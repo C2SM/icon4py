@@ -20,6 +20,7 @@ from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
     debug_utils as wrapper_debug_utils,
@@ -45,6 +46,7 @@ class GridState:
 grid_state: Optional[GridState] = None  # TODO(havogt): remove module global state
 
 
+@py2fgen.export
 def grid_init(
     cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
     cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],

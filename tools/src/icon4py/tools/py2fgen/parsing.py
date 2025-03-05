@@ -23,12 +23,18 @@ from icon4py.tools.py2fgen.utils import parse_type_spec
 def parse(module_name: str, functions: list[str], plugin_name: str) -> CffiPlugin:
     module = importlib.import_module(module_name)
     parsed_functions = [_parse_function(module, f) for f in functions]
-
+    # parsed_functions = [_parse_function_direct(getattr(module, f)) for f in functions]
     return CffiPlugin(
         module_name=module_name,
         plugin_name=plugin_name,
         functions=parsed_functions,
     )
+
+
+def _parse_function_direct(fun: Callable) -> Func:
+    if not hasattr(fun, "function_descriptor"):
+        raise TypeError("Cannot parse function, did you forget to decorate it with '@export'?")
+    return fun.function_descriptor
 
 
 def _parse_function(module: ModuleType, function_name: str) -> Func:

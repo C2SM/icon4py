@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import math
 from typing import TYPE_CHECKING, Optional
 
@@ -24,6 +25,16 @@ try:
     import cupy as cp  # type: ignore
 except ImportError:
     cp = None
+
+
+# TODO no dataclass, maybe class with slots for performance reasons
+@dataclasses.dataclass(frozen=True, slots=True)
+class ArrayDescriptor:
+    ffi: cffi.FFI
+    ptr: cffi.FFI.CData
+    shape: tuple[int, ...]
+    on_gpu: bool
+    is_optional: bool
 
 
 def _unpack(ffi: cffi.FFI, ptr, *sizes: int) -> np.typing.NDArray:  # type: ignore[no-untyped-def] # CData type not public?

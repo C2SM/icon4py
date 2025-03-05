@@ -235,7 +235,7 @@ def {{ func.name }}_wrapper(
         # Convert ptr to GT4Py fields
         {% for arg in func.args %}
         {% if arg.is_array %}
-        {{ arg.name }} = wrapper_utils.as_field(ffi, on_gpu, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}}, {{arg.is_optional}})
+        {{ arg.name }} = wrapper_utils.ArrayDescriptor(ffi, {{ arg.name }}, shape=({{ arg.size_args | join(", ") }}), on_gpu=on_gpu, is_optional={{ arg.is_optional }})
         {% elif arg.is_bool %}
         assert isinstance({{ arg.name }}, int)
         {{ arg.name }} = {{ arg.name }} != 0
@@ -255,7 +255,7 @@ def {{ func.name }}_wrapper(
 
         {{ func.name }}(
         {%- for arg in func.args -%}
-        {{ arg.name }}{{ ", " if not loop.last else "" }}
+        {{ arg.name }} = {{ arg.name }}{{ ", " if not loop.last else "" }}
         {%- endfor -%}
         )
 
@@ -272,7 +272,7 @@ def {{ func.name }}_wrapper(
         {% if arg.is_array %}
         msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape if {{arg.name}} is not None else "None")
         logging.debug(msg)
-        msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray if {{ arg.name }} is not None else "None")
+        #msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray if {{ arg.name }} is not None else "None")
         logging.debug(msg)
         {% endif %}
         {% endfor %}
