@@ -51,9 +51,27 @@ def benchmark_model(session: nox.Session) -> None:
     """Run pytest benchmarks for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
-    results_json = os.path.abspath("results.json")  # Store results in the top directory
+    results_json_path = os.path.abspath("results.json")  # Store results in the top directory
     with session.chdir(f"model"):
-        session.run("pytest", "-v", "--benchmark-only", "--benchmark-warmup=on", "--benchmark-warmup-iterations=30", f"--benchmark-json={results_json}", *session.posargs)
+        session.run("pytest", "-v", "--benchmark-only", "--benchmark-warmup=on", "--benchmark-warmup-iterations=30", f"--benchmark-json={results_json_path}", *session.posargs)
+
+@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+def bencher_baseline(session: nox.Session) -> None:
+    """Upload benchmark results to bencher."""
+    session.run(*f"bencher run \
+                   --project {os.environ['BENCHER_PROJECT']} \
+                   --token {os.environ['BENCHER_API_TOKEN']} \
+                   --branch main \
+                   --testbed ci-runner:{os.environ['SYSTEM_NAME']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
+                   --threshold-measure latency \
+                   --threshold-test percentage \
+                   --threshold-max-sample-size 64 \
+                   --threshold-upper-boundary 0.1 \
+                   --thresholds-reset \
+                   --err \
+                   --adapter python_pytest \
+                   --file results.json".split(), 
+                external=True)
 
 # Model test sessions
 # TODO(egparedes): Add backend parameter
