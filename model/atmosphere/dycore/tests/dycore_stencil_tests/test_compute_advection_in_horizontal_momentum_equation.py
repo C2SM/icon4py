@@ -170,12 +170,6 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         edge = data_alloc.index_field(grid, dims.EdgeDim)
         nlev = grid.num_levels
 
-        for level in range(nlev):
-            k[level] = level
-        for v in range(grid.num_vertices):
-            vertex[v] = v
-        for e in range(grid.num_edges):
-            edge[e] = e
 
         nrdmax = 5
         edge_domain = h_grid.domain(dims.EdgeDim)
