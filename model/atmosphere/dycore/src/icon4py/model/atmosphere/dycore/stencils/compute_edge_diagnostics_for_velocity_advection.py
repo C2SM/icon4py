@@ -136,7 +136,7 @@ def _fused_velocity_advection_stencil_1_to_6(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction(
     tangential_wind: fa.EdgeKField[vpfloat],
     khalf_tangential_wind: fa.EdgeKField[wpfloat],
