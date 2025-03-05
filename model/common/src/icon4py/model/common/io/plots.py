@@ -66,6 +66,7 @@ class Plot:
             path=savepoint_path
             )
         self.grid_savepoint = data_provider.from_savepoint_grid('aa', 0, 2)
+        self.metrics_savepoint = data_provider.from_metrics_savepoint()
         self._num_levels_to_plot = n_levels_to_plot
         self._backend = backend
 
@@ -108,8 +109,8 @@ class Plot:
              self.primal_normal[1],
             -self.primal_normal[0],
         ])
-        self.half_level_heights = self.grid_savepoint.vct_a().asnumpy()
-        self.full_level_heights = (self.half_level_heights[:-1] + self.half_level_heights[1:]) / 2
+        self.half_level_heights = self.metrics_savepoint.z_ifc().asnumpy()
+        self.full_level_heights = self.metrics_savepoint.z_mc().asnumpy()
 
         if not os.path.isdir(self.PLOT_IMGS_DIR):
             os.makedirs(self.PLOT_IMGS_DIR)
@@ -416,7 +417,7 @@ class Plot:
         return axs
 
 
-    def plot_sections(self, data, data2, sections_x: list[float] = [], sections_y: list[float] = [], label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
+    def plot_sections(self, data, data2, sections_x: list[float] = [], sections_y: list[float] = [], plot_every=1, qscale=40, label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
         """
         Plot data defined on a triangulation on vertical sections.
         """
@@ -426,14 +427,20 @@ class Plot:
             return None
         num_sections = len(sections_x) + len(sections_y)
 
+        pever = plot_every
+
         file_name = f"{self.PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}"
 
         if "vvec_cell" in file_name:
+            if type(data) is np.ndarray:
+                data  = gtx.as_field((dims.EdgeDim, dims.KDim), data)
+            if type(data2) is np.ndarray:
+                data2 = gtx.as_field((dims.CellDim, dims.KDim), data2)
             # quiver-plot *(u,v,w)* at cell centres (data is [vn, w])
             u, v = self._vec_interpolate_to_cell_center(data)
             w = self._scal_interpolate_to_full_levels(data2)
             data = (u**2 + v**2 + w**2)**0.5
-        
+
         if type(data) is not np.ndarray:
             data = data.asnumpy()
 
@@ -462,28 +469,28 @@ class Plot:
                 coords_x = self.tri.x
                 coords_y = self.tri.y
             case _: raise ValueError("Invalid data shape")
-        
+
         fig, axs, caxs = self._make_axes(num_axes=num_sections, fig_num=fig_num)
 
         plot_sec = lambda x, y, data, i: axs[i].scatter(x, y, c=data, s=6**2, cmap=cmap, norm=norm(data.min(), data.max()))
-        quiver_sec = lambda x, y, u, v, i: axs[i].quiver(x, y, u, v)
+        quiver_sec = lambda x, y, u, v, i: axs[i].quiver(x, y, u, v, scale=qscale)
 
         for i in range(num_sections):
             if i < len(sections_x):
                 v_mag = (v**2 + w**2)**0.5
                 idxs = self._get_section_indexes(coords_x, coords_y, s_x=sections_x[i], dist=self.tri.height_length*2/3)
-                x_coords = np.tile(coords_y[idxs], (self.full_level_heights.size, 1)).T
-                y_coords = np.tile(self.full_level_heights, (coords_y[idxs].size, 1))
+                x_coords = np.tile(coords_y[idxs], (self.grid.num_levels, 1)).T
+                y_coords = self.full_level_heights[idxs,:]
                 im = plot_sec(x_coords, y_coords, v_mag[idxs, :], i)
                 quiver_sec(x_coords, y_coords, v[idxs, :], w[idxs, :], i)
                 axs[i].set_title(f"Section at x = {sections_x[i]}")
             else:
                 v_mag = (u**2 + w**2)**0.5
                 idxs = self._get_section_indexes(coords_x, coords_y, s_y=sections_y[i-len(sections_x)], dist=self.tri.height_length*2/3)
-                x_coords = np.tile(coords_x[idxs], (self.full_level_heights.size, 1)).T
-                y_coords = np.tile(self.full_level_heights, (coords_x[idxs].size, 1))
-                im = plot_sec(x_coords, y_coords, v_mag[idxs, :], i)
-                quiver_sec(x_coords, y_coords, u[idxs, :], w[idxs, :], i)
+                x_coords = np.tile(coords_x[idxs], (self.grid.num_levels, 1)).T
+                y_coords = self.full_level_heights[idxs,:]
+                im = plot_sec(x_coords[::pever,::pever], y_coords[::pever,::pever], v_mag[idxs, :][::pever,::pever], i)
+                quiver_sec(x_coords[::pever,::pever], y_coords[::pever,::pever], u[idxs, :][::pever,::pever], w[idxs, :][::pever,::pever], i)
                 axs[i].set_title(f"Section at y = {sections_y[i-len(sections_x)]}")
             cbar = fig.colorbar(im, cax=caxs[i], orientation='vertical')
             cbar.set_ticks(np.linspace(cbar.vmin, cbar.vmax, 5))
@@ -500,7 +507,7 @@ class Plot:
             plt.pause(1)
 
         self.plot_counter += 1
-        return axs
+        return axs, x_coords, y_coords, u[idxs,:], w[idxs,:]
 
     def _get_section_indexes(self, grid_x, grid_y, s_x=None, s_y=None, dist=1e-3):
 
