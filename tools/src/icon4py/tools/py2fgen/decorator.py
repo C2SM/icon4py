@@ -46,7 +46,8 @@ class _DecoratedFunction:
 
         mapping = {}
         for param in self.function_descriptor.args:
-            mapping[param.name] = _as_field(param.dimensions, param.d_type)
+            if param.is_array:
+                mapping[param.name] = _as_field(param.dimensions, param.d_type)
         self._mapping = mapping
 
     def __call__(self, **kwargs: Any) -> Any:  # TODO switch to positional arguments for performance
