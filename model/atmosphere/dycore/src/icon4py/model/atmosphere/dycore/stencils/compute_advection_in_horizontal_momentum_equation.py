@@ -8,7 +8,6 @@
 import gt4py.next as gtx
 from gt4py.next import broadcast
 from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import maximum, where
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
