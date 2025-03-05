@@ -26,7 +26,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO (Chia RUi): Rename and clean up the individual stencils used by the combined stencil
 @field_operator
 def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
