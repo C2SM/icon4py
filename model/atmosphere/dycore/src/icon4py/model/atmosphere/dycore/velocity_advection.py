@@ -218,12 +218,6 @@ class VelocityAdvection:
 
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        # TODO: rbf array is inverted in serialized data
-        rbf_vec_coeff_e = gtx.as_field(
-            (dims.EdgeDim, dims.E2C2EDim),
-            self.interpolation_state.rbf_vec_coeff_e.asnumpy().transpose(),
-            allocator=self._backend,
-        )
         self._compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction(
             tangential_wind=diagnostic_state.tangential_wind,
             khalf_tangential_wind=khalf_tangential_wind,
@@ -233,7 +227,7 @@ class VelocityAdvection:
             khalf_horizontal_advection_of_w_at_edge=self._khalf_horizontal_advection_of_w_at_edge,
             vn=prognostic_state.vn,
             w=prognostic_state.w,
-            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
             wgtfac_e=self.metric_state.wgtfac_e,
             ddxn_z_full=self.metric_state.ddxn_z_full,
             ddxt_z_full=self.metric_state.ddxt_z_full,

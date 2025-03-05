@@ -773,9 +773,6 @@ class SolveNonhydro:
 
         self._start_edge_halo_level_2 = self._grid.start_index(edge_halo_level_2)
 
-        self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
-        )
         self._end_edge_nudging = self._grid.end_index(edge_domain(h_grid.Zone.NUDGING))
         self._end_edge_local = self._grid.end_index(edge_domain(h_grid.Zone.LOCAL))
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
@@ -786,49 +783,6 @@ class SolveNonhydro:
             vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
-
-    def update_time_levels_for_velocity_tendencies(
-        self,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
-        at_first_substep: bool,
-        at_initial_timestep: bool,
-    ):
-        """
-        Set time levels of ddt_adv fields for call to velocity_tendencies.
-
-        When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
-        `ddt_w_adv_pc.predictor` (advection term in vertical momentum equation in
-        predictor step) is not computed in the predictor step of each substep.
-        Instead, the advection term computed in the corrector step during the
-        previous substep is reused for efficiency (except, of course, in the
-        very first substep of the initial time step).
-        `ddt_vn_apc.predictor` (advection term in horizontal momentum equation in
-        predictor step) is only computed in the predictor step of the first
-        substep and the advection term in the corrector step during the previous
-        substep is reused for `ddt_vn_apc.predictor` from the second substep onwards.
-        Additionally, in this scheme the predictor and corrector outputs are kept
-        in separate elements of the pair (.predictor for the predictor step and
-        .corrector for the corrector step) and interpoolated at the end of the
-        corrector step to get the final output.
-
-        No other time stepping schemes are currently supported.
-
-        Args:
-            diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)
-            at_first_substep: Flag indicating if this is the first substep of the time step.
-            at_initial_timestep: Flag indicating if this is the first time step.
-
-        Returns:
-            The index of the pair element to be used for the corrector output.
-        """
-
-        assert (
-            self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
-        ), f" only {TimeSteppingScheme.MOST_EFFICIENT} is supported. But {self._config.itime_scheme} is chosen."
-        if not (at_initial_timestep and at_first_substep):
-            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
-        if not at_first_substep:
-            diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     def time_step(
         self,
@@ -873,12 +827,6 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
-
-        self.update_time_levels_for_velocity_tendencies(
-            diagnostic_state_nh,
-            at_first_substep=at_first_substep,
-            at_initial_timestep=at_initial_timestep,
-        )
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -1208,19 +1156,20 @@ class SolveNonhydro:
         )
 
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            self._compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-                inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
-                z_exner_ex_pr=self.z_exner_ex_pr,
-                ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
-                c_lin_e=self._interpolation_state.c_lin_e,
-                z_dexner_dz_c_1=self.z_dexner_dz_c_1,
-                z_gradh_exner=z_fields.z_gradh_exner,
-                horizontal_start=self._start_edge_nudging_level_2,
-                horizontal_end=self._end_edge_local,
-                vertical_start=self._vertical_params.nflatlev,
-                vertical_end=gtx.int32(self._vertical_params.nflat_gradp + 1),
-                offset_provider=self._grid.offset_providers,
-            )
+            if self._vertical_params.nflatlev < gtx.int32(self._vertical_params.nflat_gradp + 1):
+                self._compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+                    inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
+                    z_exner_ex_pr=self.z_exner_ex_pr,
+                    ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
+                    c_lin_e=self._interpolation_state.c_lin_e,
+                    z_dexner_dz_c_1=self.z_dexner_dz_c_1,
+                    z_gradh_exner=z_fields.z_gradh_exner,
+                    horizontal_start=self._start_edge_nudging_level_2,
+                    horizontal_end=self._end_edge_local,
+                    vertical_start=self._vertical_params.nflatlev,
+                    vertical_end=gtx.int32(self._vertical_params.nflat_gradp + 1),
+                    offset_provider=self._grid.offset_providers,
+                )
 
             self._compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
                 inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
@@ -1316,16 +1265,11 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
         self._exchange.exchange_and_wait(dims.EdgeDim, prognostic_states.next.vn, z_fields.z_rho_e)
 
-        rbf_vec_coeff_e = gtx.as_field(
-            (dims.EdgeDim, dims.E2C2EDim),
-            self._interpolation_state.rbf_vec_coeff_e.asnumpy().transpose(),
-            allocator=self._backend,
-        )
         self._compute_avg_vn_and_graddiv_vn_and_vt(
             e_flx_avg=self._interpolation_state.e_flx_avg,
             vn=prognostic_states.next.vn,
             geofac_grdiv=self._interpolation_state.geofac_grdiv,
-            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            rbf_vec_coeff_e=self._interpolation_state.rbf_vec_coeff_e,
             z_vn_avg=self.z_vn_avg,
             z_graddiv_vn=z_fields.z_graddiv_vn,
             vt=diagnostic_state_nh.tangential_wind,
@@ -2121,7 +2065,7 @@ class SolveNonhydro:
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.mass_flx_ic,
                     horizontal_start=self._start_cell_lateral_boundary,
-                    horizontal_end=self._end_cell_nudging,
+                    horizontal_end=self._end_cell_lateral_boundary_level_4,
                     vertical_start=0,
                     vertical_end=self._grid.num_levels + 1,
                     offset_provider={},
@@ -2137,7 +2081,7 @@ class SolveNonhydro:
                 mass_flx_ic=prep_adv.mass_flx_ic,
                 r_nsubsteps=r_nsubsteps,
                 horizontal_start=self._start_cell_lateral_boundary,
-                horizontal_end=self._end_cell_nudging,
+                horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
                 offset_provider={},

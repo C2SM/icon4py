@@ -132,11 +132,11 @@ def test_time_step_flags(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #    dt_utils.GLOBAL_EXPERIMENT,
-        #    "2000-01-01T00:00:02.000",
-        #    "2000-01-01T00:00:02.000",
-        # ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -161,7 +161,7 @@ def test_nonhydro_predictor_step(
     caplog,
     backend,
 ):
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
@@ -200,11 +200,11 @@ def test_nonhydro_predictor_step(
     at_first_substep = substep_init == 1
 
     prognostic_states = utils.create_prognostic_states(sp)
-    solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh,
-        at_first_substep=at_first_substep,
-        at_initial_timestep=at_initial_timestep,
-    )
+
+    if not (at_initial_timestep and at_first_substep):
+        diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+    if not at_first_substep:
+        diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -530,11 +530,11 @@ def test_nonhydro_predictor_step(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #     dt_utils.GLOBAL_EXPERIMENT,
-        #     "2000-01-01T00:00:02.000",
-        #     "2000-01-01T00:00:02.000",
-        # ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 def test_nonhydro_corrector_step(
@@ -559,7 +559,7 @@ def test_nonhydro_corrector_step(
     caplog,
     backend,
 ):
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     init_savepoint = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -623,11 +623,11 @@ def test_nonhydro_corrector_step(
     at_last_substep = substep_init == ndyn_substeps
 
     prognostic_states = utils.create_prognostic_states(init_savepoint)
-    solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh,
-        at_first_substep=at_first_substep,
-        at_initial_timestep=at_initial_timestep,
-    )
+
+    if not (at_initial_timestep and at_first_substep):
+        diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+    if not at_first_substep:
+        diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -743,11 +743,11 @@ def test_nonhydro_corrector_step(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #     dt_utils.GLOBAL_EXPERIMENT,
-        #     "2000-01-01T00:00:02.000",
-        #     "2000-01-01T00:00:02.000",
-        # ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 def test_run_solve_nonhydro_single_step(
@@ -774,7 +774,7 @@ def test_run_solve_nonhydro_single_step(
     caplog,
     backend,
 ):
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
 
     sp = savepoint_nonhydro_init
@@ -830,7 +830,7 @@ def test_run_solve_nonhydro_single_step(
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=substep_init == 1,
-        at_last_substep=substep_init == (ndyn_substeps),
+        at_last_substep=substep_init == ndyn_substeps,
     )
     prognostic_state_nnew = prognostic_states.next
     assert helpers.dallclose(
@@ -946,6 +946,11 @@ def test_run_solve_nonhydro_multi_step(
     for i_substep in range(ndyn_substeps):
         at_first_substep = i_substep == 0
         at_last_substep = i_substep == (ndyn_substeps - 1)
+
+        if not (at_initial_timestep and at_first_substep):
+            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+        if not at_first_substep:
+            diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,

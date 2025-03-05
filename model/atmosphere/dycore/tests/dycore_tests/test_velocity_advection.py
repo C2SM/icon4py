@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import logging
+
 import gt4py.next as gtx
 import pytest
 
@@ -28,6 +30,9 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from . import utils
 
 
+log = logging.getLogger(__name__)
+
+
 def create_vertical_params(vertical_config, grid_savepoint):
     return v_grid.VerticalGrid(
         config=vertical_config,
@@ -41,8 +46,8 @@ def create_vertical_params(vertical_config, grid_savepoint):
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_savepoint(
@@ -90,8 +95,8 @@ def test_verify_velocity_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
@@ -112,12 +117,12 @@ def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(1, 1, 1)])
+@pytest.mark.parametrize("istep_init, substep_init, istep_exit, substep_exit ", [(1, 1, 1, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -126,6 +131,8 @@ def test_velocity_predictor_step(
     istep_exit,
     step_date_init,
     step_date_exit,
+    substep_init,
+    substep_exit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -137,7 +144,9 @@ def test_velocity_predictor_step(
     interpolation_savepoint,
     savepoint_velocity_exit,
     backend,
+    caplog,
 ):
+    caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
@@ -217,6 +226,7 @@ def test_velocity_predictor_step(
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
+    # FIX
     # stencil 01
     assert helpers.dallclose(
         diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14
@@ -294,7 +304,7 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -439,7 +449,7 @@ def test_velocity_corrector_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init", [1])
@@ -477,12 +487,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_p
     vn = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.vn()
     w = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.w()
 
-    # TODO: rbf array is inverted in serialized data
-    rbf_vec_coeff_e = gtx.as_field(
-        (dims.EdgeDim, dims.E2C2EDim),
-        interpolation_savepoint.rbf_vec_coeff_e().asnumpy().transpose(),
-        allocator=backend,
-    )
+    rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     wgtfac_e = metrics_savepoint.wgtfac_e()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
@@ -594,7 +599,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_p
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init", [2])
@@ -690,7 +695,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
@@ -822,7 +827,7 @@ def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
@@ -964,7 +969,7 @@ def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
@@ -1025,7 +1030,7 @@ def test_velocity_fused_19_20_compute_advection_in_horizontal_momentum_equation(
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    # d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
+    # TODO (Chia Rui): remove? d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
     d_time = 5.0
     nrdmax = grid_savepoint.nrdmax()
 

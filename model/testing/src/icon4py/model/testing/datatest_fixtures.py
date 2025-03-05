@@ -196,8 +196,11 @@ def savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init(
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 1 to 7.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+     metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
+    - substep: dynamical substep
     """
     return (
         data_provider.savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init(
@@ -291,8 +294,10 @@ def savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit(
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 1 to 7.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return (
         data_provider.savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit(
