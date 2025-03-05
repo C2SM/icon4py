@@ -120,8 +120,8 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        contravariant_corrected_w_at_cell,
-        vertical_wind_advective_tendency,
+        contravariant_corrected_w_at_cell: np.ndarray,
+        vertical_wind_advective_tendency: np.ndarray,
         w,
         khalf_contravariant_corrected_w_at_cell,
         khalf_horizontal_advection_of_w_at_edge,
