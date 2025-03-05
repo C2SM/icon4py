@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py import next as gtx
-from gt4py.next import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import arccos, cos, sin, sqrt, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
@@ -15,7 +14,7 @@ from icon4py.model.common.dimension import E2C, E2V, Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def average_level_plus1_on_cells(
     half_level_field: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
@@ -33,7 +32,7 @@ def average_level_plus1_on_cells(
     return 0.5 * (half_level_field + half_level_field(Koff[1]))
 
 
-@field_operator
+@gtx.field_operator
 def average_level_plus1_on_edges(
     half_level_field: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
@@ -51,7 +50,7 @@ def average_level_plus1_on_edges(
     return 0.5 * (half_level_field + half_level_field(Koff[1]))
 
 
-@field_operator
+@gtx.field_operator
 def difference_level_plus1_on_cells(
     half_level_field: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
@@ -69,7 +68,7 @@ def difference_level_plus1_on_cells(
     return half_level_field - half_level_field(Koff[1])
 
 
-@field_operator
+@gtx.field_operator
 def grad_fd_norm(
     psi_c: fa.CellKField[float],
     inv_dual_edge_length: fa.EdgeField[float],
@@ -89,7 +88,7 @@ def grad_fd_norm(
     return grad_norm_psi_e
 
 
-@field_operator
+@gtx.field_operator
 def _grad_fd_tang(
     psi_v: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], float],
     inv_primal_edge_length: fa.EdgeField[float],
@@ -513,7 +512,7 @@ def arc_length(
     return radius * arccos(dot_product_on_edges(x0, x1, y0, y1, z0, z1))
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def average_two_vertical_levels_downwards_on_edges(
     input_field: fa.EdgeKField[wpfloat],
     average: fa.EdgeKField[wpfloat],
@@ -532,7 +531,7 @@ def average_two_vertical_levels_downwards_on_edges(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def average_two_vertical_levels_downwards_on_cells(
     input_field: fa.CellKField[wpfloat],
     average: fa.CellKField[wpfloat],
