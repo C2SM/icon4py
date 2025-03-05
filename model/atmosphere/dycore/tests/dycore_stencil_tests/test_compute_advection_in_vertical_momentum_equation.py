@@ -144,8 +144,8 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         cell_upper_bound,
         nlev,
         nrdmax,
-        start_cell_lateral_boundary,
-        end_cell_halo,
+        start_cell_lateral_boundary: int,
+        end_cell_halo: int,
         **kwargs,
     ) -> dict:
         # We need to store the initial return field, because we only compute on a subdomain.
