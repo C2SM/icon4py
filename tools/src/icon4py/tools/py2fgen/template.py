@@ -235,7 +235,7 @@ def {{ func.name }}_wrapper(
         # Convert ptr to GT4Py fields
         {% for arg in func.args %}
         {% if arg.is_array %}
-        {{ arg.name }} = wrapper_utils.ArrayDescriptor(ffi, {{ arg.name }}, shape=({{ arg.size_args | join(", ") }}), on_gpu=on_gpu, is_optional={{ arg.is_optional }})
+        {{ arg.name }} = wrapper_utils.ArrayDescriptor(ffi, {{ arg.name }}, shape=({{ arg.size_args | join(", ") }},), on_gpu=on_gpu, is_optional={{ arg.is_optional }})
         {% elif arg.is_bool %}
         assert isinstance({{ arg.name }}, int)
         {{ arg.name }} = {{ arg.name }} != 0
