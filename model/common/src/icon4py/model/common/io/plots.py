@@ -16,6 +16,8 @@ import pickle
 import numpy as np
 import xarray as xr
 
+mpl.use('tkagg')
+
 # Prevent matplotlib logging spam
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 # get the the logger with the name 'PIL'
@@ -54,8 +56,8 @@ def interpolate_from_half_to_full_levels(
 class Plot:
     def __init__(
             self,
-            savepoint_path: str = "",
-            grid_file_path: str = "",
+            savepoint_path: str,
+            grid_file_path: str,
             n_levels_to_plot: int = 2,
             backend: gtx.backend.Backend = gtx.gtfn_cpu,
         ):
@@ -64,7 +66,7 @@ class Plot:
             backend=backend,
             fname_prefix="icon_pydycore",
             path=savepoint_path
-            )
+        )
         self.grid_savepoint = data_provider.from_savepoint_grid('aa', 0, 2)
         self.metrics_savepoint = data_provider.from_metrics_savepoint()
         self._num_levels_to_plot = n_levels_to_plot
