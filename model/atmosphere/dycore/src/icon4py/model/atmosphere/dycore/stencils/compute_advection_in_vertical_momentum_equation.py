@@ -90,7 +90,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     return vertical_wind_advective_tendency
 
 
-@field_operator
+@gtx.field_operator
 def _compute_advection_in_vertical_momentum_equation(
     contravariant_corrected_w_at_cell: fa.CellKField[wpfloat],
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
