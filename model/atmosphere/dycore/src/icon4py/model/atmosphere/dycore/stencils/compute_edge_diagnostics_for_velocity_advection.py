@@ -36,7 +36,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 # TODO (Chia RUi): Rename and clean up the individual stencils used by the combined stencil
-@field_operator
+@gtx.field_operator
 def _compute_interface_vt_vn_and_kinetic_energy(
     vn: fa.EdgeKField[wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
