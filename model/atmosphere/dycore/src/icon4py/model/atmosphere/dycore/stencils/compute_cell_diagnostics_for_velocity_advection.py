@@ -85,7 +85,7 @@ def _compute_khalf_contravariant_corrected_w(
     return khalf_contravariant_corrected_w_at_cell
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program
 def compute_horizontal_kinetic_energy_and_khalf_contravariant_terms(
     horizontal_kinetic_energy_at_cell: fa.CellKField[vpfloat],
     khalf_contravariant_correction_at_cell: fa.CellKField[vpfloat],
