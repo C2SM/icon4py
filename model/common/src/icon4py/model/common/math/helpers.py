@@ -9,7 +9,6 @@
 from gt4py import next as gtx
 from gt4py.next import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import arccos, cos, sin, sqrt, where
-from numpy import int32
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2V, Koff
@@ -518,10 +517,10 @@ def arc_length(
 def average_two_vertical_levels_downwards_on_edges(
     input_field: fa.EdgeKField[wpfloat],
     average: fa.EdgeKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     average_level_plus1_on_edges(
         input_field,

@@ -16,9 +16,9 @@ from icon4py.model.common.states import model
 
 Z_MC: Final[str] = "height"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
-DDQZ_Z_FULL: Final[str] = "ddqz_z_full"
-DDQZ_Z_FULL_E: Final[str] = "ddqz_z_full_e"
-INV_DDQZ_Z_FULL: Final[str] = "inv_ddqz_z_full"
+DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
+DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
+INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
 SCALFAC_DD3D: Final[str] = "scaling_factor_for_3d_divergence_damping"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
 COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
@@ -77,7 +77,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     DDQZ_Z_FULL: dict(
         standard_name=DDQZ_Z_FULL,
-        long_name="ddqz_z_full",
+        long_name="functional determinant of the metrics (is positive), full levels",
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="ddqz_z_full",
@@ -85,7 +85,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     DDQZ_Z_FULL_E: dict(
         standard_name=DDQZ_Z_FULL,
-        long_name="ddqz_z_full_e",
+        long_name="functional determinant at full level on edges",
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="ddqz_z_full_e",
