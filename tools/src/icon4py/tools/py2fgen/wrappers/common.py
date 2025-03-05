@@ -9,7 +9,7 @@
 
 import functools
 import logging
-from typing import TypeAlias
+from typing import TypeAlias, Union
 
 import gt4py.next as gtx
 import numpy as np
@@ -40,11 +40,14 @@ except ImportError:
 
 try:
     import cupy as cp
+
+    xp = cp
 except ImportError:
     cp = None
+    xp = np
 
 
-xp_ndarray: TypeAlias = np.ndarray  # This is currently just a user hint
+NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 
 # TODO(havogt) import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
 assert hasattr(mpi_decomposition, "get_multinode_properties")
@@ -110,7 +113,7 @@ def cached_dummy_field(
     return gtx.zeros(domain, dtype=dtype, allocator=allocator)
 
 
-def adjust_fortran_indices(inp: np.ndarray | xp_ndarray, offset: int) -> np.ndarray | xp_ndarray:
+def adjust_fortran_indices(inp: np.ndarray | NDArray, offset: int) -> np.ndarray | NDArray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
     return inp - offset
 
@@ -122,15 +125,15 @@ def construct_icon_grid(
     vertex_ends: np.ndarray,
     edge_starts: np.ndarray,
     edge_ends: np.ndarray,
-    c2e: xp_ndarray,
-    e2c: xp_ndarray,
-    c2e2c: xp_ndarray,
-    e2c2e: xp_ndarray,
-    e2v: xp_ndarray,
-    v2e: xp_ndarray,
-    v2c: xp_ndarray,
-    e2c2v: xp_ndarray,
-    c2v: xp_ndarray,
+    c2e: NDArray,
+    e2c: NDArray,
+    c2e2c: NDArray,
+    e2c2e: NDArray,
+    e2v: NDArray,
+    v2e: NDArray,
+    v2c: NDArray,
+    e2c2v: NDArray,
+    c2v: NDArray,
     grid_id: str,
     num_vertices: int,
     num_cells: int,
