@@ -264,7 +264,7 @@ def _compute_khalf_horizontal_advection_of_w(
     return khalf_horizontal_advection_of_w_at_edge
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=GridType.UNSTRUCTURED)
 def compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction(
     tangential_wind: fa.EdgeKField[vpfloat],
     khalf_tangential_wind: fa.EdgeKField[wpfloat],
