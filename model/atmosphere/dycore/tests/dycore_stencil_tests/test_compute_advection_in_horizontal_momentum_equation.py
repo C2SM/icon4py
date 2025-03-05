@@ -165,9 +165,9 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = data_alloc.zero_field(grid, dims.KDim, dtype=gtx.int32)
-        vertex = data_alloc.zero_field(grid, dims.VertexDim, dtype=gtx.int32)
-        edge = data_alloc.zero_field(grid, dims.EdgeDim, dtype=gtx.int32)
+        k = data_alloc.index_field(grid, dims.KDim)
+        vertex = data_alloc.index_field(grid, dims.VertexDim)
+        edge = data_alloc.index_field(grid, dims.EdgeDim)
         nlev = grid.num_levels
 
         for level in range(nlev):
