@@ -210,7 +210,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         contravariant_corrected_w_at_cell = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
