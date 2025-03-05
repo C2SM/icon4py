@@ -78,7 +78,13 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
 
 class TestAverageTwoVerticalLevelsDownwardsOnCells(testing_helpers.StencilTest):
     PROGRAM = helpers.average_two_vertical_levels_downwards_on_cells
-    OUTPUTS = ("average",)
+    OUTPUTS = (
+        test_helpers.Output(
+            "average",
+            refslice=(slice(None), slice(None, -1)),
+            gtslice=(slice(None), slice(None, -1)),
+        ),
+    )
 
     @staticmethod
     def reference(
@@ -88,10 +94,10 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(testing_helpers.StencilTest):
     ) -> dict:
         shp = input_field.shape
         res = 0.5 * (input_field + np.roll(input_field, shift=-1, axis=1))[:, : shp[1] - 1]
-        return dict(result=res)
+        return dict(average=res)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         input_field = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         result = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         horizontal_start = 0

@@ -129,7 +129,7 @@ def test_program_provider(height_coordinate_source):
     deps = {
         "input_field": "height_coordinate",
     }
-    fields = {"result": "output_f"}
+    fields = {"average": "output_f"}
     provider = factory.ProgramFieldProvider(program, domain, fields, deps)
     provider(
         "output_f",
