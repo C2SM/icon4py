@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype, broadcast, where
 
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
