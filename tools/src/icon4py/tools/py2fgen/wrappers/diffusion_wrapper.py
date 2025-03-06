@@ -117,35 +117,6 @@ def diffusion_init(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    # Edge geometry
-    edge_params = grid_states.EdgeParams(
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_lengths=inv_dual_edge_length,
-        inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_x
-        ),
-        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_y
-        ),
-        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
-        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
-        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_x
-        ),
-        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_y
-        ),
-        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
-        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
-        edge_areas=edge_areas,
-        coriolis_frequency=f_e,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
-
     on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu

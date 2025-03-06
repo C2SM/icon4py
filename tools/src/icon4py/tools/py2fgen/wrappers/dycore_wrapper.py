@@ -186,45 +186,6 @@ def solve_nh_init(
     )
     nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
 
-    # edge geometry
-    edge_geometry = grid_states.EdgeParams(
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
-        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_x
-        ),
-        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_y
-        ),
-        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
-        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
-        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_x
-        ),
-        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_y
-        ),
-        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
-        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
-        edge_areas=edge_areas,
-        coriolis_frequency=f_e,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
-    )
-
-    # datatest config CellParams
-    cell_geometry = grid_states.CellParams(
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        area=cell_areas,
-        mean_cell_area=mean_cell_area,
-        length_rescale_factor=1.0,
-    )
-
     interpolation_state = dycore_states.InterpolationState(
         c_lin_e=c_lin_e,
         c_intp=c_intp,
