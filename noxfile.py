@@ -9,6 +9,8 @@
 from __future__ import annotations
 
 import os
+import json
+import glob
 import re
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias
@@ -47,17 +49,34 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
-def benchmark_model(session: nox.Session) -> None:
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
     """Run pytest benchmarks for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
-    results_json_path = os.path.abspath("results.json")  # Store results in the top directory
-    with session.chdir(f"model"):
-        session.run("pytest", "-v", "--benchmark-only", "--benchmark-warmup=on", "--benchmark-warmup-iterations=30", f"--benchmark-json={results_json_path}", *session.posargs)
+    results_json_path = os.path.abspath(f"results_{subpackage.replace('/', '_')}.json")
+    with session.chdir(f"model/{subpackage}"):
+        session.run(*f"pytest \
+                       -v \
+                       --benchmark-only \
+                       --benchmark-warmup=on \
+                       --benchmark-warmup-iterations=30 \
+                       --benchmark-json={results_json_path}".split(),
+                       *session.posargs)
 
-@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
 def bencher_baseline(session: nox.Session) -> None:
-    """Upload benchmark results to bencher."""
+    """Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted)."""
+    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
+    merged_results = {"benchmarks": []}
+    files = glob.glob("results_*.json")
+    for file in files:
+        with open(file, "r") as f:
+            data = json.load(f)
+            merged_results["benchmarks"].extend(data["benchmarks"])
+    with open(bencher_json_file_name, "w") as f:
+        json.dump(merged_results, f, indent=4)
+
     session.run(*f"bencher run \
                    --project {os.environ['BENCHER_PROJECT']} \
                    --token {os.environ['BENCHER_API_TOKEN']} \
@@ -70,7 +89,7 @@ def bencher_baseline(session: nox.Session) -> None:
                    --thresholds-reset \
                    --err \
                    --adapter python_pytest \
-                   --file results.json".split(), 
+                   --file {bencher_json_file_name}".split(),
                 external=True)
 
 # Model test sessions
