@@ -7,8 +7,7 @@ include:
     - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-    # TODO: enable advection tests
-    - COMPONENT: [diffusion, dycore, microphysics, common, driver]
+    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
       BACKEND: [dace_cpu, dace_gpu]
       GRID: [simple_grid, icon_grid]
 # test_model_stencils_x86_64:
