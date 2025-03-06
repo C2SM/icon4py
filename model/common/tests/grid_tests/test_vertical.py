@@ -62,11 +62,11 @@ def test_damping_layer_calculation_from_icon_input(
         vct_b=b,
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
-    assert nrdmax == vertical_grid.end_index_of_damping_layer
+    assert nrdmax == vertical_grid.end_index_of_damping_layer + 1
     a_array = a.ndarray
-    assert a_array[nrdmax] > damping_height
     assert a_array[nrdmax] < damping_height
-    assert vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.DAMPING)) == nrdmax
+    assert a_array[nrdmax + 1] < damping_height
+    assert vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.DAMPING)) + 1 == nrdmax
 
 
 @pytest.mark.datatest
