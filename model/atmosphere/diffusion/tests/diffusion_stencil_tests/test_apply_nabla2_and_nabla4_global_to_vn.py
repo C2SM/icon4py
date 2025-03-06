@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_
     apply_nabla2_and_nabla4_global_to_vn,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -32,7 +35,7 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
     OUTPUTS = ("vn",)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid):
         area_edge = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
@@ -55,8 +58,15 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
 
     @staticmethod
     def reference(
-        grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn, **kwargs
-    ):
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        area_edge: np.ndarray,
+        kh_smag_e: np.ndarray,
+        z_nabla2_e: np.ndarray,
+        z_nabla4_e2: np.ndarray,
+        diff_multfac_vn: np.ndarray,
+        vn: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         vn = apply_nabla2_and_nabla4_global_to_vn_numpy(
             area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
         )

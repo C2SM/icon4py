@@ -179,6 +179,10 @@ def fused_velocity_advection_stencil_15_to_18(
     nrdmax: gtx.int32,
     lvn_only: bool,
     extra_diffu: bool,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _fused_velocity_advection_stencil_15_to_18(
         z_w_con_c,
@@ -206,4 +210,8 @@ def fused_velocity_advection_stencil_15_to_18(
         lvn_only,
         extra_diffu,
         out=(z_w_con_c_full, ddt_w_adv),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
