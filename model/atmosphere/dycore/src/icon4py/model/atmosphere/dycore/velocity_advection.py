@@ -17,12 +17,11 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
 from icon4py.model.atmosphere.dycore import (
     compute_edge_diagnostics_for_velocity_advection,
-    dycore_states,
+    dycore_states, compute_cell_diagnostics_for_velocity_advection,
 )
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
     compute_advection_in_vertical_momentum_equation,
-    compute_cell_diagnostics_for_velocity_advection,
 )
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,

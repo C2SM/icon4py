@@ -13,12 +13,11 @@ import pytest
 from icon4py.model.atmosphere.dycore import (
     compute_edge_diagnostics_for_velocity_advection,
     dycore_states,
-    velocity_advection as advection,
+    velocity_advection as advection, compute_cell_diagnostics_for_velocity_advection,
 )
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
     compute_advection_in_vertical_momentum_equation,
-    compute_cell_diagnostics_for_velocity_advection,
 )
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
