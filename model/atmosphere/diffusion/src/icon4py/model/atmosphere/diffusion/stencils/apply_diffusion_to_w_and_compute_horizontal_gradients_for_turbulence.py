@@ -8,7 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
@@ -49,8 +50,8 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 ]:
     k = broadcast(k, (CellDim, KDim))
     dwdx, dwdy = (
-        where(
-            0 < k,
+        concat_where(
+            0 < KDim,
             _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
             (dwdx, dwdy),
         )
@@ -60,14 +61,14 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 
     z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
 
-    w = where(
-        (interior_idx <= cell) & (cell < halo_idx),
+    w = concat_where(
+        interior_idx <= CellDim < halo_idx,
         _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
         w_old,
     )
 
-    w = where(
-        (0 < k) & (k < nrdmax) & (interior_idx <= cell) & (cell < halo_idx),
+    w = concat_where(
+        (0 < KDim < nrdmax) & (interior_idx <= CellDim < halo_idx),
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
