@@ -19,7 +19,6 @@ from icon4py.model.testing import helpers, parallel_helpers
 from .. import utils
 
 
-
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,istep_exit, jstep_exit, step_date_exit",
