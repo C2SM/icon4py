@@ -42,7 +42,7 @@ NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
 
 
-def as_numpy(array: NDArrayInterface):
+def as_numpy(array: NDArrayInterface) -> np.ndarray:
     if isinstance(array, np.ndarray):
         return array
     elif isinstance(array, gtx.Field):
@@ -51,6 +51,15 @@ def as_numpy(array: NDArrayInterface):
         import cupy as cp
 
         return cp.asnumpy(array)
+
+
+def to_backend(array: NDArray, backend: Optional[gtx_backend.Backend]) -> NDArray:
+    if is_cupy_device(backend):
+        import cupy as cp
+
+        return cp.asarray(array)
+    else:
+        return as_numpy(array)
 
 
 def is_cupy_device(backend: Optional[gtx_backend.Backend]) -> bool:

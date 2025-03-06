@@ -98,7 +98,6 @@ def get_interpolation_factory(
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
     ],
 )
-@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.geofac_div()
@@ -118,7 +117,6 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
-@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_grdiv(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.geofac_grdiv()
@@ -147,7 +145,6 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
-@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.geofac_rot()
@@ -168,7 +165,6 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
-@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.geofac_n2s()
