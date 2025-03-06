@@ -19,23 +19,61 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 from gt4py.next.common import GridType
+from gt4py.next.embedded.context import offset_provider
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, bool, broadcast, int32, maximum, where
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
-    _mo_solve_nonhydro_stencil_04,
+from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
+    _init_two_cell_kdim_fields_with_zero_vp
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
-    _mo_solve_nonhydro_stencil_05,
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
+    _extrapolate_temporally_exner_pressure
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
-    _mo_solve_nonhydro_stencil_06,
+
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp
 )
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
-    _predictor_stencils_2_3,
+
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import (
+    _interpolate_to_surface
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
+
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
+    _interpolate_to_half_levels_vp
+)
+
+from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import (
+    _compute_first_vertical_derivative
+)
+
+from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
+    _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
+    _predictor_stencils_11_lower_upper
+)
+
+from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_derivative_of_exner import (
+    _compute_approx_of_2nd_vertical_derivative_of_exner
+)
+
+from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
+    _compute_perturbation_of_rho_and_theta
+)
+#
+# from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
+#     _mo_solve_nonhydro_stencil_04,
+# )
+# from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
+#     _mo_solve_nonhydro_stencil_05,
+# )
+# from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
+#     _mo_solve_nonhydro_stencil_06,
+# )
+# from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
+#     _predictor_stencils_2_3,
+# )
+# from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
 from icon4py.model.common.dimension import CellDim, KDim
 
 
@@ -58,6 +96,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    k_field: Field[[KDim], gtx.int32],
     rho_ic: Field[[CellDim, KDim], float],
     z_exner_ic: Field[[CellDim, KDim], float],
     exner_exfac: Field[[CellDim, KDim], float],
@@ -72,15 +111,15 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     vert_idx: Field[[KDim], int32],
     limited_area: bool,
     igradp_method: int32,
-    horizontal_lower_01: int32,
-    horizontal_upper_01: int32,
-    horizontal_lower_02: int32,
-    horizontal_upper_02: int32,
-    horizontal_lower_03: int32,
-    horizontal_upper_03: int32,
     n_lev: int32,
     nflatlev: int32,
     nflat_gradp: int32,
+    start_cell_lateral_boundary: gtx.int32,
+    start_cell_lateral_boundary_level_3: gtx.int32,
+    start_cell_halo_level_2: gtx.int32,
+    end_cell_end: gtx.int32,
+    end_cell_halo: gtx.int32,
+    end_cell_halo_level_2: gtx.int32
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -92,166 +131,154 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     vert_idx_1d = vert_idx
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
-    (z_rth_pr_1, z_rth_pr_2) = (
-        (_set_zero_c_k(), _set_zero_c_k()) if limited_area else (z_rth_pr_1, z_rth_pr_2)
-    )
+    # stencil_01
+    (z_rth_pr_1, z_rth_pr_2) = where(
+        (start_cell_lateral_boundary <= horz_idx < end_cell_end),
+        _init_two_cell_kdim_fields_with_zero_vp(
+            z_rth_pr_1, z_rth_pr_2
+        ),
+        (z_rth_pr_1, z_rth_pr_2)
+        ) if limited_area else (z_rth_pr_1, z_rth_pr_2)
 
-    # (z_exner_ex_pr, exner_pr) = where(
-    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (int32(0) <= vert_idx < n_lev),
-    #     _mo_solve_nonhydro_stencil_02(
-    #         exner_exfac=exner_exfac,
-    #         exner=exner_nnow,
-    #         exner_ref_mc=exner_ref_mc,
-    #         exner_pr=exner_pr,
-    #     ),
-    #     (z_exner_ex_pr, exner_pr),
-    # )
-    #
-    # z_exner_ex_pr = where(
-    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx == n_lev),
-    #     _set_zero_c_k(), z_exner_ex_pr,
-    # )
-
+    # solve_nonhydro_stencil_02_03
+    # TODO: there is a way to simplify the horizontal condition since 2_3 and 4_5_6 are sharing the same horizontal condition
     (z_exner_ex_pr, exner_pr) = where(
         (
-            horizontal_lower_02 <= horz_idx < horizontal_upper_02
-        ),  # & (vert_idx < (n_lev + int32(1))),
-        _predictor_stencils_2_3(
+                 (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_idx < n_lev)
+        ),
+        _extrapolate_temporally_exner_pressure(
             exner_exfac=exner_exfac,
             exner=exner_nnow,
             exner_ref_mc=exner_ref_mc,
             exner_pr=exner_pr,
-            z_exner_ex_pr=z_exner_ex_pr,
-            k_field=vert_idx_1d,
-            nlev=n_lev,
+            z_exner_ex_pr= z_exner_ex_pr,
+            exner_pr=exner_pr
         ),
         (z_exner_ex_pr, exner_pr),
     )
 
-    vert_start = maximum(1, nflatlev)
+    z_exner_ex_pr = where(
+        (
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (n_lev -1 <= vert_idx <= n_lev)
+        ),
+        _init_cell_kdim_field_with_zero_wp(
+            exner_pr=exner_pr
+        ),
+        z_exner_ex_pr,
+    )
 
-    z_exner_ic = (
-        where(
-            (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx == n_lev),
-            _mo_solve_nonhydro_stencil_04(
-                wgtfacq_c=wgtfacq_c_dsl,
+    # solve_nonhydro_stencil_4_5_6
+    if igradp_method == 3:
+        vert_start = maximum(1, nflatlev)
+        z_exner_ic = where(
+            (
+                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (n_lev <= vert_idx <= n_lev + 1)
+            ),
+            _interpolate_to_surface(
+                wgtfacq_c_dsl=wgtfacq_c_dsl,
                 z_exner_ex_pr=z_exner_ex_pr,
+                z_exner_ic=z_exner_ic
             ),
             z_exner_ic,
         )
-        if igradp_method == 3
-        else z_exner_ic
-    )
 
-    z_exner_ic = (
-        where(
-            (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
-            & (vert_start <= vert_idx < n_lev),
-            _mo_solve_nonhydro_stencil_05(
+        z_exner_ic = where(
+            (
+                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx <= n_lev)
+            ),
+            _interpolate_to_half_levels_vp(
                 wgtfac_c=wgtfac_c,
                 z_exner_ex_pr=z_exner_ex_pr,
+                z_exner_ic=z_exner_ic
             ),
             z_exner_ic,
         )
-        if igradp_method == 3
-        else z_exner_ic
-    )
 
-    z_dexner_dz_c_1 = (
-        where(
-            (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
-            & (vert_start <= vert_idx < n_lev),
-            _mo_solve_nonhydro_stencil_06(
+        z_dexner_dz_c_1 = where(
+            (
+                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx <= n_lev)
+            ),
+            _compute_first_vertical_derivative(
                 z_exner_ic=z_exner_ic,
                 inv_ddqz_z_full=inv_ddqz_z_full,
+                z_dexner_dz_c_1=z_dexner_dz_c_1
             ),
             z_dexner_dz_c_1,
         )
-        if igradp_method == 3
-        else z_dexner_dz_c_1
+
+    # solve_nonhydro_stencil_7_8_9, which is already combined
+    (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
+        (
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo),
+        ),
+        _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
+            rho=rho_nnow,
+            z_rth_pr_1=z_rth_pr_1,
+            z_rth_pr_2=z_rth_pr_2,
+            rho_ref_mc=rho_ref_mc,
+            theta_v=theta_v_nnow,
+            theta_ref_mc=theta_ref_mc,
+            rho_ic=rho_ic,
+            wgtfac_c=wgtfac_c,
+            vwind_expl_wgt=vwind_expl_wgt,
+            exner_pr=exner_pr,
+            d_exner_dz_ref_ic= d_exner_dz_ref_ic,
+            ddqz_z_half=ddqz_z_half,
+            z_theta_v_pr_ic=z_theta_v_pr_ic,
+            theta_v_ic=theta_v_ic,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            k_field=k_field
+        ),
+        (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c)
     )
 
-    # (z_exner_ic, z_dexner_dz_c_1) = (
-    #     where(
-    #         (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_start <= vert_idx),
-    #         _predictor_stencils_4_5_6(
-    #             wgtfacq_c_dsl=wgtfacq_c_dsl,
-    #             z_exner_ex_pr=z_exner_ex_pr,
-    #             z_exner_ic=z_exner_ic,
-    #             wgtfac_c=wgtfac_c,
-    #             inv_ddqz_z_full=inv_ddqz_z_full,
-    #             z_dexner_dz_c_1=z_dexner_dz_c_1,
-    #             k_field=vert_idx_1d,
-    #             nlev=n_lev,
-    #         ),
-    #         (z_exner_ic, z_dexner_dz_c_1),
-    #     )
-    #     if igradp_method == 3
-    #     else (z_exner_ic, z_dexner_dz_c_1)
-    # )
+    #stencil_11
+    (z_theta_v_pr_ic, theta_v_ic) = where(
+        (
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_idx <= n_lev+1)
+        ),
+        _predictor_stencils_11_lower_upper(
+            wgtfacq_c_dsl= wgtfacq_c_dsl,
+            z_rth_pr=z_rth_pr_2,
+            theta_ref_ic=theta_ref_ic,
+            z_theta_v_pr_ic=z_theta_v_pr_ic,
+            theta_v_ic=theta_v_ic,
+            k_field=k_field,
+            nlev=n_lev
+        ),
+        (z_theta_v_pr_ic, theta_v_ic)
+    )
 
-    #
-    # (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02),
-    #     _predictor_stencils_7_8_9(
-    #         rho=rho_nnow,
-    #         rho_ref_mc=rho_ref_mc,
-    #         theta_v=theta_v_nnow,
-    #         theta_ref_mc=theta_ref_mc,
-    #         rho_ic=rho_ic,
-    #         z_rth_pr_1=z_rth_pr_1,
-    #         z_rth_pr_2=z_rth_pr_2,
-    #         wgtfac_c=wgtfac_c,
-    #         vwind_expl_wgt=vwind_expl_wgt,
-    #         exner_pr=exner_pr,
-    #         d_exner_dz_ref_ic=d_exner_dz_ref_ic,
-    #         ddqz_z_half=ddqz_z_half,
-    #         z_theta_v_pr_ic=z_theta_v_pr_ic,
-    #         theta_v_ic=theta_v_ic,
-    #         z_th_ddz_exner_c=z_th_ddz_exner_c,
-    #         k_field=vert_idx_1d,
-    #         nlev=n_lev,
-    #     ),
-    #     (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
-    # )
+    # stencil 12
+    if igradp_method==3:
+        vert_start = nflat_gradp
+        z_dexner_dz_c_2 = where(
+            (
+                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx)
+            ),
+            _compute_approx_of_2nd_vertical_derivative_of_exner(
+                z_theta_v_pr_ic=z_theta_v_pr_ic,
+                d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+                d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+                z_rth_pr_2=z_rth_pr_2
+            )
+    )
 
-    # (z_theta_v_pr_ic, theta_v_ic) = where(
-    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx < (n_lev + int32(1))),
-    #     _predictor_stencils_11_lower_upper(
-    #         wgtfacq_c_dsl=wgtfacq_c_dsl,
-    #         z_rth_pr=z_rth_pr_2,
-    #         theta_ref_ic=theta_ref_ic,
-    #         z_theta_v_pr_ic=z_theta_v_pr_ic,
-    #         theta_v_ic=theta_v_ic,
-    #         k_field=vert_idx_1d,
-    #         nlev=n_lev,
-    #     ),
-    #     (z_theta_v_pr_ic, theta_v_ic),
-    # )
-    #
-    # vert_start = nflat_gradp
-    # if igradp_method == 3:
-    #     z_dexner_dz_c_2 = where(
-    #         (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_start <= vert_idx),
-    #         _mo_solve_nonhydro_stencil_12(
-    #             z_theta_v_pr_ic=z_theta_v_pr_ic,
-    #             d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
-    #             d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-    #             z_rth_pr_2=z_rth_pr_2,
-    #         ),
-    #         z_dexner_dz_c_2,
-    #     )
-    #
-    # (z_rth_pr_1, z_rth_pr_2) = where(
-    #     (horizontal_lower_03 <= horz_idx < horizontal_upper_03),
-    #     _mo_solve_nonhydro_stencil_13(
-    #         rho=rho_nnow,
-    #         rho_ref_mc=rho_ref_mc,
-    #         theta_v=theta_v_nnow,
-    #         theta_ref_mc=theta_ref_mc,
-    #     ),
-    #     (z_rth_pr_1, z_rth_pr_2),
-    # )
+    # stencil 13
+    (z_rth_pr_1, z_rth_pr_2) = where(
+        (
+            (start_cell_halo_level_2 <= horz_idx < end_cell_halo_level_2),
+            _compute_perturbation_of_rho_and_theta(
+                rho=rho_nnow,
+                rho_ref_mc=rho_ref_mc,
+                theta_v=theta_v_nnow,
+                theta_ref_mc=theta_ref_mc,
+                z_rth_pr_1=z_rth_pr_1,
+                z_rth_pr_2=z_rth_pr_2
+            ),
+            (z_rth_pr_1, z_rth_pr_2),
+        )
+    )
 
     return (
         z_rth_pr_1,
@@ -260,7 +287,10 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         exner_pr,
         z_exner_ic,
         z_dexner_dz_c_1,
+        z_dexner_dz_c_2,
     )
+
+#TODO: how can I check what are the output of the combined stencils?
 
 
 # @field_operator
