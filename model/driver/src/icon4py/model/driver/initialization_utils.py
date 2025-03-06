@@ -125,10 +125,10 @@ def model_initialization_serialbox(
         linit=True, date=SIMULATION_START_DATE
     )
     solve_nonhydro_init_savepoint = data_provider.from_savepoint_nonhydro_init(
-        istep=1, date=SIMULATION_START_DATE, jstep=0
+        istep=1, date=SIMULATION_START_DATE, substep=1
     )
     velocity_init_savepoint = data_provider.from_savepoint_velocity_init(
-        istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
+        istep=1, date=SIMULATION_START_DATE, substep=1
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
     diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
@@ -493,7 +493,7 @@ def read_static_fields(
             ddxn_z_full=metrics_savepoint.ddxn_z_full(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-            ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+            pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),

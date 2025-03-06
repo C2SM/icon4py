@@ -66,11 +66,10 @@ def compute_zdiff_gradp_dsl(
             >>> zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], array_ns.where(param_2.ndarray)[0][0]]
             """
 
-            param = [False] * nlev
+            param = array_ns.zeros((nlev,), dtype=bool)
             for jk1 in range(int(flat_idx[je]), nlev):
-                if (
-                    jk1 == nlev - 1
-                    or z_me[je, jk] <= z_ifc[e2c[je, 0], jk1]
+                if jk1 == nlev - 1 or (
+                    z_me[je, jk] <= z_ifc[e2c[je, 0], jk1]
                     and z_me[je, jk] >= z_ifc[e2c[je, 0], jk1 + 1]
                 ):
                     param[jk1] = True
@@ -80,9 +79,8 @@ def compute_zdiff_gradp_dsl(
         jk_start = int(flat_idx[je])
         for jk in range(int(flat_idx[je]) + 1, nlev):
             for jk1 in range(jk_start, nlev):
-                if (
-                    jk1 == nlev - 1
-                    or z_me[je, jk] <= z_ifc[e2c[je, 1], jk1]
+                if jk1 == nlev - 1 or (
+                    z_me[je, jk] <= z_ifc[e2c[je, 1], jk1]
                     and z_me[je, jk] >= z_ifc[e2c[je, 1], jk1 + 1]
                 ):
                     zdiff_gradp[je, 1, jk] = z_me[je, jk] - z_mc[e2c[je, 1], jk1]
@@ -94,9 +92,8 @@ def compute_zdiff_gradp_dsl(
         for jk in range(int(flat_idx[je]) + 1, nlev):
             if z_me[je, jk] < z_aux2[je]:
                 for jk1 in range(jk_start, nlev):
-                    if (
-                        jk1 == nlev - 1
-                        or z_aux2[je] <= z_ifc[e2c[je, 0], jk1]
+                    if jk1 == nlev - 1 or (
+                        z_aux2[je] <= z_ifc[e2c[je, 0], jk1]
                         and z_aux2[je] >= z_ifc[e2c[je, 0], jk1 + 1]
                     ):
                         zdiff_gradp[je, 0, jk] = z_aux2[je] - z_mc[e2c[je, 0], jk1]
@@ -107,9 +104,8 @@ def compute_zdiff_gradp_dsl(
         for jk in range(int(flat_idx[je]) + 1, nlev):
             if z_me[je, jk] < z_aux2[je]:
                 for jk1 in range(jk_start, nlev):
-                    if (
-                        jk1 == nlev - 1
-                        or z_aux2[je] <= z_ifc[e2c[je, 1], jk1]
+                    if jk1 == nlev - 1 or (
+                        z_aux2[je] <= z_ifc[e2c[je, 1], jk1]
                         and z_aux2[je] >= z_ifc[e2c[je, 1], jk1 + 1]
                     ):
                         zdiff_gradp[je, 1, jk] = z_aux2[je] - z_mc[e2c[je, 1], jk1]

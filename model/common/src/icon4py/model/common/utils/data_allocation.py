@@ -85,7 +85,7 @@ def as_field(field: gtx.Field, backend: Optional[gtx_backend.Backend] = None) ->
 def flatten_first_two_dims(
     *dims: gtx.Dimension, field: gtx.Field | NDArray, backend: Optional[gtx_backend.Backend] = None
 ) -> gtx.Field:
-    """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
+    """Convert a n-D sparse field or ndarray to a (n-1)-D flattened (Felix-style) sparse field."""
     buffer = field.ndarray if isinstance(field, gtx.Field) else field
     old_shape = buffer.shape
     assert len(old_shape) >= 2
@@ -95,9 +95,9 @@ def flatten_first_two_dims(
     return gtx.as_field(dims, buffer.reshape(new_shape), allocator=backend)
 
 
-def unflatten_first_two_dims(field: gtx.Field) -> NDArray:
-    """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
-    buffer = field.ndarray
+def unflatten_first_two_dims(field: gtx.Field | NDArray) -> NDArray:
+    """Convert a (n-1)-D flattened (Felix-style) sparse field or ndarray to a n-D sparse NDArray."""
+    buffer = field.ndarray if isinstance(field, gtx.Field) else field
     old_shape = buffer.shape
     new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
     return buffer.reshape(new_shape)

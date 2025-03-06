@@ -15,7 +15,7 @@ import pytest
 from cffi import FFI
 
 from icon4py.tools.py2fgen.plugin import generate_and_compile_cffi_plugin
-from icon4py.tools.py2fgen.wrapper_utils import unpack
+from icon4py.tools.py2fgen.wrapper_utils import _unpack
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def test_unpack_column_major(data, expected_result, ffi):
 
     rows, cols = expected_result.shape
 
-    result = unpack(ffi, ptr, rows, cols)
+    result = _unpack(ffi, ptr, rows, cols)
 
     assert np.array_equal(result, expected_result)
 
@@ -66,11 +66,8 @@ def test_compile_and_run_cffi_plugin_from_C():
 
         try:
             # Generate and compile the CFFI plugin, which creates lib{plugin_name}.so
-            backend = "CPU"
-            shared_library = f"{plugin_name}_{backend.lower()}"
-            generate_and_compile_cffi_plugin(
-                plugin_name, c_header, python_wrapper, build_path, backend
-            )
+            shared_library = f"{plugin_name}"
+            generate_and_compile_cffi_plugin(plugin_name, c_header, python_wrapper, build_path)
             compiled_library_path = build_path / f"lib{shared_library}.so"
 
             # Verify the shared library was created

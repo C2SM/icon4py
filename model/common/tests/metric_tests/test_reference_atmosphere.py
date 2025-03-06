@@ -17,6 +17,7 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 )
 from icon4py.model.common.metrics.metric_fields import compute_z_mc
 from icon4py.model.common.metrics.reference_atmosphere import (
+    compute_d2dexdz2_fac_mc,
     compute_d_exner_dz_ref_ic,
     compute_reference_atmosphere_cell_fields,
     compute_reference_atmosphere_edge_fields,
@@ -25,17 +26,11 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils
 
 
-# TODO (@halungge) some tests need to run on a compiled backend: embedded does not work with the
-#  Koff[-1] and roundtrip is too slow on the large grid
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     icon_grid, metrics_savepoint, backend
 ):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     rho_ref_mc_ref = metrics_savepoint.rho_ref_mc()
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
@@ -74,7 +69,7 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
         cpd=constants.CPD,
         rd=constants.RD,
         t0sl_bg=constants.T0SL_BG,
-        h_scal_bg=constants._H_SCAL_BG,
+        h_scal_bg=constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
         del_t_bg=constants.DELTA_TEMPERATURE,
         exner_ref_mc=exner_ref_mc,
         rho_ref_mc=rho_ref_mc,
@@ -93,11 +88,9 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_reference_atmsophere_on_half_level_mass_points(
+def test_compute_reference_atmosphere_on_half_level_mass_points(
     icon_grid, metrics_savepoint, backend
 ):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
     z_ifc = metrics_savepoint.z_ifc()
 
@@ -140,8 +133,6 @@ def test_compute_reference_atmsophere_on_half_level_mass_points(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
     d_exner_dz_ref_ic = data_alloc.zero_field(
@@ -163,8 +154,6 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
 def test_compute_reference_atmosphere_on_full_level_edge_fields(
     icon_grid, interpolation_savepoint, metrics_savepoint, backend
 ):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     rho_ref_me_ref = metrics_savepoint.rho_ref_me()
     theta_ref_me_ref = metrics_savepoint.theta_ref_me()
     rho_ref_me = metrics_savepoint.rho_ref_me()
@@ -213,7 +202,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
         cpd=constants.CPD,
         rd=constants.RD,
         t0sl_bg=constants.T0SL_BG,
-        h_scal_bg=constants._H_SCAL_BG,
+        h_scal_bg=constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
         del_t_bg=constants.DELTA_TEMPERATURE,
         rho_ref_me=rho_ref_me,
         theta_ref_me=theta_ref_me,
@@ -225,3 +214,35 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     )
     assert helpers.dallclose(rho_ref_me.asnumpy(), rho_ref_me_ref.asnumpy())
     assert helpers.dallclose(theta_ref_me.asnumpy(), theta_ref_me_ref.asnumpy())
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    z_mc = metrics_savepoint.z_mc()
+    d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
+    d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()
+
+    d2dexdz2_fac1_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    d2dexdz2_fac2_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+
+    compute_d2dexdz2_fac_mc.with_backend(backend=backend)(
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        z_mc=z_mc,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+        cpd=constants.CPD,
+        grav=constants.GRAV,
+        del_t_bg=constants.DEL_T_BG,
+        h_scal_bg=constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
+        horizontal_start=gtx.int32(0),
+        horizontal_end=gtx.int32(icon_grid.num_cells),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels),
+        offset_provider={},
+    )
+
+    assert helpers.dallclose(d2dexdz2_fac1_mc.asnumpy(), d2dexdz2_fac1_mc_ref.asnumpy())
+    assert helpers.dallclose(d2dexdz2_fac2_mc.asnumpy(), d2dexdz2_fac2_mc_ref.asnumpy())

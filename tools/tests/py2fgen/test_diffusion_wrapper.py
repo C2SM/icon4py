@@ -17,7 +17,12 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4py.tools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
+from icon4py.tools.py2fgen.wrappers import (
+    common as wrapper_common,
+    diffusion_wrapper,
+    grid_wrapper,
+    wrapper_dimension as w_dim,
+)
 
 from . import utils
 
@@ -48,6 +53,7 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
+    ltkeshs = True
     type_t_diffu = 2
     type_vn_diffu = 1
     hdiff_efdt_ratio = 24.0
@@ -73,6 +79,7 @@ def test_diffusion_wrapper_granule_inputs(
     edge_areas = grid_savepoint.edge_areas()
     f_e = grid_savepoint.f_e()
     cell_areas = grid_savepoint.cell_areas()
+    mean_cell_area = grid_savepoint.mean_cell_area()
     primal_normal_vert_x = grid_savepoint.primal_normal_vert_x()
     primal_normal_vert_y = grid_savepoint.primal_normal_vert_y()
     dual_normal_vert_x = grid_savepoint.dual_normal_vert_x()
@@ -215,7 +222,7 @@ def test_diffusion_wrapper_granule_inputs(
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Initialize the Grid ---
-    diffusion_wrapper.grid_init_diffusion(
+    grid_wrapper.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -231,13 +238,33 @@ def test_diffusion_wrapper_granule_inputs(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        global_root=global_root,
-        global_level=global_level,
         num_vertices=num_vertices,
         num_cells=num_cells,
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_vert_vert_length=inv_vert_vert_length,
+        edge_areas=edge_areas,
+        f_e=f_e,
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        cell_areas=cell_areas,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
+        mean_cell_area=mean_cell_area,
         c_glb_index=None,  # not running in parallel
         e_glb_index=None,
         v_glb_index=None,
@@ -285,32 +312,11 @@ def test_diffusion_wrapper_granule_inputs(
             denom_diffu_v=denom_diffu_v,
             nudge_max_coeff=nudge_max_coeff,
             itype_sher=itype_sher.value,
-            tangent_orientation=tangent_orientation,
-            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-            inv_dual_edge_length=inv_dual_edge_length,
-            inv_vert_vert_length=inv_vert_vert_length,
-            edge_areas=edge_areas,
-            f_e=f_e,
-            cell_center_lat=cell_center_lat,
-            cell_center_lon=cell_center_lon,
-            cell_areas=cell_areas,
-            primal_normal_vert_x=primal_normal_vert_x,
-            primal_normal_vert_y=primal_normal_vert_y,
-            dual_normal_vert_x=dual_normal_vert_x,
-            dual_normal_vert_y=dual_normal_vert_y,
-            primal_normal_cell_x=primal_normal_cell_x,
-            primal_normal_cell_y=primal_normal_cell_y,
-            dual_normal_cell_x=dual_normal_cell_x,
-            dual_normal_cell_y=dual_normal_cell_y,
-            edge_center_lat=edge_center_lat,
-            edge_center_lon=edge_center_lon,
-            primal_normal_x=primal_normal_x,
-            primal_normal_y=primal_normal_y,
-            global_root=global_root,
-            global_level=global_level,
+            ltkeshs=ltkeshs,
             lowest_layer_thickness=lowest_layer_thickness,
             model_top_height=model_top_height,
             stretch_factor=stretch_factor,
+            backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
         # Check input arguments to Diffusion.init
@@ -412,6 +418,7 @@ def test_diffusion_wrapper_single_step(
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
+    ltkeshs = True
     type_t_diffu = 2
     type_vn_diffu = 1
     hdiff_efdt_ratio = 24.0
@@ -428,9 +435,6 @@ def test_diffusion_wrapper_single_step(
     )
     nflat_gradp = grid_savepoint.nflat_gradp()
 
-    # global grid parameters
-    global_root, global_level = dt_utils.get_global_grid_params(experiment)
-
     # Grid parameters
     tangent_orientation = grid_savepoint.tangent_orientation()
     inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
@@ -439,6 +443,7 @@ def test_diffusion_wrapper_single_step(
     edge_areas = grid_savepoint.edge_areas()
     f_e = grid_savepoint.f_e()
     cell_areas = grid_savepoint.cell_areas()
+    mean_cell_area = grid_savepoint.mean_cell_area()
     primal_normal_vert_x = grid_savepoint.primal_normal_vert_x()
     primal_normal_vert_y = grid_savepoint.primal_normal_vert_y()
     dual_normal_vert_x = grid_savepoint.dual_normal_vert_x()
@@ -534,7 +539,7 @@ def test_diffusion_wrapper_single_step(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
-    diffusion_wrapper.grid_init_diffusion(
+    grid_wrapper.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -550,13 +555,33 @@ def test_diffusion_wrapper_single_step(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        global_root=global_root,
-        global_level=global_level,
         num_vertices=num_vertices,
         num_cells=num_cells,
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_vert_vert_length=inv_vert_vert_length,
+        edge_areas=edge_areas,
+        f_e=f_e,
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        cell_areas=cell_areas,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
+        mean_cell_area=mean_cell_area,
         c_glb_index=None,  # not running in parallel
         e_glb_index=None,
         v_glb_index=None,
@@ -601,32 +626,11 @@ def test_diffusion_wrapper_single_step(
         denom_diffu_v=denom_diffu_v,
         nudge_max_coeff=nudge_max_coeff,
         itype_sher=itype_sher.value,
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_vert_vert_length=inv_vert_vert_length,
-        edge_areas=edge_areas,
-        f_e=f_e,
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        cell_areas=cell_areas,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
-        global_root=global_root,
-        global_level=global_level,
+        ltkeshs=ltkeshs,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
+        backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 
     # Call diffusion_run

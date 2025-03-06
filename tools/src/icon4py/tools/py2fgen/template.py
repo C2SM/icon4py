@@ -6,41 +6,21 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from types import ModuleType
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
+import gt4py.next as gtx
 from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
-from gt4py.next import Dimension
-from gt4py.next.type_system.type_specifications import ScalarKind
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
     BUILTIN_TO_NUMPY_TYPE,
 )
-from icon4py.tools.py2fgen.settings import GT4PyBackend
-from icon4py.tools.py2fgen.utils import flatten_and_get_unique_elts
-from icon4py.tools.py2fgen.wrappers import wrapper_dimension
 
-
-# these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
-# therefore unpacking needs to be skipped as otherwise it will trigger an error.
-
-
-UNINITIALISED_ARRAYS = [
-    "mask_hdiff",  # optional diffusion init fields
-    "zd_diffcoef",
-    "zd_vertoffset",
-    "zd_intcoef",
-    "hdef_ic",  # optional diffusion output fields
-    "div_ic",
-    "dwdx",
-    "dwdy",
-]
 
 CFFI_DECORATOR = "@ffi.def_extern()"
-PROGRAM_DECORATOR = "@program"
 
 
 class DimensionType(Node):
@@ -50,40 +30,44 @@ class DimensionType(Node):
 
 class FuncParameter(Node):
     name: str
-    d_type: ScalarKind
-    dimensions: Sequence[Dimension]
+    d_type: ts.ScalarKind
+    dimensions: Sequence[gtx.Dimension]
+    is_optional: bool = False
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
+    is_bool: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
     size_args_len: int = datamodels.field(init=False)
     np_type: str = datamodels.field(init=False)
+    domain: str = datamodels.field(init=False)
 
     def __post_init__(self) -> None:
-        self.size_args = dims_to_size_strings(self.dimensions)
+        self.size_args = [_size_arg_name(self, i) for i in range(len(self.dimensions))]
         self.size_args_len = len(self.size_args)
         self.is_array = True if len(self.dimensions) >= 1 else False
-        # We need some fields to have nlevp1 levels on the fortran wrapper side, which we make
-        # happen by using KHalfDim as a type hint. However, this is not yet supported on the icon4py
-        # side. So before generating the python wrapper code, we replace occurrences of KHalfDim with KDim
-        self.gtdims = [
-            dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
-        ]
-        self.gtdims = [
-            "dims." + gtdim if gtdim not in dir(wrapper_dimension) else gtdim
-            for gtdim in self.gtdims
-        ]
+        self.is_bool = self.d_type == ts.ScalarKind.BOOL
+        self.gtdims = [dim.value for dim in self.dimensions]
         self.np_type = to_np_type(self.d_type)
+        self.domain = (
+            "{"
+            + ",".join(f"{d}:{s}" for d, s in zip(self.gtdims, self.size_args, strict=True))
+            + "}"
+        )
 
 
 class Func(Node):
     name: str
     args: Sequence[FuncParameter]
-    global_size_args: Sequence[str] = datamodels.field(init=False)
+    rendered_params: str = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.global_size_args = flatten_and_get_unique_elts(
-            [dims_to_size_strings(arg.dimensions) for arg in self.args]
-        )
+        params = []
+        for param in self.args:
+            params.append(param.name)
+            for i in range(len(param.dimensions)):
+                params.append(_size_arg_name(param, i))
+        params.append("on_gpu")
+        self.rendered_params = ", ".join(params)
 
 
 class CffiPlugin(Node):
@@ -93,60 +77,35 @@ class CffiPlugin(Node):
 
 
 class PythonWrapper(CffiPlugin):
-    backend: str
     debug_mode: bool
     profile: bool
-    limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
-    gt4py_backend: str = datamodels.field(init=False)
+    used_dimensions: list[gtx.Dimension] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.gt4py_backend = GT4PyBackend[self.backend].value
-        self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
+        _used_dimensions: set[gtx.Dimension] = set()
+        for func in self.functions:
+            for arg in func.args:
+                _used_dimensions.update(arg.dimensions)
+        self.used_dimensions = sorted(list(_used_dimensions), key=lambda x: x.value)
 
 
-def get_uninitialised_arrays(limited_area: bool) -> list[str]:
-    return UNINITIALISED_ARRAYS if not limited_area else []
-
-
-def build_array_size_args() -> dict[str, str]:
-    array_size_args = {}
-    from icon4py.model.common import dimension
-    from icon4py.tools.py2fgen.wrappers import wrapper_dimension
-
-    # Function to process the dimensions
-    def process_dimensions(module: ModuleType) -> None:
-        for var_name, var in vars(module).items():
-            if isinstance(var, Dimension):
-                dim_name = var_name.replace(
-                    "Dim", ""
-                )  # Assumes we keep suffixing each Dimension with Dim
-                size_name = f"n_{dim_name}"
-                array_size_args[dim_name] = size_name
-
-    # Process dimensions in both modules
-    process_dimensions(dimension)
-    process_dimensions(wrapper_dimension)
-
-    return array_size_args
-
-
-def to_c_type(scalar_type: ScalarKind) -> str:
+def to_c_type(scalar_type: ts.ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
 
-def to_np_type(scalar_type: ScalarKind) -> str:
+def to_np_type(scalar_type: ts.ScalarKind) -> str:
     """Convert a scalar type to its corresponding numpy type."""
     return BUILTIN_TO_NUMPY_TYPE[scalar_type]
 
 
-def to_iso_c_type(scalar_type: ScalarKind) -> str:
+def to_iso_c_type(scalar_type: ts.ScalarKind) -> str:
     """Convert a scalar type to its corresponding ISO C type."""
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
 
-def as_f90_value(param: FuncParameter) -> str:
+def as_f90_value(param: FuncParameter) -> Optional[str]:
     """
     Return the Fortran 90 'value' keyword for scalar types.
 
@@ -156,7 +115,7 @@ def as_f90_value(param: FuncParameter) -> str:
     Returns:
         A string containing 'value,' for scalar types, otherwise an empty string.
     """
-    return "value," if len(param.dimensions) == 0 else ""
+    return "value" if len(param.dimensions) == 0 else None
 
 
 def render_c_pointer(param: FuncParameter) -> str:
@@ -164,7 +123,9 @@ def render_c_pointer(param: FuncParameter) -> str:
     return "*" if len(param.dimensions) > 0 else ""
 
 
-def render_fortran_array_dimensions(param: FuncParameter, assumed_size_array: bool) -> str:
+def render_fortran_array_dimensions(
+    param: FuncParameter, assumed_size_array: bool
+) -> Optional[str]:
     """
     Render Fortran array dimensions for array types.
 
@@ -175,16 +136,16 @@ def render_fortran_array_dimensions(param: FuncParameter, assumed_size_array: bo
         A string representing Fortran array dimensions.
     """
     if len(param.dimensions) > 0 and assumed_size_array:
-        return "dimension(*),"
+        return "dimension(*)"
 
     if len(param.dimensions) > 0 and not assumed_size_array:
         dims = ",".join(":" for _ in param.dimensions)
-        return f"dimension({dims}),"
+        return f"dimension({dims})"
 
-    return ""
+    return None
 
 
-def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
+def dims_to_size_strings(dimensions: Sequence[gtx.Dimension]) -> list[str]:
     """Convert Python array dimension values to Fortran array access strings.
 
     These already should be in Row-major order as defined in the Python function
@@ -197,17 +158,10 @@ def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
     Returns:
         A list of Fortran array size strings.
     """
-    array_size_args = build_array_size_args()
-    size_strings = []
-    for dim in dimensions:
-        if dim.value in array_size_args:
-            size_strings.append(array_size_args[dim.value])
-        else:
-            raise ValueError(f"Dimension '{dim.value}' not found in ARRAY_SIZE_ARGS")
-    return size_strings
+    return [f"n_{dim.value}" for dim in dimensions]
 
 
-def render_fortran_array_sizes(param: FuncParameter) -> str:
+def render_fortran_array_sizes(param: FuncParameter) -> Optional[str]:
     """
     Render Fortran array size strings for array parameters.
 
@@ -220,45 +174,47 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
     if len(param.dimensions) > 0:
         size_strings = dims_to_size_strings(param.dimensions)
         return "(" + ", ".join(size_strings) + ")"
-    return ""
+    return None
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
-    # TODO(havogt): put np_as_located_field logic into unpack
     PythonWrapper = as_jinja(
         """\
 # imports for generated wrapper code
 import logging
 {% if _this_node.profile %}import time{% endif %}
 from {{ plugin_name }} import ffi
-{% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
-from gt4py.next.iterator.embedded import np_as_located_field
-from icon4py.tools.py2fgen.settings import config
+try:
+    import cupy as cp # TODO remove this import
+except ImportError:
+    cp = None
+import gt4py.next as gtx
+from gt4py.next.type_system import type_specifications as ts
 from icon4py.tools.py2fgen import wrapper_utils
-from icon4py.model.common import dimension as dims
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else -%}ERROR{%- endif -%},
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
-{% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
+
+if cp is not None:
+    logging.info(cp.show_config())
 
 # embedded function imports
 {% for func in _this_node.functions -%}
 from {{ module_name }} import {{ func.name }}
 {% endfor %}
 
+{% for dim in _this_node.used_dimensions -%}
+{{ dim.value }} = gtx.Dimension("{{ dim.value }}", kind=gtx.DimensionKind.{{ dim.kind.upper() }})
+{% endfor %}
+
 {% for func in _this_node.functions %}
 
 {{ cffi_decorator }}
 def {{ func.name }}_wrapper(
-{%- for arg in func.args -%}
-{{ arg.name }}{% if not loop.last or func.global_size_args %}, {% endif %}
-{%- endfor %}
-{%- for arg in func.global_size_args -%}
-{{ arg }}{{ ", " if not loop.last else "" }}
-{%- endfor -%}
+{{func.rendered_params}}
 ):
     try:
         {%- if _this_node.debug_mode %}
@@ -270,54 +226,19 @@ def {{ func.name }}_wrapper(
         unpack_start_time = time.perf_counter()
         {% endif %}
 
-        # Unpack pointers into Ndarrays
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        {%- if _this_node.debug_mode %}
-        msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
-        logging.debug(msg)
-        {% endif %}
-
-        {%- if arg.name in _this_node.uninitialised_arrays -%}
-        {{ arg.name }} = xp.ones((1,) * {{ arg.size_args_len }}, dtype={{arg.np_type}}, order="F")
-        {%- else -%}
-        {{ arg.name }} = wrapper_utils.unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}(ffi, {{ arg.name }}, {{ ", ".join(arg.size_args) }})
-        {%- endif -%}
-
-        {%- if arg.d_type.name == "BOOL" %}
-        {{ arg.name }} = wrapper_utils.int_array_to_bool_array({{ arg.name }})
-        {%- endif %}
-
-        {%- if _this_node.debug_mode %}
-        msg = '{{ arg.name }} after unpacking: %s' % str({{ arg.name}})
-        logging.debug(msg)
-        msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
-        logging.debug(msg)
-        {% endif %}
-        {% endif %}
-        {% endfor %}
-
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        unpack_end_time = time.perf_counter()
-        logging.critical('{{ func.name }} unpacking arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
-        {% endif %}
 
         {% if _this_node.profile %}
         cp.cuda.Stream.null.synchronize()
         allocate_start_time = time.perf_counter()
         {% endif %}
 
-        # Allocate GT4Py Fields
+        # Convert ptr to GT4Py fields
         {% for arg in func.args %}
         {% if arg.is_array %}
-        {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
-        {%- if _this_node.debug_mode %}
-        msg = 'shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
-        logging.debug(msg)
-        msg = '{{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
-        logging.debug(msg)
-        {% endif %}
+        {{ arg.name }} = wrapper_utils.as_field(ffi, on_gpu, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}}, {{arg.is_optional}})
+        {% elif arg.is_bool %}
+        assert isinstance({{ arg.name }}, int)
+        {{ arg.name }} = {{ arg.name }} != 0
         {% endif %}
         {% endfor %}
 
@@ -349,9 +270,9 @@ def {{ func.name }}_wrapper(
         # debug info
         {% for arg in func.args %}
         {% if arg.is_array %}
-        msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
+        msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape if {{arg.name}} is not None else "None")
         logging.debug(msg)
-        msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
+        msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray if {{ arg.name }} is not None else "None")
         logging.debug(msg)
         {% endif %}
         {% endfor %}
@@ -377,11 +298,19 @@ def {{ func.name }}_wrapper(
 class CHeaderGenerator(TemplatedGenerator):
     CffiPlugin = as_jinja("""{{'\n'.join(functions)}}""")
 
-    Func = as_jinja(
-        "extern int {{ name }}_wrapper({%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%});"
-    )
+    def visit_Func(self, func: Func) -> str:
+        params = []
+        for param in func.args:
+            params.append(self.visit(param))
+            for i in range(len(param.dimensions)):
+                params.append(f"int {_size_arg_name(param, i)}")
+        params.append("int on_gpu")
+        rendered_params = ", ".join(params)
+        return self.generic_visit(func, rendered_params=rendered_params)
 
-    def visit_FuncParameter(self, param: FuncParameter) -> str:
+    Func = as_jinja("extern int {{ name }}_wrapper({{rendered_params}});")
+
+    def visit_FuncParameter(self, param: FuncParameter, **kwargs: Any) -> str:
         return self.generic_visit(
             param, rendered_type=to_c_type(param.d_type), pointer=render_c_pointer(param)
         )
@@ -401,33 +330,16 @@ class DimensionPosition(Node):
 
 
 class F90FunctionDefinition(Func):
-    limited_area: bool
-    dimension_positions: Sequence[DimensionPosition] = datamodels.field(init=False)
-
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         super().__post_init__()  # call Func __post_init__
-        self.dimension_positions = self.extract_dimension_positions()
-        self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
-    def extract_dimension_positions(self) -> Sequence[DimensionPosition]:
-        """Extract a unique set of dimension positions which are used to infer dimension sizes at runtime."""
-        dim_positions: list[DimensionPosition] = []
-        unique_size_args: set[str] = set()
-        for arg in self.args:
-            for index, size_arg in enumerate(arg.size_args):
-                if size_arg not in unique_size_args:
-                    dim_positions.append(
-                        DimensionPosition(
-                            variable=str(arg.name), size_arg=size_arg, index=index + 1
-                        )
-                    )  # Use Fortran indexing
-                    unique_size_args.add(size_arg)
-        return dim_positions
+
+def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -> str:
+    return f"{','.join(attribute for attribute in  attributes if attribute is not None)} :: {name}"
 
 
 class F90Interface(Node):
     cffi_plugin: CffiPlugin
-    limited_area: bool
     function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
@@ -440,10 +352,17 @@ class F90Interface(Node):
             F90FunctionDefinition(
                 name=f.name,
                 args=f.args,
-                limited_area=self.limited_area,
             )
             for f in functions
         ]
+
+
+def _size_arg_name(param: FuncParameter, i: int) -> str:
+    return f"{param.name}_size_{i}"
+
+
+def _size_param_declaration(name: str, value: bool = True) -> str:
+    return f"integer(c_int){', value' if value else ''} :: {name}"
 
 
 class F90InterfaceGenerator(TemplatedGenerator):
@@ -468,86 +387,162 @@ end module
     )
 
     def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs: Any) -> str:
-        arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
-        if func.global_size_args:
-            arg_names += ",&\n" + ", &\n".join(func.global_size_args)
-        return self.generic_visit(func, assumed_size_array=True, param_names=arg_names)
+        param_names = []
+        param_declarations = []
+        for param in func.args:
+            param_names.append(param.name)
+            param_declarations.append(
+                _render_parameter_declaration(
+                    name=param.name,
+                    attributes=[
+                        "type(c_ptr)" if param.is_array else to_iso_c_type(param.d_type),
+                        "value",
+                        "target",
+                    ],
+                )
+            )
+            for i in range(len(param.dimensions)):
+                name = _size_arg_name(param, i)
+                param_names.append(name)
+                param_declarations.append(_size_param_declaration(name))
+
+        # on_gpu flag
+        param_declarations.append("logical(c_int), value :: on_gpu")
+        param_names.append("on_gpu")
+
+        param_names_str = ", &\n ".join(param_names)
+
+        return self.generic_visit(
+            func,
+            as_func_declaration=True,
+            param_names=param_names_str,
+            param_declarations=param_declarations,
+        )
 
     F90FunctionDeclaration = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
    import :: c_int, c_double, c_bool, c_ptr
-   {% for size_arg in global_size_args %}
-   integer(c_int), value :: {{ size_arg }}
-   {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
-   {% for arg in args %}
-   {{ arg }}
+   {% for param in param_declarations %}
+   {{ param }}
    {% endfor %}
 end function {{name}}_wrapper
     """
     )
 
     def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs: Any) -> str:
-        if len(func.args) < 1:
-            arg_names, param_names_with_size_args = "", ""
-        else:
-            arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
-            param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
+        def render_args(arg: FuncParameter) -> str:
+            if arg.is_array and arg.is_optional:
+                return f"{arg.name} = {arg.name}_ptr"
+            elif arg.is_array:
+                return f"{arg.name} = c_loc({arg.name})"
+            return f"{arg.name} = {arg.name}"
 
-        return_code_param = ",&\nrc" if len(func.args) >= 1 else "rc"
+        param_names = ", &\n ".join([arg.name for arg in func.args] + ["rc"])
+        args = []
+        for arg in func.args:
+            args.append(render_args(arg))
+            for i in range(len(arg.dimensions)):
+                name = _size_arg_name(arg, i)
+                args.append(f"{name} = {name}")
+
+        # on_gpu flag
+        args.append("on_gpu = on_gpu")
+        compiled_arg_names = ", &\n".join(args)
+
+        param_declarations = [
+            _render_parameter_declaration(
+                name=param.name,
+                attributes=[
+                    to_iso_c_type(param.d_type),
+                    render_fortran_array_dimensions(param, False),
+                    as_f90_value(param),
+                    "pointer" if param.is_optional else "target",
+                ],
+            )
+            for param in func.args
+        ]
+
+        # on_gpu flag
+        param_declarations.append("logical(c_int) :: on_gpu")
+
+        def get_sizes_maker(arg: FuncParameter) -> str:
+            return "\n".join(
+                f"{_size_arg_name(arg, i)} = SIZE({arg.name}, {i + 1})"
+                for i in range(len(arg.dimensions))
+            )
+
+        for param in func.args:
+            for i in range(len(param.dimensions)):
+                name = _size_arg_name(param, i)
+                param_declarations.append(_size_param_declaration(name, value=False))
 
         return self.generic_visit(
             func,
             assumed_size_array=False,
-            param_names=arg_names,
-            param_names_with_size_args=param_names_with_size_args,
-            arrays=set([arg.name for arg in func.args if arg.is_array]).difference(
-                set(func.uninitialised_arrays)
-            ),
-            return_code_param=return_code_param,
+            param_names=param_names,
+            args_with_size_args=compiled_arg_names,
+            non_optional_arrays=[
+                arg.name for arg in func.args if arg.is_array if not arg.is_optional
+            ],
+            optional_arrays=[arg.name for arg in func.args if arg.is_array if arg.is_optional],
+            as_allocatable=True,
+            param_declarations=param_declarations,
+            to_iso_c_type=to_iso_c_type,
+            render_fortran_array_dimensions=render_fortran_array_dimensions,
+            get_sizes_maker=get_sizes_maker,
         )
 
     F90FunctionDefinition = as_jinja(
         """
-subroutine {{name}}({{param_names}} {{ return_code_param }})
+subroutine {{name}}({{param_names}})
    use, intrinsic :: iso_c_binding
-   {% for size_arg in global_size_args %}
-   integer(c_int) :: {{ size_arg }}
-   {% endfor %}
-   {% for arg in args %}
+   {% for arg in param_declarations %}
    {{ arg }}
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
-
-   {% if arrays | length >= 1 %}
-   !$ACC host_data use_device( &
-   {%- for arr in arrays %}
-       !$ACC {{ arr }}{% if not loop.last %}, &{% else %} &{% endif %}
-   {%- endfor %}
-   !$ACC )
-   {% endif %}
-
-   {% for d in _this_node.dimension_positions %}
-   {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
+   ! ptrs
+   {% for arg in _this_node.args if arg.is_optional %}
+   type(c_ptr) :: {{ arg.name }}_ptr
    {% endfor %}
 
-   rc = {{ name }}_wrapper({{ param_names_with_size_args }})
+   {% for arg in _this_node.args if arg.is_optional %}
+   {{ arg.name }}_ptr = c_null_ptr
+   {% endfor %}
 
-   {% if arrays | length >= 1 %}
+   {%- for arr in non_optional_arrays %}
+       !$acc host_data use_device({{ arr }})
+   {%- endfor %}
+   {%- for arr in optional_arrays %}
+       !$acc host_data use_device({{ arr }}) if(associated({{ arr }}))
+   {%- endfor %}
+   
+   #ifdef _OPENACC
+   on_gpu = .True.
+   #else
+   on_gpu = .False.
+   #endif
+
+   {% for arg in _this_node.args if not arg.is_optional %}
+     {{ get_sizes_maker(arg) }}
+   {% endfor %}
+
+   {% for arg in _this_node.args if arg.is_optional %}
+   if(associated({{ arg.name }})) then
+   {{ arg.name }}_ptr = c_loc({{ arg.name }})
+     {{ get_sizes_maker(arg) }}
+    endif
+   {% endfor %}
+
+   rc = {{ name }}_wrapper({{ args_with_size_args }})
+
+   {%- for arr in non_optional_arrays %}
    !$acc end host_data
-   {% endif %}
+   {%- endfor %}
+   {%- for arr in optional_arrays %}
+   !$acc end host_data
+   {%- endfor %}
 end subroutine {{name}}
     """
     )
-
-    def visit_FuncParameter(self, param: FuncParameter, **kwargs: Any) -> str:
-        return self.generic_visit(
-            param,
-            value=as_f90_value(param),
-            iso_c_type=to_iso_c_type(param.d_type),
-            dim=render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
-            explicit_size=render_fortran_array_sizes(param),
-        )
-
-    FuncParameter = as_jinja("""{{iso_c_type}}, {{dim}} {{value}} target :: {{name}}""")
