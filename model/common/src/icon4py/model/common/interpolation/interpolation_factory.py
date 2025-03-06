@@ -55,7 +55,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0}
         log.info(
-            f"initialized interpolation factory for backend = '{self._backend.name}' and grid = '{self._grid}'"
+            f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
         self._register_computed_fields()

@@ -82,7 +82,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         self._interpolation_source = interpolation_source
         log.info(
-            f"initialized metrics factory for backend = '{self._backend.name}' and grid = '{self._grid}'"
+            f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
         vct_a = self._vertical_grid.vct_a

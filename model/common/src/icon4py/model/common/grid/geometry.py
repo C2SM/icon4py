@@ -107,7 +107,7 @@ class GridGeometry(factory.FieldSource):
         self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         log.info(
-            f"initialized geometry for backend = '{self._backend.name}' and grid = '{self._grid}'"
+            f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
 

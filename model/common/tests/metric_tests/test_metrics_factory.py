@@ -354,7 +354,9 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
     ],
 )
 @pytest.mark.datatest
-def test_factory_ddxt_z_full(grid_savepoint, metrics_savepoint, grid_file, experiment, backend, caplog):
+def test_factory_ddxt_z_full(
+    grid_savepoint, metrics_savepoint, grid_file, experiment, backend, caplog
+):
     field_ref = metrics_savepoint.ddxt_z_full().asnumpy()
     factory = get_metrics_factory(
         backend=backend,
