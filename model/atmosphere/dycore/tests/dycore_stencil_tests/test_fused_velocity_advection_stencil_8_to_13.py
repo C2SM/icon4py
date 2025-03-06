@@ -109,9 +109,9 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         istep = 1
 
         horizontal_start = 0
-        horizontal_end = gtx.int32(grid.num_cells)
+        horizontal_end = grid.num_cells
         vertical_start = 0
-        vertical_end = gtx.int32(nlev + 1)
+        vertical_end = nlev + 1
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
