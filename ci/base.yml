@@ -91,7 +91,7 @@ build_image_aarch64:
   needs: [build_image_aarch64]
   variables:
     RUNNER: "ci-runner"
-    SYSTEM_NAME: "gh200"
+    SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_002:$TEST_DATA_PATH"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
