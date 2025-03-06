@@ -8,7 +8,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
+from icon4py.model.atmosphere.dycore.compute_edge_diagnostics_for_velocity_advection import (
     compute_khalf_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims
