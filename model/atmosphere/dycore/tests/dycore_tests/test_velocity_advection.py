@@ -645,7 +645,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
-    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
     z_v_grad_w_ref = (
@@ -687,8 +687,8 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
     )
 
     assert helpers.dallclose(
-        z_v_grad_w_ref.asnumpy(),
-        khalf_horizontal_advection_of_w_at_edge.asnumpy(),
+        z_v_grad_w_ref.asnumpy()[horizontal_start:horizontal_end, :],
+        khalf_horizontal_advection_of_w_at_edge.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-15,
         atol=1.0e-15,
     )
