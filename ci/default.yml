@@ -8,7 +8,7 @@ include:
   parallel:
     matrix:
     # TODO: enable advection tests
-    - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, atmosphere/subgrid_scale_physics/microphysics, common, driver]
+    - COMPONENT: [diffusion, dycore, microphysics, common, driver]
       BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
       GRID: [simple_grid, icon_grid]
   rules:
