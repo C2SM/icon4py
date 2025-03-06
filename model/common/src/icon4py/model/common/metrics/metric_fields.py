@@ -100,7 +100,6 @@ def _compute_ddqz_z_half(
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
-    # TODO: change this to concat_where once it's merged
     ddqz_z_half = concat_where(dims.KDim == 0, 2.0 * (z_ifc - z_mc), 0.0)
     ddqz_z_half = concat_where(0 < dims.KDim < nlev, z_mc(Koff[-1]) - z_mc, ddqz_z_half)
     ddqz_z_half = concat_where(dims.KDim == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
