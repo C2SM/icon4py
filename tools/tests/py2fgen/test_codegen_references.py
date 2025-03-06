@@ -28,8 +28,8 @@ def actual_path(bindings_name: str) -> pathlib.Path:
     return pathlib.Path(__file__).parent.resolve() / "references_new" / bindings_name
 
 
-def invoke_cli(cli_runner, module, function, plugin_name, backend, path):
-    cli_args = [module, function, plugin_name, "-b", backend, "-d", "-o", path]
+def invoke_cli(cli_runner, module, function, plugin_name, path):
+    cli_args = [module, function, plugin_name, "-d", "-o", path]
     result = cli_runner.invoke(cli.main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
@@ -63,15 +63,20 @@ def check_generated_files(bindings_name: str) -> None:
         (
             "diffusion",
             "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
-            "diffusion_run, diffusion_init, grid_init_diffusion",
+            "diffusion_run, diffusion_init",
         ),
         (
             "dycore",
             "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
-            "solve_nh_run, solve_nh_init, grid_init",
+            "solve_nh_run, solve_nh_init",
+        ),
+        (
+            "grid",
+            "icon4py.tools.py2fgen.wrappers.grid_wrapper",
+            "grid_init",
         ),
     ],
-    ids=["diffusion", "dycore"],
+    ids=["diffusion", "dycore", "grid"],
 )
 def test_references(cli_runner, bindings_name, module, functions):
     invoke_cli(
@@ -79,7 +84,6 @@ def test_references(cli_runner, bindings_name, module, functions):
         module,
         functions,
         bindings_name,
-        "GPU",
         actual_path(bindings_name),
     )
     check_generated_files(bindings_name)

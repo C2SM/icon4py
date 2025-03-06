@@ -919,6 +919,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sympy" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/b4/67/fb1be2673868ee1f08e9c7bacc0b9b77d2bd5ff17ab47896f20006a2a1a5/dace-1.0.1.tar.gz", hash = "sha256:6f7a5defb082ed4f1a81f857d4268ed2bb606f6d9ea9c28d2831d1151e3a80f7", size = 5801727 }
 
 [[package]]
 name = "dask"

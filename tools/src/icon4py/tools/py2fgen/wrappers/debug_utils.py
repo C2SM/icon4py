@@ -19,10 +19,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.settings import config
 
-
-xp = config.array_ns
 
 log = setup_logger(__name__)
 
@@ -102,8 +99,6 @@ def print_grid_decomp_info(
         processor_props.rank,
         icon_grid.connectivities[E2CDim],
     )
-
-    xp.set_printoptions(edgeitems=20)
 
     log.info(
         "c_glb_index for rank %s is.... %s",

@@ -8,6 +8,8 @@
 
 import pytest
 
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
@@ -30,6 +32,7 @@ def test_jabw_initial_condition(
 ):
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
+    default_surface_pressure = data_alloc.constant_field(icon_grid, 1e5, dims.CellDim)
 
     (
         diffusion_diagnostic_state,
@@ -49,43 +52,44 @@ def test_jabw_initial_condition(
     )
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
+    prognostics_reference_savepoint = data_provider.from_savepoint_jabw_exit()
     assert helpers.dallclose(
         prognostic_state_now.rho.asnumpy(),
-        data_provider.from_savepoint_jabw_final().rho().asnumpy(),
+        prognostics_reference_savepoint.rho().asnumpy(),
     )
 
     assert helpers.dallclose(
         prognostic_state_now.exner.asnumpy(),
-        data_provider.from_savepoint_jabw_final().exner().asnumpy(),
+        prognostics_reference_savepoint.exner().asnumpy(),
     )
 
     assert helpers.dallclose(
         prognostic_state_now.theta_v.asnumpy(),
-        data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
+        prognostics_reference_savepoint.theta_v().asnumpy(),
     )
 
     assert helpers.dallclose(
         prognostic_state_now.vn.asnumpy(),
-        data_provider.from_savepoint_jabw_final().vn().asnumpy(),
+        prognostics_reference_savepoint.vn().asnumpy(),
     )
 
     assert helpers.dallclose(
         diagnostic_state.pressure.asnumpy(),
-        data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
+        prognostics_reference_savepoint.pressure().asnumpy(),
     )
 
     assert helpers.dallclose(
         diagnostic_state.temperature.asnumpy(),
-        data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
+        prognostics_reference_savepoint.temperature().asnumpy(),
     )
 
     assert helpers.dallclose(
         diagnostic_state.surface_pressure.asnumpy(),
-        data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
+        default_surface_pressure.asnumpy(),
     )
 
     assert helpers.dallclose(
         solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
-        data_provider.from_savepoint_jabw_diagnostic().exner_pr().asnumpy(),
+        data_provider.from_savepoint_diagnostics_initial().exner_pr().asnumpy(),
         atol=1.0e-14,
     )

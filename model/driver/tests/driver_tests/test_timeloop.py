@@ -34,14 +34,14 @@ from .utils import (
 @pytest.mark.requires_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
+    "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
             dt_utils.REGIONAL_EXPERIMENT,
             1,
             2,
-            0,
             1,
+            2,
             "2021-06-20T12:00:00.000",
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
@@ -54,8 +54,8 @@ from .utils import (
             dt_utils.REGIONAL_EXPERIMENT,
             1,
             2,
-            0,
             1,
+            2,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
@@ -68,8 +68,8 @@ from .utils import (
             dt_utils.GLOBAL_EXPERIMENT,
             1,
             2,
-            0,
             1,
+            2,
             "2000-01-01T00:00:00.000",
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
@@ -82,8 +82,8 @@ from .utils import (
             dt_utils.GLOBAL_EXPERIMENT,
             1,
             2,
-            0,
             1,
+            2,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:04.000",
             "2000-01-01T00:00:04.000",
@@ -96,8 +96,8 @@ from .utils import (
             dt_utils.GAUSS3D_EXPERIMENT,
             1,
             2,
-            0,
-            4,
+            1,
+            5,
             "2001-01-01T00:00:00.000",
             "2001-01-01T00:00:04.000",
             "2001-01-01T00:00:04.000",
@@ -127,6 +127,7 @@ def test_run_timeloop_single_step(
     savepoint_velocity_init,
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
+    vn_only,
     backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
@@ -241,7 +242,7 @@ def test_run_timeloop_single_step(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-        ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
@@ -284,7 +285,7 @@ def test_run_timeloop_single_step(
         ),
     )
 
-    current_index, next_index = (2, 1) if not linit else (1, 2)
+    current_index, next_index = (1, 0) if not linit else (0, 1)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
@@ -297,7 +298,7 @@ def test_run_timeloop_single_step(
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+            sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
             sp_v.ddt_w_adv_pc(current_index), sp_v.ddt_w_adv_pc(next_index)
