@@ -96,7 +96,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         type_shear = 2
 
         horizontal_start = 0
-        horizontal_end = grid.end_index(cell_domain(h_grid.Zone.HALO))
+        horizontal_end = grid.num_cells
         vertical_start = 0
         vertical_end = grid.num_levels
 
