@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Optional
 
 from gt4py.eve import codegen
 
@@ -40,9 +39,7 @@ def generate_c_header(plugin: CffiPlugin) -> str:
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
-def generate_python_wrapper(
-    plugin: CffiPlugin, backend: Optional[str], debug_mode: bool, profile: bool
-) -> str:
+def generate_python_wrapper(plugin: CffiPlugin, debug_mode: bool, profile: bool) -> str:
     """
     Generate Python wrapper code.
 
@@ -60,7 +57,6 @@ def generate_python_wrapper(
         module_name=plugin.module_name,
         plugin_name=plugin.plugin_name,
         functions=plugin.functions,
-        backend=backend,
         debug_mode=debug_mode,
         profile=profile,
     )
