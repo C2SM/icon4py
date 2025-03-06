@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import logging
 
 import pytest
 
@@ -90,7 +91,7 @@ def get_metrics_factory(
         vertical_grid = v_grid.VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         )
-        interpolation_fact = interpolation_factory.InterpolationFieldsFactory(
+        interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
@@ -102,7 +103,7 @@ def get_metrics_factory(
             vertical_grid=vertical_grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
-            interpolation_source=interpolation_fact,
+            interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
             interface_model_height=metrics_savepoint.z_ifc(),
@@ -353,7 +354,7 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
     ],
 )
 @pytest.mark.datatest
-def test_factory_ddxt_z_full(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_ddxt_z_full(grid_savepoint, metrics_savepoint, grid_file, experiment, backend, caplog):
     field_ref = metrics_savepoint.ddxt_z_full().asnumpy()
     factory = get_metrics_factory(
         backend=backend,
@@ -363,6 +364,7 @@ def test_factory_ddxt_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
         metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.DDXT_Z_FULL)
+    caplog.set_level(logging.DEBUG)
     # TODO (halungge) these are the np.allclose default values: single precision
     assert test_helpers.dallclose(field.asnumpy(), field_ref, rtol=1.0e-5, atol=1.0e-8)
 

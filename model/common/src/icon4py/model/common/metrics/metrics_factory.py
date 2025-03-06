@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import logging
 import math
 
 import gt4py.next as gtx
@@ -48,6 +49,7 @@ edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
 vertical_domain = v_grid.domain(dims.KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
+log = logging.getLogger(__name__)
 
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -79,7 +81,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._interpolation_source = interpolation_source
-
+        log.info(
+            f"initialized metrics factory for backend = '{self._backend.name}' and grid = '{self._grid}'"
+        )
+        log.debug(f"using array_ns {self._xp} ")
         vct_a = self._vertical_grid.vct_a
         vct_a_1 = vct_a.asnumpy()[0]
         self._config = {
