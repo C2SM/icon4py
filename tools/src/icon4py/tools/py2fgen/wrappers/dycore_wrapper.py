@@ -215,6 +215,7 @@ def solve_nh_init(
         dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
         dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
         edge_areas=edge_areas,
+        coriolis_frequency=f_e,
         edge_center_lat=edge_center_lat,
         edge_center_lon=edge_center_lon,
         primal_normal_x=primal_normal_x,
