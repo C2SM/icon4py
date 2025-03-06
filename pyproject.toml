@@ -111,8 +111,8 @@ url = "https://test.pypi.org/simple/"
 explicit = true
 
 [tool.uv.sources]
-# ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
-gt4py = { git = "https://github.com/tehrengruber/gt4py", branch = "icon4py_staging" } # TODO
+# ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master" }
+gt4py = { git = "https://github.com/GridTools/gt4py", branch = "main" }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
