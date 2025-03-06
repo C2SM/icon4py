@@ -109,7 +109,8 @@ module dycore
                                     at_initial_timestep, &
                                     divdamp_fac_o2, &
                                     ndyn_substeps, &
-                                    idyn_timestep) bind(c, name="solve_nh_run_wrapper") result(rc)
+                                    idyn_timestep, &
+                                    on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -317,50 +318,14 @@ module dycore
 
          integer(c_int), value, target :: idyn_timestep
 
+         logical(c_int), value :: on_gpu
+
       end function solve_nh_run_wrapper
 
       function solve_nh_init_wrapper(vct_a, &
                                      vct_a_size_0, &
                                      vct_b, &
                                      vct_b_size_0, &
-                                     cell_areas, &
-                                     cell_areas_size_0, &
-                                     primal_normal_cell_x, &
-                                     primal_normal_cell_x_size_0, &
-                                     primal_normal_cell_x_size_1, &
-                                     primal_normal_cell_y, &
-                                     primal_normal_cell_y_size_0, &
-                                     primal_normal_cell_y_size_1, &
-                                     dual_normal_cell_x, &
-                                     dual_normal_cell_x_size_0, &
-                                     dual_normal_cell_x_size_1, &
-                                     dual_normal_cell_y, &
-                                     dual_normal_cell_y_size_0, &
-                                     dual_normal_cell_y_size_1, &
-                                     edge_areas, &
-                                     edge_areas_size_0, &
-                                     tangent_orientation, &
-                                     tangent_orientation_size_0, &
-                                     inverse_primal_edge_lengths, &
-                                     inverse_primal_edge_lengths_size_0, &
-                                     inverse_dual_edge_lengths, &
-                                     inverse_dual_edge_lengths_size_0, &
-                                     inverse_vertex_vertex_lengths, &
-                                     inverse_vertex_vertex_lengths_size_0, &
-                                     primal_normal_vert_x, &
-                                     primal_normal_vert_x_size_0, &
-                                     primal_normal_vert_x_size_1, &
-                                     primal_normal_vert_y, &
-                                     primal_normal_vert_y_size_0, &
-                                     primal_normal_vert_y_size_1, &
-                                     dual_normal_vert_x, &
-                                     dual_normal_vert_x_size_0, &
-                                     dual_normal_vert_x_size_1, &
-                                     dual_normal_vert_y, &
-                                     dual_normal_vert_y_size_0, &
-                                     dual_normal_vert_y_size_1, &
-                                     f_e, &
-                                     f_e_size_0, &
                                      c_lin_e, &
                                      c_lin_e_size_0, &
                                      c_lin_e_size_1, &
@@ -504,18 +469,6 @@ module dycore
                                      coeff_gradekin_size_1, &
                                      c_owner_mask, &
                                      c_owner_mask_size_0, &
-                                     cell_center_lat, &
-                                     cell_center_lat_size_0, &
-                                     cell_center_lon, &
-                                     cell_center_lon_size_0, &
-                                     edge_center_lat, &
-                                     edge_center_lat_size_0, &
-                                     edge_center_lon, &
-                                     edge_center_lon_size_0, &
-                                     primal_normal_x, &
-                                     primal_normal_x_size_0, &
-                                     primal_normal_y, &
-                                     primal_normal_y_size_0, &
                                      rayleigh_damping_height, &
                                      itime_scheme, &
                                      iadv_rhotheta, &
@@ -544,9 +497,10 @@ module dycore
                                      lowest_layer_thickness, &
                                      model_top_height, &
                                      stretch_factor, &
-                                     mean_cell_area, &
                                      nflat_gradp, &
-                                     num_levels) bind(c, name="solve_nh_init_wrapper") result(rc)
+                                     num_levels, &
+                                     backend, &
+                                     on_gpu) bind(c, name="solve_nh_init_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -557,82 +511,6 @@ module dycore
          type(c_ptr), value, target :: vct_b
 
          integer(c_int), value :: vct_b_size_0
-
-         type(c_ptr), value, target :: cell_areas
-
-         integer(c_int), value :: cell_areas_size_0
-
-         type(c_ptr), value, target :: primal_normal_cell_x
-
-         integer(c_int), value :: primal_normal_cell_x_size_0
-
-         integer(c_int), value :: primal_normal_cell_x_size_1
-
-         type(c_ptr), value, target :: primal_normal_cell_y
-
-         integer(c_int), value :: primal_normal_cell_y_size_0
-
-         integer(c_int), value :: primal_normal_cell_y_size_1
-
-         type(c_ptr), value, target :: dual_normal_cell_x
-
-         integer(c_int), value :: dual_normal_cell_x_size_0
-
-         integer(c_int), value :: dual_normal_cell_x_size_1
-
-         type(c_ptr), value, target :: dual_normal_cell_y
-
-         integer(c_int), value :: dual_normal_cell_y_size_0
-
-         integer(c_int), value :: dual_normal_cell_y_size_1
-
-         type(c_ptr), value, target :: edge_areas
-
-         integer(c_int), value :: edge_areas_size_0
-
-         type(c_ptr), value, target :: tangent_orientation
-
-         integer(c_int), value :: tangent_orientation_size_0
-
-         type(c_ptr), value, target :: inverse_primal_edge_lengths
-
-         integer(c_int), value :: inverse_primal_edge_lengths_size_0
-
-         type(c_ptr), value, target :: inverse_dual_edge_lengths
-
-         integer(c_int), value :: inverse_dual_edge_lengths_size_0
-
-         type(c_ptr), value, target :: inverse_vertex_vertex_lengths
-
-         integer(c_int), value :: inverse_vertex_vertex_lengths_size_0
-
-         type(c_ptr), value, target :: primal_normal_vert_x
-
-         integer(c_int), value :: primal_normal_vert_x_size_0
-
-         integer(c_int), value :: primal_normal_vert_x_size_1
-
-         type(c_ptr), value, target :: primal_normal_vert_y
-
-         integer(c_int), value :: primal_normal_vert_y_size_0
-
-         integer(c_int), value :: primal_normal_vert_y_size_1
-
-         type(c_ptr), value, target :: dual_normal_vert_x
-
-         integer(c_int), value :: dual_normal_vert_x_size_0
-
-         integer(c_int), value :: dual_normal_vert_x_size_1
-
-         type(c_ptr), value, target :: dual_normal_vert_y
-
-         integer(c_int), value :: dual_normal_vert_y_size_0
-
-         integer(c_int), value :: dual_normal_vert_y_size_1
-
-         type(c_ptr), value, target :: f_e
-
-         integer(c_int), value :: f_e_size_0
 
          type(c_ptr), value, target :: c_lin_e
 
@@ -920,30 +798,6 @@ module dycore
 
          integer(c_int), value :: c_owner_mask_size_0
 
-         type(c_ptr), value, target :: cell_center_lat
-
-         integer(c_int), value :: cell_center_lat_size_0
-
-         type(c_ptr), value, target :: cell_center_lon
-
-         integer(c_int), value :: cell_center_lon_size_0
-
-         type(c_ptr), value, target :: edge_center_lat
-
-         integer(c_int), value :: edge_center_lat_size_0
-
-         type(c_ptr), value, target :: edge_center_lon
-
-         integer(c_int), value :: edge_center_lon_size_0
-
-         type(c_ptr), value, target :: primal_normal_x
-
-         integer(c_int), value :: primal_normal_x_size_0
-
-         type(c_ptr), value, target :: primal_normal_y
-
-         integer(c_int), value :: primal_normal_y_size_0
-
          real(c_double), value, target :: rayleigh_damping_height
 
          integer(c_int), value, target :: itime_scheme
@@ -1000,11 +854,13 @@ module dycore
 
          real(c_double), value, target :: stretch_factor
 
-         real(c_double), value, target :: mean_cell_area
-
          integer(c_int), value, target :: nflat_gradp
 
          integer(c_int), value, target :: num_levels
+
+         integer(c_int), value, target :: backend
+
+         logical(c_int), value :: on_gpu
 
       end function solve_nh_init_wrapper
 
@@ -1128,6 +984,8 @@ contains
       real(c_double), value, target :: ndyn_substeps
 
       integer(c_int), value, target :: idyn_timestep
+
+      logical(c_int) :: on_gpu
 
       integer(c_int) :: rho_now_size_0
 
@@ -1292,6 +1150,12 @@ contains
       !$acc host_data use_device(mass_flx_ic)
       !$acc host_data use_device(vol_flx_ic)
       !$acc host_data use_device(vn_traj)
+
+#ifdef _OPENACC
+      on_gpu = .True.
+#else
+      on_gpu = .False.
+#endif
 
       rho_now_size_0 = SIZE(rho_now, 1)
       rho_now_size_1 = SIZE(rho_now, 2)
@@ -1490,7 +1354,8 @@ contains
                                 at_initial_timestep=at_initial_timestep, &
                                 divdamp_fac_o2=divdamp_fac_o2, &
                                 ndyn_substeps=ndyn_substeps, &
-                                idyn_timestep=idyn_timestep)
+                                idyn_timestep=idyn_timestep, &
+                                on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -1527,21 +1392,6 @@ contains
 
    subroutine solve_nh_init(vct_a, &
                             vct_b, &
-                            cell_areas, &
-                            primal_normal_cell_x, &
-                            primal_normal_cell_y, &
-                            dual_normal_cell_x, &
-                            dual_normal_cell_y, &
-                            edge_areas, &
-                            tangent_orientation, &
-                            inverse_primal_edge_lengths, &
-                            inverse_dual_edge_lengths, &
-                            inverse_vertex_vertex_lengths, &
-                            primal_normal_vert_x, &
-                            primal_normal_vert_y, &
-                            dual_normal_vert_x, &
-                            dual_normal_vert_y, &
-                            f_e, &
                             c_lin_e, &
                             c_intp, &
                             e_flx_avg, &
@@ -1592,12 +1442,6 @@ contains
                             coeff2_dwdz, &
                             coeff_gradekin, &
                             c_owner_mask, &
-                            cell_center_lat, &
-                            cell_center_lon, &
-                            edge_center_lat, &
-                            edge_center_lon, &
-                            primal_normal_x, &
-                            primal_normal_y, &
                             rayleigh_damping_height, &
                             itime_scheme, &
                             iadv_rhotheta, &
@@ -1626,45 +1470,15 @@ contains
                             lowest_layer_thickness, &
                             model_top_height, &
                             stretch_factor, &
-                            mean_cell_area, &
                             nflat_gradp, &
                             num_levels, &
+                            backend, &
                             rc)
       use, intrinsic :: iso_c_binding
 
       real(c_double), dimension(:), target :: vct_a
 
       real(c_double), dimension(:), target :: vct_b
-
-      real(c_double), dimension(:), target :: cell_areas
-
-      real(c_double), dimension(:, :), target :: primal_normal_cell_x
-
-      real(c_double), dimension(:, :), target :: primal_normal_cell_y
-
-      real(c_double), dimension(:, :), target :: dual_normal_cell_x
-
-      real(c_double), dimension(:, :), target :: dual_normal_cell_y
-
-      real(c_double), dimension(:), target :: edge_areas
-
-      real(c_double), dimension(:), target :: tangent_orientation
-
-      real(c_double), dimension(:), target :: inverse_primal_edge_lengths
-
-      real(c_double), dimension(:), target :: inverse_dual_edge_lengths
-
-      real(c_double), dimension(:), target :: inverse_vertex_vertex_lengths
-
-      real(c_double), dimension(:, :), target :: primal_normal_vert_x
-
-      real(c_double), dimension(:, :), target :: primal_normal_vert_y
-
-      real(c_double), dimension(:, :), target :: dual_normal_vert_x
-
-      real(c_double), dimension(:, :), target :: dual_normal_vert_y
-
-      real(c_double), dimension(:), target :: f_e
 
       real(c_double), dimension(:, :), target :: c_lin_e
 
@@ -1766,18 +1580,6 @@ contains
 
       logical(c_int), dimension(:), target :: c_owner_mask
 
-      real(c_double), dimension(:), target :: cell_center_lat
-
-      real(c_double), dimension(:), target :: cell_center_lon
-
-      real(c_double), dimension(:), target :: edge_center_lat
-
-      real(c_double), dimension(:), target :: edge_center_lon
-
-      real(c_double), dimension(:), target :: primal_normal_x
-
-      real(c_double), dimension(:), target :: primal_normal_y
-
       real(c_double), value, target :: rayleigh_damping_height
 
       integer(c_int), value, target :: itime_scheme
@@ -1834,61 +1636,17 @@ contains
 
       real(c_double), value, target :: stretch_factor
 
-      real(c_double), value, target :: mean_cell_area
-
       integer(c_int), value, target :: nflat_gradp
 
       integer(c_int), value, target :: num_levels
 
+      integer(c_int), value, target :: backend
+
+      logical(c_int) :: on_gpu
+
       integer(c_int) :: vct_a_size_0
 
       integer(c_int) :: vct_b_size_0
-
-      integer(c_int) :: cell_areas_size_0
-
-      integer(c_int) :: primal_normal_cell_x_size_0
-
-      integer(c_int) :: primal_normal_cell_x_size_1
-
-      integer(c_int) :: primal_normal_cell_y_size_0
-
-      integer(c_int) :: primal_normal_cell_y_size_1
-
-      integer(c_int) :: dual_normal_cell_x_size_0
-
-      integer(c_int) :: dual_normal_cell_x_size_1
-
-      integer(c_int) :: dual_normal_cell_y_size_0
-
-      integer(c_int) :: dual_normal_cell_y_size_1
-
-      integer(c_int) :: edge_areas_size_0
-
-      integer(c_int) :: tangent_orientation_size_0
-
-      integer(c_int) :: inverse_primal_edge_lengths_size_0
-
-      integer(c_int) :: inverse_dual_edge_lengths_size_0
-
-      integer(c_int) :: inverse_vertex_vertex_lengths_size_0
-
-      integer(c_int) :: primal_normal_vert_x_size_0
-
-      integer(c_int) :: primal_normal_vert_x_size_1
-
-      integer(c_int) :: primal_normal_vert_y_size_0
-
-      integer(c_int) :: primal_normal_vert_y_size_1
-
-      integer(c_int) :: dual_normal_vert_x_size_0
-
-      integer(c_int) :: dual_normal_vert_x_size_1
-
-      integer(c_int) :: dual_normal_vert_y_size_0
-
-      integer(c_int) :: dual_normal_vert_y_size_1
-
-      integer(c_int) :: f_e_size_0
 
       integer(c_int) :: c_lin_e_size_0
 
@@ -2076,38 +1834,11 @@ contains
 
       integer(c_int) :: c_owner_mask_size_0
 
-      integer(c_int) :: cell_center_lat_size_0
-
-      integer(c_int) :: cell_center_lon_size_0
-
-      integer(c_int) :: edge_center_lat_size_0
-
-      integer(c_int) :: edge_center_lon_size_0
-
-      integer(c_int) :: primal_normal_x_size_0
-
-      integer(c_int) :: primal_normal_y_size_0
-
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
       !$acc host_data use_device(vct_a)
       !$acc host_data use_device(vct_b)
-      !$acc host_data use_device(cell_areas)
-      !$acc host_data use_device(primal_normal_cell_x)
-      !$acc host_data use_device(primal_normal_cell_y)
-      !$acc host_data use_device(dual_normal_cell_x)
-      !$acc host_data use_device(dual_normal_cell_y)
-      !$acc host_data use_device(edge_areas)
-      !$acc host_data use_device(tangent_orientation)
-      !$acc host_data use_device(inverse_primal_edge_lengths)
-      !$acc host_data use_device(inverse_dual_edge_lengths)
-      !$acc host_data use_device(inverse_vertex_vertex_lengths)
-      !$acc host_data use_device(primal_normal_vert_x)
-      !$acc host_data use_device(primal_normal_vert_y)
-      !$acc host_data use_device(dual_normal_vert_x)
-      !$acc host_data use_device(dual_normal_vert_y)
-      !$acc host_data use_device(f_e)
       !$acc host_data use_device(c_lin_e)
       !$acc host_data use_device(c_intp)
       !$acc host_data use_device(e_flx_avg)
@@ -2158,54 +1889,16 @@ contains
       !$acc host_data use_device(coeff2_dwdz)
       !$acc host_data use_device(coeff_gradekin)
       !$acc host_data use_device(c_owner_mask)
-      !$acc host_data use_device(cell_center_lat)
-      !$acc host_data use_device(cell_center_lon)
-      !$acc host_data use_device(edge_center_lat)
-      !$acc host_data use_device(edge_center_lon)
-      !$acc host_data use_device(primal_normal_x)
-      !$acc host_data use_device(primal_normal_y)
+
+#ifdef _OPENACC
+      on_gpu = .True.
+#else
+      on_gpu = .False.
+#endif
 
       vct_a_size_0 = SIZE(vct_a, 1)
 
       vct_b_size_0 = SIZE(vct_b, 1)
-
-      cell_areas_size_0 = SIZE(cell_areas, 1)
-
-      primal_normal_cell_x_size_0 = SIZE(primal_normal_cell_x, 1)
-      primal_normal_cell_x_size_1 = SIZE(primal_normal_cell_x, 2)
-
-      primal_normal_cell_y_size_0 = SIZE(primal_normal_cell_y, 1)
-      primal_normal_cell_y_size_1 = SIZE(primal_normal_cell_y, 2)
-
-      dual_normal_cell_x_size_0 = SIZE(dual_normal_cell_x, 1)
-      dual_normal_cell_x_size_1 = SIZE(dual_normal_cell_x, 2)
-
-      dual_normal_cell_y_size_0 = SIZE(dual_normal_cell_y, 1)
-      dual_normal_cell_y_size_1 = SIZE(dual_normal_cell_y, 2)
-
-      edge_areas_size_0 = SIZE(edge_areas, 1)
-
-      tangent_orientation_size_0 = SIZE(tangent_orientation, 1)
-
-      inverse_primal_edge_lengths_size_0 = SIZE(inverse_primal_edge_lengths, 1)
-
-      inverse_dual_edge_lengths_size_0 = SIZE(inverse_dual_edge_lengths, 1)
-
-      inverse_vertex_vertex_lengths_size_0 = SIZE(inverse_vertex_vertex_lengths, 1)
-
-      primal_normal_vert_x_size_0 = SIZE(primal_normal_vert_x, 1)
-      primal_normal_vert_x_size_1 = SIZE(primal_normal_vert_x, 2)
-
-      primal_normal_vert_y_size_0 = SIZE(primal_normal_vert_y, 1)
-      primal_normal_vert_y_size_1 = SIZE(primal_normal_vert_y, 2)
-
-      dual_normal_vert_x_size_0 = SIZE(dual_normal_vert_x, 1)
-      dual_normal_vert_x_size_1 = SIZE(dual_normal_vert_x, 2)
-
-      dual_normal_vert_y_size_0 = SIZE(dual_normal_vert_y, 1)
-      dual_normal_vert_y_size_1 = SIZE(dual_normal_vert_y, 2)
-
-      f_e_size_0 = SIZE(f_e, 1)
 
       c_lin_e_size_0 = SIZE(c_lin_e, 1)
       c_lin_e_size_1 = SIZE(c_lin_e, 2)
@@ -2350,60 +2043,10 @@ contains
 
       c_owner_mask_size_0 = SIZE(c_owner_mask, 1)
 
-      cell_center_lat_size_0 = SIZE(cell_center_lat, 1)
-
-      cell_center_lon_size_0 = SIZE(cell_center_lon, 1)
-
-      edge_center_lat_size_0 = SIZE(edge_center_lat, 1)
-
-      edge_center_lon_size_0 = SIZE(edge_center_lon, 1)
-
-      primal_normal_x_size_0 = SIZE(primal_normal_x, 1)
-
-      primal_normal_y_size_0 = SIZE(primal_normal_y, 1)
-
       rc = solve_nh_init_wrapper(vct_a=c_loc(vct_a), &
                                  vct_a_size_0=vct_a_size_0, &
                                  vct_b=c_loc(vct_b), &
                                  vct_b_size_0=vct_b_size_0, &
-                                 cell_areas=c_loc(cell_areas), &
-                                 cell_areas_size_0=cell_areas_size_0, &
-                                 primal_normal_cell_x=c_loc(primal_normal_cell_x), &
-                                 primal_normal_cell_x_size_0=primal_normal_cell_x_size_0, &
-                                 primal_normal_cell_x_size_1=primal_normal_cell_x_size_1, &
-                                 primal_normal_cell_y=c_loc(primal_normal_cell_y), &
-                                 primal_normal_cell_y_size_0=primal_normal_cell_y_size_0, &
-                                 primal_normal_cell_y_size_1=primal_normal_cell_y_size_1, &
-                                 dual_normal_cell_x=c_loc(dual_normal_cell_x), &
-                                 dual_normal_cell_x_size_0=dual_normal_cell_x_size_0, &
-                                 dual_normal_cell_x_size_1=dual_normal_cell_x_size_1, &
-                                 dual_normal_cell_y=c_loc(dual_normal_cell_y), &
-                                 dual_normal_cell_y_size_0=dual_normal_cell_y_size_0, &
-                                 dual_normal_cell_y_size_1=dual_normal_cell_y_size_1, &
-                                 edge_areas=c_loc(edge_areas), &
-                                 edge_areas_size_0=edge_areas_size_0, &
-                                 tangent_orientation=c_loc(tangent_orientation), &
-                                 tangent_orientation_size_0=tangent_orientation_size_0, &
-                                 inverse_primal_edge_lengths=c_loc(inverse_primal_edge_lengths), &
-                                 inverse_primal_edge_lengths_size_0=inverse_primal_edge_lengths_size_0, &
-                                 inverse_dual_edge_lengths=c_loc(inverse_dual_edge_lengths), &
-                                 inverse_dual_edge_lengths_size_0=inverse_dual_edge_lengths_size_0, &
-                                 inverse_vertex_vertex_lengths=c_loc(inverse_vertex_vertex_lengths), &
-                                 inverse_vertex_vertex_lengths_size_0=inverse_vertex_vertex_lengths_size_0, &
-                                 primal_normal_vert_x=c_loc(primal_normal_vert_x), &
-                                 primal_normal_vert_x_size_0=primal_normal_vert_x_size_0, &
-                                 primal_normal_vert_x_size_1=primal_normal_vert_x_size_1, &
-                                 primal_normal_vert_y=c_loc(primal_normal_vert_y), &
-                                 primal_normal_vert_y_size_0=primal_normal_vert_y_size_0, &
-                                 primal_normal_vert_y_size_1=primal_normal_vert_y_size_1, &
-                                 dual_normal_vert_x=c_loc(dual_normal_vert_x), &
-                                 dual_normal_vert_x_size_0=dual_normal_vert_x_size_0, &
-                                 dual_normal_vert_x_size_1=dual_normal_vert_x_size_1, &
-                                 dual_normal_vert_y=c_loc(dual_normal_vert_y), &
-                                 dual_normal_vert_y_size_0=dual_normal_vert_y_size_0, &
-                                 dual_normal_vert_y_size_1=dual_normal_vert_y_size_1, &
-                                 f_e=c_loc(f_e), &
-                                 f_e_size_0=f_e_size_0, &
                                  c_lin_e=c_loc(c_lin_e), &
                                  c_lin_e_size_0=c_lin_e_size_0, &
                                  c_lin_e_size_1=c_lin_e_size_1, &
@@ -2547,18 +2190,6 @@ contains
                                  coeff_gradekin_size_1=coeff_gradekin_size_1, &
                                  c_owner_mask=c_loc(c_owner_mask), &
                                  c_owner_mask_size_0=c_owner_mask_size_0, &
-                                 cell_center_lat=c_loc(cell_center_lat), &
-                                 cell_center_lat_size_0=cell_center_lat_size_0, &
-                                 cell_center_lon=c_loc(cell_center_lon), &
-                                 cell_center_lon_size_0=cell_center_lon_size_0, &
-                                 edge_center_lat=c_loc(edge_center_lat), &
-                                 edge_center_lat_size_0=edge_center_lat_size_0, &
-                                 edge_center_lon=c_loc(edge_center_lon), &
-                                 edge_center_lon_size_0=edge_center_lon_size_0, &
-                                 primal_normal_x=c_loc(primal_normal_x), &
-                                 primal_normal_x_size_0=primal_normal_x_size_0, &
-                                 primal_normal_y=c_loc(primal_normal_y), &
-                                 primal_normal_y_size_0=primal_normal_y_size_0, &
                                  rayleigh_damping_height=rayleigh_damping_height, &
                                  itime_scheme=itime_scheme, &
                                  iadv_rhotheta=iadv_rhotheta, &
@@ -2587,30 +2218,10 @@ contains
                                  lowest_layer_thickness=lowest_layer_thickness, &
                                  model_top_height=model_top_height, &
                                  stretch_factor=stretch_factor, &
-                                 mean_cell_area=mean_cell_area, &
                                  nflat_gradp=nflat_gradp, &
-                                 num_levels=num_levels)
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
+                                 num_levels=num_levels, &
+                                 backend=backend, &
+                                 on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

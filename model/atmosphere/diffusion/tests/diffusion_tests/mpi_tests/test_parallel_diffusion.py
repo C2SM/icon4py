@@ -18,6 +18,7 @@ from icon4py.model.testing import datatest_utils, helpers, parallel_helpers
 from .. import utils
 
 
+@pytest.skip("FIXME: Need updated test data yet", allow_module_level=True)
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])

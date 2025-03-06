@@ -18,12 +18,14 @@ Fortran granule interfaces:
 """
 
 import cProfile
+import dataclasses
 import pstats
 from typing import Optional
 
 import gt4py.next as gtx
+import numpy as np
+from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -37,33 +39,36 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.grid import icon
-from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen import settings as settings
-from icon4py.tools.py2fgen.settings import backend, device
-from icon4py.tools.py2fgen.wrappers import grid_wrapper
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper
 
 
 logger = setup_logger(__name__)
 
-profiler = cProfile.Profile()
-granule: Optional[Diffusion] = None
+
+@dataclasses.dataclass
+class DiffusionGranule:
+    diffusion: Diffusion
+    backend: gtx_backend.Backend
+    profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
+
+
+granule: Optional[DiffusionGranule] = None
 
 
 def profile_enable():
-    global profiler
-    profiler.enable()
+    global granule
+    granule.profiler.enable()
 
 
 def profile_disable():
-    global profiler
-    profiler.disable()
-    stats = pstats.Stats(profiler)
+    global granule
+    granule.profiler.disable()
+    stats = pstats.Stats(granule.profiler)
     stats.dump_stats(f"{__name__}.profile")
 
 
@@ -102,79 +107,23 @@ def diffusion_init(
     nudge_max_coeff: float,
     itype_sher: gtx.int32,
     ltkeshs: bool,
-    tangent_orientation: fa.EdgeField[wpfloat],
-    inverse_primal_edge_lengths: fa.EdgeField[wpfloat],
-    inv_dual_edge_length: fa.EdgeField[wpfloat],
-    inv_vert_vert_length: fa.EdgeField[wpfloat],
-    edge_areas: fa.EdgeField[wpfloat],
-    f_e: fa.EdgeField[wpfloat],
-    cell_center_lat: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    cell_center_lon: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    cell_areas: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
-    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
-    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
-    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
-    primal_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    dual_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    dual_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    edge_center_lat: fa.EdgeField[wpfloat],
-    edge_center_lon: fa.EdgeField[wpfloat],
-    primal_normal_x: fa.EdgeField[wpfloat],
-    primal_normal_y: fa.EdgeField[wpfloat],
-    global_root: gtx.int32,
-    global_level: gtx.int32,
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
+    backend: gtx.int32,
 ):
-    logger.info(f"Using Device = {device}")
-
-    global_grid_params = GlobalGridParams(root=global_root, level=global_level)
-
-    if not isinstance(grid_wrapper.grid, icon.IconGrid):
+    if grid_wrapper.grid_state is None:
         raise Exception(
-            "Need to initialise grid using grid_init_diffusion before running diffusion_init."
+            "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    # Edge geometry
-    edge_params = grid_states.EdgeParams(
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_lengths=inv_dual_edge_length,
-        inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_x
-        ),
-        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_y
-        ),
-        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
-        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
-        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_x
-        ),
-        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_y
-        ),
-        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
-        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
-        edge_areas=edge_areas,
-        f_e=f_e,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
+    on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    actual_backend = wrapper_common.select_backend(
+        wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-
-    # Cell geometry
-    cell_params = grid_states.CellParams.from_global_num_cells(
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        area=cell_areas,
-        global_num_cells=global_grid_params.num_cells,
-        length_rescale_factor=1.0,
+    logger.info(f"{on_gpu=}")
+    logger.info(
+        f"Using Backend {wrapper_common.BackendIntEnum(backend).name} ({actual_backend.name})"
     )
 
     # Diffusion parameters
@@ -201,7 +150,7 @@ def diffusion_init(
 
     # Vertical grid config
     vertical_config = VerticalGridConfig(
-        num_levels=grid_wrapper.grid.num_levels,
+        num_levels=grid_wrapper.grid_state.grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -259,17 +208,20 @@ def diffusion_init(
 
     # Initialize the diffusion granule
     global granule
-    granule = Diffusion(
-        grid=grid_wrapper.grid,
-        config=config,
-        params=diffusion_params,
-        vertical_grid=vertical_params,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-        edge_params=edge_params,
-        cell_params=cell_params,
-        backend=backend,
-        exchange=grid_wrapper.exchange_runtime,
+    granule = DiffusionGranule(
+        diffusion=Diffusion(
+            grid=grid_wrapper.grid_state.grid,
+            config=config,
+            params=diffusion_params,
+            vertical_grid=vertical_params,
+            metric_state=metric_state,
+            interpolation_state=interpolation_state,
+            edge_params=grid_wrapper.grid_state.edge_geometry,
+            cell_params=grid_wrapper.grid_state.cell_geometry,
+            backend=actual_backend,
+            exchange=grid_wrapper.grid_state.exchange_runtime,
+        ),
+        backend=actual_backend,
     )
 
 
@@ -286,6 +238,10 @@ def diffusion_run(
     dtime: gtx.float64,
     linit: bool,
 ):
+    global granule
+    if granule is None:
+        raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
+
     # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
         w=w,
@@ -296,13 +252,21 @@ def diffusion_run(
     )
 
     if hdef_ic is None:
-        hdef_ic = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+        hdef_ic = wrapper_common.cached_dummy_field(
+            "hdef_ic", domain=w.domain, dtype=w.dtype, allocator=granule.backend
+        )
     if div_ic is None:
-        div_ic = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+        div_ic = wrapper_common.cached_dummy_field(
+            "div_ic", domain=w.domain, dtype=w.dtype, allocator=granule.backend
+        )
     if dwdx is None:
-        dwdx = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+        dwdx = wrapper_common.cached_dummy_field(
+            "dwdx", domain=w.domain, dtype=w.dtype, allocator=granule.backend
+        )
     if dwdy is None:
-        dwdy = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+        dwdy = wrapper_common.cached_dummy_field(
+            "dwdy", domain=w.domain, dtype=w.dtype, allocator=granule.backend
+        )
     diagnostic_state = DiffusionDiagnosticState(
         hdef_ic=hdef_ic,
         div_ic=div_ic,
@@ -310,14 +274,13 @@ def diffusion_run(
         dwdy=dwdy,
     )
 
-    global granule
     if linit:
-        granule.initial_run(
+        granule.diffusion.initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
-        granule.run(
+        granule.diffusion.run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )

@@ -481,8 +481,10 @@ def test_nonhydro_predictor_step(
     )
     # stencil 45_b, 52
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_q.asnumpy()[cell_start_nudging:, :],
-        sp_exit.z_q().asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.intermediate_fields.z_q.asnumpy()[
+            cell_start_nudging:, : icon_grid.num_levels
+        ],
+        sp_exit.z_q().asnumpy()[cell_start_nudging:, : icon_grid.num_levels],
         atol=2e-15,
     )
     # stencil 48, 49
