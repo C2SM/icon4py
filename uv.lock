@@ -905,7 +905,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/spcl/dace?branch=main#bd7b0d63f75e6e03b12d536e51f5665e52bcb385" }
+source = { git = "https://github.com/spcl/dace?branch=main#a0304c5ecbbae5f486f96995023c3d9395852306" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
