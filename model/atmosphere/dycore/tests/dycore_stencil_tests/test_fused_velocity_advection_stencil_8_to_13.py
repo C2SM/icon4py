@@ -33,7 +33,6 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         "w_concorr_c",
         "z_w_con_c",
     )
-    MARKERS = (pytest.mark.requires_concat_where,)
 
     @staticmethod
     def reference(
