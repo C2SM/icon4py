@@ -16,8 +16,9 @@ from gt4py.next import backend as gtx_backend
 
 import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
 from icon4py.model.atmosphere.dycore import (
+    compute_cell_diagnostics_for_velocity_advection,
     compute_edge_diagnostics_for_velocity_advection,
-    dycore_states, compute_cell_diagnostics_for_velocity_advection,
+    dycore_states,
 )
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
