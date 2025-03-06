@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -15,9 +23,6 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, bool, broadcast, int32, maximum, where
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
-    _mo_solve_nonhydro_stencil_02,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
     _mo_solve_nonhydro_stencil_04,
 )
@@ -27,20 +32,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
     _mo_solve_nonhydro_stencil_06,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
-    _mo_solve_nonhydro_stencil_10,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_12 import (
-    _mo_solve_nonhydro_stencil_12,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_13 import (
-    _mo_solve_nonhydro_stencil_13,
-)
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
     _predictor_stencils_2_3,
-    _predictor_stencils_4_5_6,
-    _predictor_stencils_7_8_9,
-    _predictor_stencils_11_lower_upper,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
 from icon4py.model.common.dimension import CellDim, KDim
@@ -391,10 +384,20 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
     n_lev: int32,
     nflatlev: int32,
     nflat_gradp: int32,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float],]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
     # if istep == 1:
 
-    (z_rth_pr_1, z_rth_pr_2, z_exner_ex_pr, exner_pr, z_exner_ic, z_dexner_dz_c_1,) = (
+    (
+        z_rth_pr_1,
+        z_rth_pr_2,
+        z_exner_ex_pr,
+        exner_pr,
+        z_exner_ic,
+        z_dexner_dz_c_1,
+    ) = (
         _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
             rho_nnow,
             rho_ref_mc,
@@ -506,7 +509,14 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted2(
 ) -> Field[[CellDim, KDim], float]:
     # if istep == 1:
 
-    (z_rth_pr_1, z_rth_pr_2, z_exner_ex_pr, exner_pr, z_exner_ic, z_dexner_dz_c_1,) = (
+    (
+        z_rth_pr_1,
+        z_rth_pr_2,
+        z_exner_ex_pr,
+        exner_pr,
+        z_exner_ic,
+        z_dexner_dz_c_1,
+    ) = (
         _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
             rho_nnow,
             rho_ref_mc,
@@ -623,7 +633,14 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
     Field[[CellDim, KDim], float],
 ]:
     # if istep == 1:
-    (z_rth_pr_1, z_rth_pr_2, z_exner_ex_pr, exner_pr, z_exner_ic, z_dexner_dz_c_1,) = (
+    (
+        z_rth_pr_1,
+        z_rth_pr_2,
+        z_exner_ex_pr,
+        exner_pr,
+        z_exner_ic,
+        z_dexner_dz_c_1,
+    ) = (
         _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
             rho_nnow,
             rho_ref_mc,

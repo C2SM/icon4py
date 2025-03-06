@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -141,7 +149,6 @@ def _fused_velocity_advection_stencil_8_to_13(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-
     z_ekinh, w_concorr_c, z_w_con_c = (
         _fused_velocity_advection_stencil_8_to_13_predictor(
             z_kin_hor_e,
@@ -190,7 +197,6 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
     nlev: int32,
     nflatlev: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-
     return _fused_velocity_advection_stencil_8_to_13(
         z_kin_hor_e,
         e_bln_c_s,

@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -13,45 +21,26 @@
 
 import numpy as np
 import pytest
-from gt4py.next import np_as_located_field
 from gt4py.next.ffront.fbuiltins import int32
-from .test_mo_solve_nonhydro_stencil_01 import mo_solve_nonhydro_stencil_01_numpy
-from .test_mo_solve_nonhydro_stencil_02 import mo_solve_nonhydro_stencil_02_numpy
-from .test_mo_solve_nonhydro_stencil_04 import mo_solve_nonhydro_stencil_04_numpy
-from .test_mo_solve_nonhydro_stencil_05 import mo_solve_nonhydro_stencil_05_numpy
-from .test_mo_solve_nonhydro_stencil_06 import mo_solve_nonhydro_stencil_06_numpy
-from .test_mo_solve_nonhydro_stencil_07 import mo_solve_nonhydro_stencil_07_numpy
-from .test_mo_solve_nonhydro_stencil_08 import mo_solve_nonhydro_stencil_08_numpy
-from .test_mo_solve_nonhydro_stencil_09 import mo_solve_nonhydro_stencil_09_numpy
-from .test_mo_solve_nonhydro_stencil_10 import mo_solve_nonhydro_stencil_10_numpy
-from .test_mo_solve_nonhydro_stencil_11_lower import (
-    mo_solve_nonhydro_stencil_11_lower_numpy,
-)
-from .test_mo_solve_nonhydro_stencil_11_upper import (
-    mo_solve_nonhydro_stencil_11_upper_numpy,
-)
-from .test_mo_solve_nonhydro_stencil_12 import mo_solve_nonhydro_stencil_12_numpy
-from .test_mo_solve_nonhydro_stencil_13 import mo_solve_nonhydro_stencil_13_numpy
 
 from icon4py.model.atmosphere.dycore.fused_mo_solve_nonhydro_stencils_01_to_13 import (
     fused_mo_solve_nonhydro_stencils_01_to_13,
 )
 from icon4py.model.common.dimension import (
-    C2E2CODim,
     CellDim,
-    E2C2EODim,
-    E2CDim,
-    ECDim,
-    EdgeDim,
     KDim,
 )
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
-    flatten_first_two_dims,
     random_field,
-    random_mask,
     zero_field,
 )
+
+from .test_mo_solve_nonhydro_stencil_01 import mo_solve_nonhydro_stencil_01_numpy
+from .test_mo_solve_nonhydro_stencil_02 import mo_solve_nonhydro_stencil_02_numpy
+from .test_mo_solve_nonhydro_stencil_04 import mo_solve_nonhydro_stencil_04_numpy
+from .test_mo_solve_nonhydro_stencil_05 import mo_solve_nonhydro_stencil_05_numpy
+from .test_mo_solve_nonhydro_stencil_06 import mo_solve_nonhydro_stencil_06_numpy
 
 
 class TestFusedMoSolveNonHydroStencil1To13(StencilTest):
@@ -136,15 +125,13 @@ class TestFusedMoSolveNonHydroStencil1To13(StencilTest):
         if istep == 1:
             if limited_area:
                 (z_rth_pr_1, z_rth_pr_2) = mo_solve_nonhydro_stencil_01_numpy(
-                                            grid,
-                                            z_rth_pr_1=z_rth_pr_1,
-                                            z_rth_pr_2=z_rth_pr_2,
-                                            )
-
+                    grid,
+                    z_rth_pr_1=z_rth_pr_1,
+                    z_rth_pr_2=z_rth_pr_2,
+                )
 
             (z_exner_ex_pr, exner_pr) = np.where(
-                (horizontal_lower_02 <= horz_idx)
-                & (horz_idx < horizontal_upper_02),
+                (horizontal_lower_02 <= horz_idx) & (horz_idx < horizontal_upper_02),
                 mo_solve_nonhydro_stencil_02_numpy(
                     grid,
                     exner_exfac=exner_exfac,
