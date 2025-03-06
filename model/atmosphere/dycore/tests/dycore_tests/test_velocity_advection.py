@@ -448,6 +448,7 @@ def test_velocity_corrector_step(
 
 
 @pytest.mark.dataset
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -694,6 +695,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -826,6 +828,7 @@ def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection(
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -968,6 +971,7 @@ def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
