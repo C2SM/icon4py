@@ -25,10 +25,8 @@ def square_wrapper_module():
     return "icon4py.tools.py2fgen.wrappers.simple"
 
 
-def compile_fortran_code(
-    plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags, backend
-):
-    shared_library = f"{plugin_name}_{backend.lower()}"
+def compile_fortran_code(plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags):
+    shared_library = f"{plugin_name}"
     command = [
         f"{compiler}",
         "-cpp",
@@ -61,7 +59,6 @@ def run_test_case(
     module,
     function,
     plugin_name,
-    backend,
     samples_path,
     fortran_driver,
     test_temp_dir,
@@ -71,7 +68,7 @@ def run_test_case(
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
-        invoke_cli(cli, module, function, plugin_name, backend)
+        invoke_cli(cli, module, function, plugin_name)
         compile_and_run_fortran(
             plugin_name,
             samples_path,
@@ -80,12 +77,11 @@ def run_test_case(
             extra_compiler_flags,
             expected_error_code,
             env_vars,
-            backend=backend,
         )
 
 
-def invoke_cli(cli, module, function, plugin_name, backend):
-    cli_args = [module, function, plugin_name, "-b", backend, "-d"]
+def invoke_cli(cli, module, function, plugin_name):
+    cli_args = [module, function, plugin_name, "-d"]
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
@@ -98,11 +94,10 @@ def compile_and_run_fortran(
     extra_compiler_flags,
     expected_error_code,
     env_vars,
-    backend,
 ):
     try:
         compile_fortran_code(
-            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags, backend
+            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Compilation failed: {e}\n{e.stderr}\n{e.stdout}")
@@ -137,7 +132,6 @@ def test_py2fgen_compilation_and_execution_square_cpu(
         square_wrapper_module,
         "square_from_function",
         "square_plugin",
-        run_backend,
         samples_path,
         "test_square",
         test_temp_dir,
@@ -154,7 +148,6 @@ def test_py2fgen_python_error_propagation_to_fortran(
         square_wrapper_module,
         "square_error",
         "square_plugin",
-        "ROUNDTRIP",
         samples_path,
         "test_square",
         test_temp_dir,
@@ -165,13 +158,12 @@ def test_py2fgen_python_error_propagation_to_fortran(
 
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
-    "function_name, plugin_name, test_name, run_backend, extra_flags",
+    "function_name, plugin_name, test_name, extra_flags",
     [
         (
             "square_from_function",
             "square_plugin",
             "test_square",
-            "GPU",
             ("-acc", "-Minfo=acc", "-DUSE_SQUARE_FROM_FUNCTION"),
         ),
     ],
@@ -181,7 +173,6 @@ def test_py2fgen_compilation_and_execution_gpu(
     function_name,
     plugin_name,
     test_name,
-    run_backend,
     samples_path,
     square_wrapper_module,
     extra_flags,
@@ -192,7 +183,6 @@ def test_py2fgen_compilation_and_execution_gpu(
         square_wrapper_module,
         function_name,
         plugin_name,
-        run_backend,
         samples_path,
         test_name,
         test_temp_dir,
@@ -203,13 +193,13 @@ def test_py2fgen_compilation_and_execution_gpu(
 
 
 @pytest.mark.parametrize(
-    "run_backend, extra_flags",
+    "extra_flags",
     [
-        ("CPU", ("-DPROFILE_SQUARE_FROM_FUNCTION",)),
+        ("-DPROFILE_SQUARE_FROM_FUNCTION",),
     ],
 )
 def test_py2fgen_compilation_and_profiling(
-    cli_runner, run_backend, samples_path, square_wrapper_module, extra_flags, test_temp_dir
+    cli_runner, samples_path, square_wrapper_module, extra_flags, test_temp_dir
 ):
     """Test profiling using cProfile of the generated wrapper."""
     run_test_case(
@@ -217,7 +207,6 @@ def test_py2fgen_compilation_and_profiling(
         square_wrapper_module,
         "square_from_function,profile_enable,profile_disable",
         "square_plugin",
-        run_backend,
         samples_path,
         "test_square",
         test_temp_dir,
@@ -232,7 +221,6 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
         "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
         "diffusion_init,diffusion_run,profile_enable,profile_disable",
         "diffusion_plugin",
-        "GPU",
         samples_path,
         "test_diffusion",
         test_temp_dir,
@@ -249,7 +237,6 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, t
         "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
         "diffusion_init,diffusion_run,profile_enable,profile_disable",
         "diffusion_plugin",
-        "CPU",
         samples_path,
         "test_diffusion",
         test_temp_dir,
@@ -263,7 +250,6 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test
         "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
         "solve_nh_init,solve_nh_run,grid_init,profile_enable,profile_disable",
         "dycore_plugin",
-        "CPU",
         samples_path,
         "test_dycore",
         test_temp_dir,
@@ -277,7 +263,6 @@ def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, 
         "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
         "solve_nh_init,solve_nh_run,profile_enable,profile_disable",
         "dycore_plugin",
-        "GPU",
         samples_path,
         "test_dycore",
         test_temp_dir,
