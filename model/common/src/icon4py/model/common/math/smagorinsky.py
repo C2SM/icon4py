@@ -1,25 +1,24 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import (
+    broadcast,
+    maximum,
+    minimum,
+)
 
-from gt4py.next import Field, field_operator
-from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
-
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, Koff
 
 
-@field_operator
-def en_smag_fac_for_zero_nshift(
-    vect_a: Field[[KDim], float],
+@gtx.field_operator
+def _en_smag_fac_for_zero_nshift(
+    vect_a: fa.KField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -28,7 +27,7 @@ def en_smag_fac_for_zero_nshift(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-) -> Field[[KDim], float]:
+) -> fa.KField[float]:
     dz21 = hdiff_smag_z2 - hdiff_smag_z
     alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
     df32 = hdiff_smag_fac3 - hdiff_smag_fac2
@@ -45,3 +44,30 @@ def en_smag_fac_for_zero_nshift(
     dzqdr = minimum(broadcast(dz42, (KDim,)), maximum(zero, zf - hdiff_smag_z2))
     enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
     return enh_smag_fac
+
+
+@gtx.program
+def en_smag_fac_for_zero_nshift(
+    vect_a: fa.KField[float],
+    hdiff_smag_fac: float,
+    hdiff_smag_fac2: float,
+    hdiff_smag_fac3: float,
+    hdiff_smag_fac4: float,
+    hdiff_smag_z: float,
+    hdiff_smag_z2: float,
+    hdiff_smag_z3: float,
+    hdiff_smag_z4: float,
+    enh_smag_fac: fa.KField[float],
+):
+    _en_smag_fac_for_zero_nshift(
+        vect_a,
+        hdiff_smag_fac,
+        hdiff_smag_fac2,
+        hdiff_smag_fac3,
+        hdiff_smag_fac4,
+        hdiff_smag_z,
+        hdiff_smag_z2,
+        hdiff_smag_z3,
+        hdiff_smag_z4,
+        out=enh_smag_fac,
+    )

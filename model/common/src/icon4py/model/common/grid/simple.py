@@ -1,43 +1,19 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import dataclasses
+import uuid
 
-from dataclasses import dataclass
-
+import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common.dimension import (
-    C2E2C2E2CDim,
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    C2VDim,
-    CECDim,
-    CEDim,
-    CellDim,
-    E2C2EDim,
-    E2C2EODim,
-    E2C2VDim,
-    E2CDim,
-    E2VDim,
-    ECDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    V2CDim,
-    V2EDim,
-    VertexDim,
-)
-from icon4py.model.common.grid.base import BaseGrid, GridConfig
+from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid.base import BaseGrid, GeometryType, GridConfig, HorizontalGridSize
 
 # periodic
 #
@@ -57,11 +33,11 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig
 # |20e  \   |23e  \   |26e  \
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.common.grid.vertical import VerticalGridConfig
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-@dataclass
+@dataclasses.dataclass
 class SimpleGridData:
     c2v_table = np.asarray(
         [
@@ -83,7 +59,8 @@ class SimpleGridData:
             [6, 0, 1],
             [7, 1, 2],
             [8, 2, 0],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     e2c2v_table = np.asarray(
@@ -95,27 +72,28 @@ class SimpleGridData:
             [1, 5, 2, 4],  # 4
             [1, 4, 5, 0],  # 5
             [2, 0, 3, 8],  # 6
-            [2, 3, 5, 0],  # 7
+            [2, 3, 0, 5],  # 7
             [2, 5, 1, 3],  # 8
             [3, 4, 0, 7],  # 9
             [3, 7, 4, 6],  # 10
-            [3, 6, 7, 5],  # 11
-            [4, 5, 8, 1],  # 12
-            [4, 8, 7, 5],  # 13
+            [3, 6, 5, 7],  # 11
+            [4, 5, 1, 8],  # 12
+            [4, 8, 5, 7],  # 13
             [4, 7, 3, 8],  # 14
-            [5, 3, 6, 2],  # 15
-            [6, 5, 3, 8],  # 16
-            [8, 5, 6, 4],  # 17
+            [5, 3, 2, 6],  # 15
+            [5, 6, 3, 8],  # 16
+            [5, 8, 4, 6],  # 17
             [6, 7, 3, 1],  # 18
             [6, 1, 7, 0],  # 19
             [6, 0, 1, 8],  # 20
-            [7, 8, 2, 4],  # 21
+            [7, 8, 4, 2],  # 21
             [7, 2, 8, 1],  # 22
-            [7, 1, 2, 6],  # 23
-            [8, 6, 0, 5],  # 24
+            [7, 1, 6, 2],  # 23
+            [8, 6, 5, 0],  # 24
             [8, 0, 6, 2],  # 25
-            [8, 2, 0, 6],  # 26
-        ]
+            [8, 2, 7, 0],  # 26
+        ],
+        dtype=gtx.int32,
     )
 
     e2c_table = np.asarray(
@@ -147,7 +125,8 @@ class SimpleGridData:
             [11, 14],
             [14, 17],
             [13, 17],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     e2v_table = np.asarray(
@@ -179,7 +158,8 @@ class SimpleGridData:
             [8, 6],
             [8, 0],
             [8, 2],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     e2c2e_table = np.asarray(
@@ -211,7 +191,8 @@ class SimpleGridData:
             [16, 17, 25, 20],
             [24, 20, 26, 6],
             [25, 6, 21, 22],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     e2c2eO_table = np.asarray(
@@ -243,7 +224,8 @@ class SimpleGridData:
             [16, 17, 24, 25, 20],
             [24, 25, 20, 26, 6],
             [25, 26, 6, 21, 22],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     c2e_table = np.asarray(
@@ -266,7 +248,8 @@ class SimpleGridData:
             [19, 20, 0],  # cell 15
             [22, 23, 3],  # cell 16
             [25, 26, 6],  # cell 17
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     v2c_table = np.asarray(
@@ -280,7 +263,8 @@ class SimpleGridData:
             [9, 12, 15, 8, 11, 14],
             [12, 16, 13, 10, 6, 9],
             [13, 17, 14, 11, 7, 10],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     v2e_table = np.asarray(
@@ -294,39 +278,8 @@ class SimpleGridData:
             [18, 19, 20, 24, 16, 11],
             [21, 22, 23, 18, 10, 14],
             [24, 25, 26, 21, 13, 17],
-        ]
-    )
-
-    diamond_table = np.asarray(
-        [
-            [0, 1, 4, 6],  # 0
-            [0, 4, 1, 3],
-            [0, 3, 4, 2],
-            [1, 2, 5, 7],  # 3
-            [1, 5, 2, 4],
-            [1, 4, 5, 0],
-            [2, 0, 3, 8],  # 6
-            [2, 3, 0, 5],
-            [2, 5, 1, 3],
-            [3, 4, 0, 7],  # 9
-            [3, 7, 4, 6],
-            [3, 6, 5, 7],
-            [4, 5, 1, 8],  # 12
-            [4, 8, 5, 7],
-            [4, 7, 3, 8],
-            [5, 3, 2, 6],  # 15
-            [5, 6, 3, 8],
-            [5, 8, 4, 6],
-            [6, 7, 3, 1],  # 18
-            [6, 1, 7, 0],
-            [6, 0, 1, 8],
-            [7, 8, 4, 2],  # 21
-            [7, 2, 8, 1],
-            [7, 1, 6, 2],
-            [8, 6, 5, 0],  # 24
-            [8, 0, 6, 2],
-            [8, 2, 7, 0],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     c2e2cO_table = np.asarray(
@@ -349,7 +302,8 @@ class SimpleGridData:
             [12, 0, 14, 15],
             [13, 1, 12, 16],
             [14, 2, 13, 17],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
     c2e2c_table = np.asarray(
@@ -372,7 +326,32 @@ class SimpleGridData:
             [12, 0, 14],
             [13, 1, 12],
             [14, 2, 13],
-        ]
+        ],
+        dtype=gtx.int32,
+    )
+
+    c2e2c2e_table = np.asarray(
+        [
+            [19, 20, 0, 1, 2, 9, 4, 5, 12],  # 0c
+            [22, 23, 3, 4, 5, 12, 7, 8, 15],
+            [25, 26, 6, 7, 8, 15, 1, 2, 9],
+            [0, 1, 5, 6, 7, 2, 9, 10, 14],
+            [3, 4, 8, 0, 1, 5, 12, 13, 17],  # 4c
+            [6, 7, 2, 3, 4, 8, 15, 16, 11],
+            [1, 2, 9, 10, 11, 18, 13, 14, 21],
+            [4, 5, 12, 13, 14, 21, 16, 17, 24],
+            [7, 8, 15, 16, 17, 24, 10, 11, 18],
+            [9, 10, 14, 15, 16, 11, 18, 19, 23],  # 9c
+            [12, 13, 17, 9, 10, 14, 21, 22, 26],
+            [15, 16, 11, 12, 13, 17, 24, 25, 20],
+            [10, 11, 18, 19, 20, 0, 22, 23, 3],
+            [13, 14, 21, 22, 23, 3, 25, 26, 6],
+            [16, 17, 24, 25, 26, 6, 19, 20, 0],  # 14c
+            [18, 19, 23, 24, 25, 20, 0, 1, 5],
+            [21, 22, 26, 18, 19, 23, 3, 4, 8],
+            [24, 25, 20, 21, 22, 26, 6, 7, 2],  # 17c
+        ],
+        dtype=gtx.int32,
     )
 
     c2e2c2e2c_table = np.asarray(
@@ -395,7 +374,8 @@ class SimpleGridData:
             [12, 0, 14, 11, 17, 9, 16, 3, 4],
             [13, 1, 12, 9, 15, 10, 17, 4, 5],
             [14, 2, 13, 10, 16, 5, 3, 11, 15],
-        ]
+        ],
+        dtype=gtx.int32,
     )
 
 
@@ -407,24 +387,52 @@ class SimpleGrid(BaseGrid):
     def __init__(self):
         """Instantiate a SimpleGrid used for testing purposes."""
         super().__init__()
+
         self._configure()
         self.offset_provider_mapping = {
-            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
-            "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
-            "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
-            "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
-            "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
-            "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
-            "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
-            "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
-            "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
-            "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
-            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
-            "Koff": (lambda: KDim,),  # Koff is a special case
-            "C2E2C2E2C": (self._get_offset_provider, C2E2C2E2CDim, CellDim, CellDim),
-            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
-            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
-            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
+            "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
+            "C2E2CO": (self._get_offset_provider, dims.C2E2CODim, dims.CellDim, dims.CellDim),
+            "C2E2C": (self._get_offset_provider, dims.C2E2CDim, dims.CellDim, dims.CellDim),
+            "E2C2EO": (self._get_offset_provider, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
+            "E2C2E": (self._get_offset_provider, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
+            "V2C": (self._get_offset_provider, dims.V2CDim, dims.VertexDim, dims.CellDim),
+            "V2E": (self._get_offset_provider, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
+            "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),
+            "E2V": (self._get_offset_provider, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
+            "E2C2V": (self._get_offset_provider, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
+            "C2CE": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.C2EDim,
+                dims.CellDim,
+                dims.CEDim,
+            ),
+            "Koff": (lambda: dims.KDim,),  # Koff is a special case
+            "C2E2C2E": (self._get_offset_provider, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
+            "C2E2C2E2C": (self._get_offset_provider, dims.C2E2C2E2CDim, dims.CellDim, dims.CellDim),
+            "E2ECV": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.E2C2VDim,
+                dims.EdgeDim,
+                dims.ECVDim,
+            ),
+            "E2EC": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.E2CDim,
+                dims.EdgeDim,
+                dims.ECDim,
+            ),
+            "C2CEC": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.C2E2CDim,
+                dims.CellDim,
+                dims.CECDim,
+            ),
+            "C2CECEC": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.C2E2C2E2CDim,
+                dims.CellDim,
+                dims.CECECDim,
+            ),
         }
 
     @property
@@ -440,43 +448,78 @@ class SimpleGrid(BaseGrid):
         return self.config.num_edges
 
     @property
-    def diamond_table(self) -> int:
-        return SimpleGridData.diamond_table
+    def diamond_table(self) -> data_alloc.NDArray:
+        return SimpleGridData.e2c2v_table
 
     @property
     def num_levels(self) -> int:
         return self.config.num_levels
 
+    @property
+    def geometry_type(self) -> GeometryType:
+        return GeometryType.TORUS
+
+    @property
+    def id(self) -> uuid.UUID:
+        return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
+
+    def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
+        return False
+
     def _configure(self):
         horizontal_grid_size = HorizontalGridSize(
             num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
         )
-        vertical_grid_size = VerticalGridSize(num_lev=10)
+        vertical_grid_config = VerticalGridConfig(num_levels=10)
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
-            vertical_config=vertical_grid_size,
+            vertical_size=vertical_grid_config.num_levels,
+            limited_area=False,
         )
 
         connectivity_dict = {
-            C2VDim: SimpleGridData.c2v_table,
-            E2CDim: SimpleGridData.e2c_table,
-            E2VDim: SimpleGridData.e2v_table,
-            C2EDim: SimpleGridData.c2e_table,
-            C2E2CODim: SimpleGridData.c2e2cO_table,
-            C2E2CDim: SimpleGridData.c2e2c_table,
-            E2C2EODim: SimpleGridData.e2c2eO_table,
-            E2C2EDim: SimpleGridData.e2c2e_table,
-            E2C2VDim: SimpleGridData.e2c2v_table,
-            V2CDim: SimpleGridData.v2c_table,
-            V2EDim: SimpleGridData.v2e_table,
-            C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
+            dims.C2VDim: SimpleGridData.c2v_table,
+            dims.E2CDim: SimpleGridData.e2c_table,
+            dims.E2VDim: SimpleGridData.e2v_table,
+            dims.C2EDim: SimpleGridData.c2e_table,
+            dims.C2E2CODim: SimpleGridData.c2e2cO_table,
+            dims.C2E2CDim: SimpleGridData.c2e2c_table,
+            dims.E2C2EODim: SimpleGridData.e2c2eO_table,
+            dims.E2C2EDim: SimpleGridData.e2c2e_table,
+            dims.E2C2VDim: SimpleGridData.e2c2v_table,
+            dims.V2CDim: SimpleGridData.v2c_table,
+            dims.V2EDim: SimpleGridData.v2e_table,
+            dims.C2E2C2EDim: SimpleGridData.c2e2c2e_table,
+            dims.C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
         }
 
         self.with_config(config).with_connectivities(connectivity_dict)
         self.update_size_connectivities(
             {
-                ECVDim: self.size[EdgeDim] * self.size[E2C2VDim],
-                CEDim: self.size[CellDim] * self.size[C2EDim],
-                ECDim: self.size[EdgeDim] * self.size[E2CDim],
+                dims.ECVDim: self.size[dims.EdgeDim] * self.size[dims.E2C2VDim],
+                dims.CEDim: self.size[dims.CellDim] * self.size[dims.C2EDim],
+                dims.ECDim: self.size[dims.EdgeDim] * self.size[dims.E2CDim],
             }
         )
+
+    def start_index(self, domain: h_grid.Domain) -> gtx.int32:
+        num = self._match_grid_size(domain) if domain.zone.is_halo() else 0
+        return gtx.int32(num)
+
+    def end_index(self, domain: h_grid.Domain) -> gtx.int32:
+        num = self._match_grid_size(domain)
+        return gtx.int32(num)
+
+    def _match_grid_size(self, domain: h_grid.Domain) -> int:
+        dimension = domain.dim
+        match dimension:
+            case dims.VertexDim:
+                return self.num_vertices
+            case dims.CellDim:
+                return self.num_cells
+            case dims.EdgeDim:
+                return self.num_edges
+            case _:
+                raise exceptions.IconGridError(
+                    f" {domain} : Not a valid horizontal Domain implementation {type(domain)}"
+                )

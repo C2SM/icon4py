@@ -1,27 +1,22 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 from pytest import mark
 
-from icon4pytools.liskov.parsing.exceptions import (
+from icon4py.tools.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     RepeatedDirectiveError,
     RequiredDirectivesError,
     UnbalancedStencilDirectiveError,
 )
-from icon4pytools.liskov.parsing.parse import Declare, DirectivesParser, Imports, StartStencil
-from icon4pytools.liskov.parsing.validation import DirectiveSyntaxValidator
+from icon4py.tools.liskov.parsing.parse import Declare, DirectivesParser, Imports, StartStencil
+from icon4py.tools.liskov.parsing.validation import DirectiveSyntaxValidator
 
 from .conftest import insert_new_lines, scan_for_directives
 from .fortran_samples import (
@@ -62,6 +57,29 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
 
     with pytest.raises(UnbalancedStencilDirectiveError):
         parser(directives)
+
+
+@mark.parametrize(
+    "stencil, directive",
+    [
+        (
+            SINGLE_STENCIL_WITH_COMMENTS,
+            "!$DSL START STENCIL( name = foo ; x = bar )\n!$DSL END STENCIL(name = foo)",
+        ),
+        (
+            SINGLE_STENCIL_WITH_COMMENTS,
+            "!$DSL START FUSED STENCIL( name = foo ; x = bar )\n!$DSL END FUSED STENCIL(name = foo)",
+        ),
+    ],
+)
+def test_directive_semantics_validation_allow_whitespaces_in_name_arg(
+    make_f90_tmpfile, stencil, directive
+):
+    fpath = make_f90_tmpfile(stencil + directive)
+    opath = fpath.with_suffix(".gen")
+    directives = scan_for_directives(fpath)
+    parser = DirectivesParser(fpath, opath)
+    parser(directives)
 
 
 @mark.parametrize(
@@ -106,11 +124,11 @@ def test_directive_semantics_validation_repeated_directives(make_f90_tmpfile, di
     [
         (
             SINGLE_STENCIL_WITH_COMMENTS,
-            "!$DSL START STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)",
+            "!$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)\n!$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)",
         ),
         (
             SINGLE_FUSED,
-            "!$DSL START FUSED STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END FUSED STENCIL(name=mo_nh_diffusion_stencil_06)",
+            "!$DSL START FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence)\n!$DSL END FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence)",
         ),
     ],
 )

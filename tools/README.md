@@ -1,4 +1,4 @@
-# ICON4PyTools
+# ICON4Py Tools
 
 ## Description
 
@@ -6,22 +6,11 @@ Tools and utilities for integrating icon4py code into the ICON model.
 
 ## Installation instructions
 
-To install `icon4pytools` in a virtual environment, one can use pip with either the `requirements-dev.txt` or `requirements.txt` file. While the `requirements.txt` file will install the package along with its runtime dependencies, the `requirements-dev.txt` file additionally includes development dependencies required for running tests, generating documentation, and building the package from source. Furthermore by using the `requirements-dev.txt` file, the package will be installed in editable mode, allowing the user to make changes to the package's source code and immediately see the effects without having to reinstall the package every time. This is particularly useful during development and testing phases.
-
-```bash
-# create a virtual environment
-python3 -m venv .venv
-
-# activate the virtual environment
-source .venv/bin/activate
-
-# install all dependencies
-pip install -r requirements-dev.txt
-```
+Until development reaches a stable state, we recommend that you follow the general instructions in the [../README.md](../README.md) root folder to install `icon4py.tools` and all of its dependencies in a virtual environment.
 
 ## Command-line tools
 
-A variety of command-line tools are available in the shell after installation of `icon4pytools`.
+A variety of command-line tools are available in the shell after installation of `icon4py.tools`.
 
 ### `icon4pygen`
 
@@ -130,7 +119,7 @@ Furthermore, this directive also takes two optional keyword arguments. `type` ta
 
 #### `!$DSL START STENCIL()`
 
-This directive denotes the start of a stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. For each stencil, an ACC DATA region will be created. This ACC DATA region contains the before fileds of the according stencil. An example call looks like this:
+This directive denotes the start of a stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. For each stencil, an ACC DATA region will be created. This ACC DATA region contains the before fields of the according stencil. An example call looks like this:
 
 ```fortran
 !$DSL START STENCIL(name=mo_nh_diffusion_stencil_06; &
@@ -148,6 +137,8 @@ In addition, other optional keyword arguments are the following:
 
 - `copies`: Takes a boolean string input, and controls whether before field copies should be made or not. If set to False only the `#ifdef __DSL_VERIFY` directive is generated. Defaults to true.<br><br>
 
+- `optional_module`: Takes a boolean string input, and controls whether stencils is part of an optional module. Defaults to "None".<br><br>
+
 #### `!$DSL END STENCIL()`
 
 This directive denotes the end of a stencil. The required argument is `name`, which must match the name of the preceding `START STENCIL` directive.
@@ -156,11 +147,10 @@ Together, the `START STENCIL` and `END STENCIL` directives result in the followi
 
 ```fortran
 !$ACC DATA CREATE( &
-!$ACC   vn_before, &
-!$ACC      IF ( i_am_accel_node )
+!$ACC   vn_before)
 
 #ifdef __DSL_VERIFY
-!$ACC KERNELS IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+!$ACC KERNELS DEFAULT(NONE) ASYNC(1)
 vn_before(:, :, :) = vn(:, :, :)
 !$ACC END KERNELS
 ```
@@ -217,11 +207,10 @@ Together, the `START FUSED STENCIL` and `END FUSED STENCIL` directives result in
         !$ACC DATA CREATE( &
         !$ACC   kh_smag_e_before, &
         !$ACC   kh_smag_ec_before, &
-        !$ACC   z_nabla2_e_before ) &
-        !$ACC      IF ( i_am_accel_node )
+        !$ACC   z_nabla2_e_before )
 
 #ifdef __DSL_VERIFY
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1)
+        !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
         kh_smag_e_before(:, :, :) = kh_smag_e(:, :, :)
         kh_smag_ec_before(:, :, :) = kh_smag_ec(:, :, :)
         z_nabla2_e_before(:, :, :) = z_nabla2_e(:, :, :)
@@ -248,13 +237,15 @@ call wrap_run_calculate_diagnostic_quantities_for_turbulence( &
 
 !$ACC EXIT DATA DELETE( &
 !$ACC   div_ic_before, &
-!$ACC   hdef_ic_before ) &
-!$ACC      IF ( i_am_accel_node )
+!$ACC   hdef_ic_before )
 ```
 
 #### `!$DSL INSERT()`
 
-This directive allows the user to generate any text that is placed between the parentheses. This is useful for situations where custom code generation is necessary.
+This directive allows the user to generate any text that is placed between the parentheses.
+This is useful for situations where custom code generation is necessary.
+Note that, the `INSERT`` statement is verbatim, such that there is no filtering or fortran formatting.
+Also, that line continuation with `&` is not provided for`INSERT` statements.
 
 #### `!$DSL START PROFILE()`
 
@@ -277,6 +268,10 @@ The `END DELETE` indicates the ending line from which on code is deleted.
 #### `!$DSL ENDIF()`
 
 This directive generates an `#endif` statement.
+
+### ICON-Liskov integration style-guide
+
+Check out `tools/docs/ICON_Liskov_integration_style_guide.md` for having a unique look and feel in the fortran integration.
 
 ### `f2ser`
 
@@ -303,38 +298,117 @@ OUTPUT_FILEPATH   A path to the output Fortran source file to be generated.
 
 **Note:** The output of f2ser still has to be preprocessed using `pp_ser.py`, which then yields a compilable unit. The serialised files will have `f2ser` as their prefix in the default folder location of the experiment.
 
-## `py2f`
+# py2fgen
 
-Python utility for generating a C library and Fortran interface to call Python icon4py modules. The library [embeds python via CFFI ](https://cffi.readthedocs.io/en/latest/embedding.)
+`py2fgen` is a command-line interface (CLI) tool designed to generate C and Fortran 90 (F90) wrappers, as well as a C library, for embedding a Python module into C and Fortran applications. This tool facilitates the embedding of Python code into Fortran programs by utilizing the [`CFFI`](https://cffi.readthedocs.io/en/latest/embedding) library. `CFFI` instantiates a Python interpreter to execute Python code which is "frozen" into the dynamic library generated by `CFFI`.
 
-This is **highly experimental** and has not been tested from within Fortran code!
+**Note:** `py2fgen` has been used to embed the diffusion and dycore granule into ICON. It is important to remember that there are performance implications related to converting Fortran pointers to array-like objects that can be used in Python. It is also important to note that functions embedded into Fortran can only accept arguments with intrinsic types, as well as arrays. It is currently not possible to pass derived types to embedded Python functions.
 
-### usage
+## Usage
 
-`py2fgen`: Generates a C header file and a Fortran interface and compiles python functions into a C library embedding python. The functions need to be decorated with `CffiMethod.register` and have a signature with scalar arguments or `GT4Py` fields, for example:
-
-```
-@CffiMethod.register
-def foo(i:int, param:float, field1: Field[[VertexDim, KDim], float], field2: Field[CellDim, KDim], float])
-```
-
-see `src/icon4pytools/py2f/wrappers` for examples.
+`py2fgen` simplifies the process of embedding Python functions into C and Fortran codebases. Here's how to use it:
 
 ```bash
-py2fgen icon4pytools.py2f.wrappers.diffusion_wrapper  py2f_build
+py2fgen [OPTIONS] MODULE_IMPORT_PATH FUNCTION_NAME
+
+Arguments:
+  MODULE_IMPORT_PATH  The Python module import path to the module where the functions to be embedded are defined.
+  FUNCTIONS           A comma-separated list of functions to be embedded in the case of multiple, otherwise just the function name.
+  PLUGIN_NAME         The name of the plugin used for creating the shared library and bindings.
+Options:
+  -o, --output-path PATH          Specify the directory for generated code and
+                                  compiled libraries.
+  -b, --backend [CPU|GPU|ROUNDTRIP]
+                                  Set the backend to use, thereby unpacking
+                                  Fortran pointers into NumPy or CuPy arrays
+                                  respectively.
+  -d, --debug-mode                Enable debug mode to log additional Python
+                                  runtime information.
+  -p, --profile                   Profile granule runtime and unpacking
+                                  Fortran pointers into NumPy or CuPy arrays.
+  --limited-area                  Enable limited area mode.
 ```
 
-where the first argument is the python module to parse and the second a build directory. The call above will generate the following in `py2f_build`:
+## Initialising the grid
+
+When embedding granules it may be necessary to have access to the representation of the ICON grid inside the granule. In order to initialise the grid for each granule there exists a `grid_init_<granule_name>` function which must also be embedded and called from Fortran. Each granule has access to a module state which is defined in a dictionary at the top of the module, for example `diffusion_wrapper_state` in the diffusion wrapper.
+
+## Environment variables
+
+In order to run the embedded code from Fortran it is necessary to set environment variables based on whether you are running in a CPU or GPU context. For more information on these, as well as other information on how to build and integrate embedded code into ICON using py2fgen see [this document](https://hackmd.io/OmmNptDRTe2lex7GXuYDIQ#Python-Granule-Integration-into-ICON).
+
+### Example
+
+To create a Fortran interface along with the dynamic library for a Python function named `square` within the module `example.functions`, execute:
 
 ```bash
- ls py2f_build/
-total 204K
-drwxrwxr-x 2 magdalena magdalena 4.0K Aug 24 17:01 .
-drwxrwxr-x 9 magdalena magdalena 4.0K Aug 24 17:01 ..
--rw-rw-r-- 1 magdalena magdalena  74K Aug 24 16:58 diffusion_wrapper.c
--rw-rw-r-- 1 magdalena magdalena 3.5K Aug 24 17:01 diffusion_wrapper.f90
--rw-rw-r-- 1 magdalena magdalena  955 Aug 24 17:01 diffusion_wrapper.h
--rw-rw-r-- 1 magdalena magdalena  58K Aug 24 17:01 diffusion_wrapper.o
--rwxrwxr-x 1 magdalena magdalena  49K Aug 24 17:01 libdiffusion_wrapper.so
-
+py2fgen example.functions square
 ```
+
+It is also possible to generate bindings for more than one function at a time by using a comma-separated list of function names:
+
+```bash
+py2fgen example.functions square,square2
+```
+
+`py2fgen` can accept two types of functions:
+
+- **Simple Function:** Any Python function can be exposed.
+- **GT4Py Program:** Specifically, a Python function decorated with a `@program` decorator.
+
+**Important:** All arguments in the exposed functions must use GT4Py style type hints. These are used by the parser to map GT4Py types to C and Fortran types in the generated bindings.
+
+## Generated Files
+
+Running `py2fgen` generates five key files:
+
+- **.c File**: Contains the generated CFFI code and the frozen Python code.
+- **.so File**: The compiled dynamic C library containing the CFFI code.
+- **.h File**: Declares the function signature of your exposed function.
+- **.f90 File**: Contains a Fortran interface to the C function in the dynamic library.
+- **.o File**: Represents the object code of the CFFI plugin.
+- (Optional) **.py File**: Contains the Python code frozen into the dynamic library (available with `--debug-mode`).
+
+## Running from Fortran
+
+To use the generated CFFI plugin in a Fortran program, call the subroutine defined in the `.f90` interface file. Ensure that any arrays passed to the subroutine are in column-major order.
+
+Examples can be found under `tools/tests/py2fgen/fortran_samples`.
+
+## Compilation
+
+Compiling your Fortran driver code requires a Fortran compiler, such as `gfortran` or `nvfortran`. Follow these steps:
+
+1. Compile and link the Fortran driver code along with the Fortran interface and dynamic library:
+
+```bash
+gfortran -I. -Wl,-rpath=. -L. <function_name>_plugin.f90 <fortran_driver>.f90 -l<function_name>_plugin -o <executable_name>
+```
+
+Replace `<function_name>`, `<fortran_driver>`, and `<executable_name>` with the appropriate names for your project.
+
+**Note:** When executing the compiled binary make sure that you have sourced a Python virtual environment where all required dependencies to run the embedded Python code are present.
+
+## Error handling
+
+All generated Python wrapper code is wrapped in a `try: ... except: ...` block, with the wrapper function returning an error code `1` if an Exception ocurred
+and `0` otherwise. In case of an exception the error message is written to the `py2f_cffi.log` file, which is located in the same directory as the generated bindings.
+This means that on the Fortran side we can handle errors gracefully as follows:
+
+```Fortran
+integer(c_int) :: rc
+real(c_double), dimension(:, :), allocatable :: input, result
+
+call square(input, result, rc)
+
+! handle the Python error here
+ if (rc /= 0) then
+     print *, "Python failed with exit code = ", rc
+     call exit(1)
+ end if
+```
+
+## Other requirements
+
+- Embedded Python functions must have type hints for all function parameters, as these are used to derive the corresponding C and Fortran types.
+- Embedded Python functions are assumed to modify function parameters in-place. Explicitly returning anything is currently not supported.

@@ -1,0 +1,39 @@
+include:
+  - local: 'ci/base.yml'
+
+.test_model_stencils:
+  stage: test
+  script:
+    - nox -s test_model-3.10 -t stencils -- --backend=$BACKEND --grid=$GRID
+  parallel:
+    matrix:
+    - BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+      GRID: [simple_grid, icon_grid]
+  rules:
+    - when: on_success
+# test_model_stencils_x86_64:
+#   extends: [.test_model_stencils, .test_template_x86_64]
+test_model_stencils_aarch64:
+  extends: [.test_model_stencils, .test_template_aarch64]
+
+.test_tools:
+  stage: test
+  script:
+    - nox -s 'test_tools-3.10'
+# test_tools_x86_64:
+#   extends: [.test_tools, .test_template_x86_64]
+test_tools_aarch64:
+  extends: [.test_tools, .test_template_aarch64]
+
+.test_model_datatests:
+  stage: test
+  script:
+    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND 
+  parallel:
+    matrix:
+    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+      BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+# test_model_datatests_x86_64:
+#   extends: [.test_model_datatests, .test_template_x86_64]
+test_model_datatests_aarch64:
+  extends: [.test_model_datatests, .test_template_aarch64]
