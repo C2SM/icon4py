@@ -55,9 +55,7 @@ except ImportError:
 if dace:
     from dace import hooks
     from dace.transformation.passes.simplify import SimplifyPass
-    from gt4py.next.program_processors.runners.dace_common.utility import (
-        connectivity_identifier,
-    )
+    from gt4py.next.program_processors.runners.dace import utils as gtx_dace_utils
 
 
 P = ParamSpec("P")
@@ -169,7 +167,7 @@ def orchestrate(
                         {
                             k: v
                             for k, v in grid.offset_providers.items()
-                            if connectivity_identifier(k) in sdfg.arrays
+                            if gtx_dace_utils.connectivity_identifier(k) in sdfg.arrays
                         },
                     ),
                 }
@@ -547,7 +545,7 @@ if dace:
         return {
             # connectivity tables at runtime
             **{
-                connectivity_identifier(k): v.table
+                gtx_dace_utils.connectivity_identifier(k): v.table
                 for k, v in offset_providers.items()
                 if hasattr(v, "table")
             },
