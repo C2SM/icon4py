@@ -725,7 +725,6 @@ def test_nonhydro_corrector_step(
     )
 
 
-@pytest.mark.requires_concat_where
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -864,7 +863,6 @@ def test_run_solve_nonhydro_single_step(
 
 # why is this not run for APE?
 @pytest.mark.embedded_remap_error
-@pytest.mark.requires_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(

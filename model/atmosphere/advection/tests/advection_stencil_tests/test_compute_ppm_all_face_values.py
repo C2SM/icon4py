@@ -23,7 +23,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 class TestComputePpmAllFaceValues(helpers.StencilTest):
     PROGRAM = compute_ppm_all_face_values
     OUTPUTS = ("p_face",)
-    MARKERS = (pytest.mark.requires_concat_where,)
 
     @staticmethod
     def reference(
@@ -52,6 +51,8 @@ class TestComputePpmAllFaceValues(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
+        pytest.xfail("requires fix for concat_where domain inference")
+
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_face_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
