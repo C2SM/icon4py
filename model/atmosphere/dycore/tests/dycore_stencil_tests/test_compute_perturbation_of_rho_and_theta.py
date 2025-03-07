@@ -18,6 +18,17 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_perturbation_of_rho_and_theta_numpy(
+    rho: np.ndarray,
+    rho_ref_mc: np.ndarray,
+    theta_v: np.ndarray,
+    theta_ref_mc: np.ndarray,
+) -> tuple[np.ndarray]:
+    z_rth_pr_1 = rho - rho_ref_mc
+    z_rth_pr_2 = theta_v - theta_ref_mc
+    return z_rth_pr_1, z_rth_pr_2
+
+
 class TestComputePerturbationOfRhoAndTheta(StencilTest):
     PROGRAM = compute_perturbation_of_rho_and_theta
     OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
@@ -25,14 +36,15 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
     @staticmethod
     def reference(
         grid,
-        rho: np.array,
-        rho_ref_mc: np.array,
-        theta_v: np.array,
-        theta_ref_mc: np.array,
+        rho: np.ndarray,
+        rho_ref_mc: np.ndarray,
+        theta_v: np.ndarray,
+        theta_ref_mc: np.ndarray,
         **kwargs,
-    ) -> tuple[np.array]:
-        z_rth_pr_1 = rho - rho_ref_mc
-        z_rth_pr_2 = theta_v - theta_ref_mc
+    ) -> dict:
+        (z_rth_pr_1, z_rth_pr_2) = compute_perturbation_of_rho_and_theta_numpy(
+            rho=rho, rho_ref_mc=rho_ref_mc, theta_v=theta_v, theta_ref_mc=theta_ref_mc
+        )
         return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
     @pytest.fixture
