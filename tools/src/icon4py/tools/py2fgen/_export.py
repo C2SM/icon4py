@@ -156,9 +156,10 @@ class _DecoratedFunction:
     def __call__(
         self, ffi: cffi.FFI, **kwargs: Any
     ) -> Any:  # TODO switch to positional arguments for performance
+        # TODO pass the index of the arg to the mapping, then we have a cache per argument which we can constraint to size 2 (for double-buffering)
         kwargs = {
             k: self._mapping[k](v, ffi=ffi) if k in self._mapping else v for k, v in kwargs.items()
-        }  # TODO possibly cache this
+        }
         return self._fun(**kwargs)
 
 

@@ -440,9 +440,15 @@ end function {{name}}_wrapper
             param_names=param_names,
             args_with_size_args=compiled_arg_names,
             non_optional_arrays=[
-                arg.name for arg in func.args if is_array(arg) and not arg.is_optional
+                arg.name
+                for arg in func.args
+                if is_array(arg) and not arg.is_optional and arg.device == DeviceType.MAYBE_DEVICE
             ],
-            optional_arrays=[arg.name for arg in func.args if is_array(arg) and arg.is_optional],
+            optional_arrays=[
+                arg.name
+                for arg in func.args
+                if is_array(arg) and arg.is_optional and arg.device == DeviceType.MAYBE_DEVICE
+            ],
             as_allocatable=True,
             param_declarations=param_declarations,
             to_iso_c_type=to_iso_c_type,
