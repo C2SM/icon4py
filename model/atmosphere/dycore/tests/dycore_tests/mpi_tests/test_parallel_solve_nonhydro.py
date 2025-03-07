@@ -19,7 +19,7 @@ from icon4py.model.testing import helpers, parallel_helpers
 from .. import utils
 
 
-@pytest.skip("FIXME: Need updated test data yet", allow_module_level=True)
+@pytest.mark.embedded_rempar_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,istep_exit, jstep_exit, step_date_exit",
@@ -118,10 +118,10 @@ def test_run_solve_nonhydro_single_step(
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+            sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+            sp_v.ddt_w_adv_pc(0), sp_v.ddt_w_adv_pc(1)
         ),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
