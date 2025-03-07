@@ -905,7 +905,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/spcl/dace?branch=main#a0304c5ecbbae5f486f96995023c3d9395852306" }
+source = { git = "https://github.com/philip-paul-mueller/dace?branch=modified-gpu-launches#fbe49ed930437c7e22f74574ad44baf4d21ce190" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1393,7 +1393,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace-next#eb99a20ecae23d22f2a685997f3a3533d4c52f86" }
+source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace-next#f3cfd525eb7fa66c1e4e37328dfee432774946a7" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1839,7 +1839,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/spcl/dace?branch=main" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/philip-paul-mueller/dace?branch=modified-gpu-launches" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
     { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
