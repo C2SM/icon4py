@@ -897,7 +897,7 @@ def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
     k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
 
-    nrdmax = grid_savepoint.nrdmax()
+    nrdmax = grid_savepoint.nrdmax()[0]
 
     cell_domain = h_grid.domain(dims.CellDim)
     cell_lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
@@ -1036,9 +1036,8 @@ def test_velocity_fused_19_20_compute_advection_in_horizontal_momentum_equation(
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    # TODO (Chia Rui): remove? d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
-    d_time = 5.0
-    nrdmax = grid_savepoint.nrdmax()
+    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    nrdmax = grid_savepoint.nrdmax()[0]
 
     ddt_vn_apc_ref = (
         savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_exit.ddt_vn_apc()
