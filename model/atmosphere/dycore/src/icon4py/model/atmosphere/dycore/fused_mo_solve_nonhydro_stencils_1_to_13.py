@@ -60,25 +60,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_der
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta
 )
-#
-# from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
-#     _mo_solve_nonhydro_stencil_04,
-# )
-# from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
-#     _mo_solve_nonhydro_stencil_05,
-# )
-# from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
-#     _mo_solve_nonhydro_stencil_06,
-# )
-# from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
-#     _predictor_stencils_2_3,
-# )
-# from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
+
 from icon4py.model.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
+def _fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
     rho_nnow: Field[[CellDim, KDim], float],
     rho_ref_mc: Field[[CellDim, KDim], float],
     theta_v_nnow: Field[[CellDim, KDim], float],
@@ -127,6 +114,11 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
 ]:
     vert_idx_1d = vert_idx
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
@@ -159,7 +151,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
 
     z_exner_ex_pr = where(
         (
-            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (n_lev -1 <= vert_idx <= n_lev)
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_idx == n_lev)
         ),
         _init_cell_kdim_field_with_zero_wp(
             exner_pr=exner_pr
@@ -167,44 +159,41 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         z_exner_ex_pr,
     )
 
+    vert_start = maximum(1, nflatlev) if igradp_method ==3 else vert_start
+
     # solve_nonhydro_stencil_4_5_6
-    if igradp_method == 3:
-        vert_start = maximum(1, nflatlev)
-        z_exner_ic = where(
-            (
-                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (n_lev <= vert_idx <= n_lev + 1)
-            ),
-            _interpolate_to_surface(
-                wgtfacq_c_dsl=wgtfacq_c_dsl,
-                z_exner_ex_pr=z_exner_ex_pr,
-                z_exner_ic=z_exner_ic
-            ),
-            z_exner_ic,
+    z_exner_ic = where(
+        (
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_idx == n_lev )
+        ),
+        _interpolate_to_surface(
+            wgtfacq_c_dsl=wgtfacq_c_dsl,
+            z_exner_ex_pr=z_exner_ex_pr,
+            z_exner_ic=z_exner_ic
         )
+    ) if igradp_method == 3 else z_exner_ic
 
-        z_exner_ic = where(
-            (
-                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx <= n_lev)
-            ),
-            _interpolate_to_half_levels_vp(
-                wgtfac_c=wgtfac_c,
-                z_exner_ex_pr=z_exner_ex_pr,
-                z_exner_ic=z_exner_ic
-            ),
-            z_exner_ic,
+    z_exner_ic = where(
+        (
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx < n_lev)
+        ),
+        _interpolate_to_half_levels_vp(
+            wgtfac_c=wgtfac_c,
+            z_exner_ex_pr=z_exner_ex_pr,
+            z_exner_ic=z_exner_ic
         )
+    ) if igradp_method == 3 else z_exner_ic
 
-        z_dexner_dz_c_1 = where(
-            (
-                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx <= n_lev)
-            ),
-            _compute_first_vertical_derivative(
-                z_exner_ic=z_exner_ic,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                z_dexner_dz_c_1=z_dexner_dz_c_1
-            ),
-            z_dexner_dz_c_1,
+    z_dexner_dz_c_1 = where(
+        (
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx < n_lev)
+        ),
+        _compute_first_vertical_derivative(
+            z_exner_ic=z_exner_ic,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            z_dexner_dz_c_1=z_dexner_dz_c_1
         )
+    ) if igradp_method == 3 else z_dexner_dz_c_1
 
     # solve_nonhydro_stencil_7_8_9, which is already combined
     (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
@@ -235,7 +224,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     #stencil_11
     (z_theta_v_pr_ic, theta_v_ic) = where(
         (
-            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_idx <= n_lev+1)
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_idx <= n_lev)
         ),
         _predictor_stencils_11_lower_upper(
             wgtfacq_c_dsl= wgtfacq_c_dsl,
@@ -250,19 +239,19 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     )
 
     # stencil 12
-    if igradp_method==3:
-        vert_start = nflat_gradp
-        z_dexner_dz_c_2 = where(
-            (
-                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx)
-            ),
-            _compute_approx_of_2nd_vertical_derivative_of_exner(
-                z_theta_v_pr_ic=z_theta_v_pr_ic,
-                d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
-                d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-                z_rth_pr_2=z_rth_pr_2
-            )
-    )
+    vert_start = nflat_gradp if igradp_method ==3 else vert_start
+
+    z_dexner_dz_c_2 = where(
+        (
+            (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx)
+        ),
+        _compute_approx_of_2nd_vertical_derivative_of_exner(
+            z_theta_v_pr_ic=z_theta_v_pr_ic,
+            d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+            d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+            z_rth_pr_2=z_rth_pr_2
+        )
+    ) if igradp_method ==3 else z_dexner_dz_c_2
 
     # stencil 13
     (z_rth_pr_1, z_rth_pr_2) = where(
@@ -285,9 +274,13 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         z_rth_pr_2,
         z_exner_ex_pr,
         exner_pr,
+        rho_ic,
         z_exner_ic,
+        z_theta_v_pr_ic,
+        theta_v_ic,
+        z_th_ddz_exner_c,
         z_dexner_dz_c_1,
-        z_dexner_dz_c_2,
+        z_dexner_dz_c_2
     )
 
 #TODO: how can I check what are the output of the combined stencils?
