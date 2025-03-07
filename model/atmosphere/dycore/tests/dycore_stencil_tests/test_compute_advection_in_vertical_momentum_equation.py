@@ -33,29 +33,29 @@ from .test_interpolate_contravariant_vertical_velocity_to_full_levels import (
 
 def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    vertical_wind_advective_tendency,
-    w,
-    khalf_contravariant_corrected_w_at_cell,
-    khalf_horizontal_advection_of_w_at_edge,
-    coeff1_dwdz,
-    coeff2_dwdz,
-    e_bln_c_s,
-    ddqz_z_half,
-    area,
-    geofac_n2s,
-    scalfac_exdiff,
-    cfl_w_limit,
-    dtime,
-    levelmask,
-    cfl_clipping,
-    owner_mask,
-    cell,
-    k,
-    cell_lower_bound,
-    cell_upper_bound,
-    nlev,
-    nrdmax,
-):
+    vertical_wind_advective_tendency: np.ndarray,
+    w: np.ndarray,
+    khalf_contravariant_corrected_w_at_cell: np.ndarray,
+    khalf_horizontal_advection_of_w_at_edge: np.ndarray,
+    coeff1_dwdz: np.ndarray,
+    coeff2_dwdz: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    area: np.ndarray,
+    geofac_n2s: np.ndarray,
+    scalfac_exdiff: np.ndarray,
+    cfl_w_limit: float,
+    dtime: float,
+    levelmask: np.ndarray,
+    cfl_clipping: np.ndarray,
+    owner_mask: np.ndarray,
+    cell: np.ndarray,
+    k: np.ndarray,
+    cell_lower_bound: int,
+    cell_upper_bound: int,
+    nlev: int,
+    nrdmax: int,
+) -> np.ndarray:
     cell = cell[:, np.newaxis]
 
     condition1 = (cell_lower_bound <= cell) & (cell < cell_upper_bound) & (k >= 1)
@@ -140,10 +140,10 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         owner_mask: np.ndarray,
         cell: np.ndarray,
         k: np.ndarray,
-        cell_lower_bound,
-        cell_upper_bound,
-        nlev,
-        nrdmax,
+        cell_lower_bound: int,
+        cell_upper_bound: int,
+        nlev: int,
+        nrdmax: int,
         start_cell_lateral_boundary: int,
         end_cell_halo: int,
         **kwargs,
@@ -236,13 +236,8 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        k = data_alloc.zero_field(grid, dims.KDim, dtype=gtx.int32)
-        for level in range(grid.num_levels):
-            k[level] = level
-
-        cell = data_alloc.zero_field(grid, dims.CellDim, dtype=gtx.int32)
-        for c in range(grid.num_cells):
-            cell[c] = c
+        k = data_alloc.index_field(grid, dims.KDim)
+        cell = data_alloc.index_field(grid, dims.CellDim)
 
         nlev = grid.num_levels
         nrdmax = 5
