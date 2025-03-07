@@ -1036,7 +1036,7 @@ def test_velocity_fused_19_20_compute_advection_in_horizontal_momentum_equation(
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    d_time = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     nrdmax = grid_savepoint.nrdmax()[0]
 
     ddt_vn_apc_ref = (
