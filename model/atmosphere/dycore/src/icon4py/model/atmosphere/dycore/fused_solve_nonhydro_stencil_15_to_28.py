@@ -21,7 +21,7 @@
 
 import gt4py.next as gtx
 from gt4py.next.common import GridType
-from gt4py.next.ffront.fbuiltins import broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import broadcast, int32, where, neighbor_sum
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
@@ -72,6 +72,10 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim, CellDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+@gtx.scan_operator(axis=KDim, init=0.0, forward=True)
+def hydro_corr_last_lev(state: float, z_hydro_corr: float) -> float:
+    return state + z_hydro_corr
 
 
 @gtx.field_operator
@@ -269,6 +273,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     hydro_corr_horizontal = where((vert_idx == (nlev - 1)), z_hydro_corr, 0.0)
+    hydro_corr_horizontal_nlev = hydro_corr_last_lev(hydro_corr_horizontal)
 
     z_gradh_exner = (
         where(
@@ -276,7 +281,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
             _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=ipeidx_dsl,
                 pg_exdist=pg_exdist,
-                z_hydro_corr=hydro_corr_horizontal,
+                z_hydro_corr=hydro_corr_horizontal_nlev,
                 z_gradh_exner=z_gradh_exner,
             ),
             z_gradh_exner,
