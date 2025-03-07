@@ -608,8 +608,6 @@ class GridManager:
             dims.V2C: self._get_index_field(ConnectivityName.V2C),
             dims.C2V: self._get_index_field(ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(ConnectivityName.V2E2V),
-            dims.E2V: self._get_index_field(ConnectivityName.E2V),
-            dims.C2V: self._get_index_field(ConnectivityName.C2V),
         }
         xp = data_alloc.array_ns(on_gpu)
         grid.with_connectivities(
