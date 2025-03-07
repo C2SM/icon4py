@@ -67,11 +67,8 @@ def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> No
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
-@nox.session(python=["3.10", "3.11"],
-             requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
-def bencher_baseline(session: nox.Session) -> None:
-    """Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted)."""
-    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
+def merge_pytest_benchmark_results(bencher_json_file_name: str) -> None:
+    """Gather all benchmark results files and merge them into a single file."""
     merged_results = {"benchmarks": []}
     files = glob.glob("results_*.json")
     for file in files:
@@ -88,6 +85,13 @@ def bencher_baseline(session: nox.Session) -> None:
             continue
     with open(bencher_json_file_name, "w") as f:
         json.dump(merged_results, f, indent=4)
+
+@nox.session(python=["3.10", "3.11"],
+             requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
+def bencher_baseline(session: nox.Session) -> None:
+    """Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted)."""
+    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
+    merge_pytest_benchmark_results(bencher_json_file_name)
 
     session.run(
         *f"bencher run \
