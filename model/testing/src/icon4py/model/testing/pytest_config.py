@@ -163,3 +163,12 @@ def pytest_runtest_setup(item):
         backend,
         is_datatest=item.config.getoption("--datatest"),
     )
+
+
+# pytest benchmark hook, see:
+#     https://pytest-benchmark.readthedocs.io/en/latest/hooks.html#pytest_benchmark.hookspec.pytest_benchmark_update_json
+def pytest_benchmark_update_json(output_json):
+    "Replace 'fullname' of pytest benchmarks with a shorter name for better readability in bencher."
+    for bench in output_json["benchmarks"]:
+        # Replace fullname with name and filter unnecessary prefix and suffix
+        bench["fullname"] = bench["name"].replace("test_", "").replace("_benchmark", "")
