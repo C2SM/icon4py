@@ -18,15 +18,22 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def apply_rayleigh_damping_mechanism_numpy(
+    grid, z_raylfac: np.ndarray, w_1: np.ndarray, w: np.ndarray
+) -> np.ndarray:
+    # z_raylfac = np.expand_dims(z_raylfac, axis=0)
+    # w_1 = np.expand_dims(w_1, axis=-1)
+    w = z_raylfac * w + (1.0 - z_raylfac) * w_1
+    return w
+
+
 class TestApplyRayleighDampingMechanism(StencilTest):
     PROGRAM = apply_rayleigh_damping_mechanism
     OUTPUTS = ("w",)
 
     @staticmethod
-    def reference(grid, z_raylfac: np.array, w_1: np.array, w: np.array, **kwargs) -> dict:
-        z_raylfac = np.expand_dims(z_raylfac, axis=0)
-        w_1 = np.expand_dims(w_1, axis=-1)
-        w = z_raylfac * w + (1.0 - z_raylfac) * w_1
+    def reference(grid, z_raylfac: np.ndarray, w_1: np.ndarray, w: np.ndarray, **kwargs) -> dict:
+        w = apply_rayleigh_damping_mechanism_numpy(grid, z_raylfac, w_1, w)
         return dict(w=w)
 
     @pytest.fixture

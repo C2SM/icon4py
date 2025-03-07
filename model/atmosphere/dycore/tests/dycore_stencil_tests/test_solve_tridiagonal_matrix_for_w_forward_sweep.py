@@ -20,18 +20,18 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-    vwind_impl_wgt: np.array,
-    theta_v_ic: np.array,
-    ddqz_z_half: np.array,
-    z_alpha: np.array,
-    z_beta: np.array,
-    z_exner_expl: np.array,
-    z_w_expl: np.array,
-    z_q_ref: np.array,
-    w_ref: np.array,
+    vwind_impl_wgt: np.ndarray,
+    theta_v_ic: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    z_alpha: np.ndarray,
+    z_beta: np.ndarray,
+    z_exner_expl: np.ndarray,
+    z_w_expl: np.ndarray,
+    z_q_ref: np.ndarray,
+    w_ref: np.ndarray,
     dtime,
     cpd,
-) -> tuple[np.array]:
+) -> tuple[np.ndarray]:
     z_q = np.copy(z_q_ref)
     w = np.copy(w_ref)
     vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)

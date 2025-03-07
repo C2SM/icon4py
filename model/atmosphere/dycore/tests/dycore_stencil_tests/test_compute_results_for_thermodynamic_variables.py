@@ -18,6 +18,40 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_results_for_thermodynamic_variables_numpy(
+    grid,
+    z_rho_expl: np.ndarray,
+    vwind_impl_wgt: np.ndarray,
+    inv_ddqz_z_full: np.ndarray,
+    rho_ic: np.ndarray,
+    w: np.ndarray,
+    z_exner_expl: np.ndarray,
+    exner_ref_mc: np.ndarray,
+    z_alpha: np.ndarray,
+    z_beta: np.ndarray,
+    rho_now: np.ndarray,
+    theta_v_now: np.ndarray,
+    exner_now: np.ndarray,
+    dtime: float,
+    cvd_o_rd: float,
+) -> tuple[np.ndarray]:
+    rho_ic_offset_1 = rho_ic[:, 1:]
+    w_offset_0 = w[:, :-1]
+    w_offset_1 = w[:, 1:]
+    z_alpha_offset_1 = z_alpha[:, 1:]
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
+    rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
+        rho_ic[:, :-1] * w_offset_0 - rho_ic_offset_1 * w_offset_1
+    )
+    exner_new = (
+        z_exner_expl
+        + exner_ref_mc
+        - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
+    )
+    theta_v_new = rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
+    return (rho_new, exner_new, theta_v_new)
+
+
 class TestComputeResultsForThermodynamicVariables(StencilTest):
     PROGRAM = compute_results_for_thermodynamic_variables
     OUTPUTS = ("rho_new", "exner_new", "theta_v_new")
@@ -25,37 +59,38 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
     @staticmethod
     def reference(
         grid,
-        z_rho_expl: np.array,
-        vwind_impl_wgt: np.array,
-        inv_ddqz_z_full: np.array,
-        rho_ic: np.array,
-        w: np.array,
-        z_exner_expl: np.array,
-        exner_ref_mc: np.array,
-        z_alpha: np.array,
-        z_beta: np.array,
-        rho_now: np.array,
-        theta_v_now: np.array,
-        exner_now: np.array,
-        dtime,
-        cvd_o_rd,
+        z_rho_expl: np.ndarray,
+        vwind_impl_wgt: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        rho_ic: np.ndarray,
+        w: np.ndarray,
+        z_exner_expl: np.ndarray,
+        exner_ref_mc: np.ndarray,
+        z_alpha: np.ndarray,
+        z_beta: np.ndarray,
+        rho_now: np.ndarray,
+        theta_v_now: np.ndarray,
+        exner_now: np.ndarray,
+        dtime: float,
+        cvd_o_rd: float,
         **kwargs,
     ) -> dict:
-        rho_ic_offset_1 = rho_ic[:, 1:]
-        w_offset_0 = w[:, :-1]
-        w_offset_1 = w[:, 1:]
-        z_alpha_offset_1 = z_alpha[:, 1:]
-        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
-        rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
-            rho_ic[:, :-1] * w_offset_0 - rho_ic_offset_1 * w_offset_1
-        )
-        exner_new = (
-            z_exner_expl
-            + exner_ref_mc
-            - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
-        )
-        theta_v_new = (
-            rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
+        (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
+            grid,
+            z_rho_expl=z_rho_expl,
+            vwind_impl_wgt=vwind_impl_wgt,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            rho_ic=rho_ic,
+            w=w,
+            z_exner_expl=z_exner_expl,
+            exner_ref_mc=exner_ref_mc,
+            z_alpha=z_alpha,
+            z_beta=z_beta,
+            rho_now=rho_now,
+            theta_v_now=theta_v_now,
+            exner_now=exner_now,
+            dtime=dtime,
+            cvd_o_rd=cvd_o_rd,
         )
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 

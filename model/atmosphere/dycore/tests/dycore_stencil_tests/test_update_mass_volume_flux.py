@@ -16,6 +16,23 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def update_mass_volume_flux_numpy(
+    grid,
+    z_contr_w_fl_l: np.ndarray,
+    rho_ic: np.ndarray,
+    vwind_impl_wgt: np.ndarray,
+    w: np.ndarray,
+    mass_flx_ic: np.ndarray,
+    vol_flx_ic: np.ndarray,
+    r_nsubsteps: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+    z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
+    mass_flx_ic = mass_flx_ic + z_a
+    vol_flx_ic = vol_flx_ic + z_a / rho_ic
+    return (mass_flx_ic, vol_flx_ic)
+
+
 class TestUpdateMassVolumeFlux(StencilTest):
     PROGRAM = update_mass_volume_flux
     OUTPUTS = (
@@ -26,19 +43,25 @@ class TestUpdateMassVolumeFlux(StencilTest):
     @staticmethod
     def reference(
         grid,
-        z_contr_w_fl_l: np.array,
-        rho_ic: np.array,
-        vwind_impl_wgt: np.array,
-        w: np.array,
-        mass_flx_ic: np.array,
-        vol_flx_ic: np.array,
-        r_nsubsteps,
+        z_contr_w_fl_l: np.ndarray,
+        rho_ic: np.ndarray,
+        vwind_impl_wgt: np.ndarray,
+        w: np.ndarray,
+        mass_flx_ic: np.ndarray,
+        vol_flx_ic: np.ndarray,
+        r_nsubsteps: float,
         **kwargs,
     ) -> dict:
-        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-        z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
-        mass_flx_ic = mass_flx_ic + z_a
-        vol_flx_ic = vol_flx_ic + z_a / rho_ic
+        (mass_flx_ic, mass_flx_ic) = update_mass_volume_flux_numpy(
+            grid,
+            z_contr_w_fl_l=z_contr_w_fl_l,
+            rho_ic=rho_ic,
+            vwind_impl_wgt=vwind_impl_wgt,
+            w=w,
+            mass_flx_ic=mass_flx_ic,
+            vol_flx_ic=vol_flx_ic,
+            r_nsubsteps=r_nsubsteps,
+        )
         return dict(mass_flx_ic=mass_flx_ic, vol_flx_ic=vol_flx_ic)
 
     @pytest.fixture

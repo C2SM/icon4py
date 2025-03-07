@@ -18,6 +18,19 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def add_analysis_increments_from_data_assimilation_numpy(
+    grid,
+    z_rho_expl: np.ndarray,
+    rho_incr: np.ndarray,
+    z_exner_expl: np.ndarray,
+    exner_incr: np.ndarray,
+    iau_wgt_dyn: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
+    z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
+    return (z_rho_expl, z_exner_expl)
+
+
 class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
     PROGRAM = add_analysis_increments_from_data_assimilation
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
@@ -25,15 +38,21 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
     @staticmethod
     def reference(
         grid,
-        z_rho_expl: np.array,
-        rho_incr: np.array,
-        z_exner_expl: np.array,
-        exner_incr: np.array,
-        iau_wgt_dyn,
+        z_rho_expl: np.ndarray,
+        rho_incr: np.ndarray,
+        z_exner_expl: np.ndarray,
+        exner_incr: np.ndarray,
+        iau_wgt_dyn: float,
         **kwargs,
     ) -> dict:
-        z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
-        z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
+        z_rho_expl, z_exner_expl = add_analysis_increments_from_data_assimilation_numpy(
+            grid,
+            z_rho_expl=z_rho_expl,
+            rho_incr=rho_incr,
+            z_exner_expl=z_exner_expl,
+            exner_incr=exner_incr,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture

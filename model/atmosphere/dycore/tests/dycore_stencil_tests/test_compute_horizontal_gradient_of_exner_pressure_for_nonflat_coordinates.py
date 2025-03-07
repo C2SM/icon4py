@@ -18,6 +18,27 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    inv_dual_edge_length: np.ndarray,
+    z_exner_ex_pr: np.ndarray,
+    ddxn_z_full: np.ndarray,
+    c_lin_e: np.ndarray,
+    z_dexner_dz_c_1: np.ndarray,
+) -> np.ndarray:
+    e2c = connectivities[dims.E2CDim]
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+    c_lin_e = np.expand_dims(c_lin_e, axis=-1)
+
+    z_exner_ex_pr_e2c = z_exner_ex_pr[e2c]
+    z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
+
+    z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted - ddxn_z_full * np.sum(
+        c_lin_e * z_dexner_dz_c_1[e2c], axis=1
+    )
+    return z_gradh_exner
+
+
 class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates
     OUTPUTS = ("z_gradh_exner",)
@@ -33,15 +54,13 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
         z_dexner_dz_c_1: np.ndarray,
         **kwargs,
     ) -> dict:
-        e2c = connectivities[dims.E2CDim]
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-        c_lin_e = np.expand_dims(c_lin_e, axis=-1)
-
-        z_exner_ex_pr_e2c = z_exner_ex_pr[e2c]
-        z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
-
-        z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted - ddxn_z_full * np.sum(
-            c_lin_e * z_dexner_dz_c_1[e2c], axis=1
+        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
+            connectivities,
+            inv_dual_edge_length,
+            z_exner_ex_pr,
+            ddxn_z_full,
+            c_lin_e,
+            z_dexner_dz_c_1,
         )
         return dict(z_gradh_exner=z_gradh_exner)
 
