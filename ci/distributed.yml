@@ -1,0 +1,27 @@
+include:
+  - local: 'ci/base.yml'
+
+.test_template_aarch64_distributed:
+  extends: [.container-runner-santis-gh200, .test_template_aarch64]
+  needs: [build_image_aarch64]
+  variables:
+    # run with mpi
+    USE_MPI: "YES"
+    SLURM_NTASKS: 4
+
+
+.test_model_distributed:
+  stage: test
+  script:
+    - uv sync --extra distributed
+  parallel:
+    matrix:
+      - COMPONENT: [ diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
+        BACKEND: [ gtfn_cpu]
+  rules:
+    - when: on_success
+# test_model_stencils_x86_64:
+#   extends: [.test_model_stencils, .test_template_x86_64]
+test_model_distributed_aarch64:
+  extends: [.test_model_distributed, .test_template_aarch64_distributed]
+
