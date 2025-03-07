@@ -94,7 +94,11 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
     return impl
 
 
-def field_annotation_mapping_hook(annotation: Any, _: py2fgen.ParamDescriptor) -> Callable:
+def field_annotation_mapping_hook(
+    annotation: Any, param_descriptor: py2fgen.ParamDescriptor
+) -> Callable:
+    if not isinstance(param_descriptor, py2fgen.ArrayParamDescriptor):
+        return None
     maybe_gt4py_type = _get_gt4py_type(annotation)
     if maybe_gt4py_type is None:
         return None

@@ -20,7 +20,8 @@ export_with_mapping_hook = py2fgen.export(
     param_descriptors={
         "a": py2fgen.ArrayParamDescriptor(
             rank=1, dtype=ts.ScalarKind.INT32, device=py2fgen.DeviceType.HOST, is_optional=False
-        )
+        ),
+        "b": py2fgen.ScalarParamDescriptor(dtype=ts.ScalarKind.INT32),
     },
 )
 
@@ -28,8 +29,8 @@ SomeDim = gtx.Dimension("SomeDim")
 
 
 @export_with_mapping_hook
-def foo(a: gtx.Field[gtx.Dims[SomeDim], gtx.int32]):
-    return a
+def foo(a: gtx.Field[gtx.Dims[SomeDim], gtx.int32], b: gtx.int32):
+    return a, b
 
 
 def test_mapping_hook():
@@ -37,10 +38,12 @@ def test_mapping_hook():
 
     array_ptr = ffi.new("int[10]")
 
-    result = foo(
+    result_a, result_b = foo(
         a=wrapper_utils.ArrayDescriptor(
             shape=(10,), ptr=array_ptr, on_gpu=False, is_optional=False
         ),
+        b=5,
         ffi=ffi,
     )
-    assert hasattr(result, "ndarray")
+    assert hasattr(result_a, "ndarray")
+    assert result_b == 5

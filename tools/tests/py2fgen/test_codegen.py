@@ -12,17 +12,17 @@ import pytest
 from gt4py.next.type_system.type_specifications import ScalarKind
 
 from icon4py.model.common import dimension as dims
-from icon4py.tools.py2fgen.generate import (
-    generate_c_header,
-    generate_f90_interface,
-    generate_python_wrapper,
-)
-from icon4py.tools.py2fgen.template import (
+from icon4py.tools.py2fgen._template import (
     CffiPlugin,
     CHeaderGenerator,
     Func,
     FuncParameter,
     as_f90_value,
+)
+from icon4py.tools.py2fgen.generate import (
+    generate_c_header,
+    generate_f90_interface,
+    generate_python_wrapper,
 )
 
 
