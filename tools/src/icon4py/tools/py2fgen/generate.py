@@ -11,7 +11,7 @@ from gt4py.eve import codegen
 
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.common.utils import format_fortran_code
-from icon4py.tools.py2fgen.template import (
+from icon4py.tools.py2fgen._template import (
     CffiPlugin,
     CHeaderGenerator,
     F90Interface,

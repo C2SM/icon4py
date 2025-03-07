@@ -9,10 +9,11 @@
 # type: ignore
 
 import dataclasses
-from typing import Optional
+from typing import Annotated, Optional, TypeAlias
 
 import numpy as np
 from gt4py import next as gtx
+from gt4py.next.type_system import type_specifications as ts
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -24,14 +25,7 @@ from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
     debug_utils as wrapper_debug_utils,
-)
-from icon4py.tools.py2fgen.wrappers.wrapper_dimension import (
-    CellGlobalIndexDim,
-    CellIndexDim,
-    EdgeGlobalIndexDim,
-    EdgeIndexDim,
-    VertexGlobalIndexDim,
-    VertexIndexDim,
+    icon4py_export,
 )
 
 
@@ -45,15 +39,35 @@ class GridState:
 
 grid_state: Optional[GridState] = None  # TODO(havogt): remove module global state
 
+NumpyInt32Array1D: TypeAlias = Annotated[
+    np.ndarray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.INT32,
+        device=py2fgen.DeviceType.HOST,
+        is_optional=False,
+    ),
+]
 
-@py2fgen.export
+NumpyBoolArray1D: TypeAlias = Annotated[
+    np.ndarray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.BOOL,
+        device=py2fgen.DeviceType.HOST,
+        is_optional=False,
+    ),
+]
+
+
+@icon4py_export.export
 def grid_init(
-    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    cell_starts: NumpyInt32Array1D,
+    cell_ends: NumpyInt32Array1D,
+    vertex_starts: NumpyInt32Array1D,
+    vertex_ends: NumpyInt32Array1D,
+    edge_starts: NumpyInt32Array1D,
+    edge_ends: NumpyInt32Array1D,
     c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
     e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
     c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
@@ -63,12 +77,12 @@ def grid_init(
     v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
     e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
     c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
-    c_owner_mask: gtx.Field[[dims.CellDim], bool],
-    e_owner_mask: gtx.Field[[dims.EdgeDim], bool],
-    v_owner_mask: gtx.Field[[dims.VertexDim], bool],
-    c_glb_index: gtx.Field[[CellGlobalIndexDim], gtx.int32],
-    e_glb_index: gtx.Field[[EdgeGlobalIndexDim], gtx.int32],
-    v_glb_index: gtx.Field[[VertexGlobalIndexDim], gtx.int32],
+    c_owner_mask: NumpyBoolArray1D,
+    e_owner_mask: NumpyBoolArray1D,
+    v_owner_mask: NumpyBoolArray1D,
+    c_glb_index: NumpyInt32Array1D,
+    e_glb_index: NumpyInt32Array1D,
+    v_glb_index: NumpyInt32Array1D,
     tangent_orientation: fa.EdgeField[wpfloat],
     inverse_primal_edge_lengths: fa.EdgeField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
@@ -98,37 +112,7 @@ def grid_init(
     vertical_size: gtx.int32,
     limited_area: bool,
 ) -> None:
-    xp = c2e.array_ns  # TODO(havogt): cleanup in a follow-up PR
-    on_gpu = not xp == np  # TODO(havogt): expose `on_gpu` from py2fgen
-
-    # TODO(havogt): add direct support for ndarrays in py2fgen
-    cell_starts = cell_starts.ndarray
-    cell_ends = cell_ends.ndarray
-    vertex_starts = vertex_starts.ndarray
-    vertex_ends = vertex_ends.ndarray
-    edge_starts = edge_starts.ndarray
-    edge_ends = edge_ends.ndarray
-    c_owner_mask = c_owner_mask.ndarray if c_owner_mask is not None else None
-    e_owner_mask = e_owner_mask.ndarray if e_owner_mask is not None else None
-    v_owner_mask = v_owner_mask.ndarray if v_owner_mask is not None else None
-    c_glb_index = c_glb_index.ndarray if c_glb_index is not None else None
-    e_glb_index = e_glb_index.ndarray if e_glb_index is not None else None
-    v_glb_index = v_glb_index.ndarray if v_glb_index is not None else None
-
-    if on_gpu:
-        cp = xp
-        cell_starts = cp.asnumpy(cell_starts)
-        cell_ends = cp.asnumpy(cell_ends)
-        vertex_starts = cp.asnumpy(vertex_starts)
-        vertex_ends = cp.asnumpy(vertex_ends)
-        edge_starts = cp.asnumpy(edge_starts)
-        edge_ends = cp.asnumpy(edge_ends)
-        c_owner_mask = cp.asnumpy(c_owner_mask) if c_owner_mask is not None else None
-        e_owner_mask = cp.asnumpy(e_owner_mask) if e_owner_mask is not None else None
-        v_owner_mask = cp.asnumpy(v_owner_mask) if v_owner_mask is not None else None
-        c_glb_index = cp.asnumpy(c_glb_index) if c_glb_index is not None else None
-        e_glb_index = cp.asnumpy(e_glb_index) if e_glb_index is not None else None
-        v_glb_index = cp.asnumpy(v_glb_index) if v_glb_index is not None else None
+    on_gpu = not c2e.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
 
     grid = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,

@@ -6,7 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.tools.py2fgen.decorator import export
+from icon4py.tools.py2fgen._export import (
+    ArrayParamDescriptor,
+    DeviceType,
+    ParamDescriptor,
+    ScalarParamDescriptor,
+    export,
+)
 
 
-__all__ = ["export"]
+__all__ = [
+    "ArrayParamDescriptor",
+    "DeviceType",
+    "ParamDescriptor",
+    "ScalarParamDescriptor",
+    "export",
+]

@@ -43,9 +43,8 @@ from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
 
 logger = setup_logger(__name__)
@@ -73,7 +72,7 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
-@py2fgen.export
+@icon4py_export.export
 def diffusion_init(
     vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
@@ -227,7 +226,7 @@ def diffusion_init(
     )
 
 
-@py2fgen.export
+@icon4py_export.export
 def diffusion_run(
     w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],

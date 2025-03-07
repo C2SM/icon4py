@@ -16,7 +16,7 @@ from icon4py.tools.py2fgen.generate import (
     generate_f90_interface,
     generate_python_wrapper,
 )
-from icon4py.tools.py2fgen.parsing import parse
+from icon4py.tools.py2fgen.parsing import get_cffi_description
 from icon4py.tools.py2fgen.plugin import generate_and_compile_cffi_plugin
 
 
@@ -62,7 +62,7 @@ def main(
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
 
-    plugin = parse(module_import_path, functions, plugin_name)
+    plugin = get_cffi_description(module_import_path, functions, plugin_name)
 
     c_header = generate_c_header(plugin)
     python_wrapper = generate_python_wrapper(plugin, debug_mode, profile)

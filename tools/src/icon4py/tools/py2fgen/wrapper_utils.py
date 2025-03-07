@@ -27,17 +27,16 @@ except ImportError:
     cp = None
 
 
-# TODO no dataclass, maybe class with slots for performance reasons
+# TODO maybe plain class with slots for performance reasons
 @dataclasses.dataclass(frozen=True, slots=True)
 class ArrayDescriptor:
-    ffi: cffi.FFI
-    ptr: cffi.FFI.CData
+    ptr: cffi.FFI.CData  # hash of this object is the hash of the underlying ptr, see `cdata_hash` in `_cffi_backend.c`
     shape: tuple[int, ...]
     on_gpu: bool
-    is_optional: bool
+    is_optional: bool  # TODO remove
 
 
-def _unpack(ffi: cffi.FFI, ptr, *sizes: int) -> np.typing.NDArray:  # type: ignore[no-untyped-def] # CData type not public?
+def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
     """
     Converts a C pointer into a NumPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations requiring in-place modification of CPU data, enabling
@@ -75,7 +74,7 @@ def _unpack(ffi: cffi.FFI, ptr, *sizes: int) -> np.typing.NDArray:  # type: igno
     return arr
 
 
-def _unpack_gpu(ffi: cffi.FFI, ptr, *sizes: int):  # type: ignore[no-untyped-def] # CData type not public?
+def _unpack_gpu(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int):
     """
     Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations that require in-place modification of GPU data,
@@ -137,7 +136,25 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
     return bool_array
 
 
-def as_field(  # type: ignore[no-untyped-def] # CData type not public?
+def as_array(
+    ffi: cffi.FFI, array_descriptor: ArrayDescriptor, scalar_kind: ts.ScalarKind
+) -> np.ndarray:  # or cupy
+    unpack = _unpack_gpu if array_descriptor.on_gpu else _unpack
+    if array_descriptor.ptr == ffi.NULL:
+        if array_descriptor.is_optional:
+            return None
+        else:
+            raise RuntimeError("Parameter is not optional, but received 'NULL'.")
+    arr = unpack(ffi, array_descriptor.ptr, *array_descriptor.shape)
+    if scalar_kind == ts.ScalarKind.BOOL:
+        # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
+        # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
+        arr = _int_array_to_bool_array(arr)
+    return arr
+
+
+# TODO move function to icon4py specific module
+def as_field(
     ffi: cffi.FFI,
     on_gpu: bool,
     ptr,
@@ -145,16 +162,11 @@ def as_field(  # type: ignore[no-untyped-def] # CData type not public?
     domain: dict[gtx.Dimension, int],
     is_optional: bool,
 ) -> Optional[gtx.Field]:
-    sizes = domain.values()
-    unpack = _unpack_gpu if on_gpu else _unpack
-    if ptr == ffi.NULL:
-        if is_optional:
-            return None
-        else:
-            raise ValueError("Field is required but was not provided.")
-    arr = unpack(ffi, ptr, *sizes)
-    if scalar_kind == ts.ScalarKind.BOOL:
-        # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
-        # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
-        arr = _int_array_to_bool_array(arr)
+    arr = as_array(
+        ffi,
+        ArrayDescriptor(
+            ptr=ptr, shape=tuple(domain.values()), on_gpu=on_gpu, is_optional=is_optional
+        ),
+        scalar_kind,
+    )
     return gtx_common._field(arr, domain=gtx_common.domain(domain))
