@@ -61,6 +61,10 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
     _compute_perturbation_of_rho_and_theta
 )
 
+from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
+    _compute_rho_virtual_potential_temperatures_and_pressure_gradient
+)
+
 from icon4py.model.common.dimension import CellDim, KDim
 
 
@@ -285,7 +289,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
 
 
 @field_operator
-def _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
+def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
@@ -307,9 +311,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
     wgt_nnew_rth: float,
     horz_idx: Field[[CellDim], int32],
     vert_idx: Field[[KDim], int32],
-    horizontal_lower_11: int32,
-    horizontal_upper_11: int32,
-    n_lev: int32,
+    start_cell_lateral_boundary_level_3: gtx.int32,
+    end_cell_local: gtx.int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -319,8 +322,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c,) = where(
-        (horizontal_lower_11 <= horz_idx < horizontal_upper_11) & (int32(1) <= vert_idx),
-        _mo_solve_nonhydro_stencil_10(
+        (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_local) & (int32(1) <= vert_idx),
+        _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=w,
             w_concorr_c=w_concorr_c,
             ddqz_z_half=ddqz_z_half,
@@ -333,6 +336,10 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
             vwind_expl_wgt=vwind_expl_wgt,
             exner_pr=exner_pr,
             d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+            rho_ic=rho_ic,
+            z_theta_v_pr_ic=z_theta_v_pr_ic,
+            theta_v_ic=theta_v_ic,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
             dtime=dtime,
             wgt_nnow_rth=wgt_nnow_rth,
             wgt_nnew_rth=wgt_nnew_rth,
@@ -342,9 +349,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
             z_theta_v_pr_ic,
             theta_v_ic,
             z_th_ddz_exner_c,
-        ),
+        )
     )
-
     return (
         rho_ic,
         z_theta_v_pr_ic,
@@ -354,7 +360,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
 
 
 @field_operator
-def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
+def _fused_mo_solve_nonhydro_stencils_1_to_13_restricted(
     rho_nnow: Field[[CellDim, KDim], float],
     rho_ref_mc: Field[[CellDim, KDim], float],
     theta_v_nnow: Field[[CellDim, KDim], float],
