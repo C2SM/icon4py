@@ -229,7 +229,6 @@ def test_velocity_predictor_step(
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
-    # FIX
     # stencil 01
     assert helpers.dallclose(
         diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14

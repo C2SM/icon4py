@@ -2004,7 +2004,7 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_velocity_init(
-        self, istep: int, date: str, substep: int = 1
+        self, istep: int, date: str, substep: int
     ) -> IconVelocityInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-init"]
