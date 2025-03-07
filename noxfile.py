@@ -15,6 +15,7 @@ from typing import Final, Literal, TypeAlias
 
 import nox
 
+
 # -- nox configuration --
 nox.options.default_venv_backend = "uv"
 nox.options.sessions = ["test_model", "test_tools"]
@@ -75,6 +76,25 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
+# Model distributed test sessions
+@nox.session(python=["3.10"])
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+@nox.parametrize("selection", "distributed")
+def test_model_distributed(session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath) -> None:
+    """Run tests for selected icon4py model subpackages."""
+    _install_session_venv(session, extras=["distributed"], groups=["test"])
+
+    pytest_args = _selection_to_pytest_args(selection)
+    with session.chdir(f"model/{subpackage}"):
+        session.run(
+            *"pytest -sv --benchmark-skip".split(),
+            *pytest_args,
+            *session.posargs,
+            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+        )
+
+
+
 # @nox.session(python=["3.10", "3.11"])
 # @nox.parametrize("selection", MODEL_TEST_SELECTION)
 # def test_testing(session: nox.Session, selection: ModelTestKind) -> None:
@@ -130,9 +150,9 @@ def _install_session_venv(
             env=env
         )
 
-def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
+def _selection_to_pytest_args(selection: ModelTestsSubset|"distributed") -> list[str]:
     pytest_args = []
-    
+
     match selection:
         case "datatest":
             pytest_args.extend(["-k", "not stencil_test", "--datatest"])
@@ -140,7 +160,9 @@ def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
             pytest_args.extend(["-k", "not stencil_tests"])
+        case "distributed":
+            pytest_args.extend(["-k", "mpi_tests", "--datatest", "--with-mpi"])
         case _:
             raise AssertionError(f"Invalid selection: {selection}")
-        
+
     return pytest_args
