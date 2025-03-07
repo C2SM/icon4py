@@ -87,7 +87,7 @@ def test_model_distributed(session: nox.Session, selection: ModelTestsSubset, su
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
         session.run(
-            *"pytest -sv --benchmark-skip".split(),
+            *"mpirun -np 4 pytest -sv --benchmark-skip".split(),
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
