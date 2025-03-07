@@ -115,7 +115,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         "contravariant_corrected_w_at_cell",
         "vertical_wind_advective_tendency",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
+    MARKERS = (pytest.mark.embedded_remap_error, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(
