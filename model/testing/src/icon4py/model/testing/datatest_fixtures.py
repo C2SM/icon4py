@@ -206,6 +206,21 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_i
 
 
 @pytest.fixture
+def savepoint_nonhydro_15_28_init(data_provider, istep_init, step_date_init, substep_init):
+    """
+    Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
+
+     metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_nonhydro_15_28_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
 def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_exit):  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
@@ -233,6 +248,22 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
     """
     return data_provider.from_savepoint_nonhydro_exit(
         istep=istep_exit, date=step_date_exit, substep=substep_exit
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_15_28_exit(data_provider, istep_init, step_date_exit, substep_exit):
+    """
+    Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
+    subroutine nh_solve in mo_solve_nonhydro.f90.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_nonhydro_15_28_exit(
+        istep=istep_init, date=step_date_exit, substep=substep_exit
     )
 
 

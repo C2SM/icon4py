@@ -18,6 +18,20 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    inv_dual_edge_length: np.ndarray,
+    z_exner_ex_pr: np.ndarray,
+) -> np.ndarray:
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+
+    z_exner_ex_pr_e2c = z_exner_ex_pr[connectivities[dims.E2CDim]]
+    z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
+
+    z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
+    return z_gradh_exner
+
+
 class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates
     OUTPUTS = ("z_gradh_exner",)
@@ -30,12 +44,9 @@ class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest
         z_exner_ex_pr: np.ndarray,
         **kwargs,
     ) -> dict:
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-
-        z_exner_ex_pr_e2c = z_exner_ex_pr[connectivities[dims.E2CDim]]
-        z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
-
-        z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
+        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
+            connectivities, inv_dual_edge_length, z_exner_ex_pr
+        )
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

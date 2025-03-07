@@ -1894,7 +1894,6 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # TODO: this does not get accessed in FORTRAN
         if (
             self._config.divdamp_order == DivergenceDampingOrder.COMBINED
             and divdamp_fac_o2 <= 4 * self._config.divdamp_fac
@@ -1926,13 +1925,12 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
-        # TODO: this does not get accessed in FORTRAN
         if self._config.is_iau_active:
             log.debug("corrector start stencil 28")
             self._add_analysis_increments_to_vn(
-                diagnostic_state_nh.vn_incr,
-                prognostic_states.next.vn,
-                self._config.iau_wgt_dyn,
+                vn_incr=diagnostic_state_nh.vn_incr,
+                vn=prognostic_states.next.vn,
+                iau_wgt_dyn=self._config.iau_wgt_dyn,
                 horizontal_start=self._start_edge_nudging_level_2,
                 horizontal_end=self._end_edge_local,
                 vertical_start=0,
