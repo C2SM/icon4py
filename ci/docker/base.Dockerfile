@@ -37,8 +37,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN rustc --version && which rustc && cargo --version && which cargo
 
 # Install Bencher for performance monitoring
-RUN cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
-RUN bencher --version
+RUN curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
+RUN bencher --version && which bencher
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=24.11

@@ -16,23 +16,10 @@ include:
   script:
     - rustup default stable
     - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions | TODO(kotsaloscv): remove once merged
-    - | # Run the benchmarks
-      bencher run \
-      --project "$BENCHER_PROJECT" \
-      --token "$BENCHER_API_TOKEN" \
-      --github-actions $GD_COMMENT_TOKEN \
-      --branch "$FEATURE_BRANCH" \
-      --start-point main \
-      --start-point-clone-thresholds \
-      --start-point-reset \
-      --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}" \
-      --err \
-      --adapter python_pytest \
-      --file results.json \
-      "nox -s benchmark_model-3.10 -- --backend=$BACKEND --grid=$GRID"
+    - nox -s bencher_feature_branch-3.10 -- --backend=$BACKEND --grid=$GRID
     - | # Post the Bencher Dashboard link to the PR
       if [[ "$PR_ID" != "" && "$BACKEND" == "gtfn_cpu" && "$GRID" == "icon_grid" ]]; then
-        COMMENT_BODY="[Bencher Dashboard](https://bencher.dev/perf/icon4py)"
+        COMMENT_BODY="[Bencher Dashboard](https://bencher.dev/perf/c2sm-icon4py)"
         curl -L \
           -X POST \
           -H "Accept: application/vnd.github+json" \

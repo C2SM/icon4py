@@ -165,10 +165,10 @@ def pytest_runtest_setup(item):
     )
 
 
-# Replace "fullname" of pytest benchmarks with a shorter name for better readability in bencher
+# pytest benchmark hook, see:
+#     https://pytest-benchmark.readthedocs.io/en/latest/hooks.html#pytest_benchmark.hookspec.pytest_benchmark_update_json
 def pytest_benchmark_update_json(output_json):
+    "Replace 'fullname' of pytest benchmarks with a shorter name for better readability in bencher."
     for bench in output_json["benchmarks"]:
-        # Store the original fullname
-        bench["fullname_original"] = bench["fullname"]
         # Replace fullname with name and filter unnecessary prefix and suffix
         bench["fullname"] = bench["name"].replace("test_", "").replace("_benchmark", "")
