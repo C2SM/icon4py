@@ -39,25 +39,11 @@ def parse_comma_separated_list(ctx: click.Context, param: click.Parameter, value
     default=".",
     help="Specify the directory for generated code and compiled libraries.",
 )
-@click.option(
-    "--debug-mode",
-    "-d",
-    is_flag=True,
-    help="Enable debug mode to log additional Python runtime information.",
-)
-@click.option(
-    "--profile",
-    "-p",
-    is_flag=True,
-    help="Profile granule runtime and unpacking Fortran pointers into NumPy or CuPy arrays.",
-)
 def main(
     module_import_path: str,
     functions: list[str],
     plugin_name: str,
     output_path: pathlib.Path,
-    debug_mode: bool,
-    profile: bool,
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
@@ -65,7 +51,7 @@ def main(
     plugin = get_cffi_description(module_import_path, functions, plugin_name)
 
     c_header = generate_c_header(plugin)
-    python_wrapper = generate_python_wrapper(plugin, debug_mode, profile)
+    python_wrapper = generate_python_wrapper(plugin)
     f90_interface = generate_f90_interface(plugin)
 
     generate_and_compile_cffi_plugin(plugin.plugin_name, c_header, python_wrapper, output_path)

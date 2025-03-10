@@ -133,6 +133,7 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
         A NumPy array of booleans.
     """
     bool_array = int_array != 0
+    bool_array.flags.writeable = False
     return bool_array
 
 

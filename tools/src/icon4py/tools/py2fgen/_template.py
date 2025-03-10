@@ -77,8 +77,6 @@ class CffiPlugin(Node):
 
 
 class PythonWrapper(CffiPlugin):
-    debug_mode: bool
-    profile: bool
     cffi_decorator: str = CFFI_DECORATOR
 
 
@@ -143,26 +141,21 @@ class PythonWrapperGenerator(TemplatedGenerator):
 
     PythonWrapper = as_jinja(
         """\
-# imports for generated wrapper code
 import logging
-{% if _this_node.profile %}import time{% endif %}
 from {{ plugin_name }} import ffi
-try:
-    import cupy as cp # TODO remove this import
-except ImportError:
-    cp = None
-import gt4py.next as gtx
-from gt4py.next.type_system import type_specifications as ts
-from icon4py.tools.py2fgen import wrapper_utils
+from icon4py.tools.py2fgen import wrapper_utils, runtime_config
 
-# logger setup
-log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else -%}ERROR{%- endif -%},
+if __debug__:
+    logger = logging.getLogger(__name__)
+    log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
+    logging.basicConfig(level=getattr(logging, runtime_config.LOG_LEVEL),
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
-
-if cp is not None:
-    logging.info(cp.show_config())
+    try:
+        import cupy as cp
+        logger.info(cp.show_config())
+    except ImportError:
+        ...
 
 # embedded function imports
 {% for func in _this_node.functions -%}
@@ -176,41 +169,33 @@ def {{ func.name }}_wrapper(
 {{func.rendered_params}}
 ):
     try:
-        {%- if _this_node.debug_mode %}
-        logging.info("Python Execution Context Start")
-        {% endif %}
+        if __debug__:
+            logger.info(f"Python execution of {{ func.name }} started.")
 
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        unpack_start_time = time.perf_counter()
-        {% endif %}
+        if __debug__:
+            if config.PROFILING:
+                # TODO rework profiling
+                cp.cuda.Stream.null.synchronize()
+                unpack_start_time = time.perf_counter()
 
-
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        allocate_start_time = time.perf_counter()
-        {% endif %}
-
-        # Convert ptr to GT4Py fields
+        # Convert ptrs 
         {% for arg in func.args %}
         {% if is_array(arg) %}
         {{ arg.name }} = wrapper_utils.ArrayDescriptor({{ arg.name }}, shape=({{ arg.size_args | join(", ") }},), on_gpu={% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, is_optional={{ arg.is_optional }})
         {% elif arg.is_bool %}
+        # TODO move bool translation to postprocessing
         assert isinstance({{ arg.name }}, int)
         {{ arg.name }} = {{ arg.name }} != 0
         {% endif %}
         {% endfor %}
 
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        allocate_end_time = time.perf_counter()
-        logging.critical('{{ func.name }} allocating to gt4py fields time per timestep: %s' % str(allocate_end_time - allocate_start_time))
-        {% endif %}
+        if __debug__:
+            cp.cuda.Stream.null.synchronize()
+            allocate_end_time = time.perf_counter()
+            logger.info('{{ func.name }} constructing `ArrayDescriptors` time: %s' % str(allocate_end_time - unpack_start_time))
 
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        func_start_time = time.perf_counter()
-        {% endif %}
+            cp.cuda.Stream.null.synchronize()
+            func_start_time = time.perf_counter()
 
         {{ func.name }}(
         ffi = ffi,
@@ -219,31 +204,29 @@ def {{ func.name }}_wrapper(
         {%- endfor -%}
         )
 
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        func_end_time = time.perf_counter()
-        logging.critical('{{ func.name }} function time per timestep: %s' % str(func_end_time - func_start_time))
-        {% endif %}
+        if __debug__:
+            cp.cuda.Stream.null.synchronize()
+            func_end_time = time.perf_counter()
+            logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
 
 
-        {% if _this_node.debug_mode %}
-        # debug info
-        {% for arg in func.args %}
-        {% if is_array(arg) %}
-        msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape if {{arg.name}} is not None else "None")
-        logging.debug(msg)
-        #msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray if {{ arg.name }} is not None else "None")
-        logging.debug(msg)
-        {% endif %}
-        {% endfor %}
-        {% endif %}
+        if __debug__:
+            if logger.isEnabledFor(logging.DEBUG):
+                {% for arg in func.args %}
+                {% if is_array(arg) %}
+                msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape if {{arg.name}} is not None else "None")
+                logger.debug(msg)
+                #msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray if {{ arg.name }} is not None else "None")
+                logger.debug(msg)
+                {% endif %}
+                {% endfor %}
+                {% endif %}
 
-        {%- if _this_node.debug_mode %}
-        logging.critical("Python Execution Context End")
-        {% endif %}
+        if __debug__:
+            logger.info("Python execution of {{ func.name }} completed.")
 
     except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
+        logger.exception(f"A Python error occurred: {e}")
         return 1
 
     return 0

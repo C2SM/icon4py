@@ -39,15 +39,12 @@ def generate_c_header(plugin: CffiPlugin) -> str:
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
-def generate_python_wrapper(plugin: CffiPlugin, debug_mode: bool, profile: bool) -> str:
+def generate_python_wrapper(plugin: CffiPlugin) -> str:
     """
     Generate Python wrapper code.
 
     Args:
         plugin: The CffiPlugin instance containing information for code generation.
-        backend: Optional gt4py backend specification.
-        debug_mode: Flag indicating if debug mode is enabled.
-        profile: Flag indicate if code should be profiled.
 
     Returns:
         Formatted Python wrapper code as a string.
@@ -57,8 +54,6 @@ def generate_python_wrapper(plugin: CffiPlugin, debug_mode: bool, profile: bool)
         module_name=plugin.module_name,
         plugin_name=plugin.plugin_name,
         functions=plugin.functions,
-        debug_mode=debug_mode,
-        profile=profile,
     )
 
     generated_code = PythonWrapperGenerator.apply(python_wrapper)
