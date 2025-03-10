@@ -23,6 +23,9 @@ from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
     compute_advection_in_vertical_momentum_equation,
 )
+from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+    compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -66,6 +69,9 @@ class VelocityAdvection:
         )
 
         self._compute_horizontal_kinetic_energy_and_khalf_contravariant_terms = compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_terms.with_backend(
+            self._backend
+        )
+        self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity = compute_maximum_cfl_and_clip_contravariant_vertical_velocity.compute_maximum_cfl_and_clip_contravariant_vertical_velocity.with_backend(
             self._backend
         )
         self._compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w = compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w.with_backend(
@@ -237,12 +243,9 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        # TODO (Chia Rui): rename this stencil
-        self._fused_stencil_14(
+        self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
-            local_cfl_clipping=self.cfl_clipping,
-            local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
