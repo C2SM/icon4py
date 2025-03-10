@@ -16,7 +16,7 @@ import cffi
 from gt4py import eve
 from gt4py.next.type_system import type_specifications as gtx_ts  # TODO use py2fgen types
 
-from icon4py.tools.py2fgen import _template, wrapper_utils
+from icon4py.tools.py2fgen import _runtime, _template, wrapper_utils
 from icon4py.tools.py2fgen._template import DeviceType  # TODO fix import
 
 
@@ -154,12 +154,16 @@ class _DecoratedFunction:
         )
 
     def __call__(
-        self, ffi: cffi.FFI, **kwargs: Any
+        self, ffi: cffi.FFI, meta: Optional[dict], **kwargs: Any
     ) -> Any:  # TODO switch to positional arguments for performance
         # TODO pass the index of the arg to the mapping, then we have a cache per argument which we can constraint to size 2 (for double-buffering)
+        if __debug__:
+            meta["convert_start_time"] = _runtime.perf_counter()
         kwargs = {
             k: self._mapping[k](v, ffi=ffi) if k in self._mapping else v for k, v in kwargs.items()
         }
+        if __debug__:
+            meta["convert_end_time"] = _runtime.perf_counter()
         return self._fun(**kwargs)
 
 

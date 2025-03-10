@@ -142,10 +142,9 @@ class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
 import logging
-import time # TODO rework profiling
 from gt4py.next.type_system.type_specifications import ScalarKind
 from {{ plugin_name }} import ffi
-from icon4py.tools.py2fgen import wrapper_utils, runtime_config
+from icon4py.tools.py2fgen import wrapper_utils, runtime_config, _runtime
 
 if __debug__:
     logger = logging.getLogger(__name__)
@@ -153,11 +152,8 @@ if __debug__:
     logging.basicConfig(level=getattr(logging, runtime_config.LOG_LEVEL),
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
-    try:
-        import cupy as cp
-        logger.info(cp.show_config())
-    except ImportError:
-        ...
+    logger.info(_runtime.get_cupy_info())
+
 
 # embedded function imports
 {% for func in _this_node.functions -%}
@@ -176,9 +172,7 @@ def {{ func.name }}_wrapper(
 
         if __debug__:
             if runtime_config.PROFILING:
-                # TODO rework profiling
-                cp.cuda.Stream.null.synchronize()
-                unpack_start_time = time.perf_counter()
+                unpack_start_time = _runtime.perf_counter()
 
         # Convert ptrs 
         {% for arg in func.args %}
@@ -193,24 +187,27 @@ def {{ func.name }}_wrapper(
 
         if __debug__:
             if runtime_config.PROFILING:
-                cp.cuda.Stream.null.synchronize()
-                allocate_end_time = time.perf_counter()
+                allocate_end_time = _runtime.perf_counter()
                 logger.info('{{ func.name }} constructing `ArrayDescriptors` time: %s' % str(allocate_end_time - unpack_start_time))
 
-                cp.cuda.Stream.null.synchronize()
-                func_start_time = time.perf_counter()
+                func_start_time = _runtime.perf_counter()
 
+        if __debug__ and runtime_config.PROFILING:
+            meta = {}
+        else:
+            meta = None
         {{ func.name }}(
         ffi = ffi,
+        meta = meta,
         {%- for arg in func.args -%}
-        {{ arg.name }} = {{ arg.name }}{{ ", " if not loop.last else "" }}
+        {{ arg.name }} = {{ arg.name }}{{ "," }}
         {%- endfor -%}
         )
 
         if __debug__:
             if runtime_config.PROFILING:
-                cp.cuda.Stream.null.synchronize()
-                func_end_time = time.perf_counter()
+                func_end_time = _runtime.perf_counter()
+                logger.info('{{ func.name }} convert time: %s' % str(meta["convert_end_time"] - meta["convert_start_time"]))
                 logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
 
 
