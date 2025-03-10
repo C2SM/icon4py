@@ -22,9 +22,8 @@ from icon4py.model.atmosphere.dycore import (
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
     compute_advection_in_vertical_momentum_equation,
-    compute_maximum_cfl_and_clip_contravariant_vertical_velocity
+    compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
-
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -244,7 +243,9 @@ class VelocityAdvection:
 
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half=self.metric_state.ddqz_z_half,
-            local_z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
+            z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
+            cfl_clipping=self.cfl_clipping,
+            vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
@@ -406,19 +407,20 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        # TODO (Chia Rui): rename this stencil
-        self._fused_stencil_14(
+        self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half=self.metric_state.ddqz_z_half,
-            local_z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
-            local_cfl_clipping=self.cfl_clipping,
-            local_vcfl=self.vcfl_dsl,
+            z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
+            cfl_clipping=self.cfl_clipping,
+            vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
-            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_start=gtx.int32(
+                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+            ),
             vertical_end=gtx.int32(self.grid.num_levels - 3),
-            offset_provider=self.grid.offset_providers,
+            offset_provider={},
         )
 
         self._update_levmask_from_cfl_clipping()
