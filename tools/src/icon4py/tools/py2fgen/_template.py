@@ -192,12 +192,13 @@ def {{ func.name }}_wrapper(
         {% endfor %}
 
         if __debug__:
-            cp.cuda.Stream.null.synchronize()
-            allocate_end_time = time.perf_counter()
-            logger.info('{{ func.name }} constructing `ArrayDescriptors` time: %s' % str(allocate_end_time - unpack_start_time))
+            if runtime_config.PROFILING:
+                cp.cuda.Stream.null.synchronize()
+                allocate_end_time = time.perf_counter()
+                logger.info('{{ func.name }} constructing `ArrayDescriptors` time: %s' % str(allocate_end_time - unpack_start_time))
 
-            cp.cuda.Stream.null.synchronize()
-            func_start_time = time.perf_counter()
+                cp.cuda.Stream.null.synchronize()
+                func_start_time = time.perf_counter()
 
         {{ func.name }}(
         ffi = ffi,
@@ -207,9 +208,10 @@ def {{ func.name }}_wrapper(
         )
 
         if __debug__:
-            cp.cuda.Stream.null.synchronize()
-            func_end_time = time.perf_counter()
-            logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
+            if runtime_config.PROFILING:
+                cp.cuda.Stream.null.synchronize()
+                func_end_time = time.perf_counter()
+                logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
 
 
         if __debug__:
