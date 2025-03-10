@@ -11,12 +11,12 @@ from gt4py.next.ffront.fbuiltins import astype, broadcast, where
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
-    _interpolate_to_half_levels_vp,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_to_half_levels_vp import (
+    _interpolate_to_half_levels_vp,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
