@@ -199,7 +199,6 @@ def savepoint_compute_edge_diagnostics_for_velocity_advection_init(
      metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
     - substep: dynamical substep
     """
     return data_provider.savepoint_compute_edge_diagnostics_for_velocity_advection_init(
@@ -213,8 +212,11 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
 ):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for cell diagnostics.
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.savepoint_compute_cell_diagnostics_for_velocity_advection_init(
         istep=istep_init, date=step_date_init, substep_init=substep_init
@@ -228,8 +230,10 @@ def savepoint_compute_advection_in_vertical_momentum_equation_init(
     """
     Load data from ICON savepoint at start of velocity_advection module for vertical momentum equation.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.savepoint_compute_advection_in_vertical_momentum_equation_init(
         istep=istep_init, date=step_date_init, substep_init=substep_init
@@ -242,8 +246,11 @@ def savepoint_compute_advection_in_horizontal_momentum_equation_init(
 ):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for horizontal momentum equation.
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.savepoint_compute_advection_in_horizontal_momentum_equation_init(
         istep=istep_init, date=step_date_init, substep_init=substep_init
@@ -258,7 +265,6 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_i
      metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_init(
@@ -304,8 +310,11 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
 ):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for cell diagnostics.
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
@@ -319,8 +328,10 @@ def savepoint_compute_advection_in_vertical_momentum_equation_exit(
     """
     Load data from ICON savepoint at exist of velocity_advection module for vertical momentum equation.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.savepoint_compute_advection_in_vertical_momentum_equation_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
@@ -333,8 +344,11 @@ def savepoint_compute_advection_in_horizontal_momentum_equation_exit(
 ):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for horizontal momentum equation.
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.savepoint_compute_advection_in_horizontal_momentum_equation_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
