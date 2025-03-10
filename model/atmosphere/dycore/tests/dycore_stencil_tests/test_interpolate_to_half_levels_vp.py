@@ -9,10 +9,10 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.interpolation.stencils.interpolate_to_half_levels_vp import (
     interpolate_to_half_levels_vp,
 )
-from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest

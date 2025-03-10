@@ -218,18 +218,18 @@ class TimeLoop:
         at_initial_timestep: bool,
     ):
         """
-        Set time levels of ddt_adv fields for call to velocity_tendencies.
+        Set time levels of advective tendency fields for call to velocity_tendencies.
 
         When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
-        `ddt_w_adv_pc.predictor` (advection term in vertical momentum equation in
+        `vertical_wind_advective_tendency.predictor` (advection term in vertical momentum equation in
         predictor step) is not computed in the predictor step of each substep.
         Instead, the advection term computed in the corrector step during the
         previous substep is reused for efficiency (except, of course, in the
         very first substep of the initial time step).
-        `ddt_vn_apc.predictor` (advection term in horizontal momentum equation in
+        `normal_wind_advective_tendency.predictor` (advection term in horizontal momentum equation in
         predictor step) is only computed in the predictor step of the first
         substep and the advection term in the corrector step during the previous
-        substep is reused for `ddt_vn_apc.predictor` from the second substep onwards.
+        substep is reused for `normal_wind_advective_tendency.predictor` from the second substep onwards.
         Additionally, in this scheme the predictor and corrector outputs are kept
         in separate elements of the pair (.predictor for the predictor step and
         .corrector for the corrector step) and interpoolated at the end of the
@@ -246,9 +246,9 @@ class TimeLoop:
             The index of the pair element to be used for the corrector output.
         """
         if not (at_initial_timestep and at_first_substep):
-            diagnostic_state_nh.ddt_w_adv_pc.swap()
+            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
         if not at_first_substep:
-            diagnostic_state_nh.ddt_vn_apc_pc.swap()
+            diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     def _do_dyn_substepping(
         self,
