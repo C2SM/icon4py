@@ -27,9 +27,10 @@ except ImportError:
     cp = None
 
 
-# TODO maybe plain class with slots for performance reasons
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)  # not frozen for performance
 class ArrayDescriptor:
+    # If construction of this object matters for performance, this could be optimized by using a plain tuple,
+    # but would be more error-prone.
     ptr: cffi.FFI.CData  # hash of this object is the hash of the underlying ptr, see `cdata_hash` in `_cffi_backend.c`
     shape: tuple[int, ...]
     on_gpu: bool

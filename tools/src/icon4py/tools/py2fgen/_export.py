@@ -156,7 +156,8 @@ class _DecoratedFunction:
     def __call__(
         self, ffi: cffi.FFI, meta: Optional[dict], **kwargs: Any
     ) -> Any:  # TODO switch to positional arguments for performance
-        # TODO pass the index of the arg to the mapping, then we have a cache per argument which we can constraint to size 2 (for double-buffering)
+        # TODO pass the index of the arg to the mapping, then we have a cache per argument which we can constrain to size 2 (for double-buffering)
+        # note: this is currently already the cases as we generate a mapper per argument...
         if __debug__:
             meta["convert_start_time"] = _runtime.perf_counter()
         kwargs = {
