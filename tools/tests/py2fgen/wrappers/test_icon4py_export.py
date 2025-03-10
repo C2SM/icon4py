@@ -11,7 +11,6 @@ from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen import wrapper_utils
 from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
@@ -39,11 +38,10 @@ def test_mapping_hook():
     array_ptr = ffi.new("int[10]")
 
     result_a, result_b = foo(
-        a=wrapper_utils.ArrayDescriptor(
-            shape=(10,), ptr=array_ptr, on_gpu=False, is_optional=False
-        ),
-        b=5,
-        ffi=ffi,
+        ffi,
+        {},
+        (array_ptr, (10,), False, False),
+        5,
     )
     assert hasattr(result_a, "ndarray")
     assert result_b == 5

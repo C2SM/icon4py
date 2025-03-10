@@ -79,6 +79,7 @@ def field_annotation_descriptor_hook(annotation: Any) -> Optional[py2fgen.ParamD
 def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Callable:
     # in case the cache lookup is still performance relevant, we can replace it by a custom swap cache
     # (only for substitution mode where we know we have exactly 2 entries)
+    # or by even marking fields as constant over the whole program run and immediately return on second call
     @functools.lru_cache(maxsize=None)
     def impl(
         array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi: cffi.FFI
