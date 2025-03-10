@@ -693,7 +693,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
     ],
 )
 @pytest.mark.parametrize("istep_init", [1])
-def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection_predictor(
+def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init,
@@ -799,7 +799,7 @@ def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection_pre
     ],
 )
 @pytest.mark.parametrize("istep_init", [2])
-def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection_corrector(
+def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init,
