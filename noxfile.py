@@ -86,6 +86,30 @@ def merge_pytest_benchmark_results(bencher_json_file_name: str) -> None:
     with open(bencher_json_file_name, "w") as f:
         json.dump(merged_results, f, indent=4)
 
+@nox.session(python=["3.10", "3.11"],
+             requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
+def bencher_baseline(session: nox.Session) -> None:
+    """Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted)."""
+    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
+    merge_pytest_benchmark_results(bencher_json_file_name)
+
+    session.run(
+        *f"bencher run \
+        --project {os.environ['BENCHER_PROJECT']} \
+        --token {os.environ['BENCHER_API_TOKEN']} \
+        --branch main \
+        --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
+        --threshold-measure latency \
+        --threshold-test percentage \
+        --threshold-max-sample-size 64 \
+        --threshold-upper-boundary 0.1 \
+        --thresholds-reset \
+        --err \
+        --adapter python_pytest \
+        --file {bencher_json_file_name}".split(),
+        external=True,
+    )
+
 # Model test sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
