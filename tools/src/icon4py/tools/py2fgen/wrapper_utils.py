@@ -8,9 +8,8 @@
 
 from __future__ import annotations
 
-import dataclasses
 import math
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -27,24 +26,34 @@ except ImportError:
     cp = None
 
 
-@dataclasses.dataclass(slots=True)  # not frozen for performance
-class ArrayDescriptor:
-    # If construction of this object matters for performance, this could be optimized by using a plain tuple,
-    # but would be more error-prone.
-    ptr: cffi.FFI.CData  # hash of this object is the hash of the underlying ptr, see `cdata_hash` in `_cffi_backend.c`
-    shape: tuple[int, ...]
-    on_gpu: bool
-    is_optional: bool  # TODO remove
+# @dataclasses.dataclass(slots=True)  # not frozen for performance
+# class ArrayDescriptor:
+#     # If construction of this object matters for performance, this could be optimized by using a plain tuple,
+#     # but would be more error-prone.
+#     ptr: cffi.FFI.CData  # hash of this object is the hash of the underlying ptr, see `cdata_hash` in `_cffi_backend.c`
+#     shape: tuple[int, ...]
+#     on_gpu: bool
+#     is_optional: bool  # TODO remove
 
-    _hash: int = dataclasses.field(init=False, repr=False, compare=False, default=None)
+#     _hash: int = dataclasses.field(init=False, repr=False, compare=False, default=None)
 
-    def __post_init__(self):
-        object.__setattr__(
-            self, "_hash", hash((self.ptr, self.shape, self.on_gpu, self.is_optional))
-        )
+#     def __post_init__(self):
+#         # only ptr and shape are hash relevant (if on_gpu changes, the ptr changes)
+#         object.__setattr__(
+#             self,
+#             "_hash",
+#             hash(
+#                 (
+#                     self.ptr,
+#                     self.shape,
+#                 )
+#             ),
+#         )
 
-    def __hash__(self):
-        return self._hash
+#     def __hash__(self):
+#         return self._hash
+
+ArrayDescriptor: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
 
 
 def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
@@ -151,13 +160,13 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
 def as_array(
     ffi: cffi.FFI, array_descriptor: ArrayDescriptor, scalar_kind: ts.ScalarKind
 ) -> np.ndarray:  # or cupy
-    unpack = _unpack_gpu if array_descriptor.on_gpu else _unpack
-    if array_descriptor.ptr == ffi.NULL:
-        if array_descriptor.is_optional:
+    unpack = _unpack_gpu if array_descriptor[2] else _unpack
+    if array_descriptor[0] == ffi.NULL:
+        if array_descriptor[3]:
             return None
         else:
             raise RuntimeError("Parameter is not optional, but received 'NULL'.")
-    arr = unpack(ffi, array_descriptor.ptr, *array_descriptor.shape)
+    arr = unpack(ffi, array_descriptor[0], *array_descriptor[1])
     if scalar_kind == ts.ScalarKind.BOOL:
         # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
         # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
@@ -176,9 +185,7 @@ def as_field(
 ) -> Optional[gtx.Field]:
     arr = as_array(
         ffi,
-        ArrayDescriptor(
-            ptr=ptr, shape=tuple(domain.values()), on_gpu=on_gpu, is_optional=is_optional
-        ),
+        (ptr, tuple(domain.values()), on_gpu, is_optional),
         scalar_kind,
     )
     return gtx_common._field(arr, domain=gtx_common.domain(domain))

@@ -177,7 +177,8 @@ def {{ func.name }}_wrapper(
         # Convert ptrs 
         {% for arg in func.args %}
         {% if is_array(arg) %}
-        {{ arg.name }} = wrapper_utils.ArrayDescriptor({{ arg.name }}, shape=({{ arg.size_args | join(", ") }},), on_gpu={% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, is_optional={{ arg.is_optional }})
+        #{{ arg.name }} = wrapper_utils.ArrayDescriptor({{ arg.name }}, shape=({{ arg.size_args | join(", ") }},), on_gpu={% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, is_optional={{ arg.is_optional }})
+        {{ arg.name }} = ({{ arg.name }}, shape=({{ arg.size_args | join(", ") }},), on_gpu={% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, is_optional={{ arg.is_optional }})
         {% elif arg.is_bool %}
         # TODO move bool translation to postprocessing
         assert isinstance({{ arg.name }}, int)
