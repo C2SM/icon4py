@@ -323,7 +323,7 @@ def savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit
 
 
 @pytest.fixture
-def savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_exit(
+def savepoint_compute_advection_in_vertical_momentum_equation_exit(
     data_provider, step_date_exit, istep_init, substep_init
 ):  # F811
     """
