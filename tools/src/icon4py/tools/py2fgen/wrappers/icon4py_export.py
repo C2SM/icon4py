@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
-import functools
 import typing
 from collections.abc import Sequence
 from types import NoneType
@@ -76,10 +75,40 @@ def field_annotation_descriptor_hook(annotation: Any) -> Optional[py2fgen.ParamD
         return py2fgen.ScalarParamDescriptor(dtype=dtype)
 
 
+def swapping_cache(fun):
+    first = None
+    first_args = None
+    first_kwargs = None
+    second = None
+    second_args = None
+    second_kwargs = None
+
+    def wrapper(*args, **kwargs):
+        nonlocal first, first_args, first_kwargs, second, second_args, second_kwargs
+        if first is None:
+            first = fun(*args, **kwargs)
+            first_args = args
+            first_kwargs = kwargs
+            return first
+        if second is None:
+            second = fun(*args, **kwargs)
+            second_args = args
+            second_kwargs = kwargs
+            return second
+        if args == first_args and kwargs == first_kwargs:
+            return first
+        if args == second_args and kwargs == second_kwargs:
+            return second
+        raise ValueError("Cache is full")
+
+    return wrapper
+
+
 def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Callable:
     # in case the cache lookup is still performance relevant, we can replace it by a custom swap cache
     # (only for substitution mode where we know we have exactly 2 entries)
-    @functools.lru_cache(maxsize=None)
+    # @functools.lru_cache(maxsize=None)
+    @swapping_cache
     def impl(
         array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi: cffi.FFI
     ) -> Optional[gtx.Field]:
