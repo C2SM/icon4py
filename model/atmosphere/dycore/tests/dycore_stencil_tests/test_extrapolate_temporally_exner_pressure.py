@@ -18,6 +18,18 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def extrapolate_temporally_exner_pressure_numpy(
+    grid,
+    exner: np.array,
+    exner_ref_mc: np.array,
+    exner_pr: np.array,
+    exner_exfac: np.array,
+) -> tuple[np.ndarray]:
+    z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
+    exner_pr = exner - exner_ref_mc
+    return (z_exner_ex_pr, exner_pr)
+
+
 class TestExtrapolateTemporallyExnerPressure(StencilTest):
     PROGRAM = extrapolate_temporally_exner_pressure
     OUTPUTS = ("z_exner_ex_pr", "exner_pr")
@@ -31,8 +43,14 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
         exner_exfac: np.array,
         **kwargs,
     ) -> dict:
-        z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
-        exner_pr = exner - exner_ref_mc
+        (z_exner_ex_pr, exner_pr) = extrapolate_temporally_exner_pressure_numpy(
+            grid,
+            exner=exner,
+            exner_ref_mc=exner_ref_mc,
+            exner_pr=exner_pr,
+            exner_exfac=exner_exfac,
+        )
+
         return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
 
     @pytest.fixture
