@@ -448,11 +448,11 @@ def test_velocity_corrector_step(
     ],
 )
 @pytest.mark.parametrize("istep_init", [1])
-def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
+def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     icon_grid,
     grid_savepoint,
-    savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init,
-    savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit,
+    savepoint_compute_edge_diagnostics_for_velocity_advection_init,
+    savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_init,
@@ -465,28 +465,24 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_p
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    khalf_tangential_wind = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
-    )
-    tangential_wind = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.vt()
-    )
-    khalf_vn = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
+    khalf_tangential_wind = savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
+    tangential_wind = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vt()
+    khalf_vn = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
     horizontal_kinetic_energy_at_edge = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.z_kin_hor_e()
+        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_kin_hor_e()
     )
     khalf_horizontal_advection_of_w_at_edge = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.z_v_grad_w()
+        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_v_grad_w()
     )
-    vn = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.vn()
-    w = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.w()
+    vn = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn()
+    w = savepoint_compute_edge_diagnostics_for_velocity_advection_init.w()
 
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     wgtfac_e = metrics_savepoint.wgtfac_e()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     contravariant_correction_at_edge = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.z_w_concorr_me()
+        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_w_concorr_me()
     )
     wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
     nflatlev = grid_savepoint.nflatlev()
@@ -499,7 +495,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_p
     )
 
     skip_compute_predictor_vertical_advection = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.lvn_only()
+        savepoint_compute_edge_diagnostics_for_velocity_advection_init.lvn_only()
     )
     edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
@@ -508,18 +504,14 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_p
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
     horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
-    vt_ref = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit.vt()
+    vt_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.vt()
     z_vt_ie_ref = savepoint_velocity_exit.z_vt_ie()
-    vn_ie_ref = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit.vn_ie()
-    z_kin_hor_e_ref = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit.z_kin_hor_e()
-    )
+    vn_ie_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.vn_ie()
+    z_kin_hor_e_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_kin_hor_e()
     z_w_concorr_me_ref = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit.z_w_concorr_me()
+        savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_w_concorr_me()
     )
-    z_v_grad_w_ref = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
-    )
+    z_v_grad_w_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
 
     compute_edge_diagnostics_for_velocity_advection.compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
         backend
@@ -597,11 +589,11 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_p
     ],
 )
 @pytest.mark.parametrize("istep_init", [2])
-def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
+def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     icon_grid,
     grid_savepoint,
-    savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init,
-    savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit,
+    savepoint_compute_edge_diagnostics_for_velocity_advection_init,
+    savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_init,
@@ -615,14 +607,12 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
     edge_domain = h_grid.domain(dims.EdgeDim)
     vertex_domain = h_grid.domain(dims.VertexDim)
 
-    khalf_tangential_wind = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
-    )
-    khalf_vn = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
+    khalf_tangential_wind = savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
+    khalf_vn = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
     khalf_horizontal_advection_of_w_at_edge = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.z_v_grad_w()
+        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_v_grad_w()
     )
-    w = savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init.w()
+    w = savepoint_compute_edge_diagnostics_for_velocity_advection_init.w()
 
     c_intp = interpolation_savepoint.c_intp()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
@@ -637,9 +627,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
-    z_v_grad_w_ref = (
-        savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
-    )
+    z_v_grad_w_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
     start_vertex_lateral_boundary_level_2 = icon_grid.start_index(
         vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
@@ -696,8 +684,8 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
 def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     icon_grid,
     grid_savepoint,
-    savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init,
-    savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit,
+    savepoint_compute_cell_diagnostics_for_velocity_advection_init,
+    savepoint_compute_cell_diagnostics_for_velocity_advection_exit,
     metrics_savepoint,
     interpolation_savepoint,
     istep_init,
@@ -708,29 +696,21 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     backend,
 ):
     cell_domain = h_grid.domain(dims.CellDim)
-    z_ekinh_ref = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.z_ekinh()
-    )
-    w_concorr_c_ref = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.w_concorr_c()
-    )
-    z_w_con_c_ref = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c()
-    )
+    z_ekinh_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.z_ekinh()
+    w_concorr_c_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.w_concorr_c()
+    z_w_con_c_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c()
 
-    z_kin_hor_e = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
-    )
-    z_w_concorr_me = savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_w_concorr_me()
-    w = savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.w()
+    z_kin_hor_e = savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
+    z_w_concorr_me = savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_w_concorr_me()
+    w = savepoint_compute_cell_diagnostics_for_velocity_advection_init.w()
     khalf_contravariant_correction_at_cell = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.w_concorr_c()
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.w_concorr_c()
     )
     horizontal_kinetic_energy_at_cell = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_ekinh()
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_ekinh()
     )
     khalf_contravariant_corrected_w_at_cell = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_w_con_c()
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_w_con_c()
     )
 
     e_bln_c_s = data_alloc.flatten_first_two_dims(
@@ -802,8 +782,8 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
 def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     icon_grid,
     grid_savepoint,
-    savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init,
-    savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit,
+    savepoint_compute_cell_diagnostics_for_velocity_advection_init,
+    savepoint_compute_cell_diagnostics_for_velocity_advection_exit,
     metrics_savepoint,
     interpolation_savepoint,
     istep_init,
@@ -814,28 +794,20 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     backend,
 ):
     cell_domain = h_grid.domain(dims.CellDim)
-    z_ekinh_ref = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.z_ekinh()
-    )
-    w_concorr_c_ref = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.w_concorr_c()
-    )
-    z_w_con_c_ref = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c()
-    )
+    z_ekinh_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.z_ekinh()
+    w_concorr_c_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.w_concorr_c()
+    z_w_con_c_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c()
 
-    z_kin_hor_e = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
-    )
-    w = savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.w()
+    z_kin_hor_e = savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
+    w = savepoint_compute_cell_diagnostics_for_velocity_advection_init.w()
     khalf_contravariant_correction_at_cell = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.w_concorr_c()
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.w_concorr_c()
     )
     horizontal_kinetic_energy_at_cell = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_ekinh()
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_ekinh()
     )
     khalf_contravariant_corrected_w_at_cell = (
-        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_w_con_c()
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_w_con_c()
     )
 
     e_bln_c_s = data_alloc.flatten_first_two_dims(
@@ -902,12 +874,12 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
-def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
+def test_compute_advection_in_vertical_momentum_equation(
     icon_grid,
     grid_savepoint,
-    savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init,
-    savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_exit,
-    savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit,
+    savepoint_compute_advection_in_vertical_momentum_equation_init,
+    savepoint_compute_advection_in_vertical_momentum_equation_exit,
+    savepoint_compute_cell_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_exit,
@@ -923,25 +895,27 @@ def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
     # calculate cfl_clipping
-    z_w_con_c_8_13 = savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c().asnumpy()
+    z_w_con_c_8_13 = (
+        savepoint_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c().asnumpy()
+    )
     cfl_clipping_np = z_w_con_c_8_13 > (cfl_w_limit * ddqz_z_half.asnumpy())
     cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np)
     khalf_contravariant_corrected_w_at_cell = (
-        savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init.z_w_con_c()
+        savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c()
     )
-    w = savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init.w()
+    w = savepoint_compute_advection_in_vertical_momentum_equation_init.w()
     vertical_wind_advective_tendency = (
-        savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init.ddt_w_adv()
+        savepoint_compute_advection_in_vertical_momentum_equation_init.ddt_w_adv()
     )
     khalf_horizontal_advection_of_w_at_edge = (
-        savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init.z_v_grad_w()
+        savepoint_compute_advection_in_vertical_momentum_equation_init.z_v_grad_w()
     )
-    levmask = (
-        savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init.levmask()
+    levmask = savepoint_compute_advection_in_vertical_momentum_equation_init.levmask()
+    contravariant_corrected_w_at_cell = (
+        savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
     )
-    contravariant_corrected_w_at_cell = savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
     skip_compute_predictor_vertical_advection = (
-        savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init.lvn_only()
+        savepoint_compute_advection_in_vertical_momentum_equation_init.lvn_only()
     )
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
@@ -953,10 +927,10 @@ def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
     area = grid_savepoint.cell_areas()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
-    z_w_con_c_full_ref = savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_exit.z_w_con_c_full()
-    ddt_w_adv_ref = (
-        savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
+    z_w_con_c_full_ref = (
+        savepoint_compute_advection_in_vertical_momentum_equation_exit.z_w_con_c_full()
     )
+    ddt_w_adv_ref = savepoint_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
 
     k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
@@ -1043,11 +1017,11 @@ def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
-def test_velocity_fused_19_20_compute_advection_in_horizontal_momentum_equation(
+def test_compute_advection_in_horizontal_momentum_equation(
     icon_grid,
     grid_savepoint,
-    savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init,
-    savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_exit,
+    savepoint_compute_advection_in_horizontal_momentum_equation_init,
+    savepoint_compute_advection_in_horizontal_momentum_equation_exit,
     interpolation_savepoint,
     metrics_savepoint,
     backend,
@@ -1057,23 +1031,21 @@ def test_velocity_fused_19_20_compute_advection_in_horizontal_momentum_equation(
     step_date_init,
     step_date_exit,
 ):
-    vn = savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init.vn()
-    horizontal_kinetic_energy_at_edge = savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init.z_kin_hor_e()
+    vn = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn()
+    horizontal_kinetic_energy_at_edge = (
+        savepoint_compute_advection_in_horizontal_momentum_equation_init.z_kin_hor_e()
+    )
     horizontal_kinetic_energy_at_cell = (
-        savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init.z_ekinh()
+        savepoint_compute_advection_in_horizontal_momentum_equation_init.z_ekinh()
     )
-    tangential_wind = (
-        savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init.vt()
+    tangential_wind = savepoint_compute_advection_in_horizontal_momentum_equation_init.vt()
+    contravariant_corrected_w_at_cell = (
+        savepoint_compute_advection_in_horizontal_momentum_equation_init.z_w_con_c_full()
     )
-    contravariant_corrected_w_at_cell = savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init.z_w_con_c_full()
-    khalf_vn = (
-        savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init.vn_ie()
-    )
-    levelmask = (
-        savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init.levelmask()
-    )
+    khalf_vn = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn_ie()
+    levelmask = savepoint_compute_advection_in_horizontal_momentum_equation_init.levelmask()
     normal_wind_advective_tendency = (
-        savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init.ddt_vn_apc()
+        savepoint_compute_advection_in_horizontal_momentum_equation_init.ddt_vn_apc()
     )
 
     geofac_rot = interpolation_savepoint.geofac_rot()
@@ -1102,9 +1074,7 @@ def test_velocity_fused_19_20_compute_advection_in_horizontal_momentum_equation(
     d_time = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     nrdmax = grid_savepoint.nrdmax()[0]
 
-    ddt_vn_apc_ref = (
-        savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_exit.ddt_vn_apc()
-    )
+    ddt_vn_apc_ref = savepoint_compute_advection_in_horizontal_momentum_equation_exit.ddt_vn_apc()
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()

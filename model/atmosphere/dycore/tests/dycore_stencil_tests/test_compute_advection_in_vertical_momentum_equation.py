@@ -109,7 +109,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     return vertical_wind_advective_tendency
 
 
-class TestFusedVelocityAdvectionStencil15To18(StencilTest):
+class TestFusedVelocityAdvectionStencilVMomentum(StencilTest):
     PROGRAM = compute_advection_in_vertical_momentum_equation
     OUTPUTS = (
         "contravariant_corrected_w_at_cell",

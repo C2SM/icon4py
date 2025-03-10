@@ -28,7 +28,7 @@ from .test_compute_advective_normal_wind_tendency import (
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
 
 
-class TestFusedVelocityAdvectionStencil19To20(StencilTest):
+class TestFusedVelocityAdvectionStencilsHMomentum(StencilTest):
     PROGRAM = compute_advection_in_horizontal_momentum_equation
     OUTPUTS = ("normal_wind_advective_tendency",)
     MARKERS = (pytest.mark.embedded_remap_error,)
