@@ -22,10 +22,9 @@ from icon4py.model.atmosphere.dycore import (
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
     compute_advection_in_vertical_momentum_equation,
+    compute_maximum_cfl_and_clip_contravariant_vertical_velocity
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
-    compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
-)
+
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import (
     horizontal as h_grid,
