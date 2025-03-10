@@ -201,7 +201,7 @@ def savepoint_compute_edge_diagnostics_for_velocity_advection_init(
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.savepoint_compute_edge_diagnostics_for_velocity_advection_init(
+    return data_provider.from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
         istep=istep_init, date=step_date_init, substep_init=substep_init
     )
 
@@ -218,7 +218,7 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.savepoint_compute_cell_diagnostics_for_velocity_advection_init(
+    return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
         istep=istep_init, date=step_date_init, substep_init=substep_init
     )
 
@@ -235,7 +235,7 @@ def savepoint_compute_advection_in_vertical_momentum_equation_init(
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.savepoint_compute_advection_in_vertical_momentum_equation_init(
+    return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_init(
         istep=istep_init, date=step_date_init, substep_init=substep_init
     )
 
@@ -252,7 +252,7 @@ def savepoint_compute_advection_in_horizontal_momentum_equation_init(
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.savepoint_compute_advection_in_horizontal_momentum_equation_init(
+    return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
         istep=istep_init, date=step_date_init, substep_init=substep_init
     )
 
@@ -299,7 +299,7 @@ def savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
+    return data_provider.from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
 
@@ -316,7 +316,7 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
+    return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
 
@@ -333,7 +333,7 @@ def savepoint_compute_advection_in_vertical_momentum_equation_exit(
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.savepoint_compute_advection_in_vertical_momentum_equation_exit(
+    return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
 
@@ -350,7 +350,7 @@ def savepoint_compute_advection_in_horizontal_momentum_equation_exit(
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.savepoint_compute_advection_in_horizontal_momentum_equation_exit(
+    return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
 
