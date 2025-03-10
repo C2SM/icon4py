@@ -36,6 +36,16 @@ class ArrayDescriptor:
     on_gpu: bool
     is_optional: bool  # TODO remove
 
+    _hash: int = dataclasses.field(init=False, repr=False, compare=False, default=None)
+
+    def __post_init__(self):
+        object.__setattr__(
+            self, "_hash", hash((self.ptr, self.shape, self.on_gpu, self.is_optional))
+        )
+
+    def __hash__(self):
+        return self._hash
+
 
 def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
     """
