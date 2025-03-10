@@ -198,10 +198,10 @@ def {{ func.name }}_wrapper(
         else:
             meta = None
         {{ func.name }}(
-        ffi,
-        meta,
+        ffi = ffi,
+        meta = meta,
         {%- for arg in func.args -%}
-        {{ arg.name }}{{ "," }}
+        {{ arg.name }} = {{ arg.name }}{{ "," }}
         {%- endfor -%}
         )
 

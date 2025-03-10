@@ -53,8 +53,9 @@ except ImportError:
 #     def __hash__(self):
 #         return self._hash
 
-# first argument is `cffi.FFI.CData` # TODO define within TYPE_CHECKING?
-ArrayDescriptor: TypeAlias = Tuple[Any, tuple[int, ...], bool, bool]
+ArrayDescriptor: TypeAlias = Tuple[
+    Any, tuple[int, ...], bool, bool
+]  # first argument is `cffi.FFI.CData`
 
 
 def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:

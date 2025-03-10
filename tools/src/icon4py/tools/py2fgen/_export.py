@@ -114,14 +114,13 @@ def get_param_mappings(
     param_descriptors: Mapping[str, ParamDescriptor],
 ):  # TODO type annotations
     mappings = {}
-    param_desc_list = list(param_descriptors.values())
-    for i, param in enumerate(signature.parameters.values()):
+    for name, param in signature.parameters.items():
         if annotation_mapping_hook is not None:
-            mapping = annotation_mapping_hook(param.annotation, param_desc_list[i])
+            mapping = annotation_mapping_hook(param.annotation, param_descriptors[name])
             if mapping is None:
-                mapping = default_mapping(param.annotation, param_desc_list[i])
+                mapping = default_mapping(param.annotation, param_descriptors[name])
             if mapping is not None:
-                mappings[i] = mapping
+                mappings[name] = mapping
     return mappings
 
 
@@ -154,17 +153,19 @@ class _DecoratedFunction:
             signature, self.annotation_mapping_hook, self.param_descriptors
         )
 
-    def __call__(self, ffi: cffi.FFI, meta: Optional[dict], *args: Any) -> Any:
+    def __call__(
+        self, ffi: cffi.FFI, meta: Optional[dict], **kwargs: Any
+    ) -> Any:  # TODO switch to positional arguments for performance
         # TODO pass the index of the arg to the mapping, then we have a cache per argument which we can constrain to size 2 (for double-buffering)
         # note: this is currently already the cases as we generate a mapper per argument...
         if __debug__:
             meta["convert_start_time"] = _runtime.perf_counter()
-        args = (
-            self._mapping[i](v, ffi=ffi) if i in self._mapping else v for i, v in enumerate(args)
-        )
+        kwargs = {
+            k: self._mapping[k](v, ffi=ffi) if k in self._mapping else v for k, v in kwargs.items()
+        }
         if __debug__:
             meta["convert_end_time"] = _runtime.perf_counter()
-        return self._fun(*args)
+        return self._fun(**kwargs)
 
 
 def export(
