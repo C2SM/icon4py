@@ -2031,7 +2031,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_velocity_compute_cell_diagnostics_for_velocity_advection_init(
+    def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityInitCDiagnosticsSavepoint:
         savepoint = (
@@ -2045,7 +2045,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_velocity_compute_advection_in_vertical_momentum_equation_init(
+    def from_savepoint_compute_advection_in_vertical_momentum_equation_init(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityInitVMomentumSavepoint:
         savepoint = (
@@ -2059,7 +2059,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_velocity_compute_advection_in_horizontal_momentum_equation_init(
+    def from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityInitHMomentumSavepoint:
         savepoint = (
@@ -2129,7 +2129,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_velocity_compute_edge_diagnostics_for_velocity_advection_exit(
+    def from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExitEDiagnosticsSavepoint:
         savepoint = (
@@ -2143,7 +2143,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_velocity_compute_cell_diagnostics_for_velocity_advection_exit(
+    def from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExitCDiagnosticsSavepoint:
         savepoint = (
