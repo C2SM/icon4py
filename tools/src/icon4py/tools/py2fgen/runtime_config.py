@@ -37,10 +37,10 @@ class StrEnum(str, enum.Enum):
         return self.value
 
 
-T = TypeVar("T", bound=StrEnum)
+_T = TypeVar("_T", bound=StrEnum)
 
 
-def env_to_strenum(name: str, enum_type: type[T], default: T) -> T:
+def env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
     """Recognize string values as members of an enumeration."""
     value = os.environ.get(name, default).upper()
     if value not in enum_type.__members__:

@@ -142,6 +142,8 @@ class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
 import logging
+import time # TODO rework profiling
+from gt4py.next.type_system.type_specifications import ScalarKind
 from {{ plugin_name }} import ffi
 from icon4py.tools.py2fgen import wrapper_utils, runtime_config
 
@@ -170,10 +172,10 @@ def {{ func.name }}_wrapper(
 ):
     try:
         if __debug__:
-            logger.info(f"Python execution of {{ func.name }} started.")
+            logger.info("Python execution of {{ func.name }} started.")
 
         if __debug__:
-            if config.PROFILING:
+            if runtime_config.PROFILING:
                 # TODO rework profiling
                 cp.cuda.Stream.null.synchronize()
                 unpack_start_time = time.perf_counter()
@@ -216,11 +218,10 @@ def {{ func.name }}_wrapper(
                 {% if is_array(arg) %}
                 msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape if {{arg.name}} is not None else "None")
                 logger.debug(msg)
-                #msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray if {{ arg.name }} is not None else "None")
+                msg = '{{ arg.name }} after computation: %s' % str(wrapper_utils.as_array({{ arg.name }}, {{ arg.dtype }}) if {{ arg.name }} is not None else "None")
                 logger.debug(msg)
                 {% endif %}
                 {% endfor %}
-                {% endif %}
 
         if __debug__:
             logger.info("Python execution of {{ func.name }} completed.")
