@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Optional, TypeAlias
+from typing import TYPE_CHECKING, Any, Optional, Tuple, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -53,7 +53,9 @@ except ImportError:
 #     def __hash__(self):
 #         return self._hash
 
-ArrayDescriptor: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
+ArrayDescriptor: TypeAlias = Tuple[
+    Any, tuple[int, ...], bool, bool
+]  # first argument is `cffi.FFI.CData`
 
 
 def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
