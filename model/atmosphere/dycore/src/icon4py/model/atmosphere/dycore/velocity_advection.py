@@ -14,7 +14,6 @@ from typing import Optional
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
 from icon4py.model.atmosphere.dycore import (
     compute_cell_diagnostics_for_velocity_advection,
     compute_edge_diagnostics_for_velocity_advection,
@@ -23,18 +22,6 @@ from icon4py.model.atmosphere.dycore import (
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
     compute_advection_in_vertical_momentum_equation,
-)
-from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
-    add_extra_diffusion_for_w_con_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
-    compute_horizontal_advection_term_for_vertical_velocity,
-)
-from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical_velocity_to_full_levels import (
-    interpolate_contravariant_vertical_velocity_to_full_levels,
-)
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
-    interpolate_to_cell_center,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import (
@@ -91,27 +78,6 @@ class VelocityAdvection:
 
         self._compute_advection_in_horizontal_momentum_equation = compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
             self._backend
-        )
-        self._compute_horizontal_advection_term_for_vertical_velocity = (
-            compute_horizontal_advection_term_for_vertical_velocity.with_backend(self._backend)
-        )
-        self._interpolate_to_cell_center = interpolate_to_cell_center.with_backend(self._backend)
-        self._fused_stencils_9_10 = velocity_stencils.fused_stencils_9_10.with_backend(
-            self._backend
-        )
-        self._fused_stencils_11_to_13 = velocity_stencils.fused_stencils_11_to_13.with_backend(
-            self._backend
-        )
-
-        self._fused_stencil_14 = velocity_stencils.fused_stencil_14.with_backend(self._backend)
-        self._interpolate_contravariant_vertical_velocity_to_full_levels = (
-            interpolate_contravariant_vertical_velocity_to_full_levels.with_backend(self._backend)
-        )
-        self._fused_stencils_16_to_17 = velocity_stencils.fused_stencils_16_to_17.with_backend(
-            self._backend
-        )
-        self._add_extra_diffusion_for_w_con_approaching_cfl = (
-            add_extra_diffusion_for_w_con_approaching_cfl.with_backend(self._backend)
         )
 
     def _allocate_local_fields(self):

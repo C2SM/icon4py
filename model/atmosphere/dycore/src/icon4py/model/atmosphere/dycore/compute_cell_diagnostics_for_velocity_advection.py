@@ -11,13 +11,13 @@ from gt4py.next.ffront.fbuiltins import astype, broadcast, where
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
-    _interpolate_to_cell_center,
-)
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
+    _interpolate_to_cell_center,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -28,7 +28,6 @@ def _compute_horizontal_kinetic_energy_and_khalf_contravariant_correction(
     contravariant_correction_at_edge: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     khalf_contravariant_correction_at_cell: fa.CellKField[vpfloat],
-    horizontal_kinetic_energy_at_cell: fa.CellKField[vpfloat],
     k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
 ) -> tuple[
@@ -106,7 +105,6 @@ def compute_horizontal_kinetic_energy_and_khalf_contravariant_terms(
         contravariant_correction_at_edge,
         wgtfac_c,
         khalf_contravariant_correction_at_cell,
-        horizontal_kinetic_energy_at_cell,
         k,
         nflatlev,
         out=(

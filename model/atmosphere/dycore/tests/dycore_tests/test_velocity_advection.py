@@ -120,7 +120,7 @@ def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, substep_init, istep_exit, substep_exit ", [(1, 1, 1, 1)])
+@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -274,14 +274,6 @@ def test_velocity_predictor_step(
         atol=1.0e-15,
     )
 
-    assert helpers.dallclose(
-        velocity_advection._khalf_contravariant_corrected_w_at_cell.asnumpy()[
-            start_cell_nudging:, :
-        ],
-        savepoint_velocity_exit.z_w_con_c().asnumpy()[start_cell_nudging:, :],
-        atol=1.0e-15,
-    )
-
     # stencil 16
     assert helpers.dallclose(
         diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[
@@ -301,7 +293,7 @@ def test_velocity_predictor_step(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(2, 2, 1)])
+@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -456,7 +448,6 @@ def test_velocity_corrector_step(
     ],
 )
 @pytest.mark.parametrize("istep_init", [1])
-@pytest.mark.parametrize("substep_init", [1])
 def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     icon_grid,
     grid_savepoint,
@@ -606,7 +597,6 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_p
     ],
 )
 @pytest.mark.parametrize("istep_init", [2])
-@pytest.mark.parametrize("substep_init", [1])
 def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     icon_grid,
     grid_savepoint,
@@ -702,10 +692,8 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init", [1, 2])
-@pytest.mark.parametrize("substep_init", [1])
-@pytest.mark.parametrize("substep_exit", [1])
-def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection(
+@pytest.mark.parametrize("istep_init", [1])
+def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection_predictor(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init,
@@ -756,55 +744,133 @@ def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection(
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-    if istep_init == 1:
-        compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_terms.with_backend(
-            backend
-        )(
-            horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
-            khalf_contravariant_correction_at_cell=khalf_contravariant_correction_at_cell,
-            khalf_contravariant_corrected_w_at_cell=khalf_contravariant_corrected_w_at_cell,
-            w=w,
-            horizontal_kinetic_energy_at_edge=z_kin_hor_e,
-            contravariant_correction_at_edge=z_w_concorr_me,
-            e_bln_c_s=e_bln_c_s,
-            wgtfac_c=wgtfac_c,
-            k=k,
-            nflatlev=nflatlev,
-            nlev=icon_grid.num_levels,
-            horizontal_start=lateral_boundary_4,
-            horizontal_end=end_halo,
-            vertical_start=0,
-            vertical_end=icon_grid.num_levels + 1,
-            offset_provider={
-                "C2E": icon_grid.get_offset_provider("C2E"),
-                "C2CE": icon_grid.get_offset_provider("C2CE"),
-                "Koff": dims.KDim,
-            },
-        )
-    else:
-        compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w.with_backend(
-            backend
-        )(
-            horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
-            khalf_contravariant_correction_at_cell=khalf_contravariant_correction_at_cell,
-            khalf_contravariant_corrected_w_at_cell=khalf_contravariant_corrected_w_at_cell,
-            w=w,
-            horizontal_kinetic_energy_at_edge=z_kin_hor_e,
-            e_bln_c_s=e_bln_c_s,
-            k=k,
-            nflatlev=nflatlev,
-            nlev=icon_grid.num_levels,
-            # TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
-            horizontal_start=lateral_boundary_4,
-            horizontal_end=end_halo,
-            vertical_start=0,
-            vertical_end=icon_grid.num_levels + 1,
-            offset_provider={
-                "C2E": icon_grid.get_offset_provider("C2E"),
-                "C2CE": icon_grid.get_offset_provider("C2CE"),
-                "Koff": dims.KDim,
-            },
-        )
+    compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_terms.with_backend(
+        backend
+    )(
+        horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
+        khalf_contravariant_correction_at_cell=khalf_contravariant_correction_at_cell,
+        khalf_contravariant_corrected_w_at_cell=khalf_contravariant_corrected_w_at_cell,
+        w=w,
+        horizontal_kinetic_energy_at_edge=z_kin_hor_e,
+        contravariant_correction_at_edge=z_w_concorr_me,
+        e_bln_c_s=e_bln_c_s,
+        wgtfac_c=wgtfac_c,
+        k=k,
+        nflatlev=nflatlev,
+        nlev=icon_grid.num_levels,
+        horizontal_start=lateral_boundary_4,
+        horizontal_end=end_halo,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels + 1,
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "Koff": dims.KDim,
+        },
+    )
+
+    assert helpers.dallclose(
+        z_ekinh_ref.asnumpy(),
+        horizontal_kinetic_energy_at_cell.asnumpy(),
+        rtol=1.0e-15,
+        atol=1.0e-15,
+    )
+    assert helpers.dallclose(
+        w_concorr_c_ref.asnumpy(),
+        khalf_contravariant_correction_at_cell.asnumpy(),
+        rtol=1.0e-15,
+        atol=1.0e-15,
+    )
+    assert helpers.dallclose(
+        z_w_con_c_ref.asnumpy(),
+        khalf_contravariant_corrected_w_at_cell.asnumpy(),
+        rtol=1.0e-15,
+        atol=1.0e-15,
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+    ],
+)
+@pytest.mark.parametrize("istep_init", [2])
+def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection_corrector(
+    icon_grid,
+    grid_savepoint,
+    savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init,
+    savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit,
+    metrics_savepoint,
+    interpolation_savepoint,
+    istep_init,
+    substep_init,
+    substep_exit,
+    step_date_init,
+    step_date_exit,
+    backend,
+):
+    cell_domain = h_grid.domain(dims.CellDim)
+    z_ekinh_ref = (
+        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.z_ekinh()
+    )
+    w_concorr_c_ref = (
+        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.w_concorr_c()
+    )
+    z_w_con_c_ref = (
+        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c()
+    )
+
+    z_kin_hor_e = (
+        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
+    )
+    w = savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.w()
+    khalf_contravariant_correction_at_cell = (
+        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.w_concorr_c()
+    )
+    horizontal_kinetic_energy_at_cell = (
+        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_ekinh()
+    )
+    khalf_contravariant_corrected_w_at_cell = (
+        savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init.z_w_con_c()
+    )
+
+    e_bln_c_s = data_alloc.flatten_first_two_dims(
+        dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+    )
+    k = data_alloc.index_field(
+        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    )
+    nflatlev = grid_savepoint.nflatlev()
+    lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+    end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+
+    compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w.with_backend(
+        backend
+    )(
+        horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
+        khalf_contravariant_correction_at_cell=khalf_contravariant_correction_at_cell,
+        khalf_contravariant_corrected_w_at_cell=khalf_contravariant_corrected_w_at_cell,
+        w=w,
+        horizontal_kinetic_energy_at_edge=z_kin_hor_e,
+        e_bln_c_s=e_bln_c_s,
+        k=k,
+        nflatlev=nflatlev,
+        nlev=icon_grid.num_levels,
+        # TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
+        horizontal_start=lateral_boundary_4,
+        horizontal_end=end_halo,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels + 1,
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "Koff": dims.KDim,
+        },
+    )
 
     assert helpers.dallclose(
         z_ekinh_ref.asnumpy(),
@@ -836,8 +902,6 @@ def test_velocity_fused_8_13_compute_cell_diagnostics_for_velocity_advection(
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
-@pytest.mark.parametrize("substep_init", [1])
-@pytest.mark.parametrize("substep_exit", [1])
 def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
     icon_grid,
     grid_savepoint,
@@ -979,7 +1043,6 @@ def test_velocity_fused_15_18_compute_advection_in_vertical_momentum_equation(
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
-@pytest.mark.parametrize("substep_init", [1])
 def test_velocity_fused_19_20_compute_advection_in_horizontal_momentum_equation(
     icon_grid,
     grid_savepoint,
