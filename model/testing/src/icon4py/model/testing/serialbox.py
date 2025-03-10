@@ -2017,7 +2017,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init(
+    def compute_edge_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityInit1to7Savepoint:
         savepoint = (
