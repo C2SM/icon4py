@@ -13,8 +13,8 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils.data_allocation import index_field, random_field, zero_field
+from icon4py.model.common.grid import base
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
@@ -85,20 +85,18 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        k = index_field(grid, dims.KDim)
-        cell = index_field(grid, dims.CellDim)
+        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
+        for lev in range(grid.num_levels):
+            k[lev] = lev
 
-        cell_domain = h_grid.domain(dims.CellDim)
+        cell = zero_field(grid, dims.CellDim, dtype=gtx.int32)
+        for c in range(grid.num_cells):
+            cell[c] = c
 
         nrdmax = 13
-        interior_idx = grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
-        halo_idx = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        interior_idx = 1
+        halo_idx = 5
         type_shear = 2
-
-        horizontal_start = 0
-        horizontal_end = grid.num_cells
-        vertical_start = 0
-        vertical_end = grid.num_levels
 
         geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim)
@@ -129,8 +127,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             w=w,
             dwdx=dwdx,
             dwdy=dwdy,
-            horizontal_start=horizontal_start,
-            horizontal_end=horizontal_end,
-            vertical_start=vertical_start,
-            vertical_end=vertical_end,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=0,
+            vertical_end=grid.num_levels,
         )

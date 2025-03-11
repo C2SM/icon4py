@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
@@ -214,8 +215,10 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     fa.CellKField[float],
     fa.CellKField[float],
 ]:
-    (z_rth_pr_1, z_rth_pr_2) = concat_where(
-        dims.KDim == 0,
+    # TODO(edopao): lowering of concat_where triggers a dace issue,
+    # refer to https://github.com/spcl/dace/issues/1959; use where for now.
+    (z_rth_pr_1, z_rth_pr_2) = where(
+        k_field == 0,
         _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
