@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -22,7 +24,7 @@ def add_interpolated_horizontal_advection_of_w_numpy(
     e_bln_c_s: np.ndarray,
     z_v_grad_w: np.ndarray,
     ddt_w_adv: np.ndarray,
-    **kwargs,
+    **kwargs: Any,
 ) -> np.ndarray:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     c2e = connectivities[dims.C2EDim]
@@ -41,10 +43,14 @@ class TestAddInterpolatedHorizontalAdvectionOfW(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        e_bln_c_s: np.ndarray,
+        z_v_grad_w: np.ndarray,
+        ddt_w_adv: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         ddt_w_adv = add_interpolated_horizontal_advection_of_w_numpy(
-            grid, e_bln_c_s, z_v_grad_w, ddt_w_adv
+            connectivities, e_bln_c_s, z_v_grad_w, ddt_w_adv
         )
         return dict(ddt_w_adv=ddt_w_adv)
 

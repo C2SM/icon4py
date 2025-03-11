@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.apply_4th_order_divergence_damping
     apply_4th_order_divergence_damping,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,18 +27,18 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        scal_divdamp: np.array,
-        z_graddiv2_vn: np.array,
-        vn: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        scal_divdamp: np.ndarray,
+        z_graddiv2_vn: np.ndarray,
+        vn: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
         vn = vn + (scal_divdamp * z_graddiv2_vn)
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         scal_divdamp = random_field(grid, dims.KDim, dtype=wpfloat)
         z_graddiv2_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

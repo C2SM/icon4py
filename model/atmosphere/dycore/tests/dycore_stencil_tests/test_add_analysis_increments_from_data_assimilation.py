@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
     add_analysis_increments_from_data_assimilation,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,20 +27,20 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_rho_expl: np.array,
-        rho_incr: np.array,
-        z_exner_expl: np.array,
-        exner_incr: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_rho_expl: np.ndarray,
+        rho_incr: np.ndarray,
+        z_exner_expl: np.ndarray,
+        exner_incr: np.ndarray,
         iau_wgt_dyn,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
         z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_exner_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         exner_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rho_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

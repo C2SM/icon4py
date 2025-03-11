@@ -5,14 +5,18 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.type_alias as ta
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,20 +28,20 @@ class TestAccumulatePrepAdvFields(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_vn_avg: np.array,
-        mass_fl_e: np.array,
-        vn_traj: np.array,
-        mass_flx_me: np.array,
-        r_nsubsteps,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_vn_avg: np.ndarray,
+        mass_fl_e: np.ndarray,
+        vn_traj: np.ndarray,
+        mass_flx_me: np.ndarray,
+        r_nsubsteps: ta.wpfloat,
+        **kwargs: Any,
     ) -> dict:
         vn_traj = vn_traj + r_nsubsteps * z_vn_avg
         mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
         return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         mass_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         mass_flx_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

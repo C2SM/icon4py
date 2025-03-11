@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -14,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tend
     compute_advective_normal_wind_tendency,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -66,7 +69,7 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
         z_w_con_c_full: np.ndarray,
         vn_ie: np.ndarray,
         ddqz_z_full_e: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         ddt_vn_apc = compute_advective_normal_wind_tendency_numpy(
             connectivities,
@@ -84,7 +87,7 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         coeff_gradekin = data_alloc.random_field(grid, dims.ECDim, dtype=ta.vpfloat)
         z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

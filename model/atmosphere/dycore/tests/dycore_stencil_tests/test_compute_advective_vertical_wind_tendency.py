@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -19,12 +21,12 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_advective_vertical_wind_tendency_numpy(
-    z_w_con_c: np.array,
-    w: np.array,
-    coeff1_dwdz: np.array,
-    coeff2_dwdz: np.array,
-    **kwargs,
-) -> np.array:
+    z_w_con_c: np.ndarray,
+    w: np.ndarray,
+    coeff1_dwdz: np.ndarray,
+    coeff2_dwdz: np.ndarray,
+    **kwargs: Any,
+) -> np.ndarray:
     ddt_w_adv = np.zeros_like(coeff1_dwdz)
     ddt_w_adv[:, 1:] = -z_w_con_c[:, 1:] * (
         w[:, :-2] * coeff1_dwdz[:, 1:]
@@ -41,11 +43,11 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
     @staticmethod
     def reference(
         grid,
-        z_w_con_c: np.array,
-        w: np.array,
-        coeff1_dwdz: np.array,
-        coeff2_dwdz: np.array,
-        **kwargs,
+        z_w_con_c: np.ndarray,
+        w: np.ndarray,
+        coeff1_dwdz: np.ndarray,
+        coeff2_dwdz: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         ddt_w_adv = compute_advective_vertical_wind_tendency_numpy(
             z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
