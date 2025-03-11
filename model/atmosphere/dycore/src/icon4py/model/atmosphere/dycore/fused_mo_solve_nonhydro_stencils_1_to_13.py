@@ -20,10 +20,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import gt4py.next as gtx
+from gt4py.next import program
 from gt4py.next.common import GridType
 from gt4py.next.embedded.context import offset_provider
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, bool, broadcast, int32, maximum, where
+from gt4py.next.ffront.fbuiltins import Field, bool, broadcast, int32, maxmimum, where
 
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     _init_two_cell_kdim_fields_with_zero_vp
@@ -66,6 +67,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temp
 )
 
 from icon4py.model.common.dimension import CellDim, KDim
+from model.atmosphere.advection.tests.advection_stencil_tests.test_limit_vertical_parabola_semi_monotonically import \
+    TestLimitVerticalParabolaSemiMonotonically
 
 
 @field_operator
@@ -321,7 +324,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
 ]:
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
-    (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c,) = where(
+    (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
         (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_local) & (int32(1) <= vert_idx),
         _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=w,
@@ -348,15 +351,452 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
             rho_ic,
             z_theta_v_pr_ic,
             theta_v_ic,
-            z_th_ddz_exner_c,
+            z_th_ddz_exner_c
         )
     )
     return (
         rho_ic,
         z_theta_v_pr_ic,
         theta_v_ic,
-        z_th_ddz_exner_c,
+        z_th_ddz_exner_c
     )
+
+@field_operator
+def _fused_mo_solve_nonhydro_stencils_1_to_13(
+    rho_nnow: Field[[CellDim, KDim], float],
+    rho_ref_mc: Field[[CellDim, KDim], float],
+    theta_v_nnow: Field[[CellDim, KDim], float],
+    theta_ref_mc: Field[[CellDim, KDim], float],
+    z_rth_pr_1: Field[[CellDim, KDim], float],
+    z_rth_pr_2: Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    theta_ref_ic: Field[[CellDim, KDim], float],
+    d2dexdz2_fac1_mc: Field[[CellDim, KDim], float],
+    d2dexdz2_fac2_mc: Field[[CellDim, KDim], float],
+    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
+    vwind_expl_wgt: Field[[CellDim], float],
+    exner_pr: Field[[CellDim, KDim], float],
+    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
+    ddqz_z_half: Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    k_field: Field[[KDim], gtx.int32],
+    rho_ic: Field[[CellDim, KDim], float],
+    z_exner_ic: Field[[CellDim, KDim], float],
+    exner_exfac: Field[[CellDim, KDim], float],
+    exner_nnow: Field[[CellDim, KDim], float],
+    exner_ref_mc: Field[[CellDim, KDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
+    z_dexner_dz_c_2: Field[[CellDim, KDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: Field[[CellDim, KDim], float],
+    horz_idx: Field[[CellDim], int32],
+    vert_idx: Field[[KDim], int32],
+    limited_area: bool,
+    igradp_method: int32,
+    n_lev: int32,
+    nflatlev: int32,
+    nflat_gradp: int32,
+    start_cell_lateral_boundary: gtx.int32,
+    start_cell_lateral_boundary_level_3: gtx.int32,
+    start_cell_halo_level_2: gtx.int32,
+    end_cell_end: gtx.int32,
+    end_cell_halo: gtx.int32,
+    end_cell_halo_level_2: gtx.int32,
+    istep: int32
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
+    (z_rth_pr_1,
+    z_rth_pr_2,
+    z_exner_ex_pr,
+    exner_pr,
+    rho_ic,
+    z_exner_ic,
+    z_theta_v_pr_ic,
+    theta_v_ic,
+    z_th_ddz_exner_c,
+    z_dexner_dz_c_1,
+    z_dexner_dz_c_2) =
+            _fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
+                rho_nnow,
+                rho_ref_mc,
+                theta_v_nnow,
+                theta_ref_mc,
+                z_rth_pr_1,
+                z_rth_pr_2,
+                z_theta_v_pr_ic,
+                theta_ref_ic,
+                d2dexdz2_fac1_mc,
+                d2dexdz2_fac2_mc,
+                wgtfacq_c_dsl,
+                wgtfac_c,
+                vwind_expl_wgt,
+                exner_pr,
+                d_exner_dz_ref_ic,
+                ddqz_z_half,
+                z_th_ddz_exner_c,
+                k_field,
+                rho_ic,
+                z_exner_ic,
+                exner_exfac,
+                exner_nnow,
+                exner_ref_mc,
+                z_exner_ex_pr,
+                z_dexner_dz_c_1,
+                z_dexner_dz_c_2,
+                theta_v_ic,
+                inv_ddqz_z_full,
+                horz_idx,
+                vert_idx,
+                limited_area,
+                igradp_method,
+                n_lev,
+                nflatlev,
+                nflat_gradp,
+                start_cell_lateral_boundary,
+                start_cell_lateral_boundary_level_3,
+                start_cell_halo_level_2,
+                end_cell_end,
+                end_cell_halo,
+                end_cell_halo_level_2
+            ) if istep ==1 else (
+                z_rth_pr_1,
+                z_rth_pr_2,
+                z_exner_ex_pr,
+                exner_pr,
+                rho_ic,
+                z_exner_ic,
+                z_theta_v_pr_ic,
+                theta_v_ic,
+                z_th_ddz_exner_c,
+                z_dexner_dz_c_1,
+                z_dexner_dz_c_2
+            )
+
+
+    (rho_ic,
+        z_theta_v_pr_ic,
+        theta_v_ic,
+        z_th_ddz_exner_c
+    ) = _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
+    w,
+    w_concorr_c,
+    ddqz_z_half,
+    rho_nnow,
+    rho_nvar,
+    theta_v_nnow,
+    theta_v_nvar,
+    wgtfac_c,
+    theta_ref_mc,
+    vwind_expl_wgt,
+    exner_pr,
+    d_exner_dz_ref_ic,
+    rho_ic,
+    z_theta_v_pr_ic,
+    theta_v_ic,
+    z_th_ddz_exner_c,
+    dtime,
+    wgt_nnow_rth,
+    wgt_nnew_rth,
+    horz_idx,
+    vert_idx,
+    start_cell_lateral_boundary_level_3,
+    end_cell_local,
+    ) if istep==2 else (
+        rho_ic,
+        z_theta_v_pr_ic,
+        theta_v_ic,
+        z_th_ddz_exner_c)
+
+    return (
+        z_rth_pr_1,
+        z_rth_pr_2,
+        z_exner_ex_pr,
+        exner_pr,
+        rho_ic,
+        z_exner_ic,
+        z_theta_v_pr_ic,
+        theta_v_ic,
+        z_th_ddz_exner_c,
+        z_dexner_dz_c_1,
+        z_dexner_dz_c_2
+    )
+
+
+@field_operator
+def _fused_mo_solve_nonhydro_stencils_1_to_13_restricted(
+    rho_nnow: Field[[CellDim, KDim], float],
+    rho_ref_mc: Field[[CellDim, KDim], float],
+    theta_v_nnow: Field[[CellDim, KDim], float],
+    theta_ref_mc: Field[[CellDim, KDim], float],
+    z_rth_pr_1: Field[[CellDim, KDim], float],
+    z_rth_pr_2: Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    theta_ref_ic: Field[[CellDim, KDim], float],
+    d2dexdz2_fac1_mc: Field[[CellDim, KDim], float],
+    d2dexdz2_fac2_mc: Field[[CellDim, KDim], float],
+    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
+    vwind_expl_wgt: Field[[CellDim], float],
+    exner_pr: Field[[CellDim, KDim], float],
+    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
+    ddqz_z_half: Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    k_field: Field[[KDim], gtx.int32],
+    rho_ic: Field[[CellDim, KDim], float],
+    z_exner_ic: Field[[CellDim, KDim], float],
+    exner_exfac: Field[[CellDim, KDim], float],
+    exner_nnow: Field[[CellDim, KDim], float],
+    exner_ref_mc: Field[[CellDim, KDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
+    z_dexner_dz_c_2: Field[[CellDim, KDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: Field[[CellDim, KDim], float],
+    horz_idx: Field[[CellDim], int32],
+    vert_idx: Field[[KDim], int32],
+    limited_area: bool,
+    igradp_method: int32,
+    n_lev: int32,
+    nflatlev: int32,
+    nflat_gradp: int32,
+    start_cell_lateral_boundary: gtx.int32,
+    start_cell_lateral_boundary_level_3: gtx.int32,
+    start_cell_halo_level_2: gtx.int32,
+    end_cell_end: gtx.int32,
+    end_cell_halo: gtx.int32,
+    end_cell_halo_level_2: gtx.int32,
+    istep: int32
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
+    return _fused_mo_solve_nonhydro_stencils_1_to_13(
+                rho_nnow,
+                rho_ref_mc,
+                theta_v_nnow,
+                theta_ref_mc,
+                z_rth_pr_1,
+                z_rth_pr_2,
+                z_theta_v_pr_ic,
+                theta_ref_ic,
+                d2dexdz2_fac1_mc,
+                d2dexdz2_fac2_mc,
+                wgtfacq_c_dsl,
+                wgtfac_c,
+                vwind_expl_wgt,
+                exner_pr,
+                d_exner_dz_ref_ic,
+                ddqz_z_half,
+                z_th_ddz_exner_c,
+                k_field,
+                rho_ic,
+                z_exner_ic,
+                exner_exfac,
+                exner_nnow,
+                exner_ref_mc,
+                z_exner_ex_pr,
+                z_dexner_dz_c_1,
+                z_dexner_dz_c_2,
+                theta_v_ic,
+                inv_ddqz_z_full,
+                horz_idx,
+                vert_idx,
+                limited_area,
+                igradp_method,
+                n_lev,
+                nflatlev,
+                nflat_gradp,
+                start_cell_lateral_boundary,
+                start_cell_lateral_boundary_level_3,
+                start_cell_halo_level_2,
+                end_cell_end,
+                end_cell_halo,
+                end_cell_halo_level_2,
+                istep
+)
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def fused_mo_solve_nonhydro_stencils_1_to_13(
+    rho_nnow: Field[[CellDim, KDim], float],
+    rho_ref_mc: Field[[CellDim, KDim], float],
+    theta_v_nnow: Field[[CellDim, KDim], float],
+    theta_ref_mc: Field[[CellDim, KDim], float],
+    z_rth_pr_1: Field[[CellDim, KDim], float],
+    z_rth_pr_2: Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    theta_ref_ic: Field[[CellDim, KDim], float],
+    d2dexdz2_fac1_mc: Field[[CellDim, KDim], float],
+    d2dexdz2_fac2_mc: Field[[CellDim, KDim], float],
+    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
+    vwind_expl_wgt: Field[[CellDim], float],
+    exner_pr: Field[[CellDim, KDim], float],
+    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
+    ddqz_z_half: Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    k_field: Field[[KDim], gtx.int32],
+    rho_ic: Field[[CellDim, KDim], float],
+    z_exner_ic: Field[[CellDim, KDim], float],
+    exner_exfac: Field[[CellDim, KDim], float],
+    exner_nnow: Field[[CellDim, KDim], float],
+    exner_ref_mc: Field[[CellDim, KDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
+    z_dexner_dz_c_2: Field[[CellDim, KDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: Field[[CellDim, KDim], float],
+    horz_idx: Field[[CellDim], int32],
+    vert_idx: Field[[KDim], int32],
+    limited_area: bool,
+    igradp_method: int32,
+    n_lev: int32,
+    nflatlev: int32,
+    nflat_gradp: int32,
+    start_cell_lateral_boundary: gtx.int32,
+    start_cell_lateral_boundary_level_3: gtx.int32,
+    start_cell_halo_level_2: gtx.int32,
+    end_cell_end: gtx.int32,
+    end_cell_halo: gtx.int32,
+    end_cell_halo_level_2: gtx.int32,
+    istep: int32
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
+    _fused_mo_solve_nonhydro_stencils_1_to_13(
+        rho_nnow,
+        rho_ref_mc,
+        theta_v_nnow,
+        theta_ref_mc,
+        z_rth_pr_1,
+        z_rth_pr_2,
+        z_theta_v_pr_ic,
+        theta_ref_ic,
+        d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc,
+        wgtfacq_c_dsl,
+        wgtfac_c,
+        vwind_expl_wgt,
+        exner_pr,
+        d_exner_dz_ref_ic,
+        ddqz_z_half,
+        z_th_ddz_exner_c,
+        k_field,
+        rho_ic,
+        z_exner_ic,
+        exner_exfac,
+        exner_nnow,
+        exner_ref_mc,
+        z_exner_ex_pr,
+        z_dexner_dz_c_1,
+        z_dexner_dz_c_2,
+        theta_v_ic,
+        inv_ddqz_z_full,
+        horz_idx,
+        vert_idx,
+        limited_area,
+        igradp_method,
+        n_lev,
+        nflatlev,
+        nflat_gradp,
+        start_cell_lateral_boundary,
+        start_cell_lateral_boundary_level_3,
+        start_cell_halo_level_2,
+        end_cell_end,
+        end_cell_halo,
+        end_cell_halo_level_2,
+        istep,
+        out ={},
+        domain = {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+
+    _fused_mo_solve_nonhydro_stencils_1_to_13_restricted(
+        rho_nnow,
+        rho_ref_mc,
+        theta_v_nnow,
+        theta_ref_mc,
+        z_rth_pr_1,
+        z_rth_pr_2,
+        z_theta_v_pr_ic,
+        theta_ref_ic,
+        d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc,
+        wgtfacq_c_dsl,
+        wgtfac_c,
+        vwind_expl_wgt,
+        exner_pr,
+        d_exner_dz_ref_ic,
+        ddqz_z_half,
+        z_th_ddz_exner_c,
+        k_field,
+        rho_ic,
+        z_exner_ic,
+        exner_exfac,
+        exner_nnow,
+        exner_ref_mc,
+        z_exner_ex_pr,
+        z_dexner_dz_c_1,
+        z_dexner_dz_c_2,
+        theta_v_ic,
+        inv_ddqz_z_full,
+        horz_idx,
+        vert_idx,
+        limited_area,
+        igradp_method,
+        n_lev,
+        nflatlev,
+        nflat_gradp,
+        start_cell_lateral_boundary,
+        start_cell_lateral_boundary_level_3,
+        start_cell_halo_level_2,
+        end_cell_end,
+        end_cell_halo,
+        end_cell_halo_level_2,
+        istep,
+        out={},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            # TODO: change the bounds
+            dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+
+
+
 
 
 @field_operator
@@ -425,7 +865,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_restricted(
         z_exner_ic,
         z_dexner_dz_c_1,
     ) = (
-        _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
+        _fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
             rho_nnow,
             rho_ref_mc,
             theta_v_nnow,
@@ -544,7 +984,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted2(
         z_exner_ic,
         z_dexner_dz_c_1,
     ) = (
-        _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
+        _fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
             rho_nnow,
             rho_ref_mc,
             theta_v_nnow,
@@ -668,7 +1108,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
         z_exner_ic,
         z_dexner_dz_c_1,
     ) = (
-        _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
+        _fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
             rho_nnow,
             rho_ref_mc,
             theta_v_nnow,
@@ -884,7 +1324,7 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         },
     )
 
-    _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
+    _fused_mo_solve_nonhydro_stencils_1_to_13_restricted(
         rho_nnow,
         rho_ref_mc,
         theta_v_nnow,
