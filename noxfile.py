@@ -79,15 +79,14 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
 # Model distributed test sessions
 @nox.session(python=["3.10"])
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
-@nox.parametrize("selection", "distributed")
-def test_model_distributed(session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath) -> None:
+def test_model_distributed(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
     """Run tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["distributed"], groups=["test"])
 
-    pytest_args = _selection_to_pytest_args(selection)
+    pytest_args = _selection_to_pytest_args("distributed")
     with session.chdir(f"model/{subpackage}"):
         session.run(
-            *"mpirun -np 4 pytest -sv --benchmark-skip".split(),
+            *"pytest -sv --benchmark-skip".split(),
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],

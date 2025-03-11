@@ -9,8 +9,8 @@ include:
     MPI4PY_BUILD_BACKEND: "scikit-build-core"
     MPI4PY_BUILD_MPICC: nvc
     USE_MPI: "YES"
+    SLURM_JOB_NUM_NODES: 4
     SLURM_NTASKS: 1
-
 
 
 .test_model_distributed:
@@ -20,7 +20,7 @@ include:
     - ls ${HPC_SDK_PATH}/compilers/bin
     - ls ${HPC_SDK_PATH}/comm_libs/mpi/bin
   script:
-    - uv sync --extra distributed
+    - nox -s "test_model_distributed-3.10($COMPONENT)" -- --backend=$BACKEND
   parallel:
     matrix:
       - COMPONENT: [ diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
