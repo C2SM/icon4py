@@ -51,8 +51,6 @@ class TestComputePpmAllFaceValues(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        pytest.xfail("requires fix for concat_where domain inference")
-
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_face_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
