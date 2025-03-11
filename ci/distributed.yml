@@ -6,7 +6,8 @@ include:
   needs: [build_image_aarch64]
   variables:
     # run with mpi
-    MPI4PY_BUILD_MPICC:
+    MPI4PY_BUILD_BACKEND: "scikit-build-core"
+    MPI4PY_BUILD_MPICC: nvc
     USE_MPI: "YES"
     SLURM_NTASKS: 4
 
