@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import dataclasses
 import functools
 import typing
 from collections.abc import Sequence
@@ -15,6 +14,7 @@ from typing import Any, Callable, Optional, Union
 
 import cffi
 from gt4py import next as gtx
+from gt4py.next import common as gtx_common
 from gt4py.next.type_system import (
     type_specifications as ts,
     type_translation as gtx_type_translation,
@@ -22,12 +22,6 @@ from gt4py.next.type_system import (
 
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import _template, wrapper_utils
-
-
-@dataclasses.dataclass
-class FieldDescriptor:
-    dims: list[gtx.Dimension]
-    array_param: _template.ArrayParameter
 
 
 def _parse_type_spec(type_spec: ts.TypeSpec) -> tuple[list[gtx.Dimension], ts.ScalarKind]:
@@ -84,15 +78,11 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
     def impl(
         array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi: cffi.FFI
     ) -> Optional[gtx.Field]:
+        arr = wrapper_utils.as_array(ffi, array_descriptor, scalar_kind)
+        if arr is None:
+            return None
         domain = {d: s for d, s in zip(dims, array_descriptor[1], strict=True)}
-        return wrapper_utils.as_field(
-            ffi,
-            array_descriptor[2],
-            array_descriptor[0],
-            scalar_kind,
-            domain,
-            is_optional=array_descriptor[3],
-        )
+        return gtx_common._field(arr, domain=gtx_common.domain(domain))
 
     return impl
 

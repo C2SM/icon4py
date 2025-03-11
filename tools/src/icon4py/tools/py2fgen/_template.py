@@ -136,7 +136,7 @@ def render_fortran_array_dimensions(
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
-    def visit_PythonWrapper(self, node: PythonWrapper, **kwargs):
+    def visit_PythonWrapper(self, node: PythonWrapper, **kwargs: Any) -> str:
         return self.generic_visit(node, is_array=is_array, **kwargs)
 
     PythonWrapper = as_jinja(
@@ -152,7 +152,6 @@ if __debug__:
     logging.basicConfig(level=getattr(logging, runtime_config.LOG_LEVEL),
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
-    logger.info(_runtime.get_cupy_info())
 
 
 # embedded function imports

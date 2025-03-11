@@ -9,52 +9,25 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Optional, Tuple, TypeAlias
+from typing import TYPE_CHECKING, Optional, Tuple, TypeAlias
 
-import gt4py.next as gtx
 import numpy as np
-from gt4py.next import common as gtx_common
 from gt4py.next.type_system import type_specifications as ts
 
-
-if TYPE_CHECKING:
-    import cffi
 
 try:
     import cupy as cp  # type: ignore
 except ImportError:
     cp = None
 
+if TYPE_CHECKING:
+    import cffi
 
-# @dataclasses.dataclass(slots=True)  # not frozen for performance
-# class ArrayDescriptor:
-#     # If construction of this object matters for performance, this could be optimized by using a plain tuple,
-#     # but would be more error-prone.
-#     ptr: cffi.FFI.CData  # hash of this object is the hash of the underlying ptr, see `cdata_hash` in `_cffi_backend.c`
-#     shape: tuple[int, ...]
-#     on_gpu: bool
-#     is_optional: bool  # TODO remove
+    ArrayDescriptor: TypeAlias = Tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
+else:
+    from typing import Any
 
-#     _hash: int = dataclasses.field(init=False, repr=False, compare=False, default=None)
-
-#     def __post_init__(self):
-#         # only ptr and shape are hash relevant (if on_gpu changes, the ptr changes)
-#         object.__setattr__(
-#             self,
-#             "_hash",
-#             hash(
-#                 (
-#                     self.ptr,
-#                     self.shape,
-#                 )
-#             ),
-#         )
-
-#     def __hash__(self):
-#         return self._hash
-
-# first argument is `cffi.FFI.CData` # TODO define within TYPE_CHECKING?
-ArrayDescriptor: TypeAlias = Tuple[Any, tuple[int, ...], bool, bool]
+    ArrayDescriptor: TypeAlias = tuple[Any, tuple[int, ...], bool, bool]
 
 
 def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
@@ -95,7 +68,7 @@ def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArra
     return arr
 
 
-def _unpack_gpu(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int):
+def _unpack_gpu(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> cp.ndarray:
     """
     Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations that require in-place modification of GPU data,
@@ -115,6 +88,7 @@ def _unpack_gpu(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int):
                     This array shares the underlying data with the original Fortran code, allowing
                     modifications made through the array to affect the original data.
     """
+    assert cp is not None
 
     if not sizes:
         raise ValueError("Sizes must be provided to determine the array shape.")
@@ -160,7 +134,7 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
 
 def as_array(
     ffi: cffi.FFI, array_descriptor: ArrayDescriptor, scalar_kind: ts.ScalarKind
-) -> np.ndarray:  # or cupy
+) -> Optional[np.ndarray]:  # or cupy
     unpack = _unpack_gpu if array_descriptor[2] else _unpack
     if array_descriptor[0] == ffi.NULL:
         if array_descriptor[3]:
@@ -173,20 +147,3 @@ def as_array(
         # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
         arr = _int_array_to_bool_array(arr)
     return arr
-
-
-# TODO move function to icon4py specific module
-def as_field(
-    ffi: cffi.FFI,
-    on_gpu: bool,
-    ptr,
-    scalar_kind: ts.ScalarKind,
-    domain: dict[gtx.Dimension, int],
-    is_optional: bool,
-) -> Optional[gtx.Field]:
-    arr = as_array(
-        ffi,
-        (ptr, tuple(domain.values()), on_gpu, is_optional),
-        scalar_kind,
-    )
-    return gtx_common._field(arr, domain=gtx_common.domain(domain))

@@ -10,26 +10,17 @@ import time as _time
 
 
 try:
-    import cupy as cp
+    import cupy as cp  # type: ignore
 
-    def _sync():
+    def _sync() -> None:
         cp.cuda.runtime.deviceSynchronize()
 except ImportError:
     cp = None
 
-    def _sync():
+    def _sync() -> None:
         pass
 
 
-def perf_counter():
+def perf_counter() -> float:
     _sync()
     return _time.perf_counter()
-
-
-def get_cupy_info():
-    try:
-        import cupy as cp
-
-        return cp.show_config()
-    except ImportError:
-        return "CuPy is not installed"

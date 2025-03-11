@@ -11,7 +11,7 @@ import os
 from typing import TypeVar
 
 
-def env_flag_to_bool(name: str, default: bool) -> bool:
+def _env_flag_to_bool(name: str, default: bool) -> bool:
     """Recognize true or false signaling string values."""
     flag_value = None
     if name in os.environ:
@@ -29,7 +29,7 @@ def env_flag_to_bool(name: str, default: bool) -> bool:
             )
 
 
-class StrEnum(str, enum.Enum):
+class _StrEnum(str, enum.Enum):
     """:class:`enum.Enum` subclass whose members are considered as real strings."""
 
     def __str__(self) -> str:
@@ -37,10 +37,10 @@ class StrEnum(str, enum.Enum):
         return self.value
 
 
-_T = TypeVar("_T", bound=StrEnum)
+_T = TypeVar("_T", bound=_StrEnum)
 
 
-def env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
+def _env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
     """Recognize string values as members of an enumeration."""
     value = os.environ.get(name, default).upper()
     if value not in enum_type.__members__:
@@ -51,10 +51,10 @@ def env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
     return enum_type(value)
 
 
-PROFILING: bool = env_flag_to_bool("PY2FGEN_PROFILING", False)
+PROFILING: bool = _env_flag_to_bool("PY2FGEN_PROFILING", False)
 
 
-class PY2FGEN_LOG_LEVELS(StrEnum):
+class PY2FGEN_LOG_LEVELS(_StrEnum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -62,4 +62,4 @@ class PY2FGEN_LOG_LEVELS(StrEnum):
     CRITICAL = "CRITICAL"
 
 
-LOG_LEVEL: str = env_to_strenum("PY2FGEN_LOG_LEVEL", PY2FGEN_LOG_LEVELS, PY2FGEN_LOG_LEVELS.INFO)
+LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", PY2FGEN_LOG_LEVELS, PY2FGEN_LOG_LEVELS.INFO)

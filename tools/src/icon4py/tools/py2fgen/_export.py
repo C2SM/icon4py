@@ -32,9 +32,10 @@ class ScalarParamDescriptor(eve.Node):
 
 
 ParamDescriptor: TypeAlias = Union[ArrayParamDescriptor, ScalarParamDescriptor]
+ParamDescriptors: TypeAlias = Mapping[str, ParamDescriptor]
 
 
-def _from_annotated(annotation) -> Optional[_template.FuncParameter]:
+def _from_annotated(annotation: Any) -> Optional[_template.FuncParameter]:
     if hasattr(annotation, "__metadata__"):
         for meta in annotation.__metadata__:
             if isinstance(meta, ParamDescriptor):
@@ -42,7 +43,9 @@ def _from_annotated(annotation) -> Optional[_template.FuncParameter]:
     return None
 
 
-def _to_function_descriptor(function_name, param_descriptors) -> _template.Func:
+def _to_function_descriptor(
+    function_name: str, param_descriptors: ParamDescriptors
+) -> _template.Func:
     # TODO this function should disappear
     params = []
     for name, descriptor in param_descriptors.items():
@@ -61,7 +64,9 @@ def _to_function_descriptor(function_name, param_descriptors) -> _template.Func:
     return _template.Func(name=function_name, args=params)
 
 
-def param_descriptor_from_annotation(annotation, annotation_descriptor_hook):
+def param_descriptor_from_annotation(
+    annotation: Any, annotation_descriptor_hook: Callable[[Any], ParamDescriptor]
+) -> ParamDescriptor:
     descriptor = None
     if annotation_descriptor_hook is not None:
         descriptor = annotation_descriptor_hook(annotation)
@@ -76,7 +81,7 @@ def get_param_descriptors(
     signature: inspect.Signature,
     param_descriptors: Optional[_template.Func],
     annotation_descriptor_hook: Optional[Callable],
-) -> dict[str, ArrayParamDescriptor | ScalarParamDescriptor]:
+) -> ParamDescriptors:
     if param_descriptors is not None:
         if annotation_descriptor_hook is not None:
             raise ValueError(
@@ -93,27 +98,35 @@ def get_param_descriptors(
     return params
 
 
-def _as_array(dtype: gtx_ts.ScalarKind):
+NDArray = Any  # = np.ndarray | cp.ndarray (conditionally) TODO move to better place and fix
+
+
+def _as_array(
+    dtype: gtx_ts.ScalarKind,
+) -> Callable[[wrapper_utils.ArrayDescriptor, cffi.FFI], NDArray]:
     @functools.lru_cache(maxsize=None)
-    def impl(array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi):
+    def impl(array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi) -> NDArray:
         return wrapper_utils.as_array(ffi, array_descriptor, dtype)
 
     return impl
 
 
-def default_mapping(annotation, param_descriptor):
+MapperType: TypeAlias = Callable[[wrapper_utils.ArrayDescriptor, cffi.FFI], Any]
+
+
+def default_mapping(_: Any, param_descriptor: ParamDescriptor) -> MapperType | None:
+    """Translates ArrayDescriptor into (Numpy or Cupy) NDArray."""
     if isinstance(param_descriptor, ArrayParamDescriptor):
-        assert isinstance(param_descriptor, ArrayParamDescriptor)
         return _as_array(param_descriptor.dtype)
     return None
 
 
 def get_param_mappings(
     signature: inspect.Signature,
-    annotation_mapping_hook: Callable,
-    param_descriptors: Mapping[str, ParamDescriptor],
-):  # TODO type annotations
-    mappings = {}
+    annotation_mapping_hook: Callable[[wrapper_utils.ArrayDescriptor, cffi.FFI], Any] | None,
+    param_descriptors: ParamDescriptors,
+) -> Mapping[str, MapperType]:  # TODO type annotations
+    mappings: Mapping[str, MapperType] = {}
     for name, param in signature.parameters.items():
         if annotation_mapping_hook is not None:
             mapping = annotation_mapping_hook(param.annotation, param_descriptors[name])
@@ -153,17 +166,17 @@ class _DecoratedFunction:
             signature, self.annotation_mapping_hook, self.param_descriptors
         )
 
-    def __call__(
-        self, ffi: cffi.FFI, meta: Optional[dict], **kwargs: Any
-    ) -> Any:  # TODO switch to positional arguments for performance
-        # TODO pass the index of the arg to the mapping, then we have a cache per argument which we can constrain to size 2 (for double-buffering)
-        # note: this is currently already the cases as we generate a mapper per argument...
-        if __debug__:
+    def __call__(self, ffi: cffi.FFI, meta: Optional[dict], **kwargs: Any) -> Any:
+        # Notes: For performance reasons we could switch to positional-only arguments
+        # (this is purely internal between the generated Python code and this function).
+        # However, an experiment showed that this had small impact. Re-evaluate if we need
+        # to tune performance.
+        if __debug__ and meta is not None:
             meta["convert_start_time"] = _runtime.perf_counter()
         kwargs = {
             k: self._mapping[k](v, ffi=ffi) if k in self._mapping else v for k, v in kwargs.items()
         }
-        if __debug__:
+        if __debug__ and meta is not None:
             meta["convert_end_time"] = _runtime.perf_counter()
         return self._fun(**kwargs)
 
