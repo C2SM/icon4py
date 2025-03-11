@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
