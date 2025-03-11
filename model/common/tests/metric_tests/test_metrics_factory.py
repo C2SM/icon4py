@@ -139,7 +139,6 @@ def test_factory_inv_ddqz_z(grid_savepoint, metrics_savepoint, grid_file, experi
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
-@pytest.mark.requires_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [

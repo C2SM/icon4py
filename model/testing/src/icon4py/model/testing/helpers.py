@@ -91,8 +91,6 @@ def apply_markers(
                 pytest.xfail("Embedded backend currently fails in remap function.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
-            case "requires_concat_where" if is_embedded(backend):
-                pytest.xfail("Stencil requires concat_where.")
             case "skip_value_error":
                 if grid.config.limited_area or grid.has_skip_values():
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
