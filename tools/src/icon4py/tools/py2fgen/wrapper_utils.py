@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 import math
-from typing import TYPE_CHECKING, Optional, Tuple, TypeAlias
+from typing import TYPE_CHECKING, Optional, TypeAlias
 
 import numpy as np
 from gt4py.next.type_system import type_specifications as ts
@@ -23,7 +21,8 @@ except ImportError:
 if TYPE_CHECKING:
     import cffi
 
-    ArrayDescriptor: TypeAlias = Tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
+    # Note, we use this plain tuple for performance.
+    ArrayDescriptor: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
 else:
     from typing import Any
 
