@@ -10,7 +10,7 @@ import dataclasses
 import functools
 import inspect
 from collections.abc import Mapping
-from typing import Any, Callable, Optional, TypeAlias, Union
+from typing import Any, Callable, Optional, TypeAlias
 
 import cffi
 from gt4py import eve
@@ -31,14 +31,14 @@ class ScalarParamDescriptor(eve.Node):
     dtype: gtx_ts.ScalarKind
 
 
-ParamDescriptor: TypeAlias = Union[ArrayParamDescriptor, ScalarParamDescriptor]
+ParamDescriptor: TypeAlias = ArrayParamDescriptor | ScalarParamDescriptor
 ParamDescriptors: TypeAlias = Mapping[str, ParamDescriptor]
 
 
-def _from_annotated(annotation: Any) -> Optional[_template.FuncParameter]:
+def _from_annotated(annotation: Any) -> Optional[ParamDescriptor]:
     if hasattr(annotation, "__metadata__"):
         for meta in annotation.__metadata__:
-            if isinstance(meta, ParamDescriptor):
+            if isinstance(meta, (ArrayParamDescriptor, ScalarParamDescriptor)):
                 return meta
     return None
 
@@ -47,7 +47,7 @@ def _to_function_descriptor(
     function_name: str, param_descriptors: ParamDescriptors
 ) -> _template.Func:
     # TODO this function should disappear
-    params = []
+    params: list[_template.FuncParameter] = []
     for name, descriptor in param_descriptors.items():
         if isinstance(descriptor, ArrayParamDescriptor):
             params.append(
@@ -65,7 +65,7 @@ def _to_function_descriptor(
 
 
 def param_descriptor_from_annotation(
-    annotation: Any, annotation_descriptor_hook: Callable[[Any], ParamDescriptor]
+    annotation: Any, annotation_descriptor_hook: Optional[Callable[[Any], ParamDescriptor]]
 ) -> ParamDescriptor:
     descriptor = None
     if annotation_descriptor_hook is not None:
@@ -79,8 +79,8 @@ def param_descriptor_from_annotation(
 
 def get_param_descriptors(
     signature: inspect.Signature,
-    param_descriptors: Optional[_template.Func],
-    annotation_descriptor_hook: Optional[Callable],
+    param_descriptors: Optional[ParamDescriptors],
+    annotation_descriptor_hook: Optional[Callable[[Any], ParamDescriptor]],
 ) -> ParamDescriptors:
     if param_descriptors is not None:
         if annotation_descriptor_hook is not None:
@@ -105,7 +105,7 @@ def _as_array(
     dtype: gtx_ts.ScalarKind,
 ) -> Callable[[wrapper_utils.ArrayDescriptor, cffi.FFI], NDArray]:
     @functools.lru_cache(maxsize=None)
-    def impl(array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi) -> NDArray:
+    def impl(array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi: cffi.FFI) -> NDArray:
         return wrapper_utils.as_array(ffi, array_descriptor, dtype)
 
     return impl
@@ -123,10 +123,10 @@ def default_mapping(_: Any, param_descriptor: ParamDescriptor) -> MapperType | N
 
 def get_param_mappings(
     signature: inspect.Signature,
-    annotation_mapping_hook: Callable[[wrapper_utils.ArrayDescriptor, cffi.FFI], Any] | None,
+    annotation_mapping_hook: Callable[[Any, ParamDescriptor], MapperType] | None,
     param_descriptors: ParamDescriptors,
-) -> Mapping[str, MapperType]:  # TODO type annotations
-    mappings: Mapping[str, MapperType] = {}
+) -> Mapping[str, MapperType]:
+    mappings: dict[str, MapperType] = {}
     for name, param in signature.parameters.items():
         if annotation_mapping_hook is not None:
             mapping = annotation_mapping_hook(param.annotation, param_descriptors[name])
@@ -137,6 +137,7 @@ def get_param_mappings(
     return mappings
 
 
+# TODO move to docstring
 # To generate bindings either
 # - pass a full function descriptor
 # - pass an annotation_descriptor_hook which receives the annotation and return the FuncParameter/ArrayParameter
@@ -148,9 +149,9 @@ class _DecoratedFunction:
     _fun: Callable
     annotation_descriptor_hook: Optional[Callable]  # TODO type annotation
     annotation_mapping_hook: Optional[Callable]  # TODO type annotation
-    param_descriptors: Optional[_template.Func]
+    param_descriptors: Optional[ParamDescriptors]
     function_descriptor: _template.Func = dataclasses.field(init=False)
-    _mapping: dict[str, Callable] = dataclasses.field(init=False)
+    _mapping: Mapping[str, Callable] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
         signature = inspect.signature(self._fun)
@@ -169,8 +170,8 @@ class _DecoratedFunction:
     def __call__(self, ffi: cffi.FFI, meta: Optional[dict], **kwargs: Any) -> Any:
         # Notes: For performance reasons we could switch to positional-only arguments
         # (this is purely internal between the generated Python code and this function).
-        # However, an experiment showed that this had small impact. Re-evaluate if we need
-        # to tune performance.
+        # However, an experiment showed that this had small impact.
+        # Re-evaluate if we need to tweak performance.
         if __debug__ and meta is not None:
             meta["convert_start_time"] = _runtime.perf_counter()
         kwargs = {
@@ -185,7 +186,8 @@ def export(
     annotation_descriptor_hook: Optional[Callable] = None,
     annotation_mapping_hook: Optional[Callable] = None,
     param_descriptors: Optional[dict[str, ArrayParamDescriptor | ScalarParamDescriptor]] = None,
-):  # TODO add type hints
+) -> Callable[[Callable], Callable]:
+    # precise typing is difficult (impossible?) since we are manipulating the args
     def impl(fun: Callable) -> Callable:
         return functools.update_wrapper(
             _DecoratedFunction(
