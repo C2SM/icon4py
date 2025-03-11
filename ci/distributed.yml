@@ -9,7 +9,7 @@ include:
     MPI4PY_BUILD_BACKEND: "scikit-build-core"
     MPI4PY_BUILD_MPICC: nvc
     USE_MPI: "YES"
-    SLURM_NTASKS: 4
+    SLURM_NTASKS: 1
 
 
 
