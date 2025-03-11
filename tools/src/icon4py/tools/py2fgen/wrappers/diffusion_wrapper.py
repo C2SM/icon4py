@@ -20,7 +20,7 @@ Fortran granule interfaces:
 import cProfile
 import dataclasses
 import pstats
-from typing import Optional
+from typing import Callable, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -55,6 +55,7 @@ class DiffusionGranule:
     diffusion: Diffusion
     backend: gtx_backend.Backend
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
+    dummy_field_factory: Callable
 
 
 granule: Optional[DiffusionGranule] = None
@@ -223,6 +224,7 @@ def diffusion_init(
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
         backend=actual_backend,
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(actual_backend),
     )
 
 
@@ -254,21 +256,13 @@ def diffusion_run(
     )
 
     if hdef_ic is None:
-        hdef_ic = wrapper_common.cached_dummy_field(
-            "hdef_ic", domain=w.domain, dtype=w.dtype, allocator=granule.backend
-        )
+        hdef_ic = granule.dummy_field_factory("hdef_ic", domain=w.domain, dtype=w.dtype)
     if div_ic is None:
-        div_ic = wrapper_common.cached_dummy_field(
-            "div_ic", domain=w.domain, dtype=w.dtype, allocator=granule.backend
-        )
+        div_ic = granule.dummy_field_factory("div_ic", domain=w.domain, dtype=w.dtype)
     if dwdx is None:
-        dwdx = wrapper_common.cached_dummy_field(
-            "dwdx", domain=w.domain, dtype=w.dtype, allocator=granule.backend
-        )
+        dwdx = granule.dummy_field_factory("dwdx", domain=w.domain, dtype=w.dtype)
     if dwdy is None:
-        dwdy = wrapper_common.cached_dummy_field(
-            "dwdy", domain=w.domain, dtype=w.dtype, allocator=granule.backend
-        )
+        dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
     diagnostic_state = DiffusionDiagnosticState(
         hdef_ic=hdef_ic,
         div_ic=div_ic,
