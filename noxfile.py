@@ -26,10 +26,10 @@ nox.options.sessions = ["test_model", "test_tools"]
 ModelSubpackagePath: TypeAlias = Literal[
     "atmosphere/advection",
     "atmosphere/diffusion",
-    # "atmosphere/dycore",
-    # "atmosphere/subgrid_scale_physics/microphysics",
-    # "common",
-    # "driver",
+    "atmosphere/dycore",
+    "atmosphere/subgrid_scale_physics/microphysics",
+    "common",
+    "driver",
     # "testing", #TODO: Add tests to testing subpackage
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
