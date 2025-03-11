@@ -97,6 +97,7 @@ def bencher_baseline(session: nox.Session) -> None:
         *f"bencher run \
         --project {os.environ['BENCHER_PROJECT']} \
         --token {os.environ['BENCHER_API_TOKEN']} \
+        --host {os.environ['BENCHER_HOST']} \
         --branch main \
         --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
         --threshold-measure latency \
