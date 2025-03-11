@@ -121,6 +121,7 @@ def bencher_feature_branch(session: nox.Session) -> None:
         *f"bencher run \
         --project {os.environ['BENCHER_PROJECT']} \
         --token {os.environ['BENCHER_API_TOKEN']} \
+        --host {os.environ['BENCHER_HOST']} \
         --github-actions {os.environ['GD_COMMENT_TOKEN']} \
         --branch {os.environ['FEATURE_BRANCH']} \
         --start-point main \
