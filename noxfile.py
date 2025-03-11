@@ -69,17 +69,22 @@ def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> No
 
 def merge_pytest_benchmark_results(bencher_json_file_name: str) -> None:
     """Gather all benchmark results files and merge them into a single file."""
-    merged_results = {"benchmarks": []}
+    merged_results = {}
     files = glob.glob("results_*.json")
     for file in files:
         try:
             with open(file, "r") as f:
                 data = json.load(f)
-                merged_results["benchmarks"].extend(data["benchmarks"])
                 # preserve the first file's metadata for a valid pytest-benchmark json file
                 for key in data.keys():
                     if key != "benchmarks" and key not in merged_results:
                         merged_results[key] = data[key]
+                    elif key == "benchmarks" and "benchmarks" not in merged_results:
+                        merged_results["benchmarks"] = data["benchmarks"]
+                    elif key == "benchmarks" and "benchmarks" in merged_results:
+                        merged_results["benchmarks"].extend(data["benchmarks"])
+                    else:
+                        continue
         except:
             # Empty file, i.e. no benchmarks
             continue
