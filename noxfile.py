@@ -95,7 +95,8 @@ def merge_pytest_benchmark_results(bencher_json_file_name: str) -> None:
              requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
 def bencher_baseline(session: nox.Session) -> None:
     """Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted)."""
-    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
+    testbed_tag = f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
+    bencher_json_file_name = f"merged_benchmark_results_{session.python}_{testbed_tag.replace(':','_')}.json"
     merge_pytest_benchmark_results(bencher_json_file_name)
 
     session.run(
@@ -104,7 +105,7 @@ def bencher_baseline(session: nox.Session) -> None:
         --token {os.environ['BENCHER_API_TOKEN']} \
         --host {os.environ['BENCHER_HOST']} \
         --branch main \
-        --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
+        --testbed {testbed_tag} \
         --threshold-measure latency \
         --threshold-test percentage \
         --threshold-max-sample-size 64 \
