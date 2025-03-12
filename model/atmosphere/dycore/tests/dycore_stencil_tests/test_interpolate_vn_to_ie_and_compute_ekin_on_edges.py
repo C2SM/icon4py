@@ -13,13 +13,14 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_e
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(
-    wgtfac_e: np.array, vn: np.array
+    wgtfac_e: np.ndarray, vn: np.ndarray
 ) -> np.array:
     vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
     vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
@@ -28,7 +29,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(
 
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(
-    vn: np.array, vt: np.array
+    vn: np.ndarray, vt: np.ndarray
 ) -> np.array:
     z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
     z_kin_hor_e[:, 0] = 0
@@ -53,11 +54,11 @@ class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
     @staticmethod
     def reference(
         grid,
-        wgtfac_e: np.array,
-        vn: np.array,
-        vt: np.array,
-        vn_ie: np.array,
-        z_kin_hor_e: np.array,
+        wgtfac_e: np.ndarray,
+        vn: np.ndarray,
+        vt: np.ndarray,
+        vn_ie: np.ndarray,
+        z_kin_hor_e: np.ndarray,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
@@ -76,7 +77,7 @@ class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

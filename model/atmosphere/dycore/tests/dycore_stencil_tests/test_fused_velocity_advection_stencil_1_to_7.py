@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -139,7 +141,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         edge,
         lateral_boundary_7,
         halo_1,
-        **kwargs,
+        **kwargs: Any,
     ):
         k_nlev = k[:-1]
 

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -14,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rh
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
 from icon4py.model.testing import helpers
 
 
@@ -24,11 +27,11 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(helpers.StencilTest
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        geofac_div: np.array,
-        mass_fl_e: np.array,
-        z_theta_v_fl_e: np.array,
-        **kwargs,
-    ) -> tuple[np.array]:
+        geofac_div: np.ndarray,
+        mass_fl_e: np.ndarray,
+        z_theta_v_fl_e: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         c2e = connectivities[dims.C2EDim]
         c2ce = helpers.as_1d_connectivity(c2e)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
@@ -43,7 +46,7 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(helpers.StencilTest
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
         z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         z_flxdiv_theta = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

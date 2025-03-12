@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increm
     update_dynamical_exner_time_increment,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -25,18 +28,18 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     @staticmethod
     def reference(
         grid,
-        exner: np.array,
-        ddt_exner_phy: np.array,
-        exner_dyn_incr: np.array,
+        exner: np.ndarray,
+        ddt_exner_phy: np.ndarray,
+        exner_dyn_incr: np.ndarray,
         ndyn_substeps_var: float,
         dtime: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         exner_dyn_incr = exner - (exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy)
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddt_exner_phy = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

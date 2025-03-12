@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temp
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,24 +27,24 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
 
     @staticmethod
     def reference(
-        grid,
-        w: np.array,
-        w_concorr_c: np.array,
-        ddqz_z_half: np.array,
-        rho_now: np.array,
-        rho_var: np.array,
-        theta_now: np.array,
-        theta_var: np.array,
-        wgtfac_c: np.array,
-        theta_ref_mc: np.array,
-        vwind_expl_wgt: np.array,
-        exner_pr: np.array,
-        d_exner_dz_ref_ic: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        w: np.ndarray,
+        w_concorr_c: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        rho_now: np.ndarray,
+        rho_var: np.ndarray,
+        theta_now: np.ndarray,
+        theta_var: np.ndarray,
+        wgtfac_c: np.ndarray,
+        theta_ref_mc: np.ndarray,
+        vwind_expl_wgt: np.ndarray,
+        exner_pr: np.ndarray,
+        d_exner_dz_ref_ic: np.ndarray,
         dtime,
         wgt_nnow_rth,
         wgt_nnew_rth,
-        **kwargs,
-    ) -> tuple[np.array, np.array, np.array, np.array]:
+        **kwargs: Any,
+    ) -> dict:
         vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
         rho_now_offset = np.roll(rho_now, shift=1, axis=1)
         rho_var_offset = np.roll(rho_var, shift=1, axis=1)
@@ -84,7 +87,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         dtime = wpfloat("1.0")
         wgt_nnow_rth = wpfloat("2.0")
         wgt_nnew_rth = wpfloat("3.0")

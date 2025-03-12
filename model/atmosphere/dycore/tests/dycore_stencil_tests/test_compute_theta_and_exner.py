@@ -5,12 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import compute_theta_and_exner
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, random_mask
 from icon4py.model.testing.helpers import StencilTest
@@ -23,13 +26,13 @@ class TestComputeThetaAndExner(StencilTest):
     @staticmethod
     def reference(
         grid,
-        bdy_halo_c: np.array,
-        rho: np.array,
-        theta_v: np.array,
-        exner: np.array,
+        bdy_halo_c: np.ndarray,
+        rho: np.ndarray,
+        theta_v: np.ndarray,
+        exner: np.ndarray,
         rd_o_cvd: float,
         rd_o_p0ref: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         bdy_halo_c = np.expand_dims(bdy_halo_c, axis=-1)
 
@@ -41,7 +44,7 @@ class TestComputeThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
         bdy_halo_c = random_mask(grid, dims.CellDim)

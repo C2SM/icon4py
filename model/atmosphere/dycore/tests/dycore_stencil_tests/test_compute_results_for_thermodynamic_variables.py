@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_
     compute_results_for_thermodynamic_variables,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,22 +27,22 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_rho_expl: np.array,
-        vwind_impl_wgt: np.array,
-        inv_ddqz_z_full: np.array,
-        rho_ic: np.array,
-        w: np.array,
-        z_exner_expl: np.array,
-        exner_ref_mc: np.array,
-        z_alpha: np.array,
-        z_beta: np.array,
-        rho_now: np.array,
-        theta_v_now: np.array,
-        exner_now: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_rho_expl: np.ndarray,
+        vwind_impl_wgt: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        rho_ic: np.ndarray,
+        w: np.ndarray,
+        z_exner_expl: np.ndarray,
+        exner_ref_mc: np.ndarray,
+        z_alpha: np.ndarray,
+        z_beta: np.ndarray,
+        rho_now: np.ndarray,
+        theta_v_now: np.ndarray,
+        exner_now: np.ndarray,
         dtime,
         cvd_o_rd,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         rho_ic_offset_1 = rho_ic[:, 1:]
         w_offset_0 = w[:, :-1]
@@ -60,7 +63,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_rho_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
         inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

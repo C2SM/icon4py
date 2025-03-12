@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -14,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import 
     interpolate_to_cell_center,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
 from icon4py.model.testing import helpers
 
 
@@ -21,7 +24,7 @@ def interpolate_to_cell_center_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     interpolant: np.ndarray,
     e_bln_c_s: np.ndarray,
-    **kwargs,
+    **kwargs: Any,
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     c2e = connectivities[dims.C2EDim]
@@ -39,12 +42,12 @@ class TestInterpolateToCellCenter(helpers.StencilTest):
     OUTPUTS = ("interpolation",)
 
     @staticmethod
-    def reference(grid, interpolant: np.array, e_bln_c_s: np.array, **kwargs) -> dict:
+    def reference(grid, interpolant: np.ndarray, e_bln_c_s: np.ndarray, **kwargs) -> dict:
         interpolation = interpolate_to_cell_center_numpy(grid, interpolant, e_bln_c_s)
         return dict(interpolation=interpolation)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
         interpolation = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

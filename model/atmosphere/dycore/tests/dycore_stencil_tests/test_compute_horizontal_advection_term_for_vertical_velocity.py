@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,7 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -63,7 +65,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         z_v_grad_w: np.ndarray,
         horizontal_start: int,
         horizontal_end: int,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_v_grad_w[horizontal_start:horizontal_end, :] = (
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
@@ -80,7 +82,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         return dict(z_v_grad_w=z_v_grad_w)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

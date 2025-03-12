@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import
     compute_exner_from_rhotheta,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,19 +27,19 @@ class TestComputeExnerFromRhotheta(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        rho: np.array,
-        exner: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        rho: np.ndarray,
+        exner: np.ndarray,
         rd_o_cvd: float,
         rd_o_p0ref: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         theta_v = np.copy(exner)
         exner = np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * theta_v))
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
         rho = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)

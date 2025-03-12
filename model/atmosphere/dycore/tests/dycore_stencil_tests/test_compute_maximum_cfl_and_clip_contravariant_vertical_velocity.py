@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contr
     compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import (
     random_field,
@@ -31,7 +32,6 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
         np.ones([num_rows, num_cols]),
         np.zeros_like(z_w_con_c),
     )
-    num_rows, num_cols = cfl_clipping.shape
     vcfl = np.where(cfl_clipping == 1.0, z_w_con_c * dtime / ddqz_z_half, 0.0)
     z_w_con_c = np.where(
         (cfl_clipping == 1.0) & (vcfl < -0.85),
@@ -51,7 +51,12 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
 
     @staticmethod
     def reference(
-        grid, ddqz_z_half: np.array, z_w_con_c: np.array, cfl_w_limit, dtime, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        ddqz_z_half: np.ndarray,
+        z_w_con_c: np.ndarray,
+        cfl_w_limit,
+        dtime,
+        **kwargs,
     ) -> dict:
         (
             cfl_clipping,
@@ -68,7 +73,7 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim, dtype=bool)

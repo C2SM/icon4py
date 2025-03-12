@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,7 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
     fused_velocity_advection_stencil_15_to_18,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -144,7 +146,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         nrdmax,
         lvn_only,
         extra_diffu,
-        **kwargs,
+        **kwargs: Any,
     ):
         # We need to store the initial return field, because we only compute on a subdomain.
         z_w_con_c_full_ret = z_w_con_c_full.copy()
@@ -196,7 +198,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         return dict(z_w_con_c_full=z_w_con_c_full_ret, ddt_w_adv=ddt_w_adv_ret)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_w_con_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

@@ -5,12 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, random_mask
 from icon4py.model.testing.helpers import StencilTest
@@ -23,15 +26,15 @@ class TestUpdateThetaV(StencilTest):
     @staticmethod
     def reference(
         grid,
-        mask_prog_halo_c: np.array,
-        rho_now: np.array,
-        theta_v_now: np.array,
-        exner_new: np.array,
-        exner_now: np.array,
-        rho_new: np.array,
-        theta_v_new: np.array,
+        mask_prog_halo_c: np.ndarray,
+        rho_now: np.ndarray,
+        theta_v_now: np.ndarray,
+        exner_new: np.ndarray,
+        exner_now: np.ndarray,
+        rho_new: np.ndarray,
+        theta_v_new: np.ndarray,
         cvd_o_rd: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         mask_prog_halo_c = np.expand_dims(mask_prog_halo_c, axis=-1)
 
@@ -43,7 +46,7 @@ class TestUpdateThetaV(StencilTest):
         return dict(theta_v_new=theta_v_new)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         mask_prog_halo_c = random_mask(grid, dims.CellDim)
         rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         theta_v_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_
     compute_explicit_part_for_rho_and_exner,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,18 +27,18 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        rho_nnow: np.array,
-        inv_ddqz_z_full: np.array,
-        z_flxdiv_mass: np.array,
-        z_contr_w_fl_l: np.array,
-        exner_pr: np.array,
-        z_beta: np.array,
-        z_flxdiv_theta: np.array,
-        theta_v_ic: np.array,
-        ddt_exner_phy: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        rho_nnow: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        z_flxdiv_mass: np.ndarray,
+        z_contr_w_fl_l: np.ndarray,
+        exner_pr: np.ndarray,
+        z_beta: np.ndarray,
+        z_flxdiv_theta: np.ndarray,
+        theta_v_ic: np.ndarray,
+        ddt_exner_phy: np.ndarray,
         dtime,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
             z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
@@ -54,7 +57,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         dtime = wpfloat("1.0")
         rho_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

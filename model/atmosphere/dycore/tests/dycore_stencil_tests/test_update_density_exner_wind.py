@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
     update_density_exner_wind,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -25,14 +28,14 @@ class TestUpdateDensityExnerWind(StencilTest):
     @staticmethod
     def reference(
         grid,
-        rho_now: np.array,
-        grf_tend_rho: np.array,
-        theta_v_now: np.array,
-        grf_tend_thv: np.array,
-        w_now: np.array,
-        grf_tend_w: np.array,
+        rho_now: np.ndarray,
+        grf_tend_rho: np.ndarray,
+        theta_v_now: np.ndarray,
+        grf_tend_thv: np.ndarray,
+        w_now: np.ndarray,
+        grf_tend_w: np.ndarray,
         dtime,
-        **kwargs,
+        **kwargs: Any,
     ) -> tuple[np.array]:
         rho_new = rho_now + dtime * grf_tend_rho
         exner_new = theta_v_now + dtime * grf_tend_thv
@@ -40,7 +43,7 @@ class TestUpdateDensityExnerWind(StencilTest):
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         grf_tend_rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         theta_v_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

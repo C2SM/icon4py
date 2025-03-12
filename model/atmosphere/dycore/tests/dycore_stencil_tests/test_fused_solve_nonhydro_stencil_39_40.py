@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40
     fused_solve_nonhydro_stencil_39_40,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -63,7 +66,7 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
         vert_idx: np.ndarray,
         nlev: int,
         nflatlev: int,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         w_concorr_c_result = _fused_solve_nonhydro_stencil_39_40_numpy(
             connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
@@ -71,7 +74,7 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
         return dict(w_concorr_c=w_concorr_c_result)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         e_bln_c_s = random_field(grid, dims.CEDim, dtype=wpfloat)
         z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

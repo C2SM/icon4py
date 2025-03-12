@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_der
     compute_approx_of_2nd_vertical_derivative_of_exner,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,12 +27,12 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_theta_v_pr_ic: np.array,
-        d2dexdz2_fac1_mc: np.array,
-        d2dexdz2_fac2_mc: np.array,
-        z_rth_pr_2: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_theta_v_pr_ic: np.ndarray,
+        d2dexdz2_fac1_mc: np.ndarray,
+        d2dexdz2_fac2_mc: np.ndarray,
+        z_rth_pr_2: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         z_theta_v_pr_ic_offset_1 = z_theta_v_pr_ic[:, 1:]
         z_dexner_dz_c_2 = -0.5 * (
@@ -39,7 +42,7 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
         return dict(z_dexner_dz_c_2=z_dexner_dz_c_2)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_theta_v_pr_ic = random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )

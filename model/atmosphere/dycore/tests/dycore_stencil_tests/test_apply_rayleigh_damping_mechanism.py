@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -29,7 +31,7 @@ class TestApplyRayleighDampingMechanism(StencilTest):
         z_raylfac: np.ndarray,
         w_1: np.ndarray,
         w: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_raylfac = np.expand_dims(z_raylfac, axis=0)
         w_1 = np.expand_dims(w_1, axis=-1)

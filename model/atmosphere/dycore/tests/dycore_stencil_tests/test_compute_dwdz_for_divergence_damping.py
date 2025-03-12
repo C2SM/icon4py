@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_dampin
     compute_dwdz_for_divergence_damping,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,7 +25,11 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
 
     @staticmethod
     def reference(
-        grid, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        inv_ddqz_z_full: np.ndarray,
+        w: np.ndarray,
+        w_concorr_c: np.ndarray,
+        **kwargs,
     ) -> dict:
         z_dwdz_dd = inv_ddqz_z_full * (
             (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
@@ -32,7 +37,7 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
         return dict(z_dwdz_dd=z_dwdz_dd)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
         w_concorr_c = random_field(

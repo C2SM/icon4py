@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,12 +15,13 @@ from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import 
     copy_cell_kdim_field_to_vp,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def copy_cell_kdim_field_to_vp_numpy(field: np.array) -> np.array:
+def copy_cell_kdim_field_to_vp_numpy(field: np.ndarray) -> np.array:
     field_copy = field.copy()
     return field_copy
 
@@ -28,12 +31,14 @@ class TestCopyCellKdimFieldToVp(StencilTest):
     OUTPUTS = ("field_copy",)
 
     @staticmethod
-    def reference(grid, field: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray], field: np.ndarray, **kwargs: Any
+    ) -> dict:
         field_copy = copy_cell_kdim_field_to_vp_numpy(field)
         return dict(field_copy=field_copy)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         field = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         field_copy = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(
