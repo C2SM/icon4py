@@ -23,7 +23,7 @@ build_model_distributed:
   script:
     uv sync --extra distributed --python=3.10 --no-dev
   artifacts:
-    name: "venv_dist""
+    name: "venv_distributed_cpu"
     paths:
       - ${UV_PROJECT_ENVIRONMENT}/
 
