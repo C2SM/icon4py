@@ -1349,7 +1349,7 @@ class VelocityInitCellDiagnosticsSavepoint(IconSavepoint):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
 
 
-class IconVelocityInitVMomentumSavepoint(IconSavepoint):
+class VelocityInitVertexMomentumSavepoint(IconSavepoint):
     def z_w_con_c(self):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
 
