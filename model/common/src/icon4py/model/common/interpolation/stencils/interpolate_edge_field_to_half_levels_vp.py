@@ -36,7 +36,7 @@ def _interpolate_edge_field_to_half_levels_vp(
     return interpolation_to_half_levels_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_edge_field_to_half_levels_vp(
     wgtfac_e: fa.EdgeKField[vpfloat],
     interpolant: fa.EdgeKField[vpfloat],
