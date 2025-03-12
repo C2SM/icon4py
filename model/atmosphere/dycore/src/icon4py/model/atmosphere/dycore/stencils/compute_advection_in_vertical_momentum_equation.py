@@ -27,13 +27,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
-    khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+    vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
-    vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
     levelmask: fa.KField[bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
@@ -55,14 +55,16 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     vertical_wind_advective_tendency = where(
         (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
         _compute_advective_vertical_wind_tendency(
-            khalf_contravariant_corrected_w_at_cell, w, coeff1_dwdz, coeff2_dwdz
+            contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
         ),
         vertical_wind_advective_tendency,
     )
     vertical_wind_advective_tendency = where(
         (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
         _add_interpolated_horizontal_advection_of_w(
-            e_bln_c_s, khalf_horizontal_advection_of_w_at_edge, vertical_wind_advective_tendency
+            e_bln_c_s,
+            horizontal_advection_of_w_at_edges_on_half_levels,
+            vertical_wind_advective_tendency,
         ),
         vertical_wind_advective_tendency,
     )
@@ -73,7 +75,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
             levelmask,
             cfl_clipping,
             owner_mask,
-            khalf_contravariant_corrected_w_at_cell,
+            contravariant_corrected_w_at_cells_on_half_levels,
             ddqz_z_half,
             area,
             geofac_n2s,
@@ -91,11 +93,11 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
 
 @gtx.field_operator
 def _compute_advection_in_vertical_momentum_equation(
-    contravariant_corrected_w_at_cell: fa.CellKField[wpfloat],
+    contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[wpfloat],
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
-    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
@@ -118,22 +120,22 @@ def _compute_advection_in_vertical_momentum_equation(
     start_cell_lateral_boundary: gtx.int32,
     end_cell_halo: gtx.int32,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
-    contravariant_corrected_w_at_cell = where(
+    contravariant_corrected_w_at_cells_on_model_levels = where(
         start_cell_lateral_boundary <= cell < end_cell_halo,
         _interpolate_contravariant_vertical_velocity_to_full_levels(
-            khalf_contravariant_corrected_w_at_cell
+            contravariant_corrected_w_at_cells_on_half_levels
         ),
-        contravariant_corrected_w_at_cell,
+        contravariant_corrected_w_at_cells_on_model_levels,
     )
     vertical_wind_advective_tendency = (
         _compute_advective_vertical_wind_tendency_and_apply_diffusion(
-            khalf_contravariant_corrected_w_at_cell,
+            vertical_wind_advective_tendency,
             w,
+            horizontal_advection_of_w_at_edges_on_half_levels,
+            contravariant_corrected_w_at_cells_on_half_levels,
             coeff1_dwdz,
             coeff2_dwdz,
-            vertical_wind_advective_tendency,
             e_bln_c_s,
-            khalf_horizontal_advection_of_w_at_edge,
             levelmask,
             cfl_clipping,
             owner_mask,
@@ -154,16 +156,16 @@ def _compute_advection_in_vertical_momentum_equation(
         else vertical_wind_advective_tendency
     )
 
-    return (contravariant_corrected_w_at_cell, vertical_wind_advective_tendency)
+    return (contravariant_corrected_w_at_cells_on_model_levels, vertical_wind_advective_tendency)
 
 
 @gtx.program(grid_type=GridType.UNSTRUCTURED)
 def compute_advection_in_vertical_momentum_equation(
-    contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+    contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[vpfloat],
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
-    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
@@ -191,11 +193,11 @@ def compute_advection_in_vertical_momentum_equation(
     vertical_end: gtx.int32,
 ):
     _compute_advection_in_vertical_momentum_equation(
-        contravariant_corrected_w_at_cell,
+        contravariant_corrected_w_at_cells_on_model_levels,
         vertical_wind_advective_tendency,
         w,
-        khalf_contravariant_corrected_w_at_cell,
-        khalf_horizontal_advection_of_w_at_edge,
+        contravariant_corrected_w_at_cells_on_half_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels,
         coeff1_dwdz,
         coeff2_dwdz,
         e_bln_c_s,
@@ -217,7 +219,7 @@ def compute_advection_in_vertical_momentum_equation(
         nrdmax,
         start_cell_lateral_boundary,
         end_cell_halo,
-        out=(contravariant_corrected_w_at_cell, vertical_wind_advective_tendency),
+        out=(contravariant_corrected_w_at_cells_on_model_levels, vertical_wind_advective_tendency),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

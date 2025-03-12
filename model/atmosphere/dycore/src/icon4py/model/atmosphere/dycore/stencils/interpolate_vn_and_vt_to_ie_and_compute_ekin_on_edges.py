@@ -9,8 +9,8 @@ import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
-    _interpolate_vn_to_ie_and_compute_ekin_on_edges,
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
+    _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
     _interpolate_vt_to_interface_edges,
@@ -31,7 +31,7 @@ def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_36."""
     z_vt_ie = _interpolate_vt_to_interface_edges(wgtfac_e=wgtfac_e, vt=vt)
-    vn_ie, z_kin_hor_e = _interpolate_vn_to_ie_and_compute_ekin_on_edges(
+    vn_ie, z_kin_hor_e = _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
         wgtfac_e=wgtfac_e, vn=vn, vt=vt
     )
     return vn_ie, z_vt_ie, z_kin_hor_e

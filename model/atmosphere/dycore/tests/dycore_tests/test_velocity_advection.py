@@ -156,8 +156,8 @@ def test_velocity_predictor_step(
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         tangential_wind=init_savepoint.vt(),
-        khalf_vn=init_savepoint.vn_ie(),
-        khalf_contravariant_correction_at_cell=init_savepoint.w_concorr_c(),
+        vn_on_half_levels=init_savepoint.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
         rho_ic=None,
@@ -215,9 +215,9 @@ def test_velocity_predictor_step(
         skip_compute_predictor_vertical_advection=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        contravariant_correction_at_edge=init_savepoint.z_w_concorr_me(),
-        horizontal_kinetic_energy_at_edge=init_savepoint.z_kin_hor_e(),
-        khalf_tangential_wind=init_savepoint.z_vt_ie(),
+        contravariant_correction_at_edges_on_model_levels=init_savepoint.z_w_concorr_me(),
+        horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
+        tangential_wind_on_half_levels=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
     )
@@ -234,7 +234,9 @@ def test_velocity_predictor_step(
         diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14
     )
     # stencil 02,05
-    assert helpers.dallclose(diagnostic_state.khalf_vn.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
+    assert helpers.dallclose(
+        diagnostic_state.vn_on_half_levels.asnumpy(), icon_result_vn_ie, atol=1.0e-14
+    )
 
     start_edge_lateral_boundary_6 = icon_grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
@@ -243,7 +245,7 @@ def test_velocity_predictor_step(
     if not vn_only:
         assert helpers.dallclose(
             icon_result_z_v_grad_w[start_edge_lateral_boundary_6:, :],
-            velocity_advection._khalf_horizontal_advection_of_w_at_edge.asnumpy()[
+            velocity_advection._horizontal_advection_of_w_at_edges_on_half_levels.asnumpy()[
                 start_edge_lateral_boundary_6:, :
             ],
             atol=1.0e-16,
@@ -253,11 +255,13 @@ def test_velocity_predictor_step(
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
-        velocity_advection._horizontal_kinetic_energy_at_cell.asnumpy()[start_cell_nudging:, :],
+        velocity_advection._horizontal_kinetic_energy_at_cells_on_model_levels.asnumpy()[
+            start_cell_nudging:, :
+        ],
     )
     # stencil 10
     assert helpers.dallclose(
-        diagnostic_state.khalf_contravariant_correction_at_cell.asnumpy()[
+        diagnostic_state.contravariant_correction_at_cells_on_half_levels.asnumpy()[
             start_cell_nudging:, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
         icon_result_w_concorr_c[
@@ -267,7 +271,7 @@ def test_velocity_predictor_step(
     )
     # stencil 11,12,13,14
     assert helpers.dallclose(
-        velocity_advection._khalf_contravariant_corrected_w_at_cell.asnumpy()[
+        velocity_advection._contravariant_corrected_w_at_cells_on_half_levels.asnumpy()[
             start_cell_nudging:, :
         ],
         savepoint_velocity_exit.z_w_con_c().asnumpy()[start_cell_nudging:, :],
@@ -327,8 +331,8 @@ def test_velocity_corrector_step(
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         tangential_wind=init_savepoint.vt(),
-        khalf_vn=init_savepoint.vn_ie(),
-        khalf_contravariant_correction_at_cell=init_savepoint.w_concorr_c(),
+        vn_on_half_levels=init_savepoint.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
         rho_ic=None,
@@ -387,8 +391,8 @@ def test_velocity_corrector_step(
     velocity_advection.run_corrector_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        horizontal_kinetic_energy_at_edge=init_savepoint.z_kin_hor_e(),
-        khalf_tangential_wind=init_savepoint.z_vt_ie(),
+        horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
+        tangential_wind_on_half_levels=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
     )
@@ -402,7 +406,7 @@ def test_velocity_corrector_step(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
     assert helpers.dallclose(
-        velocity_advection._khalf_horizontal_advection_of_w_at_edge.asnumpy()[
+        velocity_advection._horizontal_advection_of_w_at_edges_on_half_levels.asnumpy()[
             start_cell_lateral_boundary_level_7:, :
         ],
         icon_result_z_v_grad_w[start_cell_lateral_boundary_level_7:, :],
@@ -411,13 +415,15 @@ def test_velocity_corrector_step(
     # stencil 08
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
-        velocity_advection._horizontal_kinetic_energy_at_cell.asnumpy()[start_cell_nudging:, :],
+        velocity_advection._horizontal_kinetic_energy_at_cells_on_model_levels.asnumpy()[
+            start_cell_nudging:, :
+        ],
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
     )
 
     # stencil 11,12,13,14
     assert helpers.dallclose(
-        velocity_advection._khalf_contravariant_corrected_w_at_cell.asnumpy()[
+        velocity_advection._contravariant_corrected_w_at_cells_on_half_levels.asnumpy()[
             start_cell_nudging:, :
         ],
         savepoint_velocity_exit.z_w_con_c().asnumpy()[start_cell_nudging:, :],
@@ -465,13 +471,15 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    khalf_tangential_wind = savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
+    tangential_wind_on_half_levels = (
+        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
+    )
     tangential_wind = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vt()
-    khalf_vn = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
-    horizontal_kinetic_energy_at_edge = (
+    vn_on_half_levels = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
+    horizontal_kinetic_energy_at_edges_on_model_levels = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_kin_hor_e()
     )
-    khalf_horizontal_advection_of_w_at_edge = (
+    horizontal_advection_of_w_at_edges_on_half_levels = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_v_grad_w()
     )
     vn = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn()
@@ -481,7 +489,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     wgtfac_e = metrics_savepoint.wgtfac_e()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
-    contravariant_correction_at_edge = (
+    contravariant_correction_at_edges_on_model_levels = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_w_concorr_me()
     )
     wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
@@ -513,15 +521,15 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     )
     z_v_grad_w_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
 
-    compute_edge_diagnostics_for_velocity_advection.compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
+    compute_edge_diagnostics_for_velocity_advection.compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
         backend
     )(
         tangential_wind=tangential_wind,
-        khalf_tangential_wind=khalf_tangential_wind,
-        khalf_vn=khalf_vn,
-        horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
-        contravariant_correction_at_edge=contravariant_correction_at_edge,
-        khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
+        tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+        vn_on_half_levels=vn_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         vn=vn,
         w=w,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
@@ -557,24 +565,26 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         vt_ref.asnumpy(), tangential_wind.asnumpy(), rtol=1.0e-14, atol=1.0e-14
     )
     assert helpers.dallclose(
-        z_vt_ie_ref.asnumpy(), khalf_tangential_wind.asnumpy(), rtol=1.0e-14, atol=1.0e-14
+        z_vt_ie_ref.asnumpy(), tangential_wind_on_half_levels.asnumpy(), rtol=1.0e-14, atol=1.0e-14
     )
-    assert helpers.dallclose(vn_ie_ref.asnumpy(), khalf_vn.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(
+        vn_ie_ref.asnumpy(), vn_on_half_levels.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
     assert helpers.dallclose(
         z_kin_hor_e_ref.asnumpy(),
-        horizontal_kinetic_energy_at_edge.asnumpy(),
+        horizontal_kinetic_energy_at_edges_on_model_levels.asnumpy(),
         rtol=1.0e-14,
         atol=1.0e-14,
     )
     assert helpers.dallclose(
         z_w_concorr_me_ref.asnumpy(),
-        contravariant_correction_at_edge.asnumpy(),
+        contravariant_correction_at_edges_on_model_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
     assert helpers.dallclose(
         z_v_grad_w_ref.asnumpy(),
-        khalf_horizontal_advection_of_w_at_edge.asnumpy(),
+        horizontal_advection_of_w_at_edges_on_half_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
@@ -607,9 +617,11 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     edge_domain = h_grid.domain(dims.EdgeDim)
     vertex_domain = h_grid.domain(dims.VertexDim)
 
-    khalf_tangential_wind = savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
-    khalf_vn = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
-    khalf_horizontal_advection_of_w_at_edge = (
+    tangential_wind_on_half_levels = (
+        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
+    )
+    vn_on_half_levels = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
+    horizontal_advection_of_w_at_edges_on_half_levels = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_v_grad_w()
     )
     w = savepoint_compute_edge_diagnostics_for_velocity_advection_init.w()
@@ -633,13 +645,13 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     )
     end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    compute_edge_diagnostics_for_velocity_advection.compute_khalf_horizontal_advection_of_w.with_backend(
+    compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
         backend
     )(
-        khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
+        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         w=w,
-        khalf_tangential_wind=khalf_tangential_wind,
-        khalf_vn=khalf_vn,
+        tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+        vn_on_half_levels=vn_on_half_levels,
         c_intp=c_intp,
         inv_dual_edge_length=inv_dual_edge_length,
         inv_primal_edge_length=inv_primal_edge_length,
@@ -665,7 +677,9 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
 
     assert helpers.dallclose(
         z_v_grad_w_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        khalf_horizontal_advection_of_w_at_edge.asnumpy()[horizontal_start:horizontal_end, :],
+        horizontal_advection_of_w_at_edges_on_half_levels.asnumpy()[
+            horizontal_start:horizontal_end, :
+        ],
         rtol=1.0e-15,
         atol=1.0e-15,
     )
@@ -700,16 +714,20 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     w_concorr_c_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.w_concorr_c()
     z_w_con_c_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c()
 
-    z_kin_hor_e = savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
-    z_w_concorr_me = savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_w_concorr_me()
+    horizontal_kinetic_energy_at_edges_on_model_levels = (
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
+    )
+    contravariant_correction_at_edges_on_model_levels = (
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_w_concorr_me()
+    )
     w = savepoint_compute_cell_diagnostics_for_velocity_advection_init.w()
-    khalf_contravariant_correction_at_cell = (
+    contravariant_correction_at_cells_on_half_levels = (
         savepoint_compute_cell_diagnostics_for_velocity_advection_init.w_concorr_c()
     )
-    horizontal_kinetic_energy_at_cell = (
+    horizontal_kinetic_energy_at_cells_on_model_levels = (
         savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_ekinh()
     )
-    khalf_contravariant_corrected_w_at_cell = (
+    contravariant_corrected_w_at_cells_on_half_levels = (
         savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_w_con_c()
     )
 
@@ -724,15 +742,15 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-    compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_terms.with_backend(
+    compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms.with_backend(
         backend
     )(
-        horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
-        khalf_contravariant_correction_at_cell=khalf_contravariant_correction_at_cell,
-        khalf_contravariant_corrected_w_at_cell=khalf_contravariant_corrected_w_at_cell,
+        horizontal_kinetic_energy_at_cells_on_model_levels=horizontal_kinetic_energy_at_cells_on_model_levels,
+        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+        contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
         w=w,
-        horizontal_kinetic_energy_at_edge=z_kin_hor_e,
-        contravariant_correction_at_edge=z_w_concorr_me,
+        horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         e_bln_c_s=e_bln_c_s,
         wgtfac_c=wgtfac_c,
         k=k,
@@ -751,19 +769,19 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
 
     assert helpers.dallclose(
         z_ekinh_ref.asnumpy(),
-        horizontal_kinetic_energy_at_cell.asnumpy(),
+        horizontal_kinetic_energy_at_cells_on_model_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
     assert helpers.dallclose(
         w_concorr_c_ref.asnumpy(),
-        khalf_contravariant_correction_at_cell.asnumpy(),
+        contravariant_correction_at_cells_on_half_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
     assert helpers.dallclose(
         z_w_con_c_ref.asnumpy(),
-        khalf_contravariant_corrected_w_at_cell.asnumpy(),
+        contravariant_corrected_w_at_cells_on_half_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
@@ -798,15 +816,17 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     w_concorr_c_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.w_concorr_c()
     z_w_con_c_ref = savepoint_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c()
 
-    z_kin_hor_e = savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
+    horizontal_kinetic_energy_at_edges_on_model_levels = (
+        savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_kin_hor_e()
+    )
     w = savepoint_compute_cell_diagnostics_for_velocity_advection_init.w()
-    khalf_contravariant_correction_at_cell = (
+    contravariant_correction_at_cells_on_half_levels = (
         savepoint_compute_cell_diagnostics_for_velocity_advection_init.w_concorr_c()
     )
-    horizontal_kinetic_energy_at_cell = (
+    horizontal_kinetic_energy_at_cells_on_model_levels = (
         savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_ekinh()
     )
-    khalf_contravariant_corrected_w_at_cell = (
+    contravariant_corrected_w_at_cells_on_half_levels = (
         savepoint_compute_cell_diagnostics_for_velocity_advection_init.z_w_con_c()
     )
 
@@ -820,14 +840,14 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-    compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w.with_backend(
+    compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w.with_backend(
         backend
     )(
-        horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
-        khalf_contravariant_correction_at_cell=khalf_contravariant_correction_at_cell,
-        khalf_contravariant_corrected_w_at_cell=khalf_contravariant_corrected_w_at_cell,
+        horizontal_kinetic_energy_at_cells_on_model_levels=horizontal_kinetic_energy_at_cells_on_model_levels,
+        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+        contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
         w=w,
-        horizontal_kinetic_energy_at_edge=z_kin_hor_e,
+        horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
         e_bln_c_s=e_bln_c_s,
         k=k,
         nflatlev=nflatlev,
@@ -846,19 +866,19 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
 
     assert helpers.dallclose(
         z_ekinh_ref.asnumpy(),
-        horizontal_kinetic_energy_at_cell.asnumpy(),
+        horizontal_kinetic_energy_at_cells_on_model_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
     assert helpers.dallclose(
         w_concorr_c_ref.asnumpy(),
-        khalf_contravariant_correction_at_cell.asnumpy(),
+        contravariant_correction_at_cells_on_half_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
     assert helpers.dallclose(
         z_w_con_c_ref.asnumpy(),
-        khalf_contravariant_corrected_w_at_cell.asnumpy(),
+        contravariant_corrected_w_at_cells_on_half_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
@@ -900,18 +920,18 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     cfl_clipping_np = z_w_con_c_8_13 > (cfl_w_limit * ddqz_z_half.asnumpy())
     cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np)
-    khalf_contravariant_corrected_w_at_cell = (
+    contravariant_corrected_w_at_cells_on_half_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c()
     )
     w = savepoint_compute_advection_in_vertical_momentum_equation_init.w()
     vertical_wind_advective_tendency = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.ddt_w_adv()
     )
-    khalf_horizontal_advection_of_w_at_edge = (
+    horizontal_advection_of_w_at_edges_on_half_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_v_grad_w()
     )
     levmask = savepoint_compute_advection_in_vertical_momentum_equation_init.levmask()
-    contravariant_corrected_w_at_cell = (
+    contravariant_corrected_w_at_cells_on_model_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
     )
     skip_compute_predictor_vertical_advection = (
@@ -955,11 +975,11 @@ def test_compute_advection_in_vertical_momentum_equation(
     compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
         backend
     )(
-        contravariant_corrected_w_at_cell=contravariant_corrected_w_at_cell,
+        contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
         vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         w=w,
-        khalf_contravariant_corrected_w_at_cell=khalf_contravariant_corrected_w_at_cell,
-        khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
+        contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
         e_bln_c_s=e_bln_c_s,
@@ -995,7 +1015,7 @@ def test_compute_advection_in_vertical_momentum_equation(
 
     assert helpers.dallclose(
         z_w_con_c_full_ref.asnumpy(),
-        contravariant_corrected_w_at_cell.asnumpy(),
+        contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
@@ -1032,17 +1052,17 @@ def test_compute_advection_in_horizontal_momentum_equation(
     step_date_exit,
 ):
     vn = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn()
-    horizontal_kinetic_energy_at_edge = (
+    horizontal_kinetic_energy_at_edges_on_model_levels = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.z_kin_hor_e()
     )
-    horizontal_kinetic_energy_at_cell = (
+    horizontal_kinetic_energy_at_cells_on_model_levels = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.z_ekinh()
     )
     tangential_wind = savepoint_compute_advection_in_horizontal_momentum_equation_init.vt()
-    contravariant_corrected_w_at_cell = (
+    contravariant_corrected_w_at_cells_on_model_levels = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.z_w_con_c_full()
     )
-    khalf_vn = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn_ie()
+    vn_on_half_levels = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn_ie()
     levelmask = savepoint_compute_advection_in_horizontal_momentum_equation_init.levelmask()
     normal_wind_advective_tendency = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.ddt_vn_apc()
@@ -1084,12 +1104,12 @@ def test_compute_advection_in_horizontal_momentum_equation(
     )(
         normal_wind_advective_tendency=normal_wind_advective_tendency,
         vn=vn,
-        horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
-        horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
+        horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+        horizontal_kinetic_energy_at_cells_on_model_levels=horizontal_kinetic_energy_at_cells_on_model_levels,
         tangential_wind=tangential_wind,
         coriolis_frequency=coriolis_frequency,
-        contravariant_corrected_w_at_cell=contravariant_corrected_w_at_cell,
-        khalf_vn=khalf_vn,
+        contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+        vn_on_half_levels=vn_on_half_levels,
         geofac_rot=geofac_rot,
         coeff_gradekin=coeff_gradekin,
         c_lin_e=c_lin_e,

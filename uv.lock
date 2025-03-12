@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -1536,10 +1537,10 @@ all = [
     { name = "icon4py-tools" },
 ]
 cuda11 = [
-    { name = "icon4py-common", extra = ["cuda11"] },
+    { name = "icon4py-common", extra = ["cuda11"], marker = "extra == 'extra-7-icon4py-cuda11'" },
 ]
 cuda12 = [
-    { name = "icon4py-common", extra = ["cuda12"] },
+    { name = "icon4py-common", extra = ["cuda12"], marker = "extra == 'extra-7-icon4py-cuda12'" },
 ]
 dace = [
     { name = "icon4py-common", extra = ["dace"] },
@@ -1644,6 +1645,7 @@ requires-dist = [
     { name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing" },
     { name = "icon4py-tools", marker = "extra == 'fortran'", editable = "tools" },
 ]
+provides-extras = ["all", "cuda11", "cuda12", "dace", "distributed", "fortran", "io", "testing"]
 
 [package.metadata.requires-dev]
 build = [
@@ -1660,7 +1662,7 @@ dev = [
     { name = "icon4py-testing", editable = "model/testing" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
     { name = "myst-parser", specifier = ">=4.0.0" },
-    { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b#aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
+    { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
     { name = "pip", specifier = ">=22.1.1" },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.0.1" },
@@ -1700,7 +1702,7 @@ lint = [
 test = [
     { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
     { name = "icon4py-testing", editable = "model/testing" },
-    { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b#aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
+    { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
     { name = "pytest", specifier = ">=8.0.1" },
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-cache", specifier = ">=1.0" },
@@ -1863,6 +1865,7 @@ requires-dist = [
     { name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0" },
     { name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0" },
 ]
+provides-extras = ["all", "cuda11", "cuda12", "dace", "distributed", "io"]
 
 [[package]]
 name = "icon4py-driver"
@@ -1960,6 +1963,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
 ]
+provides-extras = ["cuda11", "cuda12"]
 
 [[package]]
 name = "identify"

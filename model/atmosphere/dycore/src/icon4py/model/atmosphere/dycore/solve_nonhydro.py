@@ -239,12 +239,12 @@ class IntermediateFields:
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     z_rho_e: fa.EdgeKField[float]
     z_theta_v_e: fa.EdgeKField[float]
-    horizontal_kinetic_energy_at_edge: fa.EdgeKField[float]
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[float]
     """
     Declared as z_kin_hor_e in ICON.
     """
 
-    khalf_tangential_wind: fa.EdgeKField[float]
+    tangential_wind_on_half_levels: fa.EdgeKField[float]
     """
     Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. NOTE THAT IT ONLY HAS nlev LEVELS because it is only used for computing horizontal advection of w and thus level nlevp1 is not needed because w[nlevp1-1] is diagnostic.
     """
@@ -280,10 +280,10 @@ class IntermediateFields:
             z_graddiv_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
             z_rho_expl=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
             z_dwdz_dd=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            horizontal_kinetic_energy_at_edge=data_alloc.zero_field(
+            horizontal_kinetic_energy_at_edges_on_model_levels=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            khalf_tangential_wind=data_alloc.zero_field(
+            tangential_wind_on_half_levels=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
         )
@@ -714,7 +714,7 @@ class SolveNonhydro:
         self.k_field = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self._contravariant_correction_at_edge = data_alloc.zero_field(
+        self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
         """
@@ -922,9 +922,9 @@ class SolveNonhydro:
                 skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
                 diagnostic_state=diagnostic_state_nh,
                 prognostic_state=prognostic_states.current,
-                contravariant_correction_at_edge=self._contravariant_correction_at_edge,
-                horizontal_kinetic_energy_at_edge=z_fields.horizontal_kinetic_energy_at_edge,
-                khalf_tangential_wind=z_fields.khalf_tangential_wind,
+                contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
+                horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+                tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
                 dtime=dtime,
                 cell_areas=self._cell_params.area,
             )
@@ -1299,11 +1299,11 @@ class SolveNonhydro:
             ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
             ddxt_z_full=self._metric_state_nonhydro.ddxt_z_full,
             vt=diagnostic_state_nh.tangential_wind,
-            z_w_concorr_me=self._contravariant_correction_at_edge,
+            z_w_concorr_me=self._contravariant_correction_at_edges_on_model_levels,
             wgtfac_e=self._metric_state_nonhydro.wgtfac_e,
-            vn_ie=diagnostic_state_nh.khalf_vn,
-            z_vt_ie=z_fields.khalf_tangential_wind,
-            z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edge,
+            vn_ie=diagnostic_state_nh.vn_on_half_levels,
+            z_vt_ie=z_fields.tangential_wind_on_half_levels,
+            z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
             k_field=self.k_field,
             nflatlev_startindex=self._vertical_params.nflatlev,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
@@ -1317,9 +1317,9 @@ class SolveNonhydro:
             self._predictor_stencils_37_38(
                 vn=prognostic_states.next.vn,
                 vt=diagnostic_state_nh.tangential_wind,
-                vn_ie=diagnostic_state_nh.khalf_vn,
-                z_vt_ie=z_fields.khalf_tangential_wind,
-                z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edge,
+                vn_ie=diagnostic_state_nh.vn_on_half_levels,
+                z_vt_ie=z_fields.tangential_wind_on_half_levels,
+                z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
                 wgtfacq_e_dsl=self._metric_state_nonhydro.wgtfacq_e,
                 horizontal_start=self._start_edge_lateral_boundary_level_5,
                 horizontal_end=self._end_edge_halo_level_2,
@@ -1330,10 +1330,10 @@ class SolveNonhydro:
 
         self._stencils_39_40(
             e_bln_c_s=self._interpolation_state.e_bln_c_s,
-            z_w_concorr_me=self._contravariant_correction_at_edge,
+            z_w_concorr_me=self._contravariant_correction_at_edges_on_model_levels,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
-            w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             k_field=self.k_field,
             nflatlev_startindex_plus1=gtx.int32(self._vertical_params.nflatlev + 1),
             nlev=self._grid.num_levels,
@@ -1364,7 +1364,7 @@ class SolveNonhydro:
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
-            w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
             z_beta=z_fields.z_beta,
             exner_nnow=prognostic_states.current.exner,
@@ -1401,7 +1401,7 @@ class SolveNonhydro:
         self._stencils_47_48_49(
             w_nnew=prognostic_states.next.w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             z_rho_expl=z_fields.z_rho_expl,
             z_exner_expl=z_fields.z_exner_expl,
             rho_nnow=prognostic_states.current.rho,
@@ -1507,7 +1507,7 @@ class SolveNonhydro:
             self._compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.z_dwdz_dd,
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
@@ -1550,7 +1550,7 @@ class SolveNonhydro:
             self._compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.z_dwdz_dd,
                 horizontal_start=self._start_cell_lateral_boundary,
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
@@ -1608,8 +1608,8 @@ class SolveNonhydro:
         self.velocity_advection.run_corrector_step(
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_states.next,
-            horizontal_kinetic_energy_at_edge=z_fields.horizontal_kinetic_energy_at_edge,
-            khalf_tangential_wind=z_fields.khalf_tangential_wind,
+            horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+            tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
             dtime=dtime,
             cell_areas=self._cell_params.area,
         )
@@ -1623,7 +1623,7 @@ class SolveNonhydro:
         log.debug(f"corrector: start stencil 10")
         self._compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=prognostic_states.next.w,
-            w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             rho_now=prognostic_states.current.rho,
             rho_var=prognostic_states.next.rho,
@@ -1842,7 +1842,7 @@ class SolveNonhydro:
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
-                w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
                 z_beta=z_fields.z_beta,
                 exner_nnow=prognostic_states.current.exner,
@@ -1876,7 +1876,7 @@ class SolveNonhydro:
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
-                w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
                 z_beta=z_fields.z_beta,
                 exner_nnow=prognostic_states.current.exner,
@@ -1914,7 +1914,7 @@ class SolveNonhydro:
         self._stencils_47_48_49(
             w_nnew=prognostic_states.next.w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             z_rho_expl=z_fields.z_rho_expl,
             z_exner_expl=z_fields.z_exner_expl,
             rho_nnow=prognostic_states.current.rho,
@@ -2077,7 +2077,7 @@ class SolveNonhydro:
                 vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
                 w_now=prognostic_states.current.w,
                 w_new=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.khalf_contravariant_correction_at_cell,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 mass_flx_ic=prep_adv.mass_flx_ic,
                 r_nsubsteps=r_nsubsteps,
                 horizontal_start=self._start_cell_lateral_boundary,

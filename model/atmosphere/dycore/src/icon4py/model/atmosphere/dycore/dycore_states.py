@@ -29,14 +29,14 @@ class DiagnosticStateNonHydro:
     Declared as vt in ICON. Tangential wind at edge.
     """
 
-    khalf_vn: fa.EdgeKField[
+    vn_on_half_levels: fa.EdgeKField[
         float
     ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     """
     Declared as vn_ie in ICON. Normal wind at edge on k-half levels.
     """
 
-    khalf_contravariant_correction_at_cell: fa.CellKField[
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[
         float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     """

@@ -142,8 +142,8 @@ def construct_diagnostics(
             init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)
         ),
         tangential_wind=init_savepoint.vt(),
-        khalf_vn=init_savepoint.vn_ie(),
-        khalf_contravariant_correction_at_cell=init_savepoint.w_concorr_c(),
+        vn_on_half_levels=init_savepoint.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),

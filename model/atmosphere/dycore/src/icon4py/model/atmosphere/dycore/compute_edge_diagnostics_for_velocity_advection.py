@@ -22,27 +22,27 @@ from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
     _compute_tangential_wind,
 )
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
-    _interpolate_vn_to_ie_and_compute_ekin_on_edges,
-)
-from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
-    _interpolate_vt_to_interface_edges,
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
+    _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges,
 )
 from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_vp import (
+    _interpolate_edge_field_to_half_levels_vp,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _compute_interface_vt_vn_and_kinetic_energy(
+def _compute_vt_vn_on_half_levels_and_kinetic_energy(
     vn: fa.EdgeKField[wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
-    khalf_tangential_wind: fa.EdgeKField[wpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
     tangential_wind: fa.EdgeKField[vpfloat],
-    khalf_vn: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
+    vn_on_half_levels: fa.EdgeKField[vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     skip_compute_predictor_vertical_advection: bool,
@@ -51,44 +51,58 @@ def _compute_interface_vt_vn_and_kinetic_energy(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-    khalf_vn, horizontal_kinetic_energy_at_edge = where(
+    vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels = where(
         1 <= k < nlev,
-        _interpolate_vn_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, tangential_wind),
-        (khalf_vn, horizontal_kinetic_energy_at_edge),
+        _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
+            wgtfac_e, vn, tangential_wind
+        ),
+        (vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels),
     )
 
-    khalf_tangential_wind = (
+    tangential_wind_on_half_levels = (
         where(
             1 <= k < nlev,
-            _interpolate_vt_to_interface_edges(wgtfac_e, tangential_wind),
-            khalf_tangential_wind,
+            _interpolate_edge_field_to_half_levels_vp(wgtfac_e, tangential_wind),
+            tangential_wind_on_half_levels,
         )
         if not skip_compute_predictor_vertical_advection
-        else khalf_tangential_wind
+        else tangential_wind_on_half_levels
     )
 
-    (khalf_vn, khalf_tangential_wind, horizontal_kinetic_energy_at_edge) = where(
+    (
+        vn_on_half_levels,
+        tangential_wind_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
+    ) = where(
         k == 0,
         _compute_horizontal_kinetic_energy(vn, tangential_wind),
-        (khalf_vn, khalf_tangential_wind, horizontal_kinetic_energy_at_edge),
+        (
+            vn_on_half_levels,
+            tangential_wind_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
+        ),
     )
 
-    return khalf_vn, khalf_tangential_wind, horizontal_kinetic_energy_at_edge
+    return (
+        vn_on_half_levels,
+        tangential_wind_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
+    )
 
 
 @gtx.field_operator
-def _fused_velocity_advection_stencil_1_to_6(
+def _compute_derived_horizontal_winds_and_kinetic_energy_and_contravariant_correction(
     vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
-    contravariant_correction_at_edge: fa.EdgeKField[vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     nflatlev: gtx.int32,
-    khalf_tangential_wind: fa.EdgeKField[wpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
     tangential_wind: fa.EdgeKField[vpfloat],
-    khalf_vn: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
+    vn_on_half_levels: fa.EdgeKField[vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     skip_compute_predictor_vertical_advection: bool,
@@ -106,44 +120,44 @@ def _fused_velocity_advection_stencil_1_to_6(
     )
 
     (
-        khalf_vn,
-        khalf_tangential_wind,
-        horizontal_kinetic_energy_at_edge,
-    ) = _compute_interface_vt_vn_and_kinetic_energy(
+        vn_on_half_levels,
+        tangential_wind_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
+    ) = _compute_vt_vn_on_half_levels_and_kinetic_energy(
         vn,
         wgtfac_e,
-        khalf_tangential_wind,
+        tangential_wind_on_half_levels,
         tangential_wind,
-        khalf_vn,
-        horizontal_kinetic_energy_at_edge,
+        vn_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
         k,
         nlev,
         skip_compute_predictor_vertical_advection,
     )
 
-    contravariant_correction_at_edge = where(
+    contravariant_correction_at_edges_on_model_levels = where(
         nflatlev <= k < nlev,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
-        contravariant_correction_at_edge,
+        contravariant_correction_at_edges_on_model_levels,
     )
 
     return (
         tangential_wind,
-        khalf_vn,
-        khalf_tangential_wind,
-        horizontal_kinetic_energy_at_edge,
-        contravariant_correction_at_edge,
+        vn_on_half_levels,
+        tangential_wind_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
+        contravariant_correction_at_edges_on_model_levels,
     )
 
 
 @gtx.field_operator
-def _compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction(
+def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
     tangential_wind: fa.EdgeKField[vpfloat],
-    khalf_tangential_wind: fa.EdgeKField[wpfloat],
-    khalf_vn: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
-    contravariant_correction_at_edge: fa.EdgeKField[vpfloat],
-    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
+    vn_on_half_levels: fa.EdgeKField[vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     w: fa.CellKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
@@ -171,22 +185,22 @@ def _compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_
 ]:
     (
         tangential_wind,
-        khalf_vn,
-        khalf_tangential_wind,
-        horizontal_kinetic_energy_at_edge,
-        contravariant_correction_at_edge,
-    ) = _fused_velocity_advection_stencil_1_to_6(
+        vn_on_half_levels,
+        tangential_wind_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
+        contravariant_correction_at_edges_on_model_levels,
+    ) = _compute_derived_horizontal_winds_and_kinetic_energy_and_contravariant_correction(
         vn,
         rbf_vec_coeff_e,
         wgtfac_e,
         ddxn_z_full,
         ddxt_z_full,
-        contravariant_correction_at_edge,
+        contravariant_correction_at_edges_on_model_levels,
         nflatlev,
-        khalf_tangential_wind,
+        tangential_wind_on_half_levels,
         tangential_wind,
-        khalf_vn,
-        horizontal_kinetic_energy_at_edge,
+        vn_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
         k,
         nlev,
         skip_compute_predictor_vertical_advection,
@@ -194,42 +208,42 @@ def _compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_
 
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
 
-    khalf_w_at_vertex = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
+    w_at_vertices = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
-    khalf_horizontal_advection_of_w_at_edge = (
+    horizontal_advection_of_w_at_edges_on_half_levels = (
         where(
             (lateral_boundary_7 <= edge) & (edge < halo_1) & (k < nlev),
             _compute_horizontal_advection_term_for_vertical_velocity(
-                khalf_vn,
+                vn_on_half_levels,
                 inv_dual_edge_length,
                 w,
-                khalf_tangential_wind,
+                tangential_wind_on_half_levels,
                 inv_primal_edge_length,
                 tangent_orientation,
-                khalf_w_at_vertex,
+                w_at_vertices,
             ),
-            khalf_horizontal_advection_of_w_at_edge,
+            horizontal_advection_of_w_at_edges_on_half_levels,
         )
         if not skip_compute_predictor_vertical_advection
-        else khalf_horizontal_advection_of_w_at_edge
+        else horizontal_advection_of_w_at_edges_on_half_levels
     )
 
     return (
         tangential_wind,
-        khalf_tangential_wind,
-        khalf_vn,
-        horizontal_kinetic_energy_at_edge,
-        contravariant_correction_at_edge,
-        khalf_horizontal_advection_of_w_at_edge,
+        tangential_wind_on_half_levels,
+        vn_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
+        contravariant_correction_at_edges_on_model_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels,
     )
 
 
 @gtx.field_operator
-def _compute_khalf_horizontal_advection_of_w(
-    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
+def _compute_horizontal_advection_of_w(
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    khalf_tangential_wind: fa.EdgeKField[wpfloat],
-    khalf_vn: fa.EdgeKField[vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
+    vn_on_half_levels: fa.EdgeKField[vpfloat],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -241,37 +255,37 @@ def _compute_khalf_horizontal_advection_of_w(
     start_vertex_lateral_boundary_level_2: gtx.int32,
     end_vertex_halo: gtx.int32,
 ) -> fa.EdgeKField[vpfloat]:
-    khalf_w_at_vertex = where(
+    w_at_vertices = where(
         (start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo),
         _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp),
         0.0,
     )
 
-    khalf_horizontal_advection_of_w_at_edge = where(
+    horizontal_advection_of_w_at_edges_on_half_levels = where(
         (start_edge_lateral_boundary_level_7 <= edge < end_edge_halo),
         _compute_horizontal_advection_term_for_vertical_velocity(
-            khalf_vn,
+            vn_on_half_levels,
             inv_dual_edge_length,
             w,
-            khalf_tangential_wind,
+            tangential_wind_on_half_levels,
             inv_primal_edge_length,
             tangent_orientation,
-            khalf_w_at_vertex,
+            w_at_vertices,
         ),
-        khalf_horizontal_advection_of_w_at_edge,
+        horizontal_advection_of_w_at_edges_on_half_levels,
     )
 
-    return khalf_horizontal_advection_of_w_at_edge
+    return horizontal_advection_of_w_at_edges_on_half_levels
 
 
 @gtx.program(grid_type=GridType.UNSTRUCTURED)
-def compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction(
+def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
     tangential_wind: fa.EdgeKField[vpfloat],
-    khalf_tangential_wind: fa.EdgeKField[wpfloat],
-    khalf_vn: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
-    contravariant_correction_at_edge: fa.EdgeKField[vpfloat],
-    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
+    vn_on_half_levels: fa.EdgeKField[vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     w: fa.CellKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
@@ -295,13 +309,13 @@ def compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_c
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction(
+    _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
         tangential_wind,
-        khalf_tangential_wind,
-        khalf_vn,
-        horizontal_kinetic_energy_at_edge,
-        contravariant_correction_at_edge,
-        khalf_horizontal_advection_of_w_at_edge,
+        tangential_wind_on_half_levels,
+        vn_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
+        contravariant_correction_at_edges_on_model_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels,
         vn,
         w,
         rbf_vec_coeff_e,
@@ -321,11 +335,11 @@ def compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_c
         halo_1,
         out=(
             tangential_wind,
-            khalf_tangential_wind,
-            khalf_vn,
-            horizontal_kinetic_energy_at_edge,
-            contravariant_correction_at_edge,
-            khalf_horizontal_advection_of_w_at_edge,
+            tangential_wind_on_half_levels,
+            vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels,
+            horizontal_advection_of_w_at_edges_on_half_levels,
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -335,7 +349,7 @@ def compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_c
     _extrapolate_at_top(
         wgtfacq_e,
         vn,
-        out=khalf_vn,
+        out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_end - 1, vertical_end),
@@ -344,11 +358,11 @@ def compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_c
 
 
 @gtx.program(grid_type=GridType.UNSTRUCTURED)
-def compute_khalf_horizontal_advection_of_w(
-    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
+def compute_horizontal_advection_of_w(
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    khalf_tangential_wind: fa.EdgeKField[wpfloat],
-    khalf_vn: fa.EdgeKField[vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
+    vn_on_half_levels: fa.EdgeKField[vpfloat],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -364,11 +378,11 @@ def compute_khalf_horizontal_advection_of_w(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_khalf_horizontal_advection_of_w(
-        khalf_horizontal_advection_of_w_at_edge,
+    _compute_horizontal_advection_of_w(
+        horizontal_advection_of_w_at_edges_on_half_levels,
         w,
-        khalf_tangential_wind,
-        khalf_vn,
+        tangential_wind_on_half_levels,
+        vn_on_half_levels,
         c_intp,
         inv_dual_edge_length,
         inv_primal_edge_length,
@@ -379,7 +393,7 @@ def compute_khalf_horizontal_advection_of_w(
         halo_1,
         start_vertex_lateral_boundary_level_2,
         end_vertex_halo,
-        out=khalf_horizontal_advection_of_w_at_edge,
+        out=horizontal_advection_of_w_at_edges_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

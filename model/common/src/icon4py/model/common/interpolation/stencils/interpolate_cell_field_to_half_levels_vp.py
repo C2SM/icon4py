@@ -15,7 +15,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _interpolate_to_half_levels_vp(
+def _interpolate_cell_field_to_half_levels_vp(
     wgtfac_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -37,7 +37,7 @@ def _interpolate_to_half_levels_vp(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def interpolate_to_half_levels_vp(
+def interpolate_cell_field_to_half_levels_vp(
     wgtfac_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
     interpolation_to_half_levels_vp: fa.CellKField[vpfloat],
@@ -46,7 +46,7 @@ def interpolate_to_half_levels_vp(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _interpolate_to_half_levels_vp(
+    _interpolate_cell_field_to_half_levels_vp(
         wgtfac_c,
         interpolant,
         out=interpolation_to_half_levels_vp,

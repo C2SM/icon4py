@@ -12,83 +12,84 @@ from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_vel
     _correct_contravariant_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
+    _interpolate_cell_field_to_half_levels_vp,
+)
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
-)
-from icon4py.model.common.interpolation.stencils.interpolate_to_half_levels_vp import (
-    _interpolate_to_half_levels_vp,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _compute_horizontal_kinetic_energy_and_khalf_contravariant_correction(
-    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
+def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_correction(
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    contravariant_correction_at_edge: fa.EdgeKField[vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
-    khalf_contravariant_correction_at_cell: fa.CellKField[vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
 ) -> tuple[
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    horizontal_kinetic_energy_at_cell = _interpolate_to_cell_center(
-        horizontal_kinetic_energy_at_edge, e_bln_c_s
+    horizontal_kinetic_energy_at_cells_on_model_levels = _interpolate_to_cell_center(
+        horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
     )
 
-    contravariant_correction_at_cell = where(
+    contravariant_correction_at_cells_model_levels = where(
         k >= nflatlev,
-        _interpolate_to_cell_center(contravariant_correction_at_edge, e_bln_c_s),
+        _interpolate_to_cell_center(contravariant_correction_at_edges_on_model_levels, e_bln_c_s),
         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
-    khalf_contravariant_correction_at_cell = where(
+    contravariant_correction_at_cells_on_half_levels = where(
         nflatlev + 1 <= k,
-        _interpolate_to_half_levels_vp(
-            wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cell
+        _interpolate_cell_field_to_half_levels_vp(
+            wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
         ),
-        khalf_contravariant_correction_at_cell,
+        contravariant_correction_at_cells_on_half_levels,
     )
 
     return (
-        horizontal_kinetic_energy_at_cell,
-        khalf_contravariant_correction_at_cell,
+        horizontal_kinetic_energy_at_cells_on_model_levels,
+        contravariant_correction_at_cells_on_half_levels,
     )
 
 
 @gtx.field_operator
-def _compute_khalf_contravariant_corrected_w(
+def _compute_contravariant_corrected_w(
     w: fa.CellKField[wpfloat],
-    khalf_contravariant_correction_at_cell: fa.CellKField[vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
-    khalf_contravariant_corrected_w_at_cell = where(
+    contravariant_corrected_w_at_cells_on_half_levels = where(
         k < nlev, astype(w, vpfloat), broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
     )
 
-    khalf_contravariant_corrected_w_at_cell = where(
+    contravariant_corrected_w_at_cells_on_half_levels = where(
         nflatlev + 1 <= k < nlev,
         _correct_contravariant_vertical_velocity(
-            khalf_contravariant_corrected_w_at_cell, khalf_contravariant_correction_at_cell
+            contravariant_corrected_w_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels,
         ),
-        khalf_contravariant_corrected_w_at_cell,
+        contravariant_corrected_w_at_cells_on_half_levels,
     )
 
-    return khalf_contravariant_corrected_w_at_cell
+    return contravariant_corrected_w_at_cells_on_half_levels
 
 
 @gtx.program
-def compute_horizontal_kinetic_energy_and_khalf_contravariant_terms(
-    horizontal_kinetic_energy_at_cell: fa.CellKField[vpfloat],
-    khalf_contravariant_correction_at_cell: fa.CellKField[vpfloat],
-    khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms(
+    horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
-    contravariant_correction_at_edge: fa.EdgeKField[vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     k: fa.KField[gtx.int32],
@@ -99,17 +100,17 @@ def compute_horizontal_kinetic_energy_and_khalf_contravariant_terms(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_horizontal_kinetic_energy_and_khalf_contravariant_correction(
-        horizontal_kinetic_energy_at_edge,
+    _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_correction(
+        horizontal_kinetic_energy_at_edges_on_model_levels,
         e_bln_c_s,
-        contravariant_correction_at_edge,
+        contravariant_correction_at_edges_on_model_levels,
         wgtfac_c,
-        khalf_contravariant_correction_at_cell,
+        contravariant_correction_at_cells_on_half_levels,
         k,
         nflatlev,
         out=(
-            horizontal_kinetic_energy_at_cell,
-            khalf_contravariant_correction_at_cell,
+            horizontal_kinetic_energy_at_cells_on_model_levels,
+            contravariant_correction_at_cells_on_half_levels,
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -117,13 +118,13 @@ def compute_horizontal_kinetic_energy_and_khalf_contravariant_terms(
         },
     )
 
-    _compute_khalf_contravariant_corrected_w(
+    _compute_contravariant_corrected_w(
         w,
-        khalf_contravariant_correction_at_cell,
+        contravariant_correction_at_cells_on_half_levels,
         k,
         nflatlev,
         nlev,
-        out=khalf_contravariant_corrected_w_at_cell,
+        out=contravariant_corrected_w_at_cells_on_half_levels,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -132,12 +133,12 @@ def compute_horizontal_kinetic_energy_and_khalf_contravariant_terms(
 
 
 @gtx.program
-def compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w(
-    horizontal_kinetic_energy_at_cell: fa.CellKField[vpfloat],
-    khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w(
+    horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
-    khalf_contravariant_correction_at_cell: fa.CellKField[vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
@@ -148,21 +149,21 @@ def compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w(
     vertical_end: gtx.int32,
 ):
     _interpolate_to_cell_center(
-        horizontal_kinetic_energy_at_edge,
+        horizontal_kinetic_energy_at_edges_on_model_levels,
         e_bln_c_s,
-        out=horizontal_kinetic_energy_at_cell,
+        out=horizontal_kinetic_energy_at_cells_on_model_levels,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
-    _compute_khalf_contravariant_corrected_w(
+    _compute_contravariant_corrected_w(
         w,
-        khalf_contravariant_correction_at_cell,
+        contravariant_correction_at_cells_on_half_levels,
         k,
         nflatlev,
         nlev,
-        out=khalf_contravariant_corrected_w_at_cell,
+        out=contravariant_corrected_w_at_cells_on_half_levels,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

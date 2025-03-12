@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
+def _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
     wgtfac_e: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     vt: fa.EdgeKField[vpfloat],
@@ -37,7 +37,7 @@ def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def interpolate_vn_to_ie_and_compute_ekin_on_edges(
+def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
     wgtfac_e: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     vt: fa.EdgeKField[vpfloat],
@@ -48,7 +48,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _interpolate_vn_to_ie_and_compute_ekin_on_edges(
+    _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
         wgtfac_e,
         vn,
         vt,

@@ -75,8 +75,8 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.interpolation.stencils.interpolate_to_half_levels_vp import (
-    _interpolate_to_half_levels_vp,
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
+    _interpolate_cell_field_to_half_levels_vp,
 )
 
 
@@ -168,7 +168,7 @@ def predictor_stencils_4_5_6(
             dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
-    _interpolate_to_half_levels_vp(
+    _interpolate_cell_field_to_half_levels_vp(
         wgtfac_c,
         z_exner_ex_pr,
         out=z_exner_ic,

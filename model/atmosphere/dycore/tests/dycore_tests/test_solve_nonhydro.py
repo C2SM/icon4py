@@ -405,14 +405,14 @@ def test_nonhydro_predictor_step(
 
     # stencil 35,36, 37,38
     assert helpers.dallclose(
-        diagnostic_state_nh.khalf_vn.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        diagnostic_state_nh.vn_on_half_levels.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.vn_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14,
     )
 
     # stencil 35,36, 37,38
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.khalf_tangential_wind.asnumpy()[
+        solve_nonhydro.intermediate_fields.tangential_wind_on_half_levels.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_vt_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
@@ -420,7 +420,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 35,36
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.horizontal_kinetic_energy_at_edge.asnumpy()[
+        solve_nonhydro.intermediate_fields.horizontal_kinetic_energy_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
@@ -428,7 +428,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 35
     assert helpers.dallclose(
-        solve_nonhydro._contravariant_correction_at_edge.asnumpy()[
+        solve_nonhydro._contravariant_correction_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_5:, nflatlev:
         ],
         sp_exit.z_w_concorr_me().asnumpy()[edge_start_lateral_boundary_level_5:, nflatlev:],
@@ -437,7 +437,7 @@ def test_nonhydro_predictor_step(
 
     # stencils 39,40
     assert helpers.dallclose(
-        diagnostic_state_nh.khalf_contravariant_correction_at_cell.asnumpy(),
+        diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels.asnumpy(),
         sp_exit.w_concorr_c().asnumpy(),
         atol=1e-15,
     )
@@ -594,8 +594,8 @@ def test_nonhydro_corrector_step(
         z_graddiv_vn=init_savepoint.z_graddiv_vn(),
         z_rho_expl=init_savepoint.z_rho_expl(),
         z_dwdz_dd=init_savepoint.z_dwdz_dd(),
-        horizontal_kinetic_energy_at_edge=init_savepoint.z_kin_hor_e(),
-        khalf_tangential_wind=init_savepoint.z_vt_ie(),
+        horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
+        tangential_wind_on_half_levels=init_savepoint.z_vt_ie(),
     )
 
     divdamp_fac_o2 = init_savepoint.divdamp_fac_o2()
