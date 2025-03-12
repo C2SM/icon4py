@@ -26,7 +26,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _compute_advection_in_horizontal_momentum_equation(
     normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
-    vn: fa.EdgeKField[wpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[vpfloat],
     tangential_wind: fa.EdgeKField[vpfloat],
