@@ -21,7 +21,8 @@
 
 import gt4py.next as gtx
 from gt4py.next.common import GridType
-from gt4py.next.ffront.fbuiltins import broadcast, int32, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast, where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
@@ -112,7 +113,6 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     z_gradh_exner: fa.EdgeKField[vpfloat],
     z_rho_e: fa.EdgeKField[wpfloat],
     horz_idx: fa.EdgeField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
     grav_o_cpd: wpfloat,
     p_dthalf: wpfloat,
     dtime: wpfloat,
@@ -141,8 +141,6 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     fa.EdgeKField[wpfloat],
     fa.EdgeKField[wpfloat],
 ]:
-    vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
-
     (
         z_grad_rth_1,
         z_grad_rth_2,
@@ -207,24 +205,31 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         else (z_rho_e, z_theta_v_e)
     )
 
-    z_gradh_exner = where(
-        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx < nflatlev),
-        _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
-            inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
+    z_gradh_exner = concat_where(
+        KDim < nflatlev,
+        where(
+            start_edge_nudging_level_2 <= horz_idx < end_edge_local,
+            _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
+                inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
+            ),
+            z_gradh_exner,
         ),
         z_gradh_exner,
     )
 
     z_gradh_exner = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
-            & (nflatlev <= vert_idx < (nflat_gradp + int32(1))),
-            _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-                inv_dual_edge_length=inv_dual_edge_length,
-                z_exner_ex_pr=z_exner_ex_pr,
-                ddxn_z_full=ddxn_z_full,
-                c_lin_e=c_lin_e,
-                z_dexner_dz_c_1=z_dexner_dz_c_1,
+        concat_where(
+            nflatlev <= KDim < (nflat_gradp + 1),
+            where(
+                start_edge_nudging_level_2 <= horz_idx < end_edge_local,
+                _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+                    inv_dual_edge_length=inv_dual_edge_length,
+                    z_exner_ex_pr=z_exner_ex_pr,
+                    ddxn_z_full=ddxn_z_full,
+                    c_lin_e=c_lin_e,
+                    z_dexner_dz_c_1=z_dexner_dz_c_1,
+                ),
+                z_gradh_exner,
             ),
             z_gradh_exner,
         )
@@ -233,16 +238,19 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     z_gradh_exner = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
-            & ((nflat_gradp + int32(1)) <= vert_idx),
-            _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
-                inv_dual_edge_length=inv_dual_edge_length,
-                z_exner_ex_pr=z_exner_ex_pr,
-                zdiff_gradp=zdiff_gradp,
-                ikoffset=ikoffset,
-                z_dexner_dz_c_1=z_dexner_dz_c_1,
-                z_dexner_dz_c_2=z_dexner_dz_c_2,
+        concat_where(
+            (nflat_gradp + 1) <= KDim,
+            where(
+                start_edge_nudging_level_2 <= horz_idx < end_edge_local,
+                _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
+                    inv_dual_edge_length=inv_dual_edge_length,
+                    z_exner_ex_pr=z_exner_ex_pr,
+                    zdiff_gradp=zdiff_gradp,
+                    ikoffset=ikoffset,
+                    z_dexner_dz_c_1=z_dexner_dz_c_1,
+                    z_dexner_dz_c_2=z_dexner_dz_c_2,
+                ),
+                z_gradh_exner,
             ),
             z_gradh_exner,
         )
@@ -251,16 +259,20 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     z_hydro_corr = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & ((nlev - 1) <= vert_idx),
-            _compute_hydrostatic_correction_term(
-                theta_v=theta_v,
-                ikoffset=ikoffset,
-                zdiff_gradp=zdiff_gradp,
-                theta_v_ic=theta_v_ic,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                inv_dual_edge_length=inv_dual_edge_length,
-                grav_o_cpd=grav_o_cpd,
+        concat_where(
+            (nlev - 1) <= KDim,
+            where(
+                start_edge_nudging_level_2 <= horz_idx < end_edge_local,
+                _compute_hydrostatic_correction_term(
+                    theta_v=theta_v,
+                    ikoffset=ikoffset,
+                    zdiff_gradp=zdiff_gradp,
+                    theta_v_ic=theta_v_ic,
+                    inv_ddqz_z_full=inv_ddqz_z_full,
+                    inv_dual_edge_length=inv_dual_edge_length,
+                    grav_o_cpd=grav_o_cpd,
+                ),
+                z_hydro_corr,
             ),
             z_hydro_corr,
         )
@@ -268,7 +280,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         else z_hydro_corr
     )
 
-    hydro_corr_horizontal = where((vert_idx == (nlev - 1)), z_hydro_corr, 0.0)
+    hydro_corr_horizontal = concat_where(KDim == (nlev - 1), z_hydro_corr, 0.0)
 
     z_gradh_exner = (
         where(
@@ -332,7 +344,6 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
     bdy_divdamp: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
     horz_idx: fa.EdgeField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
     wgt_nnow_vel: wpfloat,
     wgt_nnew_vel: wpfloat,
     dtime: wpfloat,
@@ -353,17 +364,19 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
     end_edge_local: gtx.int32,
     kstart_dd3d: gtx.int32,
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
-    vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
 
-    z_graddiv_vn = where(
-        (start_edge_lateral_boundary_level_7 <= horz_idx < end_edge_halo_level_2)
-        & (kstart_dd3d <= vert_idx),
-        _add_vertical_wind_derivative_to_divergence_damping(
-            hmask_dd3d=hmask_dd3d,
-            scalfac_dd3d=scalfac_dd3d,
-            inv_dual_edge_length=inv_dual_edge_length,
-            z_dwdz_dd=z_dwdz_dd,
-            z_graddiv_vn=z_graddiv_vn,
+    z_graddiv_vn = concat_where(
+        kstart_dd3d <= KDim,
+        where(
+            start_edge_lateral_boundary_level_7 <= horz_idx < end_edge_halo_level_2,
+            _add_vertical_wind_derivative_to_divergence_damping(
+                hmask_dd3d=hmask_dd3d,
+                scalfac_dd3d=scalfac_dd3d,
+                inv_dual_edge_length=inv_dual_edge_length,
+                z_dwdz_dd=z_dwdz_dd,
+                z_graddiv_vn=z_graddiv_vn,
+            ),
+            z_graddiv_vn,
         ),
         z_graddiv_vn,
     )
@@ -493,7 +506,6 @@ def _fused_solve_nonhydro_stencil_15_to_28(
     ddt_vn_phy: fa.EdgeKField[vpfloat],
     vn_incr: fa.EdgeKField[vpfloat],
     horz_idx: fa.EdgeField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
     bdy_divdamp: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
     z_hydro_corr: fa.EdgeKField[vpfloat],
@@ -588,7 +600,6 @@ def _fused_solve_nonhydro_stencil_15_to_28(
             vn_incr=vn_incr,
             vn=vn,
             horz_idx=horz_idx,
-            vert_idx=vert_idx,
             grav_o_cpd=grav_o_cpd,
             p_dthalf=p_dthalf,
             dtime=dtime,
@@ -636,7 +647,6 @@ def _fused_solve_nonhydro_stencil_15_to_28(
             bdy_divdamp=bdy_divdamp,
             nudgecoeff_e=nudgecoeff_e,
             horz_idx=horz_idx,
-            vert_idx=vert_idx,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
             dtime=dtime,
@@ -783,7 +793,6 @@ def fused_solve_nonhydro_stencil_15_to_28(
         ddt_vn_phy=ddt_vn_phy,
         vn_incr=vn_incr,
         horz_idx=horz_idx,
-        vert_idx=vert_idx,
         bdy_divdamp=bdy_divdamp,
         nudgecoeff_e=nudgecoeff_e,
         z_hydro_corr=z_hydro_corr,
