@@ -29,7 +29,7 @@ build_model_distributed:
 
 .test_model_distributed:
   stage: test
-  extends: [.]
+  extends: [.build_template_aarch64_distributed]
   needs: [build_model_distributed]
   variables:
     SLURM_JOB_NUM_NODES: 1
@@ -47,6 +47,6 @@ build_model_distributed:
   rules:
     - when: on_success
 
-test_model_distributed_aarch64:
+test_model_distributed:
   extends: [.test_model_distributed]
 
