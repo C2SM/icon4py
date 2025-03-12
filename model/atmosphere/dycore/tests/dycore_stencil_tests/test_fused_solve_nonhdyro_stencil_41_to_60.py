@@ -22,40 +22,40 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_analysis_increments_from_data_assimilation import (
+from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_rayleigh_damping_mechanism import (
+from .test_apply_rayleigh_damping_mechanism import (
     apply_rayleigh_damping_mechanism_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_dwdz_for_divergence_damping import (
+from .test_compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_explicit_part_for_rho_and_exner import (
+from .test_compute_explicit_part_for_rho_and_exner import (
     compute_explicit_part_for_rho_and_exner_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
+from .test_compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
     compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
+from .test_compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
     compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_results_for_thermodynamic_variables import (
+from .test_compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_solver_coefficients_matrix import (
+from .test_compute_solver_coefficients_matrix import (
     compute_solver_coefficients_matrix_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_set_lower_boundary_condition_for_w_and_contravariant_correction import (
+from .test_set_lower_boundary_condition_for_w_and_contravariant_correction import (
     set_lower_boundary_condition_for_w_and_contravariant_correction_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_solve_tridiagonal_matrix_for_w_back_substitution import (
+from .test_solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_solve_tridiagonal_matrix_for_w_forward_sweep import (
+from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_update_mass_volume_flux import (
+from .test_update_mass_volume_flux import (
     update_mass_volume_flux_numpy,
 )
 
