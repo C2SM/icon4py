@@ -16,9 +16,9 @@ from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _interpolate_edge_field_to_half_levels_vp(
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    interpolant: fa.EdgeKField[vpfloat],
-) -> fa.EdgeKField[vpfloat]:
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    interpolant: fa.EdgeKField[ta.vpfloat],
+) -> fa.EdgeKField[ta.vpfloat]:
     """
     Interpolate a EdgeDim variable of floating precision from full levels to half levels.
     The return variable also has floating precision.
