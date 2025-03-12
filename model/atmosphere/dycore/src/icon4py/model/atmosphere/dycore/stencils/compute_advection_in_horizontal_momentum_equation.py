@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next import broadcast
-from gt4py.next.common import GridType
 from gt4py.next.ffront.fbuiltins import maximum, where
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -20,7 +19,6 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
@@ -28,22 +26,22 @@ def _compute_advection_in_horizontal_momentum_equation(
     normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    tangential_wind: fa.EdgeKField[vpfloat],
-    coriolis_frequency: fa.EdgeField[wpfloat],
-    contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    vn_on_half_levels: fa.EdgeKField[vpfloat],
-    geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], vpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    area_edge: fa.EdgeField[wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
-    cfl_w_limit: vpfloat,
-    scalfac_exdiff: wpfloat,
-    d_time: wpfloat,
+    horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    tangential_wind: fa.EdgeKField[ta.vpfloat],
+    coriolis_frequency: fa.EdgeField[ta.wpfloat],
+    contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], ta.vpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
+    area_edge: fa.EdgeField[ta.wpfloat],
+    tangent_orientation: fa.EdgeField[ta.wpfloat],
+    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
+    cfl_w_limit: ta.vpfloat,
+    scalfac_exdiff: ta.wpfloat,
+    d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
     k: fa.KField[gtx.int32],
     vertex: fa.VertexField[gtx.int32],
@@ -54,7 +52,7 @@ def _compute_advection_in_horizontal_momentum_equation(
     end_vertex_halo: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
     end_edge_local: gtx.int32,
-) -> fa.EdgeKField[vpfloat]:
+) -> fa.EdgeKField[ta.vpfloat]:
     upward_vorticity_at_vertices_on_model_levels = where(
         start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo,
         _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot),
@@ -105,25 +103,25 @@ def _compute_advection_in_horizontal_momentum_equation(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_advection_in_horizontal_momentum_equation(
-    normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    tangential_wind: fa.EdgeKField[vpfloat],
-    coriolis_frequency: fa.EdgeField[wpfloat],
-    contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    vn_on_half_levels: fa.EdgeKField[vpfloat],
-    geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], vpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    area_edge: fa.EdgeField[wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
-    cfl_w_limit: vpfloat,
-    scalfac_exdiff: wpfloat,
-    d_time: wpfloat,
+    normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    tangential_wind: fa.EdgeKField[ta.vpfloat],
+    coriolis_frequency: fa.EdgeField[ta.wpfloat],
+    contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], ta.vpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
+    area_edge: fa.EdgeField[ta.wpfloat],
+    tangent_orientation: fa.EdgeField[ta.wpfloat],
+    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
+    cfl_w_limit: ta.vpfloat,
+    scalfac_exdiff: ta.wpfloat,
+    d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
     k: fa.KField[gtx.int32],
     vertex: fa.VertexField[gtx.int32],

@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat
 
@@ -38,9 +36,9 @@ def _interpolate_edge_field_to_half_levels_vp(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_edge_field_to_half_levels_vp(
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    interpolant: fa.EdgeKField[vpfloat],
-    interpolation_to_half_levels_vp: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    interpolant: fa.EdgeKField[ta.vpfloat],
+    interpolation_to_half_levels_vp: fa.EdgeKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
