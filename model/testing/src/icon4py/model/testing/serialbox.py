@@ -1372,7 +1372,7 @@ class IconVelocityInitVMomentumSavepoint(IconSavepoint):
         return bool(self.serializer.read("vn_only", self.savepoint)[0])
 
 
-class IconVelocityInitHMomentumSavepoint(IconSavepoint):
+class VelocityAdvectionHorizontalMomentumInitSavepoint(IconSavepoint):
     def vn(self):
         return self._get_field("vn", dims.EdgeDim, dims.KDim)
 
@@ -1451,7 +1451,7 @@ class IconVelocityExitSavepoint(IconSavepoint):
         return self._get_field("vcfl_dsl", dims.KDim)
 
 
-class IconVelocityExitEDiagnosticsSavepoint(IconSavepoint):
+class VelocityAdvectionEdgeDiagnosticsExitSavepoint(IconSavepoint):
     def vt(self):
         return self._get_field("vt", dims.EdgeDim, dims.KDim)
 
@@ -1468,7 +1468,7 @@ class IconVelocityExitEDiagnosticsSavepoint(IconSavepoint):
         return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
 
 
-class IconVelocityExitCDiagnosticsSavepoint(IconSavepoint):
+class VelocityAdvectionCellDiagnosticsExitSavepoint(IconSavepoint):
     def z_ekinh(self):
         return self._get_field("z_ekinh", dims.CellDim, dims.KDim)
 
@@ -1479,7 +1479,7 @@ class IconVelocityExitCDiagnosticsSavepoint(IconSavepoint):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
 
 
-class IconVelocityExitVMomentumSavepoint(IconSavepoint):
+class VelocityAdvectionVerticalMomentumExitSavepoint(IconSavepoint):
     def z_w_con_c_full(self):
         return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
 
@@ -1487,7 +1487,7 @@ class IconVelocityExitVMomentumSavepoint(IconSavepoint):
         return self._get_field("ddt_w_adv", dims.CellDim, dims.KDim)
 
 
-class IconVelocityExitHMomentumSavepoint(IconSavepoint):
+class VelocityAdvectionHorizontalMomentumExitSavepoint(IconSavepoint):
     def ddt_vn_apc(self):
         return self._get_field("ddt_vn_apc", dims.EdgeDim, dims.KDim)
 
@@ -2061,7 +2061,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
         self, istep: int, date: str, substep_init: int
-    ) -> IconVelocityInitHMomentumSavepoint:
+    ) -> VelocityAdvectionHorizontalMomentumInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-init"]
             .istep[istep]
@@ -2131,7 +2131,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
         self, istep: int, date: str, substep_init: int
-    ) -> IconVelocityExitEDiagnosticsSavepoint:
+    ) -> VelocityAdvectionEdgeDiagnosticsExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-1to7-exit"]
             .istep[istep]
@@ -2145,7 +2145,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
         self, istep: int, date: str, substep_init: int
-    ) -> IconVelocityExitCDiagnosticsSavepoint:
+    ) -> VelocityAdvectionCellDiagnosticsExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to13-exit"]
             .istep[istep]
@@ -2159,7 +2159,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
         self, istep: int, date: str, substep_init: int
-    ) -> IconVelocityExitVMomentumSavepoint:
+    ) -> VelocityAdvectionVerticalMomentumExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-exit"]
             .istep[istep]
@@ -2173,7 +2173,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
         self, istep: int, date: str, substep_init: int
-    ) -> IconVelocityExitHMomentumSavepoint:
+    ) -> VelocityAdvectionHorizontalMomentumExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-exit"]
             .istep[istep]
