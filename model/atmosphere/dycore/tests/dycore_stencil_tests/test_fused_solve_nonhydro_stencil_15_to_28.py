@@ -22,49 +22,49 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_analysis_increments_to_vn import (
+from .test_add_analysis_increments_to_vn import (
     add_analysis_increments_to_vn_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn import (
+from .test_add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
+from .test_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_vertical_wind_derivative_to_divergence_damping import (
+from .test_add_vertical_wind_derivative_to_divergence_damping import (
     add_vertical_wind_derivative_to_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_2nd_order_divergence_damping import (
+from .test_apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_4th_order_divergence_damping import (
+from .test_apply_4th_order_divergence_damping import (
     apply_4th_order_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+from .test_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_weighted_2nd_and_4th_order_divergence_damping import (
+from .test_apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_graddiv2_of_vn import (
+from .test_compute_graddiv2_of_vn import (
     compute_graddiv2_of_vn_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_advection_of_rho_and_theta import (
+from .test_compute_horizontal_advection_of_rho_and_theta import (
     compute_horizontal_advection_of_rho_and_theta_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
+from .test_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
+from .test_compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+from .test_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_hydrostatic_correction_term import (
+from .test_compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
+from .test_mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
 )
 
