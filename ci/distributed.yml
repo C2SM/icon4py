@@ -13,24 +13,29 @@ include:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
 
-build_model_distributed_aarch64:
+build_model_distributed:
   stage: build
   extends: [.build_template_aarch64_distributed]
   before_script:
-    - echo ${MPI4PY_BUILD_MPICC}
-    - ls ${HPC_SDK_PATH}/compilers/bin
-    - ls ${HPC_SDK_PATH}/comm_libs/mpi/bin
+    - echo "using MPICC ${MPI4PY_BUILD_MPICC}"
+    - pwd
+    - cd /icon4py
   script:
     uv sync --extra distributed --python=3.10 --no-dev
+  artifacts:
+    paths:
+      - icon4py/${UV_PROJECT_ENVIRONMENT}
+
 
 .test_model_distributed:
   stage: test
-  extends: [.build_template_aarch64_distributed]
-  needs: [build_model_distributed_aarch64]
+  extends: [.]
+  needs: [build_model_distributed]
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 4
   before_script:
+    - cd /icon4py
     - ls ${UV_PROJECT_ENVIRONMENT}
   script:
     - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
