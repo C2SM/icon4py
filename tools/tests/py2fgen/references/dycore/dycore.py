@@ -2,43 +2,38 @@
 import logging
 
 from dycore import ffi
-import cupy as cp
+
+try:
+    import cupy as cp  # TODO remove this import
+except ImportError:
+    cp = None
 import gt4py.next as gtx
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.tools.py2fgen.settings import config
 from icon4py.tools.py2fgen import wrapper_utils
-
-xp = config.array_ns
 
 # logger setup
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=log_format, datefmt="%Y-%m-%d %H:%M:%S")
-logging.info(cp.show_config())
+
+if cp is not None:
+    logging.info(cp.show_config())
 
 # embedded function imports
 from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_run
 from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import grid_init
 
 
 C2E = gtx.Dimension("C2E", kind=gtx.DimensionKind.LOCAL)
-C2E2C = gtx.Dimension("C2E2C", kind=gtx.DimensionKind.LOCAL)
 C2E2CO = gtx.Dimension("C2E2CO", kind=gtx.DimensionKind.LOCAL)
-C2V = gtx.Dimension("C2V", kind=gtx.DimensionKind.LOCAL)
 Cell = gtx.Dimension("Cell", kind=gtx.DimensionKind.HORIZONTAL)
-CellIndex = gtx.Dimension("CellIndex", kind=gtx.DimensionKind.HORIZONTAL)
 E2C = gtx.Dimension("E2C", kind=gtx.DimensionKind.LOCAL)
 E2C2E = gtx.Dimension("E2C2E", kind=gtx.DimensionKind.LOCAL)
 E2C2EO = gtx.Dimension("E2C2EO", kind=gtx.DimensionKind.LOCAL)
-E2C2V = gtx.Dimension("E2C2V", kind=gtx.DimensionKind.LOCAL)
-E2V = gtx.Dimension("E2V", kind=gtx.DimensionKind.LOCAL)
 Edge = gtx.Dimension("Edge", kind=gtx.DimensionKind.HORIZONTAL)
-EdgeIndex = gtx.Dimension("EdgeIndex", kind=gtx.DimensionKind.HORIZONTAL)
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 V2C = gtx.Dimension("V2C", kind=gtx.DimensionKind.LOCAL)
 V2E = gtx.Dimension("V2E", kind=gtx.DimensionKind.LOCAL)
 Vertex = gtx.Dimension("Vertex", kind=gtx.DimensionKind.HORIZONTAL)
-VertexIndex = gtx.Dimension("VertexIndex", kind=gtx.DimensionKind.HORIZONTAL)
 
 
 @ffi.def_extern()
@@ -133,6 +128,9 @@ def solve_nh_run_wrapper(
     mass_flx_ic,
     mass_flx_ic_size_0,
     mass_flx_ic_size_1,
+    vol_flx_ic,
+    vol_flx_ic_size_0,
+    vol_flx_ic_size_1,
     vn_traj,
     vn_traj_size_0,
     vn_traj_size_1,
@@ -142,6 +140,7 @@ def solve_nh_run_wrapper(
     divdamp_fac_o2,
     ndyn_substeps,
     idyn_timestep,
+    on_gpu,
 ):
     try:
         logging.info("Python Execution Context Start")
@@ -150,7 +149,7 @@ def solve_nh_run_wrapper(
 
         rho_now = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             rho_now,
             ts.ScalarKind.FLOAT64,
             {Cell: rho_now_size_0, K: rho_now_size_1},
@@ -159,7 +158,7 @@ def solve_nh_run_wrapper(
 
         rho_new = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             rho_new,
             ts.ScalarKind.FLOAT64,
             {Cell: rho_new_size_0, K: rho_new_size_1},
@@ -168,7 +167,7 @@ def solve_nh_run_wrapper(
 
         exner_now = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             exner_now,
             ts.ScalarKind.FLOAT64,
             {Cell: exner_now_size_0, K: exner_now_size_1},
@@ -177,7 +176,7 @@ def solve_nh_run_wrapper(
 
         exner_new = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             exner_new,
             ts.ScalarKind.FLOAT64,
             {Cell: exner_new_size_0, K: exner_new_size_1},
@@ -185,16 +184,16 @@ def solve_nh_run_wrapper(
         )
 
         w_now = wrapper_utils.as_field(
-            ffi, xp, w_now, ts.ScalarKind.FLOAT64, {Cell: w_now_size_0, K: w_now_size_1}, False
+            ffi, on_gpu, w_now, ts.ScalarKind.FLOAT64, {Cell: w_now_size_0, K: w_now_size_1}, False
         )
 
         w_new = wrapper_utils.as_field(
-            ffi, xp, w_new, ts.ScalarKind.FLOAT64, {Cell: w_new_size_0, K: w_new_size_1}, False
+            ffi, on_gpu, w_new, ts.ScalarKind.FLOAT64, {Cell: w_new_size_0, K: w_new_size_1}, False
         )
 
         theta_v_now = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             theta_v_now,
             ts.ScalarKind.FLOAT64,
             {Cell: theta_v_now_size_0, K: theta_v_now_size_1},
@@ -203,7 +202,7 @@ def solve_nh_run_wrapper(
 
         theta_v_new = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             theta_v_new,
             ts.ScalarKind.FLOAT64,
             {Cell: theta_v_new_size_0, K: theta_v_new_size_1},
@@ -211,16 +210,26 @@ def solve_nh_run_wrapper(
         )
 
         vn_now = wrapper_utils.as_field(
-            ffi, xp, vn_now, ts.ScalarKind.FLOAT64, {Edge: vn_now_size_0, K: vn_now_size_1}, False
+            ffi,
+            on_gpu,
+            vn_now,
+            ts.ScalarKind.FLOAT64,
+            {Edge: vn_now_size_0, K: vn_now_size_1},
+            False,
         )
 
         vn_new = wrapper_utils.as_field(
-            ffi, xp, vn_new, ts.ScalarKind.FLOAT64, {Edge: vn_new_size_0, K: vn_new_size_1}, False
+            ffi,
+            on_gpu,
+            vn_new,
+            ts.ScalarKind.FLOAT64,
+            {Edge: vn_new_size_0, K: vn_new_size_1},
+            False,
         )
 
         w_concorr_c = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             w_concorr_c,
             ts.ScalarKind.FLOAT64,
             {Cell: w_concorr_c_size_0, K: w_concorr_c_size_1},
@@ -229,7 +238,7 @@ def solve_nh_run_wrapper(
 
         ddt_vn_apc_ntl1 = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddt_vn_apc_ntl1,
             ts.ScalarKind.FLOAT64,
             {Edge: ddt_vn_apc_ntl1_size_0, K: ddt_vn_apc_ntl1_size_1},
@@ -238,7 +247,7 @@ def solve_nh_run_wrapper(
 
         ddt_vn_apc_ntl2 = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddt_vn_apc_ntl2,
             ts.ScalarKind.FLOAT64,
             {Edge: ddt_vn_apc_ntl2_size_0, K: ddt_vn_apc_ntl2_size_1},
@@ -247,7 +256,7 @@ def solve_nh_run_wrapper(
 
         ddt_w_adv_ntl1 = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddt_w_adv_ntl1,
             ts.ScalarKind.FLOAT64,
             {Cell: ddt_w_adv_ntl1_size_0, K: ddt_w_adv_ntl1_size_1},
@@ -256,7 +265,7 @@ def solve_nh_run_wrapper(
 
         ddt_w_adv_ntl2 = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddt_w_adv_ntl2,
             ts.ScalarKind.FLOAT64,
             {Cell: ddt_w_adv_ntl2_size_0, K: ddt_w_adv_ntl2_size_1},
@@ -265,7 +274,7 @@ def solve_nh_run_wrapper(
 
         theta_v_ic = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             theta_v_ic,
             ts.ScalarKind.FLOAT64,
             {Cell: theta_v_ic_size_0, K: theta_v_ic_size_1},
@@ -273,12 +282,17 @@ def solve_nh_run_wrapper(
         )
 
         rho_ic = wrapper_utils.as_field(
-            ffi, xp, rho_ic, ts.ScalarKind.FLOAT64, {Cell: rho_ic_size_0, K: rho_ic_size_1}, False
+            ffi,
+            on_gpu,
+            rho_ic,
+            ts.ScalarKind.FLOAT64,
+            {Cell: rho_ic_size_0, K: rho_ic_size_1},
+            False,
         )
 
         exner_pr = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             exner_pr,
             ts.ScalarKind.FLOAT64,
             {Cell: exner_pr_size_0, K: exner_pr_size_1},
@@ -287,7 +301,7 @@ def solve_nh_run_wrapper(
 
         exner_dyn_incr = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             exner_dyn_incr,
             ts.ScalarKind.FLOAT64,
             {Cell: exner_dyn_incr_size_0, K: exner_dyn_incr_size_1},
@@ -296,7 +310,7 @@ def solve_nh_run_wrapper(
 
         ddt_exner_phy = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddt_exner_phy,
             ts.ScalarKind.FLOAT64,
             {Cell: ddt_exner_phy_size_0, K: ddt_exner_phy_size_1},
@@ -305,7 +319,7 @@ def solve_nh_run_wrapper(
 
         grf_tend_rho = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             grf_tend_rho,
             ts.ScalarKind.FLOAT64,
             {Cell: grf_tend_rho_size_0, K: grf_tend_rho_size_1},
@@ -314,7 +328,7 @@ def solve_nh_run_wrapper(
 
         grf_tend_thv = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             grf_tend_thv,
             ts.ScalarKind.FLOAT64,
             {Cell: grf_tend_thv_size_0, K: grf_tend_thv_size_1},
@@ -323,7 +337,7 @@ def solve_nh_run_wrapper(
 
         grf_tend_w = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             grf_tend_w,
             ts.ScalarKind.FLOAT64,
             {Cell: grf_tend_w_size_0, K: grf_tend_w_size_1},
@@ -332,7 +346,7 @@ def solve_nh_run_wrapper(
 
         mass_fl_e = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             mass_fl_e,
             ts.ScalarKind.FLOAT64,
             {Edge: mass_fl_e_size_0, K: mass_fl_e_size_1},
@@ -341,7 +355,7 @@ def solve_nh_run_wrapper(
 
         ddt_vn_phy = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddt_vn_phy,
             ts.ScalarKind.FLOAT64,
             {Edge: ddt_vn_phy_size_0, K: ddt_vn_phy_size_1},
@@ -350,7 +364,7 @@ def solve_nh_run_wrapper(
 
         grf_tend_vn = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             grf_tend_vn,
             ts.ScalarKind.FLOAT64,
             {Edge: grf_tend_vn_size_0, K: grf_tend_vn_size_1},
@@ -358,16 +372,16 @@ def solve_nh_run_wrapper(
         )
 
         vn_ie = wrapper_utils.as_field(
-            ffi, xp, vn_ie, ts.ScalarKind.FLOAT64, {Edge: vn_ie_size_0, K: vn_ie_size_1}, False
+            ffi, on_gpu, vn_ie, ts.ScalarKind.FLOAT64, {Edge: vn_ie_size_0, K: vn_ie_size_1}, False
         )
 
         vt = wrapper_utils.as_field(
-            ffi, xp, vt, ts.ScalarKind.FLOAT64, {Edge: vt_size_0, K: vt_size_1}, False
+            ffi, on_gpu, vt, ts.ScalarKind.FLOAT64, {Edge: vt_size_0, K: vt_size_1}, False
         )
 
         mass_flx_me = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             mass_flx_me,
             ts.ScalarKind.FLOAT64,
             {Edge: mass_flx_me_size_0, K: mass_flx_me_size_1},
@@ -376,16 +390,25 @@ def solve_nh_run_wrapper(
 
         mass_flx_ic = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             mass_flx_ic,
             ts.ScalarKind.FLOAT64,
             {Cell: mass_flx_ic_size_0, K: mass_flx_ic_size_1},
             False,
         )
 
+        vol_flx_ic = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            vol_flx_ic,
+            ts.ScalarKind.FLOAT64,
+            {Cell: vol_flx_ic_size_0, K: vol_flx_ic_size_1},
+            False,
+        )
+
         vn_traj = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             vn_traj,
             ts.ScalarKind.FLOAT64,
             {Edge: vn_traj_size_0, K: vn_traj_size_1},
@@ -429,6 +452,7 @@ def solve_nh_run_wrapper(
             vt,
             mass_flx_me,
             mass_flx_ic,
+            vol_flx_ic,
             vn_traj,
             dtime,
             lprep_adv,
@@ -694,6 +718,15 @@ def solve_nh_run_wrapper(
         )
         logging.debug(msg)
 
+        msg = "shape of vol_flx_ic after computation = %s" % str(
+            vol_flx_ic.shape if vol_flx_ic is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "vol_flx_ic after computation: %s" % str(
+            vol_flx_ic.ndarray if vol_flx_ic is not None else "None"
+        )
+        logging.debug(msg)
+
         msg = "shape of vn_traj after computation = %s" % str(
             vn_traj.shape if vn_traj is not None else "None"
         )
@@ -718,44 +751,6 @@ def solve_nh_init_wrapper(
     vct_a_size_0,
     vct_b,
     vct_b_size_0,
-    cell_areas,
-    cell_areas_size_0,
-    primal_normal_cell_x,
-    primal_normal_cell_x_size_0,
-    primal_normal_cell_x_size_1,
-    primal_normal_cell_y,
-    primal_normal_cell_y_size_0,
-    primal_normal_cell_y_size_1,
-    dual_normal_cell_x,
-    dual_normal_cell_x_size_0,
-    dual_normal_cell_x_size_1,
-    dual_normal_cell_y,
-    dual_normal_cell_y_size_0,
-    dual_normal_cell_y_size_1,
-    edge_areas,
-    edge_areas_size_0,
-    tangent_orientation,
-    tangent_orientation_size_0,
-    inverse_primal_edge_lengths,
-    inverse_primal_edge_lengths_size_0,
-    inverse_dual_edge_lengths,
-    inverse_dual_edge_lengths_size_0,
-    inverse_vertex_vertex_lengths,
-    inverse_vertex_vertex_lengths_size_0,
-    primal_normal_vert_x,
-    primal_normal_vert_x_size_0,
-    primal_normal_vert_x_size_1,
-    primal_normal_vert_y,
-    primal_normal_vert_y_size_0,
-    primal_normal_vert_y_size_1,
-    dual_normal_vert_x,
-    dual_normal_vert_x_size_0,
-    dual_normal_vert_x_size_1,
-    dual_normal_vert_y,
-    dual_normal_vert_y_size_0,
-    dual_normal_vert_y_size_1,
-    f_e,
-    f_e_size_0,
     c_lin_e,
     c_lin_e_size_0,
     c_lin_e_size_1,
@@ -899,18 +894,6 @@ def solve_nh_init_wrapper(
     coeff_gradekin_size_1,
     c_owner_mask,
     c_owner_mask_size_0,
-    cell_center_lat,
-    cell_center_lat_size_0,
-    cell_center_lon,
-    cell_center_lon_size_0,
-    edge_center_lat,
-    edge_center_lat_size_0,
-    edge_center_lon,
-    edge_center_lon_size_0,
-    primal_normal_x,
-    primal_normal_x_size_0,
-    primal_normal_y,
-    primal_normal_y_size_0,
     rayleigh_damping_height,
     itime_scheme,
     iadv_rhotheta,
@@ -927,7 +910,7 @@ def solve_nh_init_wrapper(
     l_vert_nested,
     rhotheta_offctr,
     veladv_offctr,
-    max_nudging_coeff,
+    nudge_max_coeff,
     divdamp_fac,
     divdamp_fac2,
     divdamp_fac3,
@@ -941,6 +924,8 @@ def solve_nh_init_wrapper(
     stretch_factor,
     nflat_gradp,
     num_levels,
+    backend,
+    on_gpu,
 ):
     try:
         logging.info("Python Execution Context Start")
@@ -948,134 +933,16 @@ def solve_nh_init_wrapper(
         # Convert ptr to GT4Py fields
 
         vct_a = wrapper_utils.as_field(
-            ffi, xp, vct_a, ts.ScalarKind.FLOAT64, {K: vct_a_size_0}, False
+            ffi, on_gpu, vct_a, ts.ScalarKind.FLOAT64, {K: vct_a_size_0}, False
         )
 
         vct_b = wrapper_utils.as_field(
-            ffi, xp, vct_b, ts.ScalarKind.FLOAT64, {K: vct_b_size_0}, False
+            ffi, on_gpu, vct_b, ts.ScalarKind.FLOAT64, {K: vct_b_size_0}, False
         )
-
-        cell_areas = wrapper_utils.as_field(
-            ffi, xp, cell_areas, ts.ScalarKind.FLOAT64, {Cell: cell_areas_size_0}, False
-        )
-
-        primal_normal_cell_x = wrapper_utils.as_field(
-            ffi,
-            xp,
-            primal_normal_cell_x,
-            ts.ScalarKind.FLOAT64,
-            {Edge: primal_normal_cell_x_size_0, E2C: primal_normal_cell_x_size_1},
-            False,
-        )
-
-        primal_normal_cell_y = wrapper_utils.as_field(
-            ffi,
-            xp,
-            primal_normal_cell_y,
-            ts.ScalarKind.FLOAT64,
-            {Edge: primal_normal_cell_y_size_0, E2C: primal_normal_cell_y_size_1},
-            False,
-        )
-
-        dual_normal_cell_x = wrapper_utils.as_field(
-            ffi,
-            xp,
-            dual_normal_cell_x,
-            ts.ScalarKind.FLOAT64,
-            {Edge: dual_normal_cell_x_size_0, E2C: dual_normal_cell_x_size_1},
-            False,
-        )
-
-        dual_normal_cell_y = wrapper_utils.as_field(
-            ffi,
-            xp,
-            dual_normal_cell_y,
-            ts.ScalarKind.FLOAT64,
-            {Edge: dual_normal_cell_y_size_0, E2C: dual_normal_cell_y_size_1},
-            False,
-        )
-
-        edge_areas = wrapper_utils.as_field(
-            ffi, xp, edge_areas, ts.ScalarKind.FLOAT64, {Edge: edge_areas_size_0}, False
-        )
-
-        tangent_orientation = wrapper_utils.as_field(
-            ffi,
-            xp,
-            tangent_orientation,
-            ts.ScalarKind.FLOAT64,
-            {Edge: tangent_orientation_size_0},
-            False,
-        )
-
-        inverse_primal_edge_lengths = wrapper_utils.as_field(
-            ffi,
-            xp,
-            inverse_primal_edge_lengths,
-            ts.ScalarKind.FLOAT64,
-            {Edge: inverse_primal_edge_lengths_size_0},
-            False,
-        )
-
-        inverse_dual_edge_lengths = wrapper_utils.as_field(
-            ffi,
-            xp,
-            inverse_dual_edge_lengths,
-            ts.ScalarKind.FLOAT64,
-            {Edge: inverse_dual_edge_lengths_size_0},
-            False,
-        )
-
-        inverse_vertex_vertex_lengths = wrapper_utils.as_field(
-            ffi,
-            xp,
-            inverse_vertex_vertex_lengths,
-            ts.ScalarKind.FLOAT64,
-            {Edge: inverse_vertex_vertex_lengths_size_0},
-            False,
-        )
-
-        primal_normal_vert_x = wrapper_utils.as_field(
-            ffi,
-            xp,
-            primal_normal_vert_x,
-            ts.ScalarKind.FLOAT64,
-            {Edge: primal_normal_vert_x_size_0, E2C2V: primal_normal_vert_x_size_1},
-            False,
-        )
-
-        primal_normal_vert_y = wrapper_utils.as_field(
-            ffi,
-            xp,
-            primal_normal_vert_y,
-            ts.ScalarKind.FLOAT64,
-            {Edge: primal_normal_vert_y_size_0, E2C2V: primal_normal_vert_y_size_1},
-            False,
-        )
-
-        dual_normal_vert_x = wrapper_utils.as_field(
-            ffi,
-            xp,
-            dual_normal_vert_x,
-            ts.ScalarKind.FLOAT64,
-            {Edge: dual_normal_vert_x_size_0, E2C2V: dual_normal_vert_x_size_1},
-            False,
-        )
-
-        dual_normal_vert_y = wrapper_utils.as_field(
-            ffi,
-            xp,
-            dual_normal_vert_y,
-            ts.ScalarKind.FLOAT64,
-            {Edge: dual_normal_vert_y_size_0, E2C2V: dual_normal_vert_y_size_1},
-            False,
-        )
-
-        f_e = wrapper_utils.as_field(ffi, xp, f_e, ts.ScalarKind.FLOAT64, {Edge: f_e_size_0}, False)
 
         c_lin_e = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             c_lin_e,
             ts.ScalarKind.FLOAT64,
             {Edge: c_lin_e_size_0, E2C: c_lin_e_size_1},
@@ -1084,7 +951,7 @@ def solve_nh_init_wrapper(
 
         c_intp = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             c_intp,
             ts.ScalarKind.FLOAT64,
             {Vertex: c_intp_size_0, V2C: c_intp_size_1},
@@ -1093,7 +960,7 @@ def solve_nh_init_wrapper(
 
         e_flx_avg = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             e_flx_avg,
             ts.ScalarKind.FLOAT64,
             {Edge: e_flx_avg_size_0, E2C2EO: e_flx_avg_size_1},
@@ -1102,7 +969,7 @@ def solve_nh_init_wrapper(
 
         geofac_grdiv = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             geofac_grdiv,
             ts.ScalarKind.FLOAT64,
             {Edge: geofac_grdiv_size_0, E2C2EO: geofac_grdiv_size_1},
@@ -1111,7 +978,7 @@ def solve_nh_init_wrapper(
 
         geofac_rot = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             geofac_rot,
             ts.ScalarKind.FLOAT64,
             {Vertex: geofac_rot_size_0, V2E: geofac_rot_size_1},
@@ -1120,7 +987,7 @@ def solve_nh_init_wrapper(
 
         pos_on_tplane_e_1 = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             pos_on_tplane_e_1,
             ts.ScalarKind.FLOAT64,
             {Edge: pos_on_tplane_e_1_size_0, E2C: pos_on_tplane_e_1_size_1},
@@ -1129,7 +996,7 @@ def solve_nh_init_wrapper(
 
         pos_on_tplane_e_2 = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             pos_on_tplane_e_2,
             ts.ScalarKind.FLOAT64,
             {Edge: pos_on_tplane_e_2_size_0, E2C: pos_on_tplane_e_2_size_1},
@@ -1138,7 +1005,7 @@ def solve_nh_init_wrapper(
 
         rbf_vec_coeff_e = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             rbf_vec_coeff_e,
             ts.ScalarKind.FLOAT64,
             {Edge: rbf_vec_coeff_e_size_0, E2C2E: rbf_vec_coeff_e_size_1},
@@ -1147,7 +1014,7 @@ def solve_nh_init_wrapper(
 
         e_bln_c_s = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             e_bln_c_s,
             ts.ScalarKind.FLOAT64,
             {Cell: e_bln_c_s_size_0, C2E: e_bln_c_s_size_1},
@@ -1156,7 +1023,7 @@ def solve_nh_init_wrapper(
 
         rbf_coeff_1 = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             rbf_coeff_1,
             ts.ScalarKind.FLOAT64,
             {Vertex: rbf_coeff_1_size_0, V2E: rbf_coeff_1_size_1},
@@ -1165,7 +1032,7 @@ def solve_nh_init_wrapper(
 
         rbf_coeff_2 = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             rbf_coeff_2,
             ts.ScalarKind.FLOAT64,
             {Vertex: rbf_coeff_2_size_0, V2E: rbf_coeff_2_size_1},
@@ -1174,7 +1041,7 @@ def solve_nh_init_wrapper(
 
         geofac_div = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             geofac_div,
             ts.ScalarKind.FLOAT64,
             {Cell: geofac_div_size_0, C2E: geofac_div_size_1},
@@ -1183,7 +1050,7 @@ def solve_nh_init_wrapper(
 
         geofac_n2s = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             geofac_n2s,
             ts.ScalarKind.FLOAT64,
             {Cell: geofac_n2s_size_0, C2E2CO: geofac_n2s_size_1},
@@ -1192,7 +1059,7 @@ def solve_nh_init_wrapper(
 
         geofac_grg_x = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             geofac_grg_x,
             ts.ScalarKind.FLOAT64,
             {Cell: geofac_grg_x_size_0, C2E2CO: geofac_grg_x_size_1},
@@ -1201,7 +1068,7 @@ def solve_nh_init_wrapper(
 
         geofac_grg_y = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             geofac_grg_y,
             ts.ScalarKind.FLOAT64,
             {Cell: geofac_grg_y_size_0, C2E2CO: geofac_grg_y_size_1},
@@ -1209,24 +1076,29 @@ def solve_nh_init_wrapper(
         )
 
         nudgecoeff_e = wrapper_utils.as_field(
-            ffi, xp, nudgecoeff_e, ts.ScalarKind.FLOAT64, {Edge: nudgecoeff_e_size_0}, False
+            ffi, on_gpu, nudgecoeff_e, ts.ScalarKind.FLOAT64, {Edge: nudgecoeff_e_size_0}, False
         )
 
         bdy_halo_c = wrapper_utils.as_field(
-            ffi, xp, bdy_halo_c, ts.ScalarKind.BOOL, {Cell: bdy_halo_c_size_0}, False
+            ffi, on_gpu, bdy_halo_c, ts.ScalarKind.BOOL, {Cell: bdy_halo_c_size_0}, False
         )
 
         mask_prog_halo_c = wrapper_utils.as_field(
-            ffi, xp, mask_prog_halo_c, ts.ScalarKind.BOOL, {Cell: mask_prog_halo_c_size_0}, False
+            ffi,
+            on_gpu,
+            mask_prog_halo_c,
+            ts.ScalarKind.BOOL,
+            {Cell: mask_prog_halo_c_size_0},
+            False,
         )
 
         rayleigh_w = wrapper_utils.as_field(
-            ffi, xp, rayleigh_w, ts.ScalarKind.FLOAT64, {K: rayleigh_w_size_0}, False
+            ffi, on_gpu, rayleigh_w, ts.ScalarKind.FLOAT64, {K: rayleigh_w_size_0}, False
         )
 
         exner_exfac = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             exner_exfac,
             ts.ScalarKind.FLOAT64,
             {Cell: exner_exfac_size_0, K: exner_exfac_size_1},
@@ -1235,7 +1107,7 @@ def solve_nh_init_wrapper(
 
         exner_ref_mc = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             exner_ref_mc,
             ts.ScalarKind.FLOAT64,
             {Cell: exner_ref_mc_size_0, K: exner_ref_mc_size_1},
@@ -1244,7 +1116,7 @@ def solve_nh_init_wrapper(
 
         wgtfac_c = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             wgtfac_c,
             ts.ScalarKind.FLOAT64,
             {Cell: wgtfac_c_size_0, K: wgtfac_c_size_1},
@@ -1253,7 +1125,7 @@ def solve_nh_init_wrapper(
 
         wgtfacq_c = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             wgtfacq_c,
             ts.ScalarKind.FLOAT64,
             {Cell: wgtfacq_c_size_0, K: wgtfacq_c_size_1},
@@ -1262,7 +1134,7 @@ def solve_nh_init_wrapper(
 
         inv_ddqz_z_full = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             inv_ddqz_z_full,
             ts.ScalarKind.FLOAT64,
             {Cell: inv_ddqz_z_full_size_0, K: inv_ddqz_z_full_size_1},
@@ -1271,7 +1143,7 @@ def solve_nh_init_wrapper(
 
         rho_ref_mc = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             rho_ref_mc,
             ts.ScalarKind.FLOAT64,
             {Cell: rho_ref_mc_size_0, K: rho_ref_mc_size_1},
@@ -1280,7 +1152,7 @@ def solve_nh_init_wrapper(
 
         theta_ref_mc = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             theta_ref_mc,
             ts.ScalarKind.FLOAT64,
             {Cell: theta_ref_mc_size_0, K: theta_ref_mc_size_1},
@@ -1288,12 +1160,12 @@ def solve_nh_init_wrapper(
         )
 
         vwind_expl_wgt = wrapper_utils.as_field(
-            ffi, xp, vwind_expl_wgt, ts.ScalarKind.FLOAT64, {Cell: vwind_expl_wgt_size_0}, False
+            ffi, on_gpu, vwind_expl_wgt, ts.ScalarKind.FLOAT64, {Cell: vwind_expl_wgt_size_0}, False
         )
 
         d_exner_dz_ref_ic = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             d_exner_dz_ref_ic,
             ts.ScalarKind.FLOAT64,
             {Cell: d_exner_dz_ref_ic_size_0, K: d_exner_dz_ref_ic_size_1},
@@ -1302,7 +1174,7 @@ def solve_nh_init_wrapper(
 
         ddqz_z_half = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddqz_z_half,
             ts.ScalarKind.FLOAT64,
             {Cell: ddqz_z_half_size_0, K: ddqz_z_half_size_1},
@@ -1311,7 +1183,7 @@ def solve_nh_init_wrapper(
 
         theta_ref_ic = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             theta_ref_ic,
             ts.ScalarKind.FLOAT64,
             {Cell: theta_ref_ic_size_0, K: theta_ref_ic_size_1},
@@ -1320,7 +1192,7 @@ def solve_nh_init_wrapper(
 
         d2dexdz2_fac1_mc = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             d2dexdz2_fac1_mc,
             ts.ScalarKind.FLOAT64,
             {Cell: d2dexdz2_fac1_mc_size_0, K: d2dexdz2_fac1_mc_size_1},
@@ -1329,7 +1201,7 @@ def solve_nh_init_wrapper(
 
         d2dexdz2_fac2_mc = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             d2dexdz2_fac2_mc,
             ts.ScalarKind.FLOAT64,
             {Cell: d2dexdz2_fac2_mc_size_0, K: d2dexdz2_fac2_mc_size_1},
@@ -1338,7 +1210,7 @@ def solve_nh_init_wrapper(
 
         rho_ref_me = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             rho_ref_me,
             ts.ScalarKind.FLOAT64,
             {Edge: rho_ref_me_size_0, K: rho_ref_me_size_1},
@@ -1347,7 +1219,7 @@ def solve_nh_init_wrapper(
 
         theta_ref_me = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             theta_ref_me,
             ts.ScalarKind.FLOAT64,
             {Edge: theta_ref_me_size_0, K: theta_ref_me_size_1},
@@ -1356,7 +1228,7 @@ def solve_nh_init_wrapper(
 
         ddxn_z_full = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddxn_z_full,
             ts.ScalarKind.FLOAT64,
             {Edge: ddxn_z_full_size_0, K: ddxn_z_full_size_1},
@@ -1365,7 +1237,7 @@ def solve_nh_init_wrapper(
 
         zdiff_gradp = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             zdiff_gradp,
             ts.ScalarKind.FLOAT64,
             {Edge: zdiff_gradp_size_0, E2C: zdiff_gradp_size_1, K: zdiff_gradp_size_2},
@@ -1374,7 +1246,7 @@ def solve_nh_init_wrapper(
 
         vertoffset_gradp = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             vertoffset_gradp,
             ts.ScalarKind.INT32,
             {
@@ -1387,7 +1259,7 @@ def solve_nh_init_wrapper(
 
         ipeidx_dsl = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ipeidx_dsl,
             ts.ScalarKind.BOOL,
             {Edge: ipeidx_dsl_size_0, K: ipeidx_dsl_size_1},
@@ -1396,7 +1268,7 @@ def solve_nh_init_wrapper(
 
         pg_exdist = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             pg_exdist,
             ts.ScalarKind.FLOAT64,
             {Edge: pg_exdist_size_0, K: pg_exdist_size_1},
@@ -1405,7 +1277,7 @@ def solve_nh_init_wrapper(
 
         ddqz_z_full_e = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddqz_z_full_e,
             ts.ScalarKind.FLOAT64,
             {Edge: ddqz_z_full_e_size_0, K: ddqz_z_full_e_size_1},
@@ -1414,7 +1286,7 @@ def solve_nh_init_wrapper(
 
         ddxt_z_full = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             ddxt_z_full,
             ts.ScalarKind.FLOAT64,
             {Edge: ddxt_z_full_size_0, K: ddxt_z_full_size_1},
@@ -1423,7 +1295,7 @@ def solve_nh_init_wrapper(
 
         wgtfac_e = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             wgtfac_e,
             ts.ScalarKind.FLOAT64,
             {Edge: wgtfac_e_size_0, K: wgtfac_e_size_1},
@@ -1432,7 +1304,7 @@ def solve_nh_init_wrapper(
 
         wgtfacq_e = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             wgtfacq_e,
             ts.ScalarKind.FLOAT64,
             {Edge: wgtfacq_e_size_0, K: wgtfacq_e_size_1},
@@ -1440,20 +1312,20 @@ def solve_nh_init_wrapper(
         )
 
         vwind_impl_wgt = wrapper_utils.as_field(
-            ffi, xp, vwind_impl_wgt, ts.ScalarKind.FLOAT64, {Cell: vwind_impl_wgt_size_0}, False
+            ffi, on_gpu, vwind_impl_wgt, ts.ScalarKind.FLOAT64, {Cell: vwind_impl_wgt_size_0}, False
         )
 
         hmask_dd3d = wrapper_utils.as_field(
-            ffi, xp, hmask_dd3d, ts.ScalarKind.FLOAT64, {Edge: hmask_dd3d_size_0}, False
+            ffi, on_gpu, hmask_dd3d, ts.ScalarKind.FLOAT64, {Edge: hmask_dd3d_size_0}, False
         )
 
         scalfac_dd3d = wrapper_utils.as_field(
-            ffi, xp, scalfac_dd3d, ts.ScalarKind.FLOAT64, {K: scalfac_dd3d_size_0}, False
+            ffi, on_gpu, scalfac_dd3d, ts.ScalarKind.FLOAT64, {K: scalfac_dd3d_size_0}, False
         )
 
         coeff1_dwdz = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             coeff1_dwdz,
             ts.ScalarKind.FLOAT64,
             {Cell: coeff1_dwdz_size_0, K: coeff1_dwdz_size_1},
@@ -1462,7 +1334,7 @@ def solve_nh_init_wrapper(
 
         coeff2_dwdz = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             coeff2_dwdz,
             ts.ScalarKind.FLOAT64,
             {Cell: coeff2_dwdz_size_0, K: coeff2_dwdz_size_1},
@@ -1471,7 +1343,7 @@ def solve_nh_init_wrapper(
 
         coeff_gradekin = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             coeff_gradekin,
             ts.ScalarKind.FLOAT64,
             {Edge: coeff_gradekin_size_0, E2C: coeff_gradekin_size_1},
@@ -1479,31 +1351,7 @@ def solve_nh_init_wrapper(
         )
 
         c_owner_mask = wrapper_utils.as_field(
-            ffi, xp, c_owner_mask, ts.ScalarKind.BOOL, {Cell: c_owner_mask_size_0}, False
-        )
-
-        cell_center_lat = wrapper_utils.as_field(
-            ffi, xp, cell_center_lat, ts.ScalarKind.FLOAT64, {Cell: cell_center_lat_size_0}, False
-        )
-
-        cell_center_lon = wrapper_utils.as_field(
-            ffi, xp, cell_center_lon, ts.ScalarKind.FLOAT64, {Cell: cell_center_lon_size_0}, False
-        )
-
-        edge_center_lat = wrapper_utils.as_field(
-            ffi, xp, edge_center_lat, ts.ScalarKind.FLOAT64, {Edge: edge_center_lat_size_0}, False
-        )
-
-        edge_center_lon = wrapper_utils.as_field(
-            ffi, xp, edge_center_lon, ts.ScalarKind.FLOAT64, {Edge: edge_center_lon_size_0}, False
-        )
-
-        primal_normal_x = wrapper_utils.as_field(
-            ffi, xp, primal_normal_x, ts.ScalarKind.FLOAT64, {Edge: primal_normal_x_size_0}, False
-        )
-
-        primal_normal_y = wrapper_utils.as_field(
-            ffi, xp, primal_normal_y, ts.ScalarKind.FLOAT64, {Edge: primal_normal_y_size_0}, False
+            ffi, on_gpu, c_owner_mask, ts.ScalarKind.BOOL, {Cell: c_owner_mask_size_0}, False
         )
 
         assert isinstance(is_iau_active, int)
@@ -1515,21 +1363,6 @@ def solve_nh_init_wrapper(
         solve_nh_init(
             vct_a,
             vct_b,
-            cell_areas,
-            primal_normal_cell_x,
-            primal_normal_cell_y,
-            dual_normal_cell_x,
-            dual_normal_cell_y,
-            edge_areas,
-            tangent_orientation,
-            inverse_primal_edge_lengths,
-            inverse_dual_edge_lengths,
-            inverse_vertex_vertex_lengths,
-            primal_normal_vert_x,
-            primal_normal_vert_y,
-            dual_normal_vert_x,
-            dual_normal_vert_y,
-            f_e,
             c_lin_e,
             c_intp,
             e_flx_avg,
@@ -1580,12 +1413,6 @@ def solve_nh_init_wrapper(
             coeff2_dwdz,
             coeff_gradekin,
             c_owner_mask,
-            cell_center_lat,
-            cell_center_lon,
-            edge_center_lat,
-            edge_center_lon,
-            primal_normal_x,
-            primal_normal_y,
             rayleigh_damping_height,
             itime_scheme,
             iadv_rhotheta,
@@ -1602,7 +1429,7 @@ def solve_nh_init_wrapper(
             l_vert_nested,
             rhotheta_offctr,
             veladv_offctr,
-            max_nudging_coeff,
+            nudge_max_coeff,
             divdamp_fac,
             divdamp_fac2,
             divdamp_fac3,
@@ -1616,6 +1443,7 @@ def solve_nh_init_wrapper(
             stretch_factor,
             nflat_gradp,
             num_levels,
+            backend,
         )
 
         # debug info
@@ -1632,143 +1460,6 @@ def solve_nh_init_wrapper(
         )
         logging.debug(msg)
         msg = "vct_b after computation: %s" % str(vct_b.ndarray if vct_b is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of cell_areas after computation = %s" % str(
-            cell_areas.shape if cell_areas is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "cell_areas after computation: %s" % str(
-            cell_areas.ndarray if cell_areas is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of primal_normal_cell_x after computation = %s" % str(
-            primal_normal_cell_x.shape if primal_normal_cell_x is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "primal_normal_cell_x after computation: %s" % str(
-            primal_normal_cell_x.ndarray if primal_normal_cell_x is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of primal_normal_cell_y after computation = %s" % str(
-            primal_normal_cell_y.shape if primal_normal_cell_y is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "primal_normal_cell_y after computation: %s" % str(
-            primal_normal_cell_y.ndarray if primal_normal_cell_y is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of dual_normal_cell_x after computation = %s" % str(
-            dual_normal_cell_x.shape if dual_normal_cell_x is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "dual_normal_cell_x after computation: %s" % str(
-            dual_normal_cell_x.ndarray if dual_normal_cell_x is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of dual_normal_cell_y after computation = %s" % str(
-            dual_normal_cell_y.shape if dual_normal_cell_y is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "dual_normal_cell_y after computation: %s" % str(
-            dual_normal_cell_y.ndarray if dual_normal_cell_y is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of edge_areas after computation = %s" % str(
-            edge_areas.shape if edge_areas is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "edge_areas after computation: %s" % str(
-            edge_areas.ndarray if edge_areas is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of tangent_orientation after computation = %s" % str(
-            tangent_orientation.shape if tangent_orientation is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "tangent_orientation after computation: %s" % str(
-            tangent_orientation.ndarray if tangent_orientation is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of inverse_primal_edge_lengths after computation = %s" % str(
-            inverse_primal_edge_lengths.shape if inverse_primal_edge_lengths is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "inverse_primal_edge_lengths after computation: %s" % str(
-            inverse_primal_edge_lengths.ndarray
-            if inverse_primal_edge_lengths is not None
-            else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of inverse_dual_edge_lengths after computation = %s" % str(
-            inverse_dual_edge_lengths.shape if inverse_dual_edge_lengths is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "inverse_dual_edge_lengths after computation: %s" % str(
-            inverse_dual_edge_lengths.ndarray if inverse_dual_edge_lengths is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of inverse_vertex_vertex_lengths after computation = %s" % str(
-            inverse_vertex_vertex_lengths.shape
-            if inverse_vertex_vertex_lengths is not None
-            else "None"
-        )
-        logging.debug(msg)
-        msg = "inverse_vertex_vertex_lengths after computation: %s" % str(
-            inverse_vertex_vertex_lengths.ndarray
-            if inverse_vertex_vertex_lengths is not None
-            else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of primal_normal_vert_x after computation = %s" % str(
-            primal_normal_vert_x.shape if primal_normal_vert_x is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "primal_normal_vert_x after computation: %s" % str(
-            primal_normal_vert_x.ndarray if primal_normal_vert_x is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of primal_normal_vert_y after computation = %s" % str(
-            primal_normal_vert_y.shape if primal_normal_vert_y is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "primal_normal_vert_y after computation: %s" % str(
-            primal_normal_vert_y.ndarray if primal_normal_vert_y is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of dual_normal_vert_x after computation = %s" % str(
-            dual_normal_vert_x.shape if dual_normal_vert_x is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "dual_normal_vert_x after computation: %s" % str(
-            dual_normal_vert_x.ndarray if dual_normal_vert_x is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of dual_normal_vert_y after computation = %s" % str(
-            dual_normal_vert_y.shape if dual_normal_vert_y is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "dual_normal_vert_y after computation: %s" % str(
-            dual_normal_vert_y.ndarray if dual_normal_vert_y is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of f_e after computation = %s" % str(f_e.shape if f_e is not None else "None")
-        logging.debug(msg)
-        msg = "f_e after computation: %s" % str(f_e.ndarray if f_e is not None else "None")
         logging.debug(msg)
 
         msg = "shape of c_lin_e after computation = %s" % str(
@@ -2217,318 +1908,6 @@ def solve_nh_init_wrapper(
         msg = "c_owner_mask after computation: %s" % str(
             c_owner_mask.ndarray if c_owner_mask is not None else "None"
         )
-        logging.debug(msg)
-
-        msg = "shape of cell_center_lat after computation = %s" % str(
-            cell_center_lat.shape if cell_center_lat is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "cell_center_lat after computation: %s" % str(
-            cell_center_lat.ndarray if cell_center_lat is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of cell_center_lon after computation = %s" % str(
-            cell_center_lon.shape if cell_center_lon is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "cell_center_lon after computation: %s" % str(
-            cell_center_lon.ndarray if cell_center_lon is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of edge_center_lat after computation = %s" % str(
-            edge_center_lat.shape if edge_center_lat is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "edge_center_lat after computation: %s" % str(
-            edge_center_lat.ndarray if edge_center_lat is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of edge_center_lon after computation = %s" % str(
-            edge_center_lon.shape if edge_center_lon is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "edge_center_lon after computation: %s" % str(
-            edge_center_lon.ndarray if edge_center_lon is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of primal_normal_x after computation = %s" % str(
-            primal_normal_x.shape if primal_normal_x is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "primal_normal_x after computation: %s" % str(
-            primal_normal_x.ndarray if primal_normal_x is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of primal_normal_y after computation = %s" % str(
-            primal_normal_y.shape if primal_normal_y is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "primal_normal_y after computation: %s" % str(
-            primal_normal_y.ndarray if primal_normal_y is not None else "None"
-        )
-        logging.debug(msg)
-
-        logging.critical("Python Execution Context End")
-
-    except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
-        return 1
-
-    return 0
-
-
-@ffi.def_extern()
-def grid_init_wrapper(
-    cell_starts,
-    cell_starts_size_0,
-    cell_ends,
-    cell_ends_size_0,
-    vertex_starts,
-    vertex_starts_size_0,
-    vertex_ends,
-    vertex_ends_size_0,
-    edge_starts,
-    edge_starts_size_0,
-    edge_ends,
-    edge_ends_size_0,
-    c2e,
-    c2e_size_0,
-    c2e_size_1,
-    e2c,
-    e2c_size_0,
-    e2c_size_1,
-    c2e2c,
-    c2e2c_size_0,
-    c2e2c_size_1,
-    e2c2e,
-    e2c2e_size_0,
-    e2c2e_size_1,
-    e2v,
-    e2v_size_0,
-    e2v_size_1,
-    v2e,
-    v2e_size_0,
-    v2e_size_1,
-    v2c,
-    v2c_size_0,
-    v2c_size_1,
-    e2c2v,
-    e2c2v_size_0,
-    e2c2v_size_1,
-    c2v,
-    c2v_size_0,
-    c2v_size_1,
-    global_root,
-    global_level,
-    num_vertices,
-    num_cells,
-    num_edges,
-    vertical_size,
-    limited_area,
-):
-    try:
-        logging.info("Python Execution Context Start")
-
-        # Convert ptr to GT4Py fields
-
-        cell_starts = wrapper_utils.as_field(
-            ffi, xp, cell_starts, ts.ScalarKind.INT32, {CellIndex: cell_starts_size_0}, False
-        )
-
-        cell_ends = wrapper_utils.as_field(
-            ffi, xp, cell_ends, ts.ScalarKind.INT32, {CellIndex: cell_ends_size_0}, False
-        )
-
-        vertex_starts = wrapper_utils.as_field(
-            ffi, xp, vertex_starts, ts.ScalarKind.INT32, {VertexIndex: vertex_starts_size_0}, False
-        )
-
-        vertex_ends = wrapper_utils.as_field(
-            ffi, xp, vertex_ends, ts.ScalarKind.INT32, {VertexIndex: vertex_ends_size_0}, False
-        )
-
-        edge_starts = wrapper_utils.as_field(
-            ffi, xp, edge_starts, ts.ScalarKind.INT32, {EdgeIndex: edge_starts_size_0}, False
-        )
-
-        edge_ends = wrapper_utils.as_field(
-            ffi, xp, edge_ends, ts.ScalarKind.INT32, {EdgeIndex: edge_ends_size_0}, False
-        )
-
-        c2e = wrapper_utils.as_field(
-            ffi, xp, c2e, ts.ScalarKind.INT32, {Cell: c2e_size_0, C2E: c2e_size_1}, False
-        )
-
-        e2c = wrapper_utils.as_field(
-            ffi, xp, e2c, ts.ScalarKind.INT32, {Edge: e2c_size_0, E2C: e2c_size_1}, False
-        )
-
-        c2e2c = wrapper_utils.as_field(
-            ffi, xp, c2e2c, ts.ScalarKind.INT32, {Cell: c2e2c_size_0, C2E2C: c2e2c_size_1}, False
-        )
-
-        e2c2e = wrapper_utils.as_field(
-            ffi, xp, e2c2e, ts.ScalarKind.INT32, {Edge: e2c2e_size_0, E2C2E: e2c2e_size_1}, False
-        )
-
-        e2v = wrapper_utils.as_field(
-            ffi, xp, e2v, ts.ScalarKind.INT32, {Edge: e2v_size_0, E2V: e2v_size_1}, False
-        )
-
-        v2e = wrapper_utils.as_field(
-            ffi, xp, v2e, ts.ScalarKind.INT32, {Vertex: v2e_size_0, V2E: v2e_size_1}, False
-        )
-
-        v2c = wrapper_utils.as_field(
-            ffi, xp, v2c, ts.ScalarKind.INT32, {Vertex: v2c_size_0, V2C: v2c_size_1}, False
-        )
-
-        e2c2v = wrapper_utils.as_field(
-            ffi, xp, e2c2v, ts.ScalarKind.INT32, {Edge: e2c2v_size_0, E2C2V: e2c2v_size_1}, False
-        )
-
-        c2v = wrapper_utils.as_field(
-            ffi, xp, c2v, ts.ScalarKind.INT32, {Cell: c2v_size_0, C2V: c2v_size_1}, False
-        )
-
-        assert isinstance(limited_area, int)
-        limited_area = limited_area != 0
-
-        grid_init(
-            cell_starts,
-            cell_ends,
-            vertex_starts,
-            vertex_ends,
-            edge_starts,
-            edge_ends,
-            c2e,
-            e2c,
-            c2e2c,
-            e2c2e,
-            e2v,
-            v2e,
-            v2c,
-            e2c2v,
-            c2v,
-            global_root,
-            global_level,
-            num_vertices,
-            num_cells,
-            num_edges,
-            vertical_size,
-            limited_area,
-        )
-
-        # debug info
-
-        msg = "shape of cell_starts after computation = %s" % str(
-            cell_starts.shape if cell_starts is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "cell_starts after computation: %s" % str(
-            cell_starts.ndarray if cell_starts is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of cell_ends after computation = %s" % str(
-            cell_ends.shape if cell_ends is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "cell_ends after computation: %s" % str(
-            cell_ends.ndarray if cell_ends is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of vertex_starts after computation = %s" % str(
-            vertex_starts.shape if vertex_starts is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "vertex_starts after computation: %s" % str(
-            vertex_starts.ndarray if vertex_starts is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of vertex_ends after computation = %s" % str(
-            vertex_ends.shape if vertex_ends is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "vertex_ends after computation: %s" % str(
-            vertex_ends.ndarray if vertex_ends is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of edge_starts after computation = %s" % str(
-            edge_starts.shape if edge_starts is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "edge_starts after computation: %s" % str(
-            edge_starts.ndarray if edge_starts is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of edge_ends after computation = %s" % str(
-            edge_ends.shape if edge_ends is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "edge_ends after computation: %s" % str(
-            edge_ends.ndarray if edge_ends is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of c2e after computation = %s" % str(c2e.shape if c2e is not None else "None")
-        logging.debug(msg)
-        msg = "c2e after computation: %s" % str(c2e.ndarray if c2e is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of e2c after computation = %s" % str(e2c.shape if e2c is not None else "None")
-        logging.debug(msg)
-        msg = "e2c after computation: %s" % str(e2c.ndarray if e2c is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of c2e2c after computation = %s" % str(
-            c2e2c.shape if c2e2c is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "c2e2c after computation: %s" % str(c2e2c.ndarray if c2e2c is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of e2c2e after computation = %s" % str(
-            e2c2e.shape if e2c2e is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "e2c2e after computation: %s" % str(e2c2e.ndarray if e2c2e is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of e2v after computation = %s" % str(e2v.shape if e2v is not None else "None")
-        logging.debug(msg)
-        msg = "e2v after computation: %s" % str(e2v.ndarray if e2v is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of v2e after computation = %s" % str(v2e.shape if v2e is not None else "None")
-        logging.debug(msg)
-        msg = "v2e after computation: %s" % str(v2e.ndarray if v2e is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of v2c after computation = %s" % str(v2c.shape if v2c is not None else "None")
-        logging.debug(msg)
-        msg = "v2c after computation: %s" % str(v2c.ndarray if v2c is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of e2c2v after computation = %s" % str(
-            e2c2v.shape if e2c2v is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "e2c2v after computation: %s" % str(e2c2v.ndarray if e2c2v is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of c2v after computation = %s" % str(c2v.shape if c2v is not None else "None")
-        logging.debug(msg)
-        msg = "c2v after computation: %s" % str(c2v.ndarray if c2v is not None else "None")
         logging.debug(msg)
 
         logging.critical("Python Execution Context End")

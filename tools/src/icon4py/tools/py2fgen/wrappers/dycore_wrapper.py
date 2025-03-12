@@ -6,18 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
 
 """
@@ -30,63 +18,52 @@ Fortran granule interfaces:
 """
 
 import cProfile
+import dataclasses
 import pstats
+from typing import Optional
 
 import gt4py.next as gtx
+import numpy as np
+from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.grid import icon
-from icon4py.model.common.grid.icon import GlobalGridParams
+from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.settings import backend, device
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common
-from icon4py.tools.py2fgen.wrappers.wrapper_dimension import (
-    CellIndexDim,
-    EdgeIndexDim,
-    VertexIndexDim,
-)
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper
 
 
 logger = setup_logger(__name__)
 
-dycore_wrapper_state = {
-    "profiler": cProfile.Profile(),
-}
+
+@dataclasses.dataclass
+class SolveNonhydroGranule:
+    solve_nh: solve_nonhydro.SolveNonhydro
+    backend: gtx_backend.Backend
+    profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
+
+
+granule: Optional[SolveNonhydroGranule]  # TODO(havogt): remove module global state
 
 
 def profile_enable():
-    dycore_wrapper_state["profiler"].enable()
+    global granule
+    granule.profiler.enable()
 
 
 def profile_disable():
-    dycore_wrapper_state["profiler"].disable()
-    stats = pstats.Stats(dycore_wrapper_state["profiler"])
+    global granule
+    granule.profiler.disable()
+    stats = pstats.Stats(granule.profiler)
     stats.dump_stats(f"{__name__}.profile")
 
 
 def solve_nh_init(
     vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    cell_areas: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    primal_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    dual_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    dual_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    edge_areas: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    tangent_orientation: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    inverse_primal_edge_lengths: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    inverse_dual_edge_lengths: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    inverse_vertex_vertex_lengths: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
-    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
-    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
-    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
-    f_e: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
@@ -137,12 +114,6 @@ def solve_nh_init(
     coeff2_dwdz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_owner_mask: gtx.Field[gtx.Dims[dims.CellDim], bool],
-    cell_center_lat: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    cell_center_lon: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    edge_center_lat: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    edge_center_lon: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    primal_normal_x: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    primal_normal_y: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
     rayleigh_damping_height: gtx.float64,
     itime_scheme: gtx.int32,
     iadv_rhotheta: gtx.int32,
@@ -159,7 +130,7 @@ def solve_nh_init(
     l_vert_nested: bool,
     rhotheta_offctr: gtx.float64,
     veladv_offctr: gtx.float64,
-    max_nudging_coeff: gtx.float64,
+    nudge_max_coeff: gtx.float64,  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
     divdamp_fac: gtx.float64,
     divdamp_fac2: gtx.float64,
     divdamp_fac3: gtx.float64,
@@ -173,9 +144,19 @@ def solve_nh_init(
     stretch_factor: gtx.float64,
     nflat_gradp: gtx.int32,
     num_levels: gtx.int32,
+    backend: gtx.int32,
 ):
-    if not isinstance(dycore_wrapper_state["grid"], icon.IconGrid):
-        raise Exception("Need to initialise grid using grid_init before running solve_nh_init.")
+    if grid_wrapper.grid_state is None:
+        raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
+
+    on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    actual_backend = wrapper_common.select_backend(
+        wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
+    )
+    logger.info(f"{on_gpu=}")
+    logger.info(
+        f"Using Backend {wrapper_common.BackendIntEnum(backend).name} ({actual_backend.name})"
+    )
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -193,7 +174,7 @@ def solve_nh_init(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coeff=max_nudging_coeff,
+        max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         divdamp_fac=divdamp_fac,
         divdamp_fac2=divdamp_fac2,
         divdamp_fac3=divdamp_fac3,
@@ -204,45 +185,6 @@ def solve_nh_init(
         divdamp_z4=divdamp_z4,
     )
     nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
-
-    # edge geometry
-    edge_geometry = grid_states.EdgeParams(
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
-        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_x
-        ),
-        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_y
-        ),
-        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
-        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
-        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_x
-        ),
-        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_y
-        ),
-        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
-        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
-        edge_areas=edge_areas,
-        f_e=f_e,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
-    )
-
-    # datatest config CellParams
-    cell_geometry = grid_states.CellParams.from_global_num_cells(
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        area=cell_areas,
-        global_num_cells=dycore_wrapper_state["grid"].global_properties.num_cells,
-        length_rescale_factor=1.0,
-    )
 
     interpolation_state = dycore_states.InterpolationState(
         c_lin_e=c_lin_e,
@@ -291,7 +233,7 @@ def solve_nh_init(
         vertoffset_gradp=data_alloc.flatten_first_two_dims(
             dims.ECDim, dims.KDim, field=vertoffset_gradp
         ),
-        ipeidx_dsl=ipeidx_dsl,
+        pg_edgeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
@@ -319,20 +261,27 @@ def solve_nh_init(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        _min_index_flat_horizontal_grad_pressure=nflat_gradp,
+        _min_index_flat_horizontal_grad_pressure=gtx.int32(
+            nflat_gradp - 1
+        ),  # Fortran vs Python indexing
     )
 
-    dycore_wrapper_state["granule"] = solve_nonhydro.SolveNonhydro(
-        grid=dycore_wrapper_state["grid"],
-        config=config,
-        params=nonhydro_params,
-        metric_state_nonhydro=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-        owner_mask=c_owner_mask,
-        backend=backend,
+    global granule
+    granule = SolveNonhydroGranule(
+        solve_nh=solve_nonhydro.SolveNonhydro(
+            grid=grid_wrapper.grid_state.grid,
+            config=config,
+            params=nonhydro_params,
+            metric_state_nonhydro=metric_state_nonhydro,
+            interpolation_state=interpolation_state,
+            vertical_params=vertical_params,
+            edge_geometry=grid_wrapper.grid_state.edge_geometry,
+            cell_geometry=grid_wrapper.grid_state.cell_geometry,
+            owner_mask=c_owner_mask,
+            backend=actual_backend,
+            exchange=grid_wrapper.grid_state.exchange_runtime,
+        ),
+        backend=actual_backend,
     )
 
 
@@ -367,6 +316,7 @@ def solve_nh_run(
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     dtime: gtx.float64,
     lprep_adv: bool,
@@ -375,15 +325,15 @@ def solve_nh_run(
     ndyn_substeps: gtx.float64,
     idyn_timestep: gtx.int32,
 ):
-    logger.info(f"Using Device = {device}")
+    global granule
+    if granule is None:
+        raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=data_alloc.zero_field(
-            dycore_wrapper_state["grid"], dims.CellDim, dims.KDim, dtype=gtx.float64
-        ),
+        vol_flx_ic=vol_flx_ic,
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
@@ -427,7 +377,7 @@ def solve_nh_run(
     # adjust for Fortran indexes
     idyn_timestep = idyn_timestep - 1
 
-    dycore_wrapper_state["granule"].time_step(
+    granule.solve_nh.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
         prep_adv=prep_adv,
@@ -437,61 +387,4 @@ def solve_nh_run(
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps - 1),
-    )
-
-
-def grid_init(
-    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
-    e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
-    c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
-    e2c2e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], gtx.int32],
-    e2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2VDim], gtx.int32],
-    v2e: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.int32],
-    v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
-    e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
-    c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
-    global_root: gtx.int32,
-    global_level: gtx.int32,
-    num_vertices: gtx.int32,
-    num_cells: gtx.int32,
-    num_edges: gtx.int32,
-    vertical_size: gtx.int32,
-    limited_area: bool,
-):
-    # todo: write this logic into template.py
-    if isinstance(limited_area, int):
-        limited_area = bool(limited_area)
-
-    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
-
-    dycore_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
-        grid_id="icon_grid",
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=True if device == "GPU" else False,
-        cell_starts=cell_starts.ndarray,
-        cell_ends=cell_ends.ndarray,
-        vertex_starts=vertex_starts.ndarray,
-        vertex_ends=vertex_ends.ndarray,
-        edge_starts=edge_starts.ndarray,
-        edge_ends=edge_ends.ndarray,
-        c2e=c2e.ndarray,
-        e2c=e2c.ndarray,
-        c2e2c=c2e2c.ndarray,
-        e2c2e=e2c2e.ndarray,
-        e2v=e2v.ndarray,
-        v2e=v2e.ndarray,
-        v2c=v2c.ndarray,
-        e2c2v=e2c2v.ndarray,
-        c2v=c2v.ndarray,
     )

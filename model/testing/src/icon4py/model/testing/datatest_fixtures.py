@@ -219,7 +219,6 @@ def savepoint_nonhydro_15_28_init(data_provider, istep_init, step_date_init, sub
         istep=istep_init, date=step_date_init, substep=substep_init
     )
 
-
 @pytest.fixture
 def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_exit):  # F811
     """
@@ -265,8 +264,8 @@ def savepoint_nonhydro_15_28_exit(data_provider, istep_init, step_date_exit, sub
     return data_provider.from_savepoint_nonhydro_15_28_exit(
         istep=istep_init, date=step_date_exit, substep=substep_exit
     )
-
-
+    
+    
 @pytest.fixture
 def savepoint_nonhydro_step_final(data_provider, step_date_exit, substep_exit):
     """

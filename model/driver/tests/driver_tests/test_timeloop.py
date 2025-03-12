@@ -91,21 +91,20 @@ from .utils import (
             False,
             True,
         ),
-        # TODO fix/regenerate data for GAUSS3D and JW
-        # (
-        #     dt_utils.GAUSS3D_EXPERIMENT,
-        #     1,
-        #     2,
-        #     1,
-        #     5,
-        #     "2001-01-01T00:00:00.000",
-        #     "2001-01-01T00:00:04.000",
-        #     "2001-01-01T00:00:04.000",
-        #     "2001-01-01T00:00:04.000",
-        #     False,
-        #     False,
-        #     False,
-        # ),
+        (
+            dt_utils.GAUSS3D_EXPERIMENT,
+            1,
+            2,
+            1,
+            5,
+            "2001-01-01T00:00:00.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            False,
+            False,
+            False,
+        ),
     ],
 )
 def test_run_timeloop_single_step(
@@ -242,7 +241,7 @@ def test_run_timeloop_single_step(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-        ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
@@ -285,7 +284,7 @@ def test_run_timeloop_single_step(
         ),
     )
 
-    current_index, next_index = (2, 1) if not linit else (1, 2)
+    current_index, next_index = (1, 0) if not linit else (0, 1)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
@@ -298,7 +297,7 @@ def test_run_timeloop_single_step(
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+            sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
             sp_v.ddt_w_adv_pc(current_index), sp_v.ddt_w_adv_pc(next_index)
