@@ -68,7 +68,10 @@ def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> No
         )
 
 def valid_results_file(file_name: str) -> bool:
-    """Check if the results file (json) is valid, i.e. non-empty and non-corrupted content."""
+    """Check if the results file (json) is valid, i.e. existing, non-empty and non-corrupted file."""
+    if not os.path.exists(file_name):
+        return False
+    
     with open(file_name, "r") as f:
         content = f.read().strip()  # Remove whitespace
 
