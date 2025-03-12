@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperat
     compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -57,7 +58,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:  # noqa: F821
+    def input_data(self, grid: base.BaseGrid) -> dict:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
