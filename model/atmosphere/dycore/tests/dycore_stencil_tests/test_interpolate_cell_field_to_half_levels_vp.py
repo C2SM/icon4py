@@ -10,15 +10,17 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.interpolation.stencils.interpolate_to_half_levels_vp import (
-    interpolate_to_half_levels_vp,
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
+    interpolate_cell_field_to_half_levels_vp,
 )
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def interpolate_to_half_levels_vp_numpy(wgtfac_c: np.array, interpolant: np.array) -> np.array:
+def interpolate_cell_field_to_half_levels_vp_numpy(
+    wgtfac_c: np.array, interpolant: np.array
+) -> np.array:
     interpolant_offset_1 = np.roll(interpolant, shift=1, axis=1)
     interpolation_to_half_levels_vp = (
         wgtfac_c * interpolant + (1.0 - wgtfac_c) * interpolant_offset_1
@@ -29,12 +31,12 @@ def interpolate_to_half_levels_vp_numpy(wgtfac_c: np.array, interpolant: np.arra
 
 
 class TestInterpolateToHalfLevelsVp(StencilTest):
-    PROGRAM = interpolate_to_half_levels_vp
+    PROGRAM = interpolate_cell_field_to_half_levels_vp
     OUTPUTS = ("interpolation_to_half_levels_vp",)
 
     @staticmethod
     def reference(grid, wgtfac_c: np.array, interpolant: np.array, **kwargs) -> dict:
-        interpolation_to_half_levels_vp = interpolate_to_half_levels_vp_numpy(
+        interpolation_to_half_levels_vp = interpolate_cell_field_to_half_levels_vp_numpy(
             wgtfac_c=wgtfac_c, interpolant=interpolant
         )
         return dict(interpolation_to_half_levels_vp=interpolation_to_half_levels_vp)

@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.compute_edge_diagnostics_for_velocity_advection import (
-    compute_khalf_horizontal_advection_of_w,
+    compute_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
@@ -24,19 +24,19 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 )
 
 
-class TestComputeKhalfHorizontalAdvectionOfW(StencilTest):
-    PROGRAM = compute_khalf_horizontal_advection_of_w
-    OUTPUTS = ("khalf_horizontal_advection_of_w_at_edge",)
+class TestComputeHorizontalAdvectionOfW(StencilTest):
+    PROGRAM = compute_horizontal_advection_of_w
+    OUTPUTS = ("horizontal_advection_of_w_at_edges_on_half_levels",)
     MARKERS = (pytest.mark.embedded_remap_error,)
 
     @classmethod
     def reference(
         cls,
         grid,
-        khalf_horizontal_advection_of_w_at_edge: np.ndarray,
+        horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
         w: np.ndarray,
-        khalf_tangential_wind: np.ndarray,
-        khalf_vn: np.ndarray,
+        tangential_wind_on_half_levels: np.ndarray,
+        vn_on_half_levels: np.ndarray,
         c_intp: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
@@ -59,36 +59,38 @@ class TestComputeKhalfHorizontalAdvectionOfW(StencilTest):
         )
         condition_mask2 = (lateral_boundary_7 <= edge) & (edge < halo_1)
 
-        khalf_w_at_vertex = np.where(
+        w_at_vertices = np.where(
             condition_mask1,
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp),
             0.0,
         )
 
-        khalf_horizontal_advection_of_w_at_edge = np.where(
+        horizontal_advection_of_w_at_edges_on_half_levels = np.where(
             condition_mask2,
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
                 grid,
-                khalf_vn[:, :-1],
+                vn_on_half_levels[:, :-1],
                 inv_dual_edge_length,
                 w,
-                khalf_tangential_wind,
+                tangential_wind_on_half_levels,
                 inv_primal_edge_length,
                 tangent_orientation,
-                khalf_w_at_vertex,
+                w_at_vertices,
             ),
-            khalf_horizontal_advection_of_w_at_edge,
+            horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
         return dict(
-            khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
+            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
     @pytest.fixture
     def input_data(self, grid: base_grid.BaseGrid) -> dict:
-        khalf_tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        khalf_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        khalf_horizontal_advection_of_w_at_edge = data_alloc.zero_field(
+        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        vn_on_half_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim
         )
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -117,10 +119,10 @@ class TestComputeKhalfHorizontalAdvectionOfW(StencilTest):
         vertical_end = nlev
 
         return dict(
-            khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
+            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
             w=w,
-            khalf_tangential_wind=khalf_tangential_wind,
-            khalf_vn=khalf_vn,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            vn_on_half_levels=vn_on_half_levels,
             c_intp=c_intp,
             inv_dual_edge_length=inv_dual_edge_length,
             inv_primal_edge_length=inv_primal_edge_length,

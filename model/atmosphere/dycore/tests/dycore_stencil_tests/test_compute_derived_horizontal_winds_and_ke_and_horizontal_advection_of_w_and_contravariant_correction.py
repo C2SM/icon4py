@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.compute_edge_diagnostics_for_velocity_advection import (
-    compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction,
+    compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
@@ -24,8 +24,8 @@ from .test_compute_horizontal_advection_term_for_vertical_velocity import (
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
 from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_extrapolate_at_top import extrapolate_at_top_numpy
-from .test_interpolate_vn_to_ie_and_compute_ekin_on_edges import (
-    interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy,
+from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
+    interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
 )
 from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
@@ -33,15 +33,17 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 )
 
 
-class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrection(StencilTest):
-    PROGRAM = compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction
+class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
+    StencilTest
+):
+    PROGRAM = compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction
     OUTPUTS = (
         "tangential_wind",
-        "khalf_tangential_wind",
-        "khalf_vn",
-        "horizontal_kinetic_energy_at_edge",
-        "contravariant_correction_at_edge",
-        "khalf_horizontal_advection_of_w_at_edge",
+        "tangential_wind_on_half_levels",
+        "vn_on_half_levels",
+        "horizontal_kinetic_energy_at_edges_on_model_levels",
+        "contravariant_correction_at_edges_on_model_levels",
+        "horizontal_advection_of_w_at_edges_on_half_levels",
     )
     MARKERS = (pytest.mark.embedded_remap_error,)
 
@@ -49,10 +51,10 @@ class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrect
     def _fused_velocity_advection_stencil_1_to_6_numpy(
         connectivities: dict[gtx.Dimension, np.ndarray],
         tangential_wind: np.ndarray,
-        khalf_tangential_wind: np.ndarray,
-        khalf_vn: np.ndarray,
-        horizontal_kinetic_energy_at_edge: np.ndarray,
-        contravariant_correction_at_edge: np.ndarray,
+        tangential_wind_on_half_levels: np.ndarray,
+        vn_on_half_levels: np.ndarray,
+        horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
+        contravariant_correction_at_edges_on_model_levels: np.ndarray,
         vn: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         wgtfac_e: np.ndarray,
@@ -63,7 +65,7 @@ class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrect
         k: np.ndarray,
         nflatlev: int,
         nlev: int,
-    ) -> tuple[np.ndarray]:
+    ) -> tuple[np.ndarray, ...]:
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
@@ -75,46 +77,56 @@ class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrect
         )
 
         condition2 = (1 <= k_nlev) & (k_nlev < nlev)
-        khalf_vn[:, :-1], horizontal_kinetic_energy_at_edge = np.where(
+        vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
             condition2,
-            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(wgtfac_e, vn, tangential_wind),
-            (khalf_vn[:, :nlev], horizontal_kinetic_energy_at_edge),
+            interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
+                wgtfac_e, vn, tangential_wind
+            ),
+            (vn_on_half_levels[:, :nlev], horizontal_kinetic_energy_at_edges_on_model_levels),
         )
 
         if not skip_compute_predictor_vertical_advection:
-            khalf_tangential_wind = np.where(
+            tangential_wind_on_half_levels = np.where(
                 condition2,
                 interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
-                khalf_tangential_wind,
+                tangential_wind_on_half_levels,
             )
 
         condition3 = k_nlev == 0
-        khalf_vn[:, :nlev], khalf_tangential_wind, horizontal_kinetic_energy_at_edge = np.where(
+        (
+            vn_on_half_levels[:, :nlev],
+            tangential_wind_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
+        ) = np.where(
             condition3,
             compute_horizontal_kinetic_energy_numpy(vn, tangential_wind),
-            (khalf_vn[:, :nlev], khalf_tangential_wind, horizontal_kinetic_energy_at_edge),
+            (
+                vn_on_half_levels[:, :nlev],
+                tangential_wind_on_half_levels,
+                horizontal_kinetic_energy_at_edges_on_model_levels,
+            ),
         )
 
         condition4 = k == nlev
-        khalf_vn = np.where(
+        vn_on_half_levels = np.where(
             condition4,
             extrapolate_at_top_numpy(wgtfacq_e, vn),
-            khalf_vn,
+            vn_on_half_levels,
         )
 
         condition5 = (nflatlev <= k_nlev) & (k_nlev < nlev)
-        contravariant_correction_at_edge = np.where(
+        contravariant_correction_at_edges_on_model_levels = np.where(
             condition5,
             compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
-            contravariant_correction_at_edge,
+            contravariant_correction_at_edges_on_model_levels,
         )
 
         return (
             tangential_wind,
-            khalf_tangential_wind,
-            khalf_vn,
-            horizontal_kinetic_energy_at_edge,
-            contravariant_correction_at_edge,
+            tangential_wind_on_half_levels,
+            vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels,
         )
 
     @classmethod
@@ -122,11 +134,11 @@ class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrect
         cls,
         grid,
         tangential_wind: np.ndarray,
-        khalf_tangential_wind: np.ndarray,
-        khalf_vn: np.ndarray,
-        horizontal_kinetic_energy_at_edge: np.ndarray,
-        contravariant_correction_at_edge: np.ndarray,
-        khalf_horizontal_advection_of_w_at_edge: np.ndarray,
+        tangential_wind_on_half_levels: np.ndarray,
+        vn_on_half_levels: np.ndarray,
+        horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
+        contravariant_correction_at_edges_on_model_levels: np.ndarray,
+        horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
         vn: np.ndarray,
         w: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
@@ -154,17 +166,17 @@ class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrect
 
         (
             tangential_wind,
-            khalf_tangential_wind,
-            khalf_vn,
-            horizontal_kinetic_energy_at_edge,
-            contravariant_correction_at_edge,
+            tangential_wind_on_half_levels,
+            vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels,
         ) = cls._fused_velocity_advection_stencil_1_to_6_numpy(
             grid,
             tangential_wind,
-            khalf_tangential_wind,
-            khalf_vn,
-            horizontal_kinetic_energy_at_edge,
-            contravariant_correction_at_edge,
+            tangential_wind_on_half_levels,
+            vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels,
             vn,
             rbf_vec_coeff_e,
             wgtfac_e,
@@ -186,38 +198,44 @@ class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrect
         )
 
         if not skip_compute_predictor_vertical_advection:
-            khalf_horizontal_advection_of_w_at_edge = np.where(
+            horizontal_advection_of_w_at_edges_on_half_levels = np.where(
                 condition_mask,
                 compute_horizontal_advection_term_for_vertical_velocity_numpy(
                     grid,
-                    khalf_vn[:, :-1],
+                    vn_on_half_levels[:, :-1],
                     inv_dual_edge_length,
                     w,
-                    khalf_tangential_wind,
+                    tangential_wind_on_half_levels,
                     inv_primal_edge_length,
                     tangent_orientation,
                     khalf_w_at_edge,
                 ),
-                khalf_horizontal_advection_of_w_at_edge,
+                horizontal_advection_of_w_at_edges_on_half_levels,
             )
 
         return dict(
             tangential_wind=tangential_wind,
-            khalf_tangential_wind=khalf_tangential_wind,
-            khalf_vn=khalf_vn,
-            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
-            contravariant_correction_at_edge=contravariant_correction_at_edge,
-            khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            vn_on_half_levels=vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
     @pytest.fixture
     def input_data(self, grid: base_grid.BaseGrid) -> dict:
         tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        khalf_tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        khalf_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        horizontal_kinetic_energy_at_edge = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        contravariant_correction_at_edge = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        khalf_horizontal_advection_of_w_at_edge = data_alloc.zero_field(
+        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        vn_on_half_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
+        contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
+        horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim
         )
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -254,12 +272,12 @@ class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrect
         vertical_end = nlev + 1
 
         return dict(
-            khalf_tangential_wind=khalf_tangential_wind,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
             tangential_wind=tangential_wind,
-            khalf_vn=khalf_vn,
-            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
-            contravariant_correction_at_edge=contravariant_correction_at_edge,
-            khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
+            vn_on_half_levels=vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
             vn=vn,
             w=w,
             rbf_vec_coeff_e=rbf_vec_coeff_e,

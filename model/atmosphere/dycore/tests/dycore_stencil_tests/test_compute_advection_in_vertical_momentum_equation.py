@@ -35,8 +35,8 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     connectivities: dict[gtx.Dimension, np.ndarray],
     vertical_wind_advective_tendency: np.ndarray,
     w: np.ndarray,
-    khalf_contravariant_corrected_w_at_cell: np.ndarray,
-    khalf_horizontal_advection_of_w_at_edge: np.ndarray,
+    contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
+    horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
     coeff1_dwdz: np.ndarray,
     coeff2_dwdz: np.ndarray,
     e_bln_c_s: np.ndarray,
@@ -63,7 +63,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     vertical_wind_advective_tendency = np.where(
         condition1,
         compute_advective_vertical_wind_tendency_numpy(
-            khalf_contravariant_corrected_w_at_cell[:, :-1], w, coeff1_dwdz, coeff2_dwdz
+            contravariant_corrected_w_at_cells_on_half_levels[:, :-1], w, coeff1_dwdz, coeff2_dwdz
         ),
         vertical_wind_advective_tendency,
     )
@@ -73,7 +73,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
         add_interpolated_horizontal_advection_of_w_numpy(
             connectivities,
             e_bln_c_s,
-            khalf_horizontal_advection_of_w_at_edge,
+            horizontal_advection_of_w_at_edges_on_half_levels,
             vertical_wind_advective_tendency,
         ),
         vertical_wind_advective_tendency,
@@ -93,7 +93,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
             levelmask,
             cfl_clipping,
             owner_mask,
-            khalf_contravariant_corrected_w_at_cell[:, :-1],
+            contravariant_corrected_w_at_cells_on_half_levels[:, :-1],
             ddqz_z_half,
             area,
             geofac_n2s,
@@ -112,7 +112,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
 class TestFusedVelocityAdvectionStencilVMomentum(StencilTest):
     PROGRAM = compute_advection_in_vertical_momentum_equation
     OUTPUTS = (
-        "contravariant_corrected_w_at_cell",
+        "contravariant_corrected_w_at_cells_on_model_levels",
         "vertical_wind_advective_tendency",
     )
     MARKERS = (pytest.mark.embedded_remap_error, pytest.mark.skip_value_error)
@@ -120,11 +120,11 @@ class TestFusedVelocityAdvectionStencilVMomentum(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        contravariant_corrected_w_at_cell: np.ndarray,
+        contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
         vertical_wind_advective_tendency: np.ndarray,
         w: np.ndarray,
-        khalf_contravariant_corrected_w_at_cell: np.ndarray,
-        khalf_horizontal_advection_of_w_at_edge: np.ndarray,
+        contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
+        horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
         coeff1_dwdz: np.ndarray,
         coeff2_dwdz: np.ndarray,
         e_bln_c_s: np.ndarray,
@@ -149,12 +149,14 @@ class TestFusedVelocityAdvectionStencilVMomentum(StencilTest):
         **kwargs,
     ) -> dict:
         # We need to store the initial return field, because we only compute on a subdomain.
-        contravariant_corrected_w_at_cell_ret = contravariant_corrected_w_at_cell.copy()
+        contravariant_corrected_w_at_cells_on_model_levels_ret = (
+            contravariant_corrected_w_at_cells_on_model_levels.copy()
+        )
         vertical_wind_advective_tendency_ret = vertical_wind_advective_tendency.copy()
 
-        contravariant_corrected_w_at_cell = (
+        contravariant_corrected_w_at_cells_on_model_levels = (
             interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
-                khalf_contravariant_corrected_w_at_cell
+                contravariant_corrected_w_at_cells_on_half_levels
             )
         )
 
@@ -164,8 +166,8 @@ class TestFusedVelocityAdvectionStencilVMomentum(StencilTest):
                     connectivities,
                     vertical_wind_advective_tendency,
                     w,
-                    khalf_contravariant_corrected_w_at_cell,
-                    khalf_horizontal_advection_of_w_at_edge,
+                    contravariant_corrected_w_at_cells_on_half_levels,
+                    horizontal_advection_of_w_at_edges_on_half_levels,
                     coeff1_dwdz,
                     coeff2_dwdz,
                     e_bln_c_s,
@@ -193,9 +195,9 @@ class TestFusedVelocityAdvectionStencilVMomentum(StencilTest):
         vertical_start = kwargs["vertical_start"]
         vertical_end = kwargs["vertical_end"]
 
-        contravariant_corrected_w_at_cell_ret[
+        contravariant_corrected_w_at_cells_on_model_levels_ret[
             start_cell_lateral_boundary:end_cell_halo, vertical_start:vertical_end
-        ] = contravariant_corrected_w_at_cell[
+        ] = contravariant_corrected_w_at_cells_on_model_levels[
             start_cell_lateral_boundary:end_cell_halo, vertical_start:vertical_end
         ]
         vertical_wind_advective_tendency_ret[
@@ -205,19 +207,21 @@ class TestFusedVelocityAdvectionStencilVMomentum(StencilTest):
         ]
 
         return dict(
-            contravariant_corrected_w_at_cell=contravariant_corrected_w_at_cell_ret,
+            contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels_ret,
             vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         )
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        contravariant_corrected_w_at_cell = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim
+        )
         vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        khalf_contravariant_corrected_w_at_cell = data_alloc.random_field(
+        contravariant_corrected_w_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        khalf_horizontal_advection_of_w_at_edge = data_alloc.random_field(
+        horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
         coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -256,11 +260,11 @@ class TestFusedVelocityAdvectionStencilVMomentum(StencilTest):
         vertical_end = nlev
 
         return dict(
-            contravariant_corrected_w_at_cell=contravariant_corrected_w_at_cell,
+            contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
             vertical_wind_advective_tendency=vertical_wind_advective_tendency,
             w=w,
-            khalf_contravariant_corrected_w_at_cell=khalf_contravariant_corrected_w_at_cell,
-            khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
+            contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
             coeff1_dwdz=coeff1_dwdz,
             coeff2_dwdz=coeff2_dwdz,
             e_bln_c_s=e_bln_c_s,

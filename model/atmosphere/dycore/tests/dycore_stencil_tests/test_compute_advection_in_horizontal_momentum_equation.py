@@ -38,12 +38,12 @@ class TestFusedVelocityAdvectionStencilsHMomentum(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         normal_wind_advective_tendency: np.ndarray,
         vn: np.ndarray,
-        horizontal_kinetic_energy_at_edge: np.ndarray,
-        horizontal_kinetic_energy_at_cell: np.ndarray,
+        horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
+        horizontal_kinetic_energy_at_cells_on_model_levels: np.ndarray,
         tangential_wind: np.ndarray,
         coriolis_frequency: np.ndarray,
-        contravariant_corrected_w_at_cell: np.ndarray,
-        khalf_vn: np.ndarray,
+        contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
+        vn_on_half_levels: np.ndarray,
         geofac_rot: np.ndarray,
         coeff_gradekin: np.ndarray,
         c_lin_e: np.ndarray,
@@ -77,7 +77,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(StencilTest):
             & (vertex < end_vertex_halo)
             & (k >= 0)
         )
-        vorticity_at_vertex = np.where(
+        upward_vorticity_at_vertices = np.where(
             vorticity_condition,
             mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vn, geofac_rot),
             0.0,
@@ -88,15 +88,15 @@ class TestFusedVelocityAdvectionStencilsHMomentum(StencilTest):
             edge_condition,
             compute_advective_normal_wind_tendency_numpy(
                 connectivities,
-                horizontal_kinetic_energy_at_edge,
+                horizontal_kinetic_energy_at_edges_on_model_levels,
                 coeff_gradekin,
-                horizontal_kinetic_energy_at_cell,
-                vorticity_at_vertex,
+                horizontal_kinetic_energy_at_cells_on_model_levels,
+                upward_vorticity_at_vertices,
                 tangential_wind,
                 coriolis_frequency,
                 c_lin_e,
-                contravariant_corrected_w_at_cell,
-                khalf_vn,
+                contravariant_corrected_w_at_cells_on_model_levels,
+                vn_on_half_levels,
                 ddqz_z_full_e,
             ),
             normal_wind_advective_tendency,
@@ -113,12 +113,12 @@ class TestFusedVelocityAdvectionStencilsHMomentum(StencilTest):
                 connectivities,
                 levelmask,
                 c_lin_e,
-                contravariant_corrected_w_at_cell,
+                contravariant_corrected_w_at_cells_on_model_levels,
                 ddqz_z_full_e,
                 area_edge,
                 tangent_orientation,
                 inv_primal_edge_length,
-                vorticity_at_vertex,
+                upward_vorticity_at_vertices,
                 geofac_grdiv,
                 vn,
                 normal_wind_advective_tendency,
@@ -145,12 +145,20 @@ class TestFusedVelocityAdvectionStencilsHMomentum(StencilTest):
     def input_data(self, grid: base.BaseGrid) -> dict:
         normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        horizontal_kinetic_energy_at_edge = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        horizontal_kinetic_energy_at_cell = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
+        horizontal_kinetic_energy_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
         tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         coriolis_frequency = data_alloc.random_field(grid, dims.EdgeDim)
-        contravariant_corrected_w_at_cell = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        khalf_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        contravariant_corrected_w_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
+        vn_on_half_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+        )
         coeff_gradekin = data_alloc.random_field(grid, dims.ECDim)
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -185,12 +193,12 @@ class TestFusedVelocityAdvectionStencilsHMomentum(StencilTest):
         return dict(
             normal_wind_advective_tendency=normal_wind_advective_tendency,
             vn=vn,
-            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
-            horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            horizontal_kinetic_energy_at_cells_on_model_levels=horizontal_kinetic_energy_at_cells_on_model_levels,
             tangential_wind=tangential_wind,
             coriolis_frequency=coriolis_frequency,
-            contravariant_corrected_w_at_cell=contravariant_corrected_w_at_cell,
-            khalf_vn=khalf_vn,
+            contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+            vn_on_half_levels=vn_on_half_levels,
             geofac_rot=geofac_rot,
             coeff_gradekin=coeff_gradekin,
             c_lin_e=c_lin_e,
