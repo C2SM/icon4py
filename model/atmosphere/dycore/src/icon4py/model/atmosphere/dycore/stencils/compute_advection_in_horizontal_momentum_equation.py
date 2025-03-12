@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tend
 from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
