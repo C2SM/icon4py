@@ -5,12 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_graddiv2_of_vn import compute_graddiv2_of_vn
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -26,7 +29,7 @@ class TestComputeGraddiv2OfVn(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_grdiv: np.ndarray,
         z_graddiv_vn: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         e2c2eO = connectivities[dims.E2C2EODim]
         geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
@@ -37,7 +40,7 @@ class TestComputeGraddiv2OfVn(StencilTest):
         return dict(z_graddiv2_vn=z_graddiv2_vn)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_graddiv_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         z_graddiv2_vn = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

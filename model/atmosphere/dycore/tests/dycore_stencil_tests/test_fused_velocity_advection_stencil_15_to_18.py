@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -12,8 +14,8 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_15_to_18 import (
     fused_velocity_advection_stencil_15_to_18,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -33,30 +35,30 @@ from .test_interpolate_contravariant_vertical_velocity_to_full_levels import (
 
 def _fused_velocity_advection_stencil_16_to_18(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    z_w_con_c,
-    w,
-    coeff1_dwdz,
-    coeff2_dwdz,
-    ddt_w_adv,
-    e_bln_c_s,
-    z_v_grad_w,
-    levelmask,
-    cfl_clipping,
-    owner_mask,
-    ddqz_z_half,
-    area,
-    geofac_n2s,
-    cell,
-    k,
-    scalfac_exdiff,
-    cfl_w_limit,
-    dtime,
-    cell_lower_bound,
-    cell_upper_bound,
-    nlev,
-    nrdmax,
-    extra_diffu,
-):
+    z_w_con_c: np.ndarray,
+    w: np.ndarray,
+    coeff1_dwdz: np.ndarray,
+    coeff2_dwdz: np.ndarray,
+    ddt_w_adv: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    z_v_grad_w: np.ndarray,
+    levelmask: np.ndarray,
+    cfl_clipping: np.ndarray,
+    owner_mask: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    area: np.ndarray,
+    geofac_n2s: np.ndarray,
+    cell: np.ndarray,
+    k: np.ndarray,
+    scalfac_exdiff: ta.wpfloat,
+    cfl_w_limit: ta.wpfloat,
+    dtime: ta.wpfloat,
+    cell_lower_bound: int,
+    cell_upper_bound: int,
+    nlev: int,
+    nrdmax: int,
+    extra_diffu: bool,
+) -> np.ndarray:
     cell = cell[:, np.newaxis]
 
     condition1 = (cell_lower_bound <= cell) & (cell < cell_upper_bound) & (k >= 1)
@@ -119,33 +121,33 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_w_con_c,
-        w,
-        coeff1_dwdz,
-        coeff2_dwdz,
-        ddt_w_adv,
-        e_bln_c_s,
-        z_v_grad_w,
-        levelmask,
-        cfl_clipping,
-        owner_mask,
-        ddqz_z_half,
-        area,
-        geofac_n2s,
-        z_w_con_c_full,
-        cell,
-        k,
-        scalfac_exdiff,
-        cfl_w_limit,
-        dtime,
-        cell_lower_bound,
-        cell_upper_bound,
-        nlev,
-        nrdmax,
-        lvn_only,
-        extra_diffu,
-        **kwargs,
-    ):
+        z_w_con_c: np.ndarray,
+        w: np.ndarray,
+        coeff1_dwdz: np.ndarray,
+        coeff2_dwdz: np.ndarray,
+        ddt_w_adv: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        z_v_grad_w: np.ndarray,
+        levelmask: np.ndarray,
+        cfl_clipping: np.ndarray,
+        owner_mask: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        area: np.ndarray,
+        geofac_n2s: np.ndarray,
+        z_w_con_c_full: np.ndarray,
+        cell: np.ndarray,
+        k: np.ndarray,
+        scalfac_exdiff: ta.wpfloat,
+        cfl_w_limit: ta.wpfloat,
+        dtime: ta.wpfloat,
+        cell_lower_bound: int,
+        cell_upper_bound: int,
+        nlev: int,
+        nrdmax: int,
+        lvn_only: bool,
+        extra_diffu: bool,
+        **kwargs: Any,
+    ) -> dict:
         # We need to store the initial return field, because we only compute on a subdomain.
         z_w_con_c_full_ret = z_w_con_c_full.copy()
         ddt_w_adv_ret = ddt_w_adv.copy()
@@ -196,7 +198,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         return dict(z_w_con_c_full=z_w_con_c_full_ret, ddt_w_adv=ddt_w_adv_ret)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_w_con_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -219,13 +221,9 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        k = data_alloc.zero_field(grid, dims.KDim, dtype=gtx.int32)
-        for level in range(grid.num_levels):
-            k[level] = level
+        k = data_alloc.index_field(grid, dims.KDim, dtype=gtx.int32)
 
-        cell = data_alloc.zero_field(grid, dims.CellDim, dtype=gtx.int32)
-        for c in range(grid.num_cells):
-            cell[c] = c
+        cell = data_alloc.index_field(grid, dims.CellDim, dtype=gtx.int32)
 
         nlev = grid.num_levels
         nrdmax = 5

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn impo
     add_temporal_tendencies_to_vn,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,15 +27,15 @@ class TestAddTemporalTendenciesToVn(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        vn_nnow: np.array,
-        ddt_vn_apc_ntl1: np.array,
-        ddt_vn_phy: np.array,
-        z_theta_v_e: np.array,
-        z_gradh_exner: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        vn_nnow: np.ndarray,
+        ddt_vn_apc_ntl1: np.ndarray,
+        ddt_vn_phy: np.ndarray,
+        z_theta_v_e: np.ndarray,
+        z_gradh_exner: np.ndarray,
         dtime: float,
         cpd: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         vn_nnew = vn_nnow + dtime * (
             ddt_vn_apc_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner
@@ -40,7 +43,7 @@ class TestAddTemporalTendenciesToVn(StencilTest):
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         dtime, cpd = wpfloat("10.0"), wpfloat("10.0")
         vn_nnow = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ddt_vn_apc_ntl1 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

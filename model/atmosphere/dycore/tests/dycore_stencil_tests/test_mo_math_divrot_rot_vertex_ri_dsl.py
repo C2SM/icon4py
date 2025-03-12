@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -36,13 +39,13 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         vec_e: np.ndarray,
         geofac_rot: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         rot_vec = mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vec_e, geofac_rot)
         return dict(rot_vec=rot_vec)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         vec_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         geofac_rot = random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
         rot_vec = zero_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.apply_hydrostatic_correction_to_ho
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, random_mask
 from icon4py.model.testing.helpers import StencilTest
@@ -24,12 +27,12 @@ class TestApplyHydrostaticCorrectionToHorizontalGradientOfExnerPressure(StencilT
 
     @staticmethod
     def reference(
-        grid,
-        ipeidx_dsl: np.array,
-        pg_exdist: np.array,
-        z_hydro_corr: np.array,
-        z_gradh_exner: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        ipeidx_dsl: np.ndarray,
+        pg_exdist: np.ndarray,
+        z_hydro_corr: np.ndarray,
+        z_gradh_exner: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         z_hydro_corr = np.expand_dims(z_hydro_corr, axis=-1)
         z_gradh_exner = np.where(
@@ -38,7 +41,7 @@ class TestApplyHydrostaticCorrectionToHorizontalGradientOfExnerPressure(StencilT
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         ipeidx_dsl = random_mask(grid, dims.EdgeDim, dims.KDim)
         pg_exdist = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         z_hydro_corr = random_field(grid, dims.EdgeDim, dtype=vpfloat)

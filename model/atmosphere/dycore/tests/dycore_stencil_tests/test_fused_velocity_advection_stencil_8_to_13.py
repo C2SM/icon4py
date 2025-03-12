@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -14,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8
     fused_velocity_advection_stencil_8_to_13,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -38,21 +41,21 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_kin_hor_e,
-        e_bln_c_s,
-        z_w_concorr_me,
-        wgtfac_c,
-        w,
-        z_w_concorr_mc,
-        w_concorr_c,
-        z_ekinh,
-        k,
-        istep,
-        nlev,
-        nflatlev,
-        z_w_con_c,
-        **kwargs,
-    ):
+        z_kin_hor_e: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfac_c: np.ndarray,
+        w: np.ndarray,
+        z_w_concorr_mc: np.ndarray,
+        w_concorr_c: np.ndarray,
+        z_ekinh: np.ndarray,
+        k: np.ndarray,
+        istep: int,
+        nlev: int,
+        nflatlev: int,
+        z_w_con_c: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         k_nlev = k[:-1]
 
         z_ekinh = np.where(
@@ -91,7 +94,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
         z_ekinh = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)

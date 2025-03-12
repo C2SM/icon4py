@@ -5,12 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_mass_flux
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -22,19 +25,19 @@ class TestComputeMassFlux(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_rho_e: np.array,
-        z_vn_avg: np.array,
-        ddqz_z_full_e: np.array,
-        z_theta_v_e: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_rho_e: np.ndarray,
+        z_vn_avg: np.ndarray,
+        ddqz_z_full_e: np.ndarray,
+        z_theta_v_e: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         mass_fl_e = z_rho_e * z_vn_avg * ddqz_z_full_e
         z_theta_v_fl_e = mass_fl_e * z_theta_v_e
         return dict(mass_fl_e=mass_fl_e, z_theta_v_fl_e=z_theta_v_fl_e)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_rho_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ddqz_z_full_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

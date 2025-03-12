@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_bac
     solve_tridiagonal_matrix_for_w_back_substitution,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -23,7 +26,12 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
     OUTPUTS = ("w",)
 
     @staticmethod
-    def reference(grid, z_q: np.array, w: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_q: np.ndarray,
+        w: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         w_new = np.zeros_like(w)
         last_k_level = w.shape[1] - 1
 
@@ -34,7 +42,7 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
         return dict(w=w_new)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         h_start = 0
