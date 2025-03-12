@@ -10,13 +10,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.atmosphere.dycore.compute_cell_diagnostics_for_velocity_advection import (
     interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
 from .test_correct_contravariant_vertical_velocity import (
@@ -29,7 +29,9 @@ from .test_interpolate_cell_field_to_half_levels_vp import (
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 
 
-class TestInterpolateHorizontalKineticWnergyToCellsAndComputeContravariantTerms(StencilTest):
+class TestInterpolateHorizontalKineticWnergyToCellsAndComputeContravariantTerms(
+    test_helpers.StencilTest
+):
     PROGRAM = interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms
     OUTPUTS = (
         "horizontal_kinetic_energy_at_cells_on_model_levels",

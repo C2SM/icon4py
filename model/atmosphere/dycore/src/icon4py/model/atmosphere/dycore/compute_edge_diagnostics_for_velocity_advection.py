@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
 from gt4py.next.ffront.fbuiltins import broadcast, where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
@@ -28,28 +27,27 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_half_levels_and_
 from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_vp import (
     _interpolate_edge_field_to_half_levels_vp,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _compute_vt_vn_on_half_levels_and_kinetic_energy(
-    vn: fa.EdgeKField[wpfloat],
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
-    tangential_wind: fa.EdgeKField[vpfloat],
-    vn_on_half_levels: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    tangential_wind: fa.EdgeKField[ta.vpfloat],
+    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
 ]:
     vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels = where(
         1 <= k < nlev,
@@ -92,26 +90,26 @@ def _compute_vt_vn_on_half_levels_and_kinetic_energy(
 
 @gtx.field_operator
 def _compute_derived_horizontal_winds_and_kinetic_energy_and_contravariant_correction(
-    vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    ddxn_z_full: fa.EdgeKField[vpfloat],
-    ddxt_z_full: fa.EdgeKField[vpfloat],
-    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    ddxn_z_full: fa.EdgeKField[ta.vpfloat],
+    ddxt_z_full: fa.EdgeKField[ta.vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     nflatlev: gtx.int32,
-    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
-    tangential_wind: fa.EdgeKField[vpfloat],
-    vn_on_half_levels: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    tangential_wind: fa.EdgeKField[ta.vpfloat],
+    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
 ]:
     tangential_wind = where(
         k < nlev,
@@ -152,22 +150,22 @@ def _compute_derived_horizontal_winds_and_kinetic_energy_and_contravariant_corre
 
 @gtx.field_operator
 def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
-    tangential_wind: fa.EdgeKField[vpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
-    vn_on_half_levels: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
-    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    w: fa.CellKField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    ddxn_z_full: fa.EdgeKField[vpfloat],
-    ddxt_z_full: fa.EdgeKField[vpfloat],
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    inv_dual_edge_length: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
+    tangential_wind: fa.EdgeKField[ta.vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    w: fa.CellKField[ta.wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    ddxn_z_full: fa.EdgeKField[ta.vpfloat],
+    ddxt_z_full: fa.EdgeKField[ta.vpfloat],
+    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
+    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
+    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
+    tangent_orientation: fa.EdgeField[ta.wpfloat],
     skip_compute_predictor_vertical_advection: bool,
     k: fa.KField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
@@ -176,12 +174,12 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
 ) -> tuple[
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
 ]:
     (
         tangential_wind,
@@ -240,21 +238,21 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
 
 @gtx.field_operator
 def _compute_horizontal_advection_of_w(
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
-    w: fa.CellKField[wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
-    vn_on_half_levels: fa.EdgeKField[vpfloat],
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    inv_dual_edge_length: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    w: fa.CellKField[ta.wpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
+    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
+    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
+    tangent_orientation: fa.EdgeField[ta.wpfloat],
     edge: fa.EdgeField[gtx.int32],
     vertex: fa.VertexField[gtx.int32],
     start_edge_lateral_boundary_level_7: gtx.int32,
     end_edge_halo: gtx.int32,
     start_vertex_lateral_boundary_level_2: gtx.int32,
     end_vertex_halo: gtx.int32,
-) -> fa.EdgeKField[vpfloat]:
+) -> fa.EdgeKField[ta.vpfloat]:
     w_at_vertices = where(
         (start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo),
         _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp),
@@ -278,25 +276,25 @@ def _compute_horizontal_advection_of_w(
     return horizontal_advection_of_w_at_edges_on_half_levels
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
-    tangential_wind: fa.EdgeKField[vpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
-    vn_on_half_levels: fa.EdgeKField[vpfloat],
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
-    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    w: fa.CellKField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    ddxn_z_full: fa.EdgeKField[vpfloat],
-    ddxt_z_full: fa.EdgeKField[vpfloat],
-    wgtfacq_e: fa.EdgeKField[vpfloat],
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    inv_dual_edge_length: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
+    tangential_wind: fa.EdgeKField[ta.vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    w: fa.CellKField[ta.wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    ddxn_z_full: fa.EdgeKField[ta.vpfloat],
+    ddxt_z_full: fa.EdgeKField[ta.vpfloat],
+    wgtfacq_e: fa.EdgeKField[ta.vpfloat],
+    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
+    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
+    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
+    tangent_orientation: fa.EdgeField[ta.wpfloat],
     skip_compute_predictor_vertical_advection: bool,
     k: fa.KField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
@@ -357,16 +355,16 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
     )
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_horizontal_advection_of_w(
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
-    w: fa.CellKField[wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
-    vn_on_half_levels: fa.EdgeKField[vpfloat],
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    inv_dual_edge_length: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    w: fa.CellKField[ta.wpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
+    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
+    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
+    tangent_orientation: fa.EdgeField[ta.wpfloat],
     edge: fa.EdgeField[gtx.int32],
     vertex: fa.VertexField[gtx.int32],
     lateral_boundary_7: gtx.int32,

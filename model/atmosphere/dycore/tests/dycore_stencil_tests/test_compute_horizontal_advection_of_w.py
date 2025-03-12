@@ -8,13 +8,13 @@
 import numpy as np
 import pytest
 
+import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.atmosphere.dycore.compute_edge_diagnostics_for_velocity_advection import (
     compute_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
 
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
@@ -24,7 +24,7 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 )
 
 
-class TestComputeHorizontalAdvectionOfW(StencilTest):
+class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
     PROGRAM = compute_horizontal_advection_of_w
     OUTPUTS = ("horizontal_advection_of_w_at_edges_on_half_levels",)
     MARKERS = (pytest.mark.embedded_remap_error,)

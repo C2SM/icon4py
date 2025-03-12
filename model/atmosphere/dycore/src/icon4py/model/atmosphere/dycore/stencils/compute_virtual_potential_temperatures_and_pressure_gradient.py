@@ -10,7 +10,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
@@ -23,17 +23,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_virtual_potential_temperatures_and_pressure_gradient(
-    wgtfac_c: fa.CellKField[vpfloat],
-    z_rth_pr_2: fa.CellKField[vpfloat],
-    theta_v: fa.CellKField[wpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
-    exner_pr: fa.CellKField[wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[ta.vpfloat],
+    z_rth_pr_2: fa.CellKField[ta.vpfloat],
+    theta_v: fa.CellKField[ta.wpfloat],
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
+    exner_pr: fa.CellKField[ta.wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKField[ta.vpfloat],
 ) -> tuple[
-    fa.CellKField[vpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_09."""
     wgtfac_c_wp, ddqz_z_half_wp = astype((wgtfac_c, ddqz_z_half), wpfloat)
@@ -52,16 +52,16 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_virtual_potential_temperatures_and_pressure_gradient(
-    wgtfac_c: fa.CellKField[vpfloat],
-    z_rth_pr_2: fa.CellKField[vpfloat],
-    theta_v: fa.CellKField[wpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
-    exner_pr: fa.CellKField[wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
-    z_theta_v_pr_ic: fa.CellKField[vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[ta.vpfloat],
+    z_rth_pr_2: fa.CellKField[ta.vpfloat],
+    theta_v: fa.CellKField[ta.wpfloat],
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
+    exner_pr: fa.CellKField[ta.wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    z_theta_v_pr_ic: fa.CellKField[ta.vpfloat],
+    theta_v_ic: fa.CellKField[ta.wpfloat],
+    z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -85,12 +85,12 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
 
 @field_operator
 def _compute_virtual_potential_temperatures(
-    wgtfac_c: fa.CellKField[vpfloat],
-    z_rth_pr_2: fa.CellKField[vpfloat],
-    theta_v: fa.CellKField[wpfloat],
+    wgtfac_c: fa.CellKField[ta.vpfloat],
+    z_rth_pr_2: fa.CellKField[ta.vpfloat],
+    theta_v: fa.CellKField[ta.wpfloat],
 ) -> tuple[
-    fa.CellKField[vpfloat],
-    fa.CellKField[wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
 ]:
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
@@ -103,13 +103,13 @@ def _compute_virtual_potential_temperatures(
 
 @field_operator
 def _compute_pressure_gradient(
-    vwind_expl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    z_theta_v_pr_ic: fa.CellKField[wpfloat],
-    exner_pr: fa.CellKField[wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
-) -> fa.CellKField[vpfloat]:
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
+    theta_v_ic: fa.CellKField[ta.wpfloat],
+    z_theta_v_pr_ic: fa.CellKField[ta.wpfloat],
+    exner_pr: fa.CellKField[ta.wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKField[ta.vpfloat],
+) -> fa.CellKField[ta.vpfloat]:
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic * (
         exner_pr(Koff[-1]) - exner_pr
