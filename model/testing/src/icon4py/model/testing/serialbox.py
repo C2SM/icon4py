@@ -1326,7 +1326,7 @@ class VelocityInitEDiagnosticsSavepoint(IconSavepoint):
         return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
 
 
-class IconVelocityInitCDiagnosticsSavepoint(IconSavepoint):
+class VelocityInitCellDiagnosticsSavepoint(IconSavepoint):
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
 
