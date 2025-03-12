@@ -21,7 +21,7 @@
 
 import gt4py.next as gtx
 from gt4py.next.common import GridType
-from gt4py.next.ffront.fbuiltins import broadcast, int32, where, neighbor_sum
+from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
@@ -63,15 +63,13 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     _compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
-    _init_two_edge_kdim_fields_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import EdgeDim, KDim, CellDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
 
 @gtx.scan_operator(axis=KDim, init=0.0, forward=True)
 def hydro_corr_last_lev(state: float, z_hydro_corr: float) -> float:
@@ -152,19 +150,29 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         z_grad_rth_2,
         z_grad_rth_3,
         z_grad_rth_4,
-    ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
-        p_ccpr1=z_rth_pr_1,
-        p_ccpr2=z_rth_pr_2,
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
-    ) if (iadv_rhotheta == MIURA) else (broadcast(0., (CellDim, KDim)), broadcast(0., (CellDim, KDim)), broadcast(0., (CellDim, KDim)), broadcast(0., (CellDim, KDim)),)
+    ) = (
+        _mo_math_gradients_grad_green_gauss_cell_dsl(
+            p_ccpr1=z_rth_pr_1,
+            p_ccpr2=z_rth_pr_2,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
+        )
+        if (iadv_rhotheta == MIURA)
+        else (
+            broadcast(0.0, (CellDim, KDim)),
+            broadcast(0.0, (CellDim, KDim)),
+            broadcast(0.0, (CellDim, KDim)),
+            broadcast(0.0, (CellDim, KDim)),
+        )
+    )
 
     (z_rho_e, z_theta_v_e) = (
         where(
             (start_edge_halo_level_2 <= horz_idx < end_edge_halo_level_2),
-            (broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
-                wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
-            )),
+            (
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            ),
             (z_rho_e, z_theta_v_e),
         )
         if iadv_rhotheta <= 2
@@ -174,9 +182,10 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     (z_rho_e, z_theta_v_e) = (
         where(
             (start_edge_lateral_boundary <= horz_idx < end_edge_halo),
-            (broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
-                wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
-            )),
+            (
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            ),
             (z_rho_e, z_theta_v_e),
         )
         if limited_area & (iadv_rhotheta <= 2)

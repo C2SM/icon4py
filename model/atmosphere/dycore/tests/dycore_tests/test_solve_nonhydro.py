@@ -8,9 +8,9 @@
 
 import logging
 
-import pytest
 import gt4py.next as gtx
-import numpy as np
+import pytest
+
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
@@ -1058,9 +1058,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "istep_init, istep_exit, at_initial_timestep", [(1, 2, True)]
-)
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 2, True)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -1136,8 +1134,10 @@ def test_run_solve_nonhydro_15_to_28(
     ddt_vn_apc_ntl2 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(1)
     ddt_vn_apc_ntl1 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
     ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
-    #vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
-    vn_incr = gtx.empty(domain={dims.EdgeDim: range(icon_grid.num_edges), dims.KDim: range(icon_grid.num_levels)})
+    # vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
+    vn_incr = gtx.empty(
+        domain={dims.EdgeDim: range(icon_grid.num_edges), dims.KDim: range(icon_grid.num_levels)}
+    )
     bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
     z_hydro_corr = savepoint_nonhydro_15_28_init.z_hydro_corr()
     z_graddiv2_vn = savepoint_nonhydro_15_28_init.z_graddiv2_vn()
@@ -1150,11 +1150,18 @@ def test_run_solve_nonhydro_15_to_28(
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     params_config = solve_nh.NonHydrostaticConfig()
-    primal_normal_cell_1 = data_alloc.flatten_first_two_dims(dims.ECDim, field=grid_savepoint.primal_normal_cell_x())
-    primal_normal_cell_2 = data_alloc.flatten_first_two_dims(dims.ECDim, field=grid_savepoint.primal_normal_cell_y())
-    dual_normal_cell_1 = data_alloc.flatten_first_two_dims(dims.ECDim, field=grid_savepoint.dual_normal_cell_x())
-    dual_normal_cell_2 = data_alloc.flatten_first_two_dims(dims.ECDim, field=grid_savepoint.dual_normal_cell_y())
-
+    primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
+        dims.ECDim, field=grid_savepoint.primal_normal_cell_x()
+    )
+    primal_normal_cell_2 = data_alloc.flatten_first_two_dims(
+        dims.ECDim, field=grid_savepoint.primal_normal_cell_y()
+    )
+    dual_normal_cell_1 = data_alloc.flatten_first_two_dims(
+        dims.ECDim, field=grid_savepoint.dual_normal_cell_x()
+    )
+    dual_normal_cell_2 = data_alloc.flatten_first_two_dims(
+        dims.ECDim, field=grid_savepoint.dual_normal_cell_y()
+    )
 
     iau_wgt_dyn = params_config.iau_wgt_dyn
     itime_scheme = params_config.itime_scheme
