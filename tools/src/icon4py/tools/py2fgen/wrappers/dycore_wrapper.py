@@ -354,8 +354,8 @@ def solve_nh_run(
             ddt_w_adv_ntl1, ddt_w_adv_ntl2
         ),
         tangential_wind=vt,
-        khalf_vn=vn_ie,
-        khalf_contravariant_correction_at_cell=w_concorr_c,
+        vn_on_half_levels=vn_ie,
+        contravariant_correction_at_cells_on_half_levels=w_concorr_c,
         rho_incr=None,  # sp.rho_incr,
         vn_incr=None,  # sp.vn_incr,
         exner_incr=None,  # sp.exner_incr,

@@ -367,8 +367,8 @@ def test_dycore_wrapper_granule_inputs(
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         tangential_wind=sp.vt(),
-        khalf_vn=sp.vn_ie(),
-        khalf_contravariant_correction_at_cell=sp.w_concorr_c(),
+        vn_on_half_levels=sp.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),

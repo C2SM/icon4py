@@ -274,10 +274,10 @@ def initialize_solve_nonhydro_diagnostic_state(
         normal_wind_advective_tendency=normal_wind_advective_tendency,
         vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         tangential_wind=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
-        khalf_vn=data_alloc.zero_field(
+        vn_on_half_levels=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        khalf_contravariant_correction_at_cell=data_alloc.zero_field(
+        contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),

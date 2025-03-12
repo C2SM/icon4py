@@ -303,8 +303,8 @@ def test_run_timeloop_single_step(
             sp_v.ddt_w_adv_pc(current_index), sp_v.ddt_w_adv_pc(next_index)
         ),
         tangential_wind=sp_v.vt(),
-        khalf_vn=sp_v.vn_ie(),
-        khalf_contravariant_correction_at_cell=sp_v.w_concorr_c(),
+        vn_on_half_levels=sp_v.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
