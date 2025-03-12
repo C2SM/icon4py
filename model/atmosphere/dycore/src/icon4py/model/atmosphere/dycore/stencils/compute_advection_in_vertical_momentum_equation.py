@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical
     _interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common import type_alias as ta
 
 
 @gtx.field_operator
