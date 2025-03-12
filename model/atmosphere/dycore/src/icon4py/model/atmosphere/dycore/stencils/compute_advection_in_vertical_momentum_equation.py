@@ -29,8 +29,9 @@ from icon4py.model.common import type_alias as ta
 def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    ...
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
