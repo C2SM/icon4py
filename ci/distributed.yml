@@ -2,7 +2,6 @@ include:
   - local: 'ci/base.yml'
 
 .build_template_aarch64_distributed:
-  stage: build
   extends: [.container-runner-santis-gh200, .test_template_aarch64]
   needs: [build_image_aarch64]
   variables:
@@ -15,6 +14,7 @@ include:
     SLURM_NTASKS: 1
 
 build_model_distributed_aarch64:
+  stage: build
   extends: [.build_template_aarch64_distributed]
   before_script:
     - echo ${MPI4PY_BUILD_MPICC}
@@ -25,6 +25,7 @@ build_model_distributed_aarch64:
 
 .test_model_distributed:
   stage: test
+  extends: [.build_template_aarch64_distributed]
   needs: [build_model_distributed_aarch64]
   variables:
     SLURM_JOB_NUM_NODES: 1
@@ -42,5 +43,5 @@ build_model_distributed_aarch64:
     - when: on_success
 
 test_model_distributed_aarch64:
-  extends: [.test_model_distributed, .build_template_aarch64_distributed]
+  extends: [.test_model_distributed]
 
