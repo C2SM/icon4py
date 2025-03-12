@@ -21,7 +21,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
 
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _stencils_42_44_45,
@@ -103,7 +104,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p1(
     theta_v: fa.CellKField[wpfloat],
     z_dwdz_dd: fa.CellKField[vpfloat],
     exner_dyn_incr: fa.CellKField[vpfloat],
-    vert_idx: Field[[KDim], int32],
     cvd_o_rd: wpfloat,
     iau_wgt_dyn: wpfloat,
     dtime: wpfloat,
@@ -139,17 +139,14 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p1(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    vert_idx_1d = vert_idx
-    vert_idx = broadcast(vert_idx, (CellDim, KDim))
-
     z_flxdiv_mass, z_flxdiv_theta = _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
     )
 
-    z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = where(
-        vert_idx < n_lev,
+    z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = concat_where(
+        KDim < n_lev,
         _stencils_43_44_45(
             z_w_expl=z_w_expl,
             w_nnow=w,
@@ -168,7 +165,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p1(
             vwind_impl_wgt=vwind_impl_wgt,
             theta_v_ic=theta_v_ic,
             z_q=z_q,
-            k_field=vert_idx_1d,
             rd=rd,
             cvd=cvd,
             dtime=dtime,
@@ -177,11 +173,11 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p1(
         ),
         (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
     )
-    z_alpha = where(vert_idx == n_lev, broadcast(vpfloat("0.0"), (CellDim, KDim)), z_alpha)
+    z_alpha = concat_where(KDim == n_lev, broadcast(vpfloat("0.0"), (CellDim, KDim)), z_alpha)
 
     w, z_contr_w_fl_l = (
-        where(
-            (vert_idx < int32(1)),
+        concat_where(
+            KDim < 1,
             (
                 broadcast(wpfloat("0.0"), (CellDim, KDim)),
                 broadcast(wpfloat("0.0"), (CellDim, KDim)),
@@ -192,14 +188,14 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p1(
         else (w, z_contr_w_fl_l)
     )
 
-    (w, z_contr_w_fl_l) = where(
-        (vert_idx == n_lev),
+    (w, z_contr_w_fl_l) = concat_where(
+        KDim == n_lev,
         _set_lower_boundary_condition_for_w_and_contravariant_correction(w_concorr_c=w_concorr_c),
         (w, z_contr_w_fl_l),
     )
 
-    (z_rho_expl, z_exner_expl) = where(
-        (vert_idx < n_lev),
+    (z_rho_expl, z_exner_expl) = concat_where(
+        KDim < n_lev,
         _compute_explicit_part_for_rho_and_exner(
             rho_nnow=rho_nnow,
             inv_ddqz_z_full=inv_ddqz_z_full,
@@ -282,7 +278,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p3(
     theta_v: fa.CellKField[wpfloat],
     z_dwdz_dd: fa.CellKField[vpfloat],
     exner_dyn_incr: fa.CellKField[vpfloat],
-    vert_idx: Field[[KDim], int32],
     cvd_o_rd: wpfloat,
     iau_wgt_dyn: wpfloat,
     dtime: wpfloat,
@@ -317,14 +312,11 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p3(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    vert_idx_1d = vert_idx
-    vert_idx = broadcast(vert_idx, (CellDim, KDim))
-
-    w_1 = where(vert_idx_1d == 0, w, 0.0)
+    w_1 = concat_where(KDim == 0, w, 0.0)
 
     w = (
-        where(
-            (int32(1) <= vert_idx < (index_of_damping_layer + int32(1))),
+        concat_where(
+            1 <= KDim < index_of_damping_layer + 1,
             _apply_rayleigh_damping_mechanism_w_1_broadcasted(
                 z_raylfac=z_raylfac,
                 w_1=w_1,
@@ -336,8 +328,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p3(
         else w
     )
 
-    rho, exner, theta_v = where(
-        jk_start <= vert_idx,
+    rho, exner, theta_v = concat_where(
+        jk_start <= KDim,
         _compute_results_for_thermodynamic_variables(
             z_rho_expl=z_rho_expl,
             vwind_impl_wgt=vwind_impl_wgt,
@@ -359,8 +351,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p3(
 
     # compute dw/dz for divergence damping term
     z_dwdz_dd = (
-        where(
-            kstart_dd3d <= vert_idx,
+        concat_where(
+            kstart_dd3d <= KDim,
             _compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 w=w,
@@ -373,8 +365,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p3(
     )
 
     exner_dyn_incr = (
-        where(
-            kstart_moist <= vert_idx,
+        concat_where(
+            kstart_moist <= KDim,
             astype(exner_nnow, vpfloat),
             exner_dyn_incr,
         )
@@ -476,9 +468,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    vert_idx_1d = vert_idx
-    vert_idx = broadcast(vert_idx, (CellDim, KDim))
-
     # verified for e-9
     z_flxdiv_mass, z_flxdiv_theta = _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div=geofac_div,
@@ -487,8 +476,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     )
 
     (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = (
-        where(
-            (vert_idx < n_lev),
+        concat_where(
+            KDim < n_lev,
             _stencils_42_44_45(
                 z_w_expl=z_w_expl,
                 w_nnow=w_nnow,
@@ -508,7 +497,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
                 vwind_impl_wgt=vwind_impl_wgt,
                 theta_v_ic=theta_v_ic,
                 z_q=z_q,
-                k_field=vert_idx_1d,
                 rd=rd,
                 cvd=cvd,
                 dtime=dtime,
@@ -520,8 +508,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         )
         if itime_scheme == 4
-        else where(
-            (vert_idx < n_lev),
+        else concat_where(
+            KDim < n_lev,
             _stencils_43_44_45(
                 z_w_expl=z_w_expl,
                 w_nnow=w_nnow,
@@ -540,7 +528,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
                 vwind_impl_wgt=vwind_impl_wgt,
                 theta_v_ic=theta_v_ic,
                 z_q=z_q,
-                k_field=vert_idx_1d,
                 rd=rd,
                 cvd=cvd,
                 dtime=dtime,
@@ -550,11 +537,11 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         )
     )
-    z_alpha = where(vert_idx == n_lev, broadcast(vpfloat("0.0"), (CellDim, KDim)), z_alpha)
+    z_alpha = concat_where(KDim == n_lev, broadcast(vpfloat("0.0"), (CellDim, KDim)), z_alpha)
 
     (w, z_contr_w_fl_l) = (
-        where(
-            (vert_idx == 0),
+        concat_where(
+            KDim == 0,
             _init_two_cell_kdim_fields_with_zero_wp(),
             (w, z_contr_w_fl_l),
         )
@@ -562,14 +549,14 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         else (w, z_contr_w_fl_l)
     )
 
-    (w, z_contr_w_fl_l) = where(
-        (vert_idx == n_lev),
+    (w, z_contr_w_fl_l) = concat_where(
+        KDim == n_lev,
         _set_lower_boundary_condition_for_w_and_contravariant_correction(w_concorr_c=w_concorr_c),
         (w, z_contr_w_fl_l),
     )
 
-    (z_rho_expl, z_exner_expl) = where(
-        (vert_idx < n_lev),
+    (z_rho_expl, z_exner_expl) = concat_where(
+        KDim < n_lev,
         _compute_explicit_part_for_rho_and_exner(
             rho_nnow=rho_nnow,
             inv_ddqz_z_full=inv_ddqz_z_full,
@@ -597,8 +584,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         else (z_rho_expl, z_exner_expl)
     )
 
-    z_q, w = where(
-        (int32(1) <= vert_idx),
+    z_q, w = concat_where(
+        1 <= KDim,
         _solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=vwind_impl_wgt,
             theta_v_ic=theta_v_ic,
@@ -615,8 +602,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         (z_q, w),
     )
 
-    w = where(
-        (int32(1) <= vert_idx),
+    w = concat_where(
+        1 <= KDim,
         _solve_tridiagonal_matrix_for_w_back_substitution_scan(
             z_q=z_q,
             w=w,
@@ -624,11 +611,11 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         w,
     )
 
-    w_1 = where(vert_idx_1d == 0, w, 0.0)
+    w_1 = concat_where(KDim == 0, w, 0.0)
 
     w = (
-        where(
-            (int32(1) <= vert_idx < (index_of_damping_layer + int32(1))),
+        concat_where(
+            1 <= KDim < index_of_damping_layer + 1,
             _apply_rayleigh_damping_mechanism_w_1_broadcasted(
                 z_raylfac=z_raylfac,
                 w_1=w_1,
@@ -640,8 +627,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         else w
     )
 
-    rho, exner, theta_v = where(
-        (jk_start <= vert_idx),
+    rho, exner, theta_v = concat_where(
+        jk_start <= KDim,
         _compute_results_for_thermodynamic_variables(
             z_rho_expl=z_rho_expl,
             vwind_impl_wgt=vwind_impl_wgt,
@@ -667,8 +654,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         else (mass_flx_ic, vol_flx_ic)
     )
 
-    mass_flx_ic, vol_flx_ic = where(
-        (int32(1) <= vert_idx),
+    mass_flx_ic, vol_flx_ic = concat_where(
+        1 <= KDim,
         _update_mass_volume_flux(
             z_contr_w_fl_l=z_contr_w_fl_l,
             rho_ic=rho_ic,
@@ -1111,7 +1098,6 @@ def fused_solve_nonhydro_stencil_41_to_60_predictor(
         theta_v=theta_v,
         z_dwdz_dd=z_dwdz_dd,
         exner_dyn_incr=exner_dyn_incr,
-        vert_idx=vert_idx,
         cvd_o_rd=cvd_o_rd,
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
@@ -1183,7 +1169,6 @@ def fused_solve_nonhydro_stencil_41_to_60_predictor(
         theta_v=theta_v,
         z_dwdz_dd=z_dwdz_dd,
         exner_dyn_incr=exner_dyn_incr,
-        vert_idx=vert_idx,
         cvd_o_rd=cvd_o_rd,
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
