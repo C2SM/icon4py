@@ -159,7 +159,7 @@ def _compute_advection_in_vertical_momentum_equation(
     return (contravariant_corrected_w_at_cells_on_model_levels, vertical_wind_advective_tendency)
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_advection_in_vertical_momentum_equation(
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[vpfloat],
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
