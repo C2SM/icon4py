@@ -15,19 +15,18 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_half_levels_and_
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
     _interpolate_vt_to_interface_edges,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
 @field_operator
 def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    vt: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    vt: fa.EdgeKField[ta.vpfloat],
 ) -> tuple[
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_36."""
     z_vt_ie = _interpolate_vt_to_interface_edges(wgtfac_e=wgtfac_e, vt=vt)
@@ -39,12 +38,12 @@ def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    vt: fa.EdgeKField[vpfloat],
-    vn_ie: fa.EdgeKField[vpfloat],
-    z_vt_ie: fa.EdgeKField[vpfloat],
-    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    vt: fa.EdgeKField[ta.vpfloat],
+    vn_ie: fa.EdgeKField[ta.vpfloat],
+    z_vt_ie: fa.EdgeKField[ta.vpfloat],
+    z_kin_hor_e: fa.EdgeKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

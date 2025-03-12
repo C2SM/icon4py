@@ -6,19 +6,17 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _interpolate_cell_field_to_half_levels_vp(
-    wgtfac_c: fa.CellKField[vpfloat],
-    interpolant: fa.CellKField[vpfloat],
-) -> fa.CellKField[vpfloat]:
+    wgtfac_c: fa.CellKField[ta.vpfloat],
+    interpolant: fa.CellKField[ta.vpfloat],
+) -> fa.CellKField[ta.vpfloat]:
     """
     Interpolate a CellDim variable of floating precision from full levels to half levels.
     The return variable also has floating precision.
@@ -36,11 +34,11 @@ def _interpolate_cell_field_to_half_levels_vp(
     return interpolation_to_half_levels_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_cell_field_to_half_levels_vp(
-    wgtfac_c: fa.CellKField[vpfloat],
-    interpolant: fa.CellKField[vpfloat],
-    interpolation_to_half_levels_vp: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[ta.vpfloat],
+    interpolant: fa.CellKField[ta.vpfloat],
+    interpolation_to_half_levels_vp: fa.CellKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
