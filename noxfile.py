@@ -54,7 +54,7 @@ def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> No
     """Run pytest benchmarks for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
-    results_json_path = os.path.abspath(f"results_{subpackage.replace('/', '_')}.json")
+    results_json_path = os.path.abspath(f"results_{session.python}_{subpackage.replace('/', '_')}.json")
     with session.chdir(f"model/{subpackage}"):
         session.run(
             *f"pytest \
@@ -67,72 +67,71 @@ def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> No
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
-def merge_pytest_benchmark_results(bencher_json_file_name: str) -> None:
-    """Gather all benchmark results files and merge them into a single file."""
-    merged_results = {"benchmarks": []}
-    files = glob.glob("results_*.json")
-    for file in files:
+def valid_results_file(file_name: str) -> bool:
+    """Check if the results file (json) is valid, i.e. non-empty and non-corrupted content."""
+    with open(file_name, "r") as f:
+        content = f.read().strip()  # Remove whitespace
+
+    if not content:  # Empty string
+        return False
+    else:
         try:
-            with open(file, "r") as f:
-                data = json.load(f)
-                merged_results["benchmarks"].extend(data["benchmarks"])
-                # preserve the first file's metadata for a valid pytest-benchmark json file
-                for key in data.keys():
-                    if key != "benchmarks" and key not in merged_results:
-                        merged_results[key] = data[key]
-        except:
-            # Empty file, i.e. no benchmarks
-            continue
-    with open(bencher_json_file_name, "w") as f:
-        json.dump(merged_results, f, indent=4)
+            data = json.loads(content)
+            if not data:  # Empty dictionary or list
+                return False
+            else:
+                return True
+        except json.JSONDecodeError:
+            return False
 
 @nox.session(python=["3.10", "3.11"],
              requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
-def bencher_baseline(session: nox.Session) -> None:
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+def bencher_baseline(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
     """Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted)."""
-    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
-    merge_pytest_benchmark_results(bencher_json_file_name)
-
-    session.run(
-        *f"bencher run \
-        --project {os.environ['BENCHER_PROJECT']} \
-        --token {os.environ['BENCHER_API_TOKEN']} \
-        --branch main \
-        --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
-        --threshold-measure latency \
-        --threshold-test percentage \
-        --threshold-max-sample-size 64 \
-        --threshold-upper-boundary 0.1 \
-        --thresholds-reset \
-        --err \
-        --adapter python_pytest \
-        --file {bencher_json_file_name}".split(),
-        external=True,
-    )
+    bencher_json_file_name = f"results_{session.python}_{subpackage.replace('/', '_')}.json"
+    if valid_results_file(bencher_json_file_name):
+        session.run(
+            *f"bencher run \
+            --project {os.environ['BENCHER_PROJECT']} \
+            --token {os.environ['BENCHER_API_TOKEN']} \
+            --host {os.environ['BENCHER_HOST']} \
+            --branch main \
+            --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
+            --threshold-measure latency \
+            --threshold-test percentage \
+            --threshold-max-sample-size 64 \
+            --threshold-upper-boundary 0.1 \
+            --thresholds-reset \
+            --err \
+            --adapter python_pytest \
+            --file {bencher_json_file_name}".split(),
+            external=True,
+        )
 
 @nox.session(python=["3.10", "3.11"],
              requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
-def bencher_feature_branch(session: nox.Session) -> None:
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+def bencher_feature_branch(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
     """Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted)."""
-    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
-    merge_pytest_benchmark_results(bencher_json_file_name)
-    
-    session.run(
-        *f"bencher run \
-        --project {os.environ['BENCHER_PROJECT']} \
-        --token {os.environ['BENCHER_API_TOKEN']} \
-        --host {os.environ['BENCHER_HOST']} \
-        --github-actions {os.environ['GD_COMMENT_TOKEN']} \
-        --branch {os.environ['FEATURE_BRANCH']} \
-        --start-point main \
-        --start-point-clone-thresholds \
-        --start-point-reset \
-        --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
-        --err \
-        --adapter python_pytest \
-        --file {bencher_json_file_name}".split(),
-        external=True,
-    )
+    bencher_json_file_name = f"results_{session.python}_{subpackage.replace('/', '_')}.json"
+    if valid_results_file(bencher_json_file_name):
+        session.run(
+            *f"bencher run \
+            --project {os.environ['BENCHER_PROJECT']} \
+            --token {os.environ['BENCHER_API_TOKEN']} \
+            --host {os.environ['BENCHER_HOST']} \
+            --github-actions {os.environ['GD_COMMENT_TOKEN']} \
+            --branch {os.environ['FEATURE_BRANCH']} \
+            --start-point main \
+            --start-point-clone-thresholds \
+            --start-point-reset \
+            --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
+            --err \
+            --adapter python_pytest \
+            --file {bencher_json_file_name}".split(),
+            external=True,
+        )
 
 # Model test sessions
 # TODO(egparedes): Add backend parameter
