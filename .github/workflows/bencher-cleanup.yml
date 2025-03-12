@@ -14,7 +14,7 @@ jobs:
             - name: Bencher (cloud or self-hosted) | Archive feature branch reports on PR close
               run: |
                 bencher archive \
-                --project c2sm-icon4py \
+                --project '${{ vars.BENCHER_PROJECT }}' \
                 --token '${{ secrets.BENCHER_API_TOKEN }}' \
                 --branch "$GITHUB_HEAD_REF"
-                --host https://api.bencher.dev
+                --host '${{ vars.BENCHER_HOST }}'
