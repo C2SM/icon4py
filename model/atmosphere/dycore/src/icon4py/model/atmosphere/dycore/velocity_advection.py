@@ -758,7 +758,7 @@ class VelocityAdvection:
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
             vertical_start=1,
-            vertical_end=gtx.int32(self.grid.num_levels - 1),
+            vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
 
