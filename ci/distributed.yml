@@ -24,7 +24,7 @@ build_model_distributed:
     uv sync --extra distributed --python=3.10 --no-dev
   artifacts:
     paths:
-      - icon4py/${UV_PROJECT_ENVIRONMENT}
+      - ./${UV_PROJECT_ENVIRONMENT}
 
 
 .test_model_distributed:
