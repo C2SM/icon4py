@@ -42,7 +42,9 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         grav_o_cpd: float,
         **kwargs: Any,
     ) -> dict:
-        def _apply_index_field(shape, to_index, neighbor_table, offset_field):
+        def _apply_index_field(
+            shape: tuple, to_index: np.ndarray, neighbor_table: np.ndarray, offset_field: np.ndarray
+        ) -> tuple:
             indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
             for iprimary in range(shape[0]):
                 for isparse in range(shape[1]):

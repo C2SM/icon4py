@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -37,7 +39,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(
 
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(
-    wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray, **kwargs
+    wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray, **kwargs: Any
 ) -> tuple:
     vn_ie = interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(wgtfac_e, vn)
     z_kin_hor_e = interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(vn, vt)

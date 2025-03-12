@@ -41,21 +41,21 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_kin_hor_e,
-        e_bln_c_s,
-        z_w_concorr_me,
-        wgtfac_c,
-        w,
-        z_w_concorr_mc,
-        w_concorr_c,
-        z_ekinh,
-        k,
-        istep,
-        nlev,
-        nflatlev,
-        z_w_con_c,
+        z_kin_hor_e: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfac_c: np.ndarray,
+        w: np.ndarray,
+        z_w_concorr_mc: np.ndarray,
+        w_concorr_c: np.ndarray,
+        z_ekinh: np.ndarray,
+        k: np.ndarray,
+        istep: int,
+        nlev: int,
+        nflatlev: int,
+        z_w_con_c: np.ndarray,
         **kwargs: Any,
-    ):
+    ) -> dict:
         k_nlev = k[:-1]
 
         z_ekinh = np.where(

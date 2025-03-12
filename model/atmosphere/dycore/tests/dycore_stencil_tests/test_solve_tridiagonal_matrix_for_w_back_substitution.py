@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -24,7 +26,12 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
     OUTPUTS = ("w",)
 
     @staticmethod
-    def reference(grid, z_q: np.ndarray, w: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_q: np.ndarray,
+        w: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         w_new = np.zeros_like(w)
         last_k_level = w.shape[1] - 1
 

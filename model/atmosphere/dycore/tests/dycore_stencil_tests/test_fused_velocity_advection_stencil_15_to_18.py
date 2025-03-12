@@ -14,7 +14,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_15_to_18 import (
     fused_velocity_advection_stencil_15_to_18,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
@@ -35,30 +35,30 @@ from .test_interpolate_contravariant_vertical_velocity_to_full_levels import (
 
 def _fused_velocity_advection_stencil_16_to_18(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    z_w_con_c,
-    w,
-    coeff1_dwdz,
-    coeff2_dwdz,
-    ddt_w_adv,
-    e_bln_c_s,
-    z_v_grad_w,
-    levelmask,
-    cfl_clipping,
-    owner_mask,
-    ddqz_z_half,
-    area,
-    geofac_n2s,
-    cell,
-    k,
-    scalfac_exdiff,
-    cfl_w_limit,
-    dtime,
-    cell_lower_bound,
-    cell_upper_bound,
-    nlev,
-    nrdmax,
-    extra_diffu,
-):
+    z_w_con_c: np.ndarray,
+    w: np.ndarray,
+    coeff1_dwdz: np.ndarray,
+    coeff2_dwdz: np.ndarray,
+    ddt_w_adv: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    z_v_grad_w: np.ndarray,
+    levelmask: np.ndarray,
+    cfl_clipping: np.ndarray,
+    owner_mask: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    area: np.ndarray,
+    geofac_n2s: np.ndarray,
+    cell: np.ndarray,
+    k: np.ndarray,
+    scalfac_exdiff: ta.wpfloat,
+    cfl_w_limit: ta.wpfloat,
+    dtime: ta.wpfloat,
+    cell_lower_bound: int,
+    cell_upper_bound: int,
+    nlev: int,
+    nrdmax: int,
+    extra_diffu: bool,
+) -> np.ndarray:
     cell = cell[:, np.newaxis]
 
     condition1 = (cell_lower_bound <= cell) & (cell < cell_upper_bound) & (k >= 1)
@@ -121,33 +121,33 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_w_con_c,
-        w,
-        coeff1_dwdz,
-        coeff2_dwdz,
-        ddt_w_adv,
-        e_bln_c_s,
-        z_v_grad_w,
-        levelmask,
-        cfl_clipping,
-        owner_mask,
-        ddqz_z_half,
-        area,
-        geofac_n2s,
-        z_w_con_c_full,
-        cell,
-        k,
-        scalfac_exdiff,
-        cfl_w_limit,
-        dtime,
-        cell_lower_bound,
-        cell_upper_bound,
-        nlev,
-        nrdmax,
-        lvn_only,
-        extra_diffu,
+        z_w_con_c: np.ndarray,
+        w: np.ndarray,
+        coeff1_dwdz: np.ndarray,
+        coeff2_dwdz: np.ndarray,
+        ddt_w_adv: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        z_v_grad_w: np.ndarray,
+        levelmask: np.ndarray,
+        cfl_clipping: np.ndarray,
+        owner_mask: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        area: np.ndarray,
+        geofac_n2s: np.ndarray,
+        z_w_con_c_full: np.ndarray,
+        cell: np.ndarray,
+        k: np.ndarray,
+        scalfac_exdiff: ta.wpfloat,
+        cfl_w_limit: ta.wpfloat,
+        dtime: ta.wpfloat,
+        cell_lower_bound: int,
+        cell_upper_bound: int,
+        nlev: int,
+        nrdmax: int,
+        lvn_only: bool,
+        extra_diffu: bool,
         **kwargs: Any,
-    ):
+    ) -> dict:
         # We need to store the initial return field, because we only compute on a subdomain.
         z_w_con_c_full_ret = z_w_con_c_full.copy()
         ddt_w_adv_ret = ddt_w_adv.copy()

@@ -27,7 +27,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
         ddt_exner_phy: np.ndarray,
         exner_dyn_incr: np.ndarray,

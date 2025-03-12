@@ -33,9 +33,9 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
     geofac_grdiv: np.ndarray,
     vn: np.ndarray,
     ddt_vn_apc: np.ndarray,
-    cfl_w_limit,
-    scalfac_exdiff,
-    dtime,
+    cfl_w_limit: ta.wpfloat,
+    scalfac_exdiff: ta.wpfloat,
+    dtime: ta.wpfloat,
 ) -> np.ndarray:
     w_con_e = np.zeros_like(vn)
     difcoef = np.zeros_like(vn)

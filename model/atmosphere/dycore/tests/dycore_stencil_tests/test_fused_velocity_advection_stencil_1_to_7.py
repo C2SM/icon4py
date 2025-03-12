@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from typing import Any, Type
 
 import gt4py.next as gtx
 import numpy as np
@@ -48,23 +48,23 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
-        connectivities,
-        vn,
-        rbf_vec_coeff_e,
-        wgtfac_e,
-        ddxn_z_full,
-        ddxt_z_full,
-        z_w_concorr_me,
-        wgtfacq_e,
-        nflatlev,
-        z_vt_ie,
-        vt,
-        vn_ie,
-        z_kin_hor_e,
-        k,
-        nlev,
-        lvn_only,
-    ):
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        vn: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
+        wgtfac_e: np.ndarray,
+        ddxn_z_full: np.ndarray,
+        ddxt_z_full: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfacq_e: np.ndarray,
+        nflatlev: int,
+        z_vt_ie: np.ndarray,
+        vt: np.ndarray,
+        vn_ie: np.ndarray,
+        z_kin_hor_e: np.ndarray,
+        k: np.ndarray,
+        nlev: int,
+        lvn_only: bool,
+    ) -> tuple:
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
@@ -114,35 +114,35 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
     @classmethod
     def reference(
-        cls,
-        grid,
-        vn,
-        rbf_vec_coeff_e,
-        wgtfac_e,
-        ddxn_z_full,
-        ddxt_z_full,
-        z_w_concorr_me,
-        wgtfacq_e,
-        nflatlev,
-        c_intp,
-        w,
-        inv_dual_edge_length,
-        inv_primal_edge_length,
-        tangent_orientation,
-        z_vt_ie,
-        vt,
-        vn_ie,
-        z_kin_hor_e,
-        z_v_grad_w,
-        k,
-        istep,
-        nlev,
-        lvn_only,
-        edge,
-        lateral_boundary_7,
-        halo_1,
+        cls: Type["TestFusedVelocityAdvectionStencil1To7"],
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        vn: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
+        wgtfac_e: np.ndarray,
+        ddxn_z_full: np.ndarray,
+        ddxt_z_full: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfacq_e: np.ndarray,
+        nflatlev: int,
+        c_intp: np.ndarray,
+        w: np.ndarray,
+        inv_dual_edge_length: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        tangent_orientation: np.ndarray,
+        z_vt_ie: np.ndarray,
+        vt: np.ndarray,
+        vn_ie: np.ndarray,
+        z_kin_hor_e: np.ndarray,
+        z_v_grad_w: np.ndarray,
+        k: np.ndarray,
+        istep: int,
+        nlev: int,
+        lvn_only: bool,
+        edge: np.ndarray,
+        lateral_boundary_7: int,
+        halo_1: int,
         **kwargs: Any,
-    ):
+    ) -> dict:
         k_nlev = k[:-1]
 
         if istep == 1:
@@ -153,7 +153,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
                 z_kin_hor_e,
                 z_w_concorr_me,
             ) = cls._fused_velocity_advection_stencil_1_to_6_numpy(
-                grid,
+                connectivities,
                 vn,
                 rbf_vec_coeff_e,
                 wgtfac_e,
@@ -175,13 +175,15 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         condition_mask = (lateral_boundary_7 <= edge) & (edge < halo_1) & (k_nlev < nlev)
 
-        z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
+        z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
+            connectivities, w, c_intp
+        )
 
         if not lvn_only:
             z_v_grad_w = np.where(
                 condition_mask,
                 compute_horizontal_advection_term_for_vertical_velocity_numpy(
-                    grid,
+                    connectivities,
                     vn_ie[:, :-1],
                     inv_dual_edge_length,
                     w,

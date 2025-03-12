@@ -14,9 +14,8 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
@@ -30,7 +29,7 @@ class TestComputeVnOnLateralBoundary(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         grf_tend_vn: np.ndarray,
         vn_now: np.ndarray,
-        dtime,
+        dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
         vn_new = vn_now + dtime * grf_tend_vn
@@ -38,10 +37,10 @@ class TestComputeVnOnLateralBoundary(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        grf_tend_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vn_now = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vn_new = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        dtime = wpfloat("6.0")
+        grf_tend_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        vn_now = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        vn_new = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        dtime = ta.wpfloat("6.0")
 
         return dict(
             grf_tend_vn=grf_tend_vn,

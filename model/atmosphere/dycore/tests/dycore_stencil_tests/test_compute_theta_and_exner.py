@@ -12,10 +12,9 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import compute_theta_and_exner
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, random_mask
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -25,13 +24,13 @@ class TestComputeThetaAndExner(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         bdy_halo_c: np.ndarray,
         rho: np.ndarray,
         theta_v: np.ndarray,
         exner: np.ndarray,
-        rd_o_cvd: float,
-        rd_o_p0ref: float,
+        rd_o_cvd: ta.wpfloat,
+        rd_o_p0ref: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
         bdy_halo_c = np.expand_dims(bdy_halo_c, axis=-1)
@@ -45,12 +44,18 @@ class TestComputeThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        rd_o_cvd = wpfloat("10.0")
-        rd_o_p0ref = wpfloat("20.0")
-        bdy_halo_c = random_mask(grid, dims.CellDim)
-        exner = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
-        rho = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
+        rd_o_cvd = ta.wpfloat("10.0")
+        rd_o_p0ref = ta.wpfloat("20.0")
+        bdy_halo_c = data_alloc.random_mask(grid, dims.CellDim)
+        exner = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=ta.wpfloat
+        )
+        rho = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=ta.wpfloat
+        )
+        theta_v = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=ta.wpfloat
+        )
 
         return dict(
             bdy_halo_c=bdy_halo_c,

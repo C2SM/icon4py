@@ -14,10 +14,9 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -31,8 +30,8 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
     z_w_expl: np.ndarray,
     z_q_ref: np.ndarray,
     w_ref: np.ndarray,
-    dtime,
-    cpd,
+    dtime: ta.wpfloat,
+    cpd: ta.wpfloat,
 ) -> tuple[np.ndarray, np.ndarray]:
     z_q = np.copy(z_q_ref)
     w = np.copy(w_ref)
@@ -73,8 +72,8 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         z_exner_expl: np.ndarray,
         z_q: np.ndarray,
         w: np.ndarray,
-        dtime: wpfloat,
-        cpd: wpfloat,
+        dtime: ta.wpfloat,
+        cpd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
         z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
@@ -93,16 +92,20 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         return dict(z_q=z_q_ref, w=w_ref)
 
     @pytest.fixture
-    def input_data(self, grid: base_grid.BaseGrid):
-        vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        theta_v_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_alpha = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat)
-        z_beta = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_exner_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_w_expl = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
-        z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(self, grid: base_grid.BaseGrid) -> dict:
+        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_alpha = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
+        )
+        z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_w_expl = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+        )
+        z_q = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         h_start = 0
         h_end = gtx.int32(grid.num_cells)
@@ -119,8 +122,8 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
             z_exner_expl=z_exner_expl,
             z_q=z_q,
             w=w,
-            dtime=wpfloat("8.0"),
-            cpd=wpfloat("7.0"),
+            dtime=ta.wpfloat("8.0"),
+            cpd=ta.wpfloat("7.0"),
             horizontal_start=h_start,
             horizontal_end=h_end,
             vertical_start=v_start,

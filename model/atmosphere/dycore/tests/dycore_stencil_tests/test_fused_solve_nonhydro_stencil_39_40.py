@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing import helpers
 
 from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
 from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
@@ -27,14 +27,14 @@ from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
 
 def _fused_solve_nonhydro_stencil_39_40_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    e_bln_c_s,
-    z_w_concorr_me,
-    wgtfac_c,
-    wgtfacq_c,
-    vert_idx,
-    nlev,
-    nflatlev,
-):
+    e_bln_c_s: np.ndarray,
+    z_w_concorr_me: np.ndarray,
+    wgtfac_c: np.ndarray,
+    wgtfacq_c: np.ndarray,
+    vert_idx: np.ndarray,
+    nlev: int,
+    nflatlev: int,
+) -> np.ndarray:
     w_concorr_c = np.where(
         (nflatlev < vert_idx) & (vert_idx < nlev),
         compute_contravariant_correction_of_w_numpy(
@@ -50,7 +50,7 @@ def _fused_solve_nonhydro_stencil_39_40_numpy(
     return w_concorr_c_res
 
 
-class TestFusedSolveNonhydroStencil39To40(StencilTest):
+class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
     PROGRAM = fused_solve_nonhydro_stencil_39_40
     OUTPUTS = ("w_concorr_c",)
     MARKERS = (pytest.mark.embedded_remap_error,)

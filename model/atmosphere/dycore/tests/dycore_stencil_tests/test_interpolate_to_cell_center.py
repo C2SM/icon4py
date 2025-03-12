@@ -42,8 +42,13 @@ class TestInterpolateToCellCenter(helpers.StencilTest):
     OUTPUTS = ("interpolation",)
 
     @staticmethod
-    def reference(grid, interpolant: np.ndarray, e_bln_c_s: np.ndarray, **kwargs) -> dict:
-        interpolation = interpolate_to_cell_center_numpy(grid, interpolant, e_bln_c_s)
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        interpolant: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        interpolation = interpolate_to_cell_center_numpy(connectivities, interpolant, e_bln_c_s)
         return dict(interpolation=interpolation)
 
     @pytest.fixture

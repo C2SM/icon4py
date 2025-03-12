@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -24,7 +26,12 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
     OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
 
     @staticmethod
-    def reference(grid, w_concorr_c: np.ndarray, z_contr_w_fl_l: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        w_concorr_c: np.ndarray,
+        z_contr_w_fl_l: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         w_nnew = w_concorr_c
         z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
         return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)

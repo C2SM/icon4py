@@ -43,7 +43,7 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         z_w_con_c: np.ndarray,
         w: np.ndarray,
         coeff1_dwdz: np.ndarray,

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -23,7 +25,7 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
-    ddqz_z_half: np.ndarray, z_w_con_c: np.ndarray, cfl_w_limit: float, dtime: float
+    ddqz_z_half: np.ndarray, z_w_con_c: np.ndarray, cfl_w_limit: ta.wpfloat, dtime: ta.wpfloat
 ) -> tuple:
     num_rows, num_cols = z_w_con_c.shape
     cfl_clipping = np.where(
@@ -53,9 +55,9 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         ddqz_z_half: np.ndarray,
         z_w_con_c: np.ndarray,
-        cfl_w_limit,
-        dtime,
-        **kwargs,
+        cfl_w_limit: ta.wpfloat,
+        dtime: ta.wpfloat,
+        **kwargs: Any,
     ) -> dict:
         (
             cfl_clipping,

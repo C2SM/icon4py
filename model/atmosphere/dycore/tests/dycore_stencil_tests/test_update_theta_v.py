@@ -25,7 +25,7 @@ class TestUpdateThetaV(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         mask_prog_halo_c: np.ndarray,
         rho_now: np.ndarray,
         theta_v_now: np.ndarray,

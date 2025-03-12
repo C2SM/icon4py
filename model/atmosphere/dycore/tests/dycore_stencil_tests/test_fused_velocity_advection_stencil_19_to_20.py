@@ -15,7 +15,7 @@ import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_19_to_20 import (
     fused_velocity_advection_stencil_19_to_20,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing.helpers import StencilTest
 
@@ -53,9 +53,9 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         inv_primal_edge_length: np.ndarray,
         geofac_grdiv: np.ndarray,
         k: np.ndarray,
-        cfl_w_limit: np.ndarray,
-        scalfac_exdiff: np.ndarray,
-        d_time: float,
+        cfl_w_limit: ta.wpfloat,
+        scalfac_exdiff: ta.wpfloat,
+        d_time: ta.wpfloat,
         extra_diffu: bool,
         nlev: int,
         nrdmax: int,

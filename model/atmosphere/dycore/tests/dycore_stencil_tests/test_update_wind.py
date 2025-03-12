@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -22,7 +24,13 @@ class TestUpdateWind(StencilTest):
     OUTPUTS = ("w_new",)
 
     @staticmethod
-    def reference(grid, w_now: np.ndarray, grf_tend_w: np.ndarray, dtime: float, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        w_now: np.ndarray,
+        grf_tend_w: np.ndarray,
+        dtime: float,
+        **kwargs: Any,
+    ) -> dict:
         w_new = w_now + dtime * grf_tend_w
         return dict(w_new=w_new)
 

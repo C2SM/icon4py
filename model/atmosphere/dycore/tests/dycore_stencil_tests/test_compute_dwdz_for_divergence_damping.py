@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -29,7 +31,7 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
         inv_ddqz_z_full: np.ndarray,
         w: np.ndarray,
         w_concorr_c: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_dwdz_dd = inv_ddqz_z_full * (
             (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])

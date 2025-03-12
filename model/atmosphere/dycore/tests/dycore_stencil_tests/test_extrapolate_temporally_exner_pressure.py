@@ -27,7 +27,7 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
         exner_ref_mc: np.ndarray,
         exner_pr: np.ndarray,

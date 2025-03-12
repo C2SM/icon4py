@@ -14,10 +14,9 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
     compute_explicit_vertical_wind_from_advection_and_vertical_wind_density,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -35,10 +34,10 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
         rho_ic: np.ndarray,
         w_concorr_c: np.ndarray,
         vwind_expl_wgt: np.ndarray,
-        dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        cpd,
+        dtime: ta.wpfloat,
+        wgt_nnow_vel: ta.wpfloat,
+        wgt_nnew_vel: ta.wpfloat,
+        cpd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
         z_w_expl = w_nnow + dtime * (
@@ -50,19 +49,19 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddt_w_adv_ntl2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_th_ddz_exner_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_w_expl = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        dtime = wpfloat("5.0")
-        wgt_nnow_vel = wpfloat("8.0")
-        wgt_nnew_vel = wpfloat("9.0")
-        cpd = wpfloat("10.0")
+        w_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        ddt_w_adv_ntl1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_w_adv_ntl2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_w_expl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        z_contr_w_fl_l = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        dtime = ta.wpfloat("5.0")
+        wgt_nnow_vel = ta.wpfloat("8.0")
+        wgt_nnew_vel = ta.wpfloat("9.0")
+        cpd = ta.wpfloat("10.0")
 
         return dict(
             z_w_expl=z_w_expl,
