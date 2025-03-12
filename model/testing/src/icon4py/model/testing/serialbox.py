@@ -1297,7 +1297,7 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
 
 
-class VelocityInitEDiagnosticsSavepoint(IconSavepoint):
+class VelocityInitEdgeDiagnosticsSavepoint(IconSavepoint):
     def lvn_only(self) -> bool:
         return bool(self.serializer.read("vn_only", self.savepoint)[0])
 
@@ -1349,7 +1349,7 @@ class VelocityInitCellDiagnosticsSavepoint(IconSavepoint):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
 
 
-class VelocityInitVertexMomentumSavepoint(IconSavepoint):
+class VelocityInitVerticalMomentumSavepoint(IconSavepoint):
     def z_w_con_c(self):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
 
@@ -2019,7 +2019,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep_init: int
-    ) -> IconVelocityInitEDiagnosticsSavepoint:
+    ) -> VelocityInitEdgeDiagnosticsSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-1to7-init"]
             .istep[istep]
@@ -2027,13 +2027,13 @@ class IconSerialDataProvider:
             .dyn_timestep[substep_init]
             .as_savepoint()
         )
-        return IconVelocityInitEDiagnosticsSavepoint(
+        return VelocityInitEdgeDiagnosticsSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep_init: int
-    ) -> IconVelocityInitCDiagnosticsSavepoint:
+    ) -> VelocityInitCellDiagnosticsSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to14-init"]
             .istep[istep]
@@ -2041,13 +2041,13 @@ class IconSerialDataProvider:
             .dyn_timestep[substep_init]
             .as_savepoint()
         )
-        return VelocityAdvectionCellDiagnosticsInitSavepoint(
+        return VelocityInitCellDiagnosticsSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_init(
         self, istep: int, date: str, substep_init: int
-    ) -> IconVelocityInitVMomentumSavepoint:
+    ) -> VelocityInitVerticalMomentumSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-init"]
             .istep[istep]
@@ -2055,7 +2055,7 @@ class IconSerialDataProvider:
             .dyn_timestep[substep_init]
             .as_savepoint()
         )
-        return VelocityAdvectionVerticalMomentumInitSavepoint
+        return VelocityInitVerticalMomentumSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
