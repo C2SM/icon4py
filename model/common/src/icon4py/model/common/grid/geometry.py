@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-import logging
 from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
 # TODO (@halungge ) test on GPU (NEP 18 ?)
@@ -35,8 +34,6 @@ from icon4py.model.common.utils import data_allocation as alloc
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
-
-log = logging.getLogger(__name__)
 
 
 class GridGeometry(factory.FieldSource):
@@ -106,10 +103,6 @@ class GridGeometry(factory.FieldSource):
         self._attrs = metadata
         self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
-        log.info(
-            f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
-        )
-        log.debug(f"using array_ns {self._xp} ")
 
         (
             edge_orientation0_lat,

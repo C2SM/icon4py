@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-import logging
 from typing import Optional
 
 import gt4py.next as gtx
@@ -32,8 +31,6 @@ cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
 
-log = logging.getLogger(__name__)
-
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
@@ -54,10 +51,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0}
-        log.info(
-            f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
-        )
-        log.debug(f"using array_ns {self._xp} ")
         self._register_computed_fields()
 
     def __repr__(self):

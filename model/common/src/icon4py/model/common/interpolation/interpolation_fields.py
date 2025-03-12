@@ -869,6 +869,7 @@ def compute_cells_aw_verts(
     """
     cells_aw_verts = array_ns.zeros(v2e.shape)
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
+        cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
             # INVALID_INDEX
             if v2e[jv, je] == gm.GridFile.INVALID_INDEX or (

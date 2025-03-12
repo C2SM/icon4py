@@ -6,13 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-import logging
 import math
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -24,7 +22,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     compute_cell_2_vertex_interpolation,
 )
@@ -49,7 +46,6 @@ edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
 vertical_domain = v_grid.domain(dims.KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
-log = logging.getLogger(__name__)
 
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -81,10 +77,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._interpolation_source = interpolation_source
-        log.info(
-            f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
-        )
-        log.debug(f"using array_ns {self._xp} ")
+
         vct_a = self._vertical_grid.vct_a
         vct_a_1 = vct_a.asnumpy()[0]
         self._config = {
@@ -144,9 +137,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     def _register_computed_fields(self):
         height = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
-                self._backend
-            ),
+            func=mf.compute_z_mc.with_backend(self._backend),
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
                 dims.KDim: (
@@ -154,8 +145,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"average": attrs.Z_MC},
-            deps={"input_field": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL},
+            fields={"z_mc": attrs.Z_MC},
+            deps={"z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL},
         )
         self.register_provider(height)
 
@@ -197,22 +188,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={"ddqz_z_full": attrs.DDQZ_Z_FULL, "inv_ddqz_z_full": attrs.INV_DDQZ_Z_FULL},
         )
         self.register_provider(ddqz_z_full_and_inverse)
-        ddqz_full_on_edges = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
-            deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
-            domain={
-                dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LOCAL),
-                    edge_domain(h_grid.Zone.END),
-                ),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
-                ),
-            },
-            fields={"out_field": attrs.DDQZ_Z_FULL_E},
-        )
-        self.register_provider(ddqz_full_on_edges)
 
         compute_scalfac_dd3d = factory.ProgramFieldProvider(
             func=mf.compute_scalfac_dd3d.with_backend(self._backend),
@@ -397,11 +372,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxn_z_half_e)
 
         compute_ddxn_z_full = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
-                self._backend
-            ),
+            func=mf.compute_ddxn_z_full.with_backend(self._backend),
             deps={
-                "input_field": attrs.DDXN_Z_HALF_E,
+                "ddxnt_z_half_e": attrs.DDXN_Z_HALF_E,
             },
             domain={
                 dims.EdgeDim: (
@@ -413,29 +386,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"average": attrs.DDXN_Z_FULL},
+            fields={attrs.DDXN_Z_FULL: attrs.DDXN_Z_FULL},
         )
         self.register_provider(compute_ddxn_z_full)
-        compute_ddxt_z_full = factory.ProgramFieldProvider(
-            func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
-                self._backend
-            ),
-            deps={
-                "input_field": attrs.DDXT_Z_HALF_E,
-            },
-            domain={
-                dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LOCAL),
-                    edge_domain(h_grid.Zone.END),
-                ),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
-                ),
-            },
-            fields={"average": attrs.DDXT_Z_FULL},
-        )
-        self.register_provider(compute_ddxt_z_full)
 
         compute_vwind_impl_wgt_np = factory.NumpyFieldsProvider(
             func=functools.partial(
