@@ -21,7 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(
     wgtfac_e: np.ndarray, vn: np.ndarray
-) -> np.array:
+) -> np.ndarray:
     vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
     vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
     vn_ie[:, 0] = 0
@@ -30,7 +30,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(
     vn: np.ndarray, vt: np.ndarray
-) -> np.array:
+) -> np.ndarray:
     z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
     z_kin_hor_e[:, 0] = 0
     return z_kin_hor_e
@@ -53,7 +53,7 @@ class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfac_e: np.ndarray,
         vn: np.ndarray,
         vt: np.ndarray,

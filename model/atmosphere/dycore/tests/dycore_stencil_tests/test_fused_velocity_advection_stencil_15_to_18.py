@@ -221,13 +221,9 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        k = data_alloc.zero_field(grid, dims.KDim, dtype=gtx.int32)
-        for level in range(grid.num_levels):
-            k[level] = level
+        k = data_alloc.index_field(grid, dims.KDim, dtype=gtx.int32)
 
-        cell = data_alloc.zero_field(grid, dims.CellDim, dtype=gtx.int32)
-        for c in range(grid.num_cells):
-            cell[c] = c
+        cell = data_alloc.index_field(grid, dims.CellDim, dtype=gtx.int32)
 
         nlev = grid.num_levels
         nrdmax = 5

@@ -60,7 +60,7 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
         theta_v: np.ndarray,
         theta_ref_mc: np.ndarray,
         **kwargs: Any,
-    ) -> tuple[np.array, np.array, np.array]:
+    ) -> dict:
         rho_offset_1 = np.roll(rho, shift=1, axis=1)
         rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
         rho_ic[:, 0] = 0

@@ -35,7 +35,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         d_exner_dz_ref_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
         **kwargs: Any,
-    ) -> tuple[np.array, np.array, np.array]:
+    ) -> dict:
         z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
         theta_v_offset = np.roll(theta_v, axis=1, shift=1)
         exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)

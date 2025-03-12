@@ -41,7 +41,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         inv_dual_edge_length: np.ndarray,
         grav_o_cpd: float,
         **kwargs: Any,
-    ) -> tuple[np.ndarray]:
+    ) -> dict:
         def _apply_index_field(shape, to_index, neighbor_table, offset_field):
             indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
             for iprimary in range(shape[0]):
@@ -98,7 +98,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
+        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32).asnumpy()
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)

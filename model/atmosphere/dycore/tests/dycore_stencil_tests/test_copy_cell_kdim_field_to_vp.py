@@ -21,7 +21,7 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def copy_cell_kdim_field_to_vp_numpy(field: np.ndarray) -> np.array:
+def copy_cell_kdim_field_to_vp_numpy(field: np.ndarray) -> np.ndarray:
     field_copy = field.copy()
     return field_copy
 

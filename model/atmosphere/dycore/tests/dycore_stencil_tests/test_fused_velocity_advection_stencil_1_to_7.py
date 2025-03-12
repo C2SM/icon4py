@@ -223,9 +223,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         k = data_alloc.index_field(grid=grid, dim=dims.KDim, extend={dims.KDim: 1})
 
-        edge = data_alloc.zero_field(grid, dims.EdgeDim, dtype=gtx.int32)
-        for e in range(grid.num_edges):
-            edge[e] = e
+        edge = data_alloc.index_field(grid, dims.EdgeDim, dtype=gtx.int32)
 
         nlev = grid.num_levels
         nflatlev = 13

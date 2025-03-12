@@ -19,7 +19,7 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def extrapolate_at_top_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.array:
+def extrapolate_at_top_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
     vn_k_minus_1 = vn[:, -1]
     vn_k_minus_2 = vn[:, -2]
     vn_k_minus_3 = vn[:, -3]

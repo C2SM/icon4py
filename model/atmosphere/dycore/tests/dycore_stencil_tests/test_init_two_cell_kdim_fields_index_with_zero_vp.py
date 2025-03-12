@@ -27,14 +27,14 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         field_index_with_zero_1: np.ndarray,
         field_index_with_zero_2: np.ndarray,
         k: np.ndarray,
         k1: gtx.int32,
         k2: gtx.int32,
         **kwargs: Any,
-    ) -> tuple[np.array]:
+    ) -> dict:
         field_index_with_zero_1 = np.where(
             k == k1, np.zeros_like(field_index_with_zero_1), field_index_with_zero_1
         )

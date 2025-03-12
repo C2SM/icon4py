@@ -27,7 +27,11 @@ class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(StencilTest):
 
     @staticmethod
     def reference(
-        grid, wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray, **kwargs: Any
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_e: np.ndarray,
+        vn: np.ndarray,
+        vt: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         vn_offset_1 = np.roll(vn, shift=1, axis=1)
         vt_offset_1 = np.roll(vt, shift=1, axis=1)

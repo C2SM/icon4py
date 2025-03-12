@@ -11,13 +11,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40 import (
     fused_solve_nonhydro_stencil_39_40,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
@@ -75,15 +74,13 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        e_bln_c_s = random_field(grid, dims.CEDim, dtype=wpfloat)
-        z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w_concorr_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
+        z_w_concorr_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfacq_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        w_concorr_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
-        vert_idx = zero_field(grid, dims.KDim, dtype=gtx.int32)
-        for level in range(grid.num_levels):
-            vert_idx[level] = level
+        vert_idx = data_alloc.index_field(grid, dims.KDim, dtype=gtx.int32)
 
         nlev = grid.num_levels
         nflatlev = 13

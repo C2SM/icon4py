@@ -27,7 +27,7 @@ class TestInitTwoCellKdimFieldsWithZeroWp(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         cell_kdim_field_with_zero_wp_1: np.ndarray,
         cell_kdim_field_with_zero_wp_2: np.ndarray,
         **kwargs: Any,

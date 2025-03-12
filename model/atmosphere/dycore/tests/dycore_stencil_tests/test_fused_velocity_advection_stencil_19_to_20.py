@@ -131,11 +131,8 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = data_alloc.zero_field(grid, dims.KDim, dtype=gtx.int32)
+        k = data_alloc.index_field(grid, dims.KDim, dtype=gtx.int32)
         nlev = grid.num_levels
-
-        for level in range(nlev):
-            k[level] = level
 
         nrdmax = 5
         extra_diffu = True

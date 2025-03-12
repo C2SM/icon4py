@@ -27,11 +27,11 @@ class TestInitTwoCellKdimFieldsWithZeroVp(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         cell_kdim_field_with_zero_vp_1: np.ndarray,
         cell_kdim_field_with_zero_vp_2: np.ndarray,
         **kwargs: Any,
-    ) -> tuple[np.array]:
+    ) -> dict:
         cell_kdim_field_with_zero_vp_1 = np.zeros_like(cell_kdim_field_with_zero_vp_1)
         cell_kdim_field_with_zero_vp_2 = np.zeros_like(cell_kdim_field_with_zero_vp_2)
         return dict(

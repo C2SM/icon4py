@@ -78,8 +78,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         zdiff_gradp = random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=vpfloat)
-        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
-
+        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32).asnumpy()
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)

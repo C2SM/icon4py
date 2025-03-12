@@ -25,7 +25,7 @@ def interpolate_to_cell_center_numpy(
     interpolant: np.ndarray,
     e_bln_c_s: np.ndarray,
     **kwargs: Any,
-) -> np.array:
+) -> np.ndarray:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     c2e = connectivities[dims.C2EDim]
     c2ce = helpers.as_1d_connectivity(c2e)

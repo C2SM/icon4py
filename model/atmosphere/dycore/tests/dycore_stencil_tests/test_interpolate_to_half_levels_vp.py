@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -19,7 +21,9 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def interpolate_to_half_levels_vp_numpy(wgtfac_c: np.ndarray, interpolant: np.ndarray) -> np.array:
+def interpolate_to_half_levels_vp_numpy(
+    wgtfac_c: np.ndarray, interpolant: np.ndarray
+) -> np.ndarray:
     interpolant_offset_1 = np.roll(interpolant, shift=1, axis=1)
     interpolation_to_half_levels_vp = (
         wgtfac_c * interpolant + (1.0 - wgtfac_c) * interpolant_offset_1
@@ -34,7 +38,12 @@ class TestInterpolateToHalfLevelsVp(StencilTest):
     OUTPUTS = ("interpolation_to_half_levels_vp",)
 
     @staticmethod
-    def reference(grid, wgtfac_c: np.ndarray, interpolant: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_c: np.ndarray,
+        interpolant: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         interpolation_to_half_levels_vp = interpolate_to_half_levels_vp_numpy(
             wgtfac_c=wgtfac_c, interpolant=interpolant
         )

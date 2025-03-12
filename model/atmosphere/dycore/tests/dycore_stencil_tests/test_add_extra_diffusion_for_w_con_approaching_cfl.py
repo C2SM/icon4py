@@ -33,9 +33,9 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     geofac_n2s: np.ndarray,
     w: np.ndarray,
     ddt_w_adv: np.ndarray,
-    scalfac_exdiff: float,
-    cfl_w_limit: float,
-    dtime: float,
+    scalfac_exdiff: ta.wpfloat,
+    cfl_w_limit: ta.wpfloat,
+    dtime: ta.wpfloat,
 ) -> np.ndarray:
     levmask = np.expand_dims(levmask, axis=0)
     owner_mask = np.expand_dims(owner_mask, axis=-1)

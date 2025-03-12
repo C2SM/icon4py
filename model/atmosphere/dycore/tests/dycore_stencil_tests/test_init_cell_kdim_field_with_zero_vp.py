@@ -21,7 +21,7 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def init_cell_kdim_field_with_zero_vp_numpy(field_with_zero_vp: np.ndarray) -> np.array:
+def init_cell_kdim_field_with_zero_vp_numpy(field_with_zero_vp: np.ndarray) -> np.ndarray:
     field_with_zero_vp = np.zeros_like(field_with_zero_vp)
     return field_with_zero_vp
 

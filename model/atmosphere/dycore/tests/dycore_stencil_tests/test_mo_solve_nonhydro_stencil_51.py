@@ -23,7 +23,7 @@ from icon4py.model.testing.helpers import StencilTest
 def mo_solve_nonhydro_stencil_51_z_q_numpy(
     z_c: np.ndarray,
     z_b: np.ndarray,
-) -> np.array:
+) -> np.ndarray:
     return -z_c / z_b
 
 
@@ -32,7 +32,7 @@ def mo_solve_nonhydro_stencil_51_w_nnew_numpy(
     z_b: np.ndarray,
     z_w_expl: np.ndarray,
     z_exner_expl: np.ndarray,
-) -> np.array:
+) -> np.ndarray:
     z_exner_expl_k_minus_1 = np.roll(z_exner_expl, shift=1, axis=1)
     w_nnew = z_w_expl[:, :-1] - z_gamma * (z_exner_expl_k_minus_1 - z_exner_expl)
     return w_nnew / z_b
@@ -44,7 +44,7 @@ class TestMoSolveNonHydroStencil51(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         vwind_impl_wgt: np.ndarray,
         theta_v_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
