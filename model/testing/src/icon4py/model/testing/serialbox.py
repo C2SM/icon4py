@@ -2041,7 +2041,7 @@ class IconSerialDataProvider:
             .dyn_timestep[substep_init]
             .as_savepoint()
         )
-        return IconVelocityInitCDiagnosticsSavepoint(
+        return VelocityAdvectionCellDiagnosticsInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
