@@ -1119,6 +1119,26 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
 
 
+class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
+    def p_vn(self):
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+
+    def p_vt(self):
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
+
+    def z_rth_pr(self, ind: TwoIndex):
+        return self._get_field_component("z_rth_pr", ind, (dims.CellDim, dims.KDim))
+
+    def z_exner_ex_pr(self):
+        return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)
+
+    def z_dexner_dz_c(self, ntnd: TimeIndex):
+        return self._get_field_component("z_dexner_dz_c", ntnd, (dims.CellDim, dims.KDim))
+
+    def theta_v(self):
+        return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+
 class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ex_pr(self):
         return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)  # KHalfDim
@@ -1242,6 +1262,23 @@ class IconNonHydroExitSavepoint(IconSavepoint):
 
     def z_theta_v_fl_e(self):
         return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
+
+
+class IconNonHydroExit_15_28_Savepoint(IconSavepoint):
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_gradh_exner(self):
+        return self._get_field("z_gradd_exner", dims.EdgeDim, dims.KDim)
+
+    def vn(self):
+        return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
 
 
 class IconNonHydroFinalSavepoint(IconSavepoint):
@@ -1888,6 +1925,20 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
+    def from_savepoint_nonhydro_15_28_init(
+        self, istep: int, date: str, substep: int
+    ) -> IconNonHydroInit_15_28_Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-14to28-init"]  # TODO
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconNonHydroInit_15_28_Savepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation-state"].as_savepoint()
         return InterpolationSavepoint(
@@ -1941,6 +1992,20 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_nonhydro_15_28_exit(
+        self, istep: int, date: str, substep: int
+    ) -> IconNonHydroExit_15_28_Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-14to28-exit"]  # TODO
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconNonHydroExit_15_28_Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
