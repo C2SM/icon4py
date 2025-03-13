@@ -12,6 +12,12 @@ from gt4py import eve
 from gt4py.next.type_system import type_specifications as gtx_ts
 
 
+# As long as we use gt4py.eve, we can also just use the gt4py.next types.
+# Note that the user-facing type should be py2fgen.ScalarKind, so we can
+# copy over the gt4py.next types if we want to.
+ScalarKind = gtx_ts.ScalarKind
+
+
 class DeviceType(eve.StrEnum):
     HOST = "host"
     MAYBE_DEVICE = "maybe_device"

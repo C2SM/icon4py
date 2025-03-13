@@ -9,14 +9,12 @@
 import string
 
 import pytest
-from gt4py.next.type_system.type_specifications import ScalarKind
 
-from icon4py.model.common import dimension as dims
+from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen._template import (
     CffiPlugin,
     CHeaderGenerator,
     Func,
-    FuncParameter,
     as_f90_value,
 )
 from icon4py.tools.py2fgen.generate import (
@@ -26,18 +24,22 @@ from icon4py.tools.py2fgen.generate import (
 )
 
 
-field_2d = FuncParameter(
-    name="name",
-    d_type=ScalarKind.FLOAT32,
-    dimensions=[dims.CellDim, dims.KDim],
-)
-field_1d = FuncParameter(
-    name="name",
-    d_type=ScalarKind.FLOAT32,
-    dimensions=[dims.KDim],
+field_2d = py2fgen.ArrayParamDescriptor(
+    rank=2,
+    dtype=py2fgen.FLOAT32,
+    device=py2fgen.DeviceType.MAYBE_DEVICE,
+    is_optional=False,
 )
 
-simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[])
+field_1d = py2fgen.ArrayParamDescriptor(
+    rank=1,
+    dtype=py2fgen.FLOAT32,
+    device=py2fgen.DeviceType.MAYBE_DEVICE,
+    is_optional=False,
+)
+
+
+simple_type = py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)
 
 
 @pytest.mark.parametrize(
@@ -49,29 +51,28 @@ def test_as_target(param, expected):
 
 foo = Func(
     name="foo",
-    args=[
-        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[]),
-        FuncParameter(
-            name="two",
-            d_type=ScalarKind.FLOAT64,
-            dimensions=[dims.CellDim, dims.KDim],
+    args={
+        "one": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
+        "two": py2fgen.ArrayParamDescriptor(
+            rank=2,
+            dtype=py2fgen.FLOAT64,
+            device=py2fgen.DeviceType.MAYBE_DEVICE,
+            is_optional=False,
         ),
-    ],
+    },
 )
 
 bar = Func(
     name="bar",
-    args=[
-        FuncParameter(
-            name="one",
-            d_type=ScalarKind.FLOAT32,
-            dimensions=[
-                dims.CellDim,
-                dims.KDim,
-            ],
+    args={
+        "one": py2fgen.ArrayParamDescriptor(
+            rank=2,
+            dtype=py2fgen.FLOAT32,
+            device=py2fgen.DeviceType.MAYBE_DEVICE,
+            is_optional=False,
         ),
-        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[]),
-    ],
+        "two": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
+    },
 )
 
 

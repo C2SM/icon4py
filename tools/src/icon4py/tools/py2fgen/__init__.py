@@ -10,11 +10,19 @@ from icon4py.tools.py2fgen._definitions import (
     ArrayParamDescriptor,
     DeviceType,
     ParamDescriptor,
+    ScalarKind as _ScalarKind,
     ScalarParamDescriptor,
 )
 from icon4py.tools.py2fgen._export import (
     export,
 )
+
+
+BOOL = _ScalarKind.BOOL
+INT32 = _ScalarKind.INT32
+INT64 = _ScalarKind.INT64
+FLOAT32 = _ScalarKind.FLOAT32
+FLOAT64 = _ScalarKind.FLOAT64
 
 
 __all__ = [
@@ -23,4 +31,9 @@ __all__ = [
     "ParamDescriptor",
     "ScalarParamDescriptor",
     "export",
+    "BOOL",
+    "INT32",
+    "INT64",
+    "FLOAT32",
+    "FLOAT64",
 ]

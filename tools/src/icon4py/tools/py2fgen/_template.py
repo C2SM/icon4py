@@ -153,10 +153,10 @@ def {{ func.name }}_wrapper(
             if runtime_config.PROFILING:
                 unpack_start_time = _runtime.perf_counter()
 
-        # Convert ptrs 
+        # ArrayDescriptors
         {% for name, arg in func.args.items() %}
         {% if is_array(arg) %}
-        {{ name }} = ({{ name }}, ({{ render_size_args_tuple(name, arg) }},), {% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
+        {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
         {% elif arg.dtype == ts.ScalarKind.BOOL %}
         # TODO move bool translation to postprocessing
         assert isinstance({{ name }}, int)
