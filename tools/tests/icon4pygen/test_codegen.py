@@ -129,8 +129,9 @@ def check_code_was_generated(stencil_name: str) -> None:
 )
 @pytest.mark.parametrize("flags", [()], ids=["normal"])
 def test_codegen(cli, stencil_module, stencil_name, flags, test_temp_dir) -> None:
-    if stencil_name.index("compute_edge_diagnostics_for_velocity_advection") or stencil_name.index(
-        "compute_cell_diagnostics_for_velocity_advection"
+    if stencil_name in (
+        "compute_edge_diagnostics_for_velocity_advection",
+        "compute_cell_diagnostics_for_velocity_advection",
     ):
         pytest.skip(f"{stencil_name} does not match standard structure")
 
