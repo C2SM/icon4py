@@ -19,13 +19,15 @@ build_model_distributed:
   before_script:
     - echo "using MPICC ${MPI4PY_BUILD_MPICC}"
     - pwd
+    - echo $CI_PROJECT_DIR
+    - ls -lah $CI_PROJECT_DIR
     - cd /icon4py
   script:
     uv sync --extra distributed --python=3.10 --no-dev
-  artifacts:
-    name: "venv_distributed_cpu"
-    paths:
-      - ${UV_PROJECT_ENVIRONMENT}/
+  #artifacts:
+  #  name: "venv_distributed_cpu"
+  #  paths:
+  #    - ${UV_PROJECT_ENVIRONMENT}/
 
 
 .test_model_distributed:
