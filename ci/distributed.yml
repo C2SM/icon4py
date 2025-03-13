@@ -1,0 +1,51 @@
+include:
+  - local: 'ci/base.yml'
+
+.build_distributed_template:
+  variables:
+    UV_PROJECT_ENVIRONMENT: .venv_dist
+    USE_MPI: "YES"
+
+.build_distributed:
+  extends: [.build_distributed_template]
+  variables:
+    DOCKERFILE: ci/docker/distributed_venv.Dockerfile
+    # Unique image name based on commit SHA,
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-distributed_venv-$PYVERSION
+    #MPI4PY_BUILD_BACKEND: "scikit-build-core"
+    #MPI4PY_BUILD_MPICC: nvc
+
+
+build_distributed:
+    stage: build
+    extends: [.container-builder-cscs-gh200, .build_distributed]
+    needs: [build_baseimage_aarch64] #[build_image_aarch64]
+
+.test_distributed_template_aarch64:
+  extends: [.container-runner-santis-gh200, .test_template_aarch64, .build_distributed_template]
+  needs: [build_distributed]
+  variables:
+    # run in parallel
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+
+.test_distributed_aarch64:
+  stage: test
+  extends: [.test_distributed_template_aarch64]
+  before_script:
+    - cd /icon4py
+    - ls ${UV_PROJECT_ENVIRONMENT}
+  script:
+    - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+    - pytest -sv --datatest --with-mpi --backend=$BACKEND $COMPONENT
+  parallel:
+    matrix:
+      - COMPONENT: [ diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
+        BACKEND: [ gtfn_cpu]
+  rules:
+    - when: on_success
+
+test_model_distributed:
+  extends: [.test_distributed_aarch64]
+
