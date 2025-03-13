@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.testing.helpers as test_helpers
-from icon4py.model.atmosphere.dycore.compute_cell_diagnostics_for_velocity_advection import (
+from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_velocity_advection import (
     interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
