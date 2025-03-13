@@ -453,14 +453,6 @@ def solve_nh_run_wrapper(
             False,
         )
 
-        # TODO move bool translation to postprocessing
-        assert isinstance(lprep_adv, int)
-        lprep_adv = lprep_adv != 0
-
-        # TODO move bool translation to postprocessing
-        assert isinstance(at_initial_timestep, int)
-        at_initial_timestep = at_initial_timestep != 0
-
         if __debug__:
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
@@ -1467,14 +1459,6 @@ def solve_nh_init_wrapper(
         )
 
         c_owner_mask = (c_owner_mask, (c_owner_mask_size_0,), on_gpu, False)
-
-        # TODO move bool translation to postprocessing
-        assert isinstance(is_iau_active, int)
-        is_iau_active = is_iau_active != 0
-
-        # TODO move bool translation to postprocessing
-        assert isinstance(l_vert_nested, int)
-        l_vert_nested = l_vert_nested != 0
 
         if __debug__:
             if runtime_config.PROFILING:

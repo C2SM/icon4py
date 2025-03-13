@@ -150,10 +150,6 @@ def diffusion_run_wrapper(
             True,
         )
 
-        # TODO move bool translation to postprocessing
-        assert isinstance(linit, int)
-        linit = linit != 0
-
         if __debug__:
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
@@ -509,26 +505,6 @@ def diffusion_init_wrapper(
             on_gpu,
             True,
         )
-
-        # TODO move bool translation to postprocessing
-        assert isinstance(hdiff_w, int)
-        hdiff_w = hdiff_w != 0
-
-        # TODO move bool translation to postprocessing
-        assert isinstance(hdiff_vn, int)
-        hdiff_vn = hdiff_vn != 0
-
-        # TODO move bool translation to postprocessing
-        assert isinstance(zdiffu_t, int)
-        zdiffu_t = zdiffu_t != 0
-
-        # TODO move bool translation to postprocessing
-        assert isinstance(hdiff_temp, int)
-        hdiff_temp = hdiff_temp != 0
-
-        # TODO move bool translation to postprocessing
-        assert isinstance(ltkeshs, int)
-        ltkeshs = ltkeshs != 0
 
         if __debug__:
             if runtime_config.PROFILING:

@@ -75,13 +75,28 @@ def _as_array(
     return impl
 
 
-MapperType: TypeAlias = Callable[[_definitions.ArrayDescriptor, cffi.FFI], Any]
+MapperType: TypeAlias = (
+    Callable[[_definitions.ArrayDescriptor, cffi.FFI], Any]
+    | Callable[[bool, cffi.FFI], Any]
+    | Callable[[int, cffi.FFI], Any]
+    | Callable[[float, cffi.FFI], Any]
+)
+
+
+def _int_to_bool(x: int, ffi: cffi.FFI) -> bool:
+    return x != 0
 
 
 def default_mapping(_: Any, param_descriptor: _definitions.ParamDescriptor) -> MapperType | None:
-    """Translates ArrayDescriptor into (Numpy or Cupy) NDArray."""
     if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
+        # ArrayDescriptors to Numpy/CuPy arrays
         return _as_array(param_descriptor.dtype)
+    if (
+        isinstance(param_descriptor, _definitions.ScalarParamDescriptor)
+        and param_descriptor.dtype == _definitions.BOOL
+    ):
+        # bools are passed as int32, convert to bool
+        return _int_to_bool
     return None
 
 

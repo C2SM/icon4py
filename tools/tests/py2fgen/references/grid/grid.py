@@ -363,10 +363,6 @@ def grid_init_wrapper(
 
         primal_normal_y = (primal_normal_y, (primal_normal_y_size_0,), on_gpu, False)
 
-        # TODO move bool translation to postprocessing
-        assert isinstance(limited_area, int)
-        limited_area = limited_area != 0
-
         if __debug__:
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
