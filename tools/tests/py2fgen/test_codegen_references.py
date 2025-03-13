@@ -61,7 +61,6 @@ def check_generated_files(bindings_name: str) -> None:
         )
 
 
-@pytest.mark.skipif()
 @pytest.mark.parametrize(
     "bindings_name, module, functions",
     [
