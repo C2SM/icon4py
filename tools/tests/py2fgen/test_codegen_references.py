@@ -51,10 +51,6 @@ def diff(reference: pathlib.Path, actual: pathlib.Path):
 
 def check_generated_files(bindings_name: str) -> None:
     for suffix in [".h", ".f90", ".py"]:
-        if bindings_name.index(
-            "compute_edge_diagnostics_for_velocity_advection"
-        ) or bindings_name.index("compute_cell_diagnostics_for_velocity_advection"):
-            pass
         assert diff(
             reference_path(bindings_name) / f"{bindings_name}{suffix}",
             actual_path(bindings_name) / f"{bindings_name}{suffix}",
