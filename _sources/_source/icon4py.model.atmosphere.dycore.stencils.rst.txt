@@ -116,6 +116,22 @@ icon4py.model.atmosphere.dycore.stencils.apply\_weighted\_2nd\_and\_4th\_order\_
    :undoc-members:
    :show-inheritance:
 
+icon4py.model.atmosphere.dycore.stencils.compute\_advection\_in\_horizontal\_momentum\_equation module
+------------------------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.stencils.compute\_advection\_in\_vertical\_momentum\_equation module
+----------------------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 icon4py.model.atmosphere.dycore.stencils.compute\_advective\_normal\_wind\_tendency module
 ------------------------------------------------------------------------------------------
 
@@ -164,6 +180,14 @@ icon4py.model.atmosphere.dycore.stencils.compute\_avg\_vn\_and\_graddiv\_vn\_and
    :undoc-members:
    :show-inheritance:
 
+icon4py.model.atmosphere.dycore.stencils.compute\_cell\_diagnostics\_for\_velocity\_advection module
+----------------------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_velocity_advection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 icon4py.model.atmosphere.dycore.stencils.compute\_contravariant\_correction module
 ----------------------------------------------------------------------------------
 
@@ -200,6 +224,14 @@ icon4py.model.atmosphere.dycore.stencils.compute\_dwdz\_for\_divergence\_damping
 ---------------------------------------------------------------------------------------
 
 .. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.stencils.compute\_edge\_diagnostics\_for\_velocity\_advection module
+----------------------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection
    :members:
    :undoc-members:
    :show-inheritance:
@@ -436,38 +468,6 @@ icon4py.model.atmosphere.dycore.stencils.fused\_solve\_nonhydro\_stencil\_39\_40
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.fused\_velocity\_advection\_stencil\_15\_to\_18 module
------------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_15_to_18
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-icon4py.model.atmosphere.dycore.stencils.fused\_velocity\_advection\_stencil\_19\_to\_20 module
------------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_19_to_20
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-icon4py.model.atmosphere.dycore.stencils.fused\_velocity\_advection\_stencil\_1\_to\_7 module
----------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1_to_7
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-icon4py.model.atmosphere.dycore.stencils.fused\_velocity\_advection\_stencil\_8\_to\_13 module
-----------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.fused\_velocity\_advection\_stencil\_8\_to\_14 module
 ----------------------------------------------------------------------------------------------
 
@@ -532,22 +532,6 @@ icon4py.model.atmosphere.dycore.stencils.interpolate\_contravariant\_vertical\_v
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.interpolate\_to\_cell\_center module
------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-icon4py.model.atmosphere.dycore.stencils.interpolate\_to\_half\_levels\_vp module
----------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.interpolate\_to\_surface module
 ------------------------------------------------------------------------
 
@@ -564,10 +548,10 @@ icon4py.model.atmosphere.dycore.stencils.interpolate\_vn\_and\_vt\_to\_ie\_and\_
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.interpolate\_vn\_to\_ie\_and\_compute\_ekin\_on\_edges module
-------------------------------------------------------------------------------------------------------
+icon4py.model.atmosphere.dycore.stencils.interpolate\_vn\_to\_half\_levels\_and\_compute\_kinetic\_energy\_on\_edges module
+---------------------------------------------------------------------------------------------------------------------------
 
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges
    :members:
    :undoc-members:
    :show-inheritance:

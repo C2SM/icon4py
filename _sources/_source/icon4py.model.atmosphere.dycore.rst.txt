@@ -52,14 +52,6 @@ icon4py.model.atmosphere.dycore.velocity\_advection module
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.velocity\_advection\_stencils module
---------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.velocity_advection_stencils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

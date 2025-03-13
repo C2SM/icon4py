@@ -1,0 +1,413 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>&lt;no title&gt; &mdash; icon4py-atmosphere-dycore  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=7e16d7a6" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>window.MathJax = {"chtml": {"displayAlign": "left", "displayIndent": "1em"}, "tex": {"inlineMath": [["\\(", "\\)"]], "displayMath": [["\\[", "\\]"]], "macros": {"superscriptsize": "{\\scriptscriptstyle}", "subscriptsize": "{\\scriptscriptstyle}", "timecolor": ["{\\color{teal}{#1}}", 1], "vertcolor": ["{\\color{YellowOrange}{#1}}", 1], "horicolor": ["{\\color{RedViolet}{#1}}", 1], "timestep": ["{{\\subscriptsize{\\timecolor{#1}}}}", 1], "vertlevel": ["{{\\subscriptsize{\\vertcolor{#1}}}}", 1], "horipoint": ["{{\\subscriptsize{\\horicolor{#1}}}}", 1], "dif": "{\\mathrm{d}}", "Dt": "{{\\Delta t}}", "Dz": ["{{\\Delta z}_\\vertlevel{#1}}", 1], "divhori": ["{\\vec{\\nabla}\\!_h\\cdot\\left(#1\\right)}", 1], "Gradn": "{{{\\Large{\\Delta}}}}", "ddt": ["{\\frac{\\dif #1}{\\dif t}}", 1], "ddz": ["{\\frac{\\dif #1}{\\dif z}}", 1], "ddxn": ["{\\frac{\\dif #1}{\\dif n}}", 1], "ddxt": ["{\\frac{\\dif #1}{\\dif t}}", 1], "pdt": ["{\\frac{\\partial #1}{\\partial t}}", 1], "pdz": ["{\\frac{\\partial #1}{\\partial z}}", 1], "pdzz": ["{\\frac{\\partial^2 #1}{\\partial z^2}}", 1], "pdxn": ["{\\frac{\\partial #1}{\\partial n}}", 1], "pdxt": ["{\\frac{\\partial #1}{\\partial t}}", 1], "variable": ["{{{#1}_{\\horipoint{#3}\\,\\vertlevel{#4}}^{\\timestep{#2}}}}", 4], "vn": ["{             \\variable{v_n                                  }{#1}{#2}{#3}}", 3], "vt": ["{             \\variable{v_t                                  }{#1}{#2}{#3}}", 3], "vh": ["{             \\variable{\\vec{v_h}                            }{#1}{#2}{#3}}", 3], "w": ["{              \\variable{w                                    }{#1}{#2}{#3}}", 3], "wcc": ["{            \\variable{w_{\\text{cc}}                        }{#1}{#2}{#3}}", 3], "kinehori": ["{       \\variable{K_h                                  }{#1}{#2}{#3}}", 3], "advvn": ["{          \\variable{\\text{adv}(v_n)                      }{#1}{#2}{#3}}", 3], "vortvert": ["{       \\variable{\\zeta                                }{#1}{#2}{#3}}", 3], "density": ["{        \\variable{\\rho                                 }{#1}{#2}{#3}}", 3], "pres": ["{           \\variable{P                                    }{#1}{#2}{#3}}", 3], "vtemp": ["{          \\variable{T_v                                  }{#1}{#2}{#3}}", 3], "vtempprime": ["{     \\variable{T_v'                                 }{#1}{#2}{#3}}", 3], "vpotemp": ["{        \\variable{\\theta_v                             }{#1}{#2}{#3}}", 3], "vpotempprime": ["{   \\variable{\\theta_v'                            }{#1}{#2}{#3}}", 3], "exner": ["{          \\variable{\\pi                                  }{#1}{#2}{#3}}", 3], "exnerprime": ["{     \\variable{\\pi'                                 }{#1}{#2}{#3}}", 3], "exnerprimegradh": ["{\\variable{\\pdxn{\\exnerprime{#1}{}{}}           }{  }{#2}{#3}}", 3], "exnerprimedz": ["{   \\variable{\\pdz{\\exnerprime{#1}{}{}}            }{  }{#2}{#3}}", 3], "exnerprimedzz": ["{  \\variable{\\frac{1}{2}\\pdzz{\\exnerprime{#1}{}{}}}{  }{#2}{#3}}", 3], "variableXK": ["{{{#1}_{\\horipoint{#2}\\,\\vertlevel{#3}}}}", 3], "presref": ["{   \\variableXK{P_0                                                            }{#1}{#2}}", 2], "vpotempref": ["{\\variableXK{\\theta_{v0}                                                    }{#1}{#2}}", 2], "exnerref": ["{  \\variableXK{\\pi_0                                                          }{#1}{#2}}", 2], "dexrefdz": ["{  \\variableXK{\\frac{1}{\\Dz{}\\vpotempref{}{}}\\ddz{\\exnerref{}{}}              }{#1}{#2}}", 2], "ddexrefdzz": ["{\\variableXK{\\ddz{}\\left(\\frac{1}{\\vpotempref{}{}}\\ddz{\\exnerref{}{}}\\right)}{#1}{#2}}", 2], "variableX": ["{{{#1}_{\\horipoint{#2}}}}", 2], "coriolis": ["{    \\variableX{f                                                                 }{#1}}", 1], "exnhydrocorr": ["{\\variableX{\\frac{g}{\\cpd \\vpotemp{\\color{black}{2}}{}{}}\\pdxn{\\vpotemp{}{}{}}}{#1}}", 1], "cpd": "{c_{pd}}", "cvd": "{c_{vd}}", "nlev": "{{\\texttt{num_lev}}}", "nflatlev": "{{\\texttt{flat_lev}}}", "nflatgradp": "{{\\texttt{flat_gradp_lev}}}", "n": "{{\\timecolor{n}}}", "ntilde": "{{\\timecolor{\\tilde{\\n}}}}", "e": "{{\\horicolor{e}}}", "offProv": ["{\\horicolor{#1}}", 1], "Wrbf": "{\\overset{\\scriptscriptstyle{\\text{rbf}}}{\\chi}}", "Wlev": "{\\overset{\\scriptscriptstyle{\\text{lev}}}{\\chi}}", "Whor": "{\\overset{\\scriptscriptstyle{\\text{hor}}}{\\chi}}", "Wedge": "{\\frac{1}{d_{12}}}", "Cgrad": "{\\overset{\\scriptscriptstyle{\\text{grad}}}{\\chi}}", "Crot": "{\\overset{\\scriptscriptstyle{\\text{rot}}}{\\chi}}", "dzgradp": "{(h^* - h_k)}", "WtimeExner": "{\\gamma}", "WtimeVWind": "{\\eta}", "IDXpg": "{\\overset{\\scriptstyle{\\partial \\pi / \\partial n}}{\\text{IDX}}}", "sum": "{\\Large{\\Sigma}}", "k": "{{\\vertcolor{k}}}", "c": "{{\\horicolor{c}}}", "v": "{{\\horicolor{v}}}"}}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            icon4py-atmosphere-dycore
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Numerical documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dycore_numerics.html">Dycore numerical documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Help pages:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../symbols_description.html">Description of symbols</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_source/offset_providers.html">Offset providers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scidoc_processor.html">Scidoc processor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../feedback.html">Feedback</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">icon4py-atmosphere-dycore</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">&lt;no title&gt;</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/scidoc/icon4py.model.atmosphere.dycore.velocity_advection.VelocityAdvection.run_predictor_step.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>zeta :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}
+\]</div>
+
+Compute the vorticity on vertices using the discrete Stokes
+theorem (eq. 5 in <a class="reference external" href="https://doi.org/10.1175/MWR2986.1">Bonaventura_and_Ringler_2005</a>).</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\Crot\)</span> : geofac_rot</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vn{\n}{\e}{\k}\)</span> : vn</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>vt :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}
+\]</div>
+
+Compute the tangential velocity by RBF interpolation from four neighboring
+edges (diamond shape) projected along the tangential direction.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\Wrbf\)</span> : rbf_vec_coeff_e</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vn{\n}{\e}{\k}\)</span> : vn</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>vn_ie :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1}, \quad \k \in [1, \nlev)
+\]</div>
+
+Interpolate the normal velocity from full to half levels.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>z_kin_hor_e :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \quad \k \in [1, \nlev)
+\]</div>
+
+Compute the horizontal kinetic energy. Exclude the first full level.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\Wlev\)</span> : wgtfac_e</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vn{\n}{\e}{\k}\)</span> : vn</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vt{\n}{\e}{\k}\)</span> : vt</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_w_concorr_me :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \quad \k \in [\nflatlev, \nlev)
+\]</div>
+
+Compute the contravariant correction to the vertical wind due to
+terrain-following coordinate. <span class="math notranslate nohighlight">\(\pdxn{}\)</span> and <span class="math notranslate nohighlight">\(\pdxt{}\)</span> are the
+horizontal derivatives along the normal and tangent directions
+respectively (eq. 17 in <a class="reference external" href="https://doi.org/10.1002/qj.2378">Zangl_etal_2015</a>).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>vn_ie :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\vn{\n}{\e}{-1/2} = \vn{\n}{\e}{0}
+\]</div>
+
+Set the normal wind at model top equal to the normal wind at the
+first full level.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>z_vt_ie :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\vt{\n}{\e}{-1/2} = \vt{\n}{\e}{0}
+\]</div>
+
+Set the tangential wind at model top equal to the tangential wind
+at the first full level.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>z_kin_hor_e :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\kinehori{\n}{\e}{0} = \frac{1}{2} \left( \vn{\n}{\e}{0}^2 + \vt{\n}{\e}{0}^2 \right)
+\]</div>
+
+Compute the horizontal kinetic energy on the first full level.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\vn{\n}{\e}{\k}\)</span> : vn</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vt{\n}{\e}{\k}\)</span> : vt</p></li>
+<li><p><span class="math notranslate nohighlight">\(\pdxn{z}\)</span> : ddxn_z_full</p></li>
+<li><p><span class="math notranslate nohighlight">\(\pdxt{z}\)</span> : ddxt_z_full</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_ekinh :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}
+\]</div>
+
+Interpolate the horizonal kinetic energy from edge to cell center.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\Whor\)</span> : e_bln_c_s</p></li>
+<li><p><span class="math notranslate nohighlight">\(\kinehori{\n}{\e}{\k}\)</span> : z_kin_hor_e</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_w_concorr_mc :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\wcc{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \wcc{\n}{\e}{\k}
+\]</div>
+
+Interpolate the contravariant correction from edge to cell center.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>w_concorr_c :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\wcc{\n}{\c}{\k-1/2} = \Wlev \wcc{\n}{\c}{\k} + (1 - \Wlev) \wcc{\n}{\c}{\k-1}, \quad \k \in [\nflatlev+1, \nlev)
+\]</div>
+
+Interpolate the contravariant correction from full to half levels.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\wcc{\n}{\e}{\k}\)</span> : z_w_concorr_me</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Whor\)</span> : e_bln_c_s</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Wlev\)</span> : wgtfac_c</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul>
+<li><dl>
+<dt>z_w_con_c :</dt><dd><p>$$
+(w{n}{c}{k-1/2} - wcc{n}{c}{k-1/2}) =
+begin{cases}</p>
+<blockquote>
+<div><p>w{n}{c}{k-1/2},                        &amp; k in [0, nflatlev+1)     \
+w{n}{c}{k-1/2} - wcc{n}{c}{k-1/2}, &amp; k in [nflatlev+1, nlev) \
+0,                                         &amp; k = nlev</p>
+</div></blockquote>
+<p>\end{cases}
+$$
+Subtract the contravariant correction <span class="math notranslate nohighlight">\(\wcc{}{}{}\)</span> from the
+vertical wind <span class="math notranslate nohighlight">\(\w{}{}{}\)</span> in the terrain-following levels. This is
+done for convevnience here, instead of directly in the advection
+tendency update, because the result needs to be interpolated to
+edge centers and full levels for later use.
+The papers do not use a new symbol for this variable, and the code
+ambiguosly mixes the variable names used for
+<span class="math notranslate nohighlight">\(\wcc{}{}{}\)</span> and <span class="math notranslate nohighlight">\((\w{}{}{} - \wcc{}{}{})\)</span>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\w{\n}{\c}{\k\pm1/2}\)</span> : w</p></li>
+<li><p><span class="math notranslate nohighlight">\(\wcc{\n}{\c}{\k\pm1/2}\)</span> : w_concorr_c</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul>
+<li><dl>
+<dt>z_w_con_c_full :</dt><dd><p>$$
+(w{n}{c}{k} - wcc{n}{c}{k}) = frac{1}{2} [ (w{n}{c}{k-1/2} - wcc{n}{c}{k-1/2})</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>(w{n}{c}{k+1/2} - wcc{n}{c}{k+1/2}) ]</p></li>
+</ul>
+</div></blockquote>
+<p>$$
+Interpolate the vertical wind with contravariant correction from
+half to full levels.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\((\w{\n}{\c}{\k\pm1/2} - \wcc{\n}{\c}{\k\pm1/2})\)</span> : z_w_con_c</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul>
+<li><dl>
+<dt>ddt_vn_apc_pc[ntnd] :</dt><dd><p>$$
+advvn{n}{e}{k} &amp;&amp;= pdxn{kinehori{}{}{}} + vt{}{}{} (vortvert{}{}{} + coriolis{}) + pdz{vn{}{}{}} (w{}{}{} - wcc{}{}{}) \</p>
+<blockquote>
+<div><p>&amp;&amp;= Gradn_{offProv{e2c}} Cgrad kinehori{n}{c}{k} + kinehori{n}{e}{k} Gradn_{offProv{e2c}} Cgrad     \
+&amp;&amp;+ vt{n}{e}{k} (coriolis{e} + 1/2 sum_{offProv{e2v}} vortvert{n}{v}{k})                             \
+&amp;&amp;+ frac{vn{n}{e}{k-1/2} - vn{n}{e}{k+1/2}}{Dz{k}}</p>
+<blockquote>
+<div><p>sum_{offProv{e2c}} Whor (w{n}{c}{k} - wcc{n}{c}{k})</p>
+</div></blockquote>
+</div></blockquote>
+<p>$$
+Compute the advective tendency of the normal wind (eq. 13 in
+<a class="reference external" href="https://doi.org/10.1002/qj.2378">Zangl_etal_2015</a>).
+The edge-normal derivative of the kinetic energy is computed by
+combining the first order approximation across adiacent cell
+centres (eq. 7 in <a class="reference external" href="https://doi.org/10.1175/MWR2986.1">Bonaventura_and_Ringler_2005</a>) with the edge value of
+the kinetic energy (TODO: this needs explaining and a reference).</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\Cgrad\)</span> : coeff_gradekin</p></li>
+<li><p><span class="math notranslate nohighlight">\(\kinehori{\n}{\e}{\k}\)</span> : z_kin_hor_e</p></li>
+<li><p><span class="math notranslate nohighlight">\(\kinehori{\n}{\c}{\k}\)</span> : z_ekinh</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vt{\n}{\e}{\k}\)</span> : vt</p></li>
+<li><p><span class="math notranslate nohighlight">\(\coriolis{\e}\)</span> : f_e</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vortvert{\n}{\v}{\k}\)</span> : zeta</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Whor\)</span> : c_lin_e</p></li>
+<li><p><span class="math notranslate nohighlight">\((\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})\)</span> : z_w_con_c_full</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vn{\n}{\e}{\k\pm1/2}\)</span> : vn_ie</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Dz{\k}\)</span> : ddqz_z_full_e</p></li>
+</ul>
+</dd>
+</dl>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, C2SM.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

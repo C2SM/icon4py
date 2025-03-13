@@ -1,0 +1,422 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>&lt;no title&gt; &mdash; icon4py-atmosphere-dycore  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=7e16d7a6" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>window.MathJax = {"chtml": {"displayAlign": "left", "displayIndent": "1em"}, "tex": {"inlineMath": [["\\(", "\\)"]], "displayMath": [["\\[", "\\]"]], "macros": {"superscriptsize": "{\\scriptscriptstyle}", "subscriptsize": "{\\scriptscriptstyle}", "timecolor": ["{\\color{teal}{#1}}", 1], "vertcolor": ["{\\color{YellowOrange}{#1}}", 1], "horicolor": ["{\\color{RedViolet}{#1}}", 1], "timestep": ["{{\\subscriptsize{\\timecolor{#1}}}}", 1], "vertlevel": ["{{\\subscriptsize{\\vertcolor{#1}}}}", 1], "horipoint": ["{{\\subscriptsize{\\horicolor{#1}}}}", 1], "dif": "{\\mathrm{d}}", "Dt": "{{\\Delta t}}", "Dz": ["{{\\Delta z}_\\vertlevel{#1}}", 1], "divhori": ["{\\vec{\\nabla}\\!_h\\cdot\\left(#1\\right)}", 1], "Gradn": "{{{\\Large{\\Delta}}}}", "ddt": ["{\\frac{\\dif #1}{\\dif t}}", 1], "ddz": ["{\\frac{\\dif #1}{\\dif z}}", 1], "ddxn": ["{\\frac{\\dif #1}{\\dif n}}", 1], "ddxt": ["{\\frac{\\dif #1}{\\dif t}}", 1], "pdt": ["{\\frac{\\partial #1}{\\partial t}}", 1], "pdz": ["{\\frac{\\partial #1}{\\partial z}}", 1], "pdzz": ["{\\frac{\\partial^2 #1}{\\partial z^2}}", 1], "pdxn": ["{\\frac{\\partial #1}{\\partial n}}", 1], "pdxt": ["{\\frac{\\partial #1}{\\partial t}}", 1], "variable": ["{{{#1}_{\\horipoint{#3}\\,\\vertlevel{#4}}^{\\timestep{#2}}}}", 4], "vn": ["{             \\variable{v_n                                  }{#1}{#2}{#3}}", 3], "vt": ["{             \\variable{v_t                                  }{#1}{#2}{#3}}", 3], "vh": ["{             \\variable{\\vec{v_h}                            }{#1}{#2}{#3}}", 3], "w": ["{              \\variable{w                                    }{#1}{#2}{#3}}", 3], "wcc": ["{            \\variable{w_{\\text{cc}}                        }{#1}{#2}{#3}}", 3], "kinehori": ["{       \\variable{K_h                                  }{#1}{#2}{#3}}", 3], "advvn": ["{          \\variable{\\text{adv}(v_n)                      }{#1}{#2}{#3}}", 3], "vortvert": ["{       \\variable{\\zeta                                }{#1}{#2}{#3}}", 3], "density": ["{        \\variable{\\rho                                 }{#1}{#2}{#3}}", 3], "pres": ["{           \\variable{P                                    }{#1}{#2}{#3}}", 3], "vtemp": ["{          \\variable{T_v                                  }{#1}{#2}{#3}}", 3], "vtempprime": ["{     \\variable{T_v'                                 }{#1}{#2}{#3}}", 3], "vpotemp": ["{        \\variable{\\theta_v                             }{#1}{#2}{#3}}", 3], "vpotempprime": ["{   \\variable{\\theta_v'                            }{#1}{#2}{#3}}", 3], "exner": ["{          \\variable{\\pi                                  }{#1}{#2}{#3}}", 3], "exnerprime": ["{     \\variable{\\pi'                                 }{#1}{#2}{#3}}", 3], "exnerprimegradh": ["{\\variable{\\pdxn{\\exnerprime{#1}{}{}}           }{  }{#2}{#3}}", 3], "exnerprimedz": ["{   \\variable{\\pdz{\\exnerprime{#1}{}{}}            }{  }{#2}{#3}}", 3], "exnerprimedzz": ["{  \\variable{\\frac{1}{2}\\pdzz{\\exnerprime{#1}{}{}}}{  }{#2}{#3}}", 3], "variableXK": ["{{{#1}_{\\horipoint{#2}\\,\\vertlevel{#3}}}}", 3], "presref": ["{   \\variableXK{P_0                                                            }{#1}{#2}}", 2], "vpotempref": ["{\\variableXK{\\theta_{v0}                                                    }{#1}{#2}}", 2], "exnerref": ["{  \\variableXK{\\pi_0                                                          }{#1}{#2}}", 2], "dexrefdz": ["{  \\variableXK{\\frac{1}{\\Dz{}\\vpotempref{}{}}\\ddz{\\exnerref{}{}}              }{#1}{#2}}", 2], "ddexrefdzz": ["{\\variableXK{\\ddz{}\\left(\\frac{1}{\\vpotempref{}{}}\\ddz{\\exnerref{}{}}\\right)}{#1}{#2}}", 2], "variableX": ["{{{#1}_{\\horipoint{#2}}}}", 2], "coriolis": ["{    \\variableX{f                                                                 }{#1}}", 1], "exnhydrocorr": ["{\\variableX{\\frac{g}{\\cpd \\vpotemp{\\color{black}{2}}{}{}}\\pdxn{\\vpotemp{}{}{}}}{#1}}", 1], "cpd": "{c_{pd}}", "cvd": "{c_{vd}}", "nlev": "{{\\texttt{num_lev}}}", "nflatlev": "{{\\texttt{flat_lev}}}", "nflatgradp": "{{\\texttt{flat_gradp_lev}}}", "n": "{{\\timecolor{n}}}", "ntilde": "{{\\timecolor{\\tilde{\\n}}}}", "e": "{{\\horicolor{e}}}", "offProv": ["{\\horicolor{#1}}", 1], "Wrbf": "{\\overset{\\scriptscriptstyle{\\text{rbf}}}{\\chi}}", "Wlev": "{\\overset{\\scriptscriptstyle{\\text{lev}}}{\\chi}}", "Whor": "{\\overset{\\scriptscriptstyle{\\text{hor}}}{\\chi}}", "Wedge": "{\\frac{1}{d_{12}}}", "Cgrad": "{\\overset{\\scriptscriptstyle{\\text{grad}}}{\\chi}}", "Crot": "{\\overset{\\scriptscriptstyle{\\text{rot}}}{\\chi}}", "dzgradp": "{(h^* - h_k)}", "WtimeExner": "{\\gamma}", "WtimeVWind": "{\\eta}", "IDXpg": "{\\overset{\\scriptstyle{\\partial \\pi / \\partial n}}{\\text{IDX}}}", "sum": "{\\Large{\\Sigma}}", "k": "{{\\vertcolor{k}}}", "c": "{{\\horicolor{c}}}", "v": "{{\\horicolor{v}}}"}}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            icon4py-atmosphere-dycore
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Numerical documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dycore_numerics.html">Dycore numerical documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Help pages:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../symbols_description.html">Description of symbols</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_source/offset_providers.html">Offset providers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scidoc_processor.html">Scidoc processor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../feedback.html">Feedback</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">icon4py-atmosphere-dycore</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">&lt;no title&gt;</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/scidoc/icon4py.model.atmosphere.dycore.solve_nonhydro.SolveNonhydro.run_predictor_step.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_exner_ex_pr :</dt><dd><p><div class="math notranslate nohighlight">
+\[\begin{split}
+\exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k}, \k \in [0, \nlev) \\
+\exnerprime{\ntilde}{\c}{\nlev} = 0
+\end{split}\]</div>
+
+Compute the temporal extrapolation of perturbed exner function
+using the time backward scheme (see the <a class="reference external" href="https://www.dwd.de/EN/ourservices/nwp_icon_tutorial/nwp_icon_tutorial_en.html">ICON_Tutorial</a> page 74).
+This variable has nlev+1 levels even though it is defined on full levels.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>exner_pr :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}
+\]</div>
+
+Store the perturbed exner function from the previous time step.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\WtimeExner\)</span> : exner_exfac</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnerprime{\n}{\c}{\k}\)</span> : exner - exner_ref_mc</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnerprime{\n-1}{\c}{\k}\)</span> : exner_pr</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_exner_ic :</dt><dd><p><div class="math notranslate nohighlight">
+\[\begin{split}
+\exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
+\exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
+\end{split}\]</div>
+
+Interpolate the perturbation exner from full to half levels.
+The ground level is based on quadratic extrapolation (with
+hydrostatic assumption?).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>z_dexner_dz_c_1 :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\exnerprimedz{\ntilde}{\c}{\k} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
+\]</div>
+
+Use the interpolated values to compute the vertical derivative
+of perturbation exner at full levels.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\Wlev\)</span> : wgtfac_c</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Wlev_{\k}\)</span> : wgtfacq_c</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnerprime{\ntilde}{\c}{\k}\)</span> : z_exner_ex_pr</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnerprime{\ntilde}{\c}{\k\pm1/2}\)</span> : z_exner_ic</p></li>
+<li><p><span class="math notranslate nohighlight">\(1 / \Dz{\k}\)</span> : inv_ddqz_z_full</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_dexner_dz_c_2 :</dt><dd><p><div class="math notranslate nohighlight">
+\[\begin{split}
+\exnerprimedzz{\ntilde}{\c}{\k} = - \frac{1}{2} \left( (\vpotempprime{\n}{\c}{\k-1/2} - \vpotempprime{\n}{\c}{\k+1/2}) \dexrefdz{\c}{\k} + \vpotempprime{\n}{\c}{\k} \ddexrefdzz{\c}{\k} \right), \quad \k \in [\nflatgradp, \nlev) \\
+\ddz{\exnerref{}{}} = - \frac{g}{\cpd \vpotempref{}{}}
+\end{split}\]</div>
+
+Compute the second vertical derivative of the perturbed exner function.
+This uses the hydrostatic approximation (see eqs. 13 and 7,8 in
+<a class="reference external" href="https://doi.org/10.1175/MWR-D-12-00049.1">Zangl_2012</a>).
+Note that the reference state of temperature (eq. 15 in
+<a class="reference external" href="https://doi.org/10.1175/MWR-D-12-00049.1">Zangl_2012</a>) is used when computing
+<span class="math notranslate nohighlight">\(\ddz{\vpotempref{\c}{\k}}\)</span> in <span class="math notranslate nohighlight">\(\ddexrefdzz{\c}{\k}\)</span>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\vpotempprime{\n}{\c}{\k\pm1/2}\)</span> : z_theta_v_pr_ic</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vpotempprime{\n}{\c}{\k}\)</span> : z_rth_pr_2</p></li>
+<li><p><span class="math notranslate nohighlight">\(\dexrefdz{}{}\)</span> : d2dexdz2_fac1_mc</p></li>
+<li><p><span class="math notranslate nohighlight">\(\ddexrefdzz{}{}\)</span> : d2dexdz2_fac2_mc</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_gradh_exner :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\exnerprimegradh{\ntilde}{\e}{\k} = \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nflatlev)
+\]</div>
+
+Compute the horizontal gradient (at constant height) of the
+temporal extrapolation of perturbed exner function on flat levels,
+unaffected by the terrain following deformation.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\exnerprime{\ntilde}{\c}{\k}\)</span> : z_exner_ex_pr</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Cgrad\)</span> : inverse_dual_edge_lengths</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul>
+<li><dl>
+<dt>z_gradh_exner :</dt><dd><p>$$
+exnerprimegradh{ntilde}{e}{k} &amp;&amp;= left.pdxn{exnerprime{}{}{}}right|_{s} - left.pdxn{h}right|_{s}exnerprimedz{}{}{}\</p>
+<blockquote>
+<div><dl class="simple">
+<dt>&amp;&amp;= Wedge Gradn_{offProv{e2c}} exnerprime{ntilde}{c}{k}</dt><dd><ul class="simple">
+<li><p>pdxn{h} sum_{offProv{e2c}} Whor exnerprimedz{ntilde}{c}{k},
+quad k in [nflatlev, nflatgradp]</p></li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+<p>$$
+Compute <span class="math notranslate nohighlight">\(\exnerprimegradh{}{}{}\)</span> on non-flat levels, affected
+by the terrain following deformation, i.e. those levels for
+which <span class="math notranslate nohighlight">\(\pdxn{h} \neq 0\)</span> (eq. 14 in <a class="reference external" href="https://doi.org/10.1002/qj.2378">Zangl_etal_2015</a> or eq. 5
+in <a class="reference external" href="https://doi.org/10.1175/MWR-D-12-00049.1">Zangl_2012</a>).</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\exnerprime{\ntilde}{\c}{\k}\)</span> : z_exner_ex_pr</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Wedge\)</span> : inverse_dual_edge_lengths</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnerprimedz{\ntilde}{\c}{\k}\)</span> : z_dexner_dz_c_1</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Whor\)</span> : c_lin_e</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul>
+<li><dl>
+<dt>z_gradh_exner :</dt><dd><p>$$
+exnerprimegradh{ntilde}{e}{k} &amp;&amp;= Wedge (exnerprime{*}{c_1}{} - exnerprime{*}{c_0}{}) \</p>
+<blockquote>
+<div><dl class="simple">
+<dt>&amp;&amp;= Wedge Gradn_{offProv{e2c}} left[ exnerprime{ntilde}{c}{k^*} + dzgradp left( exnerprimedz{ntilde}{c}{k^*} + dzgradp exnerprimedzz{ntilde}{c}{k^*} right) right],</dt><dd><p>quad k in [nflatgradp+1, nlev)</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>$$
+Compute <span class="math notranslate nohighlight">\(\exnerprimegradh{}{}{}\)</span> when the height of
+neighboring cells is in another level.
+The usual centered difference approximation is used for the
+gradient (eq. 6 in <a class="reference external" href="https://doi.org/10.1175/MWR-D-12-00049.1">Zangl_2012</a>), but instead
+of cell center values, the exner function is reconstructed
+using a second order Taylor-series expansion (eq. 8 in
+<a class="reference external" href="https://doi.org/10.1175/MWR-D-12-00049.1">Zangl_2012</a>).
+<span class="math notranslate nohighlight">\(k^*\)</span> is the level index of the neighboring (horizontally, not
+terrain-following) cell center and <span class="math notranslate nohighlight">\(h^*\)</span> is its height.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\exnerprime{\ntilde}{\c}{\k}\)</span> : z_exner_ex_pr</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnerprimedz{\ntilde}{\c}{\k}\)</span> : z_dexner_dz_c_1</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnerprimedzz{\ntilde}{\c}{\k}\)</span> : z_dexner_dz_c_2</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Wedge\)</span> : inverse_dual_edge_lengths</p></li>
+<li><p><span class="math notranslate nohighlight">\(\dzgradp\)</span> : zdiff_gradp</p></li>
+<li><p><span class="math notranslate nohighlight">\(\k^*\)</span> : vertoffset_gradp</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_hydro_corr :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\exnhydrocorr{\e} = \frac{g}{\cpd} \Wedge 4 \frac{ \vpotemp{}{\c_1}{\k} - \vpotemp{}{\c_0}{\k} }{ (\vpotemp{}{\c_1}{\k} + \vpotemp{}{\c_0}{\k})^2 },
+\]</div>
+
+with
+<div class="math notranslate nohighlight">
+\[
+\vpotemp{}{\c_i}{\k} = \vpotemp{}{\c_i}{\k^*} + \dzgradp \frac{\vpotemp{}{\c_i}{\k^*-1/2} - \vpotemp{}{\c_i}{\k^*+1/2}}{\Dz{\k^*}}
+\]</div>
+
+Compute the hydrostatically approximated correction term that
+replaces the downward extrapolation (last term in eq. 10 in
+<a class="reference external" href="https://doi.org/10.1175/MWR-D-12-00049.1">Zangl_2012</a>).
+This is only computed for the bottom-most level because all
+edges which have a neighboring cell center inside terrain
+beyond a certain limit use the same correction term at <span class="math notranslate nohighlight">\(k^*\)</span>
+level in eq. 10 in <a class="reference external" href="https://doi.org/10.1175/MWR-D-12-00049.1">Zangl_2012</a> (see also the
+last paragraph on page 3724 for the discussion).
+<span class="math notranslate nohighlight">\(\c_i\)</span> are the indexes of the adjacent cell centers using
+<span class="math notranslate nohighlight">\(\offProv{e2c}\)</span>;
+<span class="math notranslate nohighlight">\(k^*\)</span> is the level index of the neighboring (horizontally, not
+terrain-following) cell center and <span class="math notranslate nohighlight">\(h^*\)</span> is its height.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\vpotemp{}{\c}{\k}\)</span> : theta_v</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vpotemp{}{\c}{\k\pm1/2}\)</span> : theta_v_ic</p></li>
+<li><p><span class="math notranslate nohighlight">\(\frac{g}{\cpd}\)</span> : grav_o_cpd</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Wedge\)</span> : inverse_dual_edge_lengths</p></li>
+<li><p><span class="math notranslate nohighlight">\(1 / \Dz{\k}\)</span> : inv_ddqz_z_full</p></li>
+<li><p><span class="math notranslate nohighlight">\(\dzgradp\)</span> : zdiff_gradp</p></li>
+<li><p><span class="math notranslate nohighlight">\(\k^*\)</span> : vertoffset_gradp</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>z_gradh_exner :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\exnerprimegradh{\ntilde}{\e}{\k} = \exnerprimegradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg
+\]</div>
+
+Apply the hydrostatic correction term to the horizontal
+gradient (at constant height) of the temporal extrapolation of
+perturbed exner function (eq. 10 in
+<a class="reference external" href="https://doi.org/10.1175/MWR-D-12-00049.1">Zangl_2012</a>).
+This is only applied to edges for which the adjacent cell
+center (horizontally, not terrain-following) would be
+underground, i.e. edges in the <span class="math notranslate nohighlight">\(\IDXpg\)</span> set.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\exnerprimegradh{\ntilde}{\e}{\k}\)</span> : z_gradh_exner</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnhydrocorr{\e}\)</span> : hydro_corr_horizontal</p></li>
+<li><p><span class="math notranslate nohighlight">\((h_k - h_{k^*})\)</span> : pg_exdist</p></li>
+<li><p><span class="math notranslate nohighlight">\(\IDXpg\)</span> : ipeidx_dsl</p></li>
+</ul>
+</dd>
+</dl>
+<p>scidoc:
+Outputs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>vn :</dt><dd><p><div class="math notranslate nohighlight">
+\[
+\vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \exnerprimegradh{\ntilde}{\e}{\k} \right)
+\]</div>
+
+Update the normal wind speed with the advection and pressure
+gradient terms.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Inputs:</dt><dd><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\vn{\n}{\e}{\k}\)</span> : vn</p></li>
+<li><p><span class="math notranslate nohighlight">\(\Dt\)</span> : dtime</p></li>
+<li><p><span class="math notranslate nohighlight">\(\advvn{\n}{\e}{\k}\)</span> : ddt_vn_apc_pc[self.ntl1]</p></li>
+<li><p><span class="math notranslate nohighlight">\(\vpotemp{\n}{\e}{\k}\)</span> : z_theta_v_e</p></li>
+<li><p><span class="math notranslate nohighlight">\(\exnerprimegradh{\ntilde}{\e}{\k}\)</span> : z_gradh_exner</p></li>
+<li><p><span class="math notranslate nohighlight">\(\cpd\)</span> : CPD</p></li>
+</ul>
+</dd>
+</dl>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, C2SM.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
