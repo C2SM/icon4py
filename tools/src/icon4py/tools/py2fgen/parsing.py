@@ -25,6 +25,6 @@ def get_cffi_description(
 
 
 def _get_function_descriptor(fun: Callable) -> _template.Func:
-    if not hasattr(fun, "function_descriptor"):
+    if not hasattr(fun, "param_descriptors"):
         raise TypeError("Cannot parse function, did you forget to decorate it with '@export'?")
-    return fun.function_descriptor
+    return _template.Func(name=fun.__name__, args=fun.param_descriptors)

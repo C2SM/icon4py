@@ -13,60 +13,25 @@ from collections.abc import Mapping
 from typing import Any, Callable, Optional, TypeAlias
 
 import cffi
-from gt4py import eve
 from gt4py.next.type_system import type_specifications as gtx_ts  # TODO use py2fgen types
 
-from icon4py.tools.py2fgen import _runtime, _template, wrapper_utils
-from icon4py.tools.py2fgen._template import DeviceType  # TODO fix import
+from icon4py.tools.py2fgen import _definitions, _runtime, wrapper_utils
 
 
-class ArrayParamDescriptor(eve.Node):
-    rank: int
-    dtype: gtx_ts.ScalarKind
-    device: DeviceType
-    is_optional: bool
-
-
-class ScalarParamDescriptor(eve.Node):
-    dtype: gtx_ts.ScalarKind
-
-
-ParamDescriptor: TypeAlias = ArrayParamDescriptor | ScalarParamDescriptor
-ParamDescriptors: TypeAlias = Mapping[str, ParamDescriptor]
-
-
-def _from_annotated(annotation: Any) -> Optional[ParamDescriptor]:
+def _from_annotated(annotation: Any) -> Optional[_definitions.ParamDescriptor]:
     if hasattr(annotation, "__metadata__"):
         for meta in annotation.__metadata__:
-            if isinstance(meta, (ArrayParamDescriptor, ScalarParamDescriptor)):
+            if isinstance(
+                meta, (_definitions.ArrayParamDescriptor, _definitions.ScalarParamDescriptor)
+            ):
                 return meta
     return None
 
 
-def _to_function_descriptor(
-    function_name: str, param_descriptors: ParamDescriptors
-) -> _template.Func:
-    # TODO this function should disappear
-    params: list[_template.FuncParameter] = []
-    for name, descriptor in param_descriptors.items():
-        if isinstance(descriptor, ArrayParamDescriptor):
-            params.append(
-                _template.ArrayParameter(
-                    name=name,
-                    dtype=descriptor.dtype,
-                    rank=descriptor.rank,
-                    device=descriptor.device,
-                    is_optional=descriptor.is_optional,
-                )
-            )
-        else:
-            params.append(_template.FuncParameter(name=name, dtype=descriptor.dtype))
-    return _template.Func(name=function_name, args=params)
-
-
 def param_descriptor_from_annotation(
-    annotation: Any, annotation_descriptor_hook: Optional[Callable[[Any], ParamDescriptor]]
-) -> ParamDescriptor:
+    annotation: Any,
+    annotation_descriptor_hook: Optional[Callable[[Any], _definitions.ParamDescriptor]],
+) -> _definitions.ParamDescriptor:
     descriptor = None
     if annotation_descriptor_hook is not None:
         descriptor = annotation_descriptor_hook(annotation)
@@ -79,9 +44,9 @@ def param_descriptor_from_annotation(
 
 def get_param_descriptors(
     signature: inspect.Signature,
-    param_descriptors: Optional[ParamDescriptors],
-    annotation_descriptor_hook: Optional[Callable[[Any], ParamDescriptor]],
-) -> ParamDescriptors:
+    param_descriptors: Optional[_definitions.ParamDescriptors],
+    annotation_descriptor_hook: Optional[Callable[[Any], _definitions.ParamDescriptor]],
+) -> _definitions.ParamDescriptors:
     if param_descriptors is not None:
         if annotation_descriptor_hook is not None:
             raise ValueError(
@@ -114,17 +79,17 @@ def _as_array(
 MapperType: TypeAlias = Callable[[wrapper_utils.ArrayDescriptor, cffi.FFI], Any]
 
 
-def default_mapping(_: Any, param_descriptor: ParamDescriptor) -> MapperType | None:
+def default_mapping(_: Any, param_descriptor: _definitions.ParamDescriptor) -> MapperType | None:
     """Translates ArrayDescriptor into (Numpy or Cupy) NDArray."""
-    if isinstance(param_descriptor, ArrayParamDescriptor):
+    if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
         return _as_array(param_descriptor.dtype)
     return None
 
 
 def get_param_mappings(
     signature: inspect.Signature,
-    annotation_mapping_hook: Callable[[Any, ParamDescriptor], MapperType] | None,
-    param_descriptors: ParamDescriptors,
+    annotation_mapping_hook: Callable[[Any, _definitions.ParamDescriptor], MapperType] | None,
+    param_descriptors: _definitions.ParamDescriptors,
 ) -> Mapping[str, MapperType]:
     mappings: dict[str, MapperType] = {}
     for name, param in signature.parameters.items():
@@ -149,18 +114,13 @@ class _DecoratedFunction:
     _fun: Callable
     annotation_descriptor_hook: Optional[Callable]  # TODO type annotation
     annotation_mapping_hook: Optional[Callable]  # TODO type annotation
-    param_descriptors: Optional[ParamDescriptors]
-    function_descriptor: _template.Func = dataclasses.field(init=False)
+    param_descriptors: Optional[_definitions.ParamDescriptors]
     _mapping: Mapping[str, Callable] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
         signature = inspect.signature(self._fun)
         self.param_descriptors = get_param_descriptors(
             signature, self.param_descriptors, self.annotation_descriptor_hook
-        )
-
-        self.function_descriptor = _to_function_descriptor(
-            self._fun.__name__, self.param_descriptors
         )
 
         self._mapping = get_param_mappings(
@@ -185,7 +145,7 @@ class _DecoratedFunction:
 def export(
     annotation_descriptor_hook: Optional[Callable] = None,
     annotation_mapping_hook: Optional[Callable] = None,
-    param_descriptors: Optional[dict[str, ArrayParamDescriptor | ScalarParamDescriptor]] = None,
+    param_descriptors: Optional[_definitions.ParamDescriptors] = None,
 ) -> Callable[[Callable], Callable]:
     # precise typing is difficult (impossible?) since we are manipulating the args
     def impl(fun: Callable) -> Callable:

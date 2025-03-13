@@ -21,7 +21,7 @@ from gt4py.next.type_system import (
 )
 
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen import _template, wrapper_utils
+from icon4py.tools.py2fgen import _definitions, wrapper_utils
 
 
 def _parse_type_spec(type_spec: ts.TypeSpec) -> tuple[list[gtx.Dimension], ts.ScalarKind]:
@@ -60,14 +60,14 @@ def field_annotation_descriptor_hook(annotation: Any) -> Optional[py2fgen.ParamD
     gt4py_type, is_optional = maybe_gt4py_type
     dims, dtype = _parse_type_spec(gt4py_type)
     if len(dims) > 0:
-        return py2fgen.ArrayParamDescriptor(
+        return _definitions.ArrayParamDescriptor(
             rank=len(dims),
             dtype=dtype,
-            device=_template.DeviceType.MAYBE_DEVICE,
+            device=_definitions.DeviceType.MAYBE_DEVICE,
             is_optional=is_optional,
         )
     else:
-        return py2fgen.ScalarParamDescriptor(dtype=dtype)
+        return _definitions.ScalarParamDescriptor(dtype=dtype)
 
 
 def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Callable:
@@ -90,7 +90,7 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
 def field_annotation_mapping_hook(
     annotation: Any, param_descriptor: py2fgen.ParamDescriptor
 ) -> Callable | None:
-    if not isinstance(param_descriptor, py2fgen.ArrayParamDescriptor):
+    if not isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
         return None
     maybe_gt4py_type = _get_gt4py_type(annotation)
     if maybe_gt4py_type is None:

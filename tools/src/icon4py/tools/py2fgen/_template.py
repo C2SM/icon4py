@@ -6,9 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Any, Optional, Sequence, TypeGuard
+from typing import Any, Optional, Sequence, TypeGuard, Union
 
-from gt4py import eve
 from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 from gt4py.next.type_system import type_specifications as ts
@@ -18,54 +17,28 @@ from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_ISO_C_TYPE,
     BUILTIN_TO_NUMPY_TYPE,
 )
+from icon4py.tools.py2fgen import _definitions
 
 
 CFFI_DECORATOR = "@ffi.def_extern()"
 
 
-class DeviceType(eve.StrEnum):
-    HOST = "host"
-    MAYBE_DEVICE = "maybe_device"
-
-
-class FuncParameter(Node):
-    name: str
-    dtype: ts.ScalarKind
-    rank: int = 0  # TODO move to ArrayDescriptor
-    is_bool: bool = datamodels.field(init=False)  # TODO remove
-
-    def __post_init__(self) -> None:
-        self.is_bool = self.dtype == ts.ScalarKind.BOOL
-
-
-class ArrayParameter(FuncParameter):
-    device: DeviceType
-    is_optional: bool = (
-        False  # TODO(havogt): move to FuncParameter and add support for optional scalars
-    )
-    size_args: list[str] = datamodels.field(init=False)
-
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self.size_args = [_size_arg_name(self, i) for i in range(self.rank)]
-
-
-def is_array(param: FuncParameter) -> TypeGuard[ArrayParameter]:
-    return isinstance(param, ArrayParameter)
+def is_array(param: _definitions.ParamDescriptor) -> TypeGuard[_definitions.ArrayParamDescriptor]:
+    return isinstance(param, _definitions.ArrayParamDescriptor)
 
 
 class Func(Node):
     name: str
-    args: Sequence[FuncParameter]
+    args: dict[str, Union[_definitions.ArrayParamDescriptor, _definitions.ScalarParamDescriptor]]
     rendered_params: str = datamodels.field(init=False)  # TODO remove
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         params = []
-        for param in self.args:
-            params.append(param.name)
+        for name, param in self.args.items():
+            params.append(name)
             if is_array(param):
                 for i in range(param.rank):
-                    params.append(_size_arg_name(param, i))
+                    params.append(_size_arg_name(name, i))
         params.append("on_gpu")
         self.rendered_params = ", ".join(params)
 
@@ -95,7 +68,7 @@ def to_iso_c_type(scalar_type: ts.ScalarKind) -> str:
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
 
-def as_f90_value(param: FuncParameter) -> Optional[str]:
+def as_f90_value(param: _definitions.ParamDescriptor) -> Optional[str]:
     """
     Return the Fortran 90 'value' keyword for scalar types.
 
@@ -105,16 +78,16 @@ def as_f90_value(param: FuncParameter) -> Optional[str]:
     Returns:
         A string containing 'value,' for scalar types, otherwise an empty string.
     """
-    return "value" if not isinstance(param, ArrayParameter) else None
+    return "value" if not is_array(param) else None
 
 
-def render_c_pointer(param: FuncParameter) -> str:
+def render_c_pointer(param: _definitions.ParamDescriptor) -> str:
     """Render a C pointer symbol for array types."""
-    return "*" if isinstance(param, ArrayParameter) else ""
+    return "*" if is_array(param) else ""
 
 
 def render_fortran_array_dimensions(
-    param: FuncParameter, assumed_size_array: bool
+    param: _definitions.ParamDescriptor, assumed_size_array: bool
 ) -> Optional[str]:
     """
     Render Fortran array dimensions for array types.
@@ -125,7 +98,7 @@ def render_fortran_array_dimensions(
     Returns:
         A string representing Fortran array dimensions.
     """
-    if isinstance(param, ArrayParameter):
+    if is_array(param):
         if assumed_size_array:
             return "dimension(*)"
         else:
@@ -137,7 +110,14 @@ def render_fortran_array_dimensions(
 
 class PythonWrapperGenerator(TemplatedGenerator):
     def visit_PythonWrapper(self, node: PythonWrapper, **kwargs: Any) -> str:
-        return self.generic_visit(node, is_array=is_array, **kwargs)
+        def render_size_args_tuple(name: str, param: _definitions.ArrayParamDescriptor) -> str:
+            size_args = ",".join(f"{_size_arg_name(name, i)}" for i in range(param.rank))
+            return f"({size_args},)"
+
+        # TODO remove ts
+        return self.generic_visit(
+            node, ts=ts, is_array=is_array, render_size_args_tuple=render_size_args_tuple, **kwargs
+        )
 
     PythonWrapper = as_jinja(
         """\
@@ -174,13 +154,14 @@ def {{ func.name }}_wrapper(
                 unpack_start_time = _runtime.perf_counter()
 
         # Convert ptrs 
-        {% for arg in func.args %}
+        {% for name, arg in func.args.items() %}
         {% if is_array(arg) %}
-        {{ arg.name }} = ({{ arg.name }}, ({{ arg.size_args | join(", ") }},), {% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
-        {% elif arg.is_bool %}
+        # TODO use the size_args function
+        {{ name }} = ({{ name }}, ({{ render_size_args_tuple(name, arg) }},), {% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
+        {% elif arg.dtype == ts.ScalarKind.BOOL %}
         # TODO move bool translation to postprocessing
-        assert isinstance({{ arg.name }}, int)
-        {{ arg.name }} = {{ arg.name }} != 0
+        assert isinstance({{ name }}, int)
+        {{ name }} = {{ name }} != 0
         {% endif %}
         {% endfor %}
 
@@ -198,8 +179,8 @@ def {{ func.name }}_wrapper(
         {{ func.name }}(
         ffi = ffi,
         meta = meta,
-        {%- for arg in func.args -%}
-        {{ arg.name }} = {{ arg.name }}{{ "," }}
+        {%- for name, arg in func.args.items() -%}
+        {{ name }} = {{ name }}{{ "," }}
         {%- endfor -%}
         )
 
@@ -212,11 +193,11 @@ def {{ func.name }}_wrapper(
 
         if __debug__:
             if logger.isEnabledFor(logging.DEBUG):
-                {% for arg in func.args %}
+                {% for name, arg in func.args.items() %}
                 {% if is_array(arg) %}
-                msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape if {{arg.name}} is not None else "None")
+                msg = 'shape of {{ name }} after computation = %s' % str({{ name}}.shape if {{name}} is not None else "None")
                 logger.debug(msg)
-                msg = '{{ arg.name }} after computation: %s' % str(wrapper_utils.as_array(ffi, {{ arg.name }}, {{ arg.dtype }}) if {{ arg.name }} is not None else "None")
+                msg = '{{ name }} after computation: %s' % str(wrapper_utils.as_array(ffi, {{ name }}, {{ arg.dtype }}) if {{ name }} is not None else "None")
                 logger.debug(msg)
                 {% endif %}
                 {% endfor %}
@@ -242,22 +223,19 @@ class CHeaderGenerator(TemplatedGenerator):
 
     def visit_Func(self, func: Func) -> str:
         params = []
-        for param in func.args:
-            params.append(self.visit(param))
-            for i in range(param.rank):
-                params.append(f"int {_size_arg_name(param, i)}")
+        for name, param in func.args.items():
+            params.append(self.visit_Parameter(name, param))
+            if is_array(param):
+                for i in range(param.rank):
+                    params.append(f"int {_size_arg_name(name, i)}")
         params.append("int on_gpu")
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)
 
     Func = as_jinja("extern int {{ name }}_wrapper({{rendered_params}});")
 
-    def visit_FuncParameter(self, param: FuncParameter, **kwargs: Any) -> str:
-        return self.generic_visit(
-            param, rendered_type=to_c_type(param.dtype), pointer=render_c_pointer(param)
-        )
-
-    FuncParameter = as_jinja("""{{rendered_type}}{{pointer}} {{name}}""")
+    def visit_Parameter(self, name: str, param: _definitions.ParamDescriptor, **kwargs: Any) -> str:
+        return f"{to_c_type(param.dtype)}{render_c_pointer(param)} {name}"
 
 
 class F90FunctionDeclaration(Func):
@@ -293,8 +271,8 @@ class F90Interface(Node):
         ]
 
 
-def _size_arg_name(param: FuncParameter, i: int) -> str:
-    return f"{param.name}_size_{i}"
+def _size_arg_name(name: str, i: int) -> str:
+    return f"{name}_size_{i}"
 
 
 def _size_param_declaration(name: str, value: bool = True) -> str:
@@ -325,24 +303,23 @@ end module
     def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs: Any) -> str:
         param_names = []
         param_declarations = []
-        for param in func.args:
-            param_names.append(param.name)
+        for name, param in func.args.items():
+            param_names.append(name)
             param_declarations.append(
                 _render_parameter_declaration(
-                    name=param.name,
+                    name=name,
                     attributes=[
-                        "type(c_ptr)"
-                        if isinstance(param, ArrayParameter)
-                        else to_iso_c_type(param.dtype),
+                        "type(c_ptr)" if is_array(param) else to_iso_c_type(param.dtype),
                         "value",
                         "target",
                     ],
                 )
             )
-            for i in range(param.rank):
-                name = _size_arg_name(param, i)
-                param_names.append(name)
-                param_declarations.append(_size_param_declaration(name))
+            if is_array(param):
+                for i in range(param.rank):
+                    size_name = _size_arg_name(name, i)
+                    param_names.append(size_name)
+                    param_declarations.append(_size_param_declaration(size_name))
 
         # on_gpu flag
         param_declarations.append("logical(c_int), value :: on_gpu")
@@ -370,21 +347,22 @@ end function {{name}}_wrapper
     )
 
     def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs: Any) -> str:
-        def render_args(arg: FuncParameter) -> str:
-            if isinstance(arg, ArrayParameter):
-                if arg.is_optional:
-                    return f"{arg.name} = {arg.name}_ptr"
+        def render_args(name: str, param: _definitions.ParamDescriptor) -> str:
+            if is_array(param):
+                if param.is_optional:
+                    return f"{name} = {name}_ptr"
                 else:
-                    return f"{arg.name} = c_loc({arg.name})"
-            return f"{arg.name} = {arg.name}"
+                    return f"{name} = c_loc({name})"
+            return f"{name} = {name}"
 
-        param_names = ", &\n ".join([arg.name for arg in func.args] + ["rc"])
+        param_names = ", &\n ".join([name for name in func.args.keys()] + ["rc"])
         args = []
-        for arg in func.args:
-            args.append(render_args(arg))
-            for i in range(arg.rank):
-                name = _size_arg_name(arg, i)
-                args.append(f"{name} = {name}")
+        for name, param in func.args.items():
+            args.append(render_args(name, param))
+            if is_array(param):
+                for i in range(param.rank):
+                    size_name = _size_arg_name(name, i)
+                    args.append(f"{size_name} = {size_name}")
 
         # on_gpu flag
         args.append("on_gpu = on_gpu")
@@ -392,7 +370,7 @@ end function {{name}}_wrapper
 
         param_declarations = [
             _render_parameter_declaration(
-                name=param.name,
+                name=name,
                 attributes=[
                     to_iso_c_type(param.dtype),
                     render_fortran_array_dimensions(param, False),
@@ -400,21 +378,22 @@ end function {{name}}_wrapper
                     "pointer" if is_array(param) and param.is_optional else "target",
                 ],
             )
-            for param in func.args
+            for name, param in func.args.items()
         ]
 
         # on_gpu flag
         param_declarations.append("logical(c_int) :: on_gpu")
 
-        def get_sizes_maker(arg: FuncParameter) -> str:
+        def get_sizes_maker(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             return "\n".join(
-                f"{_size_arg_name(arg, i)} = SIZE({arg.name}, {i + 1})" for i in range(arg.rank)
+                f"{_size_arg_name(name, i)} = SIZE({name}, {i + 1})" for i in range(param.rank)
             )
 
-        for param in func.args:
-            for i in range(param.rank):
-                name = _size_arg_name(param, i)
-                param_declarations.append(_size_param_declaration(name, value=False))
+        for name, param in func.args.items():
+            if is_array(param):
+                for i in range(param.rank):
+                    size_name = _size_arg_name(name, i)
+                    param_declarations.append(_size_param_declaration(size_name, value=False))
 
         return self.generic_visit(
             func,
@@ -422,14 +401,18 @@ end function {{name}}_wrapper
             param_names=param_names,
             args_with_size_args=compiled_arg_names,
             non_optional_arrays=[
-                arg.name
-                for arg in func.args
-                if is_array(arg) and not arg.is_optional and arg.device == DeviceType.MAYBE_DEVICE
+                name
+                for name, param in func.args.items()
+                if is_array(param)
+                and not param.is_optional
+                and param.device == _definitions.DeviceType.MAYBE_DEVICE
             ],
             optional_arrays=[
-                arg.name
-                for arg in func.args
-                if is_array(arg) and arg.is_optional and arg.device == DeviceType.MAYBE_DEVICE
+                name
+                for name, param in func.args.items()
+                if is_array(param)
+                and param.is_optional
+                and param.device == _definitions.DeviceType.MAYBE_DEVICE
             ],
             as_allocatable=True,
             param_declarations=param_declarations,
@@ -448,12 +431,12 @@ subroutine {{name}}({{param_names}})
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
    ! ptrs
-   {% for arg in _this_node.args if is_array(arg) and arg.is_optional %}
-   type(c_ptr) :: {{ arg.name }}_ptr
+   {% for name in optional_arrays %}
+   type(c_ptr) :: {{ name }}_ptr
    {% endfor %}
 
-   {% for arg in _this_node.args if is_array(arg) and arg.is_optional %}
-   {{ arg.name }}_ptr = c_null_ptr
+   {% for name in optional_arrays %}
+   {{ name }}_ptr = c_null_ptr
    {% endfor %}
 
    {%- for arr in non_optional_arrays %}
@@ -469,14 +452,14 @@ subroutine {{name}}({{param_names}})
    on_gpu = .False.
    #endif
 
-   {% for arg in _this_node.args if is_array(arg) and not arg.is_optional %}
-     {{ get_sizes_maker(arg) }}
+   {% for name, param in _this_node.args.items() if is_array(param) and not param.is_optional %}
+     {{ get_sizes_maker(name, param) }}
    {% endfor %}
 
-   {% for arg in _this_node.args if is_array(arg) and  arg.is_optional %}
-   if(associated({{ arg.name }})) then
-   {{ arg.name }}_ptr = c_loc({{ arg.name }})
-     {{ get_sizes_maker(arg) }}
+   {% for name, param in _this_node.args.items() if is_array(param) and param.is_optional %}
+   if(associated({{ name }})) then
+   {{ name }}_ptr = c_loc({{ name }})
+     {{ get_sizes_maker(name, param) }}
     endif
    {% endfor %}
 

@@ -6,11 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.tools.py2fgen._export import (
+from icon4py.tools.py2fgen._definitions import (
     ArrayParamDescriptor,
     DeviceType,
     ParamDescriptor,
     ScalarParamDescriptor,
+)
+from icon4py.tools.py2fgen._export import (
     export,
 )
 
