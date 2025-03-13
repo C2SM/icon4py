@@ -3,10 +3,11 @@ FROM $BASE_IMAGE
 ARG PYVERSION
 ARG VENV
 COPY . /icon4py
-ENV UV_PROJECT_ENVIRONMENT=$ENV
+ENV UV_PROJECT_ENVIRONMENT=$VENV
 ENV MPI4PY_BUILD_BACKEND="scikit-build-core"
 # DO WE NEED: MPI4PY_BUILD_MPICC: nvc or si the setting the build backend enough?
 ENV USE_MPI="YES"
 WORKDIR /icon4py
+RUN echo "UV_PROJECT_ENVIRONMENT=$UV_PROJECT_ENVIRONMENT"
 RUN uv sync --extra distributed --python=$PYVERSION --no-dev
 
