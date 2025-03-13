@@ -56,7 +56,7 @@ build_distributed:
     - ls ${UV_PROJECT_ENVIRONMENT}
   script:
     - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-    - pytest -sv --datatest --with-mpi --backend=$BACKEND $COMPONENT
+    - pytest -sv -k "mpi_tests" --datatest --with-mpi --backend=$BACKEND $COMPONENT
   parallel:
     matrix:
       - COMPONENT: [ diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
