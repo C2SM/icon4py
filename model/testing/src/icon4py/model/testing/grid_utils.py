@@ -138,9 +138,9 @@ def get_grid_geometry(
     backend_name = helpers.extract_backend_name(backend)
     register_name = experiment.join(backend_name)
 
-    def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
+    def consruct_dummy_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):
-            indices = data_alloc.index_field(grid, dim)
+            indices = data_alloc.index_field(grid, dim, backend=backend)
             owner_mask = xp.ones((grid.size[dim],), dtype=bool)
             decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
@@ -151,15 +151,15 @@ def get_grid_geometry(
 
         return decomposition_info
 
-    def construct_grid_geometry(grid_file: str):
+    def construct_grid_geometry():
         gm = _download_and_load_gridfile(grid_file, num_levels=num_levels, backend=backend)
         grid = gm.grid
-        decomposition_info = construct_decomposition_info(grid)
+        decomposition_info = consruct_dummy_decomposition_info(grid)
         geometry_source = geometry.GridGeometry(
             grid, decomposition_info, backend, gm.coordinates, gm.geometry, geometry_attrs.attrs
         )
         return geometry_source
 
     if not grid_geometries.get(register_name):
-        grid_geometries[register_name] = construct_grid_geometry(grid_file)
+        grid_geometries[register_name] = construct_grid_geometry()
     return grid_geometries[register_name]
