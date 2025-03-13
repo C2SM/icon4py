@@ -6,9 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import enum
 import os
 from typing import TypeVar
+
+from gt4py import eve
 
 
 def _env_flag_to_bool(name: str, default: bool) -> bool:
@@ -29,15 +30,7 @@ def _env_flag_to_bool(name: str, default: bool) -> bool:
             )
 
 
-class _StrEnum(str, enum.Enum):
-    """:class:`enum.Enum` subclass whose members are considered as real strings."""
-
-    def __str__(self) -> str:
-        assert isinstance(self.value, str)
-        return self.value
-
-
-_T = TypeVar("_T", bound=_StrEnum)
+_T = TypeVar("_T", bound=eve.StrEnum)
 
 
 def _env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
@@ -54,7 +47,7 @@ def _env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
 PROFILING: bool = _env_flag_to_bool("PY2FGEN_PROFILING", False)
 
 
-class PY2FGEN_LOG_LEVELS(_StrEnum):
+class PY2FGEN_LOG_LEVELS(eve.StrEnum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
