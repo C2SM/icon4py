@@ -2055,7 +2055,7 @@ class IconSerialDataProvider:
             .dyn_timestep[substep_init]
             .as_savepoint()
         )
-        return VelocityInitVerticalMomentumSavepoint(
+        return VelocityAdvectionVerticalMomentumInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
