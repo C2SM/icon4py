@@ -49,68 +49,45 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
-def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+def benchmark_model(session: nox.Session) -> None:
     """Run pytest benchmarks for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
-    results_json_path = os.path.abspath(f"results_{session.python}_{subpackage.replace('/', '_')}.json")
-    with session.chdir(f"model/{subpackage}"):
-        session.run(
-            *f"pytest \
-            -v \
-            --benchmark-only \
-            --benchmark-warmup=on \
-            --benchmark-warmup-iterations=30 \
-            --benchmark-json={results_json_path}".split(),
-            *session.posargs,
-            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
-        )
+    session.run(
+        *f"pytest \
+        -v \
+        --benchmark-only \
+        --benchmark-warmup=on \
+        --benchmark-warmup-iterations=30 \
+        --benchmark-json=pytest_benchmark_results_{session.python}.json \
+        ./model".split(),
+        *session.posargs,
+    )
 
-def valid_results_file(file_name: str) -> bool:
-    """Check if the results file (json) is valid, i.e. existing, non-empty and non-corrupted file."""
-    if not os.path.exists(file_name):
-        return False
-    
-    with open(file_name, "r") as f:
-        content = f.read().strip()  # Remove whitespace
-
-    if not content:  # Empty string
-        return False
-    else:
-        try:
-            data = json.loads(content)
-            if not data:  # Empty dictionary or list
-                return False
-            else:
-                return True
-        except json.JSONDecodeError:
-            return False
-
-@nox.session(python=["3.10", "3.11"],
-             requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
-@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
-def bencher_baseline(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
-    """Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted)."""
-    bencher_json_file_name = f"results_{session.python}_{subpackage.replace('/', '_')}.json"
-    if valid_results_file(bencher_json_file_name):
-        session.run(
-            *f"bencher run \
-            --project {os.environ['BENCHER_PROJECT']} \
-            --token {os.environ['BENCHER_API_TOKEN']} \
-            --host {os.environ['BENCHER_HOST']} \
-            --branch main \
-            --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
-            --threshold-measure latency \
-            --threshold-test percentage \
-            --threshold-max-sample-size 64 \
-            --threshold-upper-boundary 0.1 \
-            --thresholds-reset \
-            --err \
-            --adapter python_pytest \
-            --file {bencher_json_file_name}".split(),
-            external=True,
-        )
+@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+def bencher_baseline(session: nox.Session) -> None:
+    """
+    Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
+    This session is used only on the main branch to create the historical baseline.
+    The historical baseline is used to compare the performance of the code in the PRs.
+    """
+    session.run(
+        *f"bencher run \
+        --project {os.environ['BENCHER_PROJECT']} \
+        --token {os.environ['BENCHER_API_TOKEN']} \
+        --host {os.environ['BENCHER_HOST']} \
+        --branch main \
+        --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
+        --threshold-measure latency \
+        --threshold-test percentage \
+        --threshold-max-sample-size 64 \
+        --threshold-upper-boundary 0.1 \
+        --thresholds-reset \
+        --err \
+        --adapter python_pytest \
+        --file pytest_benchmark_results_{session.python}.json".split(),
+        external=True,
+    )
 
 # Model test sessions
 # TODO(egparedes): Add backend parameter
