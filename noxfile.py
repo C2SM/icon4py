@@ -50,7 +50,7 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
 def benchmark_model(session: nox.Session) -> None:
-    """Run pytest benchmarks for selected icon4py model subpackages."""
+    """Run pytest benchmarks."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
     session.run(

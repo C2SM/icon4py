@@ -4,7 +4,12 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - nox -s bencher_baseline-3.10 -- --backend=$BACKEND --grid=$GRID
+    # - nox -s bencher_baseline-3.10 -- --backend=$BACKEND --grid=$GRID
+    - for BACKEND in gtfn_cpu gtfn_gpu; do
+        for GRID in icon_grid icon_grid_global; do
+          nox -s bencher_baseline-3.10 -- --backend=$BACKEND --grid=$GRID;
+        done;
+      done
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
