@@ -156,7 +156,6 @@ def {{ func.name }}_wrapper(
         # Convert ptrs 
         {% for name, arg in func.args.items() %}
         {% if is_array(arg) %}
-        # TODO use the size_args function
         {{ name }} = ({{ name }}, ({{ render_size_args_tuple(name, arg) }},), {% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
         {% elif arg.dtype == ts.ScalarKind.BOOL %}
         # TODO move bool translation to postprocessing

@@ -54,8 +54,8 @@ logger = setup_logger(__name__)
 class DiffusionGranule:
     diffusion: Diffusion
     backend: gtx_backend.Backend
-    profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
     dummy_field_factory: Callable
+    profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
 granule: Optional[DiffusionGranule] = None
