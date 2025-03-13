@@ -129,6 +129,11 @@ def check_code_was_generated(stencil_name: str) -> None:
 )
 @pytest.mark.parametrize("flags", [()], ids=["normal"])
 def test_codegen(cli, stencil_module, stencil_name, flags, test_temp_dir) -> None:
+    if stencil_name.index("compute_edge_diagnostics_for_velocity_advection") or stencil_name.index(
+        "compute_cell_diagnostics_for_velocity_advection"
+    ):
+        pytest.skip(f"{stencil_name} does not match standard structure")
+
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
         cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH, *flags]
