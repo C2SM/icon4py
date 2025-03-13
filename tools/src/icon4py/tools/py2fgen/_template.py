@@ -190,6 +190,7 @@ def {{ func.name }}_wrapper(
                 logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
 
 
+        {% if func.args %}
         if __debug__:
             if logger.isEnabledFor(logging.DEBUG):
                 {% for name, arg in func.args.items() %}
@@ -200,6 +201,7 @@ def {{ func.name }}_wrapper(
                 logger.debug(msg)
                 {% endif %}
                 {% endfor %}
+        {% endif %}
 
         if __debug__:
             logger.info("Python execution of {{ func.name }} completed.")

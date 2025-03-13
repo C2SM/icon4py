@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
 
 import cffi
 from gt4py import next as gtx
@@ -31,7 +30,7 @@ SomeDim = gtx.Dimension("SomeDim")
 
 
 def make_array_descriptor(
-    ptr: cffi.FFI.CData,
+    ptr: "cffi.FFI.CData",  # TODO don't `from __future__ import annotations` otherwise the gt4py annotation will be a string
     shape: tuple[int, ...],
     on_gpu: bool,
     is_optional: bool,

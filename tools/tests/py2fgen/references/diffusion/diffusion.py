@@ -59,15 +59,13 @@ def diffusion_run_wrapper(
             if runtime_config.PROFILING:
                 unpack_start_time = _runtime.perf_counter()
 
-        # Convert ptrs
+        # ArrayDescriptors
 
         w = (
             w,
             (
-                (
-                    w_size_0,
-                    w_size_1,
-                ),
+                w_size_0,
+                w_size_1,
             ),
             on_gpu,
             False,
@@ -76,10 +74,8 @@ def diffusion_run_wrapper(
         vn = (
             vn,
             (
-                (
-                    vn_size_0,
-                    vn_size_1,
-                ),
+                vn_size_0,
+                vn_size_1,
             ),
             on_gpu,
             False,
@@ -88,10 +84,8 @@ def diffusion_run_wrapper(
         exner = (
             exner,
             (
-                (
-                    exner_size_0,
-                    exner_size_1,
-                ),
+                exner_size_0,
+                exner_size_1,
             ),
             on_gpu,
             False,
@@ -100,10 +94,8 @@ def diffusion_run_wrapper(
         theta_v = (
             theta_v,
             (
-                (
-                    theta_v_size_0,
-                    theta_v_size_1,
-                ),
+                theta_v_size_0,
+                theta_v_size_1,
             ),
             on_gpu,
             False,
@@ -112,10 +104,8 @@ def diffusion_run_wrapper(
         rho = (
             rho,
             (
-                (
-                    rho_size_0,
-                    rho_size_1,
-                ),
+                rho_size_0,
+                rho_size_1,
             ),
             on_gpu,
             False,
@@ -124,10 +114,8 @@ def diffusion_run_wrapper(
         hdef_ic = (
             hdef_ic,
             (
-                (
-                    hdef_ic_size_0,
-                    hdef_ic_size_1,
-                ),
+                hdef_ic_size_0,
+                hdef_ic_size_1,
             ),
             on_gpu,
             True,
@@ -136,10 +124,8 @@ def diffusion_run_wrapper(
         div_ic = (
             div_ic,
             (
-                (
-                    div_ic_size_0,
-                    div_ic_size_1,
-                ),
+                div_ic_size_0,
+                div_ic_size_1,
             ),
             on_gpu,
             True,
@@ -148,10 +134,8 @@ def diffusion_run_wrapper(
         dwdx = (
             dwdx,
             (
-                (
-                    dwdx_size_0,
-                    dwdx_size_1,
-                ),
+                dwdx_size_0,
+                dwdx_size_1,
             ),
             on_gpu,
             True,
@@ -160,10 +144,8 @@ def diffusion_run_wrapper(
         dwdy = (
             dwdy,
             (
-                (
-                    dwdy_size_0,
-                    dwdy_size_1,
-                ),
+                dwdy_size_0,
+                dwdy_size_1,
             ),
             on_gpu,
             True,
@@ -222,7 +204,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "w after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, w, ScalarKind.FLOAT64) if w is not None else "None"
+                    wrapper_utils.as_array(ffi, w, 1064) if w is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -231,9 +213,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vn after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, vn, ScalarKind.FLOAT64)
-                    if vn is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, vn, 1064) if vn is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -242,9 +222,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "exner after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, exner, ScalarKind.FLOAT64)
-                    if exner is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, exner, 1064) if exner is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -253,9 +231,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "theta_v after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, theta_v, ScalarKind.FLOAT64)
-                    if theta_v is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, theta_v, 1064) if theta_v is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -264,9 +240,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rho after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, rho, ScalarKind.FLOAT64)
-                    if rho is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, rho, 1064) if rho is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -275,9 +249,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "hdef_ic after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, hdef_ic, ScalarKind.FLOAT64)
-                    if hdef_ic is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, hdef_ic, 1064) if hdef_ic is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -286,9 +258,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "div_ic after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, div_ic, ScalarKind.FLOAT64)
-                    if div_ic is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, div_ic, 1064) if div_ic is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -297,9 +267,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "dwdx after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, dwdx, ScalarKind.FLOAT64)
-                    if dwdx is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, dwdx, 1064) if dwdx is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -308,9 +276,7 @@ def diffusion_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "dwdy after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, dwdy, ScalarKind.FLOAT64)
-                    if dwdy is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, dwdy, 1064) if dwdy is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -405,19 +371,17 @@ def diffusion_init_wrapper(
             if runtime_config.PROFILING:
                 unpack_start_time = _runtime.perf_counter()
 
-        # Convert ptrs
+        # ArrayDescriptors
 
-        vct_a = (vct_a, ((vct_a_size_0,),), on_gpu, False)
+        vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
 
-        vct_b = (vct_b, ((vct_b_size_0,),), on_gpu, False)
+        vct_b = (vct_b, (vct_b_size_0,), on_gpu, False)
 
         theta_ref_mc = (
             theta_ref_mc,
             (
-                (
-                    theta_ref_mc_size_0,
-                    theta_ref_mc_size_1,
-                ),
+                theta_ref_mc_size_0,
+                theta_ref_mc_size_1,
             ),
             on_gpu,
             False,
@@ -426,10 +390,8 @@ def diffusion_init_wrapper(
         wgtfac_c = (
             wgtfac_c,
             (
-                (
-                    wgtfac_c_size_0,
-                    wgtfac_c_size_1,
-                ),
+                wgtfac_c_size_0,
+                wgtfac_c_size_1,
             ),
             on_gpu,
             False,
@@ -438,10 +400,8 @@ def diffusion_init_wrapper(
         e_bln_c_s = (
             e_bln_c_s,
             (
-                (
-                    e_bln_c_s_size_0,
-                    e_bln_c_s_size_1,
-                ),
+                e_bln_c_s_size_0,
+                e_bln_c_s_size_1,
             ),
             on_gpu,
             False,
@@ -450,10 +410,8 @@ def diffusion_init_wrapper(
         geofac_div = (
             geofac_div,
             (
-                (
-                    geofac_div_size_0,
-                    geofac_div_size_1,
-                ),
+                geofac_div_size_0,
+                geofac_div_size_1,
             ),
             on_gpu,
             False,
@@ -462,10 +420,8 @@ def diffusion_init_wrapper(
         geofac_grg_x = (
             geofac_grg_x,
             (
-                (
-                    geofac_grg_x_size_0,
-                    geofac_grg_x_size_1,
-                ),
+                geofac_grg_x_size_0,
+                geofac_grg_x_size_1,
             ),
             on_gpu,
             False,
@@ -474,10 +430,8 @@ def diffusion_init_wrapper(
         geofac_grg_y = (
             geofac_grg_y,
             (
-                (
-                    geofac_grg_y_size_0,
-                    geofac_grg_y_size_1,
-                ),
+                geofac_grg_y_size_0,
+                geofac_grg_y_size_1,
             ),
             on_gpu,
             False,
@@ -486,24 +440,20 @@ def diffusion_init_wrapper(
         geofac_n2s = (
             geofac_n2s,
             (
-                (
-                    geofac_n2s_size_0,
-                    geofac_n2s_size_1,
-                ),
+                geofac_n2s_size_0,
+                geofac_n2s_size_1,
             ),
             on_gpu,
             False,
         )
 
-        nudgecoeff_e = (nudgecoeff_e, ((nudgecoeff_e_size_0,),), on_gpu, False)
+        nudgecoeff_e = (nudgecoeff_e, (nudgecoeff_e_size_0,), on_gpu, False)
 
         rbf_coeff_1 = (
             rbf_coeff_1,
             (
-                (
-                    rbf_coeff_1_size_0,
-                    rbf_coeff_1_size_1,
-                ),
+                rbf_coeff_1_size_0,
+                rbf_coeff_1_size_1,
             ),
             on_gpu,
             False,
@@ -512,10 +462,8 @@ def diffusion_init_wrapper(
         rbf_coeff_2 = (
             rbf_coeff_2,
             (
-                (
-                    rbf_coeff_2_size_0,
-                    rbf_coeff_2_size_1,
-                ),
+                rbf_coeff_2_size_0,
+                rbf_coeff_2_size_1,
             ),
             on_gpu,
             False,
@@ -524,10 +472,8 @@ def diffusion_init_wrapper(
         mask_hdiff = (
             mask_hdiff,
             (
-                (
-                    mask_hdiff_size_0,
-                    mask_hdiff_size_1,
-                ),
+                mask_hdiff_size_0,
+                mask_hdiff_size_1,
             ),
             on_gpu,
             True,
@@ -536,10 +482,8 @@ def diffusion_init_wrapper(
         zd_diffcoef = (
             zd_diffcoef,
             (
-                (
-                    zd_diffcoef_size_0,
-                    zd_diffcoef_size_1,
-                ),
+                zd_diffcoef_size_0,
+                zd_diffcoef_size_1,
             ),
             on_gpu,
             True,
@@ -548,11 +492,9 @@ def diffusion_init_wrapper(
         zd_vertoffset = (
             zd_vertoffset,
             (
-                (
-                    zd_vertoffset_size_0,
-                    zd_vertoffset_size_1,
-                    zd_vertoffset_size_2,
-                ),
+                zd_vertoffset_size_0,
+                zd_vertoffset_size_1,
+                zd_vertoffset_size_2,
             ),
             on_gpu,
             True,
@@ -561,11 +503,9 @@ def diffusion_init_wrapper(
         zd_intcoef = (
             zd_intcoef,
             (
-                (
-                    zd_intcoef_size_0,
-                    zd_intcoef_size_1,
-                    zd_intcoef_size_2,
-                ),
+                zd_intcoef_size_0,
+                zd_intcoef_size_1,
+                zd_intcoef_size_2,
             ),
             on_gpu,
             True,
@@ -667,9 +607,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vct_a after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, vct_a, ScalarKind.FLOAT64)
-                    if vct_a is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, vct_a, 1064) if vct_a is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -678,9 +616,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vct_b after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, vct_b, ScalarKind.FLOAT64)
-                    if vct_b is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, vct_b, 1064) if vct_b is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -689,7 +625,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "theta_ref_mc after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, theta_ref_mc, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, theta_ref_mc, 1064)
                     if theta_ref_mc is not None
                     else "None"
                 )
@@ -700,9 +636,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "wgtfac_c after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, wgtfac_c, ScalarKind.FLOAT64)
-                    if wgtfac_c is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, wgtfac_c, 1064) if wgtfac_c is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -711,7 +645,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e_bln_c_s after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, e_bln_c_s, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, e_bln_c_s, 1064)
                     if e_bln_c_s is not None
                     else "None"
                 )
@@ -722,7 +656,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_div after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, geofac_div, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, geofac_div, 1064)
                     if geofac_div is not None
                     else "None"
                 )
@@ -733,7 +667,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_grg_x after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, geofac_grg_x, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, geofac_grg_x, 1064)
                     if geofac_grg_x is not None
                     else "None"
                 )
@@ -744,7 +678,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_grg_y after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, geofac_grg_y, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, geofac_grg_y, 1064)
                     if geofac_grg_y is not None
                     else "None"
                 )
@@ -755,7 +689,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_n2s after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, geofac_n2s, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, geofac_n2s, 1064)
                     if geofac_n2s is not None
                     else "None"
                 )
@@ -766,7 +700,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "nudgecoeff_e after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, nudgecoeff_e, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, nudgecoeff_e, 1064)
                     if nudgecoeff_e is not None
                     else "None"
                 )
@@ -777,7 +711,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rbf_coeff_1 after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, rbf_coeff_1, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, rbf_coeff_1, 1064)
                     if rbf_coeff_1 is not None
                     else "None"
                 )
@@ -788,7 +722,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rbf_coeff_2 after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, rbf_coeff_2, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, rbf_coeff_2, 1064)
                     if rbf_coeff_2 is not None
                     else "None"
                 )
@@ -799,9 +733,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "mask_hdiff after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, mask_hdiff, ScalarKind.BOOL)
-                    if mask_hdiff is not None
-                    else "None"
+                    wrapper_utils.as_array(ffi, mask_hdiff, 1) if mask_hdiff is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -810,7 +742,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "zd_diffcoef after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, zd_diffcoef, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, zd_diffcoef, 1064)
                     if zd_diffcoef is not None
                     else "None"
                 )
@@ -821,7 +753,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "zd_vertoffset after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, zd_vertoffset, ScalarKind.INT32)
+                    wrapper_utils.as_array(ffi, zd_vertoffset, 32)
                     if zd_vertoffset is not None
                     else "None"
                 )
@@ -832,7 +764,7 @@ def diffusion_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "zd_intcoef after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, zd_intcoef, ScalarKind.FLOAT64)
+                    wrapper_utils.as_array(ffi, zd_intcoef, 1064)
                     if zd_intcoef is not None
                     else "None"
                 )

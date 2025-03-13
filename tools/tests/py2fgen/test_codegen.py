@@ -255,50 +255,96 @@ end module
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(dummy_plugin, False, profile=False)
-    expected = """# imports for generated wrapper code
-import logging
-
+    interface = generate_python_wrapper(dummy_plugin)
+    expected = """import logging
+from gt4py.next.type_system.type_specifications import ScalarKind
 from libtest_plugin import ffi
+from icon4py.tools.py2fgen import wrapper_utils, runtime_config, _runtime
 
-try:
-    import cupy as cp  # TODO remove this import
-except ImportError:
-    cp = None
-import gt4py.next as gtx
-from gt4py.next.type_system import type_specifications as ts
-from icon4py.tools.py2fgen import wrapper_utils
+if __debug__:
+    logger = logging.getLogger(__name__)
+    log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+    logging.basicConfig(
+        level=getattr(logging, runtime_config.LOG_LEVEL),
+        format=log_format,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
-# logger setup
-log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
-logging.basicConfig(level=logging.ERROR, format=log_format, datefmt="%Y-%m-%d %H:%M:%S")
-
-if cp is not None:
-    logging.info(cp.show_config())
 
 # embedded function imports
 from libtest import foo
 from libtest import bar
 
 
-Cell = gtx.Dimension("Cell", kind=gtx.DimensionKind.HORIZONTAL)
-K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
-
-
 @ffi.def_extern()
 def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
     try:
+        if __debug__:
+            logger.info("Python execution of foo started.")
 
-        # Convert ptr to GT4Py fields
+        if __debug__:
+            if runtime_config.PROFILING:
+                unpack_start_time = _runtime.perf_counter()
 
-        two = wrapper_utils.as_field(
-            ffi, on_gpu, two, ts.ScalarKind.FLOAT64, {Cell: two_size_0, K: two_size_1}, False
+        # ArrayDescriptors
+
+        two = (
+            two,
+            (
+                two_size_0,
+                two_size_1,
+            ),
+            on_gpu,
+            False,
         )
 
-        foo(one, two)
+        if __debug__:
+            if runtime_config.PROFILING:
+                allocate_end_time = _runtime.perf_counter()
+                logger.info(
+                    "foo constructing `ArrayDescriptors` time: %s"
+                    % str(allocate_end_time - unpack_start_time)
+                )
+
+                func_start_time = _runtime.perf_counter()
+
+        if __debug__ and runtime_config.PROFILING:
+            meta = {}
+        else:
+            meta = None
+        foo(
+            ffi=ffi,
+            meta=meta,
+            one=one,
+            two=two,
+        )
+
+        if __debug__:
+            if runtime_config.PROFILING:
+                func_end_time = _runtime.perf_counter()
+                logger.info(
+                    "foo convert time: %s"
+                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                )
+                logger.info("foo execution time: %s" % str(func_end_time - func_start_time))
+
+        if __debug__:
+            if logger.isEnabledFor(logging.DEBUG):
+
+                msg = "shape of two after computation = %s" % str(
+                    two.shape if two is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "two after computation: %s" % str(
+                    wrapper_utils.as_array(ffi, two, 1064) if two is not None else "None"
+                )
+                logger.debug(msg)
+
+        if __debug__:
+            logger.info("Python execution of foo completed.")
 
     except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
+        logger.exception(f"A Python error occurred: {e}")
         return 1
 
     return 0
@@ -307,17 +353,72 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
 @ffi.def_extern()
 def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
     try:
+        if __debug__:
+            logger.info("Python execution of bar started.")
 
-        # Convert ptr to GT4Py fields
+        if __debug__:
+            if runtime_config.PROFILING:
+                unpack_start_time = _runtime.perf_counter()
 
-        one = wrapper_utils.as_field(
-            ffi, on_gpu, one, ts.ScalarKind.FLOAT32, {Cell: one_size_0, K: one_size_1}, False
+        # ArrayDescriptors
+
+        one = (
+            one,
+            (
+                one_size_0,
+                one_size_1,
+            ),
+            on_gpu,
+            False,
         )
 
-        bar(one, two)
+        if __debug__:
+            if runtime_config.PROFILING:
+                allocate_end_time = _runtime.perf_counter()
+                logger.info(
+                    "bar constructing `ArrayDescriptors` time: %s"
+                    % str(allocate_end_time - unpack_start_time)
+                )
+
+                func_start_time = _runtime.perf_counter()
+
+        if __debug__ and runtime_config.PROFILING:
+            meta = {}
+        else:
+            meta = None
+        bar(
+            ffi=ffi,
+            meta=meta,
+            one=one,
+            two=two,
+        )
+
+        if __debug__:
+            if runtime_config.PROFILING:
+                func_end_time = _runtime.perf_counter()
+                logger.info(
+                    "bar convert time: %s"
+                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                )
+                logger.info("bar execution time: %s" % str(func_end_time - func_start_time))
+
+        if __debug__:
+            if logger.isEnabledFor(logging.DEBUG):
+
+                msg = "shape of one after computation = %s" % str(
+                    one.shape if one is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "one after computation: %s" % str(
+                    wrapper_utils.as_array(ffi, one, 1032) if one is not None else "None"
+                )
+                logger.debug(msg)
+
+        if __debug__:
+            logger.info("Python execution of bar completed.")
 
     except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
+        logger.exception(f"A Python error occurred: {e}")
         return 1
 
     return 0
