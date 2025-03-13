@@ -1326,7 +1326,7 @@ class VelocityInitEdgeDiagnosticsSavepoint(IconSavepoint):
         return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
 
 
-class VelocityInitCellDiagnosticsSavepoint(IconSavepoint):
+class VelocityAdvectionCellDiagnosticsInitSavepoint(IconSavepoint):
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
 
@@ -1349,7 +1349,7 @@ class VelocityInitCellDiagnosticsSavepoint(IconSavepoint):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
 
 
-class VelocityInitVerticalMomentumSavepoint(IconSavepoint):
+class VelocityAdvectionVerticalMomentumInitSavepoint(IconSavepoint):
     def z_w_con_c(self):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
 
@@ -2033,7 +2033,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep_init: int
-    ) -> VelocityInitCellDiagnosticsSavepoint:
+    ) -> VelocityAdvectionCellDiagnosticsInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to14-init"]
             .istep[istep]
@@ -2047,7 +2047,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_init(
         self, istep: int, date: str, substep_init: int
-    ) -> VelocityInitVerticalMomentumSavepoint:
+    ) -> VelocityAdvectionVerticalMomentumInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-init"]
             .istep[istep]
