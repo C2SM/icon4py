@@ -137,6 +137,8 @@ def compute_advection_in_horizontal_momentum_equation(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """Formerly known as fused_velocity_advection_stencil_19_to_20."""
+
     _compute_advection_in_horizontal_momentum_equation(
         normal_wind_advective_tendency,
         vn,

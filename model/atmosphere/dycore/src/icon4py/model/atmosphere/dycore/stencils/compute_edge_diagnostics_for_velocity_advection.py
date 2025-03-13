@@ -307,6 +307,7 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """Formerly known as fused_velocity_advection_stencil_1_to_7_predictor."""
     _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
         tangential_wind,
         tangential_wind_on_half_levels,
@@ -376,6 +377,8 @@ def compute_horizontal_advection_of_w(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """Formerly known as fused_velocity_advection_stencil_1_to_7_corrector."""
+
     _compute_horizontal_advection_of_w(
         horizontal_advection_of_w_at_edges_on_half_levels,
         w,

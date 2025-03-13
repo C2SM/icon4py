@@ -190,6 +190,8 @@ def compute_advection_in_vertical_momentum_equation(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """Formerly known as fused_velocity_advection_stencil_15_to_18."""
+
     _compute_advection_in_vertical_momentum_equation(
         contravariant_corrected_w_at_cells_on_model_levels,
         vertical_wind_advective_tendency,

@@ -100,6 +100,8 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """Formerly known as fused_velocity_advection_stencil_8_to_13_predictor."""
+
     _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_correction(
         horizontal_kinetic_energy_at_edges_on_model_levels,
         e_bln_c_s,
@@ -148,6 +150,8 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_cor
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """Formerly known as fused_velocity_advection_stencil_8_to_13_corrector."""
+
     _interpolate_to_cell_center(
         horizontal_kinetic_energy_at_edges_on_model_levels,
         e_bln_c_s,
