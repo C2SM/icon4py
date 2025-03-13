@@ -6,14 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Optional, TypeAlias
+from typing import TYPE_CHECKING
 
 import numpy as np
-from gt4py.next.type_system import type_specifications as ts
 
 
 try:
@@ -24,15 +22,8 @@ except ImportError:
 if TYPE_CHECKING:
     import cffi
 
-    # Note, we use this plain tuple for performance.
-    ArrayDescriptor: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
-else:
-    from typing import Any
 
-    ArrayDescriptor: TypeAlias = tuple[Any, tuple[int, ...], bool, bool]
-
-
-def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
+def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
     """
     Converts a C pointer into a NumPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations requiring in-place modification of CPU data, enabling
@@ -70,7 +61,7 @@ def _unpack(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArra
     return arr
 
 
-def _unpack_gpu(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> cp.ndarray:
+def _unpack_cupy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> cp.ndarray:
     """
     Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations that require in-place modification of GPU data,
@@ -132,20 +123,3 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
     bool_array = int_array != 0
     bool_array.flags.writeable = False
     return bool_array
-
-
-def as_array(
-    ffi: cffi.FFI, array_descriptor: ArrayDescriptor, scalar_kind: ts.ScalarKind
-) -> Optional[np.ndarray]:  # or cupy
-    unpack = _unpack_gpu if array_descriptor[2] else _unpack
-    if array_descriptor[0] == ffi.NULL:
-        if array_descriptor[3]:
-            return None
-        else:
-            raise RuntimeError("Parameter is not optional, but received 'NULL'.")
-    arr = unpack(ffi, array_descriptor[0], *array_descriptor[1])
-    if scalar_kind == ts.ScalarKind.BOOL:
-        # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
-        # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
-        arr = _int_array_to_bool_array(arr)
-    return arr

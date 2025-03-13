@@ -13,9 +13,8 @@ from collections.abc import Mapping
 from typing import Any, Callable, Optional, TypeAlias
 
 import cffi
-from gt4py.next.type_system import type_specifications as gtx_ts  # TODO use py2fgen types
 
-from icon4py.tools.py2fgen import _definitions, _runtime, wrapper_utils
+from icon4py.tools.py2fgen import _definitions, _runtime, utils
 
 
 def _from_annotated(annotation: Any) -> Optional[_definitions.ParamDescriptor]:
@@ -67,16 +66,16 @@ NDArray = Any  # = np.ndarray | cp.ndarray (conditionally) TODO move to better p
 
 
 def _as_array(
-    dtype: gtx_ts.ScalarKind,
-) -> Callable[[wrapper_utils.ArrayDescriptor, cffi.FFI], NDArray]:
+    dtype: _definitions.ScalarKind,
+) -> Callable[[_definitions.ArrayDescriptor, cffi.FFI], NDArray]:
     @functools.lru_cache(maxsize=None)
-    def impl(array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi: cffi.FFI) -> NDArray:
-        return wrapper_utils.as_array(ffi, array_descriptor, dtype)
+    def impl(array_descriptor: _definitions.ArrayDescriptor, *, ffi: cffi.FFI) -> NDArray:
+        return utils.as_array(ffi, array_descriptor, dtype)
 
     return impl
 
 
-MapperType: TypeAlias = Callable[[wrapper_utils.ArrayDescriptor, cffi.FFI], Any]
+MapperType: TypeAlias = Callable[[_definitions.ArrayDescriptor, cffi.FFI], Any]
 
 
 def default_mapping(_: Any, param_descriptor: _definitions.ParamDescriptor) -> MapperType | None:

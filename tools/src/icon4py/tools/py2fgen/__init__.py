@@ -7,10 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from icon4py.tools.py2fgen._definitions import (
+    BOOL,
+    FLOAT32,
+    FLOAT64,
+    INT32,
+    INT64,
+    ArrayDescriptor,
     ArrayParamDescriptor,
     DeviceType,
     ParamDescriptor,
-    ScalarKind as _ScalarKind,
     ScalarParamDescriptor,
 )
 from icon4py.tools.py2fgen._export import (
@@ -18,22 +23,16 @@ from icon4py.tools.py2fgen._export import (
 )
 
 
-BOOL = _ScalarKind.BOOL
-INT32 = _ScalarKind.INT32
-INT64 = _ScalarKind.INT64
-FLOAT32 = _ScalarKind.FLOAT32
-FLOAT64 = _ScalarKind.FLOAT64
-
-
 __all__ = [
+    "BOOL",
+    "FLOAT32",
+    "FLOAT64",
+    "INT32",
+    "INT64",
+    "ArrayDescriptor",
     "ArrayParamDescriptor",
     "DeviceType",
     "ParamDescriptor",
     "ScalarParamDescriptor",
     "export",
-    "BOOL",
-    "INT32",
-    "INT64",
-    "FLOAT32",
-    "FLOAT64",
 ]

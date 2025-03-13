@@ -14,8 +14,8 @@ import numpy as np
 import pytest
 from cffi import FFI
 
-from icon4py.tools.py2fgen.plugin import generate_and_compile_cffi_plugin
-from icon4py.tools.py2fgen.wrapper_utils import _unpack
+from icon4py.tools.py2fgen._conversion import _unpack_numpy
+from icon4py.tools.py2fgen._generator import generate_and_compile_cffi_plugin
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def test_unpack_column_major(data, expected_result, ffi):
 
     rows, cols = expected_result.shape
 
-    result = _unpack(ffi, ptr, rows, cols)
+    result = _unpack_numpy(ffi, ptr, rows, cols)
 
     assert np.array_equal(result, expected_result)
 

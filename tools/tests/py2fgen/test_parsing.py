@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.tools.py2fgen._template import CffiPlugin
-from icon4py.tools.py2fgen.parsing import get_cffi_description
+from icon4py.tools.py2fgen._codegen import CffiPlugin
+from icon4py.tools.py2fgen._generator import get_cffi_description
 
 
 source = """

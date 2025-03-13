@@ -8,19 +8,35 @@
 
 from typing import Any, Optional, Sequence, TypeGuard, Union
 
-from gt4py.eve import Node, datamodels
+from gt4py.eve import Node, codegen, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
-from gt4py.next.type_system import type_specifications as ts
 
-from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
-    BUILTIN_TO_CPP_TYPE,
-    BUILTIN_TO_ISO_C_TYPE,
-    BUILTIN_TO_NUMPY_TYPE,
-)
-from icon4py.tools.py2fgen import _definitions
+from icon4py.tools.py2fgen import _definitions, _utils
 
 
 CFFI_DECORATOR = "@ffi.def_extern()"
+
+BUILTIN_TO_ISO_C_TYPE: dict[_definitions.ScalarKind, str] = {
+    _definitions.FLOAT64: "real(c_double)",
+    _definitions.FLOAT32: "real(c_float)",
+    _definitions.BOOL: "logical(c_int)",
+    _definitions.INT32: "integer(c_int)",
+    _definitions.INT64: "integer(c_long)",
+}
+BUILTIN_TO_CPP_TYPE: dict[_definitions.ScalarKind, str] = {
+    _definitions.FLOAT64: "double",
+    _definitions.FLOAT32: "float",
+    _definitions.BOOL: "int",
+    _definitions.INT32: "int",
+    _definitions.INT64: "long",
+}
+BUILTIN_TO_NUMPY_TYPE: dict[_definitions.ScalarKind, str] = {
+    _definitions.FLOAT64: "xp.float64",
+    _definitions.FLOAT32: "xp.float32",
+    _definitions.BOOL: "xp.int32",
+    _definitions.INT32: "xp.int32",
+    _definitions.INT64: "xp.int64",
+}
 
 
 def is_array(param: _definitions.ParamDescriptor) -> TypeGuard[_definitions.ArrayParamDescriptor]:
@@ -53,17 +69,17 @@ class PythonWrapper(CffiPlugin):
     cffi_decorator: str = CFFI_DECORATOR
 
 
-def to_c_type(scalar_type: ts.ScalarKind) -> str:
+def to_c_type(scalar_type: _definitions.ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
 
-def to_np_type(scalar_type: ts.ScalarKind) -> str:
+def to_np_type(scalar_type: _definitions.ScalarKind) -> str:
     """Convert a scalar type to its corresponding numpy type."""
     return BUILTIN_TO_NUMPY_TYPE[scalar_type]
 
 
-def to_iso_c_type(scalar_type: ts.ScalarKind) -> str:
+def to_iso_c_type(scalar_type: _definitions.ScalarKind) -> str:
     """Convert a scalar type to its corresponding ISO C type."""
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
@@ -114,17 +130,19 @@ class PythonWrapperGenerator(TemplatedGenerator):
             size_args = ",".join(f"{_size_arg_name(name, i)}" for i in range(param.rank))
             return f"({size_args},)"
 
-        # TODO remove ts
         return self.generic_visit(
-            node, ts=ts, is_array=is_array, render_size_args_tuple=render_size_args_tuple, **kwargs
+            node,
+            ScalarKind=_definitions.ScalarKind,
+            is_array=is_array,
+            render_size_args_tuple=render_size_args_tuple,
+            **kwargs,
         )
 
     PythonWrapper = as_jinja(
         """\
 import logging
-from gt4py.next.type_system.type_specifications import ScalarKind
 from {{ plugin_name }} import ffi
-from icon4py.tools.py2fgen import wrapper_utils, runtime_config, _runtime
+from icon4py.tools.py2fgen import utils, runtime_config, _runtime, _definitions
 
 if __debug__:
     logger = logging.getLogger(__name__)
@@ -157,7 +175,7 @@ def {{ func.name }}_wrapper(
         {% for name, arg in func.args.items() %}
         {% if is_array(arg) %}
         {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
-        {% elif arg.dtype == ts.ScalarKind.BOOL %}
+        {% elif arg.dtype == ScalarKind.BOOL %}
         # TODO move bool translation to postprocessing
         assert isinstance({{ name }}, int)
         {{ name }} = {{ name }} != 0
@@ -197,7 +215,7 @@ def {{ func.name }}_wrapper(
                 {% if is_array(arg) %}
                 msg = 'shape of {{ name }} after computation = %s' % str({{ name}}.shape if {{name}} is not None else "None")
                 logger.debug(msg)
-                msg = '{{ name }} after computation: %s' % str(wrapper_utils.as_array(ffi, {{ name }}, {{ arg.dtype }}) if {{ name }} is not None else "None")
+                msg = '{{ name }} after computation: %s' % str(utils.as_array(ffi, {{ name }}, {{ arg.dtype }}) if {{ name }} is not None else "None")
                 logger.debug(msg)
                 {% endif %}
                 {% endfor %}
@@ -475,3 +493,48 @@ subroutine {{name}}({{param_names}})
 end subroutine {{name}}
     """
     )
+
+
+def generate_c_header(plugin: CffiPlugin) -> str:
+    """
+    Generate C header code from the given plugin.
+
+    Args:
+        plugin: The CffiPlugin instance containing information for code generation.
+
+    Returns:
+        Formatted C header code as a string.
+    """
+    generated_code = CHeaderGenerator.apply(plugin)
+    return codegen.format_source("cpp", generated_code, style="LLVM")
+
+
+def generate_python_wrapper(plugin: CffiPlugin) -> str:
+    """
+    Generate Python wrapper code.
+
+    Args:
+        plugin: The CffiPlugin instance containing information for code generation.
+
+    Returns:
+        Formatted Python wrapper code as a string.
+    """
+    python_wrapper = PythonWrapper(
+        module_name=plugin.module_name,
+        plugin_name=plugin.plugin_name,
+        functions=plugin.functions,
+    )
+
+    generated_code = PythonWrapperGenerator.apply(python_wrapper)
+    return codegen.format_source("python", generated_code)
+
+
+def generate_f90_interface(plugin: CffiPlugin) -> str:
+    """
+    Generate Fortran 90 interface code.
+
+    Args:
+        plugin: The CffiPlugin instance containing information for code generation.
+    """
+    generated_code = F90InterfaceGenerator.apply(F90Interface(cffi_plugin=plugin))
+    return _utils.format_fortran_code(generated_code)

@@ -11,13 +11,11 @@ import string
 import pytest
 
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen._template import (
+from icon4py.tools.py2fgen._codegen import (
     CffiPlugin,
     CHeaderGenerator,
     Func,
     as_f90_value,
-)
-from icon4py.tools.py2fgen.generate import (
     generate_c_header,
     generate_f90_interface,
     generate_python_wrapper,
@@ -257,9 +255,8 @@ end module
 def test_python_wrapper(dummy_plugin):
     interface = generate_python_wrapper(dummy_plugin)
     expected = """import logging
-from gt4py.next.type_system.type_specifications import ScalarKind
 from libtest_plugin import ffi
-from icon4py.tools.py2fgen import wrapper_utils, runtime_config, _runtime
+from icon4py.tools.py2fgen import utils, runtime_config, _runtime, _definitions
 
 if __debug__:
     logger = logging.getLogger(__name__)
@@ -336,7 +333,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
                 )
                 logger.debug(msg)
                 msg = "two after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, two, 1064) if two is not None else "None"
+                    utils.as_array(ffi, two, 1064) if two is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -410,7 +407,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
                 )
                 logger.debug(msg)
                 msg = "one after computation: %s" % str(
-                    wrapper_utils.as_array(ffi, one, 1032) if one is not None else "None"
+                    utils.as_array(ffi, one, 1032) if one is not None else "None"
                 )
                 logger.debug(msg)
 

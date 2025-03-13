@@ -21,7 +21,6 @@ from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
     diffusion_wrapper,
     grid_wrapper,
-    wrapper_dimension as w_dim,
 )
 
 from . import utils
@@ -152,14 +151,12 @@ def test_diffusion_wrapper_granule_inputs(
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
-    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
-    vertex_starts = gtx.as_field(
-        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
-    )
-    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
-    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
-    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
+    cell_starts = grid_savepoint._read_int32("c_start_index")
+    cell_ends = grid_savepoint._read_int32("c_end_index")
+    vertex_starts = grid_savepoint._read_int32("v_start_index")
+    vertex_ends = grid_savepoint._read_int32("v_end_index")
+    edge_starts = grid_savepoint._read_int32("e_start_index")
+    edge_ends = grid_savepoint._read_int32("e_end_index")
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
@@ -520,14 +517,12 @@ def test_diffusion_wrapper_single_step(
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
-    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
-    vertex_starts = gtx.as_field(
-        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
-    )
-    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
-    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
-    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
+    cell_starts = grid_savepoint._read_int32("c_start_index")
+    cell_ends = grid_savepoint._read_int32("c_end_index")
+    vertex_starts = grid_savepoint._read_int32("v_start_index")
+    vertex_ends = grid_savepoint._read_int32("v_end_index")
+    edge_starts = grid_savepoint._read_int32("e_start_index")
+    edge_ends = grid_savepoint._read_int32("e_end_index")
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))

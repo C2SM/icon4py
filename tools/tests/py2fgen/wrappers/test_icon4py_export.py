@@ -12,7 +12,6 @@ from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen import wrapper_utils
 from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
@@ -34,7 +33,7 @@ def make_array_descriptor(
     shape: tuple[int, ...],
     on_gpu: bool,
     is_optional: bool,
-) -> wrapper_utils.ArrayDescriptor:
+) -> py2fgen.ArrayDescriptor:
     return (ptr, shape, on_gpu, is_optional)
 
 

@@ -21,7 +21,7 @@ from gt4py.next.type_system import (
 )
 
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen import _definitions, wrapper_utils
+from icon4py.tools.py2fgen import utils
 
 
 def _parse_type_spec(type_spec: ts.TypeSpec) -> tuple[list[gtx.Dimension], ts.ScalarKind]:
@@ -60,14 +60,14 @@ def field_annotation_descriptor_hook(annotation: Any) -> Optional[py2fgen.ParamD
     gt4py_type, is_optional = maybe_gt4py_type
     dims, dtype = _parse_type_spec(gt4py_type)
     if len(dims) > 0:
-        return _definitions.ArrayParamDescriptor(
+        return py2fgen.ArrayParamDescriptor(
             rank=len(dims),
             dtype=dtype,
-            device=_definitions.DeviceType.MAYBE_DEVICE,
+            device=py2fgen.DeviceType.MAYBE_DEVICE,
             is_optional=is_optional,
         )
     else:
-        return _definitions.ScalarParamDescriptor(dtype=dtype)
+        return py2fgen.ScalarParamDescriptor(dtype=dtype)
 
 
 def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Callable:
@@ -75,10 +75,8 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
     # (only for substitution mode where we know we have exactly 2 entries)
     # or by even marking fields as constant over the whole program run and immediately return on second call
     @functools.lru_cache(maxsize=None)
-    def impl(
-        array_descriptor: wrapper_utils.ArrayDescriptor, *, ffi: cffi.FFI
-    ) -> Optional[gtx.Field]:
-        arr = wrapper_utils.as_array(ffi, array_descriptor, scalar_kind)
+    def impl(array_descriptor: py2fgen.ArrayDescriptor, *, ffi: cffi.FFI) -> Optional[gtx.Field]:
+        arr = utils.as_array(ffi, array_descriptor, scalar_kind)
         if arr is None:
             return None
         domain = {d: s for d, s in zip(dims, array_descriptor[1], strict=True)}
@@ -90,7 +88,7 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
 def field_annotation_mapping_hook(
     annotation: Any, param_descriptor: py2fgen.ParamDescriptor
 ) -> Callable | None:
-    if not isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
+    if not isinstance(param_descriptor, py2fgen.ArrayParamDescriptor):
         return None
     maybe_gt4py_type = _get_gt4py_type(annotation)
     if maybe_gt4py_type is None:
