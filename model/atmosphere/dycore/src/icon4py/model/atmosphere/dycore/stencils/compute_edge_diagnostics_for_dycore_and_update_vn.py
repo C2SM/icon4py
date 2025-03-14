@@ -697,7 +697,7 @@ def apply_divergence_damping_and_update_vn_in_corrector_step(
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
         end_edge_local=end_edge_local,
-        out=(next_vn, z_graddiv_vn, z_graddiv2_vn),
+        out=next_vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
