@@ -363,6 +363,9 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        tangential_wind=sp.vt(),
+        vn_on_half_levels=sp.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -373,11 +376,12 @@ def test_dycore_wrapper_granule_inputs(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)),
-        vt=sp.vt(),
-        vn_ie=sp.vn_ie(),
-        w_concorr_c=sp.w_concorr_c(),
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)
+        ),
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)
+        ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
