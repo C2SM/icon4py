@@ -73,20 +73,20 @@ def bencher_baseline(session: nox.Session) -> None:
     """
     session.run(
         *f"bencher run \
-        --branch main \
-        --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
         --threshold-measure latency \
         --threshold-test percentage \
         --threshold-max-sample-size 64 \
         --threshold-upper-boundary 0.1 \
         --thresholds-reset \
         --err \
-        --adapter python_pytest \
         --file pytest_benchmark_results_{session.python}.json".split(),
         env={
             "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),
-            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+            "BENCHER_BRANCH": "main",
+            "BENCHER_TESTBED": f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}",
+            "BENCHER_ADAPTER": "python_pytest",
             "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
         },
         external=True,
         silent=True,
