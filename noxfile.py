@@ -87,6 +87,7 @@ def bencher_baseline(session: nox.Session) -> None:
         --adapter python_pytest \
         --file pytest_benchmark_results_{session.python}.json".split(),
         external=True,
+        silent=True,
     )
 
 # Model test sessions
