@@ -22,6 +22,14 @@ except ImportError:
 if TYPE_CHECKING:
     import cffi
 
+C_STR_TYPE_TO_NP_DTYPE: dict[str, np.dtype] = {
+    "int": np.dtype(np.int32),
+    "double": np.dtype(np.float64),
+    "float": np.dtype(np.float32),
+    "bool": np.dtype(np.bool_),
+    "long": np.dtype(np.int64),
+}
+
 
 def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
     """
@@ -48,11 +56,8 @@ def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.
     )  # TODO use the type from the annotation and add a debug assert that they are fine
 
     # Map C data types to NumPy dtypes
-    dtype_map: dict[str, np.dtype] = {
-        "int": np.dtype(np.int32),
-        "double": np.dtype(np.float64),
-    }
-    dtype = dtype_map.get(c_type, np.dtype(c_type))
+
+    dtype = C_STR_TYPE_TO_NP_DTYPE.get(c_type, np.dtype(c_type))
 
     # Create a NumPy array from the buffer, specifying the Fortran order
     arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
@@ -89,11 +94,7 @@ def _unpack_cupy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> cp.ndarray:
     length = math.prod(sizes)
     c_type = ffi.getctype(ffi.typeof(ptr).item)
 
-    dtype_map = {
-        "int": cp.int32,
-        "double": cp.float64,
-    }
-    dtype = dtype_map.get(c_type, None)
+    dtype = C_STR_TYPE_TO_NP_DTYPE.get(c_type, None)
     if dtype is None:
         raise ValueError(f"Unsupported C data type: {c_type}")
 

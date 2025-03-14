@@ -10,16 +10,7 @@ import cffi
 import numpy as np
 
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen import _export
-
-
-def make_array_descriptor(
-    ptr: "cffi.FFI.CData",  # TODO don't `from __future__ import annotations` otherwise the gt4py annotation will be a string
-    shape: tuple[int, ...],
-    on_gpu: bool,
-    is_optional: bool,
-) -> py2fgen.ArrayDescriptor:
-    return (ptr, shape, on_gpu, is_optional)
+from icon4py.tools.py2fgen import _export, test_utils
 
 
 def test_default_mapping_hook_array():
@@ -34,7 +25,8 @@ def test_default_mapping_hook_array():
         ),
     )
     result = array_mapper(
-        make_array_descriptor(ptr=array_ptr, shape=(10,), on_gpu=False, is_optional=False), ffi=ffi
+        test_utils.array_descriptor(ptr=array_ptr, shape=(10,), on_gpu=False, is_optional=False),
+        ffi=ffi,
     )
 
     assert isinstance(result, np.ndarray)
