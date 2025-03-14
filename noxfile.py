@@ -84,9 +84,9 @@ def bencher_baseline(session: nox.Session) -> None:
         --adapter python_pytest \
         --file pytest_benchmark_results_{session.python}.json".split(),
         env={
-            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"],
-            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"],
-            "BENCHER_HOST": os.environ["BENCHER_HOST"],
+            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),
         },
         external=True,
         silent=True,
