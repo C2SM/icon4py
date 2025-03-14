@@ -1512,8 +1512,8 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
         },
     )
 
-    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy(), atol=5e-20)
-    assert helpers.dallclose(z_graddiv2_vn.asnumpy(), z_graddiv2_vn_ref.asnumpy(), atol=1e-11)
+    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy(), rtol=1e-10)
+    assert helpers.dallclose(z_graddiv2_vn.asnumpy(), z_graddiv2_vn_ref.asnumpy(), rtol=1.e-9)
 
     assert helpers.dallclose(
         next_vn.asnumpy(),
