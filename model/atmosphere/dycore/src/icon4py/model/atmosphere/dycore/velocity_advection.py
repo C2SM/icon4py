@@ -264,6 +264,7 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
+        # return
 
         # scidoc:
         # Outputs:

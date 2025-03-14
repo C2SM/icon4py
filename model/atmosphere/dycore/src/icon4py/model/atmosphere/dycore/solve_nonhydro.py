@@ -51,6 +51,9 @@ from icon4py.model.atmosphere.dycore.stencils.apply_4th_order_divergence_damping
 from icon4py.model.atmosphere.dycore.stencils.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
 )
+from icon4py.model.atmosphere.dycore.stencils.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_original import (
+    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_original,
+)
 from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import (
     apply_rayleigh_damping_mechanism,
 )
@@ -492,6 +495,9 @@ class SolveNonhydro:
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(
                 self._backend
             )
+        )
+        self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_original = apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_original.with_backend(
+            self._backend
         )
         self._add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(
             self._backend
@@ -1006,9 +1012,9 @@ class SolveNonhydro:
                 offset_provider=self._grid.offset_providers,
             )
 
-            if self._vertical_params.nflatlev == 1:
-                # Perturbation Exner pressure on top half level
-                raise NotImplementedError("nflatlev=1 not implemented")
+        #     if self._vertical_params.nflatlev == 1:
+        #         # Perturbation Exner pressure on top half level
+        #         raise NotImplementedError("nflatlev=1 not implemented")
 
         self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
             rho=prognostic_states.current.rho,
@@ -1345,9 +1351,20 @@ class SolveNonhydro:
 
             # TODO (Christoph) check when merging fused stencil
             lowest_level = self._grid.num_levels - 1
+            # hydro_corr_horizontal = gtx.as_field(
+            #     (dims.EdgeDim,),
+            #     self.z_hydro_corr.ndarray[:, lowest_level],
+            #     allocator=self._backend.allocator,
+            # )
+            xp = data_alloc.import_array_ns(self._backend)
+            hydro_corr_horizontal_ = xp.zeros(
+                (self._grid.num_edges, self._grid.num_levels), dtype=float
+            )
+            for k in range(self._grid.num_levels):
+                hydro_corr_horizontal_[:, k] = self.z_hydro_corr.ndarray[:, lowest_level]
             hydro_corr_horizontal = gtx.as_field(
-                (dims.EdgeDim,),
-                self.z_hydro_corr.ndarray[:, lowest_level],
+                (dims.EdgeDim, dims.KDim),
+                hydro_corr_horizontal_,
                 allocator=self._backend.allocator,
             )
 
@@ -1371,6 +1388,17 @@ class SolveNonhydro:
             #  - $(h_k - h_{k^*})$ : pg_exdist
             #  - $\IDXpg$ : ipeidx_dsl
             #
+            # self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_original(
+            #     ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
+            #     pg_exdist=self._metric_state_nonhydro.pg_exdist,
+            #     z_hydro_corr=hydro_corr_horizontal,
+            #     z_gradh_exner=z_fields.z_gradh_exner,
+            #     horizontal_start=self._start_edge_nudging_level_2,
+            #     horizontal_end=self._end_edge_end,
+            #     vertical_start=0,
+            #     vertical_end=self._grid.num_levels,
+            #     offset_provider={},
+            # )
             self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
                 pg_exdist=self._metric_state_nonhydro.pg_exdist,
@@ -1894,6 +1922,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        # TODO: this does not get accessed in FORTRAN
         if (
             self._config.divdamp_order == DivergenceDampingOrder.COMBINED
             and divdamp_fac_o2 <= 4 * self._config.divdamp_fac
@@ -1925,18 +1954,20 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
+        # TODO: this does not get accessed in FORTRAN
         if self._config.is_iau_active:
             log.debug("corrector start stencil 28")
             self._add_analysis_increments_to_vn(
-                vn_incr=diagnostic_state_nh.vn_incr,
-                vn=prognostic_states.next.vn,
-                iau_wgt_dyn=self._config.iau_wgt_dyn,
+                diagnostic_state_nh.vn_incr,
+                prognostic_states.next.vn,
+                self._config.iau_wgt_dyn,
                 horizontal_start=self._start_edge_nudging_level_2,
                 horizontal_end=self._end_edge_local,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
+
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
         log.debug("corrector: start stencil 31")

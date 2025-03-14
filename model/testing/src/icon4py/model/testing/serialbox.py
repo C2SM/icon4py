@@ -1120,10 +1120,10 @@ class IconNonHydroInitSavepoint(IconSavepoint):
 
 
 class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
-    def p_vn(self):
+    def vn(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
-    def p_vt(self):
+    def vt(self):
         return self._get_field("vt", dims.EdgeDim, dims.KDim)
 
     def z_rth_pr(self, ind: TwoIndex):
@@ -1137,6 +1137,45 @@ class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
 
     def theta_v(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def theta_v_ic(self):
+        return self._get_field("theta_v_ic", dims.CellDim, dims.KDim)
+
+    def z_dwdz_dd(self):
+        return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
+
+    def ddt_vn_apc_ntl(self, ntnd):
+        return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
+
+    def ddt_vn_phy(self):
+        return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim)
+
+    def vn_incr(self):  # TODO should be vn_incr
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+
+    def bdy_divdamp(self):
+        return self._get_field("bdy_divdamp", dims.KDim)
+
+    def z_hydro_corr(self):
+        return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv2_vn(self):
+        return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
+
+    def scal_divdamp(self):
+        return self._get_field("scal_divdamp", dims.KDim)
+
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_gradh_exner(self):
+        return self._get_field("z_gradh_exner", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
 
 
 class IconNonHydroExitSavepoint(IconSavepoint):
@@ -1279,6 +1318,9 @@ class IconNonHydroExit_15_28_Savepoint(IconSavepoint):
 
     def z_graddiv_vn(self):
         return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv2_vn(self):
+        return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
 
 
 class IconNonHydroFinalSavepoint(IconSavepoint):

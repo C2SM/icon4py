@@ -15,8 +15,10 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
     dycore_utils,
-    fused_solve_nonhydro_stencil_15_to_28,
     solve_nonhydro as solve_nh,
+)
+from icon4py.model.atmosphere.dycore.stencils import (
+    compute_edge_diagnostics_for_dycore_and_update_vn,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -484,7 +486,6 @@ def test_nonhydro_predictor_step(
         sp_exit.z_beta().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
-
     # stencil 45_b, 52
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_q.asnumpy()[
@@ -624,11 +625,6 @@ def test_nonhydro_corrector_step(
     at_last_substep = substep_init == ndyn_substeps
 
     prognostic_states = utils.create_prognostic_states(init_savepoint)
-    solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh,
-        at_first_substep=at_first_substep,
-        at_initial_timestep=at_initial_timestep,
-    )
 
     if not (at_initial_timestep and at_first_substep):
         diagnostic_state_nh.ddt_w_adv_pc.swap()
@@ -1058,7 +1054,10 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 2, True)])
+@pytest.mark.parametrize(
+    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep",
+    [(1, 1, 1, 1, True)],
+)
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -1067,14 +1066,14 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #     dt_utils.GLOBAL_EXPERIMENT,
-        #     "2000-01-01T00:00:02.000",
-        #     "2000-01-01T00:00:02.000",
-        # ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
-def test_run_solve_nonhydro_15_to_28(
+def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step(
     step_date_init,
     step_date_exit,
     experiment,
@@ -1097,6 +1096,9 @@ def test_run_solve_nonhydro_15_to_28(
     savepoint_nonhydro_15_28_exit,
     backend,
 ):
+    sp = savepoint_nonhydro_init
+    sp_exit = savepoint_nonhydro_exit
+
     edge_domain = h_grid.domain(dims.EdgeDim)
 
     start_edge_halo_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -1121,8 +1123,9 @@ def test_run_solve_nonhydro_15_to_28(
     vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
-    p_vn = savepoint_nonhydro_15_28_init.p_vn()
-    p_vt = savepoint_nonhydro_15_28_init.p_vt()
+    current_vn = savepoint_nonhydro_15_28_init.vn()
+    next_vn = sp.vn_new()
+    vt = savepoint_nonhydro_15_28_init.vt()
     z_rth_pr_1 = savepoint_nonhydro_15_28_init.z_rth_pr(0)
     z_rth_pr_2 = savepoint_nonhydro_15_28_init.z_rth_pr(1)
     z_exner_ex_pr = savepoint_nonhydro_15_28_init.z_exner_ex_pr()
@@ -1130,26 +1133,14 @@ def test_run_solve_nonhydro_15_to_28(
     z_dexner_dz_c_2 = savepoint_nonhydro_15_28_init.z_dexner_dz_c(1)
     theta_v = savepoint_nonhydro_15_28_init.theta_v()
     theta_v_ic = savepoint_nonhydro_15_28_init.theta_v_ic()
-    z_dwdz_dd = savepoint_nonhydro_15_28_init.z_dwdz_dd()
-    ddt_vn_apc_ntl2 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(1)
     ddt_vn_apc_ntl1 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
     ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
-    # vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
-    vn_incr = gtx.empty(
-        domain={dims.EdgeDim: range(icon_grid.num_edges), dims.KDim: range(icon_grid.num_levels)}
-    )
-    bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
+    vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
     z_hydro_corr = savepoint_nonhydro_15_28_init.z_hydro_corr()
-    z_graddiv2_vn = savepoint_nonhydro_15_28_init.z_graddiv2_vn()
-    scal_divdamp = savepoint_nonhydro_15_28_init.scal_divdamp()
     z_rho_e = savepoint_nonhydro_15_28_init.z_rho_e()
     z_theta_v_e = savepoint_nonhydro_15_28_init.z_theta_v_e()
-    z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
-    vn = savepoint_nonhydro_15_28_init.vn()
-    z_graddiv_vn = savepoint_nonhydro_15_28_init.z_graddiv_vn()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    params_config = solve_nh.NonHydrostaticConfig()
     primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
         dims.ECDim, field=grid_savepoint.primal_normal_cell_x()
     )
@@ -1163,85 +1154,110 @@ def test_run_solve_nonhydro_15_to_28(
         dims.ECDim, field=grid_savepoint.dual_normal_cell_y()
     )
 
-    iau_wgt_dyn = params_config.iau_wgt_dyn
-    itime_scheme = params_config.itime_scheme
-    divdamp_order = params_config.divdamp_order
-    scal_divdamp_o2 = params_config.divdamp_fac2 * grid_savepoint.mean_cell_area()
-    iadv_rhotheta = params_config.iadv_rhotheta
-    is_iau_active = params_config.is_iau_active
-    igradp_method = params_config.igradp_method
+    iau_wgt_dyn = config.iau_wgt_dyn
+    iadv_rhotheta = config.iadv_rhotheta
+    is_iau_active = config.is_iau_active
+    igradp_method = config.igradp_method
 
     z_rho_e_ref = savepoint_nonhydro_15_28_exit.z_rho_e()
     z_theta_v_e_ref = savepoint_nonhydro_15_28_exit.z_theta_v_e()
     z_gradh_exner_ref = savepoint_nonhydro_15_28_exit.z_gradh_exner()
     vn_ref = savepoint_nonhydro_15_28_exit.vn()
-    z_graddiv_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv_vn()
 
-    fused_solve_nonhydro_stencil_15_to_28.fused_solve_nonhydro_stencil_15_to_28.with_backend(
+    dtime = sp.get_metadata("dtime").get("dtime")
+
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
+
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+
+    solve_nonhydro = solve_nh.SolveNonhydro(
+        grid=icon_grid,
+        config=config,
+        params=nonhydro_params,
+        metric_state_nonhydro=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
+        vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
+        cell_geometry=cell_geometry,
+        owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
+    )
+    at_first_substep = substep_init == 1
+
+    prognostic_states = utils.create_prognostic_states(sp)
+    if not (at_initial_timestep and at_first_substep):
+        diagnostic_state_nh.ddt_w_adv_pc.swap()
+    if not at_first_substep:
+        diagnostic_state_nh.ddt_vn_apc_pc.swap()
+
+    solve_nonhydro.run_predictor_step(
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_states=prognostic_states,
+        z_fields=solve_nonhydro.intermediate_fields,
+        dtime=dtime,
+        at_initial_timestep=at_initial_timestep,
+        at_first_substep=at_first_substep,
+    )
+
+    compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step.with_backend(
         backend
     )(
+        z_rho_e=z_rho_e,
+        z_theta_v_e=z_theta_v_e,
+        # TODO (Chia Rui): use the savepoint as input when scan_operator can be used in this stencil
+        z_gradh_exner=solve_nonhydro.intermediate_fields.z_gradh_exner,
+        current_vn=current_vn,
+        next_vn=next_vn,
+        vt=vt,
+        z_hydro_corr=z_hydro_corr,
+        rho_ref_me=metrics_savepoint.rho_ref_me(),
+        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        z_rth_pr_1=z_rth_pr_1,
+        z_rth_pr_2=z_rth_pr_2,
+        z_exner_ex_pr=z_exner_ex_pr,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
+        z_dexner_dz_c_2=z_dexner_dz_c_2,
+        theta_v=theta_v,
+        theta_v_ic=theta_v_ic,
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_phy=ddt_vn_phy,
+        vn_incr=vn_incr,
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        p_vn=p_vn,
-        p_vt=p_vt,
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         primal_normal_cell_1=primal_normal_cell_1,
         dual_normal_cell_1=dual_normal_cell_1,
         primal_normal_cell_2=primal_normal_cell_2,
         dual_normal_cell_2=dual_normal_cell_2,
-        rho_ref_me=metrics_savepoint.rho_ref_me(),
-        theta_ref_me=metrics_savepoint.theta_ref_me(),
-        z_rth_pr_1=z_rth_pr_1,
-        z_rth_pr_2=z_rth_pr_2,
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         c_lin_e=interpolation_savepoint.c_lin_e(),
-        z_exner_ex_pr=z_exner_ex_pr,
-        z_dexner_dz_c_1=z_dexner_dz_c_1,
-        z_dexner_dz_c_2=z_dexner_dz_c_2,
-        theta_v=theta_v,
         ikoffset=metrics_savepoint.vertoffset_gradp(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
-        theta_v_ic=theta_v_ic,
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         ipeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
-        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
-        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
-        z_dwdz_dd=z_dwdz_dd,
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
-        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-        ddt_vn_phy=ddt_vn_phy,
-        vn_incr=vn_incr,
-        horz_idx=horz_idx,
-        vert_idx=vert_idx,
-        bdy_divdamp=bdy_divdamp,
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-        z_hydro_corr=z_hydro_corr,
-        geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
-        z_graddiv2_vn=z_graddiv2_vn,
-        scal_divdamp=scal_divdamp,
-        z_rho_e=z_rho_e,
-        z_theta_v_e=z_theta_v_e,
-        z_gradh_exner=z_gradh_exner,
-        vn=vn,
-        z_graddiv_vn=z_graddiv_vn,
-        divdamp_fac=config.divdamp_fac,
-        divdamp_fac_o2=savepoint_nonhydro_init.divdamp_fac_o2(),
-        wgt_nnow_vel=savepoint_nonhydro_init.wgt_nnow_vel(),
-        wgt_nnew_vel=savepoint_nonhydro_init.wgt_nnew_vel(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         cpd=constants.CPD,
         iau_wgt_dyn=iau_wgt_dyn,
-        is_iau_active=is_iau_active,
-        itime_scheme=itime_scheme,
         p_dthalf=(0.5 * savepoint_nonhydro_init.get_metadata("dtime").get("dtime")),
         grav_o_cpd=nonhydro_params.grav_o_cpd,
+        is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
-        divdamp_order=divdamp_order,
-        scal_divdamp_o2=scal_divdamp_o2,
-        istep=istep_init,
+        iadv_rhotheta=iadv_rhotheta,
+        igradp_method=igradp_method.value,
+        MIURA=solve_nh.RhoThetaAdvectionType.MIURA.value,
+        TAYLOR_HYDRO=solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value,
+        horz_idx=horz_idx,
+        vert_idx=vert_idx,
+        nlev=icon_grid.num_levels,
+        nflatlev=vertical_params.nflatlev,
+        nflat_gradp=vertical_params.nflat_gradp,
         start_edge_halo_level_2=start_edge_halo_level_2,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary=start_edge_lateral_boundary,
@@ -1250,16 +1266,10 @@ def test_run_solve_nonhydro_15_to_28(
         start_edge_nudging_level_2=start_edge_nudging_level_2,
         end_edge_local=end_edge_local,
         end_edge_end=end_edge_end,
-        iadv_rhotheta=iadv_rhotheta,
-        igradp_method=igradp_method.value,
-        MIURA=solve_nh.RhoThetaAdvectionType.MIURA.value,
-        TAYLOR_HYDRO=solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value,
-        nlev=icon_grid.num_levels,
-        kstart_dd3d=nonhydro_params.kstart_dd3d,
-        COMBINED=solve_nh.DivergenceDampingOrder.COMBINED,
-        FOURTH_ORDER=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
-        nflatlev=vertical_params.nflatlev,
-        nflat_gradp=vertical_params.nflat_gradp,
+        horizontal_start=gtx.int32(0),
+        horizontal_end=gtx.int32(icon_grid.num_edges),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
             "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
             "E2EC": icon_grid.get_offset_provider("E2EC"),
@@ -1271,6 +1281,242 @@ def test_run_solve_nonhydro_15_to_28(
 
     assert helpers.dallclose(z_rho_e.asnumpy(), z_rho_e_ref.asnumpy())
     assert helpers.dallclose(z_theta_v_e.asnumpy(), z_theta_v_e_ref.asnumpy())
-    assert helpers.dallclose(z_gradh_exner.asnumpy(), z_gradh_exner_ref.asnumpy())
-    assert helpers.dallclose(vn.asnumpy(), vn_ref.asnumpy())
-    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy())
+
+    # TODO (Chia Rui): compare against the result of the combined stencil when z_gradh_exner can be computed
+    assert helpers.dallclose(
+        solve_nonhydro.intermediate_fields.z_gradh_exner.asnumpy()[start_edge_nudging_level_2:, :],
+        z_gradh_exner_ref.asnumpy()[start_edge_nudging_level_2:, :],
+        atol=1e-20,
+    )
+    assert helpers.dallclose(
+        next_vn.asnumpy()[start_edge_nudging_level_2:, :],
+        sp_exit.vn_new().asnumpy()[start_edge_nudging_level_2:, :],
+        atol=6e-15,
+    )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep",
+    [(2, 1, 2, 1, True)],
+)
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
+    ],
+)
+def test_apply_divergence_damping_and_update_vn_in_corrector_step(
+    step_date_init,
+    step_date_exit,
+    experiment,
+    ndyn_substeps,
+    icon_grid,
+    savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    savepoint_nonhydro_exit,
+    at_initial_timestep,
+    istep_init,
+    substep_init,
+    substep_exit,
+    savepoint_nonhydro_15_28_init,
+    savepoint_nonhydro_15_28_exit,
+    backend,
+):
+    sp = savepoint_nonhydro_init
+    sp_exit = savepoint_nonhydro_exit
+
+    edge_domain = h_grid.domain(dims.EdgeDim)
+
+    end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+    start_edge_lateral_boundary_level_7 = icon_grid.start_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
+    )
+    start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+    end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+
+    vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
+
+    z_dwdz_dd = savepoint_nonhydro_15_28_init.z_dwdz_dd()
+    ddt_vn_apc_ntl2 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(1)
+    ddt_vn_apc_ntl1 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
+    ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
+    vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
+    bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
+    z_graddiv2_vn = (
+        savepoint_nonhydro_15_28_init.z_graddiv2_vn()
+    )  # data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
+    scal_divdamp = savepoint_nonhydro_15_28_init.scal_divdamp()
+    z_theta_v_e = savepoint_nonhydro_15_28_init.z_theta_v_e()
+    z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
+    current_vn = savepoint_nonhydro_15_28_init.vn()  # savepoint_nonhydro_init.vn_now()#
+    next_vn = savepoint_nonhydro_init.vn_new()
+    z_graddiv_vn = sp.z_graddiv_vn()
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+
+    iau_wgt_dyn = config.iau_wgt_dyn
+    itime_scheme = config.itime_scheme
+    divdamp_order = config.divdamp_order
+    scal_divdamp_o2 = sp.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
+    is_iau_active = config.is_iau_active
+
+    vn_ref = sp_exit.vn_new()
+    z_graddiv_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv_vn()
+    z_graddiv2_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv2_vn()
+
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    dtime = sp.get_metadata("dtime").get("dtime")
+    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prep_adv = dycore_states.PrepAdvection(
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
+    )
+
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
+
+    z_fields = solve_nh.IntermediateFields(
+        z_gradh_exner=sp.z_gradh_exner(),
+        z_alpha=sp.z_alpha(),
+        z_beta=sp.z_beta(),
+        z_w_expl=sp.z_w_expl(),
+        z_exner_expl=sp.z_exner_expl(),
+        z_q=sp.z_q(),
+        z_contr_w_fl_l=sp.z_contr_w_fl_l(),
+        z_rho_e=sp.z_rho_e(),
+        z_theta_v_e=sp.z_theta_v_e(),
+        z_graddiv_vn=sp.z_graddiv_vn(),
+        z_rho_expl=sp.z_rho_expl(),
+        z_dwdz_dd=sp.z_dwdz_dd(),
+        z_kin_hor_e=sp.z_kin_hor_e(),
+        z_vt_ie=sp.z_vt_ie(),
+    )
+
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+
+    solve_nonhydro = solve_nh.SolveNonhydro(
+        grid=icon_grid,
+        config=config,
+        params=nonhydro_params,
+        metric_state_nonhydro=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
+        vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
+        cell_geometry=cell_geometry,
+        owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
+    )
+    at_first_substep = substep_init == 1
+    at_last_substep = substep_init == ndyn_substeps
+
+    prognostic_states = utils.create_prognostic_states(sp)
+    if not (at_initial_timestep and at_first_substep):
+        diagnostic_state_nh.ddt_w_adv_pc.swap()
+    if not at_first_substep:
+        diagnostic_state_nh.ddt_vn_apc_pc.swap()
+
+    solve_nonhydro.run_corrector_step(
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_states=prognostic_states,
+        z_fields=z_fields,
+        prep_adv=prep_adv,
+        divdamp_fac_o2=savepoint_nonhydro_init.divdamp_fac_o2(),
+        dtime=dtime,
+        lprep_adv=lprep_adv,
+        at_first_substep=at_first_substep,
+        at_last_substep=at_last_substep,
+    )
+
+    compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn_in_corrector_step.with_backend(
+        backend
+    )(
+        z_graddiv_vn=z_graddiv_vn,
+        z_graddiv2_vn=z_graddiv2_vn,
+        next_vn=next_vn,
+        current_vn=current_vn,
+        z_dwdz_dd=z_dwdz_dd,
+        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_phy=ddt_vn_phy,
+        vn_incr=vn_incr,
+        bdy_divdamp=bdy_divdamp,
+        scal_divdamp=scal_divdamp,
+        z_theta_v_e=z_theta_v_e,
+        z_gradh_exner=z_gradh_exner,
+        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
+        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+        geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
+        divdamp_fac=config.divdamp_fac,
+        divdamp_fac_o2=savepoint_nonhydro_init.divdamp_fac_o2(),
+        wgt_nnow_vel=savepoint_nonhydro_init.wgt_nnow_vel(),
+        wgt_nnew_vel=savepoint_nonhydro_init.wgt_nnew_vel(),
+        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        cpd=constants.CPD,
+        iau_wgt_dyn=iau_wgt_dyn,
+        is_iau_active=is_iau_active,
+        itime_scheme=itime_scheme,
+        limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
+        divdamp_order=divdamp_order,
+        scal_divdamp_o2=scal_divdamp_o2,
+        COMBINED=solve_nh.DivergenceDampingOrder.COMBINED,
+        FOURTH_ORDER=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
+        horz_idx=horz_idx,
+        vert_idx=vert_idx,
+        kstart_dd3d=nonhydro_params.kstart_dd3d,
+        end_edge_halo_level_2=end_edge_halo_level_2,
+        start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
+        start_edge_nudging_level_2=start_edge_nudging_level_2,
+        end_edge_local=end_edge_local,
+        horizontal_start=gtx.int32(0),
+        horizontal_end=gtx.int32(icon_grid.num_edges),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels),
+        offset_provider={
+            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "E2EC": icon_grid.get_offset_provider("E2EC"),
+            "E2C": icon_grid.get_offset_provider("E2C"),
+            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "Koff": dims.KDim,
+        },
+    )
+
+    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy(), atol=5e-20)
+    assert helpers.dallclose(z_graddiv2_vn.asnumpy(), z_graddiv2_vn_ref.asnumpy(), atol=1e-11)
+
+    assert helpers.dallclose(
+        next_vn.asnumpy(),
+        vn_ref.asnumpy(),
+        atol=6.0e-15,
+    )
