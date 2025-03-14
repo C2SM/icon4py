@@ -6,15 +6,32 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import importlib
 import logging
 from pathlib import Path
+from typing import Callable
 
 import cffi
 
-from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.py2fgen import _codegen
 
 
-logger = setup_logger(__name__)
+def get_cffi_description(
+    module_name: str, functions: list[str], plugin_name: str
+) -> _codegen.CffiPlugin:
+    module = importlib.import_module(module_name)
+    parsed_functions = [_get_function_descriptor(getattr(module, f)) for f in functions]
+    return _codegen.CffiPlugin(
+        module_name=module_name,
+        plugin_name=plugin_name,
+        functions=parsed_functions,
+    )
+
+
+def _get_function_descriptor(fun: Callable) -> _codegen.Func:
+    if not hasattr(fun, "param_descriptors"):
+        raise TypeError("Cannot parse function, did you forget to decorate it with '@export'?")
+    return _codegen.Func(name=fun.__name__, args=fun.param_descriptors)
 
 
 def generate_and_compile_cffi_plugin(
@@ -68,6 +85,5 @@ def compile_cffi_plugin(
     builder: cffi.FFI, python_wrapper: str, build_path: str, plugin_name: str
 ) -> None:
     """Compile the CFFI plugin with the given configuration."""
-    logger.info("Compiling CFFI dynamic library...")
     builder.embedding_init_code(python_wrapper)
     builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)

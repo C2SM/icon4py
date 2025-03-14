@@ -12,7 +12,7 @@ import subprocess
 import pytest
 from click.testing import CliRunner
 
-from icon4py.tools.py2fgen.cli import main
+from icon4py.tools.py2fgen._cli import main
 
 
 @pytest.fixture
@@ -81,7 +81,7 @@ def run_test_case(
 
 
 def invoke_cli(cli, module, function, plugin_name):
-    cli_args = [module, function, plugin_name, "-d"]
+    cli_args = [module, function, plugin_name]
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 

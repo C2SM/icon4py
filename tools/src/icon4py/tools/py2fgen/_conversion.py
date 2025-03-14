@@ -9,24 +9,29 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-import gt4py.next as gtx
 import numpy as np
-from gt4py.next import common as gtx_common
-from gt4py.next.type_system import type_specifications as ts
 
-
-if TYPE_CHECKING:
-    import cffi
 
 try:
     import cupy as cp  # type: ignore
 except ImportError:
     cp = None
 
+if TYPE_CHECKING:
+    import cffi
 
-def _unpack(ffi: cffi.FFI, ptr, *sizes: int) -> np.typing.NDArray:  # type: ignore[no-untyped-def] # CData type not public?
+C_STR_TYPE_TO_NP_DTYPE: dict[str, np.dtype] = {
+    "int": np.dtype(np.int32),
+    "double": np.dtype(np.float64),
+    "float": np.dtype(np.float32),
+    "bool": np.dtype(np.bool_),
+    "long": np.dtype(np.int64),
+}
+
+
+def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
     """
     Converts a C pointer into a NumPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations requiring in-place modification of CPU data, enabling
@@ -51,11 +56,8 @@ def _unpack(ffi: cffi.FFI, ptr, *sizes: int) -> np.typing.NDArray:  # type: igno
     )  # TODO use the type from the annotation and add a debug assert that they are fine
 
     # Map C data types to NumPy dtypes
-    dtype_map: dict[str, np.dtype] = {
-        "int": np.dtype(np.int32),
-        "double": np.dtype(np.float64),
-    }
-    dtype = dtype_map.get(c_type, np.dtype(c_type))
+
+    dtype = C_STR_TYPE_TO_NP_DTYPE.get(c_type, np.dtype(c_type))
 
     # Create a NumPy array from the buffer, specifying the Fortran order
     arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
@@ -64,7 +66,7 @@ def _unpack(ffi: cffi.FFI, ptr, *sizes: int) -> np.typing.NDArray:  # type: igno
     return arr
 
 
-def _unpack_gpu(ffi: cffi.FFI, ptr, *sizes: int):  # type: ignore[no-untyped-def] # CData type not public?
+def _unpack_cupy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> cp.ndarray:
     """
     Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations that require in-place modification of GPU data,
@@ -84,6 +86,7 @@ def _unpack_gpu(ffi: cffi.FFI, ptr, *sizes: int):  # type: ignore[no-untyped-def
                     This array shares the underlying data with the original Fortran code, allowing
                     modifications made through the array to affect the original data.
     """
+    assert cp is not None
 
     if not sizes:
         raise ValueError("Sizes must be provided to determine the array shape.")
@@ -91,11 +94,7 @@ def _unpack_gpu(ffi: cffi.FFI, ptr, *sizes: int):  # type: ignore[no-untyped-def
     length = math.prod(sizes)
     c_type = ffi.getctype(ffi.typeof(ptr).item)
 
-    dtype_map = {
-        "int": cp.int32,
-        "double": cp.float64,
-    }
-    dtype = dtype_map.get(c_type, None)
+    dtype = C_STR_TYPE_TO_NP_DTYPE.get(c_type, None)
     if dtype is None:
         raise ValueError(f"Unsupported C data type: {c_type}")
 
@@ -123,27 +122,5 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
         A NumPy array of booleans.
     """
     bool_array = int_array != 0
+    bool_array.flags.writeable = False
     return bool_array
-
-
-def as_field(  # type: ignore[no-untyped-def] # CData type not public?
-    ffi: cffi.FFI,
-    on_gpu: bool,
-    ptr,
-    scalar_kind: ts.ScalarKind,
-    domain: dict[gtx.Dimension, int],
-    is_optional: bool,
-) -> Optional[gtx.Field]:
-    sizes = domain.values()
-    unpack = _unpack_gpu if on_gpu else _unpack
-    if ptr == ffi.NULL:
-        if is_optional:
-            return None
-        else:
-            raise ValueError("Field is required but was not provided.")
-    arr = unpack(ffi, ptr, *sizes)
-    if scalar_kind == ts.ScalarKind.BOOL:
-        # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
-        # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
-        arr = _int_array_to_bool_array(arr)
-    return gtx_common._field(arr, domain=gtx_common.domain(domain))
