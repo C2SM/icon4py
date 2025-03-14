@@ -1119,6 +1119,32 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
 
 
+class IconNonHydroInit15to28Savepoint(IconSavepoint):
+    def z_rth_pr(self, ind: TwoIndex):
+        return self._get_field_component("z_rth_pr", ind, (dims.CellDim, dims.KDim))
+
+    def z_exner_ex_pr(self):
+        return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)
+
+    def exner_pr(self):
+        return self._get_field("exner_pr", dims.CellDim, dims.KDim)
+
+    def rho_ic(self):
+        return self._get_field("rho_ic", dims.CellDim, dims.KDim)
+
+    def z_exner_ic(self):
+        return self._get_field("z_exner_ic", dims.CellDim, dims.KDim)
+
+    def z_theta_v_pr_ic(self):
+        return self._get_field("z_theta_v_pr_ic", dims.CellDim, dims.KDim)
+
+    def theta_v_ic(self):
+        return self._get_field("theta_v_ic", dims.CellDim, dims.KDim)
+
+    def z_dexner_dz_c(self, ntnd: TimeIndex):
+        return self._get_field_component("z_dexner_dz_c", ntnd, (dims.CellDim, dims.KDim))
+
+
 class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ex_pr(self):
         return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)  # KHalfDim
@@ -1885,6 +1911,20 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_nonhydro_15_28_init(
+        self, istep: int, date: str, substep: int
+    ) -> IconNonHydroInit15to28Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-14to28-init_1to13-exit"]
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconNonHydroInit15to28Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 

@@ -32,6 +32,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     ranked_data_path,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
+    savepoint_nonhydro_15_28_init,
     savepoint_nonhydro_step_final,
     savepoint_velocity_exit,
     savepoint_velocity_init,
