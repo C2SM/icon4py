@@ -73,9 +73,6 @@ def bencher_baseline(session: nox.Session) -> None:
     """
     session.run(
         *f"bencher run \
-        --project {os.environ['BENCHER_PROJECT']} \
-        --token {os.environ['BENCHER_API_TOKEN']} \
-        --host {os.environ['BENCHER_HOST']} \
         --branch main \
         --testbed {os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']} \
         --threshold-measure latency \
@@ -86,6 +83,11 @@ def bencher_baseline(session: nox.Session) -> None:
         --err \
         --adapter python_pytest \
         --file pytest_benchmark_results_{session.python}.json".split(),
+        env={
+            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"],
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"],
+            "BENCHER_HOST": os.environ["BENCHER_HOST"],
+        },
         external=True,
         silent=True,
     )
