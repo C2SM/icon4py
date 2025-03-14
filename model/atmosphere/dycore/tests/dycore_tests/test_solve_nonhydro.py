@@ -1088,7 +1088,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    at_initial_timestep,
     istep_init,
     substep_init,
     substep_exit,
@@ -1126,6 +1125,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     current_vn = savepoint_nonhydro_15_28_init.vn()
     next_vn = sp.vn_new()
     vt = savepoint_nonhydro_15_28_init.vt()
+    z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
     z_rth_pr_1 = savepoint_nonhydro_15_28_init.z_rth_pr(0)
     z_rth_pr_2 = savepoint_nonhydro_15_28_init.z_rth_pr(1)
     z_exner_ex_pr = savepoint_nonhydro_15_28_init.z_exner_ex_pr()
@@ -1162,54 +1162,14 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     z_rho_e_ref = savepoint_nonhydro_15_28_exit.z_rho_e()
     z_theta_v_e_ref = savepoint_nonhydro_15_28_exit.z_theta_v_e()
     z_gradh_exner_ref = savepoint_nonhydro_15_28_exit.z_gradh_exner()
-    vn_ref = savepoint_nonhydro_15_28_exit.vn()
-
-    dtime = sp.get_metadata("dtime").get("dtime")
-
-    diagnostic_state_nh = utils.construct_diagnostics(sp)
-
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
-
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
-
-    solve_nonhydro = solve_nh.SolveNonhydro(
-        grid=icon_grid,
-        config=config,
-        params=nonhydro_params,
-        metric_state_nonhydro=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
-    )
-    at_first_substep = substep_init == 1
-
-    prognostic_states = utils.create_prognostic_states(sp)
-    if not (at_initial_timestep and at_first_substep):
-        diagnostic_state_nh.ddt_w_adv_pc.swap()
-    if not at_first_substep:
-        diagnostic_state_nh.ddt_vn_apc_pc.swap()
-
-    solve_nonhydro.run_predictor_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        z_fields=solve_nonhydro.intermediate_fields,
-        dtime=dtime,
-        at_initial_timestep=at_initial_timestep,
-        at_first_substep=at_first_substep,
-    )
+    vn_ref = sp_exit.vn_new()
 
     compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step.with_backend(
         backend
     )(
         z_rho_e=z_rho_e,
         z_theta_v_e=z_theta_v_e,
-        # TODO (Chia Rui): use the savepoint as input when scan_operator can be used in this stencil
-        z_gradh_exner=solve_nonhydro.intermediate_fields.z_gradh_exner,
+        z_gradh_exner=z_gradh_exner,
         current_vn=current_vn,
         next_vn=next_vn,
         vt=vt,
@@ -1283,13 +1243,13 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     assert helpers.dallclose(z_theta_v_e.asnumpy(), z_theta_v_e_ref.asnumpy())
 
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_gradh_exner.asnumpy()[start_edge_nudging_level_2:, :],
-        z_gradh_exner_ref.asnumpy()[start_edge_nudging_level_2:, :],
+        z_gradh_exner.asnumpy(),
+        z_gradh_exner_ref.asnumpy(),
         atol=1e-20,
     )
     assert helpers.dallclose(
         next_vn.asnumpy()[start_edge_nudging_level_2:, :],
-        sp_exit.vn_new().asnumpy()[start_edge_nudging_level_2:, :],
+        vn_ref.asnumpy()[start_edge_nudging_level_2:, :],
         atol=6e-15,
     )
 
@@ -1330,7 +1290,6 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    at_initial_timestep,
     istep_init,
     substep_init,
     substep_exit,
@@ -1359,13 +1318,11 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
     vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
     bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
-    z_graddiv2_vn = (
-        savepoint_nonhydro_15_28_init.z_graddiv2_vn()
-    )  # data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
+    z_graddiv2_vn = savepoint_nonhydro_15_28_init.z_graddiv2_vn()
     scal_divdamp = savepoint_nonhydro_15_28_init.scal_divdamp()
     z_theta_v_e = savepoint_nonhydro_15_28_init.z_theta_v_e()
     z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
-    current_vn = savepoint_nonhydro_15_28_init.vn()  # savepoint_nonhydro_init.vn_now()#
+    current_vn = savepoint_nonhydro_15_28_init.vn()
     next_vn = savepoint_nonhydro_init.vn_new()
     z_graddiv_vn = sp.z_graddiv_vn()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -1380,81 +1337,6 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     vn_ref = sp_exit.vn_new()
     z_graddiv_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv_vn()
     z_graddiv2_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv2_vn()
-
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=sp.vn_traj(),
-        mass_flx_me=sp.mass_flx_me(),
-        mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
-    )
-
-    diagnostic_state_nh = utils.construct_diagnostics(sp)
-
-    z_fields = solve_nh.IntermediateFields(
-        z_gradh_exner=sp.z_gradh_exner(),
-        z_alpha=sp.z_alpha(),
-        z_beta=sp.z_beta(),
-        z_w_expl=sp.z_w_expl(),
-        z_exner_expl=sp.z_exner_expl(),
-        z_q=sp.z_q(),
-        z_contr_w_fl_l=sp.z_contr_w_fl_l(),
-        z_rho_e=sp.z_rho_e(),
-        z_theta_v_e=sp.z_theta_v_e(),
-        z_graddiv_vn=sp.z_graddiv_vn(),
-        z_rho_expl=sp.z_rho_expl(),
-        z_dwdz_dd=sp.z_dwdz_dd(),
-        z_kin_hor_e=sp.z_kin_hor_e(),
-        z_vt_ie=sp.z_vt_ie(),
-    )
-
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
-
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
-
-    solve_nonhydro = solve_nh.SolveNonhydro(
-        grid=icon_grid,
-        config=config,
-        params=nonhydro_params,
-        metric_state_nonhydro=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
-    )
-    at_first_substep = substep_init == 1
-    at_last_substep = substep_init == ndyn_substeps
-
-    prognostic_states = utils.create_prognostic_states(sp)
-    if not (at_initial_timestep and at_first_substep):
-        diagnostic_state_nh.ddt_w_adv_pc.swap()
-    if not at_first_substep:
-        diagnostic_state_nh.ddt_vn_apc_pc.swap()
-
-    solve_nonhydro.run_corrector_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        z_fields=z_fields,
-        prep_adv=prep_adv,
-        divdamp_fac_o2=savepoint_nonhydro_init.divdamp_fac_o2(),
-        dtime=dtime,
-        lprep_adv=lprep_adv,
-        at_first_substep=at_first_substep,
-        at_last_substep=at_last_substep,
-    )
 
     compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn_in_corrector_step.with_backend(
         backend
@@ -1517,5 +1399,5 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     assert helpers.dallclose(
         next_vn.asnumpy(),
         vn_ref.asnumpy(),
-        atol=6.0e-15,
+        atol=4.0e-15,
     )
