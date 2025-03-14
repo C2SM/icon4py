@@ -70,6 +70,8 @@ def _as_array(
 ) -> Callable[[_definitions.ArrayDescriptor, cffi.FFI], NDArray]:
     @functools.lru_cache(maxsize=None)
     def impl(array_descriptor: _definitions.ArrayDescriptor, *, ffi: cffi.FFI) -> NDArray:
+        if array_descriptor[3] and array_descriptor is None:
+            return None
         return utils.as_array(ffi, array_descriptor, dtype)
 
     return impl

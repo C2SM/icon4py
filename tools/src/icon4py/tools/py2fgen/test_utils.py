@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import cffi
 import numpy as np
@@ -60,15 +60,26 @@ def array_to_array_descriptor(
     arr: np.ndarray,
     *,
     ffi: Optional[cffi.FFI] = None,
+    keep_alive: bool = True,
+    as_fortran_layout: bool = True,
 ) -> _definitions.ArrayDescriptor:
     if ffi is None:
         ffi = cffi.FFI()
     # TODO(havogt): need to move bool handling to Fortran side
     if arr.dtype == np.bool_:
         arr = arr.astype(np.int32, copy=True)
+    if as_fortran_layout and not arr.flags["F_CONTIGUOUS"]:
+        arr = np.asfortranarray(arr)
 
     addr = arr.ctypes.data
     strtype = _codegen.BUILTIN_TO_CPP_TYPE[from_np_dtype(arr.dtype)]
     ptr = ffi.cast(f"{strtype}*", addr)
+
+    # bind the lifetime of `arr`to `ptr`
+    def nothing(_: Any) -> None:
+        pass
+
+    if keep_alive:
+        ptr = ffi.gc(ptr, lambda _: nothing(arr))
 
     return array_descriptor(ptr, arr.shape, False, False)

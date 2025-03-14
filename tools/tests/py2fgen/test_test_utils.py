@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gc
+
 import cffi
 import numpy as np
 import pytest
@@ -29,3 +31,26 @@ def test_array_as_array_descriptor(ffi, dtype):
     arr = utils.as_array(ffi, result, from_np_dtype(dtype))
     assert isinstance(arr, np.ndarray)
     assert np.array_equal(arr, testee)
+
+
+def test_array_as_array_descriptor_lifetime(ffi):
+    result = array_to_array_descriptor(np.arange(100000, dtype=np.int32), ffi=ffi)
+
+    gc.collect()  # Force garbage collection
+    _dummy = np.arange(100000, dtype=np.int32) + 1  # let's hope we get the same memory
+
+    arr = utils.as_array(ffi, result, from_np_dtype(np.int32))
+    assert isinstance(arr, np.ndarray)
+    assert np.array_equal(arr, np.arange(100000, dtype=np.int32))
+
+
+def test_array_as_array_descriptor_do_not_keepalive(ffi):
+    # this test relies on overwriting the memory of the original array which went out of scope
+    # if flaky, we should remove it
+    result = array_to_array_descriptor(np.arange(100000, dtype=np.int32), ffi=ffi, keep_alive=False)
+
+    gc.collect()  # Force garbage collection
+    _dummy = np.arange(100000, dtype=np.int32) + 1  # let's hope we get the same memory
+
+    arr = utils.as_array(ffi, result, from_np_dtype(np.int32))
+    assert not np.array_equal(arr, np.arange(100000, dtype=np.int32))

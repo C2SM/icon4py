@@ -122,5 +122,5 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
         A NumPy array of booleans.
     """
     bool_array = int_array != 0
-    bool_array.flags.writeable = False
+    # bool_array.flags.writeable = False # TODO np.ndarray.__dlpack__() doesn't like the readonly flag # noqa: ERA001
     return bool_array
