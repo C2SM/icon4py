@@ -41,12 +41,27 @@ from icon4py.model.atmosphere.dycore.stencils.apply_2nd_order_divergence_damping
 from icon4py.model.atmosphere.dycore.stencils.apply_4th_order_divergence_damping import (
     _apply_4th_order_divergence_damping,
 )
+from icon4py.model.atmosphere.dycore.stencils.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+    _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
+)
 from icon4py.model.atmosphere.dycore.stencils.apply_weighted_2nd_and_4th_order_divergence_damping import (
     _apply_weighted_2nd_and_4th_order_divergence_damping,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_graddiv2_of_vn import _compute_graddiv2_of_vn
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rho_and_theta import (
     _compute_horizontal_advection_of_rho_and_theta,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
+    _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
+    _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+    _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
+    _compute_hydrostatic_correction_term,
 )
 from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
@@ -55,7 +70,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import wpfloat
 
 
-@gtx.scan_operator(axis=dims.KDim, init=0.0, forward=True)
+@gtx.scan_operator(axis=dims.KDim, init=0.0, forward=False)
 def hydro_corr_last_lev(state: float, z_hydro_corr: float) -> float:
     return state + z_hydro_corr
 
@@ -204,85 +219,84 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
         else (z_rho_e, z_theta_v_e)
     )
 
-    # TODO (Chia Rui): uncomment the following computation of z_gradh_exner for whe scan_operator can be used in this stencil
-    # z_gradh_exner = where(
-    #     (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx < nflatlev),
-    #     _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
-    #         inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
-    #     ),
-    #     z_gradh_exner,
-    # )
+    z_gradh_exner = where(
+        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx < nflatlev),
+        _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
+            inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
+        ),
+        z_gradh_exner,
+    )
 
-    # z_gradh_exner = (
-    #     where(
-    #         (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
-    #         & (nflatlev <= vert_idx < (nflat_gradp + gtx.int32(1))),
-    #         _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-    #             inv_dual_edge_length=inv_dual_edge_length,
-    #             z_exner_ex_pr=z_exner_ex_pr,
-    #             ddxn_z_full=ddxn_z_full,
-    #             c_lin_e=c_lin_e,
-    #             z_dexner_dz_c_1=z_dexner_dz_c_1,
-    #         ),
-    #         z_gradh_exner,
-    #     )
-    #     if igradp_method == TAYLOR_HYDRO
-    #     else z_gradh_exner
-    # )
+    z_gradh_exner = (
+        where(
+            (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
+            & (nflatlev <= vert_idx < (nflat_gradp + 1)),
+            _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+                inv_dual_edge_length=inv_dual_edge_length,
+                z_exner_ex_pr=z_exner_ex_pr,
+                ddxn_z_full=ddxn_z_full,
+                c_lin_e=c_lin_e,
+                z_dexner_dz_c_1=z_dexner_dz_c_1,
+            ),
+            z_gradh_exner,
+        )
+        if (igradp_method == TAYLOR_HYDRO) & (nflatlev < (nflat_gradp + 1))
+        else z_gradh_exner
+    )
 
-    # z_gradh_exner = (
-    #     where(
-    #         (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
-    #         & ((nflat_gradp + gtx.int32(1)) <= vert_idx),
-    #         _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
-    #             inv_dual_edge_length=inv_dual_edge_length,
-    #             z_exner_ex_pr=z_exner_ex_pr,
-    #             zdiff_gradp=zdiff_gradp,
-    #             ikoffset=ikoffset,
-    #             z_dexner_dz_c_1=z_dexner_dz_c_1,
-    #             z_dexner_dz_c_2=z_dexner_dz_c_2,
-    #         ),
-    #         z_gradh_exner,
-    #     )
-    #     if igradp_method == TAYLOR_HYDRO
-    #     else z_gradh_exner
-    # )
+    z_gradh_exner = (
+        where(
+            (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
+            & ((nflat_gradp + 1) <= vert_idx),
+            _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
+                inv_dual_edge_length=inv_dual_edge_length,
+                z_exner_ex_pr=z_exner_ex_pr,
+                zdiff_gradp=zdiff_gradp,
+                ikoffset=ikoffset,
+                z_dexner_dz_c_1=z_dexner_dz_c_1,
+                z_dexner_dz_c_2=z_dexner_dz_c_2,
+            ),
+            z_gradh_exner,
+        )
+        if igradp_method == TAYLOR_HYDRO
+        else z_gradh_exner
+    )
 
-    # z_hydro_corr = (
-    #     where(
-    #         (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & ((nlev - 1) <= vert_idx),
-    #         _compute_hydrostatic_correction_term(
-    #             theta_v=theta_v,
-    #             ikoffset=ikoffset,
-    #             zdiff_gradp=zdiff_gradp,
-    #             theta_v_ic=theta_v_ic,
-    #             inv_ddqz_z_full=inv_ddqz_z_full,
-    #             inv_dual_edge_length=inv_dual_edge_length,
-    #             grav_o_cpd=grav_o_cpd,
-    #         ),
-    #         z_hydro_corr,
-    #     )
-    #     if igradp_method == TAYLOR_HYDRO
-    #     else z_hydro_corr
-    # )
+    z_hydro_corr = (
+        where(
+            (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & ((nlev - 1) <= vert_idx),
+            _compute_hydrostatic_correction_term(
+                theta_v=theta_v,
+                ikoffset=ikoffset,
+                zdiff_gradp=zdiff_gradp,
+                theta_v_ic=theta_v_ic,
+                inv_ddqz_z_full=inv_ddqz_z_full,
+                inv_dual_edge_length=inv_dual_edge_length,
+                grav_o_cpd=grav_o_cpd,
+            ),
+            z_hydro_corr,
+        )
+        if igradp_method == TAYLOR_HYDRO
+        else z_hydro_corr
+    )
 
-    # hydro_corr_horizontal = where((vert_idx == (nlev - 1)), z_hydro_corr, 0.0)
-    # hydro_corr_horizontal_nlev = hydro_corr_last_lev(hydro_corr_horizontal)
+    hydro_corr_horizontal = where((vert_idx == (nlev - 1)), z_hydro_corr, 0.0)
+    hydro_corr_horizontal_nlev = hydro_corr_last_lev(hydro_corr_horizontal)
 
-    # z_gradh_exner = (
-    #     where(
-    #         (start_edge_nudging_level_2 <= horz_idx < end_edge_end),
-    #         _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-    #             ipeidx_dsl=ipeidx_dsl,
-    #             pg_exdist=pg_exdist,
-    #             z_hydro_corr=hydro_corr_horizontal_nlev,
-    #             z_gradh_exner=z_gradh_exner,
-    #         ),
-    #         z_gradh_exner,
-    #     )
-    #     if igradp_method == TAYLOR_HYDRO
-    #     else z_gradh_exner
-    # )
+    z_gradh_exner = (
+        where(
+            (start_edge_nudging_level_2 <= horz_idx < end_edge_end),
+            _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
+                ipeidx_dsl=ipeidx_dsl,
+                pg_exdist=pg_exdist,
+                z_hydro_corr=hydro_corr_horizontal_nlev,
+                z_gradh_exner=z_gradh_exner,
+            ),
+            z_gradh_exner,
+        )
+        if igradp_method == TAYLOR_HYDRO
+        else z_gradh_exner
+    )
 
     next_vn = where(
         (start_edge_nudging_level_2 <= horz_idx < end_edge_local),

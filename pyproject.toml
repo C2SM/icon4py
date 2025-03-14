@@ -111,9 +111,9 @@ url = "https://test.pypi.org/simple/"
 explicit = true
 
 [tool.uv.sources]
-# ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
-# TODO(egparedes): use GT4Py tagged release until #596 & gt4py#1738 are merged
-gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_20241113_cache_fix" }
+# ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master" }
+dace = { git = "https://github.com/philip-paul-mueller/dace", branch = "modified-gpu-launches" }
+gt4py = { git = "https://github.com/edopao/gt4py", branch = "gtir-dace-next" }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
@@ -242,5 +242,5 @@ packages = []
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.testing.pytest_config']
 markers = [
-    "embedded_remap_error", "uses_as_offset", "requires_concat_where", "skip_value_error", "datatest", "embedded_only", "cpu_only"
+    "embedded_remap_error", "uses_as_offset", "skip_value_error", "datatest", "embedded_only", "cpu_only"
 ]

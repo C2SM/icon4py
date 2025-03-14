@@ -1282,7 +1282,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     assert helpers.dallclose(z_rho_e.asnumpy(), z_rho_e_ref.asnumpy())
     assert helpers.dallclose(z_theta_v_e.asnumpy(), z_theta_v_e_ref.asnumpy())
 
-    # TODO (Chia Rui): compare against the result of the combined stencil when z_gradh_exner can be computed
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_gradh_exner.asnumpy()[start_edge_nudging_level_2:, :],
         z_gradh_exner_ref.asnumpy()[start_edge_nudging_level_2:, :],
@@ -1513,7 +1512,7 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     )
 
     assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy(), rtol=1e-10)
-    assert helpers.dallclose(z_graddiv2_vn.asnumpy(), z_graddiv2_vn_ref.asnumpy(), rtol=1.e-9)
+    assert helpers.dallclose(z_graddiv2_vn.asnumpy(), z_graddiv2_vn_ref.asnumpy(), rtol=1.0e-9)
 
     assert helpers.dallclose(
         next_vn.asnumpy(),
