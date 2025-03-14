@@ -904,8 +904,8 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "1.0.1"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.0"
+source = { git = "https://github.com/SPCL/dace?branch=main#3ae502745ff47f3bca16df2e5d71224dd8a0f457" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -919,7 +919,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sympy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/67/fb1be2673868ee1f08e9c7bacc0b9b77d2bd5ff17ab47896f20006a2a1a5/dace-1.0.1.tar.gz", hash = "sha256:6f7a5defb082ed4f1a81f857d4268ed2bb606f6d9ea9c28d2831d1151e3a80f7", size = 5801727 }
 
 [[package]]
 name = "dask"
@@ -1394,7 +1393,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where#77edc985a1b0b4eb2b4f778362c0c58984a5a55e" }
+source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace-next#86a66c44f71558bb4e92c56e431b628c7db5a5f0" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1432,7 +1431,7 @@ cuda11 = [
 cuda12 = [
     { name = "cupy-cuda12x" },
 ]
-dace = [
+dace-next = [
     { name = "dace" },
 ]
 
@@ -1723,7 +1722,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1740,7 +1739,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1757,7 +1756,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1774,7 +1773,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1797,7 +1796,7 @@ all = [
     { name = "dace" },
     { name = "datashader" },
     { name = "ghex" },
-    { name = "gt4py", extra = ["dace"] },
+    { name = "gt4py", extra = ["dace-next"] },
     { name = "holoviews" },
     { name = "mpi4py" },
     { name = "netcdf4" },
@@ -1816,7 +1815,7 @@ cuda12 = [
 ]
 dace = [
     { name = "dace" },
-    { name = "gt4py", extra = ["dace"] },
+    { name = "gt4py", extra = ["dace-next"] },
 ]
 distributed = [
     { name = "ghex" },
@@ -1840,13 +1839,13 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", specifier = ">=1.0" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/SPCL/dace?branch=main" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
-    { name = "gt4py", extras = ["dace"], marker = "extra == 'dace'", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
+    { name = "gt4py", extras = ["dace-next"], marker = "extra == 'dace'", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["dace", "distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1879,7 +1878,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1904,7 +1903,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1946,9 +1945,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
