@@ -314,8 +314,6 @@ def test_dycore_wrapper_granule_inputs(
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_final,
     caplog,
     icon_grid,
     at_initial_timestep,
@@ -925,13 +923,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     experiment,
     ndyn_substeps,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_final,
     caplog,
@@ -1097,7 +1088,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     savepoint_nonhydro_step_final,
     experiment,
     ndyn_substeps,
-    vn_only,
+    vn_only,  # TODO we don't use that value?
     at_initial_timestep,
 ):
     # savepoints
