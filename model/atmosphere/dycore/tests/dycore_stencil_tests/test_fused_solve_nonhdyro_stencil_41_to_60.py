@@ -22,6 +22,16 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
+
+from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_41_to_60 import (
+    fused_solve_nonhydro_stencil_41_to_60,
+)
+from icon4py.model.atmosphere.dycore.solve_nonhydro import TimeSteppingScheme
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers
+
 from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
 )
@@ -58,15 +68,6 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 from .test_update_mass_volume_flux import (
     update_mass_volume_flux_numpy,
 )
-
-from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_41_to_60 import (
-    fused_solve_nonhydro_stencil_41_to_60,
-)
-from icon4py.model.atmosphere.dycore.solve_nonhydro import TimeSteppingScheme
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
-from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
 
 
 def compute_divergence_of_fluxes_of_rho_and_theta_numpy(

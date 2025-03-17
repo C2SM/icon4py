@@ -1273,10 +1273,10 @@ class IconNonHydroInit_41_60_Savepoint(IconSavepoint):
         return self._get_field("exner_dyn_incr", dims.CellDim, dims.KDim)
 
     def mass_flx_ic(self):
-        return self._get_field("prep_adv_mass_flx_ic", dims.CellDim, dims.KDim)
+        return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
 
     def vol_flx_ic(self):
-        return self._get_field("prep_adv_vol_flx_ic", dims.CellDim, dims.KDim)
+        return self._get_field("vol_flx_ic", dims.CellDim, dims.KDim)
 
 
 class IconNonHydroExitSavepoint(IconSavepoint):

@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.experimental import concat_where
 from gt4py.next import (
     GridType,
     abs,
@@ -26,6 +25,7 @@ from gt4py.next import (
     tanh,
     where,
 )
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (

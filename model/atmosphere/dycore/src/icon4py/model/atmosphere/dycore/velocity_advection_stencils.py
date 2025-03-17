@@ -208,7 +208,9 @@ def _fused_stencils_11_to_13(
         local_z_w_con_c,
     )
 
-    local_z_w_con_c = concat_where(dims.KDim == nlev, _init_cell_kdim_field_with_zero_vp(), local_z_w_con_c)
+    local_z_w_con_c = concat_where(
+        dims.KDim == nlev, _init_cell_kdim_field_with_zero_vp(), local_z_w_con_c
+    )
 
     local_z_w_con_c = concat_where(
         nflatlev_startindex + 1 <= dims.KDim < nlev,

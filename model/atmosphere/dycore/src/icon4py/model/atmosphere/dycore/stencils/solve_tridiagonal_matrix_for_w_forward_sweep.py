@@ -47,7 +47,14 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     w: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat], fa.CellKField[wpfloat], fa.CellKField[wpfloat], fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+) -> tuple[
+    fa.CellKField[vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+]:
     """Formerly known as _mo_solve_nonhydro_stencil_52."""
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
@@ -91,6 +98,7 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep_2(
     z_q_prev = z_q(Koff[-1])
     z_q_res, w_res, _ = _w(w_prev, z_q_prev, z_a, z_b, z_c, w_prep)
     return z_q_res, w_res
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def solve_tridiagonal_matrix_for_w_forward_sweep(

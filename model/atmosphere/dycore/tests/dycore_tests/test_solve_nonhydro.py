@@ -1399,15 +1399,15 @@ def test_run_solve_nonhydro_41_to_60(
         dims.CEDim, field=interpolation_savepoint.geofac_div()
     )
 
-    buffer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=bool)
-    w_prev=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    z_q_prev=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    z_a=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    z_b=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    z_c=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    w_prep=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    buffer = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=bool)
+    w_prev = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_q_prev = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_a = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_b = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_c = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    w_prep = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
 
-    fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60_predictor.with_backend(
+    fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60.with_backend(
         backend
     )(
         geofac_div=geofac_div,
@@ -1433,7 +1433,6 @@ def test_run_solve_nonhydro_41_to_60(
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         z_raylfac=z_raylfac,
         exner_ref_mc=metrics_savepoint.exner_ref_mc(),
-        vert_idx=vert_idx,
         z_flxdiv_mass=z_flxdiv_mass,
         z_flxdiv_theta=z_flxdiv_theta,
         z_w_expl=z_w_expl,
@@ -1451,13 +1450,6 @@ def test_run_solve_nonhydro_41_to_60(
         exner_dyn_incr=exner_dyn_incr,
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=vol_flx_ic,
-        buffer=buffer,
-        w_prev=w_prev,
-        z_q_prev=z_q_prev,
-        z_a=z_a,
-        z_b=z_b,
-        z_c=z_c,
-        w_prep=w_prep,
         wgt_nnow_vel=nonhydro_params.wgt_nnow_vel,
         wgt_nnew_vel=nonhydro_params.wgt_nnew_vel,
         itime_scheme=itime_scheme,
