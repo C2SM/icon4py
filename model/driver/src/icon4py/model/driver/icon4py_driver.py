@@ -70,6 +70,10 @@ class TimeLoop:
         self._timer_solve_nonhydro = Timer("nh_solve", dp=6)
         self._timer_diffusion = Timer("diffusion", dp=6)
         self.detailed_timers = False
+        self.diffusion_start_event = cuda.Event()
+        self.diffusion_stop_event = cuda.Event()
+        self.nh_solve_start_event = cuda.Event()
+        self.nh_solve_stop_event = cuda.Event()
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -180,6 +184,13 @@ class TimeLoop:
             )
             cuda.runtime.deviceSynchronize()
             timer.capture()
+            self.diffusion_stop_event.synchronize()
+            self.nh_solve_stop_event.synchronize()
+
+            log.info(
+                f"diffusion time cuda events: {cuda.get_elapsed_time(self.diffusion_start_event, self.diffusion_stop_event)} ms"
+                f"nh_solve time cuda events: {cuda.get_elapsed_time(self.nh_solve_start_event, self.nh_solve_stop_event)} ms"
+            )
 
             self._is_first_step_in_simulation = False
 
@@ -208,6 +219,7 @@ class TimeLoop:
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
 
+        self.nh_solve_start_event.record()
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
@@ -215,15 +227,18 @@ class TimeLoop:
             initial_divdamp_fac_o2,
             do_prep_adv,
         )
+        self.nh_solve_stop_event.record()
 
         if self.diffusion.config.apply_to_horizontal_wind:
             if self.detailed_timers:
                 self._timer_diffusion.start()
+            self.diffusion_start_event.record()
             self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.next,
                 self.dtime_in_seconds,
             )
+            self.diffusion_stop_event.record()
             if self.detailed_timers:
                 cuda.runtime.deviceSynchronize()
                 self._timer_diffusion.capture()
