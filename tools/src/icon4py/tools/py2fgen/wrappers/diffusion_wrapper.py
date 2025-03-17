@@ -285,4 +285,4 @@ def diffusion_run(
         )
         if __debug__:
             diffusion_end = perf_counter()
-            logger.info("diffusion.run time: %s" % str(diffusion_start - diffusion_end))
+            logger.info("diffusion.run time: %s" % str(diffusion_end - diffusion_start))
