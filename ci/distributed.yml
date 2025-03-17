@@ -1,6 +1,28 @@
 include:
   - local: 'ci/base.yml'
 
+  # Base image build step with SHA256 checksum for caching
+.build_model_baseimage:
+  stage: baseimage
+    before_script:
+      # include build arguments in hash since we use a parameterized Docker file
+      - DOCKER_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS" | sha256sum | head -c 16`
+      - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-model-$PYVERSION
+      - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
+    artifacts:
+      reports:
+        dotenv: build.env
+    variables:
+      DOCKERFILE: ci/docker/base_model.Dockerfile
+      # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
+      CSCS_REBUILD_POLICY: if-not-exists
+      DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "PYVERSION=$PYVERSION"]'
+
+build_model_baseimage_aarch64:
+  extends: [.container-builder-cscs-gh200, .build_model_baseimage]
+  variables:
+
+
 .build_distributed_template:
   variables:
     UV_PROJECT_ENVIRONMENT: venv_dist
@@ -13,14 +35,12 @@ include:
     # Unique image name based on commit SHA,
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION
-    #MPI4PY_BUILD_BACKEND: "scikit-build-core"
-    #MPI4PY_BUILD_MPICC: nvc
 
 
 build_distributed:
     stage: build
     extends: [.container-builder-cscs-gh200, .build_distributed]
-    needs: [build_baseimage_aarch64] #[build_image_aarch64]
+    needs: [build_model_baseimage_aarch64] #[build_baseimage_aarch64]
 
 .test_template_distributed:
   timeout: 8h
@@ -38,11 +58,7 @@ build_distributed:
     TEST_DATA_PATH: "/icon4py/ci/testdata"
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
-    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
-    CC: "${HPC_SDK_PATH}/compilers/bin/nvc"
-    MPICC: "${HPC_SDK_PATH}/compilers/bin/nvc"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_002:$TEST_DATA_PATH"]'
-    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
     # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
