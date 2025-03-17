@@ -8,7 +8,7 @@
 
 from unittest import mock
 
-import gt4py.next as gtx
+import cffi
 import numpy as np
 import pytest
 
@@ -17,10 +17,15 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4py.tools.py2fgen import settings as py2fgen_settings
-from icon4py.tools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
+from icon4py.tools import py2fgen
+from icon4py.tools.py2fgen import test_utils, utils as py2fgen_utils
+from icon4py.tools.py2fgen.wrappers import (
+    common as wrapper_common,
+    diffusion_wrapper,
+)
 
 from . import utils
+from .test_grid_init import grid_init  # noqa: F401
 
 
 @pytest.mark.parametrize(
@@ -36,6 +41,7 @@ def test_diffusion_wrapper_granule_inputs(
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
+    grid_init,  # noqa: F811  # initializes the grid as side-effect
     icon_grid,
     experiment,
     lowest_layer_thickness,
@@ -64,39 +70,13 @@ def test_diffusion_wrapper_granule_inputs(
     )
     nflat_gradp = grid_savepoint.nflat_gradp()
 
-    # --- Global Grid Parameters ---
-    global_root, global_level = dt_utils.get_global_grid_params(experiment)
-
-    # --- Extract Grid Parameters from Savepoint ---
-    tangent_orientation = grid_savepoint.tangent_orientation()
-    inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    inv_vert_vert_length = grid_savepoint.inv_vert_vert_length()
-    edge_areas = grid_savepoint.edge_areas()
-    f_e = grid_savepoint.f_e()
-    cell_areas = grid_savepoint.cell_areas()
-    primal_normal_vert_x = grid_savepoint.primal_normal_vert_x()
-    primal_normal_vert_y = grid_savepoint.primal_normal_vert_y()
-    dual_normal_vert_x = grid_savepoint.dual_normal_vert_x()
-    dual_normal_vert_y = grid_savepoint.dual_normal_vert_y()
-    primal_normal_cell_x = grid_savepoint.primal_normal_cell_x()
-    primal_normal_cell_y = grid_savepoint.primal_normal_cell_y()
-    dual_normal_cell_x = grid_savepoint.dual_normal_cell_x()
-    dual_normal_cell_y = grid_savepoint.dual_normal_cell_y()
-    cell_center_lat = grid_savepoint.cell_center_lat()
-    cell_center_lon = grid_savepoint.cell_center_lon()
-    edge_center_lat = grid_savepoint.edge_center_lat()
-    edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_v1()
-    primal_normal_y = grid_savepoint.primal_normal_v2()
-
     # --- Extract Metric State Parameters ---
-    vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
-    theta_ref_mc = metrics_savepoint.theta_ref_mc()
-    wgtfac_c = metrics_savepoint.wgtfac_c()
-    mask_hdiff = metrics_savepoint.mask_hdiff()
-    zd_diffcoef = metrics_savepoint.zd_diffcoef()
+    vct_a = test_utils.array_to_array_descriptor(grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_descriptor(grid_savepoint.vct_b().ndarray)
+    theta_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_mc().ndarray)
+    wgtfac_c = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfac_c().ndarray)
+    mask_hdiff = test_utils.array_to_array_descriptor(metrics_savepoint.mask_hdiff().ndarray)
+    zd_diffcoef = test_utils.array_to_array_descriptor(metrics_savepoint.zd_diffcoef().ndarray)
 
     # todo: special handling, determine if this is necessary for Fortran arrays too
     zd_vertoffset = np.squeeze(
@@ -105,66 +85,42 @@ def test_diffusion_wrapper_granule_inputs(
     zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
         zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
-    zd_vertoffset = gtx.as_field(
-        (dims.CellDim, dims.E2CDim, dims.KDim),
-        zd_vertoffset,
-    )
+    zd_vertoffset = test_utils.array_to_array_descriptor(zd_vertoffset)
 
     zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
     zd_intcoef = metrics_savepoint._reduce_to_dim_size(
         zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
-    zd_intcoef = gtx.as_field(
-        (dims.CellDim, dims.E2CDim, dims.KDim),
-        zd_intcoef,
-    )
+    zd_intcoef = test_utils.array_to_array_descriptor(zd_intcoef)
 
     # --- Extract Interpolation State Parameters ---
-    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
-    geofac_div = interpolation_savepoint.geofac_div()
-    geofac_grg_x, geofac_grg_y = interpolation_savepoint.geofac_grg()
-    geofac_n2s = interpolation_savepoint.geofac_n2s()
-    nudgecoeff_e = interpolation_savepoint.nudgecoeff_e()
-    rbf_coeff_1 = interpolation_savepoint.rbf_vec_coeff_v1()
-    rbf_coeff_2 = interpolation_savepoint.rbf_vec_coeff_v2()
+    e_bln_c_s = test_utils.array_to_array_descriptor(interpolation_savepoint.e_bln_c_s().ndarray)
+    geofac_div = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_div().ndarray)
+    geofac_grg_x_field, geofac_grg_y_field = interpolation_savepoint.geofac_grg()
+    geofac_grg_x = test_utils.array_to_array_descriptor(geofac_grg_x_field.ndarray)
+    geofac_grg_y = test_utils.array_to_array_descriptor(geofac_grg_y_field.ndarray)
+    geofac_n2s = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_n2s().ndarray)
+    nudgecoeff_e = test_utils.array_to_array_descriptor(
+        interpolation_savepoint.nudgecoeff_e().ndarray
+    )
+    rbf_coeff_1 = test_utils.array_to_array_descriptor(
+        interpolation_savepoint.rbf_vec_coeff_v1().ndarray
+    )
+    rbf_coeff_2 = test_utils.array_to_array_descriptor(
+        interpolation_savepoint.rbf_vec_coeff_v2().ndarray
+    )
 
     # --- Extract Diagnostic and Prognostic State Parameters ---
-    hdef_ic = savepoint_diffusion_init.hdef_ic()
-    div_ic = savepoint_diffusion_init.div_ic()
-    dwdx = savepoint_diffusion_init.dwdx()
-    dwdy = savepoint_diffusion_init.dwdy()
-    w = savepoint_diffusion_init.w()
-    vn = savepoint_diffusion_init.vn()
-    exner = savepoint_diffusion_init.exner()
-    theta_v = savepoint_diffusion_init.theta_v()
-    rho = savepoint_diffusion_init.rho()
+    hdef_ic = test_utils.array_to_array_descriptor(savepoint_diffusion_init.hdef_ic().ndarray)
+    div_ic = test_utils.array_to_array_descriptor(savepoint_diffusion_init.div_ic().ndarray)
+    dwdx = test_utils.array_to_array_descriptor(savepoint_diffusion_init.dwdx().ndarray)
+    dwdy = test_utils.array_to_array_descriptor(savepoint_diffusion_init.dwdy().ndarray)
+    w = test_utils.array_to_array_descriptor(savepoint_diffusion_init.w().ndarray)
+    vn = test_utils.array_to_array_descriptor(savepoint_diffusion_init.vn().ndarray)
+    exner = test_utils.array_to_array_descriptor(savepoint_diffusion_init.exner().ndarray)
+    theta_v = test_utils.array_to_array_descriptor(savepoint_diffusion_init.theta_v().ndarray)
+    rho = test_utils.array_to_array_descriptor(savepoint_diffusion_init.rho().ndarray)
     dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
-
-    # --- Set Up Grid Parameters ---
-    num_vertices = grid_savepoint.num(dims.VertexDim)
-    num_cells = grid_savepoint.num(dims.CellDim)
-    num_edges = grid_savepoint.num(dims.EdgeDim)
-    vertical_size = grid_savepoint.num(dims.KDim)
-    limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
-
-    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
-    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
-    vertex_starts = gtx.as_field(
-        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
-    )
-    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
-    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
-    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
-
-    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
-    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
-    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint._read_int32("c2e2c"))
-    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint._read_int32("e2c2e"))
-    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint._read_int32("e2v"))
-    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint._read_int32("v2e"))
-    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint._read_int32("v2c"))
-    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
-    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
@@ -216,46 +172,13 @@ def test_diffusion_wrapper_granule_inputs(
     expected_config = utils.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
-    py2fgen_settings.config.parallel_run = False
-
-    # --- Initialize the Grid ---
-    diffusion_wrapper.grid_init_diffusion(
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        c2e=c2e,
-        e2c=e2c,
-        c2e2c=c2e2c,
-        e2c2e=e2c2e,
-        e2v=e2v,
-        v2e=v2e,
-        v2c=v2c,
-        e2c2v=e2c2v,
-        c2v=c2v,
-        global_root=global_root,
-        global_level=global_level,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        c_glb_index=None,  # not running in parallel
-        e_glb_index=None,
-        v_glb_index=None,
-        c_owner_mask=None,
-        e_owner_mask=None,
-        v_owner_mask=None,
-        comm_id=None,
-    )
-
     # --- Mock and Test Diffusion.init ---
     with mock.patch(
         "icon4py.model.atmosphere.diffusion.diffusion.Diffusion.__init__", return_value=None
     ) as mock_init:
         diffusion_wrapper.diffusion_init(
+            ffi=cffi.FFI(),
+            meta=None,
             vct_a=vct_a,
             vct_b=vct_b,
             theta_ref_mc=theta_ref_mc,
@@ -290,32 +213,10 @@ def test_diffusion_wrapper_granule_inputs(
             nudge_max_coeff=nudge_max_coeff,
             itype_sher=itype_sher.value,
             ltkeshs=ltkeshs,
-            tangent_orientation=tangent_orientation,
-            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-            inv_dual_edge_length=inv_dual_edge_length,
-            inv_vert_vert_length=inv_vert_vert_length,
-            edge_areas=edge_areas,
-            f_e=f_e,
-            cell_center_lat=cell_center_lat,
-            cell_center_lon=cell_center_lon,
-            cell_areas=cell_areas,
-            primal_normal_vert_x=primal_normal_vert_x,
-            primal_normal_vert_y=primal_normal_vert_y,
-            dual_normal_vert_x=dual_normal_vert_x,
-            dual_normal_vert_y=dual_normal_vert_y,
-            primal_normal_cell_x=primal_normal_cell_x,
-            primal_normal_cell_y=primal_normal_cell_y,
-            dual_normal_cell_x=dual_normal_cell_x,
-            dual_normal_cell_y=dual_normal_cell_y,
-            edge_center_lat=edge_center_lat,
-            edge_center_lon=edge_center_lon,
-            primal_normal_x=primal_normal_x,
-            primal_normal_y=primal_normal_y,
-            global_root=global_root,
-            global_level=global_level,
             lowest_layer_thickness=lowest_layer_thickness,
             model_top_height=model_top_height,
             stretch_factor=stretch_factor,
+            backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
         # Check input arguments to Diffusion.init
@@ -370,6 +271,8 @@ def test_diffusion_wrapper_granule_inputs(
     # --- Mock and Test Diffusion.run ---
     with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.run") as mock_run:
         diffusion_wrapper.diffusion_run(
+            ffi=cffi.FFI(),
+            meta=None,
             w=w,
             vn=vn,
             exner=exner,
@@ -403,6 +306,7 @@ def test_diffusion_wrapper_single_step(
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
+    grid_init,  # noqa: F811  # initializes the grid as side-effect
     experiment,
     lowest_layer_thickness,
     model_top_height,
@@ -434,39 +338,13 @@ def test_diffusion_wrapper_single_step(
     )
     nflat_gradp = grid_savepoint.nflat_gradp()
 
-    # global grid parameters
-    global_root, global_level = dt_utils.get_global_grid_params(experiment)
-
-    # Grid parameters
-    tangent_orientation = grid_savepoint.tangent_orientation()
-    inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    inv_vert_vert_length = grid_savepoint.inv_vert_vert_length()
-    edge_areas = grid_savepoint.edge_areas()
-    f_e = grid_savepoint.f_e()
-    cell_areas = grid_savepoint.cell_areas()
-    primal_normal_vert_x = grid_savepoint.primal_normal_vert_x()
-    primal_normal_vert_y = grid_savepoint.primal_normal_vert_y()
-    dual_normal_vert_x = grid_savepoint.dual_normal_vert_x()
-    dual_normal_vert_y = grid_savepoint.dual_normal_vert_y()
-    primal_normal_cell_x = grid_savepoint.primal_normal_cell_x()
-    primal_normal_cell_y = grid_savepoint.primal_normal_cell_y()
-    dual_normal_cell_x = grid_savepoint.dual_normal_cell_x()
-    dual_normal_cell_y = grid_savepoint.dual_normal_cell_y()
-    cell_center_lat = grid_savepoint.cell_center_lat()
-    cell_center_lon = grid_savepoint.cell_center_lon()
-    edge_center_lat = grid_savepoint.edge_center_lat()
-    edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_v1()
-    primal_normal_y = grid_savepoint.primal_normal_v2()
-
     # Metric state parameters
-    vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
-    theta_ref_mc = metrics_savepoint.theta_ref_mc()
-    wgtfac_c = metrics_savepoint.wgtfac_c()
-    mask_hdiff = metrics_savepoint.mask_hdiff()
-    zd_diffcoef = metrics_savepoint.zd_diffcoef()
+    vct_a = test_utils.array_to_array_descriptor(grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_descriptor(grid_savepoint.vct_b().ndarray)
+    theta_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_mc().ndarray)
+    wgtfac_c = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfac_c().ndarray)
+    mask_hdiff = test_utils.array_to_array_descriptor(metrics_savepoint.mask_hdiff().ndarray)
+    zd_diffcoef = test_utils.array_to_array_descriptor(metrics_savepoint.zd_diffcoef().ndarray)
 
     # todo: special handling, determine if this is necessary for Fortran arrays too
     zd_vertoffset = np.squeeze(
@@ -475,107 +353,50 @@ def test_diffusion_wrapper_single_step(
     zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
         zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
-    zd_vertoffset = gtx.as_field(
-        (dims.CellDim, dims.E2CDim, dims.KDim),
-        zd_vertoffset,
-    )
+    zd_vertoffset = test_utils.array_to_array_descriptor(zd_vertoffset)
 
     zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
     zd_intcoef = metrics_savepoint._reduce_to_dim_size(
         zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
-    zd_intcoef = gtx.as_field(
-        (dims.CellDim, dims.E2CDim, dims.KDim),
-        zd_intcoef,
-    )
+    zd_intcoef = test_utils.array_to_array_descriptor(zd_intcoef)
 
     # Interpolation state parameters
-    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
-    geofac_div = interpolation_savepoint.geofac_div()
-    geofac_grg = interpolation_savepoint.geofac_grg()
-    geofac_grg_x = geofac_grg[0]
-    geofac_grg_y = geofac_grg[1]
-    geofac_n2s = interpolation_savepoint.geofac_n2s()
-    nudgecoeff_e = interpolation_savepoint.nudgecoeff_e()
-    rbf_coeff_1 = interpolation_savepoint.rbf_vec_coeff_v1()
-    rbf_coeff_2 = interpolation_savepoint.rbf_vec_coeff_v2()
+    e_bln_c_s = test_utils.array_to_array_descriptor(interpolation_savepoint.e_bln_c_s().ndarray)
+    geofac_div = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_div().ndarray)
+    geofac_grg_x_field, geofac_grg_y_field = interpolation_savepoint.geofac_grg()
+    geofac_grg_x = test_utils.array_to_array_descriptor(geofac_grg_x_field.ndarray)
+    geofac_grg_y = test_utils.array_to_array_descriptor(geofac_grg_y_field.ndarray)
+    geofac_n2s = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_n2s().ndarray)
+    nudgecoeff_e = test_utils.array_to_array_descriptor(
+        interpolation_savepoint.nudgecoeff_e().ndarray
+    )
+    rbf_coeff_1 = test_utils.array_to_array_descriptor(
+        interpolation_savepoint.rbf_vec_coeff_v1().ndarray
+    )
+    rbf_coeff_2 = test_utils.array_to_array_descriptor(
+        interpolation_savepoint.rbf_vec_coeff_v2().ndarray
+    )
 
     # Diagnostic state parameters
-    hdef_ic = savepoint_diffusion_init.hdef_ic()
-    div_ic = savepoint_diffusion_init.div_ic()
-    dwdx = savepoint_diffusion_init.dwdx()
-    dwdy = savepoint_diffusion_init.dwdy()
+    hdef_ic = test_utils.array_to_array_descriptor(savepoint_diffusion_init.hdef_ic().ndarray)
+    div_ic = test_utils.array_to_array_descriptor(savepoint_diffusion_init.div_ic().ndarray)
+    dwdx = test_utils.array_to_array_descriptor(savepoint_diffusion_init.dwdx().ndarray)
+    dwdy = test_utils.array_to_array_descriptor(savepoint_diffusion_init.dwdy().ndarray)
 
     # Prognostic state parameters
-    w = savepoint_diffusion_init.w()
-    vn = savepoint_diffusion_init.vn()
-    exner = savepoint_diffusion_init.exner()
-    theta_v = savepoint_diffusion_init.theta_v()
-    rho = savepoint_diffusion_init.rho()
+    w = test_utils.array_to_array_descriptor(savepoint_diffusion_init.w().ndarray)
+    vn = test_utils.array_to_array_descriptor(savepoint_diffusion_init.vn().ndarray)
+    exner = test_utils.array_to_array_descriptor(savepoint_diffusion_init.exner().ndarray)
+    theta_v = test_utils.array_to_array_descriptor(savepoint_diffusion_init.theta_v().ndarray)
+    rho = test_utils.array_to_array_descriptor(savepoint_diffusion_init.rho().ndarray)
     dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
 
-    # grid params
-    num_vertices = grid_savepoint.num(dims.VertexDim)
-    num_cells = grid_savepoint.num(dims.CellDim)
-    num_edges = grid_savepoint.num(dims.EdgeDim)
-    vertical_size = grid_savepoint.num(dims.KDim)
-    limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
-
-    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
-    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
-    vertex_starts = gtx.as_field(
-        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
-    )
-    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
-    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
-    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
-
-    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
-    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
-    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint._read_int32("c2e2c"))
-    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint._read_int32("e2c2e"))
-    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint._read_int32("e2v"))
-    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint._read_int32("v2e"))
-    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint._read_int32("v2c"))
-    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
-    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
-
-    py2fgen_settings.config.parallel_run = False
-
-    diffusion_wrapper.grid_init_diffusion(
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        c2e=c2e,
-        e2c=e2c,
-        c2e2c=c2e2c,
-        e2c2e=e2c2e,
-        e2v=e2v,
-        v2e=v2e,
-        v2c=v2c,
-        e2c2v=e2c2v,
-        c2v=c2v,
-        global_root=global_root,
-        global_level=global_level,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        c_glb_index=None,  # not running in parallel
-        e_glb_index=None,
-        v_glb_index=None,
-        c_owner_mask=None,
-        e_owner_mask=None,
-        v_owner_mask=None,
-        comm_id=None,
-    )
-
+    ffi = cffi.FFI()
     # Call diffusion_init
     diffusion_wrapper.diffusion_init(
+        ffi=ffi,
+        meta=None,
         vct_a=vct_a,
         vct_b=vct_b,
         theta_ref_mc=theta_ref_mc,
@@ -610,36 +431,16 @@ def test_diffusion_wrapper_single_step(
         nudge_max_coeff=nudge_max_coeff,
         itype_sher=itype_sher.value,
         ltkeshs=ltkeshs,
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_vert_vert_length=inv_vert_vert_length,
-        edge_areas=edge_areas,
-        f_e=f_e,
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        cell_areas=cell_areas,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
-        global_root=global_root,
-        global_level=global_level,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
+        backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 
     # Call diffusion_run
     diffusion_wrapper.diffusion_run(
+        ffi=ffi,
+        meta=None,
         w=w,
         vn=vn,
         exner=exner,
@@ -663,11 +464,27 @@ def test_diffusion_wrapper_single_step(
     dwdx_ = savepoint_diffusion_exit.dwdx()
     dwdy_ = savepoint_diffusion_exit.dwdy()
 
-    assert helpers.dallclose(w.asnumpy(), w_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(vn.asnumpy(), vn_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(exner.asnumpy(), exner_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(theta_v.asnumpy(), theta_v_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(hdef_ic.asnumpy(), hdef_ic_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(div_ic.asnumpy(), div_ic_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(dwdx.asnumpy(), dwdx_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(dwdy.asnumpy(), dwdy_.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(
+        py2fgen_utils.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12
+    )
+    assert helpers.dallclose(
+        py2fgen_utils.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12
+    )
+    assert helpers.dallclose(
+        py2fgen_utils.as_array(ffi, exner, py2fgen.FLOAT64), exner_.asnumpy(), atol=1e-12
+    )
+    assert helpers.dallclose(
+        py2fgen_utils.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12
+    )
+    assert helpers.dallclose(
+        py2fgen_utils.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
+    )
+    assert helpers.dallclose(
+        py2fgen_utils.as_array(ffi, div_ic, py2fgen.FLOAT64), div_ic_.asnumpy(), atol=1e-12
+    )
+    assert helpers.dallclose(
+        py2fgen_utils.as_array(ffi, dwdx, py2fgen.FLOAT64), dwdx_.asnumpy(), atol=1e-12
+    )
+    assert helpers.dallclose(
+        py2fgen_utils.as_array(ffi, dwdy, py2fgen.FLOAT64), dwdy_.asnumpy(), atol=1e-12
+    )

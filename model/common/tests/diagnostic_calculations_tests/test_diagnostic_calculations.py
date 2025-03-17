@@ -11,17 +11,12 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.diagnostic_calculations.stencils import (
-    diagnose_pressure as pressure,
-    diagnose_surface_pressure as surface_pressure,
-    diagnose_temperature as temperature,
+    diagnose_pressure,
+    diagnose_surface_pressure,
+    diagnose_temperature,
 )
 from icon4py.model.common.interpolation.stencils import (
     edge_2_cell_vector_rbf_interpolation as rbf,
-)
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state,
-    tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
@@ -40,52 +35,39 @@ def test_diagnose_temperature(
     icon_grid,
     backend,
 ):
-    sp = data_provider.from_savepoint_jabw_final()
-    icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
-    prognostic_state_now = prognostic_state.PrognosticState(
-        rho=sp.rho(),
-        w=None,
-        vn=sp.vn(),
-        exner=sp.exner(),
-        theta_v=sp.theta_v(),
+    diagnostic_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
+    temperature_ref = diagnostic_reference_savepoint.temperature().asnumpy()
+    virtual_temperature_ref = diagnostic_reference_savepoint.virtual_temperature().asnumpy()
+    initial_prognostic_savepoint = data_provider.from_savepoint_jabw_exit()
+    exner = initial_prognostic_savepoint.exner()
+    theta_v = initial_prognostic_savepoint.theta_v()
+
+    temperature = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
     )
-    diagnostic_state = diagnostics.DiagnosticState(
-        temperature=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
-        ),
-        virtual_temperature=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
-        ),
-        pressure=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
-        ),
-        pressure_ifc=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, backend=backend
-        ),
-        u=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-    )
-    tracer_state = tracers.TracerState(
-        qv=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        qc=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        qr=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        qi=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        qs=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        qg=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
+    virtual_temperature = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
     )
 
-    temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
-        tracer_state.qv,
-        tracer_state.qc,
-        tracer_state.qr,
-        tracer_state.qi,
-        tracer_state.qs,
-        tracer_state.qg,
-        prognostic_state_now.theta_v,
-        prognostic_state_now.exner,
-        diagnostic_state.virtual_temperature,
-        diagnostic_state.temperature,
-        phy_const.RV_O_RD_MINUS_1,
+    qv = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qr = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qi = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qs = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+
+    diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
+        qv=qv,
+        qc=qc,
+        qr=qr,
+        qi=qi,
+        qs=qs,
+        qg=qg,
+        theta_v=theta_v,
+        exner=exner,
+        virtual_temperature=virtual_temperature,
+        temperature=temperature,
+        rv_o_rd_minus1=phy_const.RV_O_RD_MINUS_1,
         horizontal_start=0,
         horizontal_end=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END)),
         vertical_start=0,
@@ -95,12 +77,12 @@ def test_diagnose_temperature(
 
     # only temperature is tested because there is no moisture in the JW test. i.e. temperature = virtual_temperature
     assert helpers.dallclose(
-        diagnostic_state.temperature.asnumpy(),
-        icon_diagnostics_output_sp.temperature().asnumpy(),
+        temperature.asnumpy(),
+        temperature_ref,
     )
     assert helpers.dallclose(
-        diagnostic_state.virtual_temperature.asnumpy(),
-        icon_diagnostics_output_sp.temperature().asnumpy(),
+        virtual_temperature.asnumpy(),
+        virtual_temperature_ref,
     )
 
 
@@ -114,65 +96,51 @@ def test_diagnose_temperature(
 def test_diagnose_meridional_and_zonal_winds(
     experiment,
     data_provider,
+    interpolation_savepoint,
     icon_grid,
     backend,
 ):
-    sp = data_provider.from_savepoint_jabw_final()
-    icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
-    prognostic_state_now = prognostic_state.PrognosticState(
-        rho=sp.rho(),
-        w=None,
-        vn=sp.vn(),
-        exner=sp.exner(),
-        theta_v=sp.theta_v(),
-    )
-    diagnostic_state = diagnostics.DiagnosticState(
-        temperature=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
-        ),
-        pressure=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
-        ),
-        pressure_ifc=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, backend=backend
-        ),
-        u=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        virtual_temperature=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
-        ),
-    )
+    prognostics_init_savepoint = data_provider.from_savepoint_jabw_exit()
+    vn = prognostics_init_savepoint.vn()
+    rbv_vec_coeff_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
+    rbv_vec_coeff_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
+
+    diagnostics_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
+    u_ref = diagnostics_reference_savepoint.zonal_wind().asnumpy()
+    v_ref = diagnostics_reference_savepoint.meridional_wind().asnumpy()
+
+    u = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    v = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+
     cell_domain = h_grid.domain(dims.CellDim)
-    rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
-    rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
     cell_end_lateral_boundary_level_2 = icon_grid.end_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-
     end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
+
     rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        prognostic_state_now.vn,
-        rbv_vec_coeff_c1,
-        rbv_vec_coeff_c2,
-        diagnostic_state.u,
-        diagnostic_state.v,
-        cell_end_lateral_boundary_level_2,
-        end_cell_end,
-        0,
-        icon_grid.num_levels,
+        p_e_in=vn,
+        ptr_coeff_1=rbv_vec_coeff_c1,
+        ptr_coeff_2=rbv_vec_coeff_c2,
+        p_u_out=u,
+        p_v_out=v,
+        horizontal_start=cell_end_lateral_boundary_level_2,
+        horizontal_end=end_cell_end,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
         offset_provider={
             "C2E2C2E": icon_grid.get_offset_provider("C2E2C2E"),
         },
     )
 
     assert helpers.dallclose(
-        diagnostic_state.u.asnumpy(),
-        icon_diagnostics_output_sp.zonal_wind().asnumpy(),
+        u.asnumpy(),
+        u_ref,
     )
 
     assert helpers.dallclose(
-        diagnostic_state.v.asnumpy(),
-        icon_diagnostics_output_sp.meridional_wind().asnumpy(),
+        v.asnumpy(),
+        v_ref,
         atol=1.0e-13,
     )
 
@@ -184,43 +152,30 @@ def test_diagnose_meridional_and_zonal_winds(
         dt_utils.JABW_EXPERIMENT,
     ],
 )
-def test_diagnose_pressure(
-    experiment,
-    data_provider,
-    icon_grid,
-    backend,
+def test_diagnose_surface_pressure(
+    experiment, data_provider, icon_grid, backend, metrics_savepoint
 ):
-    sp = data_provider.from_savepoint_jabw_final()
-    icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
-    prognostic_state_now = prognostic_state.PrognosticState(
-        rho=sp.rho(),
-        w=None,
-        vn=sp.vn(),
-        exner=sp.exner(),
-        theta_v=sp.theta_v(),
-    )
-    diagnostic_state = diagnostics.DiagnosticState(
-        temperature=sp.temperature(),
-        virtual_temperature=sp.temperature(),
-        pressure=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
-        ),
-        pressure_ifc=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, backend=backend
-        ),
-        u=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
-        v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend),
+    initial_diagnostic_savepoint = data_provider.from_savepoint_diagnostics_initial()
+    surface_pressure_ref = initial_diagnostic_savepoint.pressure_sfc().asnumpy()
+    initial_prognostic_savepoint = data_provider.from_savepoint_jabw_exit()
+    exner = initial_prognostic_savepoint.exner()
+    virtual_temperature = initial_diagnostic_savepoint.virtual_temperature()
+    ddqz_z_full = metrics_savepoint.ddqz_z_full()
+
+    surface_pressure = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, backend=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
-    surface_pressure.diagnose_surface_pressure.with_backend(backend)(
-        prognostic_state_now.exner,
-        diagnostic_state.virtual_temperature,
-        data_provider.from_metrics_savepoint().ddqz_z_full(),
-        diagnostic_state.pressure_ifc,
-        phy_const.CPD_O_RD,
-        phy_const.P0REF,
-        phy_const.GRAV_O_RD,
+
+    diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
+        exner=exner,
+        virtual_temperature=virtual_temperature,
+        ddqz_z_full=ddqz_z_full,
+        surface_pressure=surface_pressure,
+        cpd_o_rd=phy_const.CPD_O_RD,
+        p0ref=phy_const.P0REF,
+        grav_o_rd=phy_const.GRAV_O_RD,
         horizontal_start=0,
         horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=icon_grid.num_levels,
@@ -228,12 +183,46 @@ def test_diagnose_pressure(
         offset_provider={"Koff": dims.KDim},
     )
 
-    pressure.diagnose_pressure.with_backend(backend)(
-        data_provider.from_metrics_savepoint().ddqz_z_full(),
-        diagnostic_state.virtual_temperature,
-        diagnostic_state.surface_pressure,
-        diagnostic_state.pressure,
-        diagnostic_state.pressure_ifc,
+    assert helpers.dallclose(
+        surface_pressure.asnumpy()[:, icon_grid.num_levels],
+        surface_pressure_ref,
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        dt_utils.JABW_EXPERIMENT,
+    ],
+)
+def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metrics_savepoint):
+    ddqz_z_full = metrics_savepoint.ddqz_z_full()
+
+    diagnostics_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
+    virtual_temperature = diagnostics_reference_savepoint.temperature()
+    surface_pressure = diagnostics_reference_savepoint.pressure_sfc()
+
+    pressure_ifc_ref = diagnostics_reference_savepoint.pressure_ifc().asnumpy()
+    pressure_ref = diagnostics_reference_savepoint.pressure().asnumpy()
+
+    pressure = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
+    )
+    cell_domain = h_grid.domain(dims.CellDim)
+
+    pressure_ifc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, backend=backend
+    )
+
+    pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
+
+    diagnose_pressure.diagnose_pressure.with_backend(backend)(
+        ddqz_z_full,
+        virtual_temperature,
+        surface_pressure,
+        pressure,
+        pressure_ifc,
         phy_const.GRAV_O_RD,
         horizontal_start=0,
         horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
@@ -241,17 +230,10 @@ def test_diagnose_pressure(
         vertical_end=icon_grid.num_levels,
         offset_provider={},
     )
-    assert helpers.dallclose(
-        diagnostic_state.surface_pressure.asnumpy(),
-        icon_diagnostics_output_sp.pressure_sfc().asnumpy(),
-    )
+
+    assert helpers.dallclose(pressure_ifc_ref, pressure_ifc.asnumpy())
 
     assert helpers.dallclose(
-        diagnostic_state.pressure_ifc.asnumpy(),
-        icon_diagnostics_output_sp.pressure_ifc().asnumpy(),
-    )
-
-    assert helpers.dallclose(
-        diagnostic_state.pressure.asnumpy(),
-        icon_diagnostics_output_sp.pressure().asnumpy(),
+        pressure_ref,
+        pressure.asnumpy(),
     )

@@ -93,5 +93,4 @@ depends_on = [
     { path = "icon4py.model.atmosphere.dycore" },
     { path = "icon4py.model.common" },
     { path = "icon4py.tools.common" },
-    { path = "icon4py.tools.icon4pygen" },
 ]
