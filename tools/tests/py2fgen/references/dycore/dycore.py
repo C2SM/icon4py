@@ -529,7 +529,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rho_now after computation: %s" % str(
-                    utils.as_array(ffi, rho_now, 1064) if rho_now is not None else "None"
+                    utils.as_array(ffi, rho_now, _definitions.FLOAT64)
+                    if rho_now is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -538,7 +540,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rho_new after computation: %s" % str(
-                    utils.as_array(ffi, rho_new, 1064) if rho_new is not None else "None"
+                    utils.as_array(ffi, rho_new, _definitions.FLOAT64)
+                    if rho_new is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -547,7 +551,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "exner_now after computation: %s" % str(
-                    utils.as_array(ffi, exner_now, 1064) if exner_now is not None else "None"
+                    utils.as_array(ffi, exner_now, _definitions.FLOAT64)
+                    if exner_now is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -556,7 +562,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "exner_new after computation: %s" % str(
-                    utils.as_array(ffi, exner_new, 1064) if exner_new is not None else "None"
+                    utils.as_array(ffi, exner_new, _definitions.FLOAT64)
+                    if exner_new is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -565,7 +573,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "w_now after computation: %s" % str(
-                    utils.as_array(ffi, w_now, 1064) if w_now is not None else "None"
+                    utils.as_array(ffi, w_now, _definitions.FLOAT64)
+                    if w_now is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -574,7 +584,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "w_new after computation: %s" % str(
-                    utils.as_array(ffi, w_new, 1064) if w_new is not None else "None"
+                    utils.as_array(ffi, w_new, _definitions.FLOAT64)
+                    if w_new is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -583,7 +595,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "theta_v_now after computation: %s" % str(
-                    utils.as_array(ffi, theta_v_now, 1064) if theta_v_now is not None else "None"
+                    utils.as_array(ffi, theta_v_now, _definitions.FLOAT64)
+                    if theta_v_now is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -592,7 +606,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "theta_v_new after computation: %s" % str(
-                    utils.as_array(ffi, theta_v_new, 1064) if theta_v_new is not None else "None"
+                    utils.as_array(ffi, theta_v_new, _definitions.FLOAT64)
+                    if theta_v_new is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -601,7 +617,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vn_now after computation: %s" % str(
-                    utils.as_array(ffi, vn_now, 1064) if vn_now is not None else "None"
+                    utils.as_array(ffi, vn_now, _definitions.FLOAT64)
+                    if vn_now is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -610,7 +628,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vn_new after computation: %s" % str(
-                    utils.as_array(ffi, vn_new, 1064) if vn_new is not None else "None"
+                    utils.as_array(ffi, vn_new, _definitions.FLOAT64)
+                    if vn_new is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -619,7 +639,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "w_concorr_c after computation: %s" % str(
-                    utils.as_array(ffi, w_concorr_c, 1064) if w_concorr_c is not None else "None"
+                    utils.as_array(ffi, w_concorr_c, _definitions.FLOAT64)
+                    if w_concorr_c is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -628,7 +650,7 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddt_vn_apc_ntl1 after computation: %s" % str(
-                    utils.as_array(ffi, ddt_vn_apc_ntl1, 1064)
+                    utils.as_array(ffi, ddt_vn_apc_ntl1, _definitions.FLOAT64)
                     if ddt_vn_apc_ntl1 is not None
                     else "None"
                 )
@@ -639,7 +661,7 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddt_vn_apc_ntl2 after computation: %s" % str(
-                    utils.as_array(ffi, ddt_vn_apc_ntl2, 1064)
+                    utils.as_array(ffi, ddt_vn_apc_ntl2, _definitions.FLOAT64)
                     if ddt_vn_apc_ntl2 is not None
                     else "None"
                 )
@@ -650,7 +672,7 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddt_w_adv_ntl1 after computation: %s" % str(
-                    utils.as_array(ffi, ddt_w_adv_ntl1, 1064)
+                    utils.as_array(ffi, ddt_w_adv_ntl1, _definitions.FLOAT64)
                     if ddt_w_adv_ntl1 is not None
                     else "None"
                 )
@@ -661,7 +683,7 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddt_w_adv_ntl2 after computation: %s" % str(
-                    utils.as_array(ffi, ddt_w_adv_ntl2, 1064)
+                    utils.as_array(ffi, ddt_w_adv_ntl2, _definitions.FLOAT64)
                     if ddt_w_adv_ntl2 is not None
                     else "None"
                 )
@@ -672,7 +694,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "theta_v_ic after computation: %s" % str(
-                    utils.as_array(ffi, theta_v_ic, 1064) if theta_v_ic is not None else "None"
+                    utils.as_array(ffi, theta_v_ic, _definitions.FLOAT64)
+                    if theta_v_ic is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -681,7 +705,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rho_ic after computation: %s" % str(
-                    utils.as_array(ffi, rho_ic, 1064) if rho_ic is not None else "None"
+                    utils.as_array(ffi, rho_ic, _definitions.FLOAT64)
+                    if rho_ic is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -690,7 +716,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "exner_pr after computation: %s" % str(
-                    utils.as_array(ffi, exner_pr, 1064) if exner_pr is not None else "None"
+                    utils.as_array(ffi, exner_pr, _definitions.FLOAT64)
+                    if exner_pr is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -699,7 +727,7 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "exner_dyn_incr after computation: %s" % str(
-                    utils.as_array(ffi, exner_dyn_incr, 1064)
+                    utils.as_array(ffi, exner_dyn_incr, _definitions.FLOAT64)
                     if exner_dyn_incr is not None
                     else "None"
                 )
@@ -710,7 +738,7 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddt_exner_phy after computation: %s" % str(
-                    utils.as_array(ffi, ddt_exner_phy, 1064)
+                    utils.as_array(ffi, ddt_exner_phy, _definitions.FLOAT64)
                     if ddt_exner_phy is not None
                     else "None"
                 )
@@ -721,7 +749,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "grf_tend_rho after computation: %s" % str(
-                    utils.as_array(ffi, grf_tend_rho, 1064) if grf_tend_rho is not None else "None"
+                    utils.as_array(ffi, grf_tend_rho, _definitions.FLOAT64)
+                    if grf_tend_rho is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -730,7 +760,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "grf_tend_thv after computation: %s" % str(
-                    utils.as_array(ffi, grf_tend_thv, 1064) if grf_tend_thv is not None else "None"
+                    utils.as_array(ffi, grf_tend_thv, _definitions.FLOAT64)
+                    if grf_tend_thv is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -739,7 +771,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "grf_tend_w after computation: %s" % str(
-                    utils.as_array(ffi, grf_tend_w, 1064) if grf_tend_w is not None else "None"
+                    utils.as_array(ffi, grf_tend_w, _definitions.FLOAT64)
+                    if grf_tend_w is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -748,7 +782,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "mass_fl_e after computation: %s" % str(
-                    utils.as_array(ffi, mass_fl_e, 1064) if mass_fl_e is not None else "None"
+                    utils.as_array(ffi, mass_fl_e, _definitions.FLOAT64)
+                    if mass_fl_e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -757,7 +793,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddt_vn_phy after computation: %s" % str(
-                    utils.as_array(ffi, ddt_vn_phy, 1064) if ddt_vn_phy is not None else "None"
+                    utils.as_array(ffi, ddt_vn_phy, _definitions.FLOAT64)
+                    if ddt_vn_phy is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -766,7 +804,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "grf_tend_vn after computation: %s" % str(
-                    utils.as_array(ffi, grf_tend_vn, 1064) if grf_tend_vn is not None else "None"
+                    utils.as_array(ffi, grf_tend_vn, _definitions.FLOAT64)
+                    if grf_tend_vn is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -775,7 +815,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vn_ie after computation: %s" % str(
-                    utils.as_array(ffi, vn_ie, 1064) if vn_ie is not None else "None"
+                    utils.as_array(ffi, vn_ie, _definitions.FLOAT64)
+                    if vn_ie is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -784,7 +826,7 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vt after computation: %s" % str(
-                    utils.as_array(ffi, vt, 1064) if vt is not None else "None"
+                    utils.as_array(ffi, vt, _definitions.FLOAT64) if vt is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -793,7 +835,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "mass_flx_me after computation: %s" % str(
-                    utils.as_array(ffi, mass_flx_me, 1064) if mass_flx_me is not None else "None"
+                    utils.as_array(ffi, mass_flx_me, _definitions.FLOAT64)
+                    if mass_flx_me is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -802,7 +846,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "mass_flx_ic after computation: %s" % str(
-                    utils.as_array(ffi, mass_flx_ic, 1064) if mass_flx_ic is not None else "None"
+                    utils.as_array(ffi, mass_flx_ic, _definitions.FLOAT64)
+                    if mass_flx_ic is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -811,7 +857,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vol_flx_ic after computation: %s" % str(
-                    utils.as_array(ffi, vol_flx_ic, 1064) if vol_flx_ic is not None else "None"
+                    utils.as_array(ffi, vol_flx_ic, _definitions.FLOAT64)
+                    if vol_flx_ic is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -820,7 +868,9 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vn_traj after computation: %s" % str(
-                    utils.as_array(ffi, vn_traj, 1064) if vn_traj is not None else "None"
+                    utils.as_array(ffi, vn_traj, _definitions.FLOAT64)
+                    if vn_traj is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1581,7 +1631,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vct_a after computation: %s" % str(
-                    utils.as_array(ffi, vct_a, 1064) if vct_a is not None else "None"
+                    utils.as_array(ffi, vct_a, _definitions.FLOAT64)
+                    if vct_a is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1590,7 +1642,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vct_b after computation: %s" % str(
-                    utils.as_array(ffi, vct_b, 1064) if vct_b is not None else "None"
+                    utils.as_array(ffi, vct_b, _definitions.FLOAT64)
+                    if vct_b is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1599,7 +1653,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "c_lin_e after computation: %s" % str(
-                    utils.as_array(ffi, c_lin_e, 1064) if c_lin_e is not None else "None"
+                    utils.as_array(ffi, c_lin_e, _definitions.FLOAT64)
+                    if c_lin_e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1608,7 +1664,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "c_intp after computation: %s" % str(
-                    utils.as_array(ffi, c_intp, 1064) if c_intp is not None else "None"
+                    utils.as_array(ffi, c_intp, _definitions.FLOAT64)
+                    if c_intp is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1617,7 +1675,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e_flx_avg after computation: %s" % str(
-                    utils.as_array(ffi, e_flx_avg, 1064) if e_flx_avg is not None else "None"
+                    utils.as_array(ffi, e_flx_avg, _definitions.FLOAT64)
+                    if e_flx_avg is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1626,7 +1686,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_grdiv after computation: %s" % str(
-                    utils.as_array(ffi, geofac_grdiv, 1064) if geofac_grdiv is not None else "None"
+                    utils.as_array(ffi, geofac_grdiv, _definitions.FLOAT64)
+                    if geofac_grdiv is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1635,7 +1697,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_rot after computation: %s" % str(
-                    utils.as_array(ffi, geofac_rot, 1064) if geofac_rot is not None else "None"
+                    utils.as_array(ffi, geofac_rot, _definitions.FLOAT64)
+                    if geofac_rot is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1644,7 +1708,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "pos_on_tplane_e_1 after computation: %s" % str(
-                    utils.as_array(ffi, pos_on_tplane_e_1, 1064)
+                    utils.as_array(ffi, pos_on_tplane_e_1, _definitions.FLOAT64)
                     if pos_on_tplane_e_1 is not None
                     else "None"
                 )
@@ -1655,7 +1719,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "pos_on_tplane_e_2 after computation: %s" % str(
-                    utils.as_array(ffi, pos_on_tplane_e_2, 1064)
+                    utils.as_array(ffi, pos_on_tplane_e_2, _definitions.FLOAT64)
                     if pos_on_tplane_e_2 is not None
                     else "None"
                 )
@@ -1666,7 +1730,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rbf_vec_coeff_e after computation: %s" % str(
-                    utils.as_array(ffi, rbf_vec_coeff_e, 1064)
+                    utils.as_array(ffi, rbf_vec_coeff_e, _definitions.FLOAT64)
                     if rbf_vec_coeff_e is not None
                     else "None"
                 )
@@ -1677,7 +1741,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e_bln_c_s after computation: %s" % str(
-                    utils.as_array(ffi, e_bln_c_s, 1064) if e_bln_c_s is not None else "None"
+                    utils.as_array(ffi, e_bln_c_s, _definitions.FLOAT64)
+                    if e_bln_c_s is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1686,7 +1752,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rbf_coeff_1 after computation: %s" % str(
-                    utils.as_array(ffi, rbf_coeff_1, 1064) if rbf_coeff_1 is not None else "None"
+                    utils.as_array(ffi, rbf_coeff_1, _definitions.FLOAT64)
+                    if rbf_coeff_1 is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1695,7 +1763,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rbf_coeff_2 after computation: %s" % str(
-                    utils.as_array(ffi, rbf_coeff_2, 1064) if rbf_coeff_2 is not None else "None"
+                    utils.as_array(ffi, rbf_coeff_2, _definitions.FLOAT64)
+                    if rbf_coeff_2 is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1704,7 +1774,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_div after computation: %s" % str(
-                    utils.as_array(ffi, geofac_div, 1064) if geofac_div is not None else "None"
+                    utils.as_array(ffi, geofac_div, _definitions.FLOAT64)
+                    if geofac_div is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1713,7 +1785,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_n2s after computation: %s" % str(
-                    utils.as_array(ffi, geofac_n2s, 1064) if geofac_n2s is not None else "None"
+                    utils.as_array(ffi, geofac_n2s, _definitions.FLOAT64)
+                    if geofac_n2s is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1722,7 +1796,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_grg_x after computation: %s" % str(
-                    utils.as_array(ffi, geofac_grg_x, 1064) if geofac_grg_x is not None else "None"
+                    utils.as_array(ffi, geofac_grg_x, _definitions.FLOAT64)
+                    if geofac_grg_x is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1731,7 +1807,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "geofac_grg_y after computation: %s" % str(
-                    utils.as_array(ffi, geofac_grg_y, 1064) if geofac_grg_y is not None else "None"
+                    utils.as_array(ffi, geofac_grg_y, _definitions.FLOAT64)
+                    if geofac_grg_y is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1740,7 +1818,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "nudgecoeff_e after computation: %s" % str(
-                    utils.as_array(ffi, nudgecoeff_e, 1064) if nudgecoeff_e is not None else "None"
+                    utils.as_array(ffi, nudgecoeff_e, _definitions.FLOAT64)
+                    if nudgecoeff_e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1749,7 +1829,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "bdy_halo_c after computation: %s" % str(
-                    utils.as_array(ffi, bdy_halo_c, 1) if bdy_halo_c is not None else "None"
+                    utils.as_array(ffi, bdy_halo_c, _definitions.BOOL)
+                    if bdy_halo_c is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1758,7 +1840,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "mask_prog_halo_c after computation: %s" % str(
-                    utils.as_array(ffi, mask_prog_halo_c, 1)
+                    utils.as_array(ffi, mask_prog_halo_c, _definitions.BOOL)
                     if mask_prog_halo_c is not None
                     else "None"
                 )
@@ -1769,7 +1851,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rayleigh_w after computation: %s" % str(
-                    utils.as_array(ffi, rayleigh_w, 1064) if rayleigh_w is not None else "None"
+                    utils.as_array(ffi, rayleigh_w, _definitions.FLOAT64)
+                    if rayleigh_w is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1778,7 +1862,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "exner_exfac after computation: %s" % str(
-                    utils.as_array(ffi, exner_exfac, 1064) if exner_exfac is not None else "None"
+                    utils.as_array(ffi, exner_exfac, _definitions.FLOAT64)
+                    if exner_exfac is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1787,7 +1873,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "exner_ref_mc after computation: %s" % str(
-                    utils.as_array(ffi, exner_ref_mc, 1064) if exner_ref_mc is not None else "None"
+                    utils.as_array(ffi, exner_ref_mc, _definitions.FLOAT64)
+                    if exner_ref_mc is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1796,7 +1884,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "wgtfac_c after computation: %s" % str(
-                    utils.as_array(ffi, wgtfac_c, 1064) if wgtfac_c is not None else "None"
+                    utils.as_array(ffi, wgtfac_c, _definitions.FLOAT64)
+                    if wgtfac_c is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1805,7 +1895,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "wgtfacq_c after computation: %s" % str(
-                    utils.as_array(ffi, wgtfacq_c, 1064) if wgtfacq_c is not None else "None"
+                    utils.as_array(ffi, wgtfacq_c, _definitions.FLOAT64)
+                    if wgtfacq_c is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1814,7 +1906,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "inv_ddqz_z_full after computation: %s" % str(
-                    utils.as_array(ffi, inv_ddqz_z_full, 1064)
+                    utils.as_array(ffi, inv_ddqz_z_full, _definitions.FLOAT64)
                     if inv_ddqz_z_full is not None
                     else "None"
                 )
@@ -1825,7 +1917,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rho_ref_mc after computation: %s" % str(
-                    utils.as_array(ffi, rho_ref_mc, 1064) if rho_ref_mc is not None else "None"
+                    utils.as_array(ffi, rho_ref_mc, _definitions.FLOAT64)
+                    if rho_ref_mc is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1834,7 +1928,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "theta_ref_mc after computation: %s" % str(
-                    utils.as_array(ffi, theta_ref_mc, 1064) if theta_ref_mc is not None else "None"
+                    utils.as_array(ffi, theta_ref_mc, _definitions.FLOAT64)
+                    if theta_ref_mc is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1843,7 +1939,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vwind_expl_wgt after computation: %s" % str(
-                    utils.as_array(ffi, vwind_expl_wgt, 1064)
+                    utils.as_array(ffi, vwind_expl_wgt, _definitions.FLOAT64)
                     if vwind_expl_wgt is not None
                     else "None"
                 )
@@ -1854,7 +1950,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "d_exner_dz_ref_ic after computation: %s" % str(
-                    utils.as_array(ffi, d_exner_dz_ref_ic, 1064)
+                    utils.as_array(ffi, d_exner_dz_ref_ic, _definitions.FLOAT64)
                     if d_exner_dz_ref_ic is not None
                     else "None"
                 )
@@ -1865,7 +1961,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddqz_z_half after computation: %s" % str(
-                    utils.as_array(ffi, ddqz_z_half, 1064) if ddqz_z_half is not None else "None"
+                    utils.as_array(ffi, ddqz_z_half, _definitions.FLOAT64)
+                    if ddqz_z_half is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1874,7 +1972,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "theta_ref_ic after computation: %s" % str(
-                    utils.as_array(ffi, theta_ref_ic, 1064) if theta_ref_ic is not None else "None"
+                    utils.as_array(ffi, theta_ref_ic, _definitions.FLOAT64)
+                    if theta_ref_ic is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1883,7 +1983,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "d2dexdz2_fac1_mc after computation: %s" % str(
-                    utils.as_array(ffi, d2dexdz2_fac1_mc, 1064)
+                    utils.as_array(ffi, d2dexdz2_fac1_mc, _definitions.FLOAT64)
                     if d2dexdz2_fac1_mc is not None
                     else "None"
                 )
@@ -1894,7 +1994,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "d2dexdz2_fac2_mc after computation: %s" % str(
-                    utils.as_array(ffi, d2dexdz2_fac2_mc, 1064)
+                    utils.as_array(ffi, d2dexdz2_fac2_mc, _definitions.FLOAT64)
                     if d2dexdz2_fac2_mc is not None
                     else "None"
                 )
@@ -1905,7 +2005,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "rho_ref_me after computation: %s" % str(
-                    utils.as_array(ffi, rho_ref_me, 1064) if rho_ref_me is not None else "None"
+                    utils.as_array(ffi, rho_ref_me, _definitions.FLOAT64)
+                    if rho_ref_me is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1914,7 +2016,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "theta_ref_me after computation: %s" % str(
-                    utils.as_array(ffi, theta_ref_me, 1064) if theta_ref_me is not None else "None"
+                    utils.as_array(ffi, theta_ref_me, _definitions.FLOAT64)
+                    if theta_ref_me is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1923,7 +2027,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddxn_z_full after computation: %s" % str(
-                    utils.as_array(ffi, ddxn_z_full, 1064) if ddxn_z_full is not None else "None"
+                    utils.as_array(ffi, ddxn_z_full, _definitions.FLOAT64)
+                    if ddxn_z_full is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1932,7 +2038,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "zdiff_gradp after computation: %s" % str(
-                    utils.as_array(ffi, zdiff_gradp, 1064) if zdiff_gradp is not None else "None"
+                    utils.as_array(ffi, zdiff_gradp, _definitions.FLOAT64)
+                    if zdiff_gradp is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1941,7 +2049,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vertoffset_gradp after computation: %s" % str(
-                    utils.as_array(ffi, vertoffset_gradp, 32)
+                    utils.as_array(ffi, vertoffset_gradp, _definitions.INT32)
                     if vertoffset_gradp is not None
                     else "None"
                 )
@@ -1952,7 +2060,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ipeidx_dsl after computation: %s" % str(
-                    utils.as_array(ffi, ipeidx_dsl, 1) if ipeidx_dsl is not None else "None"
+                    utils.as_array(ffi, ipeidx_dsl, _definitions.BOOL)
+                    if ipeidx_dsl is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1961,7 +2071,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "pg_exdist after computation: %s" % str(
-                    utils.as_array(ffi, pg_exdist, 1064) if pg_exdist is not None else "None"
+                    utils.as_array(ffi, pg_exdist, _definitions.FLOAT64)
+                    if pg_exdist is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1970,7 +2082,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddqz_z_full_e after computation: %s" % str(
-                    utils.as_array(ffi, ddqz_z_full_e, 1064)
+                    utils.as_array(ffi, ddqz_z_full_e, _definitions.FLOAT64)
                     if ddqz_z_full_e is not None
                     else "None"
                 )
@@ -1981,7 +2093,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "ddxt_z_full after computation: %s" % str(
-                    utils.as_array(ffi, ddxt_z_full, 1064) if ddxt_z_full is not None else "None"
+                    utils.as_array(ffi, ddxt_z_full, _definitions.FLOAT64)
+                    if ddxt_z_full is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1990,7 +2104,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "wgtfac_e after computation: %s" % str(
-                    utils.as_array(ffi, wgtfac_e, 1064) if wgtfac_e is not None else "None"
+                    utils.as_array(ffi, wgtfac_e, _definitions.FLOAT64)
+                    if wgtfac_e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -1999,7 +2115,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "wgtfacq_e after computation: %s" % str(
-                    utils.as_array(ffi, wgtfacq_e, 1064) if wgtfacq_e is not None else "None"
+                    utils.as_array(ffi, wgtfacq_e, _definitions.FLOAT64)
+                    if wgtfacq_e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -2008,7 +2126,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vwind_impl_wgt after computation: %s" % str(
-                    utils.as_array(ffi, vwind_impl_wgt, 1064)
+                    utils.as_array(ffi, vwind_impl_wgt, _definitions.FLOAT64)
                     if vwind_impl_wgt is not None
                     else "None"
                 )
@@ -2019,7 +2137,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "hmask_dd3d after computation: %s" % str(
-                    utils.as_array(ffi, hmask_dd3d, 1064) if hmask_dd3d is not None else "None"
+                    utils.as_array(ffi, hmask_dd3d, _definitions.FLOAT64)
+                    if hmask_dd3d is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -2028,7 +2148,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "scalfac_dd3d after computation: %s" % str(
-                    utils.as_array(ffi, scalfac_dd3d, 1064) if scalfac_dd3d is not None else "None"
+                    utils.as_array(ffi, scalfac_dd3d, _definitions.FLOAT64)
+                    if scalfac_dd3d is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -2037,7 +2159,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "coeff1_dwdz after computation: %s" % str(
-                    utils.as_array(ffi, coeff1_dwdz, 1064) if coeff1_dwdz is not None else "None"
+                    utils.as_array(ffi, coeff1_dwdz, _definitions.FLOAT64)
+                    if coeff1_dwdz is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -2046,7 +2170,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "coeff2_dwdz after computation: %s" % str(
-                    utils.as_array(ffi, coeff2_dwdz, 1064) if coeff2_dwdz is not None else "None"
+                    utils.as_array(ffi, coeff2_dwdz, _definitions.FLOAT64)
+                    if coeff2_dwdz is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -2055,7 +2181,7 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "coeff_gradekin after computation: %s" % str(
-                    utils.as_array(ffi, coeff_gradekin, 1064)
+                    utils.as_array(ffi, coeff_gradekin, _definitions.FLOAT64)
                     if coeff_gradekin is not None
                     else "None"
                 )
@@ -2066,7 +2192,9 @@ def solve_nh_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "c_owner_mask after computation: %s" % str(
-                    utils.as_array(ffi, c_owner_mask, 1) if c_owner_mask is not None else "None"
+                    utils.as_array(ffi, c_owner_mask, _definitions.BOOL)
+                    if c_owner_mask is not None
+                    else "None"
                 )
                 logger.debug(msg)
 

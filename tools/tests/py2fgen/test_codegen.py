@@ -333,7 +333,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
                 )
                 logger.debug(msg)
                 msg = "two after computation: %s" % str(
-                    utils.as_array(ffi, two, 1064) if two is not None else "None"
+                    utils.as_array(ffi, two, _definitions.FLOAT64) if two is not None else "None"
                 )
                 logger.debug(msg)
 
@@ -407,7 +407,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
                 )
                 logger.debug(msg)
                 msg = "one after computation: %s" % str(
-                    utils.as_array(ffi, one, 1032) if one is not None else "None"
+                    utils.as_array(ffi, one, _definitions.FLOAT32) if one is not None else "None"
                 )
                 logger.debug(msg)
 

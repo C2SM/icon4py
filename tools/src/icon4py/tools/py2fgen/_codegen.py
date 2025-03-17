@@ -211,7 +211,7 @@ def {{ func.name }}_wrapper(
                 {% if is_array(arg) %}
                 msg = 'shape of {{ name }} after computation = %s' % str({{ name}}.shape if {{name}} is not None else "None")
                 logger.debug(msg)
-                msg = '{{ name }} after computation: %s' % str(utils.as_array(ffi, {{ name }}, {{ arg.dtype }}) if {{ name }} is not None else "None")
+                msg = '{{ name }} after computation: %s' % str(utils.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else "None")
                 logger.debug(msg)
                 {% endif %}
                 {% endfor %}
