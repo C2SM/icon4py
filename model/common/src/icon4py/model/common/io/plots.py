@@ -279,7 +279,7 @@ class Plot:
         ax.set_aspect("equal")
         plt.draw()
 
-    def save_state(self, state, label: str = "") -> None:
+    def pickle_data(self, state, label: str = "") -> None:
         file_name = f"{self.PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}.pkl"
         with open(file_name, "wb") as f:
             pickle.dump(state, f)

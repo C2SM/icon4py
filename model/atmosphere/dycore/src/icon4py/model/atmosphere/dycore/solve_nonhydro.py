@@ -888,9 +888,7 @@ class SolveNonhydro:
         if at_initial_timestep and at_first_substep:
             if ibm.DEBUG_LEVEL >= 3:
                 # save prognostic state for testing
-                import pickle
-                with open("testdata/prognostic_state_initial.pkl", "wb") as f:
-                    pickle.dump(prognostic_states.current, f)
+                self._plot.pickle_data(prognostic_states.current, "prognostic_state_initial")
             log.info(" ***IBM fixing initial conditions")
             self._ibm.set_dirichlet_value_vn(prognostic_states.current.vn)
             self._ibm.set_dirichlet_value_w(prognostic_states.current.w)
@@ -905,7 +903,7 @@ class SolveNonhydro:
             # self._plot.plot_levels(prognostic_states.current.theta_v, label=f"IC_theta_v")
         if at_first_substep and ibm.DEBUG_LEVEL >= 3:
             # save state
-            self._plot.save_state(prognostic_states.current, "start_of_timestep")
+            self._plot.pickle_data(prognostic_states.current, "start_of_timestep")
         #<--- IBM
 
         self.run_predictor_step(
@@ -1014,7 +1012,7 @@ class SolveNonhydro:
             # self._plot.plot_levels(prognostic_states.next.exner,   label=f"end_of_timestep_exner")
             # self._plot.plot_levels(prognostic_states.next.theta_v, label=f"end_of_timestep_theta_v")
             # save state
-            self._plot.save_state(prognostic_states.next, "end_of_timestep")
+            self._plot.pickle_data(prognostic_states.next, "end_of_timestep")
         #<--- IBM
 
     # flake8: noqa: C901
