@@ -1,5 +1,15 @@
 include:
-  - local: 'ci/base.yml'
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+
+stages:
+  - baseimage
+  - build
+  - test
+  - benchmark
+
+variables:
+  PYVERSION_PREFIX: py310
+  PYVERSION: 3.10.9
 
   # Base image build step with SHA256 checksum for caching
 .build_model_baseimage:
