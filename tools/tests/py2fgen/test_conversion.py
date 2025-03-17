@@ -12,6 +12,13 @@ import pytest
 from icon4py.tools.py2fgen._conversion import _unpack_numpy
 
 
+@pytest.fixture
+def ffi():
+    import cffi
+
+    return cffi.FFI()
+
+
 @pytest.mark.parametrize(
     "data, expected_result",
     [
