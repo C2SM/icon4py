@@ -44,6 +44,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.py2fgen._runtime import perf_counter
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
 
@@ -277,6 +278,11 @@ def diffusion_run(
             dtime,
         )
     else:
+        if __debug__:
+            diffusion_start = perf_counter()
         granule.diffusion.run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
+        if __debug__:
+            diffusion_end = perf_counter()
+            logger.info("diffusion.run time: %s" % str(diffusion_start - diffusion_end))
