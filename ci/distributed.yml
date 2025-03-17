@@ -58,12 +58,11 @@ build_distributed:
   before_script:
     - cd /icon4py
     - ls -la $(pwd)
-    - ls ${UV_PROJECT_ENVIRONMENT}
+    - ls ${UV_PROJECT_ENVIRONMENT}/lib/python*/site-packages
     - echo "using MPICC ${MPICC}"
     - echo "using CC ${CC}"
   script:
-    - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-    - pytest -svv -k "mpi_tests" --datatest --with-mpi --backend=$BACKEND $COMPONENT
+    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate && pytest -svv -k "mpi_tests" --datatest --with-mpi --backend=$BACKEND $COMPONENT
   parallel:
     matrix:
       - COMPONENT: [ diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
