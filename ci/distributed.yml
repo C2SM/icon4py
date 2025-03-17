@@ -62,10 +62,10 @@ build_distributed:
     - echo "using MPICC ${MPICC}"
     - echo "using CC ${CC}"
   script:
-    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate && pytest -svv -k "mpi_tests" --datatest --with-mpi --backend=$BACKEND $COMPONENT
+    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate && pytest -svv -k "mpi_tests" --datatest --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
-      - COMPONENT: [ diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
+      - COMPONENT: [ atmosphere/diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
         BACKEND: [ gtfn_cpu]
   rules:
     - when: on_success
