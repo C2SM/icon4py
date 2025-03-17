@@ -7,8 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
 
-import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.model.common.decomposition import definitions as decomposition
 
 from . import data_handling as data, datatest_utils as dt_utils
 
@@ -18,8 +18,9 @@ def experiment():
     return dt_utils.REGIONAL_EXPERIMENT
 
 
-@pytest.fixture(params=[False], scope="session")
+@pytest.fixture(scope="session")
 def processor_props(request):
+    print("single node fixture")
     return dt_utils.get_processor_properties_for_run(decomposition.SingleNodeRun())
 
 

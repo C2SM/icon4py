@@ -106,7 +106,7 @@ def get_grid_id_for_experiment(experiment) -> uuid.UUID:
         raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
 
 
-def get_processor_properties_for_run(run_instance):
+def get_processor_properties_for_run(run_instance: decomposition.RunType):
     return decomposition.get_processor_properties(run_instance)
 
 

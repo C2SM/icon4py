@@ -62,8 +62,10 @@ log = logging.getLogger(__name__)
 def init_mpi():
     from mpi4py import MPI
 
+    print("calling init_mpi:")
     if not MPI.Is_initialized():
         log.info("initializing MPI")
+        print("MPI.Init")
         MPI.Init()
 
 
