@@ -16,7 +16,7 @@ import pickle
 import numpy as np
 import xarray as xr
 
-mpl.use('tkagg')
+#mpl.use('tkagg')
 
 # Prevent matplotlib logging spam
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
@@ -352,10 +352,14 @@ class Plot:
 
         if "vvec_cell" in file_name:
             # quiver-plot *v* at cell centres (data is vn)
+            if type(data) is np.ndarray:
+                data  = gtx.as_field((dims.EdgeDim, dims.KDim), data)
             u, v = self._vec_interpolate_to_cell_center(data)
             data = (u**2 + v**2)**0.5
         elif "vvec_edge" in file_name:
             # quiver-plot *vn* and *vt* at edge centres (data is vn)
+            if type(data) is np.ndarray:
+                data  = gtx.as_field((dims.EdgeDim, dims.KDim), data)
             vt = self._compute_vt(data)
             vn = data.asnumpy()
             data = (vn**2 + vt**2)**0.5
@@ -419,7 +423,7 @@ class Plot:
         return axs
 
 
-    def plot_sections(self, data, data2, sections_x: list[float] = [], sections_y: list[float] = [], plot_every=1, qscale=40, label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
+    def plot_sections(self, data, data2=None, sections_x: list[float] = [], sections_y: list[float] = [], plot_every=1, qscale=40, label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
         """
         Plot data defined on a triangulation on vertical sections.
         """
@@ -474,28 +478,39 @@ class Plot:
 
         fig, axs, caxs = self._make_axes(num_axes=num_sections, fig_num=fig_num)
 
-        plot_sec = lambda x, y, data, i: axs[i].scatter(x, y, c=data, s=6**2, cmap=cmap, norm=norm(data.min(), data.max()))
         quiver_sec = lambda x, y, u, v, i: axs[i].quiver(x, y, u, v, scale=qscale)
+        if "vvec_cell" in file_name:
+            plot_sec = lambda x, y, data, i: axs[i].scatter(x, y, c=data, s=6**2, cmap=cmap, norm=norm(data.min(), data.max()))
+        else:
+            plot_sec = lambda x, y, data, i: axs[i].pcolormesh(x, y, data[:-1, :-1], cmap=cmap, norm=norm(data.min(), data.max()), shading='flat')
 
         for i in range(num_sections):
             if i < len(sections_x):
-                v_mag = (v**2 + w**2)**0.5
+                if "vvec_cell" in file_name:
+                    data = (v**2 + w**2)**0.5
                 idxs = self._get_section_indexes(coords_x, coords_y, s_x=sections_x[i], dist=self.tri.height_length*2/3)
                 x_coords = np.tile(coords_y[idxs], (self.grid.num_levels, 1)).T
                 y_coords = self.full_level_heights[idxs,:]
-                im = plot_sec(x_coords, y_coords, v_mag[idxs, :], i)
-                quiver_sec(x_coords, y_coords, v[idxs, :], w[idxs, :], i)
+                im = plot_sec(x_coords, y_coords, data[idxs, :], i)
+                if "vvec_cell" in file_name:
+                    quiver_sec(x_coords, y_coords, v[idxs, :], w[idxs, :], i)
                 axs[i].set_title(f"Section at x = {sections_x[i]}")
             else:
-                v_mag = (u**2 + w**2)**0.5
+                if "vvec_cell" in file_name:
+                    data = (u**2 + w**2)**0.5
                 idxs = self._get_section_indexes(coords_x, coords_y, s_y=sections_y[i-len(sections_x)], dist=self.tri.height_length*2/3)
-                x_coords = np.tile(coords_x[idxs], (self.grid.num_levels, 1)).T
-                y_coords = self.full_level_heights[idxs,:]
-                im = plot_sec(x_coords[::pever,::pever], y_coords[::pever,::pever], v_mag[idxs, :][::pever,::pever], i)
-                quiver_sec(x_coords[::pever,::pever], y_coords[::pever,::pever], u[idxs, :][::pever,::pever], w[idxs, :][::pever,::pever], i)
+                if data.shape[1] == self.grid.num_levels:
+                    y_coords = self.full_level_heights[idxs,:]
+                else:
+                    y_coords = self.half_level_heights[idxs,:]
+                x_coords = np.tile(coords_x[idxs], (y_coords.shape[1], 1)).T
+                im = plot_sec(x_coords[::pever,::pever], y_coords[::pever,::pever], data[idxs, :][::pever,::pever], i)
+                if "vvec_cell" in file_name:
+                    quiver_sec(x_coords[::pever,::pever], y_coords[::pever,::pever], u[idxs, :][::pever,::pever], w[idxs, :][::pever,::pever], i)
                 axs[i].set_title(f"Section at y = {sections_y[i-len(sections_x)]}")
             cbar = fig.colorbar(im, cax=caxs[i], orientation='vertical')
             cbar.set_ticks(np.linspace(cbar.vmin, cbar.vmax, 5))
+            cbar.set_ticklabels([f"{c:.2f}" for c in np.linspace(cbar.vmin, cbar.vmax, 5)])
             #axs[i].set_aspect('equal')
 
         fig.subplots_adjust(wspace=0.12, hspace=0.1)
@@ -509,7 +524,10 @@ class Plot:
             plt.pause(1)
 
         self.plot_counter += 1
-        return axs, x_coords, y_coords, u[idxs,:], w[idxs,:]
+        if "vvec_cell" in file_name:
+            return axs, x_coords, y_coords, u[idxs,:], w[idxs,:], idxs
+        else:
+            return axs, x_coords, y_coords, data[idxs,:], None, idxs
 
     def _get_section_indexes(self, grid_x, grid_y, s_x=None, s_y=None, dist=1e-3):
 

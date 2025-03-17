@@ -23,7 +23,7 @@ Immersed boundary method module
 """
 
 log = logging.getLogger(__name__)
-DEBUG_LEVEL = 2
+DEBUG_LEVEL = 4
 
 
 class ImmersedBoundaryMethod:
@@ -129,12 +129,14 @@ class ImmersedBoundaryMethod:
         compute_hill_elevation = lambda x, y: hill_height * np.exp(-(compute_distance_from_hill(x, y) / hill_width)**2)
         cell_x = grid_file.cell_circumcenter_cartesian_x.values
         cell_y = grid_file.cell_circumcenter_cartesian_y.values
+        buildings = []
         buildings = [
-            [390, 410, 490, 510,  60],
-            [490, 510, 490, 510, 130],
+            #[390, 400, 0, 1000,  40],
+            #[497, 503, 0, 1000, 105],
+            [350, 400, 0, 1000, 75],
         ]
         for k in range(half_cell_mask_np.shape[1]):
-            half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
+            #half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
             for building in buildings:
                 xmin, xmax, ymin, ymax, top = building
                 half_cell_mask_np[
