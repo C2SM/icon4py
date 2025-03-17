@@ -28,13 +28,13 @@ if TYPE_CHECKING:
 def as_array(
     ffi: cffi.FFI, array_descriptor: _definitions.ArrayDescriptor, dtype: _definitions.ScalarKind
 ) -> Optional[np.ndarray]:  # or cupy
-    unpack = _conversion._unpack_cupy if array_descriptor[2] else _conversion._unpack_numpy
+    xp = cp if array_descriptor[2] else np
     if array_descriptor[0] == ffi.NULL:
         if array_descriptor[3]:
             return None
         else:
             raise RuntimeError("Parameter is not optional, but received 'NULL'.")
-    arr = unpack(ffi, array_descriptor[0], *array_descriptor[1])
+    arr = _conversion.unpack(xp, ffi, array_descriptor[0], *array_descriptor[1])
     if dtype == _definitions.BOOL:
         # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
         # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.

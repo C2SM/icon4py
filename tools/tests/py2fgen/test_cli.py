@@ -62,7 +62,7 @@ def run_test_case(
     samples_path,
     fortran_driver,
     test_temp_dir,
-    compiler="gfortran",
+    compiler="gfortran",  # TODO(havogt): don't use hard-coded compiler, see gt4py.cartesian setuptools approach
     extra_compiler_flags=(),
     expected_error_code=0,
     env_vars=None,
