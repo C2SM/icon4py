@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import math
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -125,3 +126,12 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
     bool_array = xp.array(int_array != 0, order="F", dtype=np.bool_)
     # bool_array.flags.writeable = False # TODO np.ndarray.__dlpack__() doesn't like the readonly flag # noqa: ERA001
     return bool_array
+
+
+def unpack(xp: ModuleType, ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
+    if xp == np:
+        return _unpack_numpy(ffi, ptr, *sizes)
+    elif xp == cp:
+        return _unpack_cupy(ffi, ptr, *sizes)
+    else:
+        raise ValueError(f"Unsupported array type: {xp}. Expected Numpy or CuPy.")

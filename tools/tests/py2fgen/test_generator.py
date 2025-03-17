@@ -18,7 +18,7 @@ from icon4py.tools.py2fgen._generator import generate_and_compile_cffi_plugin, g
 
 
 def test_parse_functions_on_wrapper():
-    # TODO make indepedent of `wrappers`
+    # TODO make independent of `wrappers`
     module_path = "icon4py.tools.py2fgen.wrappers.diffusion_wrapper"
     functions = ["diffusion_init", "diffusion_run"]
     plugin = get_cffi_description(module_path, functions, "diffusion_plugin")
