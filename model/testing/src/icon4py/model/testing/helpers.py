@@ -9,6 +9,7 @@
 import hashlib
 import typing
 from dataclasses import dataclass, field
+from functools import partial as functools_partial
 from typing import ClassVar
 
 import gt4py.next as gtx
@@ -210,3 +211,9 @@ def reshape(arr: np.ndarray, shape: tuple[int, ...]):
 def as_1d_connectivity(connectivity: np.ndarray) -> np.ndarray:
     old_shape = connectivity.shape
     return np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)
+
+
+def functools_partial_with_name(func, *args, **kwargs):
+    functools_partial_res = functools_partial(func, *args, **kwargs)
+    functools_partial_res.__name__ = func.__name__
+    return functools_partial_res
