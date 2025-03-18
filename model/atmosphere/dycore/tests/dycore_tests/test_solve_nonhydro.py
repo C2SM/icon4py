@@ -1048,7 +1048,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 2, True)])
+@pytest.mark.parametrize("at_initial_timestep", [(True)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -1064,7 +1064,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
         # ),
     ],
 )
-def test_run_solve_nonhydro_1_to_13(
+def test_run_solve_nonhydro_1_to_13_predictor(
     step_date_init,
     step_date_exit,
     experiment,
@@ -1079,14 +1079,13 @@ def test_run_solve_nonhydro_1_to_13(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     at_initial_timestep,
-    istep,
-    dtime,
     substep_init,
     substep_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_15_28_init,
     backend,
 ):
+    dtime = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -1095,8 +1094,8 @@ def test_run_solve_nonhydro_1_to_13(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
-    horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
+    vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend, extend={dims.KDim: 1})
+    horz_idx = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
 
     rho_nnow = savepoint_nonhydro_init.rho_now()
     rho_nvar = savepoint_nonhydro_init.rho_new()
@@ -1113,25 +1112,25 @@ def test_run_solve_nonhydro_1_to_13(
     wgt_nnew_rth = savepoint_nonhydro_init.wgt_nnew_rth()
 
     # local fields
-    z_rth_pr_1 = data_alloc.zero_field(dims.CellDim, dims.KDim, grid=icon_grid, backend=backend)
-    z_rth_pr_2 = data_alloc.zero_field(dims.CellDim, dims.KDim, grid=icon_grid, backend=backend)
-    z_theta_v_pr_ic = data_alloc.zero_field(
-        dims.CellDim, dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    z_rth_pr_1 = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    z_rth_pr_2 = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    z_theta_v_pr_ic = data_alloc.zero_field(icon_grid,
+        dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
-    z_th_ddz_exner_c = data_alloc.zero_field(
-        dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+    z_th_ddz_exner_c = data_alloc.zero_field(icon_grid,
+        dims.CellDim, dims.KDim, backend=backend
     )
-    z_exner_ic = data_alloc.zero_field(
-        dims.CellDim, dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    z_exner_ic = data_alloc.zero_field(icon_grid,
+        dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
-    z_exner_ex_pr = data_alloc.zero_field(
-        dims.CellDim, dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    z_exner_ex_pr = data_alloc.zero_field(icon_grid,
+        dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
-    z_dexner_dz_c_1 = data_alloc.zero_field(
-        dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+    z_dexner_dz_c_1 = data_alloc.zero_field(icon_grid,
+        dims.CellDim, dims.KDim, backend=backend
     )
-    z_dexner_dz_c_2 = data_alloc.zero_field(
-        dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+    z_dexner_dz_c_2 = data_alloc.zero_field(icon_grid,
+        dims.CellDim, dims.KDim, backend=backend
     )
 
     limited_area = icon_grid.limited_area
@@ -1184,9 +1183,9 @@ def test_run_solve_nonhydro_1_to_13(
     horizontal_start = 0
     horizontal_end = icon_grid.num_cells
     vertical_start = 0
-    vertical_end = icon_grid.num_levels
+    vertical_end = icon_grid.num_levels + 1
 
-    fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13.with_backend(
+    fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13_predictor.with_backend(
         backend
     )(
         rho_nnow,
@@ -1238,7 +1237,6 @@ def test_run_solve_nonhydro_1_to_13(
         end_cell_local,
         end_cell_halo,
         end_cell_halo_level_2,
-        istep,
         horizontal_start,
         horizontal_end,
         vertical_start,
