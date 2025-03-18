@@ -546,7 +546,7 @@ def configure_logging(
     run_dir.mkdir(exist_ok=True)
     logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
-    logging_level = logging.DEBUG if enable_output else logging.CRITICAL
+    logging_level = logging.DEBUG if enable_output else logging.INFO
     logging.basicConfig(
         level=logging_level,
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
