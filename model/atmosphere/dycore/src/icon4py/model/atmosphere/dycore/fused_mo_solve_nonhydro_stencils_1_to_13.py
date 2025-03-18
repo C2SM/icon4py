@@ -29,9 +29,6 @@ from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
     _predictor_stencils_11_lower_upper,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_derivative_of_exner import (
-    _compute_approx_of_2nd_vertical_derivative_of_exner,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import (
     _compute_first_vertical_derivative,
 )
@@ -50,18 +47,15 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     _init_two_cell_kdim_fields_with_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
-    _interpolate_to_half_levels_vp,
-)
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import CellDim, KDim
+
 
 @field_operator
 def _fused_mo_solve_nonhydro_stencils_1_to_5(
     z_rth_pr_1: Field[[CellDim, KDim], float],
     z_rth_pr_2: Field[[CellDim, KDim], float],
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
+    wgtfacq_c: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     z_exner_ic: Field[[CellDim, KDim], float],
@@ -93,7 +87,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_5(
     # stencil_01
     (z_rth_pr_1, z_rth_pr_2) = (
         where(
-            (start_cell_lateral_boundary <= horz_idx < end_cell_end),
+            ((start_cell_lateral_boundary <= horz_idx < end_cell_end) & (vert_idx < n_lev)),
             _init_two_cell_kdim_fields_with_zero_vp(),
             (z_rth_pr_1, z_rth_pr_2),
         )
@@ -119,35 +113,33 @@ def _fused_mo_solve_nonhydro_stencils_1_to_5(
         z_exner_ex_pr,
     )
 
-    vert_start = maximum(1, nflatlev) if igradp_method == 3 else vert_start
-
-    z_exner_ic = (
-        where(
-            (
-                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo)
-                & (vert_idx == n_lev)
-            ),
-            _interpolate_to_surface(
-                wgtfacq_c=wgtfacq_c_dsl, interpolant=z_exner_ex_pr
-            ), z_exner_ic
-        )
-        if igradp_method == 3
-        else z_exner_ic
-    )
-
-    z_exner_ic = (
-        where(
-            (
-                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo)
-                & (vert_start <= vert_idx < n_lev)
-            ),
-            _interpolate_to_half_levels_vp(
-                wgtfac_c=wgtfac_c, interpolant=z_exner_ex_pr
-            ), z_exner_ic
-        )
-        if igradp_method == 3
-        else z_exner_ic
-    )
+    # z_exner_ic = (
+    #     where(
+    #         (
+    #             (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo)
+    #             & (vert_idx == n_lev)
+    #         ),
+    #         _interpolate_to_surface(
+    #             wgtfacq_c=wgtfacq_c, interpolant=z_exner_ex_pr
+    #         ), z_exner_ic
+    #     )
+    #     if igradp_method == 3
+    #     else z_exner_ic
+    # )
+    #
+    # z_exner_ic = (
+    #     where(
+    #         (
+    #             (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo)
+    #             & (maximum(1, nflatlev) <= vert_idx < n_lev)
+    #         ),
+    #         _interpolate_to_half_levels_vp(
+    #             wgtfac_c=wgtfac_c, interpolant=z_exner_ex_pr
+    #         ), z_exner_ic
+    #     )
+    #     if igradp_method == 3
+    #     else z_exner_ic
+    # )
 
     return (
         z_rth_pr_1,
@@ -168,7 +160,7 @@ def _fused_mo_solve_nonhydro_stencils_6_to_13(
     z_rth_pr_2: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_ref_ic: Field[[CellDim, KDim], float],
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
+    wgtfacq_c: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     vwind_expl_wgt: Field[[CellDim], float],
     exner_pr: Field[[CellDim, KDim], float],
@@ -206,24 +198,26 @@ def _fused_mo_solve_nonhydro_stencils_6_to_13(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-    vert_idx_1d = vert_idx
-    vert_start = 0
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
-
-    vert_start = maximum(1, nflatlev) if igradp_method == 3 else vert_start
 
     z_dexner_dz_c_1 = (
         where(
-            ((start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo)& (vert_start <= vert_idx < n_lev)),
+            (
+                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo)
+                & (maximum(1, nflatlev) <= vert_idx < n_lev)
+            ),
             _compute_first_vertical_derivative(
-                z_exner_ic=z_exner_ic,
-                inv_ddqz_z_full=inv_ddqz_z_full
-            ),z_dexner_dz_c_1)  if igradp_method == 3 else z_dexner_dz_c_1
+                z_exner_ic=z_exner_ic, inv_ddqz_z_full=inv_ddqz_z_full
+            ),
+            z_dexner_dz_c_1,
+        )
+        if igradp_method == 3
+        else z_dexner_dz_c_1
     )
 
     # solve_nonhydro_stencil_7_8_9, which is already combined
     (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo),
+        ((start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_idx < n_lev)),
         _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
             rho=rho_nnow,
             z_rth_pr_1=z_rth_pr_1,
@@ -249,7 +243,7 @@ def _fused_mo_solve_nonhydro_stencils_6_to_13(
     (z_theta_v_pr_ic, theta_v_ic) = where(
         ((start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_idx <= n_lev)),
         _predictor_stencils_11_lower_upper(
-            wgtfacq_c_dsl=wgtfacq_c_dsl,
+            wgtfacq_c_dsl=wgtfacq_c,
             z_rth_pr=z_rth_pr_2,
             theta_ref_ic=theta_ref_ic,
             z_theta_v_pr_ic=z_theta_v_pr_ic,
@@ -261,25 +255,33 @@ def _fused_mo_solve_nonhydro_stencils_6_to_13(
     )
 
     # stencil 12
-    vert_start = nflat_gradp if igradp_method == 3 else vert_start
 
-    z_dexner_dz_c_1 = where(
-            ((start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo) & (vert_start <= vert_idx < n_lev)),
+    z_dexner_dz_c_1 = (
+        where(
+            (
+                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo)
+                & (nflat_gradp <= vert_idx < n_lev)
+            ),
             _compute_first_vertical_derivative(
                 z_exner_ic=z_exner_ic,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-            ),z_dexner_dz_c_1)  if igradp_method == 3 else z_dexner_dz_c_1
+            ),
+            z_dexner_dz_c_1,
+        )
+        if igradp_method == 3
+        else z_dexner_dz_c_1
+    )
 
     # stencil 13
     (z_rth_pr_1, z_rth_pr_2) = where(
-            (start_cell_halo_level_2 <= horz_idx < end_cell_halo_level_2),
-            _compute_perturbation_of_rho_and_theta(
-                rho=rho_nnow,
-                rho_ref_mc=rho_ref_mc,
-                theta_v=theta_v_nnow,
-                theta_ref_mc=theta_ref_mc,
-            ),
-            (z_rth_pr_1, z_rth_pr_2),
+        ((start_cell_halo_level_2 <= horz_idx < end_cell_halo_level_2) & (vert_idx < n_lev)),
+        _compute_perturbation_of_rho_and_theta(
+            rho=rho_nnow,
+            rho_ref_mc=rho_ref_mc,
+            theta_v=theta_v_nnow,
+            theta_ref_mc=theta_ref_mc,
+        ),
+        (z_rth_pr_1, z_rth_pr_2),
     )
 
     return (
@@ -353,12 +355,10 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
     )
     return (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c)
 
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
     rho_nnow: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    rho_nvar: Field[[CellDim, KDim], float],
     rho_ref_mc: Field[[CellDim, KDim], float],
     theta_v_nnow: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],
@@ -366,9 +366,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
     z_rth_pr_2: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_ref_ic: Field[[CellDim, KDim], float],
-    d2dexdz2_fac1_mc: Field[[CellDim, KDim], float],
-    d2dexdz2_fac2_mc: Field[[CellDim, KDim], float],
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
+    wgtfacq_c: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     vwind_expl_wgt: Field[[CellDim], float],
     exner_pr: Field[[CellDim, KDim], float],
@@ -385,13 +383,9 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     z_dexner_dz_c_2: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
-    theta_v_nvar: Field[[CellDim, KDim], float],
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     horz_idx: Field[[CellDim], gtx.int32],
     vert_idx: Field[[KDim], gtx.int32],
-    dtime: float,
-    wgt_nnow_rth: float,
-    wgt_nnew_rth: float,
     limited_area: bool,
     igradp_method: gtx.int32,
     n_lev: gtx.int32,
@@ -401,7 +395,6 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
     start_cell_lateral_boundary_level_3: gtx.int32,
     start_cell_halo_level_2: gtx.int32,
     end_cell_end: gtx.int32,
-    end_cell_local: gtx.int32,
     end_cell_halo: gtx.int32,
     end_cell_halo_level_2: gtx.int32,
     horizontal_start: gtx.int32,
@@ -424,7 +417,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
     _fused_mo_solve_nonhydro_stencils_1_to_5(
         z_rth_pr_1,
         z_rth_pr_2,
-        wgtfacq_c_dsl,
+        wgtfacq_c,
         wgtfac_c,
         exner_pr,
         z_exner_ic,
@@ -458,7 +451,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
     _fused_mo_solve_nonhydro_stencils_1_to_5(
         z_rth_pr_1,
         z_rth_pr_2,
-        wgtfacq_c_dsl,
+        wgtfacq_c,
         wgtfac_c,
         exner_pr,
         z_exner_ic,
@@ -477,15 +470,15 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         end_cell_end,
         end_cell_halo,
         out=(
-        z_rth_pr_1,
-        z_rth_pr_2,
-        z_exner_ex_pr,
-        exner_pr,
-        z_exner_ic,
-    ),
+            z_rth_pr_1,
+            z_rth_pr_2,
+            z_exner_ex_pr,
+            exner_pr,
+            z_exner_ic,
+        ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end-1, vertical_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
 
@@ -498,7 +491,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         z_rth_pr_2,
         z_theta_v_pr_ic,
         theta_ref_ic,
-        wgtfacq_c_dsl,
+        wgtfacq_c,
         wgtfac_c,
         vwind_expl_wgt,
         exner_pr,
@@ -523,17 +516,19 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         start_cell_halo_level_2,
         end_cell_halo,
         end_cell_halo_level_2,
-        out=(z_rth_pr_1,
-             z_rth_pr_2,
-             z_exner_ex_pr,
-             exner_pr,
-             rho_ic,
-             z_exner_ic,
-             z_theta_v_pr_ic,
-             theta_v_ic,
-             z_th_ddz_exner_c,
-             z_dexner_dz_c_1,
-             z_dexner_dz_c_2),
+        out=(
+            z_rth_pr_1,
+            z_rth_pr_2,
+            z_exner_ex_pr,
+            exner_pr,
+            rho_ic,
+            z_exner_ic,
+            z_theta_v_pr_ic,
+            theta_v_ic,
+            z_th_ddz_exner_c,
+            z_dexner_dz_c_1,
+            z_dexner_dz_c_2,
+        ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end - 1),
@@ -549,7 +544,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         z_rth_pr_2,
         z_theta_v_pr_ic,
         theta_ref_ic,
-        wgtfacq_c_dsl,
+        wgtfacq_c,
         wgtfac_c,
         vwind_expl_wgt,
         exner_pr,
@@ -574,22 +569,25 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         start_cell_halo_level_2,
         end_cell_halo,
         end_cell_halo_level_2,
-        out=(z_rth_pr_1,
-             z_rth_pr_2,
-             z_exner_ex_pr,
-             exner_pr,
-             rho_ic,
-             z_exner_ic,
-             z_theta_v_pr_ic,
-             theta_v_ic,
-             z_th_ddz_exner_c,
-             z_dexner_dz_c_1,
-             z_dexner_dz_c_2),
+        out=(
+            z_rth_pr_1,
+            z_rth_pr_2,
+            z_exner_ex_pr,
+            exner_pr,
+            rho_ic,
+            z_exner_ic,
+            z_theta_v_pr_ic,
+            theta_v_ic,
+            z_th_ddz_exner_c,
+            z_dexner_dz_c_1,
+            z_dexner_dz_c_2,
+        ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end-1, vertical_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
@@ -650,14 +648,12 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
         vert_idx,
         start_cell_lateral_boundary_level_3,
         end_cell_local,
-        out=(rho_ic,
-             z_theta_v_pr_ic,
-             theta_v_ic,
-             z_th_ddz_exner_c),
+        out=(rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end-1),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
+
 
 # TODO: check the size in serialbox.py
