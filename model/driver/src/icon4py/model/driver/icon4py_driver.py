@@ -186,9 +186,19 @@ class TimeLoop:
             timer.capture()
             self.diffusion_stop_event.synchronize()
             self.nh_solve_stop_event.synchronize()
+            self.diffusion.diffusion_halo_end_event.synchronize()
+            self.diffusion.diffusion_end_event.synchronize()
 
             log.info(
                 f"diffusion time cuda events: {cuda.get_elapsed_time(self.diffusion_start_event, self.diffusion_stop_event)} ms"
+            )
+            log.info(
+                f"diffusion kernels cuda events: {cuda.get_elapsed_time(self.diffusion.diffusion_start_event, self.diffusion.diffusion_end_event)} ms"
+            )
+            log.info(
+                f"diffusion halo cuda events: {cuda.get_elapsed_time(self.diffusion.diffusion_halo_start_event, self.diffusion.diffusion_halo_end_event)} ms"
+            )
+            log.info(
                 f"nh_solve time cuda events: {cuda.get_elapsed_time(self.nh_solve_start_event, self.nh_solve_stop_event)} ms"
             )
 

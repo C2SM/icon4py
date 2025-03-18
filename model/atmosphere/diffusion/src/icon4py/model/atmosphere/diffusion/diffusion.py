@@ -17,6 +17,7 @@ from typing import Final, Optional
 import gt4py.next as gtx
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import int32
+from cupy import cuda
 
 import icon4py.model.common.states.prognostic_state as prognostics
 from gt4py.next import backend as gtx_backend
@@ -472,6 +473,11 @@ class Diffusion:
             self._grid.offset_providers
         )
 
+        self.diffusion_start_event = cuda.Event()
+        self.diffusion_end_event = cuda.Event()
+        self.diffusion_halo_start_event = cuda.Event()
+        self.diffusion_halo_end_event = cuda.Event()
+
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
@@ -636,6 +642,7 @@ class Diffusion:
             smag_offset:
 
         """
+        self.diffusion_start_event.record()
         # dtime dependent: enh_smag_factor,
         self.scale_k.with_connectivities(self.compile_time_connectivities)(
             self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
@@ -905,11 +912,13 @@ class Diffusion:
                 offset_provider={},
             )
             log.debug("running stencil 16 (update_theta_and_exner): end")
-
+        self.diffusion_end_event.record()
+        self.diffusion_halo_start_event.record()
         self.halo_exchange_wait(
             handle_edge_comm
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
+        self.diffusion_halo_end_event.record()
 
     # TODO (kotsaloscv): It is unsafe to set it as cached property -demands more testing-
     def orchestration_uid(self) -> str:
