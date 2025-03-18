@@ -504,15 +504,14 @@ def _run_diffusion_single_step(
             config, diagnostic_state, prognostic_state, savepoint_diffusion_exit
         )
     else:
-        if pytestconfig.getoption("--benchmark-disable"):
-            pytest.skip("Test skipped due to 'benchmark-disable' option.")
-        else:
-            benchmark(
-                diffusion_granule.run,
-                diagnostic_state=diagnostic_state,
-                prognostic_state=prognostic_state,
-                dtime=dtime,
-            )
+        helpers.perform_benchmark(
+            pytestconfig,
+            benchmark,
+            diffusion_granule.run,
+            diagnostic_state=diagnostic_state,
+            prognostic_state=prognostic_state,
+            dtime=dtime,
+        )
 
 
 test_run_diffusion_single_step = pytest.mark.datatest(
@@ -530,7 +529,9 @@ test_run_diffusion_single_step = pytest.mark.datatest(
         )(
             pytest.mark.parametrize("ndyn_substeps", [2])(
                 pytest.mark.parametrize("orchestration", [False, True])(
-                    helpers.functools_partial_with_name(_run_diffusion_single_step, benchmark=None)
+                    helpers.functools_partial_with_update(
+                        _run_diffusion_single_step, benchmark=None
+                    )
                 )
             )
         )
