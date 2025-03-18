@@ -8,6 +8,7 @@
 
 from typing import TYPE_CHECKING, Any, Callable, Mapping, TypeAlias
 
+import cffi
 import numpy as np
 from gt4py import eve
 from gt4py.next.type_system import type_specifications as gtx_ts
@@ -70,10 +71,8 @@ Mapping of parameter names to their descriptors.
 
 
 # cffi.FFI.CData is not available at runtime, therefore we provide a runtime
-# alias with type `Any`.
+# alias with type `Any` (as the `TypeAlias`` will be runtime evaluated)
 if TYPE_CHECKING:
-    import cffi
-
     ArrayInfo: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
     """
     ArrayInfo describes the runtime information of a buffer:
