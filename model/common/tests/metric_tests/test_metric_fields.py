@@ -59,9 +59,7 @@ class TestComputeZMc(testing_helpers.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
-        z_ifc: np.ndarray,
-        **kwargs:Any
+        connectivities: dict[gtx.Dimension, np.ndarray], z_ifc: np.ndarray, **kwargs: Any
     ) -> dict:
         shp = z_ifc.shape
         z_mc = 0.5 * (z_ifc + np.roll(z_ifc, shift=-1, axis=1))[:, : shp[1] - 1]
