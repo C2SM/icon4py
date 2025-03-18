@@ -52,7 +52,7 @@ def array_descriptor(
     shape: tuple[int, ...],
     on_gpu: bool,
     is_optional: bool,
-) -> _definitions.ArrayDescriptor:
+) -> _definitions.ArrayInfo:
     return (ptr, shape, on_gpu, is_optional)
 
 
@@ -62,7 +62,7 @@ def array_to_array_descriptor(
     ffi: Optional[cffi.FFI] = None,
     keep_alive: bool = True,
     as_fortran_layout: bool = True,
-) -> _definitions.ArrayDescriptor:
+) -> _definitions.ArrayInfo:
     if ffi is None:
         ffi = cffi.FFI()
     # TODO(havogt): need to move bool handling to Fortran side

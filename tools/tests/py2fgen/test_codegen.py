@@ -283,7 +283,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
             if runtime_config.PROFILING:
                 unpack_start_time = _runtime.perf_counter()
 
-        # ArrayDescriptors
+        # ArrayInfos
 
         two = (
             two,
@@ -299,7 +299,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
                 logger.info(
-                    "foo constructing `ArrayDescriptors` time: %s"
+                    "foo constructing `ArrayInfos` time: %s"
                     % str(allocate_end_time - unpack_start_time)
                 )
 
@@ -357,7 +357,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
             if runtime_config.PROFILING:
                 unpack_start_time = _runtime.perf_counter()
 
-        # ArrayDescriptors
+        # ArrayInfos
 
         one = (
             one,
@@ -373,7 +373,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
                 logger.info(
-                    "bar constructing `ArrayDescriptors` time: %s"
+                    "bar constructing `ArrayInfos` time: %s"
                     % str(allocate_end_time - unpack_start_time)
                 )
 

@@ -22,7 +22,7 @@ TODO
 
 ### Raw argument conversion hooks
 
-By default, array arguments are translated to Numpy or CuPy arrays. Alternatively, you can provide a hook that provides a translation function from an `ArrayDescriptor` to your custom type. Note, this translation function is executed on each call and should be as efficient as possible, e.g. by caching the result.
+By default, array arguments are translated to Numpy or CuPy arrays. Alternatively, you can provide a hook that provides a translation function from an `ArrayInfo` to your custom type. Note, this translation function is executed on each call and should be as efficient as possible, e.g. by caching the result.
 
 ### Optimized Python
 

@@ -8,11 +8,14 @@
 
 from __future__ import annotations
 
+import functools
 import math
 from types import ModuleType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
+
+from icon4py.tools.py2fgen import _definitions, utils
 
 
 try:
@@ -135,3 +138,35 @@ def unpack(xp: ModuleType, ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> n
         return _unpack_cupy(ffi, ptr, *sizes)
     else:
         raise ValueError(f"Unsupported array type: {xp}. Expected Numpy or CuPy.")
+
+
+def _as_array(
+    dtype: _definitions.ScalarKind,
+) -> Callable[[_definitions.ArrayInfo, cffi.FFI], _definitions.NDArray]:
+    # since we typically create one mapper per parameter, maxsize=2 is a good default for double buffering
+    @functools.lru_cache(maxsize=2)
+    def impl(array_descriptor: _definitions.ArrayInfo, *, ffi: cffi.FFI) -> _definitions.NDArray:
+        if array_descriptor[3] and array_descriptor is None:
+            return None
+        return utils.as_array(ffi, array_descriptor, dtype)
+
+    return impl
+
+
+def _int_to_bool(x: int, ffi: cffi.FFI) -> bool:
+    return x != 0
+
+
+def default_mapping(
+    _: Any, param_descriptor: _definitions.ParamDescriptor
+) -> _definitions.MapperType | None:
+    if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
+        # ArrayInfos to Numpy/CuPy arrays
+        return _as_array(param_descriptor.dtype)
+    if (
+        isinstance(param_descriptor, _definitions.ScalarParamDescriptor)
+        and param_descriptor.dtype == _definitions.BOOL
+    ):
+        # bools are passed as int32, convert to bool
+        return _int_to_bool
+    return None

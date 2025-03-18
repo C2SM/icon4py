@@ -10,11 +10,11 @@ import dataclasses
 import functools
 import inspect
 from collections.abc import Mapping
-from typing import Any, Callable, Optional, TypeAlias
+from typing import Any, Callable, Optional
 
 import cffi
 
-from icon4py.tools.py2fgen import _definitions, _runtime, utils
+from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
 
 
 def _from_annotated(annotation: Any) -> Optional[_definitions.ParamDescriptor]:
@@ -62,57 +62,18 @@ def get_param_descriptors(
     return params
 
 
-NDArray = Any  # = np.ndarray | cp.ndarray (conditionally) TODO move to better place and fix
-
-
-def _as_array(
-    dtype: _definitions.ScalarKind,
-) -> Callable[[_definitions.ArrayDescriptor, cffi.FFI], NDArray]:
-    @functools.lru_cache(maxsize=None)
-    def impl(array_descriptor: _definitions.ArrayDescriptor, *, ffi: cffi.FFI) -> NDArray:
-        if array_descriptor[3] and array_descriptor is None:
-            return None
-        return utils.as_array(ffi, array_descriptor, dtype)
-
-    return impl
-
-
-MapperType: TypeAlias = (
-    Callable[[_definitions.ArrayDescriptor, cffi.FFI], Any]
-    | Callable[[bool, cffi.FFI], Any]
-    | Callable[[int, cffi.FFI], Any]
-    | Callable[[float, cffi.FFI], Any]
-)
-
-
-def _int_to_bool(x: int, ffi: cffi.FFI) -> bool:
-    return x != 0
-
-
-def default_mapping(_: Any, param_descriptor: _definitions.ParamDescriptor) -> MapperType | None:
-    if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
-        # ArrayDescriptors to Numpy/CuPy arrays
-        return _as_array(param_descriptor.dtype)
-    if (
-        isinstance(param_descriptor, _definitions.ScalarParamDescriptor)
-        and param_descriptor.dtype == _definitions.BOOL
-    ):
-        # bools are passed as int32, convert to bool
-        return _int_to_bool
-    return None
-
-
 def get_param_mappings(
     signature: inspect.Signature,
-    annotation_mapping_hook: Callable[[Any, _definitions.ParamDescriptor], MapperType] | None,
+    annotation_mapping_hook: Callable[[Any, _definitions.ParamDescriptor], _definitions.MapperType]
+    | None,
     param_descriptors: _definitions.ParamDescriptors,
-) -> Mapping[str, MapperType]:
-    mappings: dict[str, MapperType] = {}
+) -> Mapping[str, _definitions.MapperType]:
+    mappings: dict[str, _definitions.MapperType] = {}
     for name, param in signature.parameters.items():
         if annotation_mapping_hook is not None:
             mapping = annotation_mapping_hook(param.annotation, param_descriptors[name])
             if mapping is None:
-                mapping = default_mapping(param.annotation, param_descriptors[name])
+                mapping = _conversion.default_mapping(param.annotation, param_descriptors[name])
             if mapping is not None:
                 mappings[name] = mapping
     return mappings
@@ -123,7 +84,7 @@ def get_param_mappings(
 # - pass a full function descriptor
 # - pass an annotation_descriptor_hook which receives the annotation and return the FuncParameter/ArrayParameter
 # To postprocess the arguments coming from Fortran
-# - pass a annotation_mapping_hook which receives the annotation and returns a function that takes the ArrayDescriptor (TODO extend to any descriptor) and ffi
+# - pass a annotation_mapping_hook which receives the annotation and returns a function that takes the ArrayInfo (TODO extend to any descriptor) and ffi
 # Note that the mapping functions are performance relevant and should be cached (not the hook itself)
 @dataclasses.dataclass
 class _DecoratedFunction:
@@ -134,7 +95,7 @@ class _DecoratedFunction:
     _mapping: Mapping[str, Callable] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
-        signature = inspect.signature(self._fun)
+        signature = inspect.signature(self._fun)  # TODO use typing.get_type_hints()
         self.param_descriptors = get_param_descriptors(
             signature, self.param_descriptors, self.annotation_descriptor_hook
         )

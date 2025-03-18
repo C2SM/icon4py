@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 def as_array(
-    ffi: cffi.FFI, array_descriptor: _definitions.ArrayDescriptor, dtype: _definitions.ScalarKind
+    ffi: cffi.FFI, array_descriptor: _definitions.ArrayInfo, dtype: _definitions.ScalarKind
 ) -> Optional[np.ndarray]:  # or cupy
     xp = cp if array_descriptor[2] else np
     if array_descriptor[0] == ffi.NULL:

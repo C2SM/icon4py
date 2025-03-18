@@ -58,7 +58,7 @@ def diffusion_run_wrapper(
             if runtime_config.PROFILING:
                 unpack_start_time = _runtime.perf_counter()
 
-        # ArrayDescriptors
+        # ArrayInfos
 
         w = (
             w,
@@ -154,7 +154,7 @@ def diffusion_run_wrapper(
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
                 logger.info(
-                    "diffusion_run constructing `ArrayDescriptors` time: %s"
+                    "diffusion_run constructing `ArrayInfos` time: %s"
                     % str(allocate_end_time - unpack_start_time)
                 )
 
@@ -374,7 +374,7 @@ def diffusion_init_wrapper(
             if runtime_config.PROFILING:
                 unpack_start_time = _runtime.perf_counter()
 
-        # ArrayDescriptors
+        # ArrayInfos
 
         vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
 
@@ -518,7 +518,7 @@ def diffusion_init_wrapper(
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
                 logger.info(
-                    "diffusion_init constructing `ArrayDescriptors` time: %s"
+                    "diffusion_init constructing `ArrayInfos` time: %s"
                     % str(allocate_end_time - unpack_start_time)
                 )
 
