@@ -33,7 +33,7 @@ def make_array_descriptor(
     shape: tuple[int, ...],
     on_gpu: bool,
     is_optional: bool,
-) -> py2fgen.ArrayDescriptor:
+) -> py2fgen.ArrayInfo:
     return (ptr, shape, on_gpu, is_optional)
 
 

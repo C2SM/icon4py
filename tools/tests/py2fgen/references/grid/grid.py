@@ -136,7 +136,7 @@ def grid_init_wrapper(
             if runtime_config.PROFILING:
                 unpack_start_time = _runtime.perf_counter()
 
-        # ArrayDescriptors
+        # ArrayInfos
 
         cell_starts = (cell_starts, (cell_starts_size_0,), False, False)
 
@@ -367,7 +367,7 @@ def grid_init_wrapper(
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
                 logger.info(
-                    "grid_init constructing `ArrayDescriptors` time: %s"
+                    "grid_init constructing `ArrayInfos` time: %s"
                     % str(allocate_end_time - unpack_start_time)
                 )
 

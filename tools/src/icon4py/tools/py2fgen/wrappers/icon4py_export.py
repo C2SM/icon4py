@@ -75,7 +75,7 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
     # (only for substitution mode where we know we have exactly 2 entries)
     # or by even marking fields as constant over the whole program run and immediately return on second call
     @functools.lru_cache(maxsize=None)
-    def impl(array_descriptor: py2fgen.ArrayDescriptor, *, ffi: cffi.FFI) -> Optional[gtx.Field]:
+    def impl(array_descriptor: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> Optional[gtx.Field]:
         arr = utils.as_array(ffi, array_descriptor, scalar_kind)
         if arr is None:
             return None

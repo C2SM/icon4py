@@ -6,8 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import TYPE_CHECKING, Mapping, TypeAlias
+from typing import TYPE_CHECKING, Any, Callable, Mapping, TypeAlias
 
+import numpy as np
 from gt4py import eve
 from gt4py.next.type_system import type_specifications as gtx_ts
 
@@ -25,11 +26,28 @@ FLOAT64 = gtx_ts.ScalarKind.FLOAT64
 
 
 class DeviceType(eve.StrEnum):
+    """
+    Host: The pointer is always a host pointer.
+    MaybeDevice: If the Fortran code is compiled for OpenACC, the pointer will be a device pointer,
+        otherwise it will be a host pointer.
+    """
+
     HOST = "host"
     MAYBE_DEVICE = "maybe_device"
 
 
 class ArrayParamDescriptor(eve.Node):
+    """
+    Describes an array parameter of a function.
+
+    The information is used to generate the Fortran signature and semantics.
+    Attributes:
+        rank: The rank of the array.
+        dtype: The data type of the array.
+        device: 'Host' or 'MaybeDevice', see :class:`DeviceType`.
+        is_optional: If True, the pointer can be NULL.
+    """
+
     rank: int
     dtype: ScalarKind
     device: DeviceType
@@ -41,15 +59,49 @@ class ScalarParamDescriptor(eve.Node):
 
 
 ParamDescriptor: TypeAlias = ArrayParamDescriptor | ScalarParamDescriptor
+"""
+Describes the parameter type of a function, which is used to generate the
+Fortran signature and semantics.
+"""
 ParamDescriptors: TypeAlias = Mapping[str, ParamDescriptor]
+"""
+Mapping of parameter names to their descriptors.
+"""
 
 
+# cffi.FFI.CData is not available at runtime, therefore we provide a runtime
+# alias with type `Any`.
 if TYPE_CHECKING:
     import cffi
 
-    # Note, we use this plain tuple for performance.
-    ArrayDescriptor: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
+    ArrayInfo: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
+    """
+    ArrayInfo describes the runtime information of a buffer:
+    
+    Attributes
+        pointer: The CFFI pointer.
+        shape: Shape of the buffer.
+        on_gpu: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.device is `Host`).
+        is_optional: If True, the pointer can be NULL.
+
+    Note: We use a plain tuple to minimize runtime overhead in the bindings.
+    """
+    # the above is an inofficial pyright way of annotating TypeAlias, however doesn't work within TYPE_CHECKING
 else:
     from typing import Any
 
-    ArrayDescriptor: TypeAlias = tuple[Any, tuple[int, ...], bool, bool]
+    ArrayInfo: TypeAlias = tuple[Any, tuple[int, ...], bool, bool]
+
+if TYPE_CHECKING:
+    import cupy as cp  # type: ignore[import-untyped]
+
+    NDArray: TypeAlias = cp.ndarray | np.ndarray
+else:
+    NDArray: TypeAlias = np.ndarray
+
+MapperType: TypeAlias = (
+    Callable[[ArrayInfo, cffi.FFI], Any]
+    | Callable[[bool, cffi.FFI], Any]
+    | Callable[[int, cffi.FFI], Any]
+    | Callable[[float, cffi.FFI], Any]
+)
