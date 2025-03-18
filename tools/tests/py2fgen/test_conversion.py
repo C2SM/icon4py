@@ -11,7 +11,8 @@ import os
 import numpy as np
 import pytest
 
-from icon4py.tools.py2fgen._conversion import _int_array_to_bool_array, unpack
+from icon4py.tools import py2fgen
+from icon4py.tools.py2fgen import _conversion, test_utils
 
 
 try:
@@ -66,7 +67,7 @@ def test_unpack_column_major(xp, ctype, rawdata, expected, ffi):
 
     rows, cols = expected_result.shape
 
-    result = unpack(xp, ffi, ptr, rows, cols)
+    result = _conversion.unpack(xp, ffi, ptr, rows, cols)
 
     assert np.array_equal(result, expected_result)
 
@@ -75,6 +76,39 @@ def test_int_array_to_bool():
     testee = np.array([[0, -1, 1], [0, -1, 1]], dtype=np.int32, order="F")
     expected = np.array([[False, True, True], [False, True, True]], dtype=np.bool_, order="F")
 
-    result = _int_array_to_bool_array(testee)
+    result = _conversion._int_array_to_bool_array(testee)
     assert result.flags["F_CONTIGUOUS"]
     assert np.array_equal(result, expected)
+
+
+def test_default_mapping_hook_array(ffi):
+    array_ptr = ffi.new("int[10]")
+
+    array_mapper = _conversion.default_mapping(
+        None,
+        py2fgen.ArrayParamDescriptor(
+            rank=1, dtype=py2fgen.INT32, device=py2fgen.DeviceType.HOST, is_optional=False
+        ),
+    )
+    result = array_mapper(
+        test_utils.array_descriptor(ptr=array_ptr, shape=(10,), on_gpu=False, is_optional=False),
+        ffi=ffi,
+    )
+
+    assert isinstance(result, np.ndarray)
+
+
+_ffi_not_needed = None
+
+
+def test_default_mapping_hook_bool():
+    bool_mapper = _conversion.default_mapping(
+        None, py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL)
+    )
+
+    true_result = bool_mapper(-1, ffi=_ffi_not_needed)
+    assert isinstance(true_result, bool)
+    assert true_result
+    false_result = bool_mapper(0, ffi=_ffi_not_needed)
+    assert isinstance(false_result, bool)
+    assert not false_result
