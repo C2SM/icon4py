@@ -114,9 +114,6 @@ class VelocityAdvection:
         self.cfl_clipping = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, dtype=bool, backend=self._backend
         )
-        self.levmask = data_alloc.zero_field(
-            self.grid, dims.KDim, dtype=bool, backend=self._backend
-        )
         self.vcfl_dsl = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
@@ -208,11 +205,7 @@ class VelocityAdvection:
             tangent_orientation=self.edge_params.tangent_orientation,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             k=self.k_field,
-            edge=self.edge_field,
             nflatlev=self.vertical_params.nflatlev,
-            nlev=gtx.int32(self.grid.num_levels),
-            lateral_boundary_7=self._start_edge_lateral_boundary_level_7,
-            halo_1=self._end_edge_halo,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=gtx.int32(0),
@@ -239,6 +232,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
+        # TODO most likely this should be inlined into the next function
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             z_w_con_c=self._contravariant_corrected_w_at_cells_on_half_levels,
@@ -255,8 +249,8 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        self._update_levmask_from_cfl_clipping()
-
+        # note level_mask removed, because all accesses where additionally checking cfl_clipping
+        # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditons
         self._compute_advection_in_vertical_momentum_equation(
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
             vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.predictor,
@@ -273,7 +267,6 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-            levelmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
             cell=self.cell_field,
@@ -282,8 +275,6 @@ class VelocityAdvection:
             cell_upper_bound=self._end_cell_local,
             nlev=gtx.int32(self.grid.num_levels),
             nrdmax=self.vertical_params.nrdmax,
-            start_cell_lateral_boundary=self._start_cell_lateral_boundary_level_4,
-            end_cell_halo=self._end_cell_halo,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
@@ -291,8 +282,11 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        self.levelmask = self.levmask
-
+        # TODO(havogt): can we move this to the end?
+        xp = data_alloc.import_array_ns(self._backend)
+        levmask = gtx.as_field(
+            domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
+        )
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
             vn=prognostic_state.vn,
@@ -313,27 +307,15 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             d_time=dtime,
-            levelmask=self.levelmask,
+            levelmask=levmask,  # TODO(havogt): can we get rid of the levelmask here?
             k=self.k_field,
-            vertex=self.vertex_field,
-            edge=self.edge_field,
             nlev=self.grid.num_levels,
             nrdmax=self.vertical_params.nrdmax,
-            start_vertex_lateral_boundary_level_2=self._start_vertex_lateral_boundary_level_2,
-            end_vertex_halo=self._end_vertex_halo,
-            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
-            end_edge_local=self._end_edge_local,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(self.grid.num_edges),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
-        )
-
-    def _update_levmask_from_cfl_clipping(self):
-        xp = data_alloc.import_array_ns(self._backend)
-        self.levmask = gtx.as_field(
-            domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):
@@ -374,12 +356,6 @@ class VelocityAdvection:
             inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             tangent_orientation=self.edge_params.tangent_orientation,
-            edge=self.edge_field,
-            vertex=self.vertex_field,
-            lateral_boundary_7=self._start_edge_lateral_boundary_level_7,
-            halo_1=self._end_edge_halo,
-            start_vertex_lateral_boundary_level_2=self._start_vertex_lateral_boundary_level_2,
-            end_vertex_halo=self._end_vertex_halo,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=gtx.int32(0),
@@ -403,7 +379,6 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
         )
-
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             z_w_con_c=self._contravariant_corrected_w_at_cells_on_half_levels,
@@ -419,8 +394,6 @@ class VelocityAdvection:
             vertical_end=gtx.int32(self.grid.num_levels - 3),
             offset_provider={},
         )
-
-        self._update_levmask_from_cfl_clipping()
 
         self._compute_advection_in_vertical_momentum_equation(
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
@@ -438,7 +411,6 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             skip_compute_predictor_vertical_advection=False,
-            levelmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
             cell=self.cell_field,
@@ -447,16 +419,18 @@ class VelocityAdvection:
             cell_upper_bound=self._end_cell_local,
             nlev=gtx.int32(self.grid.num_levels),
             nrdmax=self.vertical_params.nrdmax,
-            start_cell_lateral_boundary=self._start_cell_lateral_boundary_level_4,
-            end_cell_halo=self._end_cell_halo,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
-        # This behaviour needs to change for multiple blocks
-        self.levelmask = self.levmask
+
+        # TODO(havogt): can we move this to the end?
+        xp = data_alloc.import_array_ns(self._backend)
+        levmask = gtx.as_field(
+            domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
+        )
 
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
@@ -478,16 +452,10 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             d_time=dtime,
-            levelmask=self.levelmask,
+            levelmask=levmask,  # TODO(havogt): can we get rid of the levelmask here?
             k=self.k_field,
-            vertex=self.vertex_field,
-            edge=self.edge_field,
             nlev=self.grid.num_levels,
             nrdmax=self.vertical_params.nrdmax,
-            start_vertex_lateral_boundary_level_2=self._start_vertex_lateral_boundary_level_2,
-            end_vertex_halo=self._end_vertex_halo,
-            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
-            end_edge_local=self._end_edge_local,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(self.grid.num_edges),
             vertical_start=gtx.int32(0),
