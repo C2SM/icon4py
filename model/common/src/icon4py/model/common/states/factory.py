@@ -42,6 +42,7 @@ import collections
 import enum
 import functools
 import inspect
+import logging
 from typing import (
     Any,
     Callable,
@@ -72,6 +73,7 @@ from icon4py.model.common.states import model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+log = logging.getLogger(__name__)
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
 
 
@@ -310,6 +312,9 @@ class FieldOperatorProvider(FieldProvider):
     def _compute(self, factory, grid_provider):
         # allocate output buffer
         compute_backend = self._func.backend
+        log.debug(
+            f"compute backend is: {'embedded' if compute_backend is None else compute_backend.name}"
+        )
         try:
             metadata = {k: factory.get(k, RetrievalType.METADATA) for k, v in self._output.items()}
             dtype = metadata["dtype"]
@@ -318,9 +323,14 @@ class FieldOperatorProvider(FieldProvider):
         self._fields = self._allocate(compute_backend, grid_provider, dtype=dtype)
         # call field operator
         # construct dependencies
-        deps = {
-            k: data_alloc.as_field(factory.get(v), backend=compute_backend)
+        log.debug(f"transfering dependencies to compute backend: {self._dependencies.keys()}")
+        deps_orig = {
+            k: factory.get(v)
             for k, v in self._dependencies.items()
+        }
+        deps = {
+            k: data_alloc.as_field(v, backend=compute_backend)
+            for k, v in deps_orig.items()
         }
 
         offset_providers = self._get_offset_providers(grid_provider.grid)
