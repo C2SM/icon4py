@@ -16,9 +16,6 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
-from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
-    _init_two_edge_kdim_fields_with_zero_wp,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import (
     E2C,
@@ -53,36 +50,28 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
     )
 
-    w_con_e, difcoef = _init_two_edge_kdim_fields_with_zero_wp()
-
     w_con_e = where(
         levelmask | levelmask(Koff[1]),
         neighbor_sum(c_lin_e * z_w_con_c_full_wp(E2C), axis=E2CDim),
-        w_con_e,
+        0.0,
     )
     difcoef = where(
-        (levelmask | levelmask(Koff[1]))
+        (
+            levelmask | levelmask(Koff[1])
+        )  # TODO(havogt): my guess is if the second condition is `True`, then `(levelmask | levelmask(Koff[1]))` is also `True`
         & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
         scalfac_exdiff
         * minimum(
             wpfloat("0.85") - cfl_w_limit_wp * dtime,
             abs(w_con_e) * dtime / ddqz_z_full_e_wp - cfl_w_limit_wp * dtime,
         ),
-        difcoef,
+        0.0,
     )
-    ddt_vn_apc_wp = where(
-        (levelmask | levelmask(Koff[1]))
-        & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
-        ddt_vn_apc_wp
-        + difcoef
-        * area_edge
-        * (
-            neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
-            + tangent_orientation
-            * inv_primal_edge_length
-            * astype(zeta(E2V[1]) - zeta(E2V[0]), wpfloat)
-        ),
-        ddt_vn_apc_wp,
+    ddt_vn_apc_wp = ddt_vn_apc_wp + difcoef * area_edge * (
+        neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
+        + tangent_orientation
+        * inv_primal_edge_length
+        * astype(zeta(E2V[1]) - zeta(E2V[0]), wpfloat)
     )
     return astype(ddt_vn_apc_wp, vpfloat)
 
