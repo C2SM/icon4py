@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import functools
 import hashlib
 import typing
 from dataclasses import dataclass, field
@@ -211,20 +210,3 @@ def reshape(arr: np.ndarray, shape: tuple[int, ...]):
 def as_1d_connectivity(connectivity: np.ndarray) -> np.ndarray:
     old_shape = connectivity.shape
     return np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)
-
-
-def functools_partial_with_update(func, *args, **kwargs):
-    functools_partial_res = functools.partial(func, *args, **kwargs)
-    functools.update_wrapper(functools_partial_res, func)
-    return functools_partial_res
-
-
-def perform_benchmark(pytestconfig, benchmark, func, *args, **kwargs):
-    """Check if benchmarking is enabled and benchmark with pytest-benchmark"""
-    if pytestconfig.getoption("--benchmark-disable"):
-        pytest.skip("Test skipped due to 'benchmark-disable' option.")
-
-    if pytest_benchmark is None:
-        pytest.skip("Test skipped due to missing pytest-benchmark.")
-
-    benchmark(func, *args, **kwargs)

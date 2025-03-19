@@ -402,7 +402,18 @@ def test_verify_diffusion_init_against_savepoint(
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
 
 
-def _run_diffusion_single_step(
+@pytest.mark.datatest
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+    ],
+)
+@pytest.mark.parametrize("ndyn_substeps", [2])
+@pytest.mark.parametrize("orchestration", [False, True])
+def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
@@ -415,8 +426,6 @@ def _run_diffusion_single_step(
     ndyn_substeps,
     backend,
     orchestration,
-    pytestconfig,
-    benchmark,
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
@@ -493,69 +502,13 @@ def _run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    if not benchmark:
-        diffusion_granule.run(
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-        )
-
-        verify_diffusion_fields(
-            config, diagnostic_state, prognostic_state, savepoint_diffusion_exit
-        )
-    else:
-        helpers.perform_benchmark(
-            pytestconfig,
-            benchmark,
-            diffusion_granule.run,
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-        )
-
-
-test_run_diffusion_single_step = pytest.mark.datatest(
-    pytest.mark.embedded_remap_error(
-        pytest.mark.parametrize(
-            "experiment, step_date_init, step_date_exit",
-            [
-                (
-                    dt_utils.REGIONAL_EXPERIMENT,
-                    "2021-06-20T12:00:10.000",
-                    "2021-06-20T12:00:10.000",
-                ),
-                (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
-            ],
-        )(
-            pytest.mark.parametrize("ndyn_substeps", [2])(
-                pytest.mark.parametrize("orchestration", [False, True])(
-                    helpers.functools_partial_with_update(
-                        _run_diffusion_single_step, benchmark=None
-                    )
-                )
-            )
-        )
+    diffusion_granule.run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        dtime=dtime,
     )
-)
 
-
-test_run_diffusion_single_step_benchmark = pytest.mark.datatest(
-    pytest.mark.embedded_remap_error(
-        pytest.mark.parametrize(
-            "experiment, step_date_init, step_date_exit",
-            [
-                (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
-            ],
-        )(
-            pytest.mark.parametrize("ndyn_substeps", [2])(
-                pytest.mark.parametrize(
-                    "orchestration",
-                    [False, True],
-                )(_run_diffusion_single_step)
-            )
-        )
-    )
-)
+    verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
 
 @pytest.mark.datatest
