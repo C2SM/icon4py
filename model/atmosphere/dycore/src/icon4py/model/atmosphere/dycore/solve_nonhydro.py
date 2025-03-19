@@ -915,7 +915,7 @@ class SolveNonhydro:
             # Recompute only vn tendency
             skip_compute_predictor_vertical_advection: bool = (
                 self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
-                and not (at_initial_timestep and at_first_substep)
+                and not at_initial_timestep
             )
 
             self.velocity_advection.run_predictor_step(
