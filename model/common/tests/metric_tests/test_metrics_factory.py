@@ -15,6 +15,7 @@ from icon4py.model.common.metrics import (
     metrics_attributes as attrs,
     metrics_factory,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -63,9 +64,9 @@ def metrics_config(experiment: str) -> tuple:
 def get_metrics_factory(
     backend, experiment, grid_file, grid_savepoint, metrics_savepoint
 ) -> metrics_factory.MetricsFieldsFactory:
-    backend_name = test_helpers.extract_backend_name(backend)
-    name = experiment.join(backend_name)
-    factory = metrics_factories.get(name)
+    registry_name = "_".join((experiment, data_alloc.backend_name(backend)))
+    factory = metrics_factories.get(    registry_name = "_".join((experiment, backend_name))
+)
 
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)

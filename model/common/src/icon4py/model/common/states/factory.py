@@ -60,7 +60,6 @@ import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import gt4py.next.ffront.decorator as gtx_decorator
 import xarray as xa
-from gt4py.next import backend
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import (
@@ -151,7 +150,7 @@ class FieldSource(GridProvider, Protocol):
     #      there are fields which need to be computed on a specific backend, which can be different from the
     #      general run backend
     @property
-    def backend(self) -> backend.Backend:
+    def backend(self) -> gtx_backend.Backend:
         ...
 
     def get(
@@ -219,7 +218,7 @@ class CompositeSource(FieldSource):
         return self._metadata
 
     @property
-    def backend(self) -> backend.Backend:
+    def backend(self) -> gtx_backend.Backend:
         return self._backend
 
     @property
@@ -312,8 +311,8 @@ class FieldOperatorProvider(FieldProvider):
     def _compute(self, factory, grid_provider):
         # allocate output buffer
         compute_backend = self._func.backend
-        log.debug(
-            f"compute backend is: {'embedded' if compute_backend is None else compute_backend.name}"
+        log.info(
+            f"computing {self._func.__name__}: compute backend is: {data_alloc.backend_name(compute_backend)}, target backend is: {data_alloc.backend_name(factory.backend)}"
         )
         try:
             metadata = {k: factory.get(k, RetrievalType.METADATA) for k, v in self._output.items()}
@@ -322,19 +321,14 @@ class FieldOperatorProvider(FieldProvider):
             dtype = ta.wpfloat
         self._fields = self._allocate(compute_backend, grid_provider, dtype=dtype)
         # call field operator
-        # construct dependencies
         log.debug(f"transfering dependencies to compute backend: {self._dependencies.keys()}")
-        deps_orig = {
-            k: factory.get(v)
+    
+        deps = {
+            k: data_alloc.as_field(factory.get(v), backend=compute_backend)
             for k, v in self._dependencies.items()
         }
-        deps = {
-            k: data_alloc.as_field(v, backend=compute_backend)
-            for k, v in deps_orig.items()
-        }
 
-        offset_providers = self._get_offset_providers(grid_provider.grid)
-        providers = {k: _to_backend(v, compute_backend) for k, v in offset_providers.items()}
+        providers = {k: _provider_on_backend(v, compute_backend) for k, v in self._get_offset_providers(grid_provider.grid).items()}        
         out_fields = self._unravel_output_fields()
 
         self._func(**deps, out=out_fields, offset_provider=providers)
@@ -670,11 +664,13 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def _to_backend(
+def _provider_on_backend(
     provider: gtx.NeighborTableOffsetProvider, backend: Optional[gtx_backend.Backend]
 ) -> gtx.NeighborTableOffsetProvider:
+    table=data_alloc.to_backend(provider.table, backend)
+    log.debug(f"transfering offset provider {provider} to compute backend: {data_alloc.backend_name(backend)}")
     return gtx.NeighborTableOffsetProvider(
-        table=data_alloc.to_backend(provider.table, backend),
+        table=table,
         neighbor_axis=provider.neighbor_axis,
         has_skip_values=provider.has_skip_values,
         max_neighbors=provider.max_neighbors,

@@ -7,9 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import numpy as np
 import pytest
-
+from gt4py.next import backend as gtx_backend
 import icon4py.model.common.states.factory as factory
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -72,10 +73,9 @@ def test_get_c_lin_e(interpolation_savepoint, grid_file, experiment, backend, rt
 
 
 def get_interpolation_factory(
-    backend, experiment, grid_file
+    backend: gtx_backend.Backend|None, experiment:str, grid_file:str
 ) -> interpolation_factory.InterpolationFieldsFactory:
-    backend_name = test_helpers.extract_backend_name(backend)
-    registry_key = experiment.join(backend_name)
+    registry_key = "_".join((experiment, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
