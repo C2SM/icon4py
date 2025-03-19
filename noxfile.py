@@ -94,7 +94,7 @@ def bencher_baseline(session: nox.Session) -> None:
     )
 
 @nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
-def bencher_feature_branch(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+def bencher_feature_branch(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
     This session compares the performance of the feature branch with the historical baseline (as built from bencher_baseline session).
