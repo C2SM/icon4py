@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -22,15 +22,11 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libncurses5-dev \
     libncursesw5-dev \
     xz-utils \
-    tk-dev \
     libffi-dev \
     libhdf5-dev \
     liblzma-dev \
     python-openssl \
-    libreadline-dev \
-    git \
-    rustc \
-    htop && \
+    git && \
     rm -rf /var/lib/apt/lists/*
 
 
