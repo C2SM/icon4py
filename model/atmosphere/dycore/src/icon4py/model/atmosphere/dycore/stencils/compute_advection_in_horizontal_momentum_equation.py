@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next import broadcast
+from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import maximum, where
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -71,9 +72,9 @@ def _compute_advection_in_horizontal_momentum_equation(
     )
 
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
-    normal_wind_advective_tendency = where(
-        (start_edge_nudging_level_2 <= edge < end_edge_local)
-        & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 4),
+    normal_wind_advective_tendency = concat_where(
+        (start_edge_nudging_level_2 <= dims.EdgeDim < end_edge_local)
+        & ((maximum(3, nrdmax - 2) - 1) <= dims.KDim < nlev - 4),
         _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask,
             c_lin_e,
