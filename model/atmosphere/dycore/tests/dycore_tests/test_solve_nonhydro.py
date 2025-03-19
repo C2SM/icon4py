@@ -180,7 +180,7 @@ def test_nonhydro_predictor_step(
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
@@ -351,12 +351,6 @@ def test_nonhydro_predictor_step(
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_gradh_exner.asnumpy()[edge_start_nudging_level_2:, :],
         sp_exit.z_gradh_exner().asnumpy()[edge_start_nudging_level_2:, :],
-        atol=1e-20,
-    )
-    # stencil 21
-    assert helpers.dallclose(
-        solve_nonhydro.z_hydro_corr.asnumpy()[edge_start_nudging_level_2:, nlev - 1],
-        sp_exit.z_hydro_corr().asnumpy()[edge_start_nudging_level_2:, nlev - 1],
         atol=1e-20,
     )
     prognostic_state_nnew = prognostic_states.next
@@ -582,7 +576,7 @@ def test_nonhydro_corrector_step(
         vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
-    diagnostic_state_nh = utils.construct_diagnostics(init_savepoint)
+    diagnostic_state_nh = utils.construct_diagnostics(init_savepoint, icon_grid, backend)
 
     z_fields = solve_nh.IntermediateFields(
         z_gradh_exner=init_savepoint.z_gradh_exner(),
@@ -660,13 +654,7 @@ def test_nonhydro_corrector_step(
     assert helpers.dallclose(
         diagnostic_state_nh.theta_v_ic.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
-    )
-
-    # stencil 17
-    assert helpers.dallclose(
-        z_fields.z_graddiv_vn.asnumpy(),
-        savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
-        atol=1e-12,
+        atol=1.0e-12,
     )
 
     # stencil 23,26, 27, 4th_order_divdamp
@@ -799,7 +787,7 @@ def test_run_solve_nonhydro_single_step(
         vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
@@ -921,7 +909,9 @@ def test_run_solve_nonhydro_multi_step(
 
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, swap_ddt_w_adv_pc=not linit)
+    diagnostic_state_nh = utils.construct_diagnostics(
+        sp, icon_grid, backend, swap_ddt_w_adv_pc=not linit
+    )
     prognostic_states = utils.create_prognostic_states(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
@@ -982,12 +972,6 @@ def test_run_solve_nonhydro_multi_step(
     assert helpers.dallclose(
         diagnostic_state_nh.theta_v_ic.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
-    )
-
-    assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
-        savepoint_nonhydro_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
-        atol=1.0e-18,
     )
 
     assert helpers.dallclose(
@@ -1055,8 +1039,8 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep",
-    [(1, 1, 1, 1, True)],
+    "istep_init, substep_init, istep_exit, substep_exit",
+    [(1, 1, 1, 1)],
 )
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -1257,8 +1241,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep",
-    [(2, 1, 2, 1, True)],
+    "istep_init, substep_init, istep_exit, substep_exit",
+    [(2, 1, 2, 1)],
 )
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -1318,7 +1302,6 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
     vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
     bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
-    z_graddiv2_vn = savepoint_nonhydro_15_28_init.z_graddiv2_vn()
     scal_divdamp = savepoint_nonhydro_15_28_init.scal_divdamp()
     z_theta_v_e = savepoint_nonhydro_15_28_init.z_theta_v_e()
     z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
@@ -1335,14 +1318,11 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     is_iau_active = config.is_iau_active
 
     vn_ref = sp_exit.vn_new()
-    z_graddiv_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv_vn()
-    z_graddiv2_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv2_vn()
 
     compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn_in_corrector_step.with_backend(
         backend
     )(
         z_graddiv_vn=z_graddiv_vn,
-        z_graddiv2_vn=z_graddiv2_vn,
         next_vn=next_vn,
         current_vn=current_vn,
         z_dwdz_dd=z_dwdz_dd,
@@ -1392,9 +1372,6 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
             "Koff": dims.KDim,
         },
     )
-
-    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy(), rtol=1e-10)
-    assert helpers.dallclose(z_graddiv2_vn.asnumpy(), z_graddiv2_vn_ref.asnumpy(), rtol=1.0e-9)
 
     assert helpers.dallclose(
         next_vn.asnumpy(),

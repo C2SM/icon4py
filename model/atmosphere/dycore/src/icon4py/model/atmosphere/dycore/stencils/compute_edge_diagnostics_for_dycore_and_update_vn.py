@@ -67,7 +67,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.scan_operator(axis=dims.KDim, init=0.0, forward=False)
@@ -328,7 +328,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
 @gtx.field_operator
 def _apply_divergence_damping_and_update_vn_in_corrector_step(
     z_graddiv_vn: fa.EdgeKField[ta.vpfloat],
-    z_graddiv2_vn: fa.EdgeKField[ta.vpfloat],
     next_vn: fa.EdgeKField[ta.wpfloat],
     current_vn: fa.EdgeKField[ta.wpfloat],
     z_dwdz_dd: fa.CellKField[ta.vpfloat],
@@ -369,28 +368,28 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
 ) -> fa.EdgeKField[ta.wpfloat]:
     vert_idx = broadcast(vert_idx, (dims.EdgeDim, dims.KDim))
 
-    # z_graddiv_vn = where(
-    #     (start_edge_lateral_boundary_level_7 <= horz_idx < end_edge_halo_level_2)
-    #     & (kstart_dd3d <= vert_idx),
-    #     _add_vertical_wind_derivative_to_divergence_damping(
-    #         hmask_dd3d=hmask_dd3d,
-    #         scalfac_dd3d=scalfac_dd3d,
-    #         inv_dual_edge_length=inv_dual_edge_length,
-    #         z_dwdz_dd=z_dwdz_dd,
-    #         z_graddiv_vn=z_graddiv_vn,
-    #     ),
-    #     z_graddiv_vn,
-    # )
+    z_graddiv_vn = where(
+        (start_edge_lateral_boundary_level_7 <= horz_idx < end_edge_halo_level_2)
+        & (kstart_dd3d <= vert_idx),
+        _add_vertical_wind_derivative_to_divergence_damping(
+            hmask_dd3d=hmask_dd3d,
+            scalfac_dd3d=scalfac_dd3d,
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_dwdz_dd=z_dwdz_dd,
+            z_graddiv_vn=z_graddiv_vn,
+        ),
+        z_graddiv_vn,
+    )
 
-    # z_graddiv2_vn = (
-    #     where(
-    #         (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
-    #         _compute_graddiv2_of_vn(geofac_grdiv=geofac_grdiv, z_graddiv_vn=z_graddiv_vn),
-    #         z_graddiv2_vn,
-    #     )
-    #     if (divdamp_order == COMBINED) | (divdamp_order == FOURTH_ORDER)
-    #     else z_graddiv2_vn
-    # )
+    z_graddiv2_vn = (
+        where(
+            (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+            _compute_graddiv2_of_vn(geofac_grdiv=geofac_grdiv, z_graddiv_vn=z_graddiv_vn),
+            broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+        )
+        if (divdamp_order == COMBINED) | (divdamp_order == FOURTH_ORDER)
+        else broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim))
+    )
 
     next_vn = (
         where(
@@ -607,7 +606,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
 @gtx.program(grid_type=GridType.UNSTRUCTURED)
 def apply_divergence_damping_and_update_vn_in_corrector_step(
     z_graddiv_vn: fa.EdgeKField[ta.vpfloat],
-    z_graddiv2_vn: fa.EdgeKField[ta.vpfloat],
     next_vn: fa.EdgeKField[ta.wpfloat],
     current_vn: fa.EdgeKField[ta.wpfloat],
     z_dwdz_dd: fa.CellKField[ta.vpfloat],
@@ -650,30 +648,8 @@ def apply_divergence_damping_and_update_vn_in_corrector_step(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _add_vertical_wind_derivative_to_divergence_damping(
-        hmask_dd3d=hmask_dd3d,
-        scalfac_dd3d=scalfac_dd3d,
-        inv_dual_edge_length=inv_dual_edge_length,
-        z_dwdz_dd=z_dwdz_dd,
-        z_graddiv_vn=z_graddiv_vn,
-        out=z_graddiv_vn,
-        domain={
-            dims.EdgeDim: (start_edge_lateral_boundary_level_7, end_edge_halo_level_2),
-            dims.KDim: (kstart_dd3d, vertical_end),
-        },
-    )
-    _compute_graddiv2_of_vn(
-        geofac_grdiv=geofac_grdiv,
-        z_graddiv_vn=z_graddiv_vn,
-        out=z_graddiv2_vn,
-        domain={
-            dims.EdgeDim: (start_edge_nudging_level_2, end_edge_local),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
     _apply_divergence_damping_and_update_vn_in_corrector_step(
         z_graddiv_vn=z_graddiv_vn,
-        z_graddiv2_vn=z_graddiv2_vn,
         next_vn=next_vn,
         current_vn=current_vn,
         z_dwdz_dd=z_dwdz_dd,

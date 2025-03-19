@@ -7,9 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+from typing import Optional
+
+from gt4py.next import backend as gtx_backend
+
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
@@ -120,7 +124,10 @@ def create_vertical_params(
 
 
 def construct_diagnostics(
-    init_savepoint: sb.IconNonHydroInitSavepoint, swap_ddt_w_adv_pc: bool = False
+    init_savepoint: sb.IconNonHydroInitSavepoint,
+    grid: icon_grid.IconGrid,
+    backend: Optional[gtx_backend.Backend],
+    swap_ddt_w_adv_pc: bool = False,
 ):
     current_index, next_index = (1, 0) if swap_ddt_w_adv_pc else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
@@ -143,9 +150,9 @@ def construct_diagnostics(
         vt=init_savepoint.vt(),
         vn_ie=init_savepoint.vn_ie(),
         w_concorr_c=init_savepoint.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
+        rho_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        vn_incr=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        exner_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
         exner_dyn_incr=init_savepoint.exner_dyn_incr(),
     )
 
