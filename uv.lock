@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -905,7 +906,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/SPCL/dace?branch=main#3ae502745ff47f3bca16df2e5d71224dd8a0f457" }
+source = { git = "https://github.com/philip-paul-mueller/dace?branch=improved-2d-copy#065e0d7456f74e1f8b9c420fb20325dc4f1fa490" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1393,7 +1394,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace-next#86a66c44f71558bb4e92c56e431b628c7db5a5f0" }
+source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace-next#75e6874235dff737905dd0caa2bf8e3553e5f916" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1531,10 +1532,10 @@ all = [
     { name = "icon4py-tools" },
 ]
 cuda11 = [
-    { name = "icon4py-common", extra = ["cuda11"] },
+    { name = "icon4py-common", extra = ["cuda11"], marker = "extra == 'extra-7-icon4py-cuda11'" },
 ]
 cuda12 = [
-    { name = "icon4py-common", extra = ["cuda12"] },
+    { name = "icon4py-common", extra = ["cuda12"], marker = "extra == 'extra-7-icon4py-cuda12'" },
 ]
 dace = [
     { name = "icon4py-common", extra = ["dace"] },
@@ -1639,6 +1640,7 @@ requires-dist = [
     { name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing" },
     { name = "icon4py-tools", marker = "extra == 'fortran'", editable = "tools" },
 ]
+provides-extras = ["all", "cuda11", "cuda12", "dace", "distributed", "fortran", "io", "testing"]
 
 [package.metadata.requires-dev]
 build = [
@@ -1839,7 +1841,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/SPCL/dace?branch=main" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/philip-paul-mueller/dace?branch=improved-2d-copy" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
     { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
@@ -1858,6 +1860,7 @@ requires-dist = [
     { name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0" },
     { name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0" },
 ]
+provides-extras = ["all", "cuda11", "cuda12", "dace", "distributed", "io"]
 
 [[package]]
 name = "icon4py-driver"
@@ -1955,6 +1958,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
 ]
+provides-extras = ["cuda11", "cuda12"]
 
 [[package]]
 name = "identify"
