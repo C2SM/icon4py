@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:22.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -25,7 +25,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libffi-dev \
     libhdf5-dev \
     liblzma-dev \
-    python-openssl \
+    python3-openssl \
     git && \
     rm -rf /var/lib/apt/lists/*
 
