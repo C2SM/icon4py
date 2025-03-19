@@ -66,14 +66,14 @@ def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, d
 @pytest.mark.datatest
 def test_get_c_lin_e(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.c_lin_e()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.C_LIN_E)
     assert field.shape == (grid.num_edges, E2C_SIZE)
     assert test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
 
 
-def get_interpolation_factory(
+def _get_interpolation_factory(
     backend: gtx_backend.Backend | None, experiment: str, grid_file: str
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = "_".join((experiment, data_alloc.backend_name(backend)))
@@ -102,7 +102,7 @@ def get_interpolation_factory(
 @pytest.mark.datatest
 def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.geofac_div()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.GEOFAC_DIV)
     assert field.shape == (grid.num_cells, C2E_SIZE)
@@ -121,7 +121,7 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
 @pytest.mark.datatest
 def test_get_geofac_grdiv(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.geofac_grdiv()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.GEOFAC_GRDIV)
     assert field.shape == (grid.num_edges, 5)
@@ -149,7 +149,7 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
 @pytest.mark.datatest
 def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.geofac_rot()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.GEOFAC_ROT)
     horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -169,7 +169,7 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
 @pytest.mark.datatest
 def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.geofac_n2s()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.GEOFAC_N2S)
     assert field.shape == (grid.num_cells, 4)
@@ -186,7 +186,7 @@ def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend,
 @pytest.mark.datatest
 def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend):
     field_ref = interpolation_savepoint.geofac_grg()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field_x = factory.get(attrs.GEOFAC_GRG_X)
     assert field_x.shape == (grid.num_cells, 4)
@@ -220,7 +220,7 @@ def test_get_mass_conserving_cell_average_weight(
     interpolation_savepoint, grid_file, experiment, backend, rtol
 ):
     field_ref = interpolation_savepoint.c_bln_avg()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.C_BLN_AVG)
 
@@ -241,7 +241,7 @@ def test_get_mass_conserving_cell_average_weight(
 @pytest.mark.datatest
 def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.e_flx_avg()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG)
     assert field.shape == (grid.num_edges, grid.connectivities[dims.E2C2EODim].shape[1])
@@ -259,7 +259,7 @@ def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol
 @pytest.mark.datatest
 def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.e_bln_c_s()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.E_BLN_C_S)
     assert field.shape == (grid.num_cells, C2E_SIZE)
@@ -277,7 +277,7 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
 def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
     field_ref_2 = interpolation_savepoint.pos_on_tplane_e_y()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     field_1 = factory.get(attrs.POS_ON_TPLANE_E_X)
     field_2 = factory.get(attrs.POS_ON_TPLANE_E_Y)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), rtol=rtol)
@@ -294,7 +294,7 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
 @pytest.mark.datatest
 def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.c_intp()
-    factory = get_interpolation_factory(backend, experiment, grid_file)
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.CELL_AW_VERTS)
 

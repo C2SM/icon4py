@@ -340,7 +340,6 @@ def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_
     cell_lon = coordinates[dims.CellDim]["lon"]
     edge_lat = coordinates[dims.EdgeDim]["lat"]
     edge_lon = coordinates[dims.EdgeDim]["lon"]
-
     lat_0, lon_0, lat_1, lon_1 = geometry.create_auxiliary_coordinate_arrays_for_orientation(
         grid, cell_lat, cell_lon, edge_lat, edge_lon, backend=backend
     )

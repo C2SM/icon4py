@@ -61,7 +61,7 @@ def metrics_config(experiment: str) -> tuple:
     )
 
 
-def get_metrics_factory(
+def _get_metrics_factory(
     backend, experiment, grid_file, grid_savepoint, metrics_savepoint
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment, data_alloc.backend_name(backend)))
@@ -128,7 +128,7 @@ def get_metrics_factory(
 @pytest.mark.datatest
 def test_factory_inv_ddqz_z(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.inv_ddqz_z_full()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -150,7 +150,7 @@ def test_factory_inv_ddqz_z(grid_savepoint, metrics_savepoint, grid_file, experi
 @pytest.mark.datatest
 def test_factory_ddqz_z_half(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.ddqz_z_half()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -171,7 +171,7 @@ def test_factory_ddqz_z_half(grid_savepoint, metrics_savepoint, grid_file, exper
 @pytest.mark.datatest
 def test_factory_scalfac_dd3d(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.scalfac_dd3d()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -192,7 +192,7 @@ def test_factory_scalfac_dd3d(grid_savepoint, metrics_savepoint, grid_file, expe
 @pytest.mark.datatest
 def test_factory_rayleigh_w(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.rayleigh_w()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -214,7 +214,7 @@ def test_factory_rayleigh_w(grid_savepoint, metrics_savepoint, grid_file, experi
 def test_factory_coeffs_dwdz(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref_1 = metrics_savepoint.coeff1_dwdz()
     field_ref_2 = metrics_savepoint.coeff2_dwdz()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -238,7 +238,7 @@ def test_factory_coeffs_dwdz(grid_savepoint, metrics_savepoint, grid_file, exper
 def test_factory_ref_mc(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref_1 = metrics_savepoint.theta_ref_mc()
     field_ref_2 = metrics_savepoint.exner_ref_mc()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -262,7 +262,7 @@ def test_factory_ref_mc(grid_savepoint, metrics_savepoint, grid_file, experiment
 def test_factory_facs_mc(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -285,7 +285,7 @@ def test_factory_facs_mc(grid_savepoint, metrics_savepoint, grid_file, experimen
 @pytest.mark.datatest
 def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.ddxn_z_full()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -309,7 +309,7 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
 @pytest.mark.datatest
 def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.vwind_impl_wgt()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -333,7 +333,7 @@ def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
 @pytest.mark.datatest
 def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.vwind_expl_wgt()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -354,7 +354,7 @@ def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
 @pytest.mark.datatest
 def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.exner_exfac()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -375,7 +375,7 @@ def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, exper
 @pytest.mark.datatest
 def test_factory_pg_edgeidx_dsl(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.pg_edgeidx_dsl()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -396,7 +396,7 @@ def test_factory_pg_edgeidx_dsl(grid_savepoint, metrics_savepoint, grid_file, ex
 @pytest.mark.datatest
 def test_factory_pg_exdist_dsl(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.pg_exdist()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -420,7 +420,7 @@ def test_factory_mask_bdy_prog_halo_c(
 ):
     field_ref_1 = metrics_savepoint.mask_prog_halo_c()
     field_ref_2 = metrics_savepoint.bdy_halo_c()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -443,7 +443,7 @@ def test_factory_mask_bdy_prog_halo_c(
 @pytest.mark.datatest
 def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.hmask_dd3d()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -464,7 +464,7 @@ def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experi
 @pytest.mark.datatest
 def test_factory_zdiff_gradp(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.zdiff_gradp()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -485,7 +485,7 @@ def test_factory_zdiff_gradp(grid_savepoint, metrics_savepoint, grid_file, exper
 @pytest.mark.datatest
 def test_factory_coeff_gradekin(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.coeff_gradekin()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -505,7 +505,7 @@ def test_factory_coeff_gradekin(grid_savepoint, metrics_savepoint, grid_file, ex
 )
 @pytest.mark.datatest
 def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
@@ -530,7 +530,7 @@ def test_factory_diffusion(grid_savepoint, metrics_savepoint, grid_file, experim
     field_ref_2 = metrics_savepoint.zd_diffcoef()
     field_ref_3 = metrics_savepoint.zd_intcoef()
     field_ref_4 = metrics_savepoint.zd_vertoffset()
-    factory = get_metrics_factory(
+    factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,

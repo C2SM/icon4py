@@ -349,7 +349,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             out_fields = out_fields[0]
         return out_fields
 
-    # TODO: do we need that here? GT4Py issue
+    # TODO: do we need that here?
     def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
         for dim in self._dims:
@@ -676,7 +676,7 @@ def _provider_on_backend(
 ) -> gtx.NeighborTableOffsetProvider:
     table = data_alloc.to_backend(provider.table, backend)
     log.debug(
-        f"transfering offset provider {provider} to compute backend: {data_alloc.backend_name(backend)}"
+        f"transferring offset provider {provider} to compute backend: {data_alloc.backend_name(backend)}"
     )
     return gtx.NeighborTableOffsetProvider(
         table=table,
