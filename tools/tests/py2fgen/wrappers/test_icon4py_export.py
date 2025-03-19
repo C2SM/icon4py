@@ -28,7 +28,7 @@ export_with_mapping_hook = py2fgen.export(
 SomeDim = gtx.Dimension("SomeDim")
 
 
-def make_array_descriptor(
+def make_array_info(
     ptr: "cffi.FFI.CData",  # TODO don't `from __future__ import annotations` otherwise the gt4py annotation will be a string
     shape: tuple[int, ...],
     on_gpu: bool,
@@ -50,7 +50,7 @@ def test_mapping_hook():
     result_a, result_b = foo(
         ffi=ffi,
         meta={},
-        a=make_array_descriptor(shape=(10,), ptr=array_ptr, on_gpu=False, is_optional=False),
+        a=make_array_info(shape=(10,), ptr=array_ptr, on_gpu=False, is_optional=False),
         b=5,
     )
     assert hasattr(result_a, "ndarray")

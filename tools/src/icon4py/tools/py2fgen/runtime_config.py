@@ -34,7 +34,7 @@ _T = TypeVar("_T", bound=eve.StrEnum)
 
 
 def _env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
-    """Recognize string values as members of an enumeration."""
+    """Read an enum value from an environment variable (with checking)."""
     value = os.environ.get(name, default).upper()
     if value not in enum_type.__members__:
         allowed_values = ", ".join(f"'{m}'" for m in enum_type.__members__)
@@ -45,6 +45,7 @@ def _env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
 
 
 PROFILING: bool = _env_flag_to_bool("PY2FGEN_PROFILING", False)
+"""Enable profiling for the PY2FGEN generated bindings."""
 
 
 class PY2FGEN_LOG_LEVELS(eve.StrEnum):
@@ -56,3 +57,4 @@ class PY2FGEN_LOG_LEVELS(eve.StrEnum):
 
 
 LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", PY2FGEN_LOG_LEVELS, PY2FGEN_LOG_LEVELS.INFO)
+"""Set the log level for the PY2FGEN generated bindings."""

@@ -18,10 +18,10 @@ from icon4py.tools.py2fgen import _codegen
 
 def get_cffi_description(
     module_name: str, functions: list[str], plugin_name: str
-) -> _codegen.CffiPlugin:
+) -> _codegen.BindingsLibrary:
     module = importlib.import_module(module_name)
     parsed_functions = [_get_function_descriptor(getattr(module, f)) for f in functions]
-    return _codegen.CffiPlugin(
+    return _codegen.BindingsLibrary(
         module_name=module_name,
         plugin_name=plugin_name,
         functions=parsed_functions,

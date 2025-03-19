@@ -68,8 +68,31 @@ def test_unpack_column_major(xp, ctype, rawdata, expected, ffi):
     rows, cols = expected_result.shape
 
     result = _conversion.unpack(xp, ffi, ptr, rows, cols)
+    assert isinstance(result, xp.ndarray)
+    assert xp.array_equal(result, expected_result)
 
-    assert np.array_equal(result, expected_result)
+
+@pytest.mark.parametrize(
+    "ctype, rawdtype, rawdata, expected",
+    [
+        ("double", np.float64, [1.0, 2.0, 3.0, 4.0], [[1.0, 3.0], [2.0, 4.0]]),
+        ("long", np.int64, [1, 2, 3, 4], [[1, 3], [2, 4]]),
+        ("int", np.int32, [-1, 0, -1, 0, 0, -1], [[True, True, False], [False, False, True]]),
+    ],
+)
+def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):
+    expected_result = xp.array(expected)
+
+    arr = xp.array(rawdata, dtype=rawdtype)
+    ptr = ffi.cast(f"{ctype}*", _get_ptr(xp, arr))
+    array_info = test_utils.array_info(
+        ptr, shape=expected_result.shape, on_gpu=xp != np, is_optional=False
+    )
+
+    result = _conversion.as_array(ffi, array_info, test_utils.from_np_dtype(expected_result.dtype))
+
+    assert isinstance(result, xp.ndarray)
+    assert xp.array_equal(result, expected_result)
 
 
 def test_int_array_to_bool():
@@ -91,7 +114,7 @@ def test_default_mapping_hook_array(ffi):
         ),
     )
     result = array_mapper(
-        test_utils.array_descriptor(ptr=array_ptr, shape=(10,), on_gpu=False, is_optional=False),
+        test_utils.array_info(ptr=array_ptr, shape=(10,), on_gpu=False, is_optional=False),
         ffi=ffi,
     )
 

@@ -15,9 +15,6 @@ from click.testing import CliRunner
 from icon4py.tools.py2fgen import _cli
 
 
-# TODO(havogt): move to `wrappers` test
-
-
 @pytest.fixture
 def cli_runner():
     return CliRunner()

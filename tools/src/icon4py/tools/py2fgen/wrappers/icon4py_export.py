@@ -21,7 +21,6 @@ from gt4py.next.type_system import (
 )
 
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen import utils
 
 
 def _parse_type_spec(type_spec: ts.TypeSpec) -> tuple[list[gtx.Dimension], ts.ScalarKind]:
@@ -75,11 +74,11 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
     # (only for substitution mode where we know we have exactly 2 entries)
     # or by even marking fields as constant over the whole program run and immediately return on second call
     @functools.lru_cache(maxsize=None)
-    def impl(array_descriptor: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> Optional[gtx.Field]:
-        arr = utils.as_array(ffi, array_descriptor, scalar_kind)
+    def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> Optional[gtx.Field]:
+        arr = py2fgen.as_array(ffi, array_info, scalar_kind)
         if arr is None:
             return None
-        domain = {d: s for d, s in zip(dims, array_descriptor[1], strict=True)}
+        domain = {d: s for d, s in zip(dims, array_info[1], strict=True)}
         return gtx_common._field(arr, domain=gtx_common.domain(domain))
 
     return impl

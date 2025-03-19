@@ -18,7 +18,7 @@ from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen import test_utils, utils as py2fgen_utils
+from icon4py.tools.py2fgen import test_utils
 from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
     diffusion_wrapper,
@@ -71,12 +71,12 @@ def test_diffusion_wrapper_granule_inputs(
     nflat_gradp = grid_savepoint.nflat_gradp()
 
     # --- Extract Metric State Parameters ---
-    vct_a = test_utils.array_to_array_descriptor(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_descriptor(grid_savepoint.vct_b().ndarray)
-    theta_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_mc().ndarray)
-    wgtfac_c = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfac_c().ndarray)
-    mask_hdiff = test_utils.array_to_array_descriptor(metrics_savepoint.mask_hdiff().ndarray)
-    zd_diffcoef = test_utils.array_to_array_descriptor(metrics_savepoint.zd_diffcoef().ndarray)
+    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+    theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
+    wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
+    mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
+    zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
     # todo: special handling, determine if this is necessary for Fortran arrays too
     zd_vertoffset = np.squeeze(
@@ -85,41 +85,35 @@ def test_diffusion_wrapper_granule_inputs(
     zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
         zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
-    zd_vertoffset = test_utils.array_to_array_descriptor(zd_vertoffset)
+    zd_vertoffset = test_utils.array_to_array_info(zd_vertoffset)
 
     zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
     zd_intcoef = metrics_savepoint._reduce_to_dim_size(
         zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
-    zd_intcoef = test_utils.array_to_array_descriptor(zd_intcoef)
+    zd_intcoef = test_utils.array_to_array_info(zd_intcoef)
 
     # --- Extract Interpolation State Parameters ---
-    e_bln_c_s = test_utils.array_to_array_descriptor(interpolation_savepoint.e_bln_c_s().ndarray)
-    geofac_div = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_div().ndarray)
+    e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
+    geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
     geofac_grg_x_field, geofac_grg_y_field = interpolation_savepoint.geofac_grg()
-    geofac_grg_x = test_utils.array_to_array_descriptor(geofac_grg_x_field.ndarray)
-    geofac_grg_y = test_utils.array_to_array_descriptor(geofac_grg_y_field.ndarray)
-    geofac_n2s = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_n2s().ndarray)
-    nudgecoeff_e = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.nudgecoeff_e().ndarray
-    )
-    rbf_coeff_1 = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.rbf_vec_coeff_v1().ndarray
-    )
-    rbf_coeff_2 = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.rbf_vec_coeff_v2().ndarray
-    )
+    geofac_grg_x = test_utils.array_to_array_info(geofac_grg_x_field.ndarray)
+    geofac_grg_y = test_utils.array_to_array_info(geofac_grg_y_field.ndarray)
+    geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
+    nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
+    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
+    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
 
     # --- Extract Diagnostic and Prognostic State Parameters ---
-    hdef_ic = test_utils.array_to_array_descriptor(savepoint_diffusion_init.hdef_ic().ndarray)
-    div_ic = test_utils.array_to_array_descriptor(savepoint_diffusion_init.div_ic().ndarray)
-    dwdx = test_utils.array_to_array_descriptor(savepoint_diffusion_init.dwdx().ndarray)
-    dwdy = test_utils.array_to_array_descriptor(savepoint_diffusion_init.dwdy().ndarray)
-    w = test_utils.array_to_array_descriptor(savepoint_diffusion_init.w().ndarray)
-    vn = test_utils.array_to_array_descriptor(savepoint_diffusion_init.vn().ndarray)
-    exner = test_utils.array_to_array_descriptor(savepoint_diffusion_init.exner().ndarray)
-    theta_v = test_utils.array_to_array_descriptor(savepoint_diffusion_init.theta_v().ndarray)
-    rho = test_utils.array_to_array_descriptor(savepoint_diffusion_init.rho().ndarray)
+    hdef_ic = test_utils.array_to_array_info(savepoint_diffusion_init.hdef_ic().ndarray)
+    div_ic = test_utils.array_to_array_info(savepoint_diffusion_init.div_ic().ndarray)
+    dwdx = test_utils.array_to_array_info(savepoint_diffusion_init.dwdx().ndarray)
+    dwdy = test_utils.array_to_array_info(savepoint_diffusion_init.dwdy().ndarray)
+    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)
+    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)
+    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
+    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
+    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
     dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
 
     # --- Expected objects that form inputs into init and run functions
@@ -339,12 +333,12 @@ def test_diffusion_wrapper_single_step(
     nflat_gradp = grid_savepoint.nflat_gradp()
 
     # Metric state parameters
-    vct_a = test_utils.array_to_array_descriptor(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_descriptor(grid_savepoint.vct_b().ndarray)
-    theta_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_mc().ndarray)
-    wgtfac_c = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfac_c().ndarray)
-    mask_hdiff = test_utils.array_to_array_descriptor(metrics_savepoint.mask_hdiff().ndarray)
-    zd_diffcoef = test_utils.array_to_array_descriptor(metrics_savepoint.zd_diffcoef().ndarray)
+    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+    theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
+    wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
+    mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
+    zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
     # todo: special handling, determine if this is necessary for Fortran arrays too
     zd_vertoffset = np.squeeze(
@@ -353,43 +347,37 @@ def test_diffusion_wrapper_single_step(
     zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
         zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
-    zd_vertoffset = test_utils.array_to_array_descriptor(zd_vertoffset)
+    zd_vertoffset = test_utils.array_to_array_info(zd_vertoffset)
 
     zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
     zd_intcoef = metrics_savepoint._reduce_to_dim_size(
         zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
-    zd_intcoef = test_utils.array_to_array_descriptor(zd_intcoef)
+    zd_intcoef = test_utils.array_to_array_info(zd_intcoef)
 
     # Interpolation state parameters
-    e_bln_c_s = test_utils.array_to_array_descriptor(interpolation_savepoint.e_bln_c_s().ndarray)
-    geofac_div = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_div().ndarray)
+    e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
+    geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
     geofac_grg_x_field, geofac_grg_y_field = interpolation_savepoint.geofac_grg()
-    geofac_grg_x = test_utils.array_to_array_descriptor(geofac_grg_x_field.ndarray)
-    geofac_grg_y = test_utils.array_to_array_descriptor(geofac_grg_y_field.ndarray)
-    geofac_n2s = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_n2s().ndarray)
-    nudgecoeff_e = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.nudgecoeff_e().ndarray
-    )
-    rbf_coeff_1 = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.rbf_vec_coeff_v1().ndarray
-    )
-    rbf_coeff_2 = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.rbf_vec_coeff_v2().ndarray
-    )
+    geofac_grg_x = test_utils.array_to_array_info(geofac_grg_x_field.ndarray)
+    geofac_grg_y = test_utils.array_to_array_info(geofac_grg_y_field.ndarray)
+    geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
+    nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
+    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
+    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
 
     # Diagnostic state parameters
-    hdef_ic = test_utils.array_to_array_descriptor(savepoint_diffusion_init.hdef_ic().ndarray)
-    div_ic = test_utils.array_to_array_descriptor(savepoint_diffusion_init.div_ic().ndarray)
-    dwdx = test_utils.array_to_array_descriptor(savepoint_diffusion_init.dwdx().ndarray)
-    dwdy = test_utils.array_to_array_descriptor(savepoint_diffusion_init.dwdy().ndarray)
+    hdef_ic = test_utils.array_to_array_info(savepoint_diffusion_init.hdef_ic().ndarray)
+    div_ic = test_utils.array_to_array_info(savepoint_diffusion_init.div_ic().ndarray)
+    dwdx = test_utils.array_to_array_info(savepoint_diffusion_init.dwdx().ndarray)
+    dwdy = test_utils.array_to_array_info(savepoint_diffusion_init.dwdy().ndarray)
 
     # Prognostic state parameters
-    w = test_utils.array_to_array_descriptor(savepoint_diffusion_init.w().ndarray)
-    vn = test_utils.array_to_array_descriptor(savepoint_diffusion_init.vn().ndarray)
-    exner = test_utils.array_to_array_descriptor(savepoint_diffusion_init.exner().ndarray)
-    theta_v = test_utils.array_to_array_descriptor(savepoint_diffusion_init.theta_v().ndarray)
-    rho = test_utils.array_to_array_descriptor(savepoint_diffusion_init.rho().ndarray)
+    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)
+    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)
+    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
+    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
+    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
     dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
 
     ffi = cffi.FFI()
@@ -464,27 +452,23 @@ def test_diffusion_wrapper_single_step(
     dwdx_ = savepoint_diffusion_exit.dwdx()
     dwdy_ = savepoint_diffusion_exit.dwdy()
 
+    assert helpers.dallclose(py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(py2fgen.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12)
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, exner, py2fgen.FLOAT64), exner_.asnumpy(), atol=1e-12
     )
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12
     )
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, exner, py2fgen.FLOAT64), exner_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
     )
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, div_ic, py2fgen.FLOAT64), div_ic_.asnumpy(), atol=1e-12
     )
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, dwdx, py2fgen.FLOAT64), dwdx_.asnumpy(), atol=1e-12
     )
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, div_ic, py2fgen.FLOAT64), div_ic_.asnumpy(), atol=1e-12
-    )
-    assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, dwdx, py2fgen.FLOAT64), dwdx_.asnumpy(), atol=1e-12
-    )
-    assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, dwdy, py2fgen.FLOAT64), dwdy_.asnumpy(), atol=1e-12
+        py2fgen.as_array(ffi, dwdy, py2fgen.FLOAT64), dwdy_.asnumpy(), atol=1e-12
     )

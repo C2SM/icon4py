@@ -39,3 +39,8 @@ Note, that debugging and profiling is not available if Python is set to optimize
 ### Known problems
 
 - On the Fortran side we use standard 4-byte logicals to represent Python booleans. Currently, we do not create views of the boolean arrays, but instead copy the data to 1-byte boolean arrays on the Python side. Therefore, these arrays are read-only.
+
+### Future improvements
+
+- Currently we require the `rank` of an array to be known at bindings generation time. We could make this more flexible, by passing an `ArrayInfo`-like struct from Fortran to Python.
+- In the CLI interface the user has to provide a module and all functions. Instead we can just request the modules and export all functions that are exportable.

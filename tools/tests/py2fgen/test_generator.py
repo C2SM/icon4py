@@ -13,7 +13,7 @@ import tempfile
 import cffi
 import pytest
 
-from icon4py.tools.py2fgen._codegen import CffiPlugin
+from icon4py.tools.py2fgen._codegen import BindingsLibrary
 from icon4py.tools.py2fgen._generator import generate_and_compile_cffi_plugin, get_cffi_description
 
 
@@ -22,7 +22,7 @@ def test_parse_functions_on_wrapper():
     module_path = "icon4py.tools.py2fgen.wrappers.diffusion_wrapper"
     functions = ["diffusion_init", "diffusion_run"]
     plugin = get_cffi_description(module_path, functions, "diffusion_plugin")
-    assert isinstance(plugin, CffiPlugin)
+    assert isinstance(plugin, BindingsLibrary)
 
 
 @pytest.fixture

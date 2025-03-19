@@ -59,13 +59,13 @@ class Func(Node):
         self.rendered_params = ", ".join(params)
 
 
-class CffiPlugin(Node):
+class BindingsLibrary(Node):
     module_name: str
     plugin_name: str
     functions: list[Func]
 
 
-class PythonWrapper(CffiPlugin):
+class PythonWrapper(BindingsLibrary):
     cffi_decorator: str = CFFI_DECORATOR
 
 
@@ -142,7 +142,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
         """\
 import logging
 from {{ plugin_name }} import ffi
-from icon4py.tools.py2fgen import utils, runtime_config, _runtime, _definitions
+from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
 if __debug__:
     logger = logging.getLogger(__name__)
@@ -211,7 +211,7 @@ def {{ func.name }}_wrapper(
                 {% if is_array(arg) %}
                 msg = 'shape of {{ name }} after computation = %s' % str({{ name}}.shape if {{name}} is not None else "None")
                 logger.debug(msg)
-                msg = '{{ name }} after computation: %s' % str(utils.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else "None")
+                msg = '{{ name }} after computation: %s' % str(_conversion.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else "None")
                 logger.debug(msg)
                 {% endif %}
                 {% endfor %}
@@ -234,7 +234,7 @@ def {{ func.name }}_wrapper(
 
 
 class CHeaderGenerator(TemplatedGenerator):
-    CffiPlugin = as_jinja("""{{'\n'.join(functions)}}""")
+    BindingsLibrary = as_jinja("""{{'\n'.join(functions)}}""")
 
     def visit_Func(self, func: Func) -> str:
         params = []
@@ -268,7 +268,7 @@ def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -
 
 
 class F90Interface(Node):
-    cffi_plugin: CffiPlugin
+    cffi_plugin: BindingsLibrary
     function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
@@ -491,12 +491,12 @@ end subroutine {{name}}
     )
 
 
-def generate_c_header(plugin: CffiPlugin) -> str:
+def generate_c_header(plugin: BindingsLibrary) -> str:
     """
     Generate C header code from the given plugin.
 
     Args:
-        plugin: The CffiPlugin instance containing information for code generation.
+        plugin: The BindingsLibrary instance containing information for code generation.
 
     Returns:
         Formatted C header code as a string.
@@ -505,12 +505,12 @@ def generate_c_header(plugin: CffiPlugin) -> str:
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
-def generate_python_wrapper(plugin: CffiPlugin) -> str:
+def generate_python_wrapper(plugin: BindingsLibrary) -> str:
     """
     Generate Python wrapper code.
 
     Args:
-        plugin: The CffiPlugin instance containing information for code generation.
+        plugin: The BindingsLibrary instance containing information for code generation.
 
     Returns:
         Formatted Python wrapper code as a string.
@@ -525,12 +525,12 @@ def generate_python_wrapper(plugin: CffiPlugin) -> str:
     return codegen.format_source("python", generated_code)
 
 
-def generate_f90_interface(plugin: CffiPlugin) -> str:
+def generate_f90_interface(plugin: BindingsLibrary) -> str:
     """
     Generate Fortran 90 interface code.
 
     Args:
-        plugin: The CffiPlugin instance containing information for code generation.
+        plugin: The BindingsLibrary instance containing information for code generation.
     """
     generated_code = F90InterfaceGenerator.apply(F90Interface(cffi_plugin=plugin))
     return _utils.format_fortran_code(generated_code)

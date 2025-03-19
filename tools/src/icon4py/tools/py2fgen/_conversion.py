@@ -11,11 +11,11 @@ from __future__ import annotations
 import functools
 import math
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import numpy as np
 
-from icon4py.tools.py2fgen import _definitions, utils
+from icon4py.tools.py2fgen import _definitions
 
 
 try:
@@ -127,7 +127,7 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
     """
     xp = np if isinstance(int_array, np.ndarray) else cp
     bool_array = xp.array(int_array != 0, order="F", dtype=np.bool_)
-    # bool_array.flags.writeable = False # TODO np.ndarray.__dlpack__() doesn't like the readonly flag # noqa: ERA001
+    # bool_array.flags.writeable = False # TODO(havogt): np.ndarray.__dlpack__() doesn't like the readonly flag # noqa: ERA001
     return bool_array
 
 
@@ -140,15 +140,32 @@ def unpack(xp: ModuleType, ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> n
         raise ValueError(f"Unsupported array type: {xp}. Expected Numpy or CuPy.")
 
 
-def _as_array(
+def as_array(
+    ffi: cffi.FFI, array_info: _definitions.ArrayInfo, dtype: _definitions.ScalarKind
+) -> Optional[np.ndarray]:  # or cupy
+    xp = cp if array_info[2] else np
+    if array_info[0] == ffi.NULL:
+        if array_info[3]:
+            return None
+        else:
+            raise RuntimeError("Parameter is not optional, but received 'NULL'.")
+    arr = unpack(xp, ffi, array_info[0], *array_info[1])
+    if dtype == _definitions.BOOL:
+        # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
+        # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
+        arr = _int_array_to_bool_array(arr)
+    return arr
+
+
+def _as_array_mapping(
     dtype: _definitions.ScalarKind,
 ) -> Callable[[_definitions.ArrayInfo, cffi.FFI], _definitions.NDArray]:
     # since we typically create one mapper per parameter, maxsize=2 is a good default for double buffering
     @functools.lru_cache(maxsize=2)
-    def impl(array_descriptor: _definitions.ArrayInfo, *, ffi: cffi.FFI) -> _definitions.NDArray:
-        if array_descriptor[3] and array_descriptor is None:
+    def impl(array_info: _definitions.ArrayInfo, *, ffi: cffi.FFI) -> _definitions.NDArray:
+        if array_info[3] and array_info is None:
             return None
-        return utils.as_array(ffi, array_descriptor, dtype)
+        return as_array(ffi, array_info, dtype)
 
     return impl
 
@@ -162,7 +179,7 @@ def default_mapping(
 ) -> _definitions.MapperType | None:
     if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
         # ArrayInfos to Numpy/CuPy arrays
-        return _as_array(param_descriptor.dtype)
+        return _as_array_mapping(param_descriptor.dtype)
     if (
         isinstance(param_descriptor, _definitions.ScalarParamDescriptor)
         and param_descriptor.dtype == _definitions.BOOL

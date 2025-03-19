@@ -24,7 +24,7 @@ from icon4py.model.testing import (
     helpers,
 )
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen import test_utils, utils as py2fgen_utils
+from icon4py.tools.py2fgen import test_utils
 from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
     dycore_wrapper,
@@ -77,119 +77,91 @@ def solve_nh_init(
     rayleigh_damping_height = 12500.0
 
     # vertical params
-    vct_a = test_utils.array_to_array_descriptor(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_descriptor(grid_savepoint.vct_b().ndarray)
+    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
 
     # metric state parameters
-    bdy_halo_c = test_utils.array_to_array_descriptor(metrics_savepoint.bdy_halo_c().ndarray)
-    mask_prog_halo_c = test_utils.array_to_array_descriptor(
-        metrics_savepoint.mask_prog_halo_c().ndarray
-    )
-    rayleigh_w = test_utils.array_to_array_descriptor(metrics_savepoint.rayleigh_w().ndarray)
-    exner_exfac = test_utils.array_to_array_descriptor(metrics_savepoint.exner_exfac().ndarray)
-    exner_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.exner_ref_mc().ndarray)
-    wgtfac_c = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfacq_c_dsl().ndarray)
-    inv_ddqz_z_full = test_utils.array_to_array_descriptor(
-        metrics_savepoint.inv_ddqz_z_full().ndarray
-    )
-    rho_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.rho_ref_mc().ndarray)
-    theta_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_mc().ndarray)
-    vwind_expl_wgt = test_utils.array_to_array_descriptor(
-        metrics_savepoint.vwind_expl_wgt().ndarray
-    )
-    d_exner_dz_ref_ic = test_utils.array_to_array_descriptor(
+    bdy_halo_c = test_utils.array_to_array_info(metrics_savepoint.bdy_halo_c().ndarray)
+    mask_prog_halo_c = test_utils.array_to_array_info(metrics_savepoint.mask_prog_halo_c().ndarray)
+    rayleigh_w = test_utils.array_to_array_info(metrics_savepoint.rayleigh_w().ndarray)
+    exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
+    exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
+    wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
+    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c_dsl().ndarray)
+    inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
+    rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
+    theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
+    vwind_expl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_expl_wgt().ndarray)
+    d_exner_dz_ref_ic = test_utils.array_to_array_info(
         metrics_savepoint.d_exner_dz_ref_ic().ndarray
     )
-    ddqz_z_half = test_utils.array_to_array_descriptor(metrics_savepoint.ddqz_z_half().ndarray)
-    theta_ref_ic = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_ic().ndarray)
-    d2dexdz2_fac1_mc = test_utils.array_to_array_descriptor(
-        metrics_savepoint.d2dexdz2_fac1_mc().ndarray
-    )
-    d2dexdz2_fac2_mc = test_utils.array_to_array_descriptor(
-        metrics_savepoint.d2dexdz2_fac2_mc().ndarray
-    )
-    rho_ref_me = test_utils.array_to_array_descriptor(metrics_savepoint.rho_ref_me().ndarray)
-    theta_ref_me = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_me().ndarray)
-    ddxn_z_full = test_utils.array_to_array_descriptor(metrics_savepoint.ddxn_z_full().ndarray)
+    ddqz_z_half = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_half().ndarray)
+    theta_ref_ic = test_utils.array_to_array_info(metrics_savepoint.theta_ref_ic().ndarray)
+    d2dexdz2_fac1_mc = test_utils.array_to_array_info(metrics_savepoint.d2dexdz2_fac1_mc().ndarray)
+    d2dexdz2_fac2_mc = test_utils.array_to_array_info(metrics_savepoint.d2dexdz2_fac2_mc().ndarray)
+    rho_ref_me = test_utils.array_to_array_info(metrics_savepoint.rho_ref_me().ndarray)
+    theta_ref_me = test_utils.array_to_array_info(metrics_savepoint.theta_ref_me().ndarray)
+    ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
     zdiff_gradp_field = metrics_savepoint._get_field(
         "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
     )
-    zdiff_gradp = test_utils.array_to_array_descriptor(zdiff_gradp_field.ndarray)
+    zdiff_gradp = test_utils.array_to_array_info(zdiff_gradp_field.ndarray)
 
     vertoffset_gradp_field = metrics_savepoint._get_field(
         "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
     )
-    vertoffset_gradp = test_utils.array_to_array_descriptor(vertoffset_gradp_field.ndarray)
+    vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
-    pg_edgeidx_dsl = test_utils.array_to_array_descriptor(
-        metrics_savepoint.pg_edgeidx_dsl().ndarray
-    )
-    pg_exdist = test_utils.array_to_array_descriptor(metrics_savepoint.pg_exdist().ndarray)
-    ddqz_z_full_e = test_utils.array_to_array_descriptor(metrics_savepoint.ddqz_z_full_e().ndarray)
-    ddxt_z_full = test_utils.array_to_array_descriptor(metrics_savepoint.ddxt_z_full().ndarray)
-    wgtfac_e = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_descriptor(
-        metrics_savepoint.wgtfacq_e_dsl(num_levels).ndarray
-    )
-    vwind_impl_wgt = test_utils.array_to_array_descriptor(
-        metrics_savepoint.vwind_impl_wgt().ndarray
-    )
-    hmask_dd3d = test_utils.array_to_array_descriptor(metrics_savepoint.hmask_dd3d().ndarray)
-    scalfac_dd3d = test_utils.array_to_array_descriptor(metrics_savepoint.scalfac_dd3d().ndarray)
-    coeff1_dwdz = test_utils.array_to_array_descriptor(metrics_savepoint.coeff1_dwdz().ndarray)
-    coeff2_dwdz = test_utils.array_to_array_descriptor(metrics_savepoint.coeff2_dwdz().ndarray)
+    pg_edgeidx_dsl = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx_dsl().ndarray)
+    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist().ndarray)
+    ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
+    ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
+    wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
+    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e_dsl(num_levels).ndarray)
+    vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
+    hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
+    scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
+    coeff1_dwdz = test_utils.array_to_array_info(metrics_savepoint.coeff1_dwdz().ndarray)
+    coeff2_dwdz = test_utils.array_to_array_info(metrics_savepoint.coeff2_dwdz().ndarray)
 
     coeff_gradekin_field = metrics_savepoint._get_field("coeff_gradekin", dims.EdgeDim, dims.E2CDim)
-    coeff_gradekin = test_utils.array_to_array_descriptor(coeff_gradekin_field.ndarray)
+    coeff_gradekin = test_utils.array_to_array_info(coeff_gradekin_field.ndarray)
 
     # interpolation state parameters
-    c_lin_e = test_utils.array_to_array_descriptor(interpolation_savepoint.c_lin_e().ndarray)
-    c_intp = test_utils.array_to_array_descriptor(interpolation_savepoint.c_intp().ndarray)
-    e_flx_avg = test_utils.array_to_array_descriptor(interpolation_savepoint.e_flx_avg().ndarray)
-    geofac_grdiv = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.geofac_grdiv().ndarray
-    )
-    geofac_rot = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_rot().ndarray)
+    c_lin_e = test_utils.array_to_array_info(interpolation_savepoint.c_lin_e().ndarray)
+    c_intp = test_utils.array_to_array_info(interpolation_savepoint.c_intp().ndarray)
+    e_flx_avg = test_utils.array_to_array_info(interpolation_savepoint.e_flx_avg().ndarray)
+    geofac_grdiv = test_utils.array_to_array_info(interpolation_savepoint.geofac_grdiv().ndarray)
+    geofac_rot = test_utils.array_to_array_info(interpolation_savepoint.geofac_rot().ndarray)
 
     pos_on_tplane_e_1_field = interpolation_savepoint._get_field(
         "pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim
     )
-    pos_on_tplane_e_1 = test_utils.array_to_array_descriptor(pos_on_tplane_e_1_field.ndarray)
+    pos_on_tplane_e_1 = test_utils.array_to_array_info(pos_on_tplane_e_1_field.ndarray)
 
     pos_on_tplane_e_2_field = interpolation_savepoint._get_field(
         "pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim
     )
-    pos_on_tplane_e_2 = test_utils.array_to_array_descriptor(pos_on_tplane_e_2_field.ndarray)
+    pos_on_tplane_e_2 = test_utils.array_to_array_info(pos_on_tplane_e_2_field.ndarray)
 
-    rbf_vec_coeff_e = test_utils.array_to_array_descriptor(
+    rbf_vec_coeff_e = test_utils.array_to_array_info(
         interpolation_savepoint.rbf_vec_coeff_e().ndarray
     )
-    e_bln_c_s = test_utils.array_to_array_descriptor(interpolation_savepoint.e_bln_c_s().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.rbf_vec_coeff_v1().ndarray
-    )
-    rbf_coeff_2 = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.rbf_vec_coeff_v2().ndarray
-    )
-    geofac_div = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_div().ndarray)
-    geofac_n2s = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_n2s().ndarray)
-    geofac_grg_x = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.geofac_grg()[0].ndarray
-    )
-    geofac_grg_y = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.geofac_grg()[1].ndarray
-    )
-    nudgecoeff_e = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.nudgecoeff_e().ndarray
-    )
+    e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
+    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
+    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+    geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
+    geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
+    geofac_grg_x = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[0].ndarray)
+    geofac_grg_y = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[1].ndarray)
+    nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
 
     # other params
-    c_owner_mask = test_utils.array_to_array_descriptor(grid_savepoint.c_owner_mask().ndarray)
+    c_owner_mask = test_utils.array_to_array_info(grid_savepoint.c_owner_mask().ndarray)
 
     ffi = cffi.FFI()
     dycore_wrapper.solve_nh_init(
@@ -359,8 +331,8 @@ def test_dycore_wrapper_granule_inputs(
     rayleigh_damping_height = 12500.0
 
     # vertical params
-    vct_a = test_utils.array_to_array_descriptor(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_descriptor(grid_savepoint.vct_b().ndarray)
+    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -370,156 +342,128 @@ def test_dycore_wrapper_granule_inputs(
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 
     # metric state parameters
-    bdy_halo_c = test_utils.array_to_array_descriptor(metrics_savepoint.bdy_halo_c().ndarray)
-    mask_prog_halo_c = test_utils.array_to_array_descriptor(
-        metrics_savepoint.mask_prog_halo_c().ndarray
-    )
-    rayleigh_w = test_utils.array_to_array_descriptor(metrics_savepoint.rayleigh_w().ndarray)
-    exner_exfac = test_utils.array_to_array_descriptor(metrics_savepoint.exner_exfac().ndarray)
-    exner_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.exner_ref_mc().ndarray)
-    wgtfac_c = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfacq_c_dsl().ndarray)
-    inv_ddqz_z_full = test_utils.array_to_array_descriptor(
-        metrics_savepoint.inv_ddqz_z_full().ndarray
-    )
-    rho_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.rho_ref_mc().ndarray)
-    theta_ref_mc = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_mc().ndarray)
-    vwind_expl_wgt = test_utils.array_to_array_descriptor(
-        metrics_savepoint.vwind_expl_wgt().ndarray
-    )
-    d_exner_dz_ref_ic = test_utils.array_to_array_descriptor(
+    bdy_halo_c = test_utils.array_to_array_info(metrics_savepoint.bdy_halo_c().ndarray)
+    mask_prog_halo_c = test_utils.array_to_array_info(metrics_savepoint.mask_prog_halo_c().ndarray)
+    rayleigh_w = test_utils.array_to_array_info(metrics_savepoint.rayleigh_w().ndarray)
+    exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
+    exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
+    wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
+    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c_dsl().ndarray)
+    inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
+    rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
+    theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
+    vwind_expl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_expl_wgt().ndarray)
+    d_exner_dz_ref_ic = test_utils.array_to_array_info(
         metrics_savepoint.d_exner_dz_ref_ic().ndarray
     )
-    ddqz_z_half = test_utils.array_to_array_descriptor(metrics_savepoint.ddqz_z_half().ndarray)
-    theta_ref_ic = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_ic().ndarray)
-    d2dexdz2_fac1_mc = test_utils.array_to_array_descriptor(
-        metrics_savepoint.d2dexdz2_fac1_mc().ndarray
-    )
-    d2dexdz2_fac2_mc = test_utils.array_to_array_descriptor(
-        metrics_savepoint.d2dexdz2_fac2_mc().ndarray
-    )
-    rho_ref_me = test_utils.array_to_array_descriptor(metrics_savepoint.rho_ref_me().ndarray)
-    theta_ref_me = test_utils.array_to_array_descriptor(metrics_savepoint.theta_ref_me().ndarray)
-    ddxn_z_full = test_utils.array_to_array_descriptor(metrics_savepoint.ddxn_z_full().ndarray)
+    ddqz_z_half = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_half().ndarray)
+    theta_ref_ic = test_utils.array_to_array_info(metrics_savepoint.theta_ref_ic().ndarray)
+    d2dexdz2_fac1_mc = test_utils.array_to_array_info(metrics_savepoint.d2dexdz2_fac1_mc().ndarray)
+    d2dexdz2_fac2_mc = test_utils.array_to_array_info(metrics_savepoint.d2dexdz2_fac2_mc().ndarray)
+    rho_ref_me = test_utils.array_to_array_info(metrics_savepoint.rho_ref_me().ndarray)
+    theta_ref_me = test_utils.array_to_array_info(metrics_savepoint.theta_ref_me().ndarray)
+    ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
     zdiff_gradp_field = metrics_savepoint._get_field(
         "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
     )
-    zdiff_gradp = test_utils.array_to_array_descriptor(zdiff_gradp_field.ndarray)
+    zdiff_gradp = test_utils.array_to_array_info(zdiff_gradp_field.ndarray)
 
     vertoffset_gradp_field = metrics_savepoint._get_field(
         "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
     )
-    vertoffset_gradp = test_utils.array_to_array_descriptor(vertoffset_gradp_field.ndarray)
+    vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
-    pg_edgeidx_dsl = test_utils.array_to_array_descriptor(
-        metrics_savepoint.pg_edgeidx_dsl().ndarray
-    )
-    pg_exdist = test_utils.array_to_array_descriptor(metrics_savepoint.pg_exdist().ndarray)
-    ddqz_z_full_e = test_utils.array_to_array_descriptor(metrics_savepoint.ddqz_z_full_e().ndarray)
-    ddxt_z_full = test_utils.array_to_array_descriptor(metrics_savepoint.ddxt_z_full().ndarray)
-    wgtfac_e = test_utils.array_to_array_descriptor(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_descriptor(
-        metrics_savepoint.wgtfacq_e_dsl(num_levels).ndarray
-    )
-    vwind_impl_wgt = test_utils.array_to_array_descriptor(
-        metrics_savepoint.vwind_impl_wgt().ndarray
-    )
-    hmask_dd3d = test_utils.array_to_array_descriptor(metrics_savepoint.hmask_dd3d().ndarray)
-    scalfac_dd3d = test_utils.array_to_array_descriptor(metrics_savepoint.scalfac_dd3d().ndarray)
-    coeff1_dwdz = test_utils.array_to_array_descriptor(metrics_savepoint.coeff1_dwdz().ndarray)
-    coeff2_dwdz = test_utils.array_to_array_descriptor(metrics_savepoint.coeff2_dwdz().ndarray)
+    pg_edgeidx_dsl = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx_dsl().ndarray)
+    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist().ndarray)
+    ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
+    ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
+    wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
+    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e_dsl(num_levels).ndarray)
+    vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
+    hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
+    scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
+    coeff1_dwdz = test_utils.array_to_array_info(metrics_savepoint.coeff1_dwdz().ndarray)
+    coeff2_dwdz = test_utils.array_to_array_info(metrics_savepoint.coeff2_dwdz().ndarray)
 
     coeff_gradekin_field = metrics_savepoint._get_field("coeff_gradekin", dims.EdgeDim, dims.E2CDim)
-    coeff_gradekin = test_utils.array_to_array_descriptor(coeff_gradekin_field.ndarray)
+    coeff_gradekin = test_utils.array_to_array_info(coeff_gradekin_field.ndarray)
 
     # interpolation state parameters
-    c_lin_e = test_utils.array_to_array_descriptor(interpolation_savepoint.c_lin_e().ndarray)
-    c_intp = test_utils.array_to_array_descriptor(interpolation_savepoint.c_intp().ndarray)
-    e_flx_avg = test_utils.array_to_array_descriptor(interpolation_savepoint.e_flx_avg().ndarray)
-    geofac_grdiv = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.geofac_grdiv().ndarray
-    )
-    geofac_rot = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_rot().ndarray)
+    c_lin_e = test_utils.array_to_array_info(interpolation_savepoint.c_lin_e().ndarray)
+    c_intp = test_utils.array_to_array_info(interpolation_savepoint.c_intp().ndarray)
+    e_flx_avg = test_utils.array_to_array_info(interpolation_savepoint.e_flx_avg().ndarray)
+    geofac_grdiv = test_utils.array_to_array_info(interpolation_savepoint.geofac_grdiv().ndarray)
+    geofac_rot = test_utils.array_to_array_info(interpolation_savepoint.geofac_rot().ndarray)
 
     pos_on_tplane_e_1_field = interpolation_savepoint._get_field(
         "pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim
     )
-    pos_on_tplane_e_1 = test_utils.array_to_array_descriptor(pos_on_tplane_e_1_field.ndarray)
+    pos_on_tplane_e_1 = test_utils.array_to_array_info(pos_on_tplane_e_1_field.ndarray)
 
     pos_on_tplane_e_2_field = interpolation_savepoint._get_field(
         "pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim
     )
-    pos_on_tplane_e_2 = test_utils.array_to_array_descriptor(pos_on_tplane_e_2_field.ndarray)
+    pos_on_tplane_e_2 = test_utils.array_to_array_info(pos_on_tplane_e_2_field.ndarray)
 
-    rbf_vec_coeff_e = test_utils.array_to_array_descriptor(
+    rbf_vec_coeff_e = test_utils.array_to_array_info(
         interpolation_savepoint.rbf_vec_coeff_e().ndarray
     )
-    e_bln_c_s = test_utils.array_to_array_descriptor(interpolation_savepoint.e_bln_c_s().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.rbf_vec_coeff_v1().ndarray
-    )
-    rbf_coeff_2 = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.rbf_vec_coeff_v2().ndarray
-    )
-    geofac_div = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_div().ndarray)
-    geofac_n2s = test_utils.array_to_array_descriptor(interpolation_savepoint.geofac_n2s().ndarray)
-    geofac_grg_x = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.geofac_grg()[0].ndarray
-    )
-    geofac_grg_y = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.geofac_grg()[1].ndarray
-    )
-    nudgecoeff_e = test_utils.array_to_array_descriptor(
-        interpolation_savepoint.nudgecoeff_e().ndarray
-    )
+    e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
+    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
+    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+    geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
+    geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
+    geofac_grg_x = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[0].ndarray)
+    geofac_grg_y = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[1].ndarray)
+    nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
 
     # other params
-    c_owner_mask = test_utils.array_to_array_descriptor(grid_savepoint.c_owner_mask().ndarray)
+    c_owner_mask = test_utils.array_to_array_info(grid_savepoint.c_owner_mask().ndarray)
 
     # --- Granule input parameters for dycore run
     initial_divdamp_fac = sp.divdamp_fac_o2()
 
     # PrepAdvection
-    vn_traj = test_utils.array_to_array_descriptor(sp.vn_traj().ndarray)
-    vol_flx_ic = test_utils.array_to_array_descriptor(
+    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
+    vol_flx_ic = test_utils.array_to_array_info(
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )  # TODO sp.vol_flx_ic()
-    mass_flx_me = test_utils.array_to_array_descriptor(sp.mass_flx_me().ndarray)
-    mass_flx_ic = test_utils.array_to_array_descriptor(sp.mass_flx_ic().ndarray)
+    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
+    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
     # Diagnostic state parameters
-    theta_v_ic = test_utils.array_to_array_descriptor(sp.theta_v_ic().ndarray)
-    exner_pr = test_utils.array_to_array_descriptor(sp.exner_pr().ndarray)
-    rho_ic = test_utils.array_to_array_descriptor(sp.rho_ic().ndarray)
-    ddt_exner_phy = test_utils.array_to_array_descriptor(sp.ddt_exner_phy().ndarray)
-    grf_tend_rho = test_utils.array_to_array_descriptor(sp.grf_tend_rho().ndarray)
-    grf_tend_thv = test_utils.array_to_array_descriptor(sp.grf_tend_thv().ndarray)
-    grf_tend_w = test_utils.array_to_array_descriptor(sp.grf_tend_w().ndarray)
-    mass_fl_e = test_utils.array_to_array_descriptor(sp.mass_fl_e().ndarray)
-    ddt_vn_phy = test_utils.array_to_array_descriptor(sp.ddt_vn_phy().ndarray)
-    grf_tend_vn = test_utils.array_to_array_descriptor(sp.grf_tend_vn().ndarray)
-    ddt_vn_apc_ntl1 = test_utils.array_to_array_descriptor(sp.ddt_vn_apc_pc(0).ndarray)
-    ddt_vn_apc_ntl2 = test_utils.array_to_array_descriptor(sp.ddt_vn_apc_pc(1).ndarray)
-    ddt_w_adv_ntl1 = test_utils.array_to_array_descriptor(sp.ddt_w_adv_pc(0).ndarray)
-    ddt_w_adv_ntl2 = test_utils.array_to_array_descriptor(sp.ddt_w_adv_pc(1).ndarray)
-    vt = test_utils.array_to_array_descriptor(sp.vt().ndarray)
-    vn_ie = test_utils.array_to_array_descriptor(sp.vn_ie().ndarray)
-    w_concorr_c = test_utils.array_to_array_descriptor(sp.w_concorr_c().ndarray)
-    exner_dyn_incr = test_utils.array_to_array_descriptor(sp.exner_dyn_incr().ndarray)
+    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
+    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
+    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
+    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)
+    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)
+    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)
+    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)
+    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)
+    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)
+    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)
+    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)
+    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)
+    ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
+    ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
+    vt = test_utils.array_to_array_info(sp.vt().ndarray)
+    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
+    exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
     # Prognostic state parameters
-    w_now = test_utils.array_to_array_descriptor(sp.w_now().ndarray)
-    vn_now = test_utils.array_to_array_descriptor(sp.vn_now().ndarray)
-    theta_v_now = test_utils.array_to_array_descriptor(sp.theta_v_now().ndarray)
-    rho_now = test_utils.array_to_array_descriptor(sp.rho_now().ndarray)
-    exner_now = test_utils.array_to_array_descriptor(sp.exner_now().ndarray)
+    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)
+    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)
+    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)
+    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)
+    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)
 
-    w_new = test_utils.array_to_array_descriptor(sp.w_new().ndarray)
-    vn_new = test_utils.array_to_array_descriptor(sp.vn_new().ndarray)
-    theta_v_new = test_utils.array_to_array_descriptor(sp.theta_v_new().ndarray)
-    rho_new = test_utils.array_to_array_descriptor(sp.rho_new().ndarray)
-    exner_new = test_utils.array_to_array_descriptor(sp.exner_new().ndarray)
+    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)
+    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)
+    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)
+    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)
+    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)
 
     # using fortran indices
     substep = substep_init
@@ -943,45 +887,45 @@ def test_granule_solve_nonhydro_single_step_regional(
     initial_divdamp_fac = sp.divdamp_fac_o2()  # This is a scalar, don't convert
 
     # PrepAdvection
-    vn_traj = test_utils.array_to_array_descriptor(sp.vn_traj().ndarray)
-    vol_flx_ic = test_utils.array_to_array_descriptor(
+    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
+    vol_flx_ic = test_utils.array_to_array_info(
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )
-    mass_flx_me = test_utils.array_to_array_descriptor(sp.mass_flx_me().ndarray)
-    mass_flx_ic = test_utils.array_to_array_descriptor(sp.mass_flx_ic().ndarray)
+    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
+    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
     # Diagnostic state parameters
-    theta_v_ic = test_utils.array_to_array_descriptor(sp.theta_v_ic().ndarray)
-    exner_pr = test_utils.array_to_array_descriptor(sp.exner_pr().ndarray)
-    rho_ic = test_utils.array_to_array_descriptor(sp.rho_ic().ndarray)
-    ddt_exner_phy = test_utils.array_to_array_descriptor(sp.ddt_exner_phy().ndarray)
-    grf_tend_rho = test_utils.array_to_array_descriptor(sp.grf_tend_rho().ndarray)
-    grf_tend_thv = test_utils.array_to_array_descriptor(sp.grf_tend_thv().ndarray)
-    grf_tend_w = test_utils.array_to_array_descriptor(sp.grf_tend_w().ndarray)
-    mass_fl_e = test_utils.array_to_array_descriptor(sp.mass_fl_e().ndarray)
-    ddt_vn_phy = test_utils.array_to_array_descriptor(sp.ddt_vn_phy().ndarray)
-    grf_tend_vn = test_utils.array_to_array_descriptor(sp.grf_tend_vn().ndarray)
-    ddt_vn_apc_ntl1 = test_utils.array_to_array_descriptor(sp.ddt_vn_apc_pc(0).ndarray)
-    ddt_vn_apc_ntl2 = test_utils.array_to_array_descriptor(sp.ddt_vn_apc_pc(1).ndarray)
-    ddt_w_adv_ntl1 = test_utils.array_to_array_descriptor(sp.ddt_w_adv_pc(0).ndarray)
-    ddt_w_adv_ntl2 = test_utils.array_to_array_descriptor(sp.ddt_w_adv_pc(1).ndarray)
-    vt = test_utils.array_to_array_descriptor(sp.vt().ndarray)
-    vn_ie = test_utils.array_to_array_descriptor(sp.vn_ie().ndarray)
-    w_concorr_c = test_utils.array_to_array_descriptor(sp.w_concorr_c().ndarray)
-    exner_dyn_incr = test_utils.array_to_array_descriptor(sp.exner_dyn_incr().ndarray)
+    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
+    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
+    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
+    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)
+    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)
+    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)
+    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)
+    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)
+    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)
+    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)
+    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)
+    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)
+    ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
+    ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
+    vt = test_utils.array_to_array_info(sp.vt().ndarray)
+    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
+    exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
     # Prognostic state parameters
-    w_now = test_utils.array_to_array_descriptor(sp.w_now().ndarray)
-    vn_now = test_utils.array_to_array_descriptor(sp.vn_now().ndarray)
-    theta_v_now = test_utils.array_to_array_descriptor(sp.theta_v_now().ndarray)
-    rho_now = test_utils.array_to_array_descriptor(sp.rho_now().ndarray)
-    exner_now = test_utils.array_to_array_descriptor(sp.exner_now().ndarray)
+    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)
+    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)
+    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)
+    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)
+    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)
 
-    w_new = test_utils.array_to_array_descriptor(sp.w_new().ndarray)
-    vn_new = test_utils.array_to_array_descriptor(sp.vn_new().ndarray)
-    theta_v_new = test_utils.array_to_array_descriptor(sp.theta_v_new().ndarray)
-    rho_new = test_utils.array_to_array_descriptor(sp.rho_new().ndarray)
-    exner_new = test_utils.array_to_array_descriptor(sp.exner_new().ndarray)
+    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)
+    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)
+    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)
+    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)
+    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)
 
     # using fortran indices
     substep = substep_init
@@ -1030,36 +974,36 @@ def test_granule_solve_nonhydro_single_step_regional(
         idyn_timestep=substep,
     )
 
-    # Comparison asserts should now use py2fgen_utils.as_array
+    # Comparison asserts should now use py2fgen.as_array
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, theta_v_new, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, theta_v_new, py2fgen.FLOAT64),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, exner_new, py2fgen.FLOAT64), sp_step_exit.exner_new().asnumpy()
+        py2fgen.as_array(ffi, exner_new, py2fgen.FLOAT64), sp_step_exit.exner_new().asnumpy()
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, vn_new, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, vn_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-12,
         atol=1e-13,
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, rho_new, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, rho_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, w_new, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, w_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -1104,49 +1048,49 @@ def test_granule_solve_nonhydro_multi_step_regional(
     initial_divdamp_fac = sp.divdamp_fac_o2()
 
     # PrepAdvection
-    vn_traj = test_utils.array_to_array_descriptor(sp.vn_traj().ndarray)
-    vol_flx_ic = test_utils.array_to_array_descriptor(
+    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
+    vol_flx_ic = test_utils.array_to_array_info(
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )
-    mass_flx_me = test_utils.array_to_array_descriptor(sp.mass_flx_me().ndarray)
-    mass_flx_ic = test_utils.array_to_array_descriptor(sp.mass_flx_ic().ndarray)
+    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
+    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
     # Diagnostic state parameters
-    theta_v_ic = test_utils.array_to_array_descriptor(sp.theta_v_ic().ndarray)
-    exner_pr = test_utils.array_to_array_descriptor(sp.exner_pr().ndarray)
-    rho_ic = test_utils.array_to_array_descriptor(sp.rho_ic().ndarray)
-    ddt_exner_phy = test_utils.array_to_array_descriptor(sp.ddt_exner_phy().ndarray)
-    grf_tend_rho = test_utils.array_to_array_descriptor(sp.grf_tend_rho().ndarray)
-    grf_tend_thv = test_utils.array_to_array_descriptor(sp.grf_tend_thv().ndarray)
-    grf_tend_w = test_utils.array_to_array_descriptor(sp.grf_tend_w().ndarray)
-    mass_fl_e = test_utils.array_to_array_descriptor(sp.mass_fl_e().ndarray)
-    ddt_vn_phy = test_utils.array_to_array_descriptor(sp.ddt_vn_phy().ndarray)
-    grf_tend_vn = test_utils.array_to_array_descriptor(sp.grf_tend_vn().ndarray)
-    ddt_vn_apc_ntl1 = test_utils.array_to_array_descriptor(sp.ddt_vn_apc_pc(0).ndarray)
-    ddt_vn_apc_ntl2 = test_utils.array_to_array_descriptor(sp.ddt_vn_apc_pc(1).ndarray)
+    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
+    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
+    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
+    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)
+    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)
+    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)
+    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)
+    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)
+    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)
+    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)
+    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)
+    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)
     if linit:
-        ddt_w_adv_ntl1 = test_utils.array_to_array_descriptor(sp.ddt_w_adv_pc(0).ndarray)
-        ddt_w_adv_ntl2 = test_utils.array_to_array_descriptor(sp.ddt_w_adv_pc(1).ndarray)
+        ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
+        ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
     else:
-        ddt_w_adv_ntl1 = test_utils.array_to_array_descriptor(sp.ddt_w_adv_pc(1).ndarray)
-        ddt_w_adv_ntl2 = test_utils.array_to_array_descriptor(sp.ddt_w_adv_pc(0).ndarray)
-    vt = test_utils.array_to_array_descriptor(sp.vt().ndarray)
-    vn_ie = test_utils.array_to_array_descriptor(sp.vn_ie().ndarray)
-    w_concorr_c = test_utils.array_to_array_descriptor(sp.w_concorr_c().ndarray)
-    exner_dyn_incr = test_utils.array_to_array_descriptor(sp.exner_dyn_incr().ndarray)
+        ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
+        ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
+    vt = test_utils.array_to_array_info(sp.vt().ndarray)
+    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
+    exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
     # Prognostic state parameters
-    w_now = test_utils.array_to_array_descriptor(sp.w_now().ndarray)
-    vn_now = test_utils.array_to_array_descriptor(sp.vn_now().ndarray)
-    theta_v_now = test_utils.array_to_array_descriptor(sp.theta_v_now().ndarray)
-    rho_now = test_utils.array_to_array_descriptor(sp.rho_now().ndarray)
-    exner_now = test_utils.array_to_array_descriptor(sp.exner_now().ndarray)
+    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)
+    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)
+    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)
+    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)
+    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)
 
-    w_new = test_utils.array_to_array_descriptor(sp.w_new().ndarray)
-    vn_new = test_utils.array_to_array_descriptor(sp.vn_new().ndarray)
-    theta_v_new = test_utils.array_to_array_descriptor(sp.theta_v_new().ndarray)
-    rho_new = test_utils.array_to_array_descriptor(sp.rho_new().ndarray)
-    exner_new = test_utils.array_to_array_descriptor(sp.exner_new().ndarray)
+    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)
+    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)
+    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)
+    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)
+    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)
 
     ffi = cffi.FFI()
     # use fortran indices in the driving loop to compute i_substep
@@ -1213,63 +1157,63 @@ def test_granule_solve_nonhydro_multi_step_regional(
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, rho_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
+        py2fgen.as_array(ffi, rho_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, theta_v_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
+        py2fgen.as_array(ffi, theta_v_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, mass_fl_e, py2fgen.FLOAT64)[edge_start_lb_plus4:, :],
+        py2fgen.as_array(ffi, mass_fl_e, py2fgen.FLOAT64)[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-7,
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, mass_flx_me, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, mass_flx_me, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         atol=5e-7,
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, vn_traj, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, vn_traj, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         atol=1e-12,
     )
 
     # we compare against _now fields as _new and _now are switched internally in the granule.
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, theta_v_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, theta_v_now, py2fgen.FLOAT64),
         sp_step_exit.theta_v_new().asnumpy(),
         atol=5e-7,
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, rho_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, rho_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, exner_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, exner_now, py2fgen.FLOAT64),
         sp_step_exit.exner_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, w_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, w_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, vn_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, vn_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13,
     )
     assert helpers.dallclose(
-        py2fgen_utils.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )

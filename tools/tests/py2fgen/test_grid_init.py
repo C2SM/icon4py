@@ -24,86 +24,72 @@ def grid_init(grid_savepoint):
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("c_start_index"))
-    cell_ends = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("c_end_index"))
-    vertex_starts = test_utils.array_to_array_descriptor(
-        grid_savepoint._read_int32("v_start_index")
-    )
-    vertex_ends = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("v_end_index"))
-    edge_starts = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("e_start_index"))
-    edge_ends = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("e_end_index"))
+    cell_starts = test_utils.array_to_array_info(grid_savepoint._read_int32("c_start_index"))
+    cell_ends = test_utils.array_to_array_info(grid_savepoint._read_int32("c_end_index"))
+    vertex_starts = test_utils.array_to_array_info(grid_savepoint._read_int32("v_start_index"))
+    vertex_ends = test_utils.array_to_array_info(grid_savepoint._read_int32("v_end_index"))
+    edge_starts = test_utils.array_to_array_info(grid_savepoint._read_int32("e_start_index"))
+    edge_ends = test_utils.array_to_array_info(grid_savepoint._read_int32("e_end_index"))
 
-    c2e = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("c2e"))
-    e2c = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("e2c"))
-    c2e2c = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("c2e2c"))
-    e2c2e = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("e2c2e"))
-    e2v = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("e2v"))
-    v2e = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("v2e"))
-    v2c = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("v2c"))
-    e2c2v = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("e2c2v"))
-    c2v = test_utils.array_to_array_descriptor(grid_savepoint._read_int32("c2v"))
+    c2e = test_utils.array_to_array_info(grid_savepoint._read_int32("c2e"))
+    e2c = test_utils.array_to_array_info(grid_savepoint._read_int32("e2c"))
+    c2e2c = test_utils.array_to_array_info(grid_savepoint._read_int32("c2e2c"))
+    e2c2e = test_utils.array_to_array_info(grid_savepoint._read_int32("e2c2e"))
+    e2v = test_utils.array_to_array_info(grid_savepoint._read_int32("e2v"))
+    v2e = test_utils.array_to_array_info(grid_savepoint._read_int32("v2e"))
+    v2c = test_utils.array_to_array_info(grid_savepoint._read_int32("v2c"))
+    e2c2v = test_utils.array_to_array_info(grid_savepoint._read_int32("e2c2v"))
+    c2v = test_utils.array_to_array_info(grid_savepoint._read_int32("c2v"))
 
     # --- Extract Grid Parameters from Savepoint ---
-    tangent_orientation = test_utils.array_to_array_descriptor(
+    tangent_orientation = test_utils.array_to_array_info(
         grid_savepoint.tangent_orientation().ndarray
     )
-    inverse_primal_edge_lengths = test_utils.array_to_array_descriptor(
+    inverse_primal_edge_lengths = test_utils.array_to_array_info(
         grid_savepoint.inverse_primal_edge_lengths().ndarray
     )
-    inv_dual_edge_length = test_utils.array_to_array_descriptor(
+    inv_dual_edge_length = test_utils.array_to_array_info(
         grid_savepoint.inv_dual_edge_length().ndarray
     )
-    inv_vert_vert_length = test_utils.array_to_array_descriptor(
+    inv_vert_vert_length = test_utils.array_to_array_info(
         grid_savepoint.inv_vert_vert_length().ndarray
     )
-    edge_areas = test_utils.array_to_array_descriptor(grid_savepoint.edge_areas().ndarray)
-    f_e = test_utils.array_to_array_descriptor(grid_savepoint.f_e().ndarray)
-    cell_areas = test_utils.array_to_array_descriptor(grid_savepoint.cell_areas().ndarray)
+    edge_areas = test_utils.array_to_array_info(grid_savepoint.edge_areas().ndarray)
+    f_e = test_utils.array_to_array_info(grid_savepoint.f_e().ndarray)
+    cell_areas = test_utils.array_to_array_info(grid_savepoint.cell_areas().ndarray)
     mean_cell_area = grid_savepoint.mean_cell_area()
-    primal_normal_vert_x = test_utils.array_to_array_descriptor(
+    primal_normal_vert_x = test_utils.array_to_array_info(
         grid_savepoint.primal_normal_vert_x().ndarray
     )
-    primal_normal_vert_y = test_utils.array_to_array_descriptor(
+    primal_normal_vert_y = test_utils.array_to_array_info(
         grid_savepoint.primal_normal_vert_y().ndarray
     )
-    dual_normal_vert_x = test_utils.array_to_array_descriptor(
-        grid_savepoint.dual_normal_vert_x().ndarray
-    )
-    dual_normal_vert_y = test_utils.array_to_array_descriptor(
-        grid_savepoint.dual_normal_vert_y().ndarray
-    )
-    primal_normal_cell_x = test_utils.array_to_array_descriptor(
+    dual_normal_vert_x = test_utils.array_to_array_info(grid_savepoint.dual_normal_vert_x().ndarray)
+    dual_normal_vert_y = test_utils.array_to_array_info(grid_savepoint.dual_normal_vert_y().ndarray)
+    primal_normal_cell_x = test_utils.array_to_array_info(
         grid_savepoint.primal_normal_cell_x().ndarray
     )
-    primal_normal_cell_y = test_utils.array_to_array_descriptor(
+    primal_normal_cell_y = test_utils.array_to_array_info(
         grid_savepoint.primal_normal_cell_y().ndarray
     )
-    dual_normal_cell_x = test_utils.array_to_array_descriptor(
-        grid_savepoint.dual_normal_cell_x().ndarray
-    )
-    dual_normal_cell_y = test_utils.array_to_array_descriptor(
-        grid_savepoint.dual_normal_cell_y().ndarray
-    )
-    cell_center_lat = test_utils.array_to_array_descriptor(grid_savepoint.cell_center_lat().ndarray)
-    cell_center_lon = test_utils.array_to_array_descriptor(grid_savepoint.cell_center_lon().ndarray)
-    edge_center_lat = test_utils.array_to_array_descriptor(grid_savepoint.edge_center_lat().ndarray)
-    edge_center_lon = test_utils.array_to_array_descriptor(grid_savepoint.edge_center_lon().ndarray)
-    primal_normal_x = test_utils.array_to_array_descriptor(
-        grid_savepoint.primal_normal_v1().ndarray
-    )
-    primal_normal_y = test_utils.array_to_array_descriptor(
-        grid_savepoint.primal_normal_v2().ndarray
-    )
+    dual_normal_cell_x = test_utils.array_to_array_info(grid_savepoint.dual_normal_cell_x().ndarray)
+    dual_normal_cell_y = test_utils.array_to_array_info(grid_savepoint.dual_normal_cell_y().ndarray)
+    cell_center_lat = test_utils.array_to_array_info(grid_savepoint.cell_center_lat().ndarray)
+    cell_center_lon = test_utils.array_to_array_info(grid_savepoint.cell_center_lon().ndarray)
+    edge_center_lat = test_utils.array_to_array_info(grid_savepoint.edge_center_lat().ndarray)
+    edge_center_lon = test_utils.array_to_array_info(grid_savepoint.edge_center_lon().ndarray)
+    primal_normal_x = test_utils.array_to_array_info(grid_savepoint.primal_normal_v1().ndarray)
+    primal_normal_y = test_utils.array_to_array_info(grid_savepoint.primal_normal_v2().ndarray)
 
     # not running in parallel
     _dummy_int_array = np.array([], dtype=np.int32)
     _dummy_bool_array = np.array([], dtype=np.bool_)
-    c_glb_index = test_utils.array_to_array_descriptor(_dummy_int_array)
-    e_glb_index = test_utils.array_to_array_descriptor(_dummy_int_array)
-    v_glb_index = test_utils.array_to_array_descriptor(_dummy_int_array)
-    c_owner_mask = test_utils.array_to_array_descriptor(_dummy_bool_array)
-    e_owner_mask = test_utils.array_to_array_descriptor(_dummy_bool_array)
-    v_owner_mask = test_utils.array_to_array_descriptor(_dummy_bool_array)
+    c_glb_index = test_utils.array_to_array_info(_dummy_int_array)
+    e_glb_index = test_utils.array_to_array_info(_dummy_int_array)
+    v_glb_index = test_utils.array_to_array_info(_dummy_int_array)
+    c_owner_mask = test_utils.array_to_array_info(_dummy_bool_array)
+    e_owner_mask = test_utils.array_to_array_info(_dummy_bool_array)
+    v_owner_mask = test_utils.array_to_array_info(_dummy_bool_array)
 
     ffi = cffi.FFI()
     grid_wrapper.grid_init(

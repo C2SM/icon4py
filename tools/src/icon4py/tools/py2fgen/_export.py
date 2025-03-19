@@ -79,15 +79,17 @@ def get_param_mappings(
     return mappings
 
 
-# TODO move to docstring
-# To generate bindings either
-# - pass a full function descriptor
-# - pass an annotation_descriptor_hook which receives the annotation and return the FuncParameter/ArrayParameter
-# To postprocess the arguments coming from Fortran
-# - pass a annotation_mapping_hook which receives the annotation and returns a function that takes the ArrayInfo (TODO extend to any descriptor) and ffi
 # Note that the mapping functions are performance relevant and should be cached (not the hook itself)
 @dataclasses.dataclass
 class _DecoratedFunction:
+    """
+    Wraps a function to make it exportable with 'py2fgen'.
+
+    A function is exportable if it provides the attribute 'param_descriptors'.
+
+    See :func:`export` for details.
+    """
+
     _fun: Callable
     annotation_descriptor_hook: Optional[Callable]  # TODO type annotation
     annotation_mapping_hook: Optional[Callable]  # TODO type annotation
@@ -124,6 +126,25 @@ def export(
     annotation_mapping_hook: Optional[Callable] = None,
     param_descriptors: Optional[_definitions.ParamDescriptors] = None,
 ) -> Callable[[Callable], Callable]:
+    """
+    Decorator to mark a function as exportable.
+
+    The standard mechanism for exporting a function is to decorate the function with
+    '@py2fgen.export(param_descriptors=...)'. Where 'ParamDescriptors' is a dictionary
+    that provides a :class:`ParamDescriptor` for each parameter of the function.
+
+    Additionally, the user can provide a hock to fill 'param_descriptors' from the parameters
+    type annotations.
+
+    For runtime processing of a scalar parameter or an 'ArrayInfo', the user can provide a hook
+    which provides a mapping function to translate the parameter to a different type, e.g.
+    to translate 'ArrayInfo' to a NumPy array.
+    Note: The mapping function (not the hook) is called at every invocation of the function,
+    therefore it is recommended to use a cache for the mapping function.
+
+    A default mapping is provided, see :func:`_conversion.default_mapping`.
+    """
+
     # precise typing is difficult (impossible?) since we are manipulating the args
     def impl(fun: Callable) -> Callable:
         return functools.update_wrapper(

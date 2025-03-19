@@ -1,6 +1,6 @@
 import logging
 from grid import ffi
-from icon4py.tools.py2fgen import utils, runtime_config, _runtime, _definitions
+from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
 if __debug__:
     logger = logging.getLogger(__name__)
@@ -448,7 +448,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "cell_starts after computation: %s" % str(
-                    utils.as_array(ffi, cell_starts, _definitions.INT32)
+                    _conversion.as_array(ffi, cell_starts, _definitions.INT32)
                     if cell_starts is not None
                     else "None"
                 )
@@ -459,7 +459,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "cell_ends after computation: %s" % str(
-                    utils.as_array(ffi, cell_ends, _definitions.INT32)
+                    _conversion.as_array(ffi, cell_ends, _definitions.INT32)
                     if cell_ends is not None
                     else "None"
                 )
@@ -470,7 +470,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vertex_starts after computation: %s" % str(
-                    utils.as_array(ffi, vertex_starts, _definitions.INT32)
+                    _conversion.as_array(ffi, vertex_starts, _definitions.INT32)
                     if vertex_starts is not None
                     else "None"
                 )
@@ -481,7 +481,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "vertex_ends after computation: %s" % str(
-                    utils.as_array(ffi, vertex_ends, _definitions.INT32)
+                    _conversion.as_array(ffi, vertex_ends, _definitions.INT32)
                     if vertex_ends is not None
                     else "None"
                 )
@@ -492,7 +492,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "edge_starts after computation: %s" % str(
-                    utils.as_array(ffi, edge_starts, _definitions.INT32)
+                    _conversion.as_array(ffi, edge_starts, _definitions.INT32)
                     if edge_starts is not None
                     else "None"
                 )
@@ -503,7 +503,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "edge_ends after computation: %s" % str(
-                    utils.as_array(ffi, edge_ends, _definitions.INT32)
+                    _conversion.as_array(ffi, edge_ends, _definitions.INT32)
                     if edge_ends is not None
                     else "None"
                 )
@@ -514,7 +514,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "c2e after computation: %s" % str(
-                    utils.as_array(ffi, c2e, _definitions.INT32) if c2e is not None else "None"
+                    _conversion.as_array(ffi, c2e, _definitions.INT32)
+                    if c2e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -523,7 +525,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e2c after computation: %s" % str(
-                    utils.as_array(ffi, e2c, _definitions.INT32) if e2c is not None else "None"
+                    _conversion.as_array(ffi, e2c, _definitions.INT32)
+                    if e2c is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -532,7 +536,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "c2e2c after computation: %s" % str(
-                    utils.as_array(ffi, c2e2c, _definitions.INT32) if c2e2c is not None else "None"
+                    _conversion.as_array(ffi, c2e2c, _definitions.INT32)
+                    if c2e2c is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -541,7 +547,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e2c2e after computation: %s" % str(
-                    utils.as_array(ffi, e2c2e, _definitions.INT32) if e2c2e is not None else "None"
+                    _conversion.as_array(ffi, e2c2e, _definitions.INT32)
+                    if e2c2e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -550,7 +558,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e2v after computation: %s" % str(
-                    utils.as_array(ffi, e2v, _definitions.INT32) if e2v is not None else "None"
+                    _conversion.as_array(ffi, e2v, _definitions.INT32)
+                    if e2v is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -559,7 +569,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "v2e after computation: %s" % str(
-                    utils.as_array(ffi, v2e, _definitions.INT32) if v2e is not None else "None"
+                    _conversion.as_array(ffi, v2e, _definitions.INT32)
+                    if v2e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -568,7 +580,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "v2c after computation: %s" % str(
-                    utils.as_array(ffi, v2c, _definitions.INT32) if v2c is not None else "None"
+                    _conversion.as_array(ffi, v2c, _definitions.INT32)
+                    if v2c is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -577,7 +591,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e2c2v after computation: %s" % str(
-                    utils.as_array(ffi, e2c2v, _definitions.INT32) if e2c2v is not None else "None"
+                    _conversion.as_array(ffi, e2c2v, _definitions.INT32)
+                    if e2c2v is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -586,7 +602,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "c2v after computation: %s" % str(
-                    utils.as_array(ffi, c2v, _definitions.INT32) if c2v is not None else "None"
+                    _conversion.as_array(ffi, c2v, _definitions.INT32)
+                    if c2v is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -595,7 +613,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "c_owner_mask after computation: %s" % str(
-                    utils.as_array(ffi, c_owner_mask, _definitions.BOOL)
+                    _conversion.as_array(ffi, c_owner_mask, _definitions.BOOL)
                     if c_owner_mask is not None
                     else "None"
                 )
@@ -606,7 +624,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e_owner_mask after computation: %s" % str(
-                    utils.as_array(ffi, e_owner_mask, _definitions.BOOL)
+                    _conversion.as_array(ffi, e_owner_mask, _definitions.BOOL)
                     if e_owner_mask is not None
                     else "None"
                 )
@@ -617,7 +635,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "v_owner_mask after computation: %s" % str(
-                    utils.as_array(ffi, v_owner_mask, _definitions.BOOL)
+                    _conversion.as_array(ffi, v_owner_mask, _definitions.BOOL)
                     if v_owner_mask is not None
                     else "None"
                 )
@@ -628,7 +646,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "c_glb_index after computation: %s" % str(
-                    utils.as_array(ffi, c_glb_index, _definitions.INT32)
+                    _conversion.as_array(ffi, c_glb_index, _definitions.INT32)
                     if c_glb_index is not None
                     else "None"
                 )
@@ -639,7 +657,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "e_glb_index after computation: %s" % str(
-                    utils.as_array(ffi, e_glb_index, _definitions.INT32)
+                    _conversion.as_array(ffi, e_glb_index, _definitions.INT32)
                     if e_glb_index is not None
                     else "None"
                 )
@@ -650,7 +668,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "v_glb_index after computation: %s" % str(
-                    utils.as_array(ffi, v_glb_index, _definitions.INT32)
+                    _conversion.as_array(ffi, v_glb_index, _definitions.INT32)
                     if v_glb_index is not None
                     else "None"
                 )
@@ -661,7 +679,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "tangent_orientation after computation: %s" % str(
-                    utils.as_array(ffi, tangent_orientation, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, tangent_orientation, _definitions.FLOAT64)
                     if tangent_orientation is not None
                     else "None"
                 )
@@ -674,7 +692,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "inverse_primal_edge_lengths after computation: %s" % str(
-                    utils.as_array(ffi, inverse_primal_edge_lengths, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, inverse_primal_edge_lengths, _definitions.FLOAT64)
                     if inverse_primal_edge_lengths is not None
                     else "None"
                 )
@@ -685,7 +703,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "inv_dual_edge_length after computation: %s" % str(
-                    utils.as_array(ffi, inv_dual_edge_length, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, inv_dual_edge_length, _definitions.FLOAT64)
                     if inv_dual_edge_length is not None
                     else "None"
                 )
@@ -696,7 +714,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "inv_vert_vert_length after computation: %s" % str(
-                    utils.as_array(ffi, inv_vert_vert_length, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, inv_vert_vert_length, _definitions.FLOAT64)
                     if inv_vert_vert_length is not None
                     else "None"
                 )
@@ -707,7 +725,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "edge_areas after computation: %s" % str(
-                    utils.as_array(ffi, edge_areas, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, edge_areas, _definitions.FLOAT64)
                     if edge_areas is not None
                     else "None"
                 )
@@ -718,7 +736,9 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "f_e after computation: %s" % str(
-                    utils.as_array(ffi, f_e, _definitions.FLOAT64) if f_e is not None else "None"
+                    _conversion.as_array(ffi, f_e, _definitions.FLOAT64)
+                    if f_e is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -727,7 +747,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "cell_center_lat after computation: %s" % str(
-                    utils.as_array(ffi, cell_center_lat, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, cell_center_lat, _definitions.FLOAT64)
                     if cell_center_lat is not None
                     else "None"
                 )
@@ -738,7 +758,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "cell_center_lon after computation: %s" % str(
-                    utils.as_array(ffi, cell_center_lon, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, cell_center_lon, _definitions.FLOAT64)
                     if cell_center_lon is not None
                     else "None"
                 )
@@ -749,7 +769,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "cell_areas after computation: %s" % str(
-                    utils.as_array(ffi, cell_areas, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, cell_areas, _definitions.FLOAT64)
                     if cell_areas is not None
                     else "None"
                 )
@@ -760,7 +780,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "primal_normal_vert_x after computation: %s" % str(
-                    utils.as_array(ffi, primal_normal_vert_x, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, primal_normal_vert_x, _definitions.FLOAT64)
                     if primal_normal_vert_x is not None
                     else "None"
                 )
@@ -771,7 +791,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "primal_normal_vert_y after computation: %s" % str(
-                    utils.as_array(ffi, primal_normal_vert_y, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, primal_normal_vert_y, _definitions.FLOAT64)
                     if primal_normal_vert_y is not None
                     else "None"
                 )
@@ -782,7 +802,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "dual_normal_vert_x after computation: %s" % str(
-                    utils.as_array(ffi, dual_normal_vert_x, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, dual_normal_vert_x, _definitions.FLOAT64)
                     if dual_normal_vert_x is not None
                     else "None"
                 )
@@ -793,7 +813,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "dual_normal_vert_y after computation: %s" % str(
-                    utils.as_array(ffi, dual_normal_vert_y, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, dual_normal_vert_y, _definitions.FLOAT64)
                     if dual_normal_vert_y is not None
                     else "None"
                 )
@@ -804,7 +824,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "primal_normal_cell_x after computation: %s" % str(
-                    utils.as_array(ffi, primal_normal_cell_x, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, primal_normal_cell_x, _definitions.FLOAT64)
                     if primal_normal_cell_x is not None
                     else "None"
                 )
@@ -815,7 +835,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "primal_normal_cell_y after computation: %s" % str(
-                    utils.as_array(ffi, primal_normal_cell_y, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, primal_normal_cell_y, _definitions.FLOAT64)
                     if primal_normal_cell_y is not None
                     else "None"
                 )
@@ -826,7 +846,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "dual_normal_cell_x after computation: %s" % str(
-                    utils.as_array(ffi, dual_normal_cell_x, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, dual_normal_cell_x, _definitions.FLOAT64)
                     if dual_normal_cell_x is not None
                     else "None"
                 )
@@ -837,7 +857,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "dual_normal_cell_y after computation: %s" % str(
-                    utils.as_array(ffi, dual_normal_cell_y, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, dual_normal_cell_y, _definitions.FLOAT64)
                     if dual_normal_cell_y is not None
                     else "None"
                 )
@@ -848,7 +868,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "edge_center_lat after computation: %s" % str(
-                    utils.as_array(ffi, edge_center_lat, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, edge_center_lat, _definitions.FLOAT64)
                     if edge_center_lat is not None
                     else "None"
                 )
@@ -859,7 +879,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "edge_center_lon after computation: %s" % str(
-                    utils.as_array(ffi, edge_center_lon, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, edge_center_lon, _definitions.FLOAT64)
                     if edge_center_lon is not None
                     else "None"
                 )
@@ -870,7 +890,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "primal_normal_x after computation: %s" % str(
-                    utils.as_array(ffi, primal_normal_x, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, primal_normal_x, _definitions.FLOAT64)
                     if primal_normal_x is not None
                     else "None"
                 )
@@ -881,7 +901,7 @@ def grid_init_wrapper(
                 )
                 logger.debug(msg)
                 msg = "primal_normal_y after computation: %s" % str(
-                    utils.as_array(ffi, primal_normal_y, _definitions.FLOAT64)
+                    _conversion.as_array(ffi, primal_normal_y, _definitions.FLOAT64)
                     if primal_normal_y is not None
                     else "None"
                 )

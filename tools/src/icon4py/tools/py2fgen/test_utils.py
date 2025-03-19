@@ -16,6 +16,13 @@ import numpy as np
 from icon4py.tools.py2fgen import _codegen, _definitions
 
 
+"""
+Utilities for testing a py2fgen code.
+
+E.g. constructing 'array_infos' or translating 'array_infos' to arrays.
+"""
+
+
 def to_np_dtype(dtype: _definitions.ScalarKind) -> np.dtype:
     if dtype == _definitions.ScalarKind.INT32:
         return np.dtype(np.int32)
@@ -47,7 +54,7 @@ def from_np_dtype(dtype: np.dtype) -> _definitions.ScalarKind:
         raise ValueError(f"Unsupported dtype: {dtype}")
 
 
-def array_descriptor(
+def array_info(
     ptr: cffi.FFI.CData,
     shape: tuple[int, ...],
     on_gpu: bool,
@@ -56,7 +63,7 @@ def array_descriptor(
     return (ptr, shape, on_gpu, is_optional)
 
 
-def array_to_array_descriptor(
+def array_to_array_info(
     arr: np.ndarray,
     *,
     ffi: Optional[cffi.FFI] = None,
@@ -82,4 +89,4 @@ def array_to_array_descriptor(
     if keep_alive:
         ptr = ffi.gc(ptr, lambda _: nothing(arr))
 
-    return array_descriptor(ptr, arr.shape, False, False)
+    return array_info(ptr, arr.shape, False, False)

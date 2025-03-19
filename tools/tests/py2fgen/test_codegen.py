@@ -12,7 +12,7 @@ import pytest
 
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen._codegen import (
-    CffiPlugin,
+    BindingsLibrary,
     CHeaderGenerator,
     Func,
     as_f90_value,
@@ -75,7 +75,7 @@ bar = Func(
 
 
 def test_cheader_generation_for_single_function():
-    plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[foo])
+    plugin = BindingsLibrary(module_name="libtest", plugin_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
     assert (
@@ -85,7 +85,7 @@ def test_cheader_generation_for_single_function():
 
 
 def test_cheader_for_pointer_args():
-    plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[bar])
+    plugin = BindingsLibrary(module_name="libtest", plugin_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
     assert (
@@ -109,7 +109,7 @@ def compare_ignore_whitespace(actual: str, expected: str):
 
 @pytest.fixture
 def dummy_plugin():
-    return CffiPlugin(
+    return BindingsLibrary(
         module_name="libtest",
         plugin_name="libtest_plugin",
         functions=[foo, bar],
@@ -256,7 +256,7 @@ def test_python_wrapper(dummy_plugin):
     interface = generate_python_wrapper(dummy_plugin)
     expected = """import logging
 from libtest_plugin import ffi
-from icon4py.tools.py2fgen import utils, runtime_config, _runtime, _definitions
+from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
 if __debug__:
     logger = logging.getLogger(__name__)
@@ -333,7 +333,9 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
                 )
                 logger.debug(msg)
                 msg = "two after computation: %s" % str(
-                    utils.as_array(ffi, two, _definitions.FLOAT64) if two is not None else "None"
+                    _conversion.as_array(ffi, two, _definitions.FLOAT64)
+                    if two is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
@@ -407,7 +409,9 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
                 )
                 logger.debug(msg)
                 msg = "one after computation: %s" % str(
-                    utils.as_array(ffi, one, _definitions.FLOAT32) if one is not None else "None"
+                    _conversion.as_array(ffi, one, _definitions.FLOAT32)
+                    if one is not None
+                    else "None"
                 )
                 logger.debug(msg)
 
