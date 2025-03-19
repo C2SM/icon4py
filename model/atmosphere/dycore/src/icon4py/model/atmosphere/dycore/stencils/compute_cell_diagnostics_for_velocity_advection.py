@@ -6,8 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import astype, broadcast, where
+from gt4py.next.ffront.fbuiltins import astype, broadcast, maximum, where
 
+from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
+)
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
@@ -87,12 +90,19 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[vpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    vcfl: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    cfl_w_limit: vpfloat,
+    dtime: wpfloat,
     k: fa.KField[gtx.int32],
+    end_index_of_damping_layer: gtx.int32,
     nflatlev: gtx.int32,
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -130,6 +140,18 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+        ddqz_z_half,
+        z_w_con_c,
+        cfl_w_limit,
+        dtime,
+        out=(cfl_clipping, vcfl, z_w_con_c),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),  # possibly protect with boundary4
+            dims.KDim: (maximum(3, end_index_of_damping_layer - 2) - 1, vertical_end - 3),
         },
     )
 
