@@ -1223,7 +1223,7 @@ def test_run_solve_nonhydro_1_to_13_predictor(
         end_cell_halo_level_2=end_cell_halo_level_2,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=3,
+        vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={
             "Koff": dims.KDim,
@@ -1232,29 +1232,29 @@ def test_run_solve_nonhydro_1_to_13_predictor(
     lb = start_cell_lateral_boundary_level_3
 
     assert helpers.dallclose(
-        z_rth_pr_1.asnumpy()[lb:, nflatlev:], z_rth_pr_1_ref.asnumpy()[lb:, nflatlev:]
+        z_rth_pr_1.asnumpy()[lb:, ], z_rth_pr_1_ref.asnumpy()[lb:, ]
     )
     assert helpers.dallclose(
-        z_rth_pr_2.asnumpy()[lb:, nflatlev:], z_rth_pr_2_ref.asnumpy()[lb:, nflatlev:]
+        z_rth_pr_2.asnumpy()[lb:, ], z_rth_pr_2_ref.asnumpy()[lb:, ]
     )
     assert helpers.dallclose(
-        z_exner_ex_pr.asnumpy()[lb:, nflatlev:], z_exner_ex_pr_ref.asnumpy()[lb:, nflatlev:]
+        z_exner_ex_pr.asnumpy()[lb:, ], z_exner_ex_pr_ref.asnumpy()[lb:, ]
     )
     assert helpers.dallclose(
-        exner_pr.asnumpy()[lb:, nflatlev:], exner_pr_ref.asnumpy()[lb:, nflatlev:]
+        exner_pr.asnumpy()[lb:, ], exner_pr_ref.asnumpy()[lb:, ]
     )
-    assert helpers.dallclose(rho_ic.asnumpy()[lb:, nflatlev:], rho_ic_ref.asnumpy()[lb:, nflatlev:])
+    assert helpers.dallclose(rho_ic.asnumpy()[lb:, ], rho_ic_ref.asnumpy()[lb:, ])
 
     assert helpers.dallclose(
-        z_exner_ic.asnumpy()[lb : icon_grid.num_levels, nflatlev:],
-        z_exner_ic_ref.asnumpy()[lb : icon_grid.num_levels, nflatlev:],
+        z_exner_ic.asnumpy()[lb : icon_grid.num_levels, ],
+        z_exner_ic_ref.asnumpy()[lb : icon_grid.num_levels, ],
     )
 
     assert helpers.dallclose(
-        z_theta_v_pr_ic.asnumpy()[lb:, nflatlev:], z_theta_v_pr_ic_ref.asnumpy()[lb:, nflatlev:]
+        z_theta_v_pr_ic.asnumpy()[lb:, ], z_theta_v_pr_ic_ref.asnumpy()[lb:, ]
     )
     assert helpers.dallclose(
-        theta_v_ic.asnumpy()[lb:, nflatlev:], theta_v_ic_ref.asnumpy()[lb:, nflatlev:]
+        theta_v_ic.asnumpy()[lb:, ], theta_v_ic_ref.asnumpy()[lb:, ]
     )
     assert helpers.dallclose(
         z_dexner_dz_c_1.asnumpy()[lb:, nflatlev:],
