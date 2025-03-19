@@ -44,27 +44,36 @@ def _compute_advection_in_horizontal_momentum_equation(
     d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
     k: fa.KField[gtx.int32],
+    edge: fa.EdgeField[gtx.int32],
     nlev: gtx.int32,
     nrdmax: gtx.int32,
+    start_edge_nudging_level_2: gtx.int32,
+    end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
     upward_vorticity_at_vertices_on_model_levels = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
 
-    normal_wind_advective_tendency = _compute_advective_normal_wind_tendency(
-        horizontal_kinetic_energy_at_edges_on_model_levels,
-        coeff_gradekin,
-        horizontal_kinetic_energy_at_cells_on_model_levels,
-        upward_vorticity_at_vertices_on_model_levels,
-        tangential_wind,
-        coriolis_frequency,
-        c_lin_e,
-        contravariant_corrected_w_at_cells_on_model_levels,
-        vn_on_half_levels,
-        ddqz_z_full_e,
+    # TODO(havogt): start_edge_nudging_level_2 <= edge < end_edge_local, this is just to protect halo lines
+    normal_wind_advective_tendency = where(
+        start_edge_nudging_level_2 <= edge < end_edge_local,
+        _compute_advective_normal_wind_tendency(
+            horizontal_kinetic_energy_at_edges_on_model_levels,
+            coeff_gradekin,
+            horizontal_kinetic_energy_at_cells_on_model_levels,
+            upward_vorticity_at_vertices_on_model_levels,
+            tangential_wind,
+            coriolis_frequency,
+            c_lin_e,
+            contravariant_corrected_w_at_cells_on_model_levels,
+            vn_on_half_levels,
+            ddqz_z_full_e,
+        ),
+        normal_wind_advective_tendency,
     )
 
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
     normal_wind_advective_tendency = where(
-        ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 4),
+        (start_edge_nudging_level_2 <= edge < end_edge_local)
+        & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 4),
         _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask,
             c_lin_e,
@@ -109,8 +118,11 @@ def compute_advection_in_horizontal_momentum_equation(
     d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
     k: fa.KField[gtx.int32],
+    edge: fa.EdgeField[gtx.int32],
     nlev: gtx.int32,
     nrdmax: gtx.int32,
+    start_edge_nudging_level_2: gtx.int32,
+    end_edge_local: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -140,8 +152,11 @@ def compute_advection_in_horizontal_momentum_equation(
         d_time,
         levelmask,
         k,
+        edge,
         nlev,
         nrdmax,
+        start_edge_nudging_level_2,
+        end_edge_local,
         out=normal_wind_advective_tendency,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
