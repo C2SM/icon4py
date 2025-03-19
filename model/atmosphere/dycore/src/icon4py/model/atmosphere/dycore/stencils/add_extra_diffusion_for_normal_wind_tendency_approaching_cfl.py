@@ -23,14 +23,12 @@ from icon4py.model.common.dimension import (
     E2V,
     E2C2EODim,
     E2CDim,
-    Koff,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-    levelmask: fa.KField[bool],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
     z_w_con_c_full: fa.CellKField[ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
@@ -71,7 +69,6 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
     z_w_con_c_full: fa.CellKField[ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
@@ -91,7 +88,6 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     vertical_end: gtx.int32,
 ):
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-        levelmask,
         c_lin_e,
         z_w_con_c_full,
         ddqz_z_full_e,

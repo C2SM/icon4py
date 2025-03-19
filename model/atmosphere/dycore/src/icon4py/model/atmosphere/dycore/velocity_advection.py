@@ -282,11 +282,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        # TODO(havogt): can we move this to the end?
-        xp = data_alloc.import_array_ns(self._backend)
-        levmask = gtx.as_field(
-            domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
-        )
+        # TODO(havogt): level_mask was removed, need to check if the condition is still valid
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
             vn=prognostic_state.vn,
@@ -307,7 +303,6 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             d_time=dtime,
-            levelmask=levmask,  # TODO(havogt): can we get rid of the levelmask here?
             k=self.k_field,
             edge=self.edge_field,
             nlev=self.grid.num_levels,
@@ -429,12 +424,6 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        # TODO(havogt): can we move this to the end?
-        xp = data_alloc.import_array_ns(self._backend)
-        levmask = gtx.as_field(
-            domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
-        )
-
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
             vn=prognostic_state.vn,
@@ -455,7 +444,6 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             d_time=dtime,
-            levelmask=levmask,  # TODO(havogt): can we get rid of the levelmask here?
             k=self.k_field,
             edge=self.edge_field,
             nlev=self.grid.num_levels,

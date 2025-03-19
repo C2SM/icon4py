@@ -1035,7 +1035,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
         savepoint_compute_advection_in_horizontal_momentum_equation_init.z_w_con_c_full()
     )
     vn_on_half_levels = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn_ie()
-    levelmask = savepoint_compute_advection_in_horizontal_momentum_equation_init.levelmask()
     normal_wind_advective_tendency = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.ddt_vn_apc()
     )
@@ -1080,7 +1079,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
         coeff_gradekin=coeff_gradekin,
         c_lin_e=c_lin_e,
         ddqz_z_full_e=ddqz_z_full_e,
-        levelmask=levelmask,
         area_edge=area_edge,
         tangent_orientation=tangent_orientation,
         inv_primal_edge_length=inv_primal_edge_length,

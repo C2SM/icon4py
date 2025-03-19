@@ -42,7 +42,6 @@ def _compute_advection_in_horizontal_momentum_equation(
     cfl_w_limit: ta.vpfloat,
     scalfac_exdiff: ta.wpfloat,
     d_time: ta.wpfloat,
-    levelmask: fa.KField[bool],
     k: fa.KField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
     nlev: gtx.int32,
@@ -75,7 +74,6 @@ def _compute_advection_in_horizontal_momentum_equation(
         (start_edge_nudging_level_2 <= edge < end_edge_local)
         & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 4),
         _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-            levelmask,
             c_lin_e,
             contravariant_corrected_w_at_cells_on_model_levels,
             ddqz_z_full_e,
@@ -116,7 +114,6 @@ def compute_advection_in_horizontal_momentum_equation(
     cfl_w_limit: ta.vpfloat,
     scalfac_exdiff: ta.wpfloat,
     d_time: ta.wpfloat,
-    levelmask: fa.KField[bool],
     k: fa.KField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
     nlev: gtx.int32,
@@ -150,7 +147,6 @@ def compute_advection_in_horizontal_momentum_equation(
         cfl_w_limit,
         scalfac_exdiff,
         d_time,
-        levelmask,
         k,
         edge,
         nlev,
