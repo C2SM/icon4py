@@ -255,7 +255,7 @@ class PrecomputedFieldProvider(FieldProvider):
         return lambda: self.fields
 
 
-class FieldOperatorProvider(FieldProvider):
+class EmbeddedFieldOperatorProvider(FieldProvider):
     """Provider that calls a GT4Py Fieldoperator.
 
     # TODO (@halungge) for now to be used only on FieldView Embedded GT4Py backend.
@@ -312,7 +312,9 @@ class FieldOperatorProvider(FieldProvider):
         # allocate output buffer
         compute_backend = self._func.backend
         log.info(
-            f"computing {self._func.__name__}: compute backend is: {data_alloc.backend_name(compute_backend)}, target backend is: {data_alloc.backend_name(factory.backend)}"
+            f"computing {self._func.__name__}: compute backend is: "
+            f"{data_alloc.backend_name(compute_backend)}, target backend is: "
+            f"{data_alloc.backend_name(factory.backend)}"
         )
         try:
             metadata = {k: factory.get(k, RetrievalType.METADATA) for k, v in self._output.items()}
@@ -321,7 +323,7 @@ class FieldOperatorProvider(FieldProvider):
             dtype = ta.wpfloat
         self._fields = self._allocate(compute_backend, grid_provider, dtype=dtype)
         # call field operator
-        log.debug(f"transfering dependencies to compute backend: {self._dependencies.keys()}")
+        log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
         deps = {
             k: data_alloc.as_field(factory.get(v), backend=compute_backend)
@@ -336,7 +338,8 @@ class FieldOperatorProvider(FieldProvider):
         # transfer to target backend, the fields might have been computed on a compute backend
         for k, v in self._fields.items():
             log.debug(
-                f"transfering result {k} to target backend: {data_alloc.backend_name(factory.backend)}"
+                f"transfering result {k} to target backend: "
+                f"{data_alloc.backend_name(factory.backend)}"
             )
             self._fields[k] = data_alloc.as_field(v, backend=factory.backend)
 

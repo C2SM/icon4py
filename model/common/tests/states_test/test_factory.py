@@ -113,7 +113,7 @@ def test_field_operator_provider(cell_coordinate_source):
     deps = {"lat": "lat", "lon": "lon"}
     fields = {"x": "x", "y": "y", "z": "z"}
 
-    provider = factory.FieldOperatorProvider(field_op, domain, fields, deps)
+    provider = factory.EmbeddedFieldOperatorProvider(field_op, domain, fields, deps)
     provider("x", cell_coordinate_source, cell_coordinate_source.backend, cell_coordinate_source)
     x = provider.fields["x"]
     assert isinstance(x, gtx.Field)
