@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, maximum, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast, maximum
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     _add_extra_diffusion_for_w_con_approaching_cfl,
@@ -51,15 +52,15 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
 
     # TODO(havogt): we should get rid of the cell_lower_bound and cell_upper_bound,
     # they are only to protect write to halo (if I understand correctly)
-    vertical_wind_advective_tendency = where(
-        (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
+    vertical_wind_advective_tendency = concat_where(
+        (cell_lower_bound <= dims.CellDim < cell_upper_bound) & (1 <= dims.KDim),
         _compute_advective_vertical_wind_tendency(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
         ),
         vertical_wind_advective_tendency,
     )
-    vertical_wind_advective_tendency = where(
-        (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
+    vertical_wind_advective_tendency = concat_where(
+        (cell_lower_bound <= dims.CellDim < cell_upper_bound) & (1 <= dims.KDim),
         _add_interpolated_horizontal_advection_of_w(
             e_bln_c_s,
             horizontal_advection_of_w_at_edges_on_half_levels,
@@ -67,9 +68,9 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
         ),
         vertical_wind_advective_tendency,
     )
-    vertical_wind_advective_tendency = where(
-        (cell_lower_bound <= cell < cell_upper_bound)
-        & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 3),
+    vertical_wind_advective_tendency = concat_where(
+        (cell_lower_bound <= dims.CellDim < cell_upper_bound)
+        & ((maximum(3, nrdmax - 2) - 1) <= dims.KDim < nlev - 3),
         _add_extra_diffusion_for_w_con_approaching_cfl(
             cfl_clipping,
             owner_mask,
