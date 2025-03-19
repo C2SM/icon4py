@@ -64,7 +64,6 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
         contravariant_correction_at_cells_on_half_levels,
     )
 
-    # possibly protect with boundary4 in horizontal
     cfl_clipping, vcfl, z_w_con_c = where(
         maximum(3, end_index_of_damping_layer - 2) - 1 <= k < nlevp1 - 1 - 3,
         _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
@@ -180,6 +179,19 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, nlevp1),
+        },
+    )
+
+    # TODO remove
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+        ddqz_z_half,
+        z_w_con_c,
+        cfl_w_limit,
+        dtime,
+        out=(cfl_clipping, vcfl, z_w_con_c),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),  # possibly protect with boundary4
+            dims.KDim: (maximum(3, end_index_of_damping_layer - 2) - 1, nlevp1 - 1 - 3),
         },
     )
 
