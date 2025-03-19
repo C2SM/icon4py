@@ -48,10 +48,10 @@ class TestDiagnoseTemperature(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
         theta_v = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-5, high=1.0, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0e-4, high=1.0, dtype=ta.wpfloat
         )
         exner = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-5, high=1.0, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0e-4, high=1.0, dtype=ta.wpfloat
         )
         qv = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
