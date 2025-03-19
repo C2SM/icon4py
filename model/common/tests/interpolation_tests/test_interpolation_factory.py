@@ -230,13 +230,14 @@ def test_get_mass_conserving_cell_average_weight(
 
 ## FIXME: does not validate
 #   -> connectivity order between reference from serialbox and computed value is different
+## TODO (@halungge) rtol is from parametrization is overwritten in assert - function is most probably wrong
+#  TODO (@halungge) global grid is not tested
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
     ],
 )
-@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.e_flx_avg()
@@ -290,7 +291,6 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
-@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.c_intp()
