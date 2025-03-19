@@ -322,19 +322,23 @@ class FieldOperatorProvider(FieldProvider):
         self._fields = self._allocate(compute_backend, grid_provider, dtype=dtype)
         # call field operator
         log.debug(f"transfering dependencies to compute backend: {self._dependencies.keys()}")
-    
+
         deps = {
             k: data_alloc.as_field(factory.get(v), backend=compute_backend)
             for k, v in self._dependencies.items()
         }
 
-        providers = {k: _provider_on_backend(v, compute_backend) for k, v in self._get_offset_providers(grid_provider.grid).items()}        
-        out_fields = self._unravel_output_fields()
-
-        self._func(**deps, out=out_fields, offset_provider=providers)
+        providers = {
+            k: _provider_on_backend(v, compute_backend)
+            for k, v in self._get_offset_providers(grid_provider.grid).items()
+        }
+        self._func(**deps, out=self._unravel_output_fields(), offset_provider=providers)
         # transfer to target backend, the fields might have been computed on a compute backend
-        for f in self._fields.values():
-            data_alloc.as_field(f, backend=factory.backend)
+        for k, v in self._fields.items():
+            log.debug(
+                f"transfering result {k} to target backend: {data_alloc.backend_name(factory.backend)}"
+            )
+            self._fields[k] = data_alloc.as_field(v, backend=factory.backend)
 
     def _unravel_output_fields(self):
         out_fields = tuple(self._fields.values())
@@ -667,8 +671,10 @@ def _func_name(callable_: Callable[..., Any]) -> str:
 def _provider_on_backend(
     provider: gtx.NeighborTableOffsetProvider, backend: Optional[gtx_backend.Backend]
 ) -> gtx.NeighborTableOffsetProvider:
-    table=data_alloc.to_backend(provider.table, backend)
-    log.debug(f"transfering offset provider {provider} to compute backend: {data_alloc.backend_name(backend)}")
+    table = data_alloc.to_backend(provider.table, backend)
+    log.debug(
+        f"transfering offset provider {provider} to compute backend: {data_alloc.backend_name(backend)}"
+    )
     return gtx.NeighborTableOffsetProvider(
         table=table,
         neighbor_axis=provider.neighbor_axis,

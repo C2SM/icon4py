@@ -65,8 +65,7 @@ def get_metrics_factory(
     backend, experiment, grid_file, grid_savepoint, metrics_savepoint
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment, data_alloc.backend_name(backend)))
-    factory = metrics_factories.get(    registry_name = "_".join((experiment, backend_name))
-)
+    factory = metrics_factories.get(registry_name)
 
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
@@ -115,7 +114,7 @@ def get_metrics_factory(
             exner_expol=exner_expol,
             vwind_offctr=vwind_offctr,
         )
-        metrics_factories[name] = factory
+        metrics_factories[registry_name] = factory
     return factory
 
 

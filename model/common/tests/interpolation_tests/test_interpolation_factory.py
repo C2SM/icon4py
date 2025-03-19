@@ -8,14 +8,15 @@
 import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
+
 import icon4py.model.common.states.factory as factory
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -73,7 +74,7 @@ def test_get_c_lin_e(interpolation_savepoint, grid_file, experiment, backend, rt
 
 
 def get_interpolation_factory(
-    backend: gtx_backend.Backend|None, experiment:str, grid_file:str
+    backend: gtx_backend.Backend | None, experiment: str, grid_file: str
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = "_".join((experiment, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
@@ -182,7 +183,6 @@ def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend,
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend):
     field_ref = interpolation_savepoint.geofac_grg()

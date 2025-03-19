@@ -21,7 +21,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils, helpers
+from icon4py.model.testing import data_handling, datatest_utils as dt_utils
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -136,7 +136,7 @@ def get_grid_geometry(
     xp = data_alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
     register_name = "_".join((experiment, data_alloc.backend_name(backend)))
-    
+
     def consruct_dummy_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):
             indices = data_alloc.index_field(grid, dim, backend=backend)

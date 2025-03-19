@@ -41,8 +41,10 @@ except ImportError:
 NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
 
+
 def backend_name(backend: gtx_backend.Backend | None) -> str:
     return "embedded" if backend is None else backend.name
+
 
 def as_numpy(array: NDArrayInterface) -> np.ndarray:
     if isinstance(array, np.ndarray):
@@ -92,8 +94,6 @@ def import_array_ns(backend: Optional[gtx_backend.Backend]):
 def as_field(field: gtx.Field, backend: Optional[gtx_backend.Backend] = None) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     data = to_backend(field.ndarray, backend)
-    
-    #device = gtx_core_defs.Device(gtx_core_defs.DeviceType.CPU, device_id=0) if backend is None else backend.allocator.__gt_device_type__
     return gtx.as_field(field.domain, data=data, allocator=backend)
 
 
