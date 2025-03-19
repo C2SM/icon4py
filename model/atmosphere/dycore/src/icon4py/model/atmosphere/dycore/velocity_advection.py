@@ -235,7 +235,7 @@ class VelocityAdvection:
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
+            nlevp1=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
         )
 

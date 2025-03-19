@@ -31,9 +31,18 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    cfl_w_limit: vpfloat,
+    dtime: wpfloat,
     k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
+    nlevp1: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
 ) -> tuple[
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[bool],
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
@@ -55,9 +64,28 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
         contravariant_correction_at_cells_on_half_levels,
     )
 
+    # possibly protect with boundary4 in horizontal
+    cfl_clipping, vcfl, z_w_con_c = where(
+        maximum(3, end_index_of_damping_layer - 2) <= k < nlevp1 - 1 - 3,
+        _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+            ddqz_z_half,
+            z_w_con_c,
+            cfl_w_limit,
+            dtime,
+        ),
+        (
+            broadcast(False, (dims.CellDim, dims.KDim)),
+            broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            z_w_con_c,
+        ),
+    )
+
     return (
         horizontal_kinetic_energy_at_cells_on_model_levels,
         contravariant_correction_at_cells_on_half_levels,
+        cfl_clipping,
+        vcfl,
+        z_w_con_c,
     )
 
 
@@ -108,7 +136,7 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
+    nlevp1: gtx.int32,
 ):
     """Formerly known as fused_velocity_advection_stencil_8_to_13_predictor."""
 
@@ -118,15 +146,24 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
         contravariant_correction_at_edges_on_model_levels,
         wgtfac_c,
         contravariant_correction_at_cells_on_half_levels,
+        z_w_con_c,
+        ddqz_z_half,
+        cfl_w_limit,
+        dtime,
         k,
         nflatlev,
+        nlevp1,
+        end_index_of_damping_layer,
         out=(
             horizontal_kinetic_energy_at_cells_on_model_levels,
             contravariant_correction_at_cells_on_half_levels,
+            cfl_clipping,
+            vcfl,
+            z_w_con_c,
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (vertical_start, nlevp1 - 1),
         },
     )
 
@@ -139,19 +176,7 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
         out=contravariant_corrected_w_at_cells_on_half_levels,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-        ddqz_z_half,
-        z_w_con_c,
-        cfl_w_limit,
-        dtime,
-        out=(cfl_clipping, vcfl, z_w_con_c),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),  # possibly protect with boundary4
-            dims.KDim: (maximum(3, end_index_of_damping_layer - 2) - 1, vertical_end - 3),
+            dims.KDim: (vertical_start, nlevp1),
         },
     )
 
