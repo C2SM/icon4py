@@ -66,7 +66,7 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
 
     # possibly protect with boundary4 in horizontal
     cfl_clipping, vcfl, z_w_con_c = where(
-        maximum(3, end_index_of_damping_layer - 2) <= k < nlevp1 - 1 - 3,
+        maximum(3, end_index_of_damping_layer - 2) - 1 <= k < nlevp1 - 1 - 3,
         _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half,
             z_w_con_c,
@@ -167,6 +167,9 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
         },
     )
 
+    # TODO unfortunately we need this field `contravariant_corrected_w_at_cells_on_half_levels`
+    # fully computed for inlining into _compute_advection_in_vertical_momentum_equation
+    # maybe we should inline this computation, but only write up to nlev, then compute the extra level here
     _compute_contravariant_corrected_w(
         w,
         contravariant_correction_at_cells_on_half_levels,
