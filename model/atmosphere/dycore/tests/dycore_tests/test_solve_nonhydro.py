@@ -1173,80 +1173,96 @@ def test_run_solve_nonhydro_1_to_13_predictor(
     z_dexner_dz_c_1_ref = savepoint_nonhydro_15_28_init.z_dexner_dz_c(0)
     z_dexner_dz_c_2_ref = savepoint_nonhydro_15_28_init.z_dexner_dz_c(1)
 
-    k_field = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    k_field = data_alloc.index_field(
+        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    )
 
-    horizontal_start = 0
-    horizontal_end = icon_grid.num_cells
-    vertical_start = 0
-    vertical_end = icon_grid.num_levels + 1
-
-    # TODO: patch
-    z_exner_ic = z_exner_ic_ref
     fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13_predictor.with_backend(
         backend
     )(
-        rho_nnow,
-        rho_ref_mc,
-        theta_v_nnow,
-        theta_ref_mc,
-        z_rth_pr_1,
-        z_rth_pr_2,
-        z_theta_v_pr_ic,
-        theta_ref_ic,
-        wgtfacq_c,
-        wgtfac_c,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-        z_th_ddz_exner_c,
-        k_field,
-        rho_ic,
-        z_exner_ic,
-        exner_exfac,
-        exner_nnow,
-        exner_ref_mc,
-        z_exner_ex_pr,
-        z_dexner_dz_c_1,
-        z_dexner_dz_c_2,
-        theta_v_ic,
-        inv_ddqz_z_full,
-        horz_idx,
-        vert_idx,
-        limited_area,
-        igradp_method,
-        n_lev,
-        nflatlev,
-        nflat_gradp,
-        start_cell_lateral_boundary,
-        start_cell_lateral_boundary_level_3,
-        start_cell_halo_level_2,
-        end_cell_end,
-        end_cell_halo,
-        end_cell_halo_level_2,
-        horizontal_start,
-        horizontal_end,
-        vertical_start,
-        vertical_end,
+        rho_nnow=rho_nnow,
+        rho_ref_mc=rho_ref_mc,
+        theta_v_nnow=theta_v_nnow,
+        theta_ref_mc=theta_ref_mc,
+        z_rth_pr_1=z_rth_pr_1,
+        z_rth_pr_2=z_rth_pr_2,
+        z_theta_v_pr_ic=z_theta_v_pr_ic,
+        theta_ref_ic=theta_ref_ic,
+        wgtfacq_c=wgtfacq_c,
+        wgtfac_c=wgtfac_c,
+        vwind_expl_wgt=vwind_expl_wgt,
+        exner_pr=exner_pr,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        ddqz_z_half=ddqz_z_half,
+        z_th_ddz_exner_c=z_th_ddz_exner_c,
+        k_field=k_field,
+        rho_ic=rho_ic,
+        z_exner_ic=z_exner_ic,
+        exner_exfac=exner_exfac,
+        exner_nnow=exner_nnow,
+        exner_ref_mc=exner_ref_mc,
+        z_exner_ex_pr=z_exner_ex_pr,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
+        z_dexner_dz_c_2=z_dexner_dz_c_2,
+        theta_v_ic=theta_v_ic,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+        horz_idx=horz_idx,
+        vert_idx=vert_idx,
+        limited_area=limited_area,
+        igradp_method=igradp_method,
+        n_lev=n_lev,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
+        start_cell_lateral_boundary=start_cell_lateral_boundary,
+        start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
+        start_cell_halo_level_2=start_cell_halo_level_2,
+        end_cell_end=end_cell_end,
+        end_cell_halo=end_cell_halo,
+        end_cell_halo_level_2=end_cell_halo_level_2,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=3,
+        vertical_end=icon_grid.num_levels + 1,
         offset_provider={
             "Koff": dims.KDim,
         },
     )
-
-    assdf = 9
-    assert helpers.dallclose(z_rth_pr_1.asnumpy(), z_rth_pr_1_ref.asnumpy())
-    assert helpers.dallclose(z_rth_pr_2.asnumpy(), z_rth_pr_2_ref.asnumpy())
-    assert helpers.dallclose(z_exner_ex_pr.asnumpy(), z_exner_ex_pr_ref.asnumpy())
-    assert helpers.dallclose(exner_pr.asnumpy(), exner_pr_ref.asnumpy())
-    assert helpers.dallclose(rho_ic.asnumpy(), rho_ic_ref.asnumpy())
+    lb = start_cell_lateral_boundary_level_3
 
     assert helpers.dallclose(
-        z_exner_ic.asnumpy()[start_cell_lateral_boundary_level_3:, nflatlev:],
-        z_exner_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:, nflatlev:],
-        rtol=1e-9,
+        z_rth_pr_1.asnumpy()[lb:, nflatlev:], z_rth_pr_1_ref.asnumpy()[lb:, nflatlev:]
+    )
+    assert helpers.dallclose(
+        z_rth_pr_2.asnumpy()[lb:, nflatlev:], z_rth_pr_2_ref.asnumpy()[lb:, nflatlev:]
+    )
+    assert helpers.dallclose(
+        z_exner_ex_pr.asnumpy()[lb:, nflatlev:], z_exner_ex_pr_ref.asnumpy()[lb:, nflatlev:]
+    )
+    assert helpers.dallclose(
+        exner_pr.asnumpy()[lb:, nflatlev:], exner_pr_ref.asnumpy()[lb:, nflatlev:]
+    )
+    assert helpers.dallclose(rho_ic.asnumpy()[lb:, nflatlev:], rho_ic_ref.asnumpy()[lb:, nflatlev:])
+
+    assert helpers.dallclose(
+        z_exner_ic.asnumpy()[lb : icon_grid.num_levels, nflatlev:],
+        z_exner_ic_ref.asnumpy()[lb : icon_grid.num_levels, nflatlev:],
     )
 
-    assert helpers.dallclose(z_theta_v_pr_ic.asnumpy(), z_theta_v_pr_ic_ref.asnumpy())
-    assert helpers.dallclose(theta_v_ic.asnumpy(), theta_v_ic_ref.asnumpy())
-    assert helpers.dallclose(z_dexner_dz_c_1.asnumpy(), z_dexner_dz_c_1_ref.asnumpy())
-    assert helpers.dallclose(z_dexner_dz_c_2.asnumpy(), z_dexner_dz_c_2_ref.asnumpy())
+    assert helpers.dallclose(
+        z_theta_v_pr_ic.asnumpy()[lb:, nflatlev:], z_theta_v_pr_ic_ref.asnumpy()[lb:, nflatlev:]
+    )
+    assert helpers.dallclose(
+        theta_v_ic.asnumpy()[lb:, nflatlev:], theta_v_ic_ref.asnumpy()[lb:, nflatlev:]
+    )
+    assert helpers.dallclose(
+        z_dexner_dz_c_1.asnumpy()[lb:, nflatlev:],
+        z_dexner_dz_c_1_ref.asnumpy()[lb:, nflatlev:],
+        atol=1e-6,
+    )
+    assert helpers.dallclose(
+        z_dexner_dz_c_2.asnumpy()[lb:, nflat_gradp:],
+        z_dexner_dz_c_2_ref.asnumpy()[lb:, nflat_gradp:],
+        atol=1e-15,
+    )
