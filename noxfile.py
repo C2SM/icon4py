@@ -81,11 +81,11 @@ def bencher_baseline(session: nox.Session) -> None:
         --err \
         --file pytest_benchmark_results_{session.python}.json".split(),
         env={
-            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),
+            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_BRANCH": "main",
             "BENCHER_TESTBED": f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}",
             "BENCHER_ADAPTER": "python_pytest",
-            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),
+            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
         },
         external=True,
