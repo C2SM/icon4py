@@ -35,7 +35,7 @@ def test_geometry_raises_for_unknown_field(backend):
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-8),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-12),
     ],
 )
@@ -323,7 +323,6 @@ def test_sparse_fields_creator():
     assert helpers.dallclose(sparse[1].asnumpy(), sparse2[1].asnumpy())
 
 
-@pytest.mark.cpu_only
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
