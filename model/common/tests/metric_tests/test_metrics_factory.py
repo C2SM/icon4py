@@ -373,6 +373,7 @@ def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, exper
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
+@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_factory_pg_edgeidx_dsl(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.pg_edgeidx_dsl()

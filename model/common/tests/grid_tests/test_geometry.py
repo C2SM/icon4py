@@ -323,6 +323,7 @@ def test_sparse_fields_creator():
     assert helpers.dallclose(sparse[1].asnumpy(), sparse2[1].asnumpy())
 
 
+@pytest.mark.cpu_only
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
