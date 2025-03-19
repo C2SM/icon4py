@@ -240,21 +240,21 @@ class VelocityAdvection:
         )
 
         # TODO most likely this should be inlined into the next function
-        self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-            ddqz_z_half=self.metric_state.ddqz_z_half,
-            z_w_con_c=self._contravariant_corrected_w_at_cells_on_half_levels,
-            cfl_clipping=self.cfl_clipping,
-            vcfl=self.vcfl_dsl,
-            cfl_w_limit=cfl_w_limit,
-            dtime=dtime,
-            horizontal_start=self._start_cell_lateral_boundary_level_4,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=gtx.int32(
-                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
-            ),
-            vertical_end=gtx.int32(self.grid.num_levels - 3),
-            offset_provider={},
-        )
+        # self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+        #     ddqz_z_half=self.metric_state.ddqz_z_half,
+        #     z_w_con_c=self._contravariant_corrected_w_at_cells_on_half_levels,
+        #     cfl_clipping=self.cfl_clipping,
+        #     vcfl=self.vcfl_dsl,
+        #     cfl_w_limit=cfl_w_limit,
+        #     dtime=dtime,
+        #     horizontal_start=self._start_cell_lateral_boundary_level_4,
+        #     horizontal_end=self._end_cell_halo,
+        #     vertical_start=gtx.int32(
+        #         max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+        #     ),
+        #     vertical_end=gtx.int32(self.grid.num_levels - 3),
+        #     offset_provider={},
+        # )
 
         # note level_mask removed, because all accesses where additionally checking cfl_clipping
         # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditons
