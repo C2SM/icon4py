@@ -12,11 +12,11 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
-    interpolate_to_cell_center,
-)
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
+    interpolate_to_cell_center,
+)
 from icon4py.model.testing import helpers
 
 

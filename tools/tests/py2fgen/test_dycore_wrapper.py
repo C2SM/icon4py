@@ -23,8 +23,12 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.tools.py2fgen import settings as py2fgen_settings
-from icon4py.tools.py2fgen.wrappers import dycore_wrapper, grid_wrapper, wrapper_dimension as w_dim
+from icon4py.tools.py2fgen.wrappers import (
+    common as wrapper_common,
+    dycore_wrapper,
+    grid_wrapper,
+    wrapper_dimension as w_dim,
+)
 
 from . import utils
 
@@ -238,10 +242,6 @@ def test_dycore_wrapper_granule_inputs(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
-    # global grid params
-    global_root = 4
-    global_level = 9
-
     # --- Granule input parameters for dycore run
     initial_divdamp_fac = sp.divdamp_fac_o2()
 
@@ -366,6 +366,9 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        tangential_wind=sp.vt(),
+        vn_on_half_levels=sp.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -376,11 +379,12 @@ def test_dycore_wrapper_granule_inputs(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)),
-        vt=sp.vt(),
-        vn_ie=sp.vn_ie(),
-        w_concorr_c=sp.w_concorr_c(),
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)
+        ),
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)
+        ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -419,9 +423,13 @@ def test_dycore_wrapper_granule_inputs(
     expected_at_last_substep = substep_init == ndyn_substeps
 
     # --- Initialize the Grid ---
-    py2fgen_settings.config.parallel_run = False
-
     grid_wrapper.grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -431,19 +439,33 @@ def test_dycore_wrapper_granule_inputs(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        global_root=global_root,
-        global_level=global_level,
         num_vertices=num_vertices,
         num_cells=num_cells,
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inv_dual_edge_length=inverse_dual_edge_lengths,
+        inv_vert_vert_length=inverse_vertex_vertex_lengths,
+        edge_areas=edge_areas,
+        f_e=f_e,
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        cell_areas=cell_areas,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
+        mean_cell_area=mean_cell_area,
         c_glb_index=None,  # not running in parallel
         e_glb_index=None,
         v_glb_index=None,
@@ -461,21 +483,6 @@ def test_dycore_wrapper_granule_inputs(
         dycore_wrapper.solve_nh_init(
             vct_a=vct_a,
             vct_b=vct_b,
-            cell_areas=cell_areas,
-            primal_normal_cell_x=primal_normal_cell_x,
-            primal_normal_cell_y=primal_normal_cell_y,
-            dual_normal_cell_x=dual_normal_cell_x,
-            dual_normal_cell_y=dual_normal_cell_y,
-            edge_areas=edge_areas,
-            tangent_orientation=tangent_orientation,
-            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-            inverse_dual_edge_lengths=inverse_dual_edge_lengths,
-            inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-            primal_normal_vert_x=primal_normal_vert_x,
-            primal_normal_vert_y=primal_normal_vert_y,
-            dual_normal_vert_x=dual_normal_vert_x,
-            dual_normal_vert_y=dual_normal_vert_y,
-            f_e=f_e,
             c_lin_e=c_lin_e,
             c_intp=c_intp,
             e_flx_avg=e_flx_avg,
@@ -526,12 +533,6 @@ def test_dycore_wrapper_granule_inputs(
             coeff2_dwdz=coeff2_dwdz,
             coeff_gradekin=coeff_gradekin,
             c_owner_mask=c_owner_mask,
-            cell_center_lat=cell_center_lat,
-            cell_center_lon=cell_center_lon,
-            edge_center_lat=edge_center_lat,
-            edge_center_lon=edge_center_lon,
-            primal_normal_x=primal_normal_x,
-            primal_normal_y=primal_normal_y,
             rayleigh_damping_height=rayleigh_damping_height,
             itime_scheme=itime_scheme,
             iadv_rhotheta=iadv_rhotheta,
@@ -560,9 +561,9 @@ def test_dycore_wrapper_granule_inputs(
             lowest_layer_thickness=lowest_layer_thickness,
             model_top_height=model_top_height,
             stretch_factor=stretch_factor,
-            mean_cell_area=mean_cell_area,
             nflat_gradp=nflat_gradp,
             num_levels=num_levels,
+            backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
         # Check input arguments to SolveNonhydro.init
@@ -910,13 +911,13 @@ def test_granule_solve_nonhydro_single_step_regional(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
-    # global grid params
-    global_root = 4
-    global_level = 9
-
-    py2fgen_settings.config.parallel_run = False
-
     grid_wrapper.grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -926,19 +927,33 @@ def test_granule_solve_nonhydro_single_step_regional(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        global_root=global_root,
-        global_level=global_level,
         num_vertices=num_vertices,
         num_cells=num_cells,
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inv_dual_edge_length=inverse_dual_edge_lengths,
+        inv_vert_vert_length=inverse_vertex_vertex_lengths,
+        edge_areas=edge_areas,
+        f_e=f_e,
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        cell_areas=cell_areas,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
+        mean_cell_area=mean_cell_area,
         c_glb_index=None,  # not running in parallel
         e_glb_index=None,
         v_glb_index=None,
@@ -952,21 +967,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     dycore_wrapper.solve_nh_init(
         vct_a=vct_a,
         vct_b=vct_b,
-        cell_areas=cell_areas,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
-        edge_areas=edge_areas,
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
-        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        f_e=f_e,
         c_lin_e=c_lin_e,
         c_intp=c_intp,
         e_flx_avg=e_flx_avg,
@@ -1017,12 +1017,6 @@ def test_granule_solve_nonhydro_single_step_regional(
         coeff2_dwdz=coeff2_dwdz,
         coeff_gradekin=coeff_gradekin,
         c_owner_mask=c_owner_mask,
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
         rayleigh_damping_height=rayleigh_damping_height,
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
@@ -1051,9 +1045,9 @@ def test_granule_solve_nonhydro_single_step_regional(
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
-        mean_cell_area=mean_cell_area,
         nflat_gradp=nflat_gradp,
         num_levels=num_levels,
+        backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 
     # solve nh run parameters
@@ -1367,13 +1361,13 @@ def test_granule_solve_nonhydro_multi_step_regional(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
-    # global grid params
-    global_root = 4
-    global_level = 9
-
-    py2fgen_settings.config.parallel_run = False
-
     grid_wrapper.grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -1383,19 +1377,33 @@ def test_granule_solve_nonhydro_multi_step_regional(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        global_root=global_root,
-        global_level=global_level,
         num_vertices=num_vertices,
         num_cells=num_cells,
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inv_dual_edge_length=inverse_dual_edge_lengths,
+        inv_vert_vert_length=inverse_vertex_vertex_lengths,
+        edge_areas=edge_areas,
+        f_e=f_e,
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        cell_areas=cell_areas,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
+        mean_cell_area=mean_cell_area,
         c_glb_index=None,  # not running in parallel
         e_glb_index=None,
         v_glb_index=None,
@@ -1409,21 +1417,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
     dycore_wrapper.solve_nh_init(
         vct_a=vct_a,
         vct_b=vct_b,
-        cell_areas=cell_areas,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
-        edge_areas=edge_areas,
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
-        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        f_e=f_e,
         c_lin_e=c_lin_e,
         c_intp=c_intp,
         e_flx_avg=e_flx_avg,
@@ -1474,12 +1467,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
         coeff2_dwdz=coeff2_dwdz,
         coeff_gradekin=coeff_gradekin,
         c_owner_mask=c_owner_mask,
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
         rayleigh_damping_height=rayleigh_damping_height,
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
@@ -1508,9 +1495,9 @@ def test_granule_solve_nonhydro_multi_step_regional(
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
-        mean_cell_area=mean_cell_area,
         nflat_gradp=nflat_gradp,
         num_levels=num_levels,
+        backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 
     # solve nh run parameters
