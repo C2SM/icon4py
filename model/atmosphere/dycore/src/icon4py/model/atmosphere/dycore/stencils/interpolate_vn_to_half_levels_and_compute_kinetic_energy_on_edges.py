@@ -13,17 +13,17 @@ from gt4py.next.ffront.fbuiltins import astype
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    vt: fa.EdgeKField[vpfloat],
-) -> tuple[fa.EdgeKField[vpfloat], fa.EdgeKField[vpfloat]]:
+def _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    vt: fa.EdgeKField[ta.vpfloat],
+) -> tuple[fa.EdgeKField[ta.vpfloat], fa.EdgeKField[ta.vpfloat]]:
     """Formerly known as _mo_velocity_advection_stencil_02."""
     # TODO: This stencil fusion with the one below is not optimal:
     # _compute_horizontal_kinetic_energy is wasting computation by assigning
@@ -37,18 +37,18 @@ def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def interpolate_vn_to_ie_and_compute_ekin_on_edges(
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    vt: fa.EdgeKField[vpfloat],
-    vn_ie: fa.EdgeKField[vpfloat],
-    z_kin_hor_e: fa.EdgeKField[vpfloat],
+def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
+    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    vn: fa.EdgeKField[ta.wpfloat],
+    vt: fa.EdgeKField[ta.vpfloat],
+    vn_ie: fa.EdgeKField[ta.vpfloat],
+    z_kin_hor_e: fa.EdgeKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _interpolate_vn_to_ie_and_compute_ekin_on_edges(
+    _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
         wgtfac_e,
         vn,
         vt,
