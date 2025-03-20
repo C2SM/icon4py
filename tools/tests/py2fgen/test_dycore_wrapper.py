@@ -366,7 +366,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
+        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
         ddt_exner_phy=sp.ddt_exner_phy(),
@@ -374,7 +374,7 @@ def test_dycore_wrapper_granule_inputs(
         grf_tend_thv=sp.grf_tend_thv(),
         grf_tend_w=sp.grf_tend_w(),
         mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
+        normal_wind_tendency_due_to_physics_process=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)),
@@ -382,7 +382,7 @@ def test_dycore_wrapper_granule_inputs(
         vn_ie=sp.vn_ie(),
         w_concorr_c=sp.w_concorr_c(),
         rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
+        normal_wind_iau_increments=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
     )

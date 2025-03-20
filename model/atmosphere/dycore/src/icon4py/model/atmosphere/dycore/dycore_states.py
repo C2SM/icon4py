@@ -31,7 +31,10 @@ class DiagnosticStateNonHydro:
     w_concorr_c: fa.CellKField[
         float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    theta_v_ic: fa.CellKField[float]
+    theta_v_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as theta_v_ic in ICON.
+    """
     exner_pr: fa.CellKField[float]
     rho_ic: fa.CellKField[float]
     ddt_exner_phy: fa.CellKField[float]
@@ -39,14 +42,20 @@ class DiagnosticStateNonHydro:
     grf_tend_thv: fa.CellKField[float]
     grf_tend_w: fa.CellKField[float]
     mass_fl_e: fa.EdgeKField[float]
-    ddt_vn_phy: fa.EdgeKField[float]
+    normal_wind_tendency_due_to_physics_process: fa.EdgeKField[float]
+    """
+    Declared as ddt_vn_phy in ICON.
+    """
     grf_tend_vn: fa.EdgeKField[float]
     ddt_vn_apc_pc: common_utils.PredictorCorrectorPair[fa.EdgeKField[float]]
     ddt_w_adv_pc: common_utils.PredictorCorrectorPair[fa.CellKField[float]]
 
     # Analysis increments
     rho_incr: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
-    vn_incr: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    normal_wind_iau_increments: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    """
+    Declared as vn_incr in ICON.
+    """
     exner_incr: Optional[fa.EdgeKField[float]]  # exner increment [- ]
     exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
 
@@ -106,8 +115,14 @@ class MetricStateNonHydro:
     exner_ref_mc: fa.CellKField[float]
     rho_ref_mc: fa.CellKField[float]
     theta_ref_mc: fa.CellKField[float]
-    rho_ref_me: fa.EdgeKField[float]
-    theta_ref_me: fa.EdgeKField[float]
+    reference_rho_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as rho_ref_me in ICON.
+    """
+    reference_theta_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as theta_ref_me in ICON.
+    """
     theta_ref_ic: fa.CellKField[float]
 
     d_exner_dz_ref_ic: fa.CellKField[float]
@@ -127,8 +142,14 @@ class MetricStateNonHydro:
     vwind_expl_wgt: fa.CellField[float]
     vwind_impl_wgt: fa.CellField[float]
 
-    hmask_dd3d: fa.EdgeField[float]
-    scalfac_dd3d: fa.KField[float]
+    horizontal_mask_for_3d_divdamp: fa.EdgeField[float]
+    """
+    Declared as hmask_dd3d in ICON.
+    """
+    scaling_factor_for_3d_divdamp: fa.KField[float]
+    """
+    Declared as scalfac_dd3d in ICON.
+    """
 
     coeff1_dwdz: fa.CellKField[float]
     coeff2_dwdz: fa.CellKField[float]

@@ -37,56 +37,62 @@ def test_validate_divdamp_fields_against_savepoint_values(
     grid_savepoint, savepoint_nonhydro_init, icon_grid, backend
 ):
     config = solve_nh.NonHydrostaticConfig()
-    divdamp_fac_o2 = 0.032
+    second_order_divdamp_factor = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = data_alloc.zero_field(
+    interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
         backend=backend,
     )
-    scal_divdamp = data_alloc.zero_field(
+    fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
         backend=backend,
     )
-    bdy_divdamp = data_alloc.zero_field(
+    reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
         backend=backend,
     )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
-        config.divdamp_fac,
-        config.divdamp_fac2,
-        config.divdamp_fac3,
-        config.divdamp_fac4,
-        config.divdamp_z,
-        config.divdamp_z2,
-        config.divdamp_z3,
-        config.divdamp_z4,
-        enh_divdamp_fac,
+        config.fourth_order_divdamp_factor,
+        config.fourth_order_divdamp_factor2,
+        config.fourth_order_divdamp_factor3,
+        config.fourth_order_divdamp_factor4,
+        config.fourth_order_divdamp_z,
+        config.fourth_order_divdamp_z2,
+        config.fourth_order_divdamp_z3,
+        config.fourth_order_divdamp_z4,
+        interpolated_fourth_order_divdamp_factor,
         offset_provider={"Koff": dims.KDim},
     )
-    dycore_utils._calculate_scal_divdamp.with_backend(backend)(
-        enh_divdamp_fac=enh_divdamp_fac,
+    dycore_utils._calculate_fourth_order_divdamp_scaling_coeff.with_backend(backend)(
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
         divdamp_order=config.divdamp_order,
         mean_cell_area=mean_cell_area,
-        divdamp_fac_o2=divdamp_fac_o2,
-        out=scal_divdamp,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        out=fourth_order_divdamp_scaling_coeff,
         offset_provider={},
     )
-    dycore_utils._calculate_bdy_divdamp.with_backend(backend)(
-        scal_divdamp,
+    dycore_utils._calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary.with_backend(
+        backend
+    )(
+        fourth_order_divdamp_scaling_coeff,
         config.nudge_max_coeff,
         constants.DBL_EPS,
-        out=bdy_divdamp,
+        out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
         offset_provider={},
     )
 
     assert helpers.dallclose(
-        scal_divdamp.asnumpy(), savepoint_nonhydro_init.scal_divdamp().asnumpy()
+        fourth_order_divdamp_scaling_coeff.asnumpy(),
+        savepoint_nonhydro_init.scal_divdamp().asnumpy(),
     )
-    assert helpers.dallclose(bdy_divdamp.asnumpy(), savepoint_nonhydro_init.bdy_divdamp().asnumpy())
+    assert helpers.dallclose(
+        reduced_fourth_order_divdamp_coeff_at_nest_boundary.asnumpy(),
+        savepoint_nonhydro_init.bdy_divdamp().asnumpy(),
+    )
 
 
 @pytest.mark.datatest
@@ -242,7 +248,9 @@ def test_nonhydro_predictor_step(
         sp_exit.exner_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
-        solve_nonhydro.z_exner_ex_pr.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        solve_nonhydro.temporal_extrapolation_of_perturbed_exner.asnumpy()[
+            cell_start_lateral_boundary_level_2:, :
+        ],
         sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
 
@@ -261,7 +269,9 @@ def test_nonhydro_predictor_step(
     )
     # stencil 6
     assert helpers.dallclose(
-        solve_nonhydro.z_dexner_dz_c_1.asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
+        solve_nonhydro.ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, nflatlev:
+        ],
         sp_exit.z_dexner_dz_c(0).asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
         atol=5e-18,
     )
@@ -283,23 +293,25 @@ def test_nonhydro_predictor_step(
         sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
-        diagnostic_state_nh.theta_v_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, :
+        ],
         sp_exit.theta_v_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     # stencils 7,8,9, 13
     assert helpers.dallclose(
-        solve_nonhydro.z_rth_pr_1.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        solve_nonhydro.perturbed_rho.asnumpy()[cell_start_lateral_boundary_level_2:, :],
         sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
-        solve_nonhydro.z_rth_pr_2.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        solve_nonhydro.perturbed_theta_v.asnumpy()[cell_start_lateral_boundary_level_2:, :],
         sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
 
     # stencils 12
     nflat_gradp = vertical_params.nflat_gradp
     assert helpers.dallclose(
-        solve_nonhydro.z_dexner_dz_c_2.asnumpy()[
+        solve_nonhydro.d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, nflat_gradp:
         ],
         sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_2:, nflat_gradp:],
@@ -335,13 +347,13 @@ def test_nonhydro_predictor_step(
     # TODO Fix REGIONAL
     # compute_horizontal_advection_of_rho_and_theta
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_rho_e.asnumpy()[
+        solve_nonhydro.intermediate_fields.rho_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_7:, :
         ],
         sp_exit.z_rho_e().asnumpy()[edge_start_lateral_boundary_level_7:, :],
     )
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_theta_v_e.asnumpy()[
+        solve_nonhydro.intermediate_fields.theta_v_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_7:, :
         ],
         sp_exit.z_theta_v_e().asnumpy()[edge_start_lateral_boundary_level_7:, :],
@@ -349,7 +361,9 @@ def test_nonhydro_predictor_step(
 
     # stencils 18,19, 20, 22
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_gradh_exner.asnumpy()[edge_start_nudging_level_2:, :],
+        solve_nonhydro.intermediate_fields.horizontal_pressure_gradient.asnumpy()[
+            edge_start_nudging_level_2:, :
+        ],
         sp_exit.z_gradh_exner().asnumpy()[edge_start_nudging_level_2:, :],
         atol=1e-20,
     )
@@ -376,7 +390,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 30
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_graddiv_vn.asnumpy()[
+        solve_nonhydro.intermediate_fields.horizontal_gradient_of_normal_wind_divergence.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_graddiv_vn().asnumpy()[edge_start_lateral_boundary_level_5:, :],
@@ -579,23 +593,23 @@ def test_nonhydro_corrector_step(
     diagnostic_state_nh = utils.construct_diagnostics(init_savepoint, icon_grid, backend)
 
     z_fields = solve_nh.IntermediateFields(
-        z_gradh_exner=init_savepoint.z_gradh_exner(),
+        horizontal_pressure_gradient=init_savepoint.z_gradh_exner(),
         z_alpha=init_savepoint.z_alpha(),
         z_beta=init_savepoint.z_beta(),
         z_w_expl=init_savepoint.z_w_expl(),
         z_exner_expl=init_savepoint.z_exner_expl(),
         z_q=init_savepoint.z_q(),
         z_contr_w_fl_l=init_savepoint.z_contr_w_fl_l(),
-        z_rho_e=init_savepoint.z_rho_e(),
-        z_theta_v_e=init_savepoint.z_theta_v_e(),
-        z_graddiv_vn=init_savepoint.z_graddiv_vn(),
+        rho_at_edges_on_model_levels=init_savepoint.z_rho_e(),
+        theta_v_at_edges_on_model_levels=init_savepoint.z_theta_v_e(),
+        horizontal_gradient_of_normal_wind_divergence=init_savepoint.z_graddiv_vn(),
         z_rho_expl=init_savepoint.z_rho_expl(),
-        z_dwdz_dd=init_savepoint.z_dwdz_dd(),
+        dwdz_at_cells_on_model_levels=init_savepoint.z_dwdz_dd(),
         z_kin_hor_e=init_savepoint.z_kin_hor_e(),
         z_vt_ie=init_savepoint.z_vt_ie(),
     )
 
-    divdamp_fac_o2 = init_savepoint.divdamp_fac_o2()
+    second_order_divdamp_factor = init_savepoint.divdamp_fac_o2()
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
@@ -630,7 +644,7 @@ def test_nonhydro_corrector_step(
         prognostic_states=prognostic_states,
         z_fields=z_fields,
         prep_adv=prep_adv,
-        divdamp_fac_o2=divdamp_fac_o2,
+        second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
         lprep_adv=lprep_adv,
         at_first_substep=at_first_substep,
@@ -639,11 +653,13 @@ def test_nonhydro_corrector_step(
 
     if icon_grid.limited_area:
         assert helpers.dallclose(
-            solve_nonhydro._bdy_divdamp.asnumpy(), init_savepoint.bdy_divdamp().asnumpy()
+            solve_nonhydro.reduced_fourth_order_divdamp_coeff_at_nest_boundary.asnumpy(),
+            init_savepoint.bdy_divdamp().asnumpy(),
         )
 
     assert helpers.dallclose(
-        solve_nonhydro.scal_divdamp.asnumpy(), init_savepoint.scal_divdamp().asnumpy()
+        solve_nonhydro.fourth_order_divdamp_scaling_coeff.asnumpy(),
+        init_savepoint.scal_divdamp().asnumpy(),
     )
     # stencil 10
     assert helpers.dallclose(
@@ -652,7 +668,7 @@ def test_nonhydro_corrector_step(
     )
     # stencil 10
     assert helpers.dallclose(
-        diagnostic_state_nh.theta_v_ic.asnumpy(),
+        diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         atol=1.0e-12,
     )
@@ -810,12 +826,12 @@ def test_run_solve_nonhydro_single_step(
 
     prognostic_states = utils.create_prognostic_states(sp)
 
-    initial_divdamp_fac = sp.divdamp_fac_o2()
+    second_order_divdamp_factor = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
         prep_adv=prep_adv,
-        divdamp_fac_o2=initial_divdamp_fac,
+        second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
@@ -946,7 +962,7 @@ def test_run_solve_nonhydro_multi_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
             prep_adv=prep_adv,
-            divdamp_fac_o2=sp.divdamp_fac_o2(),
+            second_order_divdamp_factor=sp.divdamp_fac_o2(),
             dtime=dtime,
             at_initial_timestep=at_initial_timestep,
             lprep_adv=lprep_adv,
@@ -970,7 +986,7 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert helpers.dallclose(
-        diagnostic_state_nh.theta_v_ic.asnumpy()[cell_start_lb_plus2:, :],
+        diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
@@ -1108,21 +1124,25 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
 
     current_vn = savepoint_nonhydro_15_28_init.vn()
     next_vn = sp.vn_new()
-    vt = savepoint_nonhydro_15_28_init.vt()
-    z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
-    z_rth_pr_1 = savepoint_nonhydro_15_28_init.z_rth_pr(0)
-    z_rth_pr_2 = savepoint_nonhydro_15_28_init.z_rth_pr(1)
-    z_exner_ex_pr = savepoint_nonhydro_15_28_init.z_exner_ex_pr()
-    z_dexner_dz_c_1 = savepoint_nonhydro_15_28_init.z_dexner_dz_c(0)
-    z_dexner_dz_c_2 = savepoint_nonhydro_15_28_init.z_dexner_dz_c(1)
+    tangential_wind = savepoint_nonhydro_15_28_init.vt()
+    horizontal_pressure_gradient = savepoint_nonhydro_15_28_init.z_gradh_exner()
+    perturbed_rho = savepoint_nonhydro_15_28_init.z_rth_pr(0)
+    perturbed_theta_v = savepoint_nonhydro_15_28_init.z_rth_pr(1)
+    temporal_extrapolation_of_perturbed_exner = savepoint_nonhydro_15_28_init.z_exner_ex_pr()
+    ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+        savepoint_nonhydro_15_28_init.z_dexner_dz_c(0)
+    )
+    d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+        savepoint_nonhydro_15_28_init.z_dexner_dz_c(1)
+    )
     theta_v = savepoint_nonhydro_15_28_init.theta_v()
-    theta_v_ic = savepoint_nonhydro_15_28_init.theta_v_ic()
-    ddt_vn_apc_ntl1 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
-    ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
-    vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
-    z_hydro_corr = savepoint_nonhydro_15_28_init.z_hydro_corr()
-    z_rho_e = savepoint_nonhydro_15_28_init.z_rho_e()
-    z_theta_v_e = savepoint_nonhydro_15_28_init.z_theta_v_e()
+    theta_v_at_cells_on_half_levels = savepoint_nonhydro_15_28_init.theta_v_ic()
+    predictor_normal_wind_advective_tendency = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
+    normal_wind_tendency_due_to_physics_process = savepoint_nonhydro_15_28_init.ddt_vn_phy()
+    normal_wind_iau_increments = savepoint_nonhydro_15_28_init.vn_incr()
+    hydrostatic_correction = savepoint_nonhydro_15_28_init.z_hydro_corr()
+    rho_at_edges_on_model_levels = savepoint_nonhydro_15_28_init.z_rho_e()
+    theta_v_at_edges_on_model_levels = savepoint_nonhydro_15_28_init.z_theta_v_e()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
@@ -1151,25 +1171,25 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step.with_backend(
         backend
     )(
-        z_rho_e=z_rho_e,
-        z_theta_v_e=z_theta_v_e,
-        z_gradh_exner=z_gradh_exner,
+        rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
+        theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+        horizontal_pressure_gradient=horizontal_pressure_gradient,
         current_vn=current_vn,
         next_vn=next_vn,
-        vt=vt,
-        z_hydro_corr=z_hydro_corr,
-        rho_ref_me=metrics_savepoint.rho_ref_me(),
-        theta_ref_me=metrics_savepoint.theta_ref_me(),
-        z_rth_pr_1=z_rth_pr_1,
-        z_rth_pr_2=z_rth_pr_2,
-        z_exner_ex_pr=z_exner_ex_pr,
-        z_dexner_dz_c_1=z_dexner_dz_c_1,
-        z_dexner_dz_c_2=z_dexner_dz_c_2,
+        tangential_wind=tangential_wind,
+        hydrostatic_correction=hydrostatic_correction,
+        reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
+        reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
+        perturbed_rho=perturbed_rho,
+        perturbed_theta_v=perturbed_theta_v,
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+        ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         theta_v=theta_v,
-        theta_v_ic=theta_v_ic,
-        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-        ddt_vn_phy=ddt_vn_phy,
-        vn_incr=vn_incr,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
+        normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+        normal_wind_iau_increments=normal_wind_iau_increments,
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
@@ -1195,8 +1215,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method.value,
-        MIURA=solve_nh.RhoThetaAdvectionType.MIURA.value,
-        TAYLOR_HYDRO=solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value,
+        MIURA_advection_type=solve_nh.RhoThetaAdvectionType.MIURA.value,
+        TAYLOR_HYDRO_gradp_method=solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value,
         horz_idx=horz_idx,
         vert_idx=vert_idx,
         nlev=icon_grid.num_levels,
@@ -1223,11 +1243,11 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         },
     )
 
-    assert helpers.dallclose(z_rho_e.asnumpy(), z_rho_e_ref.asnumpy())
-    assert helpers.dallclose(z_theta_v_e.asnumpy(), z_theta_v_e_ref.asnumpy())
+    assert helpers.dallclose(rho_at_edges_on_model_levels.asnumpy(), z_rho_e_ref.asnumpy())
+    assert helpers.dallclose(theta_v_at_edges_on_model_levels.asnumpy(), z_theta_v_e_ref.asnumpy())
 
     assert helpers.dallclose(
-        z_gradh_exner.asnumpy(),
+        horizontal_pressure_gradient.asnumpy(),
         z_gradh_exner_ref.asnumpy(),
         atol=1e-20,
     )
@@ -1296,25 +1316,27 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
-    z_dwdz_dd = savepoint_nonhydro_15_28_init.z_dwdz_dd()
-    ddt_vn_apc_ntl2 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(1)
-    ddt_vn_apc_ntl1 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
-    ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
-    vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
-    bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
-    scal_divdamp = savepoint_nonhydro_15_28_init.scal_divdamp()
-    z_theta_v_e = savepoint_nonhydro_15_28_init.z_theta_v_e()
-    z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
+    dwdz_at_cells_on_model_levels = savepoint_nonhydro_15_28_init.z_dwdz_dd()
+    predictor_normal_wind_advective_tendency = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
+    corrector_normal_wind_advective_tendency = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(1)
+    normal_wind_tendency_due_to_physics_process = savepoint_nonhydro_15_28_init.ddt_vn_phy()
+    normal_wind_iau_increments = savepoint_nonhydro_15_28_init.vn_incr()
+    reduced_fourth_order_divdamp_coeff_at_nest_boundary = (
+        savepoint_nonhydro_15_28_init.bdy_divdamp()
+    )
+    fourth_order_divdamp_scaling_coeff = savepoint_nonhydro_15_28_init.scal_divdamp()
+    theta_v_at_edges_on_model_levels = savepoint_nonhydro_15_28_init.z_theta_v_e()
+    horizontal_pressure_gradient = savepoint_nonhydro_15_28_init.z_gradh_exner()
     current_vn = savepoint_nonhydro_15_28_init.vn()
     next_vn = savepoint_nonhydro_init.vn_new()
-    z_graddiv_vn = sp.z_graddiv_vn()
+    horizontal_gradient_of_normal_wind_divergence = sp.z_graddiv_vn()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
     iau_wgt_dyn = config.iau_wgt_dyn
     itime_scheme = config.itime_scheme
     divdamp_order = config.divdamp_order
-    scal_divdamp_o2 = sp.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
+    second_order_divdamp_scaling_coeff = sp.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
     is_iau_active = config.is_iau_active
 
     vn_ref = sp_exit.vn_new()
@@ -1322,25 +1344,26 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn_in_corrector_step.with_backend(
         backend
     )(
-        z_graddiv_vn=z_graddiv_vn,
+        horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
         next_vn=next_vn,
         current_vn=current_vn,
-        z_dwdz_dd=z_dwdz_dd,
-        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-        ddt_vn_phy=ddt_vn_phy,
-        vn_incr=vn_incr,
-        bdy_divdamp=bdy_divdamp,
-        scal_divdamp=scal_divdamp,
-        z_theta_v_e=z_theta_v_e,
-        z_gradh_exner=z_gradh_exner,
-        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
-        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
+        predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
+        corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
+        normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+        normal_wind_iau_increments=normal_wind_iau_increments,
+        theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+        horizontal_pressure_gradient=horizontal_pressure_gradient,
+        reduced_fourth_order_divdamp_coeff_at_nest_boundary=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+        fourth_order_divdamp_scaling_coeff=fourth_order_divdamp_scaling_coeff,
+        second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
+        horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
+        scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
-        divdamp_fac=config.divdamp_fac,
-        divdamp_fac_o2=savepoint_nonhydro_init.divdamp_fac_o2(),
+        fourth_order_divdamp_factor=config.fourth_order_divdamp_factor,
+        second_order_divdamp_factor=savepoint_nonhydro_init.divdamp_fac_o2(),
         wgt_nnow_vel=savepoint_nonhydro_init.wgt_nnow_vel(),
         wgt_nnew_vel=savepoint_nonhydro_init.wgt_nnew_vel(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
@@ -1350,12 +1373,11 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
         itime_scheme=itime_scheme,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
-        scal_divdamp_o2=scal_divdamp_o2,
-        COMBINED=solve_nh.DivergenceDampingOrder.COMBINED,
-        FOURTH_ORDER=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
+        COMBINED_divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
+        FOURTH_ORDER_divdamp_order=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
         horz_idx=horz_idx,
         vert_idx=vert_idx,
-        kstart_dd3d=nonhydro_params.kstart_dd3d,
+        starting_index_for_3d_divdamp=nonhydro_params.starting_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,

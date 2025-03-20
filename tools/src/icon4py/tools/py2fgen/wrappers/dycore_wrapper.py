@@ -175,14 +175,14 @@ def solve_nh_init(
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
-        divdamp_fac=divdamp_fac,
-        divdamp_fac2=divdamp_fac2,
-        divdamp_fac3=divdamp_fac3,
-        divdamp_fac4=divdamp_fac4,
-        divdamp_z=divdamp_z,
-        divdamp_z2=divdamp_z2,
-        divdamp_z3=divdamp_z3,
-        divdamp_z4=divdamp_z4,
+        fourth_order_divdamp_factor=divdamp_fac,
+        fourth_order_divdamp_factor2=divdamp_fac2,
+        fourth_order_divdamp_factor3=divdamp_fac3,
+        fourth_order_divdamp_factor4=divdamp_fac4,
+        fourth_order_divdamp_z=divdamp_z,
+        fourth_order_divdamp_z2=divdamp_z2,
+        fourth_order_divdamp_z3=divdamp_z3,
+        fourth_order_divdamp_z4=divdamp_z4,
     )
     nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
 
@@ -337,7 +337,7 @@ def solve_nh_run(
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=theta_v_ic,
+        theta_v_at_cells_on_half_levels=theta_v_ic,
         exner_pr=exner_pr,
         rho_ic=rho_ic,
         ddt_exner_phy=ddt_exner_phy,
@@ -345,7 +345,7 @@ def solve_nh_run(
         grf_tend_thv=grf_tend_thv,
         grf_tend_w=grf_tend_w,
         mass_fl_e=mass_fl_e,
-        ddt_vn_phy=ddt_vn_phy,
+        normal_wind_tendency_due_to_physics_process=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
@@ -353,7 +353,7 @@ def solve_nh_run(
         vn_ie=vn_ie,
         w_concorr_c=w_concorr_c,
         rho_incr=None,  # sp.rho_incr,
-        vn_incr=None,  # sp.vn_incr,
+        normal_wind_iau_increments=None,  # sp.vn_incr,
         exner_incr=None,  # sp.exner_incr,
         exner_dyn_incr=exner_dyn_incr,
     )
@@ -381,7 +381,7 @@ def solve_nh_run(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
         prep_adv=prep_adv,
-        divdamp_fac_o2=divdamp_fac_o2,
+        second_order_divdamp_factor=divdamp_fac_o2,
         dtime=dtime,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,

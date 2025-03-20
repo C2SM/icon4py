@@ -248,8 +248,8 @@ def test_run_timeloop_single_step(
         wgtfac_e=metrics_savepoint.wgtfac_e(),
         wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
         vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
-        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
-        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
+        scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
         coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
@@ -286,7 +286,7 @@ def test_run_timeloop_single_step(
 
     current_index, next_index = (1, 0) if not linit else (0, 1)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
+        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
         ddt_exner_phy=sp.ddt_exner_phy(),
@@ -294,7 +294,7 @@ def test_run_timeloop_single_step(
         grf_tend_thv=sp.grf_tend_thv(),
         grf_tend_w=sp.grf_tend_w(),
         mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
+        normal_wind_tendency_due_to_physics_process=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
             sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
@@ -306,7 +306,7 @@ def test_run_timeloop_single_step(
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
         rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
+        normal_wind_iau_increments=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
