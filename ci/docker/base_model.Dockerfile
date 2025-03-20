@@ -22,12 +22,15 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libncurses5-dev \
     libncursesw5-dev \
     xz-utils \
+    tk-dev \
     libffi-dev \
     libhdf5-dev \
     liblzma-dev \
     python3-openssl \
     libreadline-dev \
-    git && \
+    git \
+    jq \
+    htop && \
     rm -rf /var/lib/apt/lists/*
 
 

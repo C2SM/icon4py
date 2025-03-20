@@ -8,6 +8,8 @@ ENV MPI4PY_BUILD_BACKEND="scikit-build-core"
 # DO WE NEED: MPI4PY_BUILD_MPICC: nvc or si the setting the build backend enough?
 ENV USE_MPI="YES"
 WORKDIR /icon4py
+RUN ldd `which ls` | grep libc
+RUN ldd --version
 RUN echo "UV_PROJECT_ENVIRONMENT=$UV_PROJECT_ENVIRONMENT"
 RUN uv -v sync --extra distributed --python=$PYVERSION
 
