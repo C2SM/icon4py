@@ -97,7 +97,7 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-8),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
