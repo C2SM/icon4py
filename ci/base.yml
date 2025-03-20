@@ -4,6 +4,7 @@ include:
 stages:
   - baseimage
   - image
+  - build
   - test
   - benchmark
 

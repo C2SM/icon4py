@@ -18,7 +18,7 @@ from icon4py.model.testing import datatest_utils, helpers, parallel_helpers
 from .. import utils
 
 
-@pytest.skip("FIXME: Need updated test data yet", allow_module_level=True)
+@pytest.mark.embedded_remap_error
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
@@ -29,7 +29,7 @@ def test_parallel_diffusion(
     step_date_init,
     linit,
     ndyn_substeps,
-    processor_props,  # fixture
+    processor_props,
     decomposition_info,
     icon_grid,
     savepoint_diffusion_init,
@@ -50,7 +50,7 @@ def test_parallel_diffusion(
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{datatest_utils.REGIONAL_EXPERIMENT}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{experiment}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "

@@ -1,0 +1,55 @@
+include:
+  - local: 'ci/base.yml'
+
+.build_template_aarch64_distributed:
+  extends: [.container-runner-santis-gh200, .test_template_aarch64]
+  needs: [build_image_aarch64]
+  variables:
+    # run with mpi
+    UV_PROJECT_ENVIRONMENT: .venv_dist
+    MPI4PY_BUILD_BACKEND: "scikit-build-core"
+    MPI4PY_BUILD_MPICC: nvc
+    USE_MPI: "YES"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+
+build_model_distributed:
+  stage: build
+  extends: [.build_template_aarch64_distributed]
+  before_script:
+    - echo "using MPICC ${MPI4PY_BUILD_MPICC}"
+    - pwd
+    - echo $CI_PROJECT_DIR
+    - ls -lah $CI_PROJECT_DIR
+    - cd /icon4py
+  script:
+    uv sync --extra distributed --python=3.10 --no-dev
+  #artifacts:
+  #  name: "venv_distributed_cpu"
+  #  paths:
+  #    - ${UV_PROJECT_ENVIRONMENT}/
+
+
+.test_model_distributed:
+  stage: test
+  extends: [.build_template_aarch64_distributed]
+  needs: [build_model_distributed]
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+  before_script:
+    - cd /icon4py
+    - ls ${UV_PROJECT_ENVIRONMENT}
+  script:
+    - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+    - pytest -sv --datatest --with-mpi --backend=$BACKEND $COMPONENT
+  parallel:
+    matrix:
+      - COMPONENT: [ diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
+        BACKEND: [ gtfn_cpu]
+  rules:
+    - when: on_success
+
+test_model_distributed:
+  extends: [.test_model_distributed]
+

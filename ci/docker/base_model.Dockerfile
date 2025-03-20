@@ -15,6 +15,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     zlib1g-dev \
     libssl-dev \
     libbz2-dev \
+    libmpich-dev\
     libsqlite3-dev \
     libnuma-dev \
     llvm \
@@ -32,40 +33,8 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     htop && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Rust using rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN rustc --version && which rustc && cargo --version && which cargo
-
-# Install Bencher for performance monitoring
-RUN curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
-RUN bencher --version && which bencher
-
-# Install NVIDIA HPC SDK for nvfortran
-ARG HPC_SDK_VERSION=24.11
-ARG HPC_SDK_NAME=nvhpc_2024_2411_Linux_aarch64_cuda_12.6
-ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
-
-RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
-    mkdir -p /opt/nvidia && \
-    tar -xzf /tmp/nvhpc.tar.gz -C /opt/nvidia && \
-    rm /tmp/nvhpc.tar.gz
-
-ENV NVHPC_SILENT=1
-RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
 # Set environment variables
-ARG ARCH=aarch64
-ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
-# The variable CUDA_PATH is used by cupy to find the cuda toolchain
-ENV CUDA_PATH=${HPC_SDK_PATH}/cuda \
-    NVIDIA_VISIBLE_DEVICES=all \
-    NVIDIA_DRIVER_CAPABILITIES=compute,utility
-
-ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
-    MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
-    LD_LIBRARY_PATH=${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
-
 # Install Boost
 RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
     echo be0d91732d5b0cc6fbb275c7939974457e79b54d6f07ce2e3dfdd68bef883b0b boost_1_85_0.tar.gz > boost_hash.txt && \
