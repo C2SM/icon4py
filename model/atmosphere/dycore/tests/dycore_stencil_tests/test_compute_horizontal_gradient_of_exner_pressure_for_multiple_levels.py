@@ -43,7 +43,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
         return indexed
 
     e2c = connectivities[dims.E2CDim]
-    full_shape = e2c.shape + zdiff_gradp.shape[1:]
+    full_shape = e2c.shape + zdiff_gradp.shape[2:]
     zdiff_gradp = zdiff_gradp.reshape(full_shape)
     ikoffset = ikoffset.reshape(full_shape)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)

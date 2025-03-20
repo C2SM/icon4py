@@ -48,7 +48,7 @@ def compute_hydrostatic_correction_term_numpy(
         return indexed, indexed_p1
 
     e2c = connectivities[dims.E2CDim]
-    full_shape = e2c.shape + zdiff_gradp.shape[1:]
+    full_shape = e2c.shape + zdiff_gradp.shape[2:]
     zdiff_gradp = zdiff_gradp.reshape(full_shape)
     ikoffset = ikoffset.reshape(full_shape)
 
