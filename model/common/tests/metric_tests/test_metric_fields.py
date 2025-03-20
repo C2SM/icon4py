@@ -640,7 +640,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
     horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
 
-    compute_bdy_halo_c(
+    compute_bdy_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
         bdy_halo_c=bdy_halo_c_full,
         horizontal_start=horizontal_start,
