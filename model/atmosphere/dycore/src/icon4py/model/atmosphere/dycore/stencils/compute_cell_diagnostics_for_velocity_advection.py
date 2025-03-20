@@ -65,25 +65,25 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
         contravariant_correction_at_cells_on_half_levels,
     )
 
-    # cfl_clipping, vcfl, z_w_con_c = where(
-    #     maximum(3, end_index_of_damping_layer - 2) - 1 <= k < nlevp1 - 1 - 3,
-    #     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-    #         ddqz_z_half,
-    #         z_w_con_c,
-    #         cfl_w_limit,
-    #         dtime,
-    #     ),
-    #     (
-    #         broadcast(False, (dims.CellDim, dims.KDim)),
-    #         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-    #         z_w_con_c,
-    #     ),
-    # )
-    cfl_clipping, vcfl, z_w_con_c = (
-        broadcast(False, (dims.CellDim, dims.KDim)),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-        z_w_con_c,
+    cfl_clipping, vcfl, z_w_con_c = where(
+        maximum(3, end_index_of_damping_layer - 2) - 1 <= k < nlevp1 - 1 - 3,
+        _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+            ddqz_z_half,
+            z_w_con_c,
+            cfl_w_limit,
+            dtime,
+        ),
+        (
+            broadcast(False, (dims.CellDim, dims.KDim)),
+            broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            z_w_con_c,
+        ),
     )
+    # cfl_clipping, vcfl, z_w_con_c = (
+    #     broadcast(False, (dims.CellDim, dims.KDim)),
+    #     broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+    #     z_w_con_c,
+    # )
 
     return (
         horizontal_kinetic_energy_at_cells_on_model_levels,
@@ -190,29 +190,29 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     )
 
     # TODO this is already included in the first fieldop, however seems to be wrong
-    # _compute_maximum_cfl_and_clip_contravariant_vertical_velocity_z_w_con_c(
-    #     # _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-    #     ddqz_z_half,
-    #     z_w_con_c,
-    #     cfl_w_limit,
-    #     dtime,
-    #     out=z_w_con_c,
-    #     domain={
-    #         dims.CellDim: (horizontal_start, horizontal_end),  # possibly protect with boundary4
-    #         dims.KDim: (maximum(3, end_index_of_damping_layer - 2) - 1, nlevp1 - 1 - 3),
-    #     },
-    # )
-    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity_z_w_con_c(
         ddqz_z_half,
         z_w_con_c,
         cfl_w_limit,
         dtime,
-        out=(cfl_clipping, vcfl, z_w_con_c),
+        out=z_w_con_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),  # possibly protect with boundary4
             dims.KDim: (maximum(3, end_index_of_damping_layer - 2) - 1, nlevp1 - 1 - 3),
         },
     )
+
+    # _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+    #     ddqz_z_half,
+    #     z_w_con_c,
+    #     cfl_w_limit,
+    #     dtime,
+    #     out=(cfl_clipping, vcfl, z_w_con_c),
+    #     domain={
+    #         dims.CellDim: (horizontal_start, horizontal_end),  # possibly protect with boundary4
+    #         dims.KDim: (maximum(3, end_index_of_damping_layer - 2) - 1, nlevp1 - 1 - 3),
+    #     },
+    # )
 
 
 @gtx.program

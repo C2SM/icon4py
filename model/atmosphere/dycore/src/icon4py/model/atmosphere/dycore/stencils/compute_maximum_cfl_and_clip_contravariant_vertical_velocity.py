@@ -63,7 +63,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity_z_w_con_c(
     z_w_con_c: fa.CellKField[vpfloat],
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
-) -> fa.CellKField[bool]:
+) -> fa.CellKField[vpfloat]:
     """Formerly know as _mo_velocity_advection_stencil_14."""
     z_w_con_c_wp, ddqz_z_half_wp = astype((z_w_con_c, ddqz_z_half), wpfloat)
 
