@@ -57,15 +57,6 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
         return cp.asnumpy(array)
 
 
-def copy_to_backend_device(array: NDArray, backend: Optional[gtx_backend.Backend]) -> NDArray:
-    if is_cupy_device(backend):
-        import cupy as cp
-
-        return cp.asarray(array)
-    else:
-        return as_numpy(array)
-
-
 def is_cupy_device(backend: Optional[gtx_backend.Backend]) -> bool:
     if backend is not None:
         return backend.allocator.__gt_device_type__ in CUDA_DEVICE_TYPES
@@ -94,10 +85,10 @@ def import_array_ns(backend: Optional[gtx_backend.Backend]):
 def as_field(
     field: gtx.Field,
     backend: Optional[gtx_backend.Backend] = None,
-    embedded_on_host: bool = True,
+    embedded_on_host: bool = False,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
-    data = copy_to_backend_device(field.ndarray, backend) if embedded_on_host else field.ndarray
+    data = field.asnumpy() if embedded_on_host else field.ndarray
     return gtx.as_field(field.domain, data=data, allocator=backend)
 
 
