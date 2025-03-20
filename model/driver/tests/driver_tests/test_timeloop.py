@@ -236,8 +236,8 @@ def test_run_timeloop_single_step(
         theta_ref_ic=metrics_savepoint.theta_ref_ic(),
         d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
         d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
-        rho_ref_me=metrics_savepoint.rho_ref_me(),
-        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
+        reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
@@ -306,7 +306,9 @@ def test_run_timeloop_single_step(
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
         rho_incr=None,  # sp.rho_incr(),
-        normal_wind_iau_increments=None,  # sp.vn_incr(),
+        normal_wind_iau_increments=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
