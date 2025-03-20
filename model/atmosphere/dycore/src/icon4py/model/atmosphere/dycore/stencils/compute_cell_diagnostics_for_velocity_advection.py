@@ -65,7 +65,7 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
         contravariant_correction_at_cells_on_half_levels,
     )
 
-    cfl_clipping, vcfl, z_w_con_c = where(
+    cfl_clipping, vcfl, z_w_con_c_tmp = where(
         maximum(3, end_index_of_damping_layer - 2) - 1 <= k < nlevp1 - 1 - 3,
         _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half,
