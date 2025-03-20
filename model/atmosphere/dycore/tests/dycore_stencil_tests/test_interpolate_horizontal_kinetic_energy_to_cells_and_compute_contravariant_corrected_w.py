@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_veloc
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
@@ -99,7 +100,7 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         horizontal_kinetic_energy_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )
