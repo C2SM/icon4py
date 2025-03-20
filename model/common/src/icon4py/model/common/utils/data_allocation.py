@@ -57,7 +57,7 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
         return cp.asnumpy(array)
 
 
-def to_backend(array: NDArray, backend: Optional[gtx_backend.Backend]) -> NDArray:
+def copy_to_backend_device(array: NDArray, backend: Optional[gtx_backend.Backend]) -> NDArray:
     if is_cupy_device(backend):
         import cupy as cp
 
@@ -91,9 +91,13 @@ def import_array_ns(backend: Optional[gtx_backend.Backend]):
     return array_ns(is_cupy_device(backend))
 
 
-def as_field(field: gtx.Field, backend: Optional[gtx_backend.Backend] = None) -> gtx.Field:
+def as_field(
+    field: gtx.Field,
+    backend: Optional[gtx_backend.Backend] = None,
+    embedded_on_host: bool = True,
+) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
-    data = to_backend(field.ndarray, backend)
+    data = copy_to_backend_device(field.ndarray, backend) if embedded_on_host else field.ndarray
     return gtx.as_field(field.domain, data=data, allocator=backend)
 
 

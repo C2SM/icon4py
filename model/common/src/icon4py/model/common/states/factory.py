@@ -43,6 +43,7 @@ import enum
 import functools
 import inspect
 import logging
+from types import ModuleType
 from typing import (
     Any,
     Callable,
@@ -308,7 +309,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             self._compute(field_src, grid)
         return self.fields[field_name]
 
-    def _compute(self, factory, grid_provider):
+    def _compute(self, factory: FieldSource, grid_provider: GridProvider) -> None:
         # allocate output buffer
         compute_backend = self._func.backend
         log.info(
@@ -316,12 +317,9 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             f"{data_alloc.backend_name(compute_backend)}, target backend is: "
             f"{data_alloc.backend_name(factory.backend)}"
         )
-        try:
-            metadata = {k: factory.get(k, RetrievalType.METADATA) for k, v in self._output.items()}
-            dtype = metadata["dtype"]
-        except (ValueError, KeyError):
-            dtype = ta.wpfloat
-        self._fields = self._allocate(compute_backend, grid_provider, dtype=dtype)
+        xp = data_alloc.import_array_ns(factory.backend)
+        metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields.keys()}
+        self._fields = self._allocate_fields(compute_backend, grid_provider, xp, metadata)
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
@@ -330,15 +328,12 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             for k, v in self._dependencies.items()
         }
 
-        providers = {
-            k: _provider_on_backend(v, compute_backend)
-            for k, v in self._get_offset_providers(grid_provider.grid).items()
-        }
+        providers = self._get_offset_providers(grid_provider.grid)
         self._func(**deps, out=self._unravel_output_fields(), offset_provider=providers)
         # transfer to target backend, the fields might have been computed on a compute backend
         for k, v in self._fields.items():
             log.debug(
-                f"transfering result {k} to target backend: "
+                f"transferring result {k} to target backend: "
                 f"{data_alloc.backend_name(factory.backend)}"
             )
             self._fields[k] = data_alloc.as_field(v, backend=factory.backend)
@@ -371,26 +366,44 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
                 # used for different compute backend in function call
         return offset_providers
 
-    def _allocate(
+    def _allocate_fields(
         self,
         backend: Optional[gtx_backend.Backend],
-        grid: GridProvider,
-        dtype: state_utils.ScalarType = ta.wpfloat,
+        grid_provider: GridProvider,
+        xp: ModuleType,
+        metadata: dict[str, model.FieldMetaData],
     ) -> dict[str, state_utils.FieldType]:
-        def _map_size(dim: gtx.Dimension, grid: GridProvider) -> int:
-            if dim.kind == gtx.DimensionKind.VERTICAL:
-                size = grid.vertical_grid.num_levels
-                return size + 1 if dims == dims.KHalfDim else size
-            return grid.grid.size[dim]
+        def _map_size(dim: gtx.Dimension, grids: GridProvider) -> int:
+            match dim:
+                case dims.KHalfDim:
+                    return grids.vertical_grid.num_levels + 1
+                case dims.KDim:
+                    return grids.vertical_grid.num_levels
+                case _:
+                    return grids.grid.size[dim]
 
         def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
-            if dim == dims.KHalfDim:
-                return dims.KDim
-            return dim
+            match dim:
+                case dims.KHalfDim:
+                    return dims.KDim
+                case _:
+                    return dim
 
-        allocate = gtx.constructors.zeros.partial(allocator=backend)
-        field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
-        return {k: allocate(field_domain, dtype=dtype) for k in self._fields.keys()}
+        def _allocate(
+            grid_provider: GridProvider,
+            backend: gtx_backend.Backend,
+            array_ns: ModuleType,
+            dtype: state_utils.ScalarType = ta.wpfloat,
+        ) -> gtx.Field:
+            shape = tuple(_map_size(dim, grid_provider) for dim in self._dims)
+            dims = tuple(_map_dim(dim) for dim in self._dims)
+            buffer = array_ns.zeros(shape, dtype=dtype)
+            return gtx.as_field(dims, data=buffer, allocator=backend, dtype=dtype)
+
+        return {
+            k: _allocate(grid_provider, backend, xp, dtype=dtype_or_default(k, metadata))
+            for k in self._fields.keys()
+        }
 
 
 class ProgramFieldProvider(FieldProvider):
@@ -685,3 +698,9 @@ def _provider_on_backend(
         max_neighbors=provider.max_neighbors,
         origin_axis=provider.origin_axis,
     )
+
+
+def dtype_or_default(
+    field_name: str, metadata: dict[str, model.FieldMetaData]
+) -> state_utils.ScalarType:
+    return metadata[field_name].get("dtype", ta.wpfloat)
