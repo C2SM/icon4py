@@ -26,6 +26,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libhdf5-dev \
     liblzma-dev \
     python3-openssl \
+    libreadline-dev \
     git && \
     rm -rf /var/lib/apt/lists/*
 
