@@ -10,6 +10,7 @@ from gt4py.next.ffront.fbuiltins import astype, broadcast, maximum, where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity_z_w_con_c,
 )
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
@@ -169,6 +170,7 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     # TODO unfortunately we need this field `contravariant_corrected_w_at_cells_on_half_levels`
     # fully computed for inlining into _compute_advection_in_vertical_momentum_equation
     # maybe we should inline this computation, but only write up to nlev, then compute the extra level here
+    # TODO or maybe the ranges are just wrong because inside everything is protected in an if and the nlvep1 level is set to 0
     _compute_contravariant_corrected_w(
         w,
         contravariant_correction_at_cells_on_half_levels,
@@ -182,13 +184,14 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
         },
     )
 
-    # TODO remove
-    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+    # TODO this is already included in the first fieldop, however seems to be wrong
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity_z_w_con_c(
+        # _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         ddqz_z_half,
         z_w_con_c,
         cfl_w_limit,
         dtime,
-        out=(cfl_clipping, vcfl, z_w_con_c),
+        out=z_w_con_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),  # possibly protect with boundary4
             dims.KDim: (maximum(3, end_index_of_damping_layer - 2) - 1, nlevp1 - 1 - 3),

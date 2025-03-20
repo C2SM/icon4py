@@ -57,6 +57,40 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     return cfl_clipping, vcfl_vp, astype(z_w_con_c_wp, vpfloat)
 
 
+@field_operator
+def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity_z_w_con_c(
+    ddqz_z_half: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    cfl_w_limit: vpfloat,
+    dtime: wpfloat,
+) -> fa.CellKField[bool]:
+    """Formerly know as _mo_velocity_advection_stencil_14."""
+    z_w_con_c_wp, ddqz_z_half_wp = astype((z_w_con_c, ddqz_z_half), wpfloat)
+
+    cfl_clipping = where(
+        abs(z_w_con_c) > cfl_w_limit * ddqz_z_half,
+        broadcast(True, (dims.CellDim, dims.KDim)),
+        False,
+    )
+
+    vcfl = where(cfl_clipping, z_w_con_c_wp * dtime / ddqz_z_half_wp, wpfloat("0.0"))
+    vcfl_vp = astype(vcfl, vpfloat)
+
+    z_w_con_c_wp = where(
+        (cfl_clipping) & (vcfl_vp < -vpfloat("0.85")),
+        astype(-vpfloat("0.85") * ddqz_z_half, wpfloat) / dtime,
+        z_w_con_c_wp,
+    )
+
+    z_w_con_c_wp = where(
+        (cfl_clipping) & (vcfl_vp > vpfloat("0.85")),
+        astype(vpfloat("0.85") * ddqz_z_half, wpfloat) / dtime,
+        z_w_con_c_wp,
+    )
+
+    return astype(z_w_con_c_wp, vpfloat)
+
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     ddqz_z_half: fa.CellKField[vpfloat],
