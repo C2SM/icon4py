@@ -9,12 +9,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.states.utils as state_utils
 import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
     compute_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -86,7 +87,7 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base_grid.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn_on_half_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}

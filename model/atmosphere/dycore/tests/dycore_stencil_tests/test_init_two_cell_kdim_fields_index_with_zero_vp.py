@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_index_wi
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
@@ -47,7 +48,7 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         field_index_with_zero_1 = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, dtype=vpfloat
         )

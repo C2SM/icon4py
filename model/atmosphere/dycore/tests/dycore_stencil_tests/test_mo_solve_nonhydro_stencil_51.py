@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_solve_nonhydro_stencil_51 impor
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
@@ -74,7 +75,7 @@ class TestMoSolveNonHydroStencil51(StencilTest):
         return dict(z_q=z_q, w_nnew=w_nnew)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_q = zero_field(grid, dims.CellDim, dims.KDim)
         w_nnew = zero_field(grid, dims.CellDim, dims.KDim)
         vwind_impl_wgt = random_field(grid, dims.CellDim)

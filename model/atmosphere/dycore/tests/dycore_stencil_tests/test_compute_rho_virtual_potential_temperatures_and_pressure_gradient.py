@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temp
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -86,7 +87,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = ta.wpfloat("1.0")
         wgt_nnow_rth = ta.wpfloat("2.0")
         wgt_nnew_rth = ta.wpfloat("3.0")

@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tend
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -87,7 +88,7 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         coeff_gradekin = data_alloc.random_field(grid, dims.ECDim, dtype=ta.vpfloat)
         z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

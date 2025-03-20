@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers as test_helpers
 
@@ -214,7 +215,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )

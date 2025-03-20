@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rh
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers
 
 
@@ -177,7 +178,7 @@ class TestComputeBtraj(helpers.StencilTest):
         return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)

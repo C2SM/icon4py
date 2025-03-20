@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -39,7 +40,7 @@ class TestComputeExnerFromRhotheta(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
         rho = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)

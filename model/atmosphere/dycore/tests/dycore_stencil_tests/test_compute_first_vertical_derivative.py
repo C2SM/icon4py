@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative 
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -36,7 +37,7 @@ class TestComputeFirstVerticalDerivative(StencilTest):
         return dict(z_dexner_dz_c_1=z_dexner_dz_c_1)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_exner_ic = random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )

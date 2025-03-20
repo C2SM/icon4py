@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
@@ -42,7 +43,7 @@ class TestUpdateDensityExnerWind(StencilTest):
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         grf_tend_rho = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_v_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

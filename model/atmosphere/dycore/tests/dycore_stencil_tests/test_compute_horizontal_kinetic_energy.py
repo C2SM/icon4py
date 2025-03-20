@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy 
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -43,7 +44,7 @@ class TestComputeHorizontalKineticEnergy(StencilTest):
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 

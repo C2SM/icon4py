@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import 
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -38,7 +39,7 @@ class TestCopyCellKdimFieldToVp(StencilTest):
         return dict(field_copy=field_copy)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         field = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         field_copy = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(

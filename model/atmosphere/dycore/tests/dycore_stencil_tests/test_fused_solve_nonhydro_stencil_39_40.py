@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers
 
 from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
@@ -73,7 +74,7 @@ class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
         return dict(w_concorr_c=w_concorr_c_result)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
         z_w_concorr_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import (
     flatten_first_two_dims,
     random_field,
@@ -75,7 +76,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         zdiff_gradp = random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat)

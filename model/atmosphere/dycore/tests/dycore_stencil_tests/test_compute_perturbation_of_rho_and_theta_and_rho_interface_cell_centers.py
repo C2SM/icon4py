@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -26,7 +27,7 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
     OUTPUTS = ("rho_ic", "z_rth_pr_1", "z_rth_pr_2")
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         rho_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

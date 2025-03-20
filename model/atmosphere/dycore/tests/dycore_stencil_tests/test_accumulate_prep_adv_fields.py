@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import 
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -41,7 +42,7 @@ class TestAccumulatePrepAdvFields(StencilTest):
         return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         mass_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         mass_flx_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

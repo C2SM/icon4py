@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_vel
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -43,7 +44,7 @@ class TestCorrectContravariantVerticalVelocity(StencilTest):
         return dict(z_w_con_c=z_w_con_c)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 

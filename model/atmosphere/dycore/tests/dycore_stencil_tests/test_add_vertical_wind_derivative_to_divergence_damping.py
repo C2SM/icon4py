@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_vertical_wind_derivative_to_di
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -49,7 +50,7 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(helpers.StencilTest):
         return dict(z_graddiv_vn=z_graddiv_vn)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         hmask_dd3d = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         scalfac_dd3d = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)

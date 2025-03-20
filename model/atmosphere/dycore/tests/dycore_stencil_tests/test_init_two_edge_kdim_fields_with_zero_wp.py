@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zer
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -40,7 +41,7 @@ class TestInitTwoEdgeKdimFieldsWithZeroWp(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         edge_kdim_field_with_zero_wp_1 = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         edge_kdim_field_with_zero_wp_2 = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 

@@ -13,7 +13,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_veloc
     compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -223,7 +224,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         )
 
     @pytest.fixture
-    def input_data(self, grid: base_grid.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn_on_half_levels = data_alloc.zero_field(

@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -46,7 +47,7 @@ class TestUpdateMassFluxWeighted(StencilTest):
         return dict(mass_flx_ic=mass_flx_ic)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
         rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)

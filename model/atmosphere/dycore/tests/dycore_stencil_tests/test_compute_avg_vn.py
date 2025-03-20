@@ -14,6 +14,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import compute_avg_vn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -39,7 +40,7 @@ class TestComputeAvgVn(StencilTest):
         return dict(z_vn_avg=z_vn_avg)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

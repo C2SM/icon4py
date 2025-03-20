@@ -14,6 +14,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import compute_theta_and_exner
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -43,7 +44,7 @@ class TestComputeThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rd_o_cvd = ta.wpfloat("10.0")
         rd_o_p0ref = ta.wpfloat("20.0")
         bdy_halo_c = data_alloc.random_mask(grid, dims.CellDim)

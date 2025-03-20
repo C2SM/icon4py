@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -39,7 +40,7 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         exner_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

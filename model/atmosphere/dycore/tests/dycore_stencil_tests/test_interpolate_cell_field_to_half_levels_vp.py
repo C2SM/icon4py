@@ -17,6 +17,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     interpolate_cell_field_to_half_levels_vp,
 )
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing import helpers as test_helpers
 
@@ -50,7 +51,7 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
         return dict(interpolation_to_half_levels_vp=interpolation_to_half_levels_vp)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         interpolation_to_half_levels_vp = zero_field(

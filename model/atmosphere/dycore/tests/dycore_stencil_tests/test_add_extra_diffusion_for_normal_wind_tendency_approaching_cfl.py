@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_win
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, random_mask
 from icon4py.model.testing.helpers import StencilTest
 
@@ -102,7 +103,7 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
     MARKERS = (pytest.mark.embedded_remap_error,)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         levelmask = random_mask(grid, dims.KDim, extend={dims.KDim: 1})
         c_lin_e = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
         z_w_con_c_full = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

@@ -14,6 +14,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import update_mass_volume_flux
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -44,7 +45,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         return dict(mass_flx_ic=mass_flx_ic, vol_flx_ic=vol_flx_ic)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_contr_w_fl_l = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)

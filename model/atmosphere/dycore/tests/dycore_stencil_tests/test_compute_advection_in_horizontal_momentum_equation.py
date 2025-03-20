@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_mo
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers as test_helpers
 
 from .test_add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -142,7 +143,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         return dict(normal_wind_advective_tendency=normal_wind_advective_tendency)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
