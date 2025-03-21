@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,30 +15,11 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
-
-
-def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
-    inv_dual_edge_length: np.ndarray,
-    z_exner_ex_pr: np.ndarray,
-    ddxn_z_full: np.ndarray,
-    c_lin_e: np.ndarray,
-    z_dexner_dz_c_1: np.ndarray,
-) -> np.ndarray:
-    e2c = connectivities[dims.E2CDim]
-    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-    c_lin_e = np.expand_dims(c_lin_e, axis=-1)
-
-    z_exner_ex_pr_e2c = z_exner_ex_pr[e2c]
-    z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
-
-    z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted - ddxn_z_full * np.sum(
-        c_lin_e * z_dexner_dz_c_1[e2c], axis=1
-    )
-    return z_gradh_exner
 
 
 class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilTest):
@@ -52,20 +35,22 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
         ddxn_z_full: np.ndarray,
         c_lin_e: np.ndarray,
         z_dexner_dz_c_1: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
-        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
-            connectivities,
-            inv_dual_edge_length,
-            z_exner_ex_pr,
-            ddxn_z_full,
-            c_lin_e,
-            z_dexner_dz_c_1,
+        e2c = connectivities[dims.E2CDim]
+        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+        c_lin_e = np.expand_dims(c_lin_e, axis=-1)
+
+        z_exner_ex_pr_e2c = z_exner_ex_pr[e2c]
+        z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
+
+        z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted - ddxn_z_full * np.sum(
+            c_lin_e * z_dexner_dz_c_1[e2c], axis=1
         )
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

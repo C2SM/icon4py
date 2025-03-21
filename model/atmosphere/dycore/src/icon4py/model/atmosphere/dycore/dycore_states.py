@@ -24,17 +24,30 @@ from icon4py.model.common import (
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
-    vt: fa.EdgeKField[float]
-    vn_ie: fa.EdgeKField[
+    tangential_wind: fa.EdgeKField[float]
+    """
+    Declared as vt in ICON. Tangential wind at edge.
+    """
+
+    vn_on_half_levels: fa.EdgeKField[
         float
     ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    w_concorr_c: fa.CellKField[
+    """
+    Declared as vn_ie in ICON. Normal wind at edge on k-half levels.
+    """
+
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[
         float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    """
+    Declared as w_concorr_c in ICON. Contravariant correction at cell center on k-half levels. vn dz/dn + vt dz/dt, z is topography height
+    """
+
     theta_v_at_cells_on_half_levels: fa.CellKField[float]
     """
     Declared as theta_v_ic in ICON.
     """
+
     exner_pr: fa.CellKField[float]
     rho_ic: fa.CellKField[float]
     ddt_exner_phy: fa.CellKField[float]
@@ -47,8 +60,15 @@ class DiagnosticStateNonHydro:
     Declared as ddt_vn_phy in ICON.
     """
     grf_tend_vn: fa.EdgeKField[float]
-    ddt_vn_apc_pc: common_utils.PredictorCorrectorPair[fa.EdgeKField[float]]
-    ddt_w_adv_pc: common_utils.PredictorCorrectorPair[fa.CellKField[float]]
+    normal_wind_advective_tendency: common_utils.PredictorCorrectorPair[fa.EdgeKField[float]]
+    """
+    Declared as ddt_vn_apc_pc in ICON. Advective tendency of normal wind (including coriolis force).
+    """
+
+    vertical_wind_advective_tendency: common_utils.PredictorCorrectorPair[fa.CellKField[float]]
+    """
+    Declared as ddt_w_adv_pc in ICON. Advective tendency of vertical wind.
+    """
 
     # Analysis increments
     rho_incr: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]

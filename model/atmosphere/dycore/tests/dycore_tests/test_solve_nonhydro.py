@@ -212,9 +212,9 @@ def test_nonhydro_predictor_step(
     prognostic_states = utils.create_prognostic_states(sp)
 
     if not (at_initial_timestep and at_first_substep):
-        diagnostic_state_nh.ddt_w_adv_pc.swap()
+        diagnostic_state_nh.vertical_wind_advective_tendency.swap()
     if not at_first_substep:
-        diagnostic_state_nh.ddt_vn_apc_pc.swap()
+        diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -398,7 +398,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 30
     assert helpers.dallclose(
-        diagnostic_state_nh.vt.asnumpy(),
+        diagnostic_state_nh.tangential_wind.asnumpy(),
         sp_exit.vt().asnumpy(),
         atol=5e-14,
     )
@@ -419,14 +419,14 @@ def test_nonhydro_predictor_step(
 
     # stencil 35,36, 37,38
     assert helpers.dallclose(
-        diagnostic_state_nh.vn_ie.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        diagnostic_state_nh.vn_on_half_levels.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.vn_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14,
     )
 
     # stencil 35,36, 37,38
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_vt_ie.asnumpy()[
+        solve_nonhydro.intermediate_fields.tangential_wind_on_half_levels.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_vt_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
@@ -434,7 +434,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 35,36
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_kin_hor_e.asnumpy()[
+        solve_nonhydro.intermediate_fields.horizontal_kinetic_energy_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
@@ -442,14 +442,16 @@ def test_nonhydro_predictor_step(
     )
     # stencil 35
     assert helpers.dallclose(
-        solve_nonhydro.z_w_concorr_me.asnumpy()[edge_start_lateral_boundary_level_5:, nflatlev:],
+        solve_nonhydro._contravariant_correction_at_edges_on_model_levels.asnumpy()[
+            edge_start_lateral_boundary_level_5:, nflatlev:
+        ],
         sp_exit.z_w_concorr_me().asnumpy()[edge_start_lateral_boundary_level_5:, nflatlev:],
         atol=1e-15,
     )
 
     # stencils 39,40
     assert helpers.dallclose(
-        diagnostic_state_nh.w_concorr_c.asnumpy(),
+        diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels.asnumpy(),
         sp_exit.w_concorr_c().asnumpy(),
         atol=1e-15,
     )
@@ -494,6 +496,7 @@ def test_nonhydro_predictor_step(
         sp_exit.z_beta().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
+
     # stencil 45_b, 52
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_q.asnumpy()[
@@ -605,8 +608,8 @@ def test_nonhydro_corrector_step(
         horizontal_gradient_of_normal_wind_divergence=init_savepoint.z_graddiv_vn(),
         z_rho_expl=init_savepoint.z_rho_expl(),
         dwdz_at_cells_on_model_levels=init_savepoint.z_dwdz_dd(),
-        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
-        z_vt_ie=init_savepoint.z_vt_ie(),
+        horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
+        tangential_wind_on_half_levels=init_savepoint.z_vt_ie(),
     )
 
     second_order_divdamp_factor = init_savepoint.divdamp_fac_o2()
@@ -635,9 +638,9 @@ def test_nonhydro_corrector_step(
     prognostic_states = utils.create_prognostic_states(init_savepoint)
 
     if not (at_initial_timestep and at_first_substep):
-        diagnostic_state_nh.ddt_w_adv_pc.swap()
+        diagnostic_state_nh.vertical_wind_advective_tendency.swap()
     if not at_first_substep:
-        diagnostic_state_nh.ddt_vn_apc_pc.swap()
+        diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -926,7 +929,7 @@ def test_run_solve_nonhydro_multi_step(
     linit = sp.get_metadata("linit").get("linit")
 
     diagnostic_state_nh = utils.construct_diagnostics(
-        sp, icon_grid, backend, swap_ddt_w_adv_pc=not linit
+        sp, icon_grid, backend, swap_vertical_wind_advective_tendency=not linit
     )
     prognostic_states = utils.create_prognostic_states(sp)
 
@@ -954,9 +957,9 @@ def test_run_solve_nonhydro_multi_step(
         at_last_substep = i_substep == (ndyn_substeps - 1)
 
         if not (at_initial_timestep and at_first_substep):
-            diagnostic_state_nh.ddt_w_adv_pc.swap()
+            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
         if not at_first_substep:
-            diagnostic_state_nh.ddt_vn_apc_pc.swap()
+            diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,

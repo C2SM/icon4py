@@ -296,15 +296,15 @@ def test_run_timeloop_single_step(
         mass_fl_e=sp.mass_fl_e(),
         normal_wind_tendency_due_to_physics_process=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
         ),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp_v.ddt_w_adv_pc(current_index), sp_v.ddt_w_adv_pc(next_index)
         ),
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
+        tangential_wind=sp_v.vt(),
+        vn_on_half_levels=sp_v.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
         rho_incr=None,  # sp.rho_incr(),
         normal_wind_iau_increments=data_alloc.zero_field(
             icon_grid, dims.EdgeDim, dims.KDim, backend=backend

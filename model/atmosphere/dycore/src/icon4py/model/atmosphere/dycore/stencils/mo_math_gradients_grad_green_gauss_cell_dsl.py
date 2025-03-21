@@ -27,8 +27,7 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    p_ccpr1_wp = astype(p_ccpr1, wpfloat)
-    p_ccpr2_wp = astype(p_ccpr2, wpfloat)
+    p_ccpr1_wp, p_ccpr2_wp = astype((p_ccpr1, p_ccpr2), wpfloat)
 
     p_grad_1_u_wp = neighbor_sum(geofac_grg_x * p_ccpr1_wp(C2E2CO), axis=C2E2CODim)
     p_grad_1_v_wp = neighbor_sum(geofac_grg_y * p_ccpr1_wp(C2E2CO), axis=C2E2CODim)

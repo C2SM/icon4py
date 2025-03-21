@@ -145,17 +145,17 @@ def model_initialization_serialbox(
         mass_fl_e=solve_nonhydro_init_savepoint.mass_fl_e(),
         normal_wind_tendency_due_to_physics_process=solve_nonhydro_init_savepoint.ddt_vn_phy(),
         grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             velocity_init_savepoint.ddt_vn_apc_pc(1),
             velocity_init_savepoint.ddt_vn_apc_pc(2),
         ),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             velocity_init_savepoint.ddt_w_adv_pc(1),
             velocity_init_savepoint.ddt_w_adv_pc(2),
         ),
-        vt=velocity_init_savepoint.vt(),
-        vn_ie=velocity_init_savepoint.vn_ie(),
-        w_concorr_c=velocity_init_savepoint.w_concorr_c(),
+        tangential_wind=velocity_init_savepoint.vt(),
+        vn_on_half_levels=velocity_init_savepoint.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=velocity_init_savepoint.w_concorr_c(),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         normal_wind_iau_increments=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),

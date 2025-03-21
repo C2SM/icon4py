@@ -254,8 +254,14 @@ class IntermediateFields:
     """
     Declared as z_theta_v_e in ICON.
     """
-    z_kin_hor_e: fa.EdgeKField[float]
-    z_vt_ie: fa.EdgeKField[float]
+    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as z_kin_hor_e in ICON.
+    """
+    tangential_wind_on_half_levels: fa.EdgeKField[float]
+    """
+    Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. NOTE THAT IT ONLY HAS nlev LEVELS because it is only used for computing horizontal advection of w and thus level nlevp1 is not needed because w[nlevp1-1] is diagnostic.
+    """
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[float]
     """
     Declared as z_graddiv_vn in ICON.
@@ -303,8 +309,12 @@ class IntermediateFields:
             dwdz_at_cells_on_model_levels=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, backend=backend
             ),
-            z_kin_hor_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
-            z_vt_ie=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+            horizontal_kinetic_energy_at_edges_on_model_levels=data_alloc.zero_field(
+                grid, dims.EdgeDim, dims.KDim, backend=backend
+            ),
+            tangential_wind_on_half_levels=data_alloc.zero_field(
+                grid, dims.EdgeDim, dims.KDim, backend=backend
+            ),
         )
 
 
@@ -738,18 +748,6 @@ class SolveNonhydro:
         """
         Declared as z_rth_pr_2 in ICON.
         """
-        self.z_grad_rth_1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
-        self.z_grad_rth_2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
-        self.z_grad_rth_3 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
-        self.z_grad_rth_4 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
         self.d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, backend=self._backend)
         )
@@ -784,9 +782,12 @@ class SolveNonhydro:
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
         self.edge_field = data_alloc.index_field(self._grid, dims.EdgeDim, backend=self._backend)
-        self.z_w_concorr_me = data_alloc.zero_field(
+        self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
+        """
+        Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
+        """
         self.z_raylfac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
             self._grid, dims.KDim, backend=self._backend
@@ -991,18 +992,18 @@ class SolveNonhydro:
 
         if at_first_substep:
             # Recompute only vn tendency
-            lvn_only: bool = (
+            skip_compute_predictor_vertical_advection: bool = (
                 self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
                 and not (at_initial_timestep and at_first_substep)
             )
 
             self.velocity_advection.run_predictor_step(
-                vn_only=lvn_only,
+                skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
                 diagnostic_state=diagnostic_state_nh,
                 prognostic_state=prognostic_states.current,
-                z_w_concorr_me=self.z_w_concorr_me,
-                z_kin_hor_e=z_fields.z_kin_hor_e,
-                z_vt_ie=z_fields.z_vt_ie,
+                contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
+                horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+                tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
                 dtime=dtime,
                 cell_areas=self._cell_params.area,
             )
@@ -1027,27 +1028,6 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # scidoc:
-        # Outputs:
-        #  - z_exner_ex_pr :
-        #     $$
-        #     \exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k}, \k \in [0, \nlev) \\
-        #     \exnerprime{\ntilde}{\c}{\nlev} = 0
-        #     $$
-        #     Compute the temporal extrapolation of perturbed exner function
-        #     using the time backward scheme (see the |ICONTutorial| page 74).
-        #     This variable has nlev+1 levels even though it is defined on full levels.
-        #  - exner_pr :
-        #     $$
-        #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}
-        #     $$
-        #     Store the perturbed exner function from the previous time step.
-        #
-        # Inputs:
-        #  - $\WtimeExner$ : exner_exfac
-        #  - $\exnerprime{\n}{\c}{\k}$ : exner - exner_ref_mc
-        #  - $\exnerprime{\n-1}{\c}{\k}$ : exner_pr
-        #
         self._predictor_stencils_2_3(
             exner_exfac=self._metric_state_nonhydro.exner_exfac,
             exner=prognostic_states.current.exner,
@@ -1062,30 +1042,6 @@ class SolveNonhydro:
         )
 
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            # scidoc:
-            # Outputs:
-            #  - z_exner_ic :
-            #     $$
-            #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
-            #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
-            #     $$
-            #     Interpolate the perturbation exner from full to half levels.
-            #     The ground level is based on quadratic extrapolation (with
-            #     hydrostatic assumption?).
-            #  - z_dexner_dz_c_1 :
-            #     $$
-            #     \exnerprimedz{\ntilde}{\c}{\k} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
-            #     $$
-            #     Use the interpolated values to compute the vertical derivative
-            #     of perturbation exner at full levels.
-            #
-            # Inputs:
-            #  - $\Wlev$ : wgtfac_c
-            #  - $\Wlev_{\k}$ : wgtfacq_c
-            #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
-            #  - $\exnerprime{\ntilde}{\c}{\k\pm1/2}$ : z_exner_ic
-            #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
-            #
             self._predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
                 z_exner_ex_pr=self.temporal_extrapolation_of_perturbed_exner,
@@ -1145,26 +1101,6 @@ class SolveNonhydro:
         )
 
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            # scidoc:
-            # Outputs:
-            #  - z_dexner_dz_c_2 :
-            #     $$
-            #     \exnerprimedzz{\ntilde}{\c}{\k} = - \frac{1}{2} \left( (\vpotempprime{\n}{\c}{\k-1/2} - \vpotempprime{\n}{\c}{\k+1/2}) \dexrefdz{\c}{\k} + \vpotempprime{\n}{\c}{\k} \ddexrefdzz{\c}{\k} \right), \quad \k \in [\nflatgradp, \nlev) \\
-            #     \ddz{\exnerref{}{}} = - \frac{g}{\cpd \vpotempref{}{}}
-            #     $$
-            #     Compute the second vertical derivative of the perturbed exner function.
-            #     This uses the hydrostatic approximation (see eqs. 13 and 7,8 in
-            #     |ICONSteepSlopePressurePaper|).
-            #     Note that the reference state of temperature (eq. 15 in
-            #     |ICONSteepSlopePressurePaper|) is used when computing
-            #     $\ddz{\vpotempref{\c}{\k}}$ in $\ddexrefdzz{\c}{\k}$.
-            #
-            # Inputs:
-            #  - $\vpotempprime{\n}{\c}{\k\pm1/2}$ : z_theta_v_pr_ic
-            #  - $\vpotempprime{\n}{\c}{\k}$ : z_rth_pr_2
-            #  - $\dexrefdz{}{}$ : d2dexdz2_fac1_mc
-            #  - $\ddexrefdzz{}{}$ : d2dexdz2_fac2_mc
-            #
             self._compute_approx_of_2nd_vertical_derivative_of_exner(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
@@ -1215,23 +1151,6 @@ class SolveNonhydro:
                 horizontal_end=self._end_vertex_halo,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
-            )
-        elif self._config.iadv_rhotheta == RhoThetaAdvectionType.MIURA:
-            # Compute Green-Gauss gradients for rho and theta
-            self._mo_math_gradients_grad_green_gauss_cell_dsl(
-                p_grad_1_u=self.z_grad_rth_1,
-                p_grad_1_v=self.z_grad_rth_2,
-                p_grad_2_u=self.z_grad_rth_3,
-                p_grad_2_v=self.z_grad_rth_4,
-                p_ccpr1=self.perturbed_rho,
-                p_ccpr2=self.perturbed_theta_v,
-                geofac_grg_x=self._interpolation_state.geofac_grg_x,
-                geofac_grg_y=self._interpolation_state.geofac_grg_y,
-                horizontal_start=self._start_cell_lateral_boundary_level_3,
-                horizontal_end=self._end_cell_halo,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,  # UBOUND(p_ccpr,2)
                 offset_provider=self._grid.offset_providers,
             )
 
@@ -1329,7 +1248,7 @@ class SolveNonhydro:
             rbf_vec_coeff_e=self._interpolation_state.rbf_vec_coeff_e,
             z_vn_avg=self.z_vn_avg,
             z_graddiv_vn=z_fields.horizontal_gradient_of_normal_wind_divergence,
-            vt=diagnostic_state_nh.vt,
+            vt=diagnostic_state_nh.tangential_wind,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
@@ -1355,12 +1274,12 @@ class SolveNonhydro:
             vn=prognostic_states.next.vn,
             ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
             ddxt_z_full=self._metric_state_nonhydro.ddxt_z_full,
-            vt=diagnostic_state_nh.vt,
-            z_w_concorr_me=self.z_w_concorr_me,
+            vt=diagnostic_state_nh.tangential_wind,
+            z_w_concorr_me=self._contravariant_correction_at_edges_on_model_levels,
             wgtfac_e=self._metric_state_nonhydro.wgtfac_e,
-            vn_ie=diagnostic_state_nh.vn_ie,
-            z_vt_ie=z_fields.z_vt_ie,
-            z_kin_hor_e=z_fields.z_kin_hor_e,
+            vn_ie=diagnostic_state_nh.vn_on_half_levels,
+            z_vt_ie=z_fields.tangential_wind_on_half_levels,
+            z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
             k_field=self.k_field,
             nflatlev_startindex=self._vertical_params.nflatlev,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
@@ -1373,10 +1292,10 @@ class SolveNonhydro:
         if not self.l_vert_nested:
             self._predictor_stencils_37_38(
                 vn=prognostic_states.next.vn,
-                vt=diagnostic_state_nh.vt,
-                vn_ie=diagnostic_state_nh.vn_ie,
-                z_vt_ie=z_fields.z_vt_ie,
-                z_kin_hor_e=z_fields.z_kin_hor_e,
+                vt=diagnostic_state_nh.tangential_wind,
+                vn_ie=diagnostic_state_nh.vn_on_half_levels,
+                z_vt_ie=z_fields.tangential_wind_on_half_levels,
+                z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
                 wgtfacq_e_dsl=self._metric_state_nonhydro.wgtfacq_e,
                 horizontal_start=self._start_edge_lateral_boundary_level_5,
                 horizontal_end=self._end_edge_halo_level_2,
@@ -1387,10 +1306,10 @@ class SolveNonhydro:
 
         self._stencils_39_40(
             e_bln_c_s=self._interpolation_state.e_bln_c_s,
-            z_w_concorr_me=self.z_w_concorr_me,
+            z_w_concorr_me=self._contravariant_correction_at_edges_on_model_levels,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             k_field=self.k_field,
             nflatlev_startindex_plus1=gtx.int32(self._vertical_params.nflatlev + 1),
             nlev=self._grid.num_levels,
@@ -1417,11 +1336,11 @@ class SolveNonhydro:
         self._stencils_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_states.current.w,
-            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.predictor,
+            ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
             z_beta=z_fields.z_beta,
             exner_nnow=prognostic_states.current.exner,
@@ -1458,7 +1377,7 @@ class SolveNonhydro:
         self._stencils_47_48_49(
             w_nnew=prognostic_states.next.w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             z_rho_expl=z_fields.z_rho_expl,
             z_exner_expl=z_fields.z_exner_expl,
             rho_nnow=prognostic_states.current.rho,
@@ -1564,7 +1483,7 @@ class SolveNonhydro:
             self._compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
@@ -1607,7 +1526,7 @@ class SolveNonhydro:
             self._compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
                 horizontal_start=self._start_cell_lateral_boundary,
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
@@ -1672,8 +1591,8 @@ class SolveNonhydro:
         self.velocity_advection.run_corrector_step(
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_states.next,
-            z_kin_hor_e=z_fields.z_kin_hor_e,
-            z_vt_ie=z_fields.z_vt_ie,
+            horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+            tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
             dtime=dtime,
             cell_areas=self._cell_params.area,
         )
@@ -1687,7 +1606,7 @@ class SolveNonhydro:
         log.debug(f"corrector: start stencil 10")
         self._compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=prognostic_states.next.w,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             rho_now=prognostic_states.current.rho,
             rho_var=prognostic_states.next.rho,
@@ -1837,12 +1756,12 @@ class SolveNonhydro:
             self._stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.predictor,
-                ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc.corrector,
+                ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
+                ddt_w_adv_ntl2=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
-                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
                 z_beta=z_fields.z_beta,
                 exner_nnow=prognostic_states.current.exner,
@@ -1872,11 +1791,11 @@ class SolveNonhydro:
             self._stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.predictor,
+                ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
-                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
                 z_beta=z_fields.z_beta,
                 exner_nnow=prognostic_states.current.exner,
@@ -1914,7 +1833,7 @@ class SolveNonhydro:
         self._stencils_47_48_49(
             w_nnew=prognostic_states.next.w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             z_rho_expl=z_fields.z_rho_expl,
             z_exner_expl=z_fields.z_exner_expl,
             rho_nnow=prognostic_states.current.rho,
@@ -2077,7 +1996,7 @@ class SolveNonhydro:
                 vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
                 w_now=prognostic_states.current.w,
                 w_new=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 mass_flx_ic=prep_adv.mass_flx_ic,
                 r_nsubsteps=r_nsubsteps,
                 horizontal_start=self._start_cell_lateral_boundary,

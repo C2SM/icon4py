@@ -348,11 +348,15 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         normal_wind_tendency_due_to_physics_process=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
-        vt=vt,
-        vn_ie=vn_ie,
-        w_concorr_c=w_concorr_c,
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            ddt_vn_apc_ntl1, ddt_vn_apc_ntl2
+        ),
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            ddt_w_adv_ntl1, ddt_w_adv_ntl2
+        ),
+        tangential_wind=vt,
+        vn_on_half_levels=vn_ie,
+        contravariant_correction_at_cells_on_half_levels=w_concorr_c,
         rho_incr=None,
         normal_wind_iau_increments=vn_incr,
         exner_incr=None,

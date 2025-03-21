@@ -127,9 +127,9 @@ def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     grid: icon_grid.IconGrid,
     backend: Optional[gtx_backend.Backend],
-    swap_ddt_w_adv_pc: bool = False,
+    swap_vertical_wind_advective_tendency: bool = False,
 ):
-    current_index, next_index = (1, 0) if swap_ddt_w_adv_pc else (0, 1)
+    current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
         theta_v_at_cells_on_half_levels=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
@@ -141,15 +141,15 @@ def construct_diagnostics(
         mass_fl_e=init_savepoint.mass_fl_e(),
         normal_wind_tendency_due_to_physics_process=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)
         ),
-        vt=init_savepoint.vt(),
-        vn_ie=init_savepoint.vn_ie(),
-        w_concorr_c=init_savepoint.w_concorr_c(),
+        tangential_wind=init_savepoint.vt(),
+        vn_on_half_levels=init_savepoint.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
         rho_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
         normal_wind_iau_increments=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, backend=backend

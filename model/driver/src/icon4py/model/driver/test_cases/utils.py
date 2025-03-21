@@ -242,11 +242,11 @@ def initialize_solve_nonhydro_diagnostic_state(
     grid: icon_grid.IconGrid,
     backend: Optional[gtx_backend.Backend],
 ) -> dycore_states.DiagnosticStateNonHydro:
-    ddt_vn_apc = common_utils.PredictorCorrectorPair(
+    normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
         data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
         data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
     )
-    ddt_w_adv = common_utils.PredictorCorrectorPair(
+    vertical_wind_advective_tendency = common_utils.PredictorCorrectorPair(
         data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
@@ -273,13 +273,13 @@ def initialize_solve_nonhydro_diagnostic_state(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),
         grf_tend_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
-        ddt_vn_apc_pc=ddt_vn_apc,
-        ddt_w_adv_pc=ddt_w_adv,
-        vt=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
-        vn_ie=data_alloc.zero_field(
+        normal_wind_advective_tendency=normal_wind_advective_tendency,
+        vertical_wind_advective_tendency=vertical_wind_advective_tendency,
+        tangential_wind=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        vn_on_half_levels=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        w_concorr_c=data_alloc.zero_field(
+        contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
