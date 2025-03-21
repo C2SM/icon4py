@@ -46,7 +46,7 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
     )
 
     contravariant_correction_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nflatlev + 1,
+        nflatlev + 1 <= dims.KDim,
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
         ),

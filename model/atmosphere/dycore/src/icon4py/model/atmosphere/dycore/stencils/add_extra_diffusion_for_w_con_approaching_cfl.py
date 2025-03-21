@@ -21,6 +21,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _add_extra_diffusion_for_w_con_approaching_cfl(
+    levmask: fa.KField[bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     z_w_con_c: fa.CellKField[ta.vpfloat],
@@ -39,7 +40,7 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
     )
 
     difcoef = where(
-        cfl_clipping & owner_mask,
+        levmask & cfl_clipping & owner_mask,
         scalfac_exdiff
         * minimum(
             wpfloat("0.85") - cfl_w_limit_wp * dtime,
@@ -49,7 +50,7 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
     )
 
     ddt_w_adv_wp = where(
-        cfl_clipping & owner_mask,
+        levmask & cfl_clipping & owner_mask,
         ddt_w_adv_wp + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
         ddt_w_adv_wp,
     )
@@ -59,6 +60,7 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_extra_diffusion_for_w_con_approaching_cfl(
+    levmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     z_w_con_c: fa.CellKField[ta.vpfloat],
@@ -76,6 +78,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl(
     vertical_end: gtx.int32,
 ):
     _add_extra_diffusion_for_w_con_approaching_cfl(
+        levmask,
         cfl_clipping,
         owner_mask,
         z_w_con_c,
