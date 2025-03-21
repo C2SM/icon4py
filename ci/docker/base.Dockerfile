@@ -27,9 +27,18 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     python3-openssl \
     libreadline-dev \
     git \
-    rustc \
+    jq \
     htop && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Rust using rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustc --version && which rustc && cargo --version && which cargo
+
+# Install Bencher for performance monitoring
+RUN curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
+RUN bencher --version && which bencher
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=24.11

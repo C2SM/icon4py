@@ -68,7 +68,7 @@ def _get_or_initialize(experiment, backend, name):
             edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
             edge_center_lon=geometry_.get(geometry_meta.EDGE_LON),
             tangent_orientation=geometry_.get(geometry_meta.TANGENT_ORIENTATION),
-            f_e=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
+            coriolis_frequency=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
             edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
             primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
             inverse_primal_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
