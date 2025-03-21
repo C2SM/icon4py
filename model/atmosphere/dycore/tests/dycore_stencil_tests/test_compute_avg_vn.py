@@ -5,12 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import compute_avg_vn
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -26,7 +30,7 @@ class TestComputeAvgVn(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         e_flx_avg: np.ndarray,
         vn: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         e2c2eO = connectivities[dims.E2C2EODim]
         geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
@@ -36,7 +40,7 @@ class TestComputeAvgVn(StencilTest):
         return dict(z_vn_avg=z_vn_avg)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
