@@ -193,15 +193,15 @@ def compute_diffusion_metrics(
     for ji in range(listdim):
         jc = indlist[ji]
         k_range = range(k_start[jc], k_end[jc])
-        if all((k_range)):
+        if all(k_range):
             nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)
             z_vintcoeff[jc, :, :] = _compute_z_vintcoeff(
                 k_range, z_mc, z_mc_off, z_vintcoeff, jc, nlev
             )
 
             zd_intcoef_dsl[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
-            zd_vertoffset_dsl[jc, :, k_range] = nbidx[jc, :, k_range] - array_ns.transpose(
-                [k_range] * 3
+            zd_vertoffset_dsl[jc, :, k_range] = (
+                nbidx[jc, :, k_range] - array_ns.tile(array_ns.array(k_range), (3, 1)).T
             )
             mask_hdiff[jc, k_range] = True
 
