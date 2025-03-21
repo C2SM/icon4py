@@ -79,23 +79,26 @@ def _compute_advection_in_horizontal_momentum_equation(
 
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
     normal_wind_advective_tendency = concat_where(
-        (start_edge_nudging_level_2 <= dims.Edge < end_edge_local)
-        & ((maximum(3, nrdmax - 2) - 1) <= dims.KDim < nlev - 4),
-        _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-            levelmask,
-            c_lin_e,
-            contravariant_corrected_w_at_cells_on_model_levels,
-            ddqz_z_full_e,
-            area_edge,
-            tangent_orientation,
-            inv_primal_edge_length,
-            upward_vorticity_at_vertices_on_model_levels,
-            geofac_grdiv,
-            vn,
+        (maximum(3, nrdmax - 2) - 1) <= dims.KDim < (nlev - 4),
+        where(
+            start_edge_nudging_level_2 <= dims.Edge < end_edge_local,
+            _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
+                levelmask,
+                c_lin_e,
+                contravariant_corrected_w_at_cells_on_model_levels,
+                ddqz_z_full_e,
+                area_edge,
+                tangent_orientation,
+                inv_primal_edge_length,
+                upward_vorticity_at_vertices_on_model_levels,
+                geofac_grdiv,
+                vn,
+                normal_wind_advective_tendency,
+                cfl_w_limit,
+                scalfac_exdiff,
+                d_time,
+            ),
             normal_wind_advective_tendency,
-            cfl_w_limit,
-            scalfac_exdiff,
-            d_time,
         ),
         normal_wind_advective_tendency,
     )

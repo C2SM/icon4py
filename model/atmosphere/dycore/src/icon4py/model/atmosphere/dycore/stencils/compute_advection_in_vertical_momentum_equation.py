@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import broadcast, maximum
+from gt4py.next.ffront.fbuiltins import maximum, where
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     _add_extra_diffusion_for_w_con_approaching_cfl,
@@ -49,39 +49,49 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     nlev: gtx.int32,
     nrdmax: gtx.int32,
 ) -> fa.CellKField[ta.vpfloat]:
-
     vertical_wind_advective_tendency = concat_where(
-        (cell_lower_bound <= dims.Cell < cell_upper_bound) & (1 <= dims.KDim),
-        _compute_advective_vertical_wind_tendency(
-            contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
-        ),
-        vertical_wind_advective_tendency,
-    )
-    vertical_wind_advective_tendency = concat_where(
-        (cell_lower_bound <= dims.Cell < cell_upper_bound) & (1 <= dims.KDim),
-        _add_interpolated_horizontal_advection_of_w(
-            e_bln_c_s,
-            horizontal_advection_of_w_at_edges_on_half_levels,
+        1 <= dims.KDim,
+        where(
+            cell_lower_bound <= dims.Cell < cell_upper_bound,
+            _compute_advective_vertical_wind_tendency(
+                contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
+            ),
             vertical_wind_advective_tendency,
         ),
         vertical_wind_advective_tendency,
     )
     vertical_wind_advective_tendency = concat_where(
-        (cell_lower_bound <= dims.Cell < cell_upper_bound)
-        & ((maximum(3, nrdmax - 2) - 1) <= dims.KDim < nlev - 3),
-        _add_extra_diffusion_for_w_con_approaching_cfl(
-            levelmask,
-            cfl_clipping,
-            owner_mask,
-            contravariant_corrected_w_at_cells_on_half_levels,
-            ddqz_z_half,
-            area,
-            geofac_n2s,
-            w,
+        1 <= dims.KDim,
+        where(
+            cell_lower_bound <= dims.Cell < cell_upper_bound,
+            _add_interpolated_horizontal_advection_of_w(
+                e_bln_c_s,
+                horizontal_advection_of_w_at_edges_on_half_levels,
+                vertical_wind_advective_tendency,
+            ),
             vertical_wind_advective_tendency,
-            scalfac_exdiff,
-            cfl_w_limit,
-            dtime,
+        ),
+        vertical_wind_advective_tendency,
+    )
+    vertical_wind_advective_tendency = concat_where(
+        (maximum(3, nrdmax - 2) - 1) <= dims.KDim < (nlev - 3),
+        where(
+            cell_lower_bound <= dims.Cell < cell_upper_bound,
+            _add_extra_diffusion_for_w_con_approaching_cfl(
+                levelmask,
+                cfl_clipping,
+                owner_mask,
+                contravariant_corrected_w_at_cells_on_half_levels,
+                ddqz_z_half,
+                area,
+                geofac_n2s,
+                w,
+                vertical_wind_advective_tendency,
+                scalfac_exdiff,
+                cfl_w_limit,
+                dtime,
+            ),
+            vertical_wind_advective_tendency,
         ),
         vertical_wind_advective_tendency,
     )

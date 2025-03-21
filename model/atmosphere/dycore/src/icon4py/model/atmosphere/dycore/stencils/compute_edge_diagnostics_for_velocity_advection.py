@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import broadcast, where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
@@ -210,15 +211,19 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
 
     horizontal_advection_of_w_at_edges_on_half_levels = (
         concat_where(
-            (lateral_boundary_7 <= dims.Edge) & (dims.Edge < halo_1) & (dims.KDim < nlev),
-            _compute_horizontal_advection_term_for_vertical_velocity(
-                vn_on_half_levels,
-                inv_dual_edge_length,
-                w,
-                tangential_wind_on_half_levels,
-                inv_primal_edge_length,
-                tangent_orientation,
-                w_at_vertices,
+            dims.KDim < nlev,
+            where(
+                lateral_boundary_7 <= dims.Edge < halo_1,
+                _compute_horizontal_advection_term_for_vertical_velocity(
+                    vn_on_half_levels,
+                    inv_dual_edge_length,
+                    w,
+                    tangential_wind_on_half_levels,
+                    inv_primal_edge_length,
+                    tangent_orientation,
+                    w_at_vertices,
+                ),
+                horizontal_advection_of_w_at_edges_on_half_levels,
             ),
             horizontal_advection_of_w_at_edges_on_half_levels,
         )
