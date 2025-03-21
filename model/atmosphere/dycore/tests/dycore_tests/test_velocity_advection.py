@@ -502,7 +502,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     skip_compute_predictor_vertical_advection = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.lvn_only()
     )
-    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
@@ -539,7 +538,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-        edge=edge,
         nflatlev=gtx.int32(nflatlev),
         nlev=gtx.int32(icon_grid.num_levels),
         lateral_boundary_7=lateral_boundary_7,
@@ -1064,8 +1062,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
-    vertex = data_alloc.index_field(dim=dims.VertexDim, grid=icon_grid, backend=backend)
-    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
     edge_domain = h_grid.domain(dims.EdgeDim)
     vertex_domain = h_grid.domain(dims.VertexDim)
@@ -1105,8 +1101,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
         tangent_orientation=tangent_orientation,
         inv_primal_edge_length=inv_primal_edge_length,
         geofac_grdiv=geofac_grdiv,
-        vertex=vertex,
-        edge=edge,
         cfl_w_limit=cfl_w_limit,
         scalfac_exdiff=scalfac_exdiff,
         d_time=d_time,

@@ -152,7 +152,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         inv_primal_edge_length: np.ndarray,
         tangent_orientation: np.ndarray,
         skip_compute_predictor_vertical_advection: bool,
-        edge: np.ndarray,
         nflatlev: int,
         nlev: int,
         lateral_boundary_7: int,
@@ -190,6 +189,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             nlev,
         )
 
+        edge = np.arange(tangential_wind.shape[0])
         edge = edge[:, np.newaxis]
 
         condition_mask = (lateral_boundary_7 <= edge) & (edge < halo_1) & (k_nlev < nlev)
@@ -251,8 +251,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
-        edge = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
-
         nlev = grid.num_levels
         nflatlev = 13
 
@@ -286,7 +284,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             inv_primal_edge_length=inv_primal_edge_length,
             tangent_orientation=tangent_orientation,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-            edge=edge,
             nflatlev=nflatlev,
             nlev=nlev,
             lateral_boundary_7=lateral_boundary_7,

@@ -454,7 +454,6 @@ class Diffusion:
 
         diffusion_utils._init_nabla2_factor_in_upper_damping_zone(
             physical_heights=self._vertical_grid.interface_physical_height,
-            k_field=self.vertical_index,
             nrdmax=self._vertical_grid.end_index_of_damping_layer,
             nshift=0,
             heights_nrd_shift=self._vertical_grid.interface_physical_height.ndarray[
@@ -772,7 +771,6 @@ class Diffusion:
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=self._interpolation_state.nudgecoeff_e,
             vn=prognostic_state.vn,
-            edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=self._edge_start_nudging_level_2,

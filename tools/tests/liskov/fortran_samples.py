@@ -345,7 +345,6 @@ MULTIPLE_FUSED = """\
         !$DSL     diff_multfac_vn=diff_multfac_vn(:); &
         !$DSL     nudgecoeff_e=p_int%nudgecoeff_e(:,1); &
         !$DSL     vn=p_nh_prog%vn(:,:,1); &
-        !$DSL     edge=horizontal_idx(:); &
         !$DSL     nudgezone_diff=nudgezone_diff; &
         !$DSL     fac_bdydiff_v=fac_bdydiff_v; &
         !$DSL     start_2nd_nudge_line_idx_e=start_2nd_nudge_line_idx_e-1; &
