@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import astype, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -34,7 +35,7 @@ def _interpolate_to_half_levels(
 ) -> fa.EdgeKField[ta.vpfloat]:
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
     x_ie_wp = wgtfac_e_wp * x + (wpfloat("1.0") - wgtfac_e_wp) * x(Koff[-1])
-    return where(k > 0, astype(x_ie_wp, vpfloat), x)
+    return concat_where(dims.KDim > 0, astype(x_ie_wp, vpfloat), x)
 
 
 @gtx.field_operator
@@ -88,8 +89,8 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
         else tangential_wind_on_half_levels
     )
 
-    contravariant_correction_at_edges_on_model_levels = where(
-        nflatlev <= k,
+    contravariant_correction_at_edges_on_model_levels = concat_where(
+        nflatlev <= dims.KDim,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
         contravariant_correction_at_edges_on_model_levels,
     )
