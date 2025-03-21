@@ -1119,7 +1119,7 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
 
 
-class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
+class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
     def vn(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
@@ -1303,7 +1303,7 @@ class IconNonHydroExitSavepoint(IconSavepoint):
         return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
 
 
-class IconNonHydroExit_15_28_Savepoint(IconSavepoint):
+class NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
     def z_rho_e(self):
         return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
 
@@ -2166,9 +2166,9 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_nonhydro_15_28_init(
+    def from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
         self, istep: int, date: str, substep: int
-    ) -> IconNonHydroInit_15_28_Savepoint:
+    ) -> NonHydroInitEdgeDiagnosticsUpdateVnSavepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-14to28-init"]  # TODO
             .istep[istep]
@@ -2176,7 +2176,7 @@ class IconSerialDataProvider:
             .dyn_timestep[substep]
             .as_savepoint()
         )
-        return IconNonHydroInit_15_28_Savepoint(
+        return NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
@@ -2292,9 +2292,9 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_nonhydro_15_28_exit(
+    def from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
         self, istep: int, date: str, substep: int
-    ) -> IconNonHydroExit_15_28_Savepoint:
+    ) -> NonHydroExitEdgeDiagnosticsUpdateVnSavepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-14to28-exit"]  # TODO
             .istep[istep]
@@ -2302,7 +2302,7 @@ class IconSerialDataProvider:
             .dyn_timestep[substep]
             .as_savepoint()
         )
-        return IconNonHydroExit_15_28_Savepoint(
+        return NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 

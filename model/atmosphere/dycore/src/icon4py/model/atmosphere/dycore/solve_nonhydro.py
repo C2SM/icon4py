@@ -1196,7 +1196,6 @@ class SolveNonhydro:
             dtime=dtime,
             cpd=constants.CPD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
-            p_dthalf=(0.5 * dtime),
             grav_o_cpd=self._params.grav_o_cpd,
             is_iau_active=self._config.is_iau_active,
             limited_area=self._grid.limited_area,

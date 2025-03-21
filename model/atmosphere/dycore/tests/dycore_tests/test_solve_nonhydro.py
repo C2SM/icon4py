@@ -1068,12 +1068,14 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     istep_init,
     substep_init,
     substep_exit,
-    savepoint_nonhydro_15_28_init,
-    savepoint_nonhydro_15_28_exit,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
 ):
-    sp = savepoint_nonhydro_init
-    sp_exit = savepoint_nonhydro_exit
+    sp_nh_init = savepoint_nonhydro_init
+    sp_nh_exit = savepoint_nonhydro_exit
+    sp_stencil_init = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
+    sp_stencil_exit = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit
 
     edge_domain = h_grid.domain(dims.EdgeDim)
 
@@ -1099,27 +1101,25 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
-    current_vn = savepoint_nonhydro_15_28_init.vn()
-    next_vn = sp.vn_new()
-    tangential_wind = savepoint_nonhydro_15_28_init.vt()
-    horizontal_pressure_gradient = savepoint_nonhydro_15_28_init.z_gradh_exner()
-    perturbed_rho = savepoint_nonhydro_15_28_init.z_rth_pr(0)
-    perturbed_theta_v = savepoint_nonhydro_15_28_init.z_rth_pr(1)
-    temporal_extrapolation_of_perturbed_exner = savepoint_nonhydro_15_28_init.z_exner_ex_pr()
-    ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-        savepoint_nonhydro_15_28_init.z_dexner_dz_c(0)
+    current_vn = sp_stencil_init.vn()
+    next_vn = sp_nh_init.vn_new()
+    tangential_wind = sp_stencil_init.vt()
+    horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
+    perturbed_rho = sp_stencil_init.z_rth_pr(0)
+    perturbed_theta_v = sp_stencil_init.z_rth_pr(1)
+    temporal_extrapolation_of_perturbed_exner = sp_stencil_init.z_exner_ex_pr()
+    ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(0)
+    d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(
+        1
     )
-    d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-        savepoint_nonhydro_15_28_init.z_dexner_dz_c(1)
-    )
-    theta_v = savepoint_nonhydro_15_28_init.theta_v()
-    theta_v_at_cells_on_half_levels = savepoint_nonhydro_15_28_init.theta_v_ic()
-    predictor_normal_wind_advective_tendency = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
-    normal_wind_tendency_due_to_physics_process = savepoint_nonhydro_15_28_init.ddt_vn_phy()
-    normal_wind_iau_increments = savepoint_nonhydro_15_28_init.vn_incr()
-    hydrostatic_correction = savepoint_nonhydro_15_28_init.z_hydro_corr()
-    rho_at_edges_on_model_levels = savepoint_nonhydro_15_28_init.z_rho_e()
-    theta_v_at_edges_on_model_levels = savepoint_nonhydro_15_28_init.z_theta_v_e()
+    theta_v = sp_stencil_init.theta_v()
+    theta_v_at_cells_on_half_levels = sp_stencil_init.theta_v_ic()
+    predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
+    normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
+    normal_wind_iau_increments = sp_stencil_init.vn_incr()
+    hydrostatic_correction = sp_stencil_init.z_hydro_corr()
+    rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
+    theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
@@ -1140,10 +1140,10 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     is_iau_active = config.is_iau_active
     igradp_method = config.igradp_method
 
-    z_rho_e_ref = savepoint_nonhydro_15_28_exit.z_rho_e()
-    z_theta_v_e_ref = savepoint_nonhydro_15_28_exit.z_theta_v_e()
-    z_gradh_exner_ref = savepoint_nonhydro_15_28_exit.z_gradh_exner()
-    vn_ref = sp_exit.vn_new()
+    z_rho_e_ref = sp_stencil_exit.z_rho_e()
+    z_theta_v_e_ref = sp_stencil_exit.z_theta_v_e()
+    z_gradh_exner_ref = sp_stencil_exit.z_gradh_exner()
+    vn_ref = sp_nh_exit.vn_new()
 
     compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step.with_backend(
         backend
@@ -1186,7 +1186,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         cpd=constants.CPD,
         iau_wgt_dyn=iau_wgt_dyn,
-        p_dthalf=(0.5 * savepoint_nonhydro_init.get_metadata("dtime").get("dtime")),
         grav_o_cpd=nonhydro_params.grav_o_cpd,
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
@@ -1274,12 +1273,13 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     istep_init,
     substep_init,
     substep_exit,
-    savepoint_nonhydro_15_28_init,
-    savepoint_nonhydro_15_28_exit,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
 ):
-    sp = savepoint_nonhydro_init
-    sp_exit = savepoint_nonhydro_exit
+    sp_nh_init = savepoint_nonhydro_init
+    sp_nh_exit = savepoint_nonhydro_exit
+    sp_stencil_init = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
 
     edge_domain = h_grid.domain(dims.EdgeDim)
 
@@ -1293,30 +1293,30 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
-    dwdz_at_cells_on_model_levels = savepoint_nonhydro_15_28_init.z_dwdz_dd()
-    predictor_normal_wind_advective_tendency = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
-    corrector_normal_wind_advective_tendency = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(1)
-    normal_wind_tendency_due_to_physics_process = savepoint_nonhydro_15_28_init.ddt_vn_phy()
-    normal_wind_iau_increments = savepoint_nonhydro_15_28_init.vn_incr()
-    reduced_fourth_order_divdamp_coeff_at_nest_boundary = (
-        savepoint_nonhydro_15_28_init.bdy_divdamp()
-    )
-    fourth_order_divdamp_scaling_coeff = savepoint_nonhydro_15_28_init.scal_divdamp()
-    theta_v_at_edges_on_model_levels = savepoint_nonhydro_15_28_init.z_theta_v_e()
-    horizontal_pressure_gradient = savepoint_nonhydro_15_28_init.z_gradh_exner()
-    current_vn = savepoint_nonhydro_15_28_init.vn()
+    dwdz_at_cells_on_model_levels = sp_stencil_init.z_dwdz_dd()
+    predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
+    corrector_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(1)
+    normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
+    normal_wind_iau_increments = sp_stencil_init.vn_incr()
+    reduced_fourth_order_divdamp_coeff_at_nest_boundary = sp_stencil_init.bdy_divdamp()
+    fourth_order_divdamp_scaling_coeff = sp_stencil_init.scal_divdamp()
+    theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
+    horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
+    current_vn = sp_stencil_init.vn()
     next_vn = savepoint_nonhydro_init.vn_new()
-    horizontal_gradient_of_normal_wind_divergence = sp.z_graddiv_vn()
+    horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
     iau_wgt_dyn = config.iau_wgt_dyn
     itime_scheme = config.itime_scheme
     divdamp_order = config.divdamp_order
-    second_order_divdamp_scaling_coeff = sp.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
+    second_order_divdamp_scaling_coeff = (
+        sp_nh_init.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
+    )
     is_iau_active = config.is_iau_active
 
-    vn_ref = sp_exit.vn_new()
+    vn_ref = sp_nh_exit.vn_new()
 
     compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn_in_corrector_step.with_backend(
         backend
