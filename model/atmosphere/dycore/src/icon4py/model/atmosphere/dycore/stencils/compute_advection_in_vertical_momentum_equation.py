@@ -51,7 +51,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     vertical_wind_advective_tendency = concat_where(
         1 <= dims.KDim,
         where(
-            cell_lower_bound <= dims.Cell < cell_upper_bound,
+            cell_lower_bound <= cell < cell_upper_bound,
             _compute_advective_vertical_wind_tendency(
                 contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
             ),
@@ -62,7 +62,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     vertical_wind_advective_tendency = concat_where(
         1 <= dims.KDim,
         where(
-            cell_lower_bound <= dims.Cell < cell_upper_bound,
+            cell_lower_bound <= cell < cell_upper_bound,
             _add_interpolated_horizontal_advection_of_w(
                 e_bln_c_s,
                 horizontal_advection_of_w_at_edges_on_half_levels,
@@ -75,7 +75,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     vertical_wind_advective_tendency = concat_where(
         (maximum(3, nrdmax - 2) - 1) <= dims.KDim < (nlev - 3),
         where(
-            cell_lower_bound <= dims.Cell < cell_upper_bound,
+            cell_lower_bound <= cell < cell_upper_bound,
             _add_extra_diffusion_for_w_con_approaching_cfl(
                 levelmask,
                 cfl_clipping,
