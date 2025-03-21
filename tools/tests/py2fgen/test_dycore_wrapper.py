@@ -73,6 +73,7 @@ def test_dycore_wrapper_granule_inputs(
     caplog,
     icon_grid,
     at_initial_timestep,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
 
@@ -270,6 +271,7 @@ def test_dycore_wrapper_granule_inputs(
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
     exner_dyn_incr = sp.exner_dyn_incr()
+    vn_incr = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
 
     # Prognostic state parameters
     w_now = sp.w_now()
@@ -330,8 +332,8 @@ def test_dycore_wrapper_granule_inputs(
         theta_ref_ic=metrics_savepoint.theta_ref_ic(),
         d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
         d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
-        rho_ref_me=metrics_savepoint.rho_ref_me(),
-        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
+        reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
@@ -342,8 +344,8 @@ def test_dycore_wrapper_granule_inputs(
         wgtfac_e=metrics_savepoint.wgtfac_e(),
         wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(num_levels),
         vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
-        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
-        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
+        scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
         coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
@@ -369,7 +371,7 @@ def test_dycore_wrapper_granule_inputs(
         tangential_wind=sp.vt(),
         vn_on_half_levels=sp.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),
-        theta_v_ic=sp.theta_v_ic(),
+        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
         ddt_exner_phy=sp.ddt_exner_phy(),
@@ -377,7 +379,7 @@ def test_dycore_wrapper_granule_inputs(
         grf_tend_thv=sp.grf_tend_thv(),
         grf_tend_w=sp.grf_tend_w(),
         mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
+        normal_wind_tendency_due_to_physics_process=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)
@@ -386,7 +388,9 @@ def test_dycore_wrapper_granule_inputs(
             sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
+        normal_wind_iau_increments=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
@@ -653,6 +657,7 @@ def test_dycore_wrapper_granule_inputs(
             grf_tend_vn=grf_tend_vn,
             vn_ie=vn_ie,
             vt=vt,
+            vn_incr=vn_incr,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,
@@ -684,7 +689,7 @@ def test_dycore_wrapper_granule_inputs(
         assert result, f"Prep Advection comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
-            captured_kwargs["divdamp_fac_o2"], expected_initial_divdamp_fac
+            captured_kwargs["second_order_divdamp_factor"], expected_initial_divdamp_fac
         )
         assert result, f"Divdamp Factor comparison failed: {error_message}"
 
@@ -743,6 +748,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     caplog,
     icon_grid,
     at_initial_timestep,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
 
@@ -1078,6 +1084,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
     exner_dyn_incr = sp.exner_dyn_incr()
+    vn_incr = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
 
     # Prognostic state parameters
     w_now = sp.w_now()
@@ -1124,6 +1131,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         grf_tend_vn=grf_tend_vn,
         vn_ie=vn_ie,
         vt=vt,
+        vn_incr=vn_incr,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
         vn_traj=vn_traj,
@@ -1195,6 +1203,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     experiment,
     ndyn_substeps,
     at_initial_timestep,
+    backend,
 ):
     # savepoints
     sp = savepoint_nonhydro_init
@@ -1533,6 +1542,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
     exner_dyn_incr = sp.exner_dyn_incr()
+    vn_incr = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
 
     # Prognostic state parameters
     w_now = sp.w_now()
@@ -1601,6 +1611,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             grf_tend_vn=grf_tend_vn,
             vn_ie=vn_ie,
             vt=vt,
+            vn_incr=vn_incr,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vn_traj=vn_traj,

@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.decorator import GridType, field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
@@ -19,7 +18,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
@@ -29,8 +28,8 @@ def _fused_solve_nonhydro_stencil_39_40(
     nlev: gtx.int32,
     nflatlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
-    w_concorr_c = where(
-        nflatlev + 1 <= vert_idx < nlev,
+    w_concorr_c = concat_where(
+        nflatlev + 1 <= dims.KDim < nlev,
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         _compute_contravariant_correction_of_w_for_lower_boundary(
             e_bln_c_s, z_w_concorr_me, wgtfacq_c
@@ -39,7 +38,7 @@ def _fused_solve_nonhydro_stencil_39_40(
     return w_concorr_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],

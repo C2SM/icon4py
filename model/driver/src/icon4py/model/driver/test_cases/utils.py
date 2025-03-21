@@ -255,7 +255,7 @@ def initialize_solve_nonhydro_diagnostic_state(
         ),
     )
     return dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=data_alloc.zero_field(
+        theta_v_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         exner_pr=exner_pr,
@@ -269,7 +269,9 @@ def initialize_solve_nonhydro_diagnostic_state(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         mass_fl_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
-        ddt_vn_phy=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        normal_wind_tendency_due_to_physics_process=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),
         grf_tend_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
         normal_wind_advective_tendency=normal_wind_advective_tendency,
         vertical_wind_advective_tendency=vertical_wind_advective_tendency,
@@ -281,7 +283,7 @@ def initialize_solve_nonhydro_diagnostic_state(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
-        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
+        normal_wind_iau_increments=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
         exner_dyn_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
     )

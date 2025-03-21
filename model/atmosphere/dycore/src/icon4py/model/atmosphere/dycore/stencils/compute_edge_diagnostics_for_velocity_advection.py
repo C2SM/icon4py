@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -49,8 +50,8 @@ def _compute_vt_vn_on_half_levels_and_kinetic_energy(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels = where(
-        1 <= k < nlev,
+    vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels = concat_where(
+        1 <= dims.KDim < nlev,
         _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
             wgtfac_e, vn, tangential_wind
         ),
@@ -58,8 +59,8 @@ def _compute_vt_vn_on_half_levels_and_kinetic_energy(
     )
 
     tangential_wind_on_half_levels = (
-        where(
-            1 <= k < nlev,
+        concat_where(
+            1 <= dims.KDim < nlev,
             _interpolate_edge_field_to_half_levels_vp(wgtfac_e, tangential_wind),
             tangential_wind_on_half_levels,
         )
@@ -71,8 +72,8 @@ def _compute_vt_vn_on_half_levels_and_kinetic_energy(
         vn_on_half_levels,
         tangential_wind_on_half_levels,
         horizontal_kinetic_energy_at_edges_on_model_levels,
-    ) = where(
-        k == 0,
+    ) = concat_where(
+        dims.KDim == 0,
         _compute_horizontal_kinetic_energy(vn, tangential_wind),
         (
             vn_on_half_levels,
@@ -111,8 +112,8 @@ def _compute_derived_horizontal_winds_and_kinetic_energy_and_contravariant_corre
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    tangential_wind = where(
-        k < nlev,
+    tangential_wind = concat_where(
+        dims.KDim < nlev,
         _compute_tangential_wind(vn, rbf_vec_coeff_e),
         tangential_wind,
     )
@@ -133,8 +134,8 @@ def _compute_derived_horizontal_winds_and_kinetic_energy_and_contravariant_corre
         skip_compute_predictor_vertical_advection,
     )
 
-    contravariant_correction_at_edges_on_model_levels = where(
-        nflatlev <= k < nlev,
+    contravariant_correction_at_edges_on_model_levels = concat_where(
+        nflatlev <= dims.KDim < nlev,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
         contravariant_correction_at_edges_on_model_levels,
     )
@@ -209,8 +210,8 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     w_at_vertices = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
     horizontal_advection_of_w_at_edges_on_half_levels = (
-        where(
-            (lateral_boundary_7 <= edge) & (edge < halo_1) & (k < nlev),
+        concat_where(
+            (lateral_boundary_7 <= dims.EdgeDim) & (dims.EdgeDim < halo_1) & (dims.KDim < nlev),
             _compute_horizontal_advection_term_for_vertical_velocity(
                 vn_on_half_levels,
                 inv_dual_edge_length,
@@ -253,14 +254,14 @@ def _compute_horizontal_advection_of_w(
     start_vertex_lateral_boundary_level_2: gtx.int32,
     end_vertex_halo: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
-    w_at_vertices = where(
-        (start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo),
+    w_at_vertices = concat_where(
+        (start_vertex_lateral_boundary_level_2 <= dims.VertexDim < end_vertex_halo),
         _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp),
         0.0,
     )
 
-    horizontal_advection_of_w_at_edges_on_half_levels = where(
-        (start_edge_lateral_boundary_level_7 <= edge < end_edge_halo),
+    horizontal_advection_of_w_at_edges_on_half_levels = concat_where(
+        (start_edge_lateral_boundary_level_7 <= dims.EdgeDim < end_edge_halo),
         _compute_horizontal_advection_term_for_vertical_velocity(
             vn_on_half_levels,
             inv_dual_edge_length,

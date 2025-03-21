@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import astype, broadcast, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import astype, broadcast
 
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
@@ -28,7 +29,6 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
 ) -> tuple[
     fa.CellKField[vpfloat],
@@ -38,16 +38,16 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
         horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
     )
 
-    contravariant_correction_at_cells_model_levels = where(
-        k >= nflatlev,
+    contravariant_correction_at_cells_on_model_levels = concat_where(
+        nflatlev <= dims.KDim,
         _interpolate_to_cell_center(contravariant_correction_at_edges_on_model_levels, e_bln_c_s),
         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
-    contravariant_correction_at_cells_on_half_levels = where(
-        nflatlev + 1 <= k,
+    contravariant_correction_at_cells_on_half_levels = concat_where(
+        nflatlev + 1 <= dims.KDim,
         _interpolate_cell_field_to_half_levels_vp(
-            wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
+            wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_on_model_levels
         ),
         contravariant_correction_at_cells_on_half_levels,
     )
@@ -62,16 +62,15 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
 def _compute_contravariant_corrected_w(
     w: fa.CellKField[wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
-    contravariant_corrected_w_at_cells_on_half_levels = where(
-        k < nlev, astype(w, vpfloat), broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
+    contravariant_corrected_w_at_cells_on_half_levels = concat_where(
+        dims.KDim < nlev, astype(w, vpfloat), broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
     )
 
-    contravariant_corrected_w_at_cells_on_half_levels = where(
-        nflatlev + 1 <= k < nlev,
+    contravariant_corrected_w_at_cells_on_half_levels = concat_where(
+        nflatlev + 1 <= dims.KDim < nlev,
         _correct_contravariant_vertical_velocity(
             contravariant_corrected_w_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels,
@@ -108,7 +107,6 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
         contravariant_correction_at_edges_on_model_levels,
         wgtfac_c,
         contravariant_correction_at_cells_on_half_levels,
-        k,
         nflatlev,
         out=(
             horizontal_kinetic_energy_at_cells_on_model_levels,
@@ -123,7 +121,6 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     _compute_contravariant_corrected_w(
         w,
         contravariant_correction_at_cells_on_half_levels,
-        k,
         nflatlev,
         nlev,
         out=contravariant_corrected_w_at_cells_on_half_levels,
@@ -164,7 +161,6 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_cor
     _compute_contravariant_corrected_w(
         w,
         contravariant_correction_at_cells_on_half_levels,
-        k,
         nflatlev,
         nlev,
         out=contravariant_corrected_w_at_cells_on_half_levels,
