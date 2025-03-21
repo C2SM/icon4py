@@ -12,7 +12,7 @@ import pathlib
 import pytest
 from click.testing import CliRunner
 
-from icon4py.tools.py2fgen import cli
+from icon4py.tools.py2fgen import _cli
 
 
 @pytest.fixture
@@ -29,8 +29,8 @@ def actual_path(bindings_name: str) -> pathlib.Path:
 
 
 def invoke_cli(cli_runner, module, function, plugin_name, path):
-    cli_args = [module, function, plugin_name, "-d", "-o", path]
-    result = cli_runner.invoke(cli.main, cli_args)
+    cli_args = [module, function, plugin_name, "-o", path]
+    result = cli_runner.invoke(_cli.main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
 

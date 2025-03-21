@@ -19,6 +19,8 @@ try:
 except ImportError:
     cp = None
 
+# TODO(havogt): move to `wrappers` test
+
 
 def compare_values_shallow(value1, value2, obj_name="value"):
     # Handle comparison of NdArrayField objects

@@ -615,12 +615,6 @@ contains
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
-      !$acc host_data use_device(cell_starts)
-      !$acc host_data use_device(cell_ends)
-      !$acc host_data use_device(vertex_starts)
-      !$acc host_data use_device(vertex_ends)
-      !$acc host_data use_device(edge_starts)
-      !$acc host_data use_device(edge_ends)
       !$acc host_data use_device(c2e)
       !$acc host_data use_device(e2c)
       !$acc host_data use_device(c2e2c)
@@ -630,12 +624,6 @@ contains
       !$acc host_data use_device(v2c)
       !$acc host_data use_device(e2c2v)
       !$acc host_data use_device(c2v)
-      !$acc host_data use_device(c_owner_mask)
-      !$acc host_data use_device(e_owner_mask)
-      !$acc host_data use_device(v_owner_mask)
-      !$acc host_data use_device(c_glb_index)
-      !$acc host_data use_device(e_glb_index)
-      !$acc host_data use_device(v_glb_index)
       !$acc host_data use_device(tangent_orientation)
       !$acc host_data use_device(inverse_primal_edge_lengths)
       !$acc host_data use_device(inv_dual_edge_length)
@@ -874,18 +862,6 @@ contains
                              vertical_size=vertical_size, &
                              limited_area=limited_area, &
                              on_gpu=on_gpu)
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
