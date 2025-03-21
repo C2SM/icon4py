@@ -431,18 +431,6 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         },
     )
 
-    _compute_first_vertical_derivative_igradp_method(
-        z_exner_ic=z_exner_ic,
-        inv_ddqz_z_full=inv_ddqz_z_full,
-        z_dexner_dz_c_1=z_dexner_dz_c_1,
-        igradp_method=igradp_method,
-        out=z_dexner_dz_c_1,
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (nflatlev, vertical_end - 1),
-        },
-    )
-
     _set_theta_v_prime_ic_at_lower_boundary(
         wgtfacq_c=wgtfacq_c,
         z_rth_pr=z_rth_pr_2,
@@ -461,6 +449,18 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (n_lev, n_lev + 1),
+        },
+    )
+
+    _compute_first_vertical_derivative_igradp_method(
+        z_exner_ic=z_exner_ic,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
+        igradp_method=igradp_method,
+        out=z_dexner_dz_c_1,
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+            dims.KDim: (nflatlev, vertical_end - 1),
         },
     )
 
