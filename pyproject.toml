@@ -179,6 +179,14 @@ show_error_codes = true
 warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
+# TODO fix gtx.int32 export in gt4py
+[[tool.mypy.overrides]]
+disable_error_code = ["attr-defined", "name-defined"]
+module = '*.dycore_stencil_tests.*'
+
+
+
+
 
 # -- ruff --
 [tool.ruff]

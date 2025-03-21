@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,8 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_half_levels_and_
     interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing import helpers as test_helpers
@@ -36,8 +40,8 @@ def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_z_kin_hor_
 
 
 def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
-    wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray, **kwargs
-) -> tuple[np.ndarray]:
+    wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray, **kwargs: Any
+) -> tuple[np.ndarray, np.ndarray]:
     vn_ie = interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_numpy(
         wgtfac_e, vn
     )
@@ -56,7 +60,7 @@ class TestInterpolateVnToHalfLevelsAndComputeKineticEnergyOnEdges(test_helpers.S
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfac_e: np.ndarray,
         vn: np.ndarray,
         vt: np.ndarray,
@@ -82,7 +86,7 @@ class TestInterpolateVnToHalfLevelsAndComputeKineticEnergyOnEdges(test_helpers.S
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
