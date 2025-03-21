@@ -625,8 +625,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
 
-    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
-    vertex = data_alloc.index_field(dim=dims.VertexDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
@@ -650,8 +648,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
         inv_dual_edge_length=inv_dual_edge_length,
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
-        edge=edge,
-        vertex=vertex,
         lateral_boundary_7=lateral_boundary_7,
         halo_1=halo_1,
         start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,

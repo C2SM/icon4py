@@ -51,7 +51,8 @@ def _compute_advection_in_horizontal_momentum_equation(
     end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
     upward_vorticity_at_vertices_on_model_levels = concat_where(
-        start_vertex_lateral_boundary_level_2 <= dims.VertexDim < end_vertex_halo,
+        (start_vertex_lateral_boundary_level_2 <= dims.VertexDim)
+        & (dims.VertexDim < end_vertex_halo),
         _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot),
         0.0,
     )
@@ -74,9 +75,9 @@ def _compute_advection_in_horizontal_momentum_equation(
     )
 
     normal_wind_advective_tendency = concat_where(
-        (maximum(3, nrdmax - 2) - 1) <= dims.KDim < (nlev - 4),
+        ((maximum(3, nrdmax - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 4)),
         concat_where(
-            start_edge_nudging_level_2 <= dims.EdgeDim < end_edge_local,
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
                 levelmask,
                 c_lin_e,

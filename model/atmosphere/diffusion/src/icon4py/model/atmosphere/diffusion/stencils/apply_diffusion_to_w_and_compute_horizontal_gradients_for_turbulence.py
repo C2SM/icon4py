@@ -58,7 +58,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
 
     w = concat_where(
-        interior_idx <= CellDim < halo_idx,
+        (interior_idx <= CellDim) & (CellDim < halo_idx),
         _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
         w_old,
     )
