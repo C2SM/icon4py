@@ -906,7 +906,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/philip-paul-mueller/dace?branch=improved-2d-copy#065e0d7456f74e1f8b9c420fb20325dc4f1fa490" }
+source = { git = "https://github.com/philip-paul-mueller/dace?branch=gt4py-next-integration#6972fab34449d09cac101e97062e67bddc1c3a6e" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1394,7 +1394,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace-next#c7de03310d918588294021ec74063abb78b621da" }
+source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace-next#56c877666b7d9dd3b43089f87dba6b1120a5658c" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1841,7 +1841,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/philip-paul-mueller/dace?branch=improved-2d-copy" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/philip-paul-mueller/dace?branch=gt4py-next-integration" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
     { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=gtir-dace-next" },
