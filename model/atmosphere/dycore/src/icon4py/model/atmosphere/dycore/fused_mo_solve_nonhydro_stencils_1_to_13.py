@@ -329,6 +329,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
     dtime: float,
     wgt_nnow_rth: float,
     wgt_nnew_rth: float,
+    n_lev: gtx.int32,
     horz_idx: Field[[CellDim], gtx.int32],
     vert_idx: Field[[KDim], gtx.int32],
     start_cell_lateral_boundary_level_3: gtx.int32,
@@ -342,7 +343,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_local) & (1 <= vert_idx),
+        (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_local) & (1 <= vert_idx < n_lev),
         _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=w,
             w_concorr_c=w_concorr_c,
@@ -627,6 +628,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
     wgt_nnew_rth: float,
     horz_idx: Field[[CellDim], gtx.int32],
     vert_idx: Field[[KDim], gtx.int32],
+    n_lev: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     end_cell_local: gtx.int32,
     horizontal_start: gtx.int32,
@@ -659,6 +661,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
         dtime,
         wgt_nnow_rth,
         wgt_nnew_rth,
+        n_lev,
         horz_idx,
         vert_idx,
         start_cell_lateral_boundary_level_3,
@@ -666,6 +669,6 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
         out=(rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (vertical_start, vertical_end ),
         },
     )
