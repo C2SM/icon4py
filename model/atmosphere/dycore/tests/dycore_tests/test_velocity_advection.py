@@ -1050,7 +1050,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
-    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
     edge_domain = h_grid.domain(dims.EdgeDim)
 
@@ -1086,14 +1085,11 @@ def test_compute_advection_in_horizontal_momentum_equation(
         inv_primal_edge_length=inv_primal_edge_length,
         geofac_grdiv=geofac_grdiv,
         k=k,
-        edge=edge,
         cfl_w_limit=cfl_w_limit,
         scalfac_exdiff=scalfac_exdiff,
         d_time=d_time,
         nlev=icon_grid.num_levels,
         nrdmax=nrdmax,
-        start_edge_nudging_level_2=start_edge_nudging_level_2,
-        end_edge_local=end_edge_local,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
         vertical_start=0,

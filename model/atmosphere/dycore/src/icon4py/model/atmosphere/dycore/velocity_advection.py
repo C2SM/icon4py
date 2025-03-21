@@ -309,11 +309,8 @@ class VelocityAdvection:
             d_time=dtime,
             levelmask=levmask,  # TODO(havogt): can we get rid of the levelmask here?
             k=self.k_field,
-            edge=self.edge_field,
             nlev=self.grid.num_levels,
             nrdmax=self.vertical_params.nrdmax,
-            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
-            end_edge_local=self._end_edge_local,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(self.grid.num_edges),
             vertical_start=gtx.int32(0),
@@ -457,11 +454,8 @@ class VelocityAdvection:
             d_time=dtime,
             levelmask=levmask,  # TODO(havogt): can we get rid of the levelmask here?
             k=self.k_field,
-            edge=self.edge_field,
             nlev=self.grid.num_levels,
             nrdmax=self.vertical_params.nrdmax,
-            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
-            end_edge_local=self._end_edge_local,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(self.grid.num_edges),
             vertical_start=gtx.int32(0),
