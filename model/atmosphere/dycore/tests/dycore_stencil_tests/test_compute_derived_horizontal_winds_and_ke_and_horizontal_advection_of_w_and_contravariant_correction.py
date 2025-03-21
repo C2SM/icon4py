@@ -152,7 +152,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         inv_primal_edge_length: np.ndarray,
         tangent_orientation: np.ndarray,
         skip_compute_predictor_vertical_advection: bool,
-        k: np.ndarray,
         edge: np.ndarray,
         nflatlev: int,
         nlev: int,
@@ -163,6 +162,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
+        k = np.arange(nlev + 1)
         k_nlev = k[:-1]
 
         (
@@ -251,11 +251,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
-        k = data_alloc.index_field(
-            dim=dims.KDim,
-            grid=grid,
-            extend={dims.KDim: 1},
-        )
         edge = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
 
         nlev = grid.num_levels
@@ -291,7 +286,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             inv_primal_edge_length=inv_primal_edge_length,
             tangent_orientation=tangent_orientation,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-            k=k,
             edge=edge,
             nflatlev=nflatlev,
             nlev=nlev,

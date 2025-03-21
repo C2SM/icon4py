@@ -120,9 +120,7 @@ class VelocityAdvection:
         self.vcfl_dsl = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.k_field = data_alloc.index_field(
-            self.grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
-        )
+
         self.cell_field = data_alloc.index_field(self.grid, dims.CellDim, backend=self._backend)
         self.edge_field = data_alloc.index_field(self.grid, dims.EdgeDim, backend=self._backend)
         self.vertex_field = data_alloc.index_field(self.grid, dims.VertexDim, backend=self._backend)
@@ -207,7 +205,6 @@ class VelocityAdvection:
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             tangent_orientation=self.edge_params.tangent_orientation,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-            k=self.k_field,
             edge=self.edge_field,
             nflatlev=self.vertical_params.nflatlev,
             nlev=gtx.int32(self.grid.num_levels),
@@ -229,7 +226,6 @@ class VelocityAdvection:
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             wgtfac_c=self.metric_state.wgtfac_c,
-            k=self.k_field,
             nflatlev=self.vertical_params.nflatlev,
             nlev=self.grid.num_levels,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
@@ -277,7 +273,6 @@ class VelocityAdvection:
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
             cell=self.cell_field,
-            k=self.k_field,
             cell_lower_bound=self._start_cell_nudging,
             cell_upper_bound=self._end_cell_local,
             nlev=gtx.int32(self.grid.num_levels),
@@ -314,7 +309,6 @@ class VelocityAdvection:
             scalfac_exdiff=scalfac_exdiff,
             d_time=dtime,
             levelmask=self.levelmask,
-            k=self.k_field,
             vertex=self.vertex_field,
             edge=self.edge_field,
             nlev=self.grid.num_levels,
@@ -394,7 +388,6 @@ class VelocityAdvection:
             w=prognostic_state.w,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            k=self.k_field,
             nflatlev=self.vertical_params.nflatlev,
             nlev=self.grid.num_levels,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
@@ -442,7 +435,6 @@ class VelocityAdvection:
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
             cell=self.cell_field,
-            k=self.k_field,
             cell_lower_bound=self._start_cell_nudging,
             cell_upper_bound=self._end_cell_local,
             nlev=gtx.int32(self.grid.num_levels),
@@ -479,7 +471,6 @@ class VelocityAdvection:
             scalfac_exdiff=scalfac_exdiff,
             d_time=dtime,
             levelmask=self.levelmask,
-            k=self.k_field,
             vertex=self.vertex_field,
             edge=self.edge_field,
             nlev=self.grid.num_levels,

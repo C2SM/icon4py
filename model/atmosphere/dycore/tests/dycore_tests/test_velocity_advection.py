@@ -498,9 +498,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
-    k = data_alloc.index_field(
-        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
-    )
 
     skip_compute_predictor_vertical_advection = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.lvn_only()
@@ -542,7 +539,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-        k=k,
         edge=edge,
         nflatlev=gtx.int32(nflatlev),
         nlev=gtx.int32(icon_grid.num_levels),
@@ -952,7 +948,6 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     ddt_w_adv_ref = savepoint_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
 
-    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
 
     nrdmax = grid_savepoint.nrdmax()[0]
@@ -994,7 +989,6 @@ def test_compute_advection_in_vertical_momentum_equation(
         dtime=dtime,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
         cell=cell,
-        k=k,
         cell_lower_bound=cell_lower_bound,
         cell_upper_bound=cell_upper_bound,
         nlev=icon_grid.num_levels,

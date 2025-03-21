@@ -812,8 +812,6 @@ class Diffusion:
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
-            k=self.vertical_index,
-            cell=self.horizontal_cell_index,
             nrdmax=int32(  # DaCe parser peculiarity (does not work as gtx.int32)
                 self._vertical_grid.end_index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries

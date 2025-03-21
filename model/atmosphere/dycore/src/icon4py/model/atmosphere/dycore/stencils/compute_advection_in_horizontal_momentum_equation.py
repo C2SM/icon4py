@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import broadcast
 from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import maximum, where
 
@@ -44,7 +43,6 @@ def _compute_advection_in_horizontal_momentum_equation(
     scalfac_exdiff: ta.wpfloat,
     d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
-    k: fa.KField[gtx.int32],
     vertex: fa.VertexField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
     nlev: gtx.int32,
@@ -77,7 +75,6 @@ def _compute_advection_in_horizontal_momentum_equation(
         normal_wind_advective_tendency,
     )
 
-    k = broadcast(k, (dims.EdgeDim, dims.KDim))
     normal_wind_advective_tendency = concat_where(
         (maximum(3, nrdmax - 2) - 1) <= dims.KDim < (nlev - 4),
         where(
@@ -127,7 +124,6 @@ def compute_advection_in_horizontal_momentum_equation(
     scalfac_exdiff: ta.wpfloat,
     d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
-    k: fa.KField[gtx.int32],
     vertex: fa.VertexField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
     nlev: gtx.int32,
@@ -164,7 +160,6 @@ def compute_advection_in_horizontal_momentum_equation(
         scalfac_exdiff,
         d_time,
         levelmask,
-        k,
         vertex,
         edge,
         nlev,

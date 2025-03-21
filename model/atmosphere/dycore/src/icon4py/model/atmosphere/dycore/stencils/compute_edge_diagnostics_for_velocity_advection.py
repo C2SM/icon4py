@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -42,7 +42,6 @@ def _compute_vt_vn_on_half_levels_and_kinetic_energy(
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
@@ -102,7 +101,6 @@ def _compute_derived_horizontal_winds_and_kinetic_energy_and_contravariant_corre
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
@@ -129,7 +127,6 @@ def _compute_derived_horizontal_winds_and_kinetic_energy_and_contravariant_corre
         tangential_wind,
         vn_on_half_levels,
         horizontal_kinetic_energy_at_edges_on_model_levels,
-        k,
         nlev,
         skip_compute_predictor_vertical_advection,
     )
@@ -168,7 +165,6 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     skip_compute_predictor_vertical_advection: bool,
-    k: fa.KField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
     nflatlev: gtx.int32,
     nlev: gtx.int32,
@@ -200,12 +196,9 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
         tangential_wind,
         vn_on_half_levels,
         horizontal_kinetic_energy_at_edges_on_model_levels,
-        k,
         nlev,
         skip_compute_predictor_vertical_advection,
     )
-
-    k = broadcast(k, (dims.EdgeDim, dims.KDim))
 
     w_at_vertices = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
@@ -301,7 +294,6 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     skip_compute_predictor_vertical_advection: bool,
-    k: fa.KField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
     nflatlev: gtx.int32,
     nlev: gtx.int32,
@@ -331,7 +323,6 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
         inv_primal_edge_length,
         tangent_orientation,
         skip_compute_predictor_vertical_advection,
-        k,
         edge,
         nflatlev,
         nlev,
