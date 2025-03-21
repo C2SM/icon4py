@@ -401,7 +401,7 @@ class SimpleGrid(BaseGrid):
             "E2V": (self._get_offset_provider, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
             "E2C2V": (self._get_offset_provider, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
             "C2CE": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.C2EDim,
                 dims.CellDim,
                 dims.CEDim,
@@ -410,25 +410,25 @@ class SimpleGrid(BaseGrid):
             "C2E2C2E": (self._get_offset_provider, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
             "C2E2C2E2C": (self._get_offset_provider, dims.C2E2C2E2CDim, dims.CellDim, dims.CellDim),
             "E2ECV": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.E2C2VDim,
                 dims.EdgeDim,
                 dims.ECVDim,
             ),
             "E2EC": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.E2CDim,
                 dims.EdgeDim,
                 dims.ECDim,
             ),
             "C2CEC": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.C2E2CDim,
                 dims.CellDim,
                 dims.CECDim,
             ),
             "C2CECEC": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.C2E2C2E2CDim,
                 dims.CellDim,
                 dims.CECECDim,

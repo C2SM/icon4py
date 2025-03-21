@@ -29,7 +29,6 @@ if TYPE_CHECKING:
 #:  via GT4Py
 CUDA_DEVICE_TYPES = (
     gtx_core_defs.DeviceType.CUDA,
-    gtx_core_defs.DeviceType.CUDA_MANAGED,
     gtx_core_defs.DeviceType.ROCM,
 )
 
