@@ -8,7 +8,7 @@
 import gt4py.next as gtx
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_to_vn import (
     _apply_nabla2_and_nabla4_global_to_vn,
@@ -56,8 +56,8 @@ def _apply_diffusion_to_vn(
 
     # TODO: Use if-else statement instead
     vn = (
-        where(
-            start_2nd_nudge_line_idx_e <= edge,
+        concat_where(
+            start_2nd_nudge_line_idx_e <= dims.EdgeDim,
             _apply_nabla2_and_nabla4_to_vn(
                 area_edge,
                 kh_smag_e,
@@ -71,8 +71,8 @@ def _apply_diffusion_to_vn(
             _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
         )
         if limited_area
-        else where(
-            start_2nd_nudge_line_idx_e <= edge,
+        else concat_where(
+            start_2nd_nudge_line_idx_e <= dims.EdgeDim,
             _apply_nabla2_and_nabla4_global_to_vn(
                 area_edge,
                 kh_smag_e,

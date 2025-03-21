@@ -8,7 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     _init_cell_kdim_field_with_zero_vp,
@@ -28,11 +29,11 @@ def _init_two_cell_kdim_fields_index_with_zero_vp(
     """Formerly known as _mo_solve_nonhydro_stencil_45 and _mo_solve_nonhydro_stencil_45_b."""
     k = broadcast(k, (dims.CellDim, dims.KDim))
 
-    field_index_with_zero_1 = where(
-        (k == k1), _init_cell_kdim_field_with_zero_vp(), field_index_with_zero_1
+    field_index_with_zero_1 = concat_where(
+        (dims.KDim == k1), _init_cell_kdim_field_with_zero_vp(), field_index_with_zero_1
     )
-    field_index_with_zero_2 = where(
-        (k == k2), _init_cell_kdim_field_with_zero_vp(), field_index_with_zero_2
+    field_index_with_zero_2 = concat_where(
+        (dims.KDim == k2), _init_cell_kdim_field_with_zero_vp(), field_index_with_zero_2
     )
 
     return field_index_with_zero_1, field_index_with_zero_2
