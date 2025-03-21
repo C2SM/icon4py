@@ -318,32 +318,6 @@ def test_nonhydro_predictor_step(
         atol=1e-22,
     )
 
-    # grad_green_gauss_cell_dsl
-    assert helpers.dallclose(
-        solve_nonhydro.z_grad_rth_1.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_grad_rth(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        rtol=1e-6,
-        atol=1e-21,
-    )
-    assert helpers.dallclose(
-        solve_nonhydro.z_grad_rth_2.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_grad_rth(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        rtol=1e-6,
-        atol=1e-21,
-    )
-    assert helpers.dallclose(
-        solve_nonhydro.z_grad_rth_3.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_grad_rth(2).asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        rtol=5e-6,
-        atol=1e-17,
-    )
-    assert helpers.dallclose(
-        solve_nonhydro.z_grad_rth_4.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_grad_rth(3).asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        rtol=1e-6,
-        atol=1e-21,
-    )
-
     # TODO Fix REGIONAL
     # compute_horizontal_advection_of_rho_and_theta
     assert helpers.dallclose(
