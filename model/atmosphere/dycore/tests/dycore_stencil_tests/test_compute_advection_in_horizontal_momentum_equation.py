@@ -15,8 +15,9 @@ import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
     compute_advection_in_horizontal_momentum_equation,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers as test_helpers
 
 from .test_add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -52,19 +53,19 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         tangent_orientation: np.ndarray,
         inv_primal_edge_length: np.ndarray,
         geofac_grdiv: np.ndarray,
-        cfl_w_limit: np.ndarray,
-        scalfac_exdiff: np.ndarray,
-        d_time: float,
+        cfl_w_limit: ta.wpfloat,
+        scalfac_exdiff: ta.wpfloat,
+        d_time: ta.wpfloat,
         levelmask: np.ndarray,
         k: np.ndarray,
         vertex: np.ndarray,
         edge: np.ndarray,
         nlev: int,
         nrdmax: int,
-        start_vertex_lateral_boundary_level_2,
-        end_vertex_halo,
-        start_edge_nudging_level_2,
-        end_edge_local,
+        start_vertex_lateral_boundary_level_2: gtx.int32,
+        end_vertex_halo: gtx.int32,
+        start_edge_nudging_level_2: gtx.int32,
+        end_edge_local: gtx.int32,
         **kwargs: Any,
     ) -> dict:
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
@@ -142,7 +143,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         return dict(normal_wind_advective_tendency=normal_wind_advective_tendency)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
