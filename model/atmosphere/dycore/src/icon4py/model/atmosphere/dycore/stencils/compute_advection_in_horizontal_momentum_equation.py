@@ -81,7 +81,7 @@ def _compute_advection_in_horizontal_momentum_equation(
     normal_wind_advective_tendency = concat_where(
         (maximum(3, nrdmax - 2) - 1) <= dims.KDim < (nlev - 4),
         where(
-            start_edge_nudging_level_2 <= dims.Edge < end_edge_local,
+            start_edge_nudging_level_2 <= edge < end_edge_local,
             _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
                 levelmask,
                 c_lin_e,
