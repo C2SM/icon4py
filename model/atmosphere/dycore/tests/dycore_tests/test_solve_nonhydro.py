@@ -1117,7 +1117,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
     normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increments = sp_stencil_init.vn_incr()
-    hydrostatic_correction = sp_stencil_init.z_hydro_corr()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -1154,7 +1153,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         current_vn=current_vn,
         next_vn=next_vn,
         tangential_wind=tangential_wind,
-        hydrostatic_correction=hydrostatic_correction,
         reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
         reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
         perturbed_rho=perturbed_rho,
@@ -1169,12 +1167,12 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         normal_wind_iau_increments=normal_wind_iau_increments,
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
-        pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
-        primal_normal_cell_1=primal_normal_cell_1,
-        dual_normal_cell_1=dual_normal_cell_1,
-        primal_normal_cell_2=primal_normal_cell_2,
-        dual_normal_cell_2=dual_normal_cell_2,
+        pos_on_tplane_e_x=interpolation_savepoint.pos_on_tplane_e_x(),
+        pos_on_tplane_e_y=interpolation_savepoint.pos_on_tplane_e_y(),
+        primal_normal_cell_x=primal_normal_cell_1,
+        dual_normal_cell_x=dual_normal_cell_1,
+        primal_normal_cell_y=primal_normal_cell_2,
+        dual_normal_cell_y=dual_normal_cell_2,
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         c_lin_e=interpolation_savepoint.c_lin_e(),
         ikoffset=metrics_savepoint.vertoffset_gradp(),

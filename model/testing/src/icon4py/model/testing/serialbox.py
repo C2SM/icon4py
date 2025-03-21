@@ -2097,13 +2097,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityInitEdgeDiagnosticsSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-1to7-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityInitEdgeDiagnosticsSavepoint(
@@ -2111,13 +2111,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionCellDiagnosticsInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to14-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionCellDiagnosticsInitSavepoint(
@@ -2125,13 +2125,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionVerticalMomentumInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionVerticalMomentumInitSavepoint(
@@ -2139,13 +2139,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionHorizontalMomentumInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionHorizontalMomentumInitSavepoint(
@@ -2223,13 +2223,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionEdgeDiagnosticsExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-1to7-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionEdgeDiagnosticsExitSavepoint(
@@ -2237,13 +2237,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionCellDiagnosticsExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to13-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionCellDiagnosticsExitSavepoint(
@@ -2251,13 +2251,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionVerticalMomentumExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionVerticalMomentumExitSavepoint(
@@ -2265,13 +2265,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionHorizontalMomentumExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionHorizontalMomentumExitSavepoint(

@@ -202,7 +202,7 @@ def savepoint_compute_edge_diagnostics_for_velocity_advection_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
-        istep=istep_init, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -219,7 +219,7 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-        istep=istep_init, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -236,7 +236,7 @@ def savepoint_compute_advection_in_vertical_momentum_equation_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_init(
-        istep=istep_init, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -253,7 +253,7 @@ def savepoint_compute_advection_in_horizontal_momentum_equation_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
-        istep=istep_init, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
