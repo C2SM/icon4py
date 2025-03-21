@@ -80,12 +80,6 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     )
     vn_on_half_levels = _interpolate_to_half_levels(k, wgtfac_e, vn)
 
-    contravariant_correction_at_edges_on_model_levels = where(
-        nflatlev <= k,
-        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
-        contravariant_correction_at_edges_on_model_levels,
-    )
-
     # TODO(havogt): for now and performance, we should split this into two programs for
     # skip_compute_predictor_vertical_advection True/False
     tangential_wind_on_half_levels = (
@@ -93,6 +87,13 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
         if not skip_compute_predictor_vertical_advection
         else tangential_wind_on_half_levels
     )
+
+    contravariant_correction_at_edges_on_model_levels = where(
+        nflatlev <= k,
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
+        contravariant_correction_at_edges_on_model_levels,
+    )
+
     w_at_vertices = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
     horizontal_advection_of_w_at_edges_on_half_levels = (
         _compute_horizontal_advection_term_for_vertical_velocity(
