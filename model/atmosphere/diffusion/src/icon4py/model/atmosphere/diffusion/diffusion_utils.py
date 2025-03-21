@@ -7,7 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, minimum, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast, minimum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, VertexDim
@@ -165,8 +166,8 @@ def _init_nabla2_factor_in_upper_damping_zone(
     heights_nrd_shift: float,
     heights_1: float,
 ) -> fa.KField[float]:
-    height_sliced = where(
-        (k_field >= (1 + nshift)) & (k_field < (nshift + nrdmax + 1)), physical_heights, 0.0
+    height_sliced = concat_where(
+        ((1 + nshift) <= dims.KDim < (nshift + nrdmax + 1)), physical_heights, 0.0
     )
     diff_multfac_n2w = (
         1.0 / 12.0 * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4

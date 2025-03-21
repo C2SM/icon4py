@@ -8,7 +8,7 @@
 import gt4py.next as gtx
 from gt4py.next import broadcast
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import maximum, where
+from gt4py.next.ffront.fbuiltins import maximum
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
@@ -54,14 +54,14 @@ def _compute_advection_in_horizontal_momentum_equation(
     start_edge_nudging_level_2: gtx.int32,
     end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
-    upward_vorticity_at_vertices_on_model_levels = where(
-        start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo,
+    upward_vorticity_at_vertices_on_model_levels = concat_where(
+        start_vertex_lateral_boundary_level_2 <= dims.VertexDim < end_vertex_halo,
         _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot),
         0.0,
     )
 
-    normal_wind_advective_tendency = where(
-        start_edge_nudging_level_2 <= edge < end_edge_local,
+    normal_wind_advective_tendency = concat_where(
+        start_edge_nudging_level_2 <= dims.EdgeDim < end_edge_local,
         _compute_advective_normal_wind_tendency(
             horizontal_kinetic_energy_at_edges_on_model_levels,
             coeff_gradekin,
@@ -80,8 +80,8 @@ def _compute_advection_in_horizontal_momentum_equation(
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
     normal_wind_advective_tendency = concat_where(
         (maximum(3, nrdmax - 2) - 1) <= dims.KDim < (nlev - 4),
-        where(
-            start_edge_nudging_level_2 <= edge < end_edge_local,
+        concat_where(
+            start_edge_nudging_level_2 <= dims.EdgeDim < end_edge_local,
             _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
                 levelmask,
                 c_lin_e,
