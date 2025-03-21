@@ -53,14 +53,14 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     # TODO(havogt): we should get rid of the cell_lower_bound and cell_upper_bound,
     # they are only to protect write to halo (if I understand correctly)
     vertical_wind_advective_tendency = concat_where(
-        (cell_lower_bound <= dims.CellDim < cell_upper_bound) & (1 <= dims.KDim),
+        dims.KDim,
         _compute_advective_vertical_wind_tendency(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
         ),
         vertical_wind_advective_tendency,
     )
     vertical_wind_advective_tendency = concat_where(
-        (cell_lower_bound <= dims.CellDim < cell_upper_bound) & (1 <= dims.KDim),
+        1 <= dims.KDim,
         _add_interpolated_horizontal_advection_of_w(
             e_bln_c_s,
             horizontal_advection_of_w_at_edges_on_half_levels,
@@ -69,8 +69,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
         vertical_wind_advective_tendency,
     )
     vertical_wind_advective_tendency = concat_where(
-        (cell_lower_bound <= dims.CellDim < cell_upper_bound)
-        & ((maximum(3, nrdmax - 2) - 1) <= dims.KDim < nlev - 3),
+        (maximum(3, nrdmax - 2) - 1) <= dims.KDim < nlev - 3,
         _add_extra_diffusion_for_w_con_approaching_cfl(
             cfl_clipping,
             owner_mask,
