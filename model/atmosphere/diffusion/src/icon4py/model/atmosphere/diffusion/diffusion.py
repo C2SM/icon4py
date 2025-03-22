@@ -452,7 +452,7 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
 
-        diffusion_utils._init_nabla2_factor_in_upper_damping_zone(
+        diffusion_utils._init_nabla2_factor_in_upper_damping_zone.with_backend(self._backend)(
             physical_heights=self._vertical_grid.interface_physical_height,
             nrdmax=self._vertical_grid.end_index_of_damping_layer,
             nshift=0,
