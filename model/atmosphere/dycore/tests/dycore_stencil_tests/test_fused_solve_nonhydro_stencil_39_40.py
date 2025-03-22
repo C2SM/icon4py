@@ -32,10 +32,10 @@ def _fused_solve_nonhydro_stencil_39_40_numpy(
     z_w_concorr_me: np.ndarray,
     wgtfac_c: np.ndarray,
     wgtfacq_c: np.ndarray,
-    vert_idx: np.ndarray,
     nlev: int,
     nflatlev: int,
 ) -> np.ndarray:
+    vert_idx = np.arange(nlev)
     w_concorr_c = np.where(
         (nflatlev < vert_idx) & (vert_idx < nlev),
         compute_contravariant_correction_of_w_numpy(
@@ -63,13 +63,12 @@ class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
         z_w_concorr_me: np.ndarray,
         wgtfac_c: np.ndarray,
         wgtfacq_c: np.ndarray,
-        vert_idx: np.ndarray,
         nlev: int,
         nflatlev: int,
         **kwargs: Any,
     ) -> dict:
         w_concorr_c_result = _fused_solve_nonhydro_stencil_39_40_numpy(
-            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
+            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, nlev, nflatlev
         )
         return dict(w_concorr_c=w_concorr_c_result)
 
@@ -81,8 +80,6 @@ class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
         wgtfacq_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         w_concorr_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
-        vert_idx = data_alloc.index_field(grid, dims.KDim, dtype=gtx.int32)
-
         nlev = grid.num_levels
         nflatlev = 13
 
@@ -91,7 +88,6 @@ class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             wgtfacq_c=wgtfacq_c,
-            vert_idx=vert_idx,
             nlev=nlev,
             nflatlev=nflatlev,
             w_concorr_c=w_concorr_c,

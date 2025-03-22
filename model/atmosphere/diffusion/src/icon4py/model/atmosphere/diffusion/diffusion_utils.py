@@ -7,7 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, minimum, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast, minimum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, VertexDim
@@ -159,14 +160,13 @@ def init_diffusion_local_fields_for_regular_timestep(
 @gtx.field_operator
 def _init_nabla2_factor_in_upper_damping_zone(
     physical_heights: fa.KField[float],
-    k_field: fa.KField[gtx.int32],
     nrdmax: gtx.int32,
     nshift: gtx.int32,
     heights_nrd_shift: float,
     heights_1: float,
 ) -> fa.KField[float]:
-    height_sliced = where(
-        (k_field >= (1 + nshift)) & (k_field < (nshift + nrdmax + 1)), physical_heights, 0.0
+    height_sliced = concat_where(
+        ((1 + nshift) <= dims.KDim) & (dims.KDim < (nshift + nrdmax + 1)), physical_heights, 0.0
     )
     diff_multfac_n2w = (
         1.0 / 12.0 * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4
@@ -177,7 +177,6 @@ def _init_nabla2_factor_in_upper_damping_zone(
 @gtx.program
 def init_nabla2_factor_in_upper_damping_zone(
     physical_heights: fa.KField[float],
-    k_field: fa.KField[gtx.int32],
     diff_multfac_n2w: fa.KField[float],
     nrdmax: gtx.int32,
     nshift: gtx.int32,
@@ -203,7 +202,6 @@ def init_nabla2_factor_in_upper_damping_zone(
     """
     _init_nabla2_factor_in_upper_damping_zone(
         physical_heights=physical_heights,
-        k_field=k_field,
         nrdmax=nrdmax,
         nshift=nshift,
         heights_nrd_shift=heights_nrd_shift,

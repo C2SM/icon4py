@@ -43,8 +43,6 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         inv_dual_edge_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
         tangent_orientation: np.ndarray,
-        edge: np.ndarray,
-        vertex: np.ndarray,
         lateral_boundary_7: int,
         halo_1: int,
         start_vertex_lateral_boundary_level_2: int,
@@ -54,6 +52,8 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
+        edge = np.arange(tangential_wind_on_half_levels.shape[0])
+        vertex = np.arange(c_intp.shape[0])
         edge = edge[:, np.newaxis]
         vertex = vertex[:, np.newaxis]
         condition_mask1 = (start_vertex_lateral_boundary_level_2 <= vertex) & (
@@ -101,9 +101,6 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
-        edge = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
-        vertex = data_alloc.index_field(dim=dims.VertexDim, grid=grid)
-
         nlev = grid.num_levels
 
         edge_domain = h_grid.domain(dims.EdgeDim)
@@ -129,8 +126,6 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
             inv_dual_edge_length=inv_dual_edge_length,
             inv_primal_edge_length=inv_primal_edge_length,
             tangent_orientation=tangent_orientation,
-            edge=edge,
-            vertex=vertex,
             lateral_boundary_7=lateral_boundary_7,
             halo_1=halo_1,
             start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,

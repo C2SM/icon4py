@@ -44,13 +44,13 @@ class TestApplyDiffusionToVn(StencilTest):
         diff_multfac_vn: np.ndarray,
         nudgecoeff_e: np.ndarray,
         vn: np.ndarray,
-        edge: np.ndarray,
         nudgezone_diff: np.ndarray,
         fac_bdydiff_v: np.ndarray,
         start_2nd_nudge_line_idx_e: np.int32,
         limited_area: bool,
         **kwargs: Any,
     ):
+        edge = np.arange(area_edge.shape[0])
         vn_cp = vn.copy()
         z_nabla4_e2 = calculate_nabla4_numpy(
             connectivities,
@@ -99,8 +99,6 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        edge = data_alloc.index_field(grid=grid, dim=dims.EdgeDim)
-
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
 
@@ -141,7 +139,6 @@ class TestApplyDiffusionToVn(StencilTest):
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=nudgecoeff_e,
             vn=vn,
-            edge=edge,
             nudgezone_diff=nudgezone_diff,
             fac_bdydiff_v=fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=start_2nd_nudge_line_idx_e,

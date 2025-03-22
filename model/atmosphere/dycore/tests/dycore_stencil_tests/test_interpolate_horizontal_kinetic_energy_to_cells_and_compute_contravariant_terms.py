@@ -52,7 +52,6 @@ class TestInterpolateHorizontalKineticWnergyToCellsAndComputeContravariantTerms(
         contravariant_correction_at_edges_on_model_levels: np.ndarray,
         e_bln_c_s: np.ndarray,
         wgtfac_c: np.ndarray,
-        k: np.ndarray,
         nflatlev: ta.wpfloat,
         nlev: ta.wpfloat,
         horizontal_start: int,
@@ -60,6 +59,7 @@ class TestInterpolateHorizontalKineticWnergyToCellsAndComputeContravariantTerms(
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
+        k = np.arange(0, nlev + 1)
         k_nlev = k[:-1]
 
         horizontal_kinetic_energy_at_cells_on_model_levels_cp = (
@@ -148,9 +148,6 @@ class TestInterpolateHorizontalKineticWnergyToCellsAndComputeContravariantTerms(
         )
         e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-
-        k = data_alloc.index_field(dim=dims.KDim, grid=grid, extend={dims.KDim: 1})
-
         nlev = grid.num_levels
         nflatlev = 4
 
@@ -169,7 +166,6 @@ class TestInterpolateHorizontalKineticWnergyToCellsAndComputeContravariantTerms(
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             e_bln_c_s=e_bln_c_s,
             wgtfac_c=wgtfac_c,
-            k=k,
             nflatlev=nflatlev,
             nlev=nlev,
             horizontal_start=horizontal_start,

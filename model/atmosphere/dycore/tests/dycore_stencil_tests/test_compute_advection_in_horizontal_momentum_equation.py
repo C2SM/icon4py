@@ -57,9 +57,6 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         scalfac_exdiff: ta.wpfloat,
         d_time: ta.wpfloat,
         levelmask: np.ndarray,
-        k: np.ndarray,
-        vertex: np.ndarray,
-        edge: np.ndarray,
         nlev: int,
         nrdmax: int,
         start_vertex_lateral_boundary_level_2: gtx.int32,
@@ -69,7 +66,9 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         **kwargs: Any,
     ) -> dict:
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
-
+        k = np.arange(nlev)
+        vertex = np.arange(geofac_rot.shape[0])
+        edge = np.arange(vn.shape[0])
         vertex = vertex[:, np.newaxis]
         edge = edge[:, np.newaxis]
 
@@ -174,9 +173,6 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = data_alloc.index_field(grid, dims.KDim)
-        vertex = data_alloc.index_field(grid, dims.VertexDim)
-        edge = data_alloc.index_field(grid, dims.EdgeDim)
         nlev = grid.num_levels
 
         nrdmax = 5
@@ -212,9 +208,6 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             scalfac_exdiff=scalfac_exdiff,
             d_time=d_time,
             levelmask=levelmask,
-            k=k,
-            vertex=vertex,
-            edge=edge,
             nlev=nlev,
             nrdmax=nrdmax,
             start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,

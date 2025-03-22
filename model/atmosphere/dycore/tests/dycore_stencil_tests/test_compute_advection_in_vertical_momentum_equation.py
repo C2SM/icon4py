@@ -53,13 +53,13 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     cell: np.ndarray,
-    k: np.ndarray,
     cell_lower_bound: int,
     cell_upper_bound: int,
     nlev: int,
     nrdmax: int,
 ) -> np.ndarray:
     cell = cell[:, np.newaxis]
+    k = np.arange(nlev)
 
     condition1 = (cell_lower_bound <= cell) & (cell < cell_upper_bound) & (k >= 1)
 
@@ -142,7 +142,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
         cell: np.ndarray,
-        k: np.ndarray,
         cell_lower_bound: int,
         cell_upper_bound: int,
         nlev: int,
@@ -184,7 +183,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
                     cfl_clipping,
                     owner_mask,
                     cell,
-                    k,
                     cell_lower_bound,
                     cell_upper_bound,
                     nlev,
@@ -243,7 +241,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        k = data_alloc.index_field(grid, dims.KDim)
         cell = data_alloc.index_field(grid, dims.CellDim)
 
         nlev = grid.num_levels
@@ -282,7 +279,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
             cfl_clipping=cfl_clipping,
             owner_mask=owner_mask,
             cell=cell,
-            k=k,
             cell_lower_bound=cell_lower_bound,
             cell_upper_bound=cell_upper_bound,
             nlev=nlev,
