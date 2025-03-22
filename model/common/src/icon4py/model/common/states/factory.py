@@ -444,6 +444,7 @@ class ProgramFieldProvider(FieldProvider):
                 horizontal_offsets = {
                     k: v
                     for k, v in grid.offset_providers.items()
+                    # TODO(halungge): review this workaround, as the fix should be available in the gt4py baseline
                     if isinstance(v, gtx.Connectivity)
                     and v.domain.dims[0].kind == gtx.DimensionKind.HORIZONTAL
                 }
