@@ -171,6 +171,7 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     assert all(p >= 0 for p in params.smagorinski_factor)
 
 
+@pytest.mark.infinite_concat_where
 @pytest.mark.datatest
 def test_diffusion_init(
     savepoint_diffusion_init,
@@ -318,6 +319,7 @@ def _verify_init_values_against_savepoint(
     )
 
 
+@pytest.mark.infinite_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment,step_date_init",
