@@ -39,7 +39,7 @@ class TestInterpolateHorizontalKineticWnergyToCellsAndComputeContravariantTerms(
         "contravariant_correction_at_cells_on_half_levels",
         "contravariant_corrected_w_at_cells_on_half_levels",
     )
-    MARKERS = (pytest.mark.requires_concat_where,)
+    MARKERS = (pytest.mark.requires_concat_where, pytest.mark.infinite_concat_where)
 
     @staticmethod
     def reference(

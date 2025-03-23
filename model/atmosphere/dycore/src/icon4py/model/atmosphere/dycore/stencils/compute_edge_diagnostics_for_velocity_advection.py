@@ -248,7 +248,8 @@ def _compute_horizontal_advection_of_w(
     end_vertex_halo: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
     w_at_vertices = concat_where(
-        (start_vertex_lateral_boundary_level_2 <= dims.VertexDim < end_vertex_halo),
+        (start_vertex_lateral_boundary_level_2 <= dims.VertexDim)
+        & (dims.VertexDim < end_vertex_halo),
         _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp),
         0.0,
     )

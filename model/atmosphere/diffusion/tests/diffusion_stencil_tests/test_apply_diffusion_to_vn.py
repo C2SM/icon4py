@@ -119,11 +119,9 @@ class TestApplyDiffusionToVn(StencilTest):
         fac_bdydiff_v = 5.0
         nudgezone_diff = 9.0
 
-        start_2nd_nudge_line_idx_e = 6
-
         edge_domain = h_grid.domain(dims.EdgeDim)
+        start_2nd_nudge_line_idx_e = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-
         horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         return dict(

@@ -22,12 +22,8 @@ def _init_two_cell_kdim_fields_index_with_zero_vp(
     k2: gtx.int32,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_45 and _mo_solve_nonhydro_stencil_45_b."""
-    field_index_with_zero_1 = concat_where(
-        (dims.KDim == k1), vpfloat("0.0"), field_index_with_zero_1
-    )
-    field_index_with_zero_2 = concat_where(
-        (dims.KDim == k2), vpfloat("0.0"), field_index_with_zero_2
-    )
+    field_index_with_zero_1 = concat_where(dims.KDim == k1, vpfloat("0.0"), field_index_with_zero_1)
+    field_index_with_zero_2 = concat_where(dims.KDim == k2, vpfloat("0.0"), field_index_with_zero_2)
 
     return field_index_with_zero_1, field_index_with_zero_2
 

@@ -56,7 +56,7 @@ def _apply_diffusion_to_vn(
     # TODO: Use if-else statement instead
     vn = (
         concat_where(
-            start_2nd_nudge_line_idx_e <= dims.EdgeDim,
+            dims.EdgeDim >= start_2nd_nudge_line_idx_e,
             _apply_nabla2_and_nabla4_to_vn(
                 area_edge,
                 kh_smag_e,
@@ -71,7 +71,7 @@ def _apply_diffusion_to_vn(
         )
         if limited_area
         else concat_where(
-            start_2nd_nudge_line_idx_e <= dims.EdgeDim,
+            dims.EdgeDim >= start_2nd_nudge_line_idx_e,
             _apply_nabla2_and_nabla4_global_to_vn(
                 area_edge,
                 kh_smag_e,
