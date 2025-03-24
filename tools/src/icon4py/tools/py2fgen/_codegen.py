@@ -8,7 +8,7 @@
 
 from typing import Any, Final, Literal, Sequence, TypeGuard, Union
 
-from gt4py.eve import Node, codegen, datamodels
+from gt4py.eve import Node, codegen
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 
 from icon4py.tools.py2fgen import _definitions, _utils
@@ -46,26 +46,12 @@ def is_array(param: _definitions.ParamDescriptor) -> TypeGuard[_definitions.Arra
 class Func(Node):
     name: str
     args: dict[str, Union[_definitions.ArrayParamDescriptor, _definitions.ScalarParamDescriptor]]
-    rendered_params: str = datamodels.field(init=False)  # TODO remove
-
-    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        params = []
-        for name, param in self.args.items():
-            params.append(name)
-            if is_array(param):
-                params.extend(_size_arg_name(name, i) for i in range(param.rank))
-        params.append("on_gpu")
-        self.rendered_params = ", ".join(params)
 
 
 class BindingsLibrary(Node):
     module_name: str
     library_name: str
     functions: list[Func]
-
-
-class PythonWrapper(BindingsLibrary):
-    cffi_decorator: str = CFFI_DECORATOR
 
 
 def to_c_type(scalar_type: _definitions.ScalarKind) -> str:
@@ -124,20 +110,31 @@ def render_fortran_array_dimensions(
 
 
 class PythonWrapperGenerator(codegen.TemplatedGenerator):
-    def visit_PythonWrapper(self, node: PythonWrapper, **kwargs: Any) -> str:
+    def visit_BindingsLibrary(self, node: BindingsLibrary, **kwargs: Any) -> str:
         def render_size_args_tuple(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             size_args = ",".join(f"{_size_arg_name(name, i)}" for i in range(param.rank))
             return f"({size_args},)"
+
+        def render_params(func: Func) -> str:
+            params = []
+            for name, param in func.args.items():
+                params.append(name)
+                if is_array(param):
+                    params.extend(_size_arg_name(name, i) for i in range(param.rank))
+            params.append("on_gpu")
+            return ", ".join(params)
 
         return self.generic_visit(
             node,
             ScalarKind=_definitions.ScalarKind,
             is_array=is_array,
             render_size_args_tuple=render_size_args_tuple,
+            render_params=render_params,
+            cffi_decorator=CFFI_DECORATOR,
             **kwargs,
         )
 
-    PythonWrapper = as_jinja(
+    BindingsLibrary = as_jinja(
         """\
 import logging
 from {{ library_name }} import ffi
@@ -160,7 +157,7 @@ from {{ module_name }} import {{ func.name }}
 
 {{ cffi_decorator }}
 def {{ func.name }}_wrapper(
-{{func.rendered_params}}
+{{render_params(func)}}
 ):
     try:
         if __debug__:
@@ -252,37 +249,8 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
         return f"{to_c_type(param.dtype)}{render_c_pointer(param)} {name}"
 
 
-class F90FunctionDeclaration(Func):
-    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__post_init__()  # call Func __post_init__
-
-
-class F90FunctionDefinition(Func):
-    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__post_init__()  # call Func __post_init__
-
-
 def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -> str:
     return f"{','.join(attribute for attribute in  attributes if attribute is not None)} :: {name}"
-
-
-class F90Interface(Node):
-    bindings_library: BindingsLibrary
-    function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
-    function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
-
-    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        functions = self.bindings_library.functions
-        self.function_declaration = [
-            F90FunctionDeclaration(name=f.name, args=f.args) for f in functions
-        ]
-        self.function_definition = [
-            F90FunctionDefinition(
-                name=f.name,
-                args=f.args,
-            )
-            for f in functions
-        ]
 
 
 def _size_arg_name(name: str, i: int) -> str:
@@ -293,28 +261,8 @@ def _size_param_declaration(name: str, value: bool = True) -> str:
     return f"integer(c_int){', value' if value else ''} :: {name}"
 
 
-class F90InterfaceGenerator(codegen.TemplatedGenerator):
-    F90Interface = as_jinja(
-        """\
-module {{ _this_node.bindings_library.library_name }}
-    use, intrinsic :: iso_c_binding
-    implicit none
-
-    {% for func in _this_node.bindings_library.functions %}
-    public :: {{ func.name }}
-    {% endfor %}
-
-interface
-    {{ '\n'.join(function_declaration) }}
-end interface
-
-contains
-    {{ '\n'.join(function_definition) }}
-end module
-"""
-    )
-
-    def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs: Any) -> str:
+class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
+    def visit_Func(self, func: Func, **kwargs: Any) -> str:
         param_names = []
         param_declarations = []
         for name, param in func.args.items():
@@ -348,7 +296,7 @@ end module
             param_declarations=param_declarations,
         )
 
-    F90FunctionDeclaration = as_jinja(
+    Func = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
    import :: c_int, c_double, c_bool, c_ptr
@@ -360,7 +308,9 @@ end function {{name}}_wrapper
     """
     )
 
-    def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs: Any) -> str:
+
+class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
+    def visit_Func(self, func: Func, **kwargs: Any) -> str:
         def render_args(name: str, param: _definitions.ParamDescriptor) -> str:
             if is_array(param):
                 if param.is_optional:
@@ -437,7 +387,7 @@ end function {{name}}_wrapper
             is_array=is_array,
         )
 
-    F90FunctionDefinition = as_jinja(
+    Func = as_jinja(
         """
 subroutine {{name}}({{param_names}})
    use, intrinsic :: iso_c_binding
@@ -491,6 +441,37 @@ end subroutine {{name}}
     )
 
 
+class F90InterfaceGenerator(codegen.TemplatedGenerator):
+    def visit_BindingsLibrary(self, bindings_library: BindingsLibrary, **kwargs: Any) -> str:
+        bindings_functions = FortranBindingsFunctionGenerator.apply(bindings_library.functions)
+        iso_c_bindings_functions = FortranISOCBindingsGenerator.apply(bindings_library.functions)
+        return self.generic_visit(
+            bindings_library,
+            bindings_functions=bindings_functions,
+            iso_c_bindings_functions=iso_c_bindings_functions,
+        )
+
+    BindingsLibrary = as_jinja(
+        """\
+module {{ _this_node.library_name }}
+    use, intrinsic :: iso_c_binding
+    implicit none
+
+    {% for func in _this_node.functions %}
+    public :: {{ func.name }}
+    {% endfor %}
+
+interface
+    {{ '\n'.join(iso_c_bindings_functions) }}
+end interface
+
+contains
+    {{ '\n'.join(bindings_functions) }}
+end module
+"""
+    )
+
+
 def generate_c_header(bindings_library: BindingsLibrary) -> str:
     """
     Generate C header code from the given plugin.
@@ -515,13 +496,7 @@ def generate_python_wrapper(bindings_library: BindingsLibrary) -> str:
     Returns:
         Formatted Python wrapper code as a string.
     """
-    python_wrapper = PythonWrapper(
-        module_name=bindings_library.module_name,
-        library_name=bindings_library.library_name,
-        functions=bindings_library.functions,
-    )
-
-    generated_code = PythonWrapperGenerator.apply(python_wrapper)
+    generated_code = PythonWrapperGenerator.apply(bindings_library)
     return codegen.format_source("python", generated_code)
 
 
@@ -532,5 +507,5 @@ def generate_f90_interface(bindings_library: BindingsLibrary) -> str:
     Args:
         plugin: The BindingsLibrary instance containing information for code generation.
     """
-    generated_code = F90InterfaceGenerator.apply(F90Interface(bindings_library=bindings_library))
+    generated_code = F90InterfaceGenerator.apply(bindings_library)
     return _utils.format_fortran_code(generated_code)
