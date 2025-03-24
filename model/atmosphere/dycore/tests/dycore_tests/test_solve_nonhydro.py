@@ -1239,7 +1239,7 @@ def test_run_solve_nonhydro_1_to_13_predictor(
         z_dexner_dz_c_1.asnumpy()[lb:, nflatlev:],
         z_dexner_dz_c_1_ref.asnumpy()[lb:, nflatlev:],
         atol=1e-6,
-    )
+    )  # TODO: check
     assert helpers.dallclose(
         z_dexner_dz_c_2.asnumpy()[lb:, nflat_gradp:],
         z_dexner_dz_c_2_ref.asnumpy()[lb:, nflat_gradp:],
@@ -1288,14 +1288,6 @@ def test_run_solve_nonhydro_1_to_13_corrector(
     backend,
 ):
     dtime = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     vert_idx = data_alloc.index_field(
         dim=dims.KDim, grid=icon_grid, backend=backend, extend={dims.KDim: 1}
     )
@@ -1325,8 +1317,6 @@ def test_run_solve_nonhydro_1_to_13_corrector(
     )
 
     end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-    end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
-    end_cell_halo_level_2 = icon_grid.end_index((cell_domain(h_grid.Zone.HALO_LEVEL_2)))
 
     wgtfac_c = metrics_savepoint.wgtfac_c()
     theta_ref_mc = metrics_savepoint.theta_ref_mc()
@@ -1337,7 +1327,6 @@ def test_run_solve_nonhydro_1_to_13_corrector(
     rho_ic_ref = savepoint_nonhydro_15_28_init.rho_ic()
     z_theta_v_pr_ic_ref = savepoint_nonhydro_15_28_init.z_theta_v_pr_ic()
     theta_v_ic_ref = savepoint_nonhydro_15_28_init.theta_v_ic()
-    # z_th_ddz_exner_c_ref = savepoint_nonhydro_15_28_init.z_th_ddz_exner_c()
 
     fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13_corrector.with_backend(
         backend
@@ -1363,26 +1352,24 @@ def test_run_solve_nonhydro_1_to_13_corrector(
         wgt_nnew_rth=wgt_nnew_rth,
         horz_idx=horz_idx,
         vert_idx=vert_idx,
-        n_lev= icon_grid.num_levels,
         start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
         end_cell_local=end_cell_local,
-        # horizontal_start= 0,
-        # horizontal_end=icon_grid.num_cells,
-        # vertical_start= 1,
-        # vertical_end=icon_grid.num_levels ,
-            offset_provider={
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=1,
+        vertical_end=icon_grid.num_levels,
+        offset_provider={
             "Koff": dims.KDim,
         },
     )
     lb = start_cell_lateral_boundary_level_3
 
-    assert helpers.dallclose(rho_ic.asnumpy()[lb:, ], rho_ic_ref.asnumpy()[lb:, ])
+    assert helpers.dallclose(rho_ic.asnumpy()[lb:,], rho_ic_ref.asnumpy()[lb:,])
 
-    assert helpers.dallclose(theta_v_ic.asnumpy()[lb:, ], theta_v_ic_ref.asnumpy()[lb:, ])
+    assert helpers.dallclose(theta_v_ic.asnumpy()[lb:,], theta_v_ic_ref.asnumpy()[lb:,])
 
-    assert helpers.dallclose(z_theta_v_pr_ic.asnumpy()[lb: ,:icon_grid.num_levels-1], z_theta_v_pr_ic_ref.asnumpy()[lb: ,:icon_grid.num_levels-1], atol=1e-9)
-
-
-
-
-
+    assert helpers.dallclose(
+        z_theta_v_pr_ic.asnumpy()[lb:, : icon_grid.num_levels - 1],
+        z_theta_v_pr_ic_ref.asnumpy()[lb:, : icon_grid.num_levels - 1],
+        atol=1e-9,
+    )

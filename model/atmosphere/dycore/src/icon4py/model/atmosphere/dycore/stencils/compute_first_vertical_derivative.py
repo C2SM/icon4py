@@ -24,6 +24,22 @@ def _compute_first_vertical_derivative(
     return z_dexner_dz_c_1
 
 
+@field_operator
+def _compute_first_vertical_derivative_igradp_method(
+    z_exner_ic: fa.CellKField[vpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    z_dexner_dz_c_1: fa.CellKField[vpfloat],
+    igradp_method: gtx.int32,
+) -> fa.CellKField[vpfloat]:
+    """Formerly known as _mo_solve_nonhydro_stencil_06."""
+    z_dexner_dz_c_1 = (
+        (z_exner_ic - z_exner_ic(Koff[1])) * inv_ddqz_z_full
+        if igradp_method == 3
+        else z_dexner_dz_c_1
+    )
+    return z_dexner_dz_c_1
+
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_first_vertical_derivative(
     z_exner_ic: fa.CellKField[vpfloat],

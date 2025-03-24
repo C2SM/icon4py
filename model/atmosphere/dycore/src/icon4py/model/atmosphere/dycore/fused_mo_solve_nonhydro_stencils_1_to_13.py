@@ -21,6 +21,7 @@
 
 import gt4py.next as gtx
 from gt4py.next import program
+from icon4py.model.common import field_type_aliases as fa
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field, bool, broadcast, maximum, where
@@ -29,13 +30,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
-    _predictor_stencils_11_lower_upper,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_derivative_of_exner import (
     _compute_approx_of_2nd_vertical_derivative_of_exner,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import (
-    _compute_first_vertical_derivative,
+    _compute_first_vertical_derivative_igradp_method,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
@@ -56,6 +56,9 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp impo
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
+from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boundary import (
+    _set_theta_v_prime_ic_at_lower_boundary,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import CellDim, KDim
 
@@ -89,6 +92,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13(
     vert_idx: Field[[KDim], gtx.int32],
     limited_area: bool,
     igradp_method: gtx.int32,
+    n_lev: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_cell_lateral_boundary: gtx.int32,
@@ -205,7 +209,6 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13(
         z_dexner_dz_c_2,
     )
 
-
 @field_operator
 def _fused_mo_solve_nonhydro_stencils_1_to_13_restriced(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
@@ -242,26 +245,25 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_restriced(
 
 @field_operator
 def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
-    w: fa.CellKField[vpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
-    rho_nnow: fa.CellKField[vpfloat],
-    rho_nvar: fa.CellKField[vpfloat],
-    theta_v_nnow: fa.CellKField[vpfloat],
-    theta_v_nvar: fa.CellKField[vpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
-    theta_ref_mc: fa.CellKField[vpfloat],
-    vwind_expl_wgt: fa.CellField[vpfloat],
-    exner_pr: fa.CellKField[vpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[vpfloat],
-    z_theta_v_pr_ic: fa.CellKField[vpfloat],
-    theta_v_ic: fa.CellKField[vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
-    dtime: vpfloat,
-    wgt_nnow_rth: vpfloat,
-    wgt_nnew_rth: vpfloat,
-    n_lev: gtx.int32,
+    w: fa.CellKField[ta.vpfloat],
+    w_concorr_c: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    rho_nnow: fa.CellKField[ta.vpfloat],
+    rho_nvar: fa.CellKField[ta.vpfloat],
+    theta_v_nnow: fa.CellKField[ta.vpfloat],
+    theta_v_nvar: fa.CellKField[ta.vpfloat],
+    wgtfac_c: fa.CellKField[ta.wpfloat],
+    theta_ref_mc: fa.CellKField[ta.wpfloat],
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
+    exner_pr: fa.CellKField[ta.wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[ta.wpfloat],
+    rho_ic: fa.CellKField[ta.wpfloat],
+    z_theta_v_pr_ic: fa.CellKField[ta.wpfloat],
+    theta_v_ic: fa.CellKField[ta.wpfloat],
+    z_th_ddz_exner_c: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
+    wgt_nnow_rth: ta.wpfloat,
+    wgt_nnew_rth: ta.wpfloat,
     horz_idx: fa.CellField[gtx.int32],
     vert_idx: fa.KField[gtx.int32],
     start_cell_lateral_boundary_level_3: gtx.int32,
@@ -275,7 +277,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_local) & (1 <= vert_idx < n_lev),
+        (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_local) & (1 <= vert_idx),
         _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=w,
             w_concorr_c=w_concorr_c,
@@ -431,18 +433,6 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         },
     )
 
-    _compute_first_vertical_derivative_igradp_method(
-        z_exner_ic=z_exner_ic,
-        inv_ddqz_z_full=inv_ddqz_z_full,
-        z_dexner_dz_c_1=z_dexner_dz_c_1,
-        igradp_method=igradp_method,
-        out=z_dexner_dz_c_1,
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (nflatlev, vertical_end - 1),
-        },
-    )
-
     _set_theta_v_prime_ic_at_lower_boundary(
         wgtfacq_c=wgtfacq_c,
         z_rth_pr=z_rth_pr_2,
@@ -464,43 +454,49 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         },
     )
 
+    _compute_first_vertical_derivative_igradp_method(
+        z_exner_ic=z_exner_ic,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
+        igradp_method=igradp_method,
+        out=z_dexner_dz_c_1,
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+            dims.KDim: (nflatlev, vertical_end - 1),
+        },
+    )
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
-    w: fa.CellKField[vpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
-    rho_nnow: fa.CellKField[vpfloat],
-    rho_nvar: fa.CellKField[vpfloat],
-    theta_v_nnow: fa.CellKField[vpfloat],
-    theta_v_nvar: fa.CellKField[vpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
-    theta_ref_mc: fa.CellKField[vpfloat],
-    vwind_expl_wgt: fa.CellField[vpfloat],
-    exner_pr: fa.CellKField[vpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[vpfloat],
-    z_theta_v_pr_ic: fa.CellKField[vpfloat],
-    theta_v_ic: fa.CellKField[vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
-    dtime: vpfloat,
-    wgt_nnow_rth: vpfloat,
-    wgt_nnew_rth: vpfloat,
+    w: fa.CellKField[ta.wpfloat],
+    w_concorr_c: fa.CellKField[ta.wpfloat],
+    ddqz_z_half: fa.CellKField[ta.wpfloat],
+    rho_nnow: fa.CellKField[ta.wpfloat],
+    rho_nvar: fa.CellKField[ta.wpfloat],
+    theta_v_nnow: fa.CellKField[ta.wpfloat],
+    theta_v_nvar: fa.CellKField[ta.wpfloat],
+    wgtfac_c: fa.CellKField[ta.wpfloat],
+    theta_ref_mc: fa.CellKField[ta.wpfloat],
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
+    exner_pr: fa.CellKField[ta.wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[ta.wpfloat],
+    rho_ic: fa.CellKField[ta.wpfloat],
+    z_theta_v_pr_ic: fa.CellKField[ta.wpfloat],
+    theta_v_ic: fa.CellKField[ta.wpfloat],
+    z_th_ddz_exner_c: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
+    wgt_nnow_rth: ta.wpfloat,
+    wgt_nnew_rth: ta.wpfloat,
     horz_idx: fa.CellField[gtx.int32],
     vert_idx: fa.KField[gtx.int32],
-    n_lev: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     end_cell_local: gtx.int32,
-    # horizontal_start: gtx.int32,
-    # horizontal_end: gtx.int32,
-    # vertical_start: gtx.int32,
-    # vertical_end: gtx.int32,
-) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-]:
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
     _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
         w,
         w_concorr_c,
@@ -521,14 +517,13 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
         dtime,
         wgt_nnow_rth,
         wgt_nnew_rth,
-        n_lev,
         horz_idx,
         vert_idx,
         start_cell_lateral_boundary_level_3,
         end_cell_local,
         out=(rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
-        # domain={
-        #     dims.CellDim: (horizontal_start, horizontal_end),
-        #     dims.KDim: (vertical_start, vertical_end ),
-        # },
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
