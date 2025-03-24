@@ -1683,14 +1683,15 @@ class SolveNonhydro:
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
-        self._compute_rho_virtual_potential_temperatures_and_pressure_gradient(
+
+        self._fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
             w=prognostic_states.next.w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
-            rho_now=prognostic_states.current.rho,
-            rho_var=prognostic_states.next.rho,
-            theta_now=prognostic_states.current.theta_v,
-            theta_var=prognostic_states.next.theta_v,
+            rho_nnow=prognostic_states.current.rho,
+            rho_nvar=prognostic_states.next.rho,
+            theta_v_nnow=prognostic_states.current.theta_v,
+            theta_v_nvar=prognostic_states.next.theta_v,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             theta_ref_mc=self._metric_state_nonhydro.theta_ref_mc,
             vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
@@ -1703,12 +1704,42 @@ class SolveNonhydro:
             dtime=dtime,
             wgt_nnow_rth=self._params.wgt_nnow_rth,
             wgt_nnew_rth=self._params.wgt_nnew_rth,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_local,
-            vertical_start=1,
-            vertical_end=self._grid.num_levels,
+            horz_idx=self.cell_field,
+            vert_idx=self.k_field,
+            start_cell_lateral_boundary_level_3=self._start_cell_lateral_boundary_level_3,
+            end_cell_local=self._end_cell_local,
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(self._grid.num_cells),
+            vertical_start=gtx.int32(1),
+            vertical_end=gtx.int32(self._grid.num_levels),
             offset_provider=self._grid.offset_providers,
         )
+        # self._compute_rho_virtual_potential_temperatures_and_pressure_gradient(
+        #     w=prognostic_states.next.w,
+        #     w_concorr_c=diagnostic_state_nh.w_concorr_c,
+        #     ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
+        #     rho_now=prognostic_states.current.rho,
+        #     rho_var=prognostic_states.next.rho,
+        #     theta_now=prognostic_states.current.theta_v,
+        #     theta_var=prognostic_states.next.theta_v,
+        #     wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
+        #     theta_ref_mc=self._metric_state_nonhydro.theta_ref_mc,
+        #     vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
+        #     exner_pr=diagnostic_state_nh.exner_pr,
+        #     d_exner_dz_ref_ic=self._metric_state_nonhydro.d_exner_dz_ref_ic,
+        #     rho_ic=diagnostic_state_nh.rho_ic,
+        #     z_theta_v_pr_ic=self.z_theta_v_pr_ic,
+        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
+        #     z_th_ddz_exner_c=self.z_th_ddz_exner_c,
+        #     dtime=dtime,
+        #     wgt_nnow_rth=self._params.wgt_nnow_rth,
+        #     wgt_nnew_rth=self._params.wgt_nnew_rth,
+        #     horizontal_start=self._start_cell_lateral_boundary_level_3,
+        #     horizontal_end=self._end_cell_local,
+        #     vertical_start=1,
+        #     vertical_end=self._grid.num_levels,
+        #     offset_provider=self._grid.offset_providers,
+        # )
 
         log.debug(f"corrector: start stencil 17")
         self._add_vertical_wind_derivative_to_divergence_damping(
