@@ -36,6 +36,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_der
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import (
     _compute_first_vertical_derivative_igradp_method,
+    _compute_first_and_second_vertical_derivative_exner,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
@@ -92,6 +93,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13(
     vert_idx: Field[[KDim], gtx.int32],
     limited_area: bool,
     igradp_method: gtx.int32,
+    n_lev: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_cell_lateral_boundary: gtx.int32,
@@ -165,23 +167,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13(
         vert_idx == 0, broadcast(0.0, (dims.CellDim, dims.KDim)), z_theta_v_pr_ic
     )
 
-    z_dexner_dz_c_2 = (
-        where(
-            (
-                (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo)
-                & (nflat_gradp <= vert_idx)
-            ),
-            _compute_approx_of_2nd_vertical_derivative_of_exner(
-                z_theta_v_pr_ic=z_theta_v_pr_ic,
-                d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
-                d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-                z_rth_pr_2=z_rth_pr_2,
-            ),
-            z_dexner_dz_c_2,
-        )
-        if igradp_method == 3
-        else z_dexner_dz_c_2
-    )
+
 
     (z_rth_pr_1, z_rth_pr_2) = where(
         (start_cell_halo_level_2 <= horz_idx < end_cell_halo_level_2),
@@ -405,6 +391,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         vert_idx=vert_idx,
         limited_area=limited_area,
         igradp_method=igradp_method,
+        n_lev=n_lev,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
         start_cell_lateral_boundary=start_cell_lateral_boundary,
@@ -464,6 +451,28 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
             dims.KDim: (nflatlev, vertical_end - 1),
         },
     )
+
+    _compute_first_and_second_vertical_derivative_exner(
+        z_exner_ic=z_exner_ic,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
+        z_dexner_dz_c_2=z_dexner_dz_c_2,
+        z_theta_v_pr_ic=z_theta_v_pr_ic,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+        z_rth_pr_2=z_rth_pr_2,
+        igradp_method=igradp_method,
+        nflatlev=nflatlev,
+        vert_idx=vert_idx,
+        nflat_gradp=nflat_gradp,
+        out=(z_dexner_dz_c_1, z_dexner_dz_c_2),
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+            dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+
+
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
