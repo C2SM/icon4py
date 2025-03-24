@@ -204,7 +204,7 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
         concat_where(
             dims.KDim < nlev,
             concat_where(
-                lateral_boundary_7 <= dims.EdgeDim < halo_1,
+                (lateral_boundary_7 <= dims.EdgeDim) & (dims.EdgeDim < halo_1),
                 _compute_horizontal_advection_term_for_vertical_velocity(
                     vn_on_half_levels,
                     inv_dual_edge_length,
@@ -255,7 +255,7 @@ def _compute_horizontal_advection_of_w(
     )
 
     horizontal_advection_of_w_at_edges_on_half_levels = concat_where(
-        (start_edge_lateral_boundary_level_7 <= dims.EdgeDim < end_edge_halo),
+        (start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
         _compute_horizontal_advection_term_for_vertical_velocity(
             vn_on_half_levels,
             inv_dual_edge_length,
