@@ -48,7 +48,7 @@ PROFILING: bool = _env_flag_to_bool("PY2FGEN_PROFILING", False)
 """Enable profiling for the PY2FGEN generated bindings."""
 
 
-class PY2FGEN_LOG_LEVELS(eve.StrEnum):
+class Py2fgenLogLevels(eve.StrEnum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -56,5 +56,5 @@ class PY2FGEN_LOG_LEVELS(eve.StrEnum):
     CRITICAL = "CRITICAL"
 
 
-LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", PY2FGEN_LOG_LEVELS, PY2FGEN_LOG_LEVELS.INFO)
+LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenLogLevels.INFO)
 """Set the log level for the PY2FGEN generated bindings."""

@@ -7,7 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+import typing
+from typing import Optional
+
 import cffi
+import pytest
 from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
@@ -58,3 +62,54 @@ def test_mapping_hook():
     )
     assert hasattr(result_a, "ndarray")
     assert result_b == 5
+
+
+def fun_non_optional(_: int):
+    pass
+
+
+def fun_with_optional(_: Optional[int]):
+    pass
+
+
+def fun_with_None(_: int | None):
+    pass
+
+
+def fun_with_None_first(_: None | int):
+    pass
+
+
+@pytest.mark.parametrize(
+    "fun,is_optional",
+    [
+        (fun_non_optional, False),
+        (fun_with_optional, True),
+        (fun_with_None, True),
+        (fun_with_None_first, True),
+    ],
+)
+def test_is_optional_type_hint(fun, is_optional):
+    testee = typing.get_type_hints(fun)["_"]
+
+    result = icon4py_export._is_optional_type_hint(testee)
+
+    assert result == is_optional
+
+
+@pytest.mark.parametrize(
+    "fun,is_optional",
+    [
+        (fun_non_optional, False),
+        (fun_with_optional, True),
+        (fun_with_None, True),
+        (fun_with_None_first, True),
+    ],
+)
+def test_unpack_optional_type_hint(fun, is_optional):
+    testee = typing.get_type_hints(fun)["_"]
+
+    result, is_optional = icon4py_export._unpack_optional_type_hint(testee)
+
+    assert result is int
+    assert is_optional == is_optional

@@ -112,7 +112,7 @@ def grid_init(
     vertical_size: gtx.int32,
     limited_area: bool,
 ) -> None:
-    on_gpu = not c2e.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = c2e.array_ns is not np  # TODO(havogt): expose `on_gpu` from py2fgen
 
     grid = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,

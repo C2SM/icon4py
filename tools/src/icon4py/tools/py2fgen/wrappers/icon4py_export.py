@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import functools
+import types
 import typing
 from collections.abc import Sequence
-from types import NoneType
 from typing import Any, Callable, Optional, Union
 
 import cffi
@@ -34,17 +34,20 @@ def _parse_type_spec(type_spec: ts.TypeSpec) -> tuple[list[gtx.Dimension], ts.Sc
 
 
 def _is_optional_type_hint(type_hint: Any) -> bool:
-    return typing.get_origin(type_hint) is Union and typing.get_args(type_hint)[1] is NoneType
+    return typing.get_origin(type_hint) in (
+        types.UnionType,
+        Union,
+    ) and types.NoneType in typing.get_args(type_hint)
 
 
 def _unpack_optional_type_hint(type_hint: Any) -> tuple[Any, bool]:
     if _is_optional_type_hint(type_hint):
-        return typing.get_args(type_hint)[0], True
+        return next(arg for arg in typing.get_args(type_hint) if arg is not types.NoneType), True
     else:
         return type_hint, False
 
 
-def _get_gt4py_type(type_hint: Any) -> Optional[tuple[ts.TypeSpec, bool]]:
+def _get_gt4py_type(type_hint: Any) -> tuple[ts.TypeSpec, bool] | None:
     non_optional_type, is_optional = _unpack_optional_type_hint(type_hint)
     try:
         return gtx_type_translation.from_type_hint(non_optional_type), is_optional
@@ -52,14 +55,23 @@ def _get_gt4py_type(type_hint: Any) -> Optional[tuple[ts.TypeSpec, bool]]:
         return None
 
 
+# TODO(egparedes): possibly use `TypeForm` for the annotation parameter,
+# once https://peps.python.org/pep-0747/ is approved.
 def field_annotation_descriptor_hook(annotation: Any) -> Optional[py2fgen.ParamDescriptor]:
+    """
+    Translates GT4Py types to 'ParamDescriptor's.
+
+    'gtx.Field' to 'ArrayParamDescriptor' and GT4Py scalars to 'ScalarParamDescriptor'.
+
+    If types cannot be translated to GT4Py types, we delegate to the next mechanism (return 'None').
+    """
     maybe_gt4py_type = _get_gt4py_type(annotation)
     if maybe_gt4py_type is None:
         return None
 
     gt4py_type, is_optional = maybe_gt4py_type
     dims, dtype = _parse_type_spec(gt4py_type)
-    if len(dims) > 0:
+    if dims:
         return py2fgen.ArrayParamDescriptor(
             rank=len(dims),
             dtype=dtype,
@@ -79,7 +91,8 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
         arr = py2fgen.as_array(ffi, array_info, scalar_kind)
         if arr is None:
             return None
-        domain = {d: s for d, s in zip(dims, array_info[1], strict=True)}
+        _, shape, _, _ = array_info
+        domain = {d: s for d, s in zip(dims, shape, strict=True)}
         return gtx_common._field(arr, domain=gtx_common.domain(domain))
 
     return impl
@@ -88,15 +101,19 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
 def field_annotation_mapping_hook(
     annotation: Any, param_descriptor: py2fgen.ParamDescriptor
 ) -> Callable | None:
+    """
+    Translates 'ArrayInfo's to 'gtx.Field' if they are annotated with 'gtx.Field'.
+
+    If the type is not a GT4Py type, we delegate to the default mappping (by returning 'None').
+    """
     if not isinstance(param_descriptor, py2fgen.ArrayParamDescriptor):
         return None
     maybe_gt4py_type = _get_gt4py_type(annotation)
     if maybe_gt4py_type is None:
         return None
-    else:
-        gt4py_type, is_optional = maybe_gt4py_type
-        dims, dtype = _parse_type_spec(gt4py_type)
-        return _as_field(dims, dtype)
+    gt4py_type, _ = maybe_gt4py_type
+    dims, dtype = _parse_type_spec(gt4py_type)
+    return _as_field(dims, dtype)
 
 
 export = py2fgen.export(
