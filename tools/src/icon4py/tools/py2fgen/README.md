@@ -8,7 +8,7 @@ A lightweight Fortran bindings generator for Python functions utilizing CFFI.
 - Provide information about the function's parameters, in one of the following ways (see [Parameter Descriptors](#parameter-descriptors))
   - provide full `ParamDescriptors`
   - provide a `ParamDescriptor` via `Annotated` type hint for each parameter
-  - provide f function that translates the type annotation to a `ParamDescriptor`
+  - provide a function that translates the type annotation to a `ParamDescriptor`
 - Optional: provide a function that specifies how to convert the raw arguments to custom types.
 - Finally, run the py2fgen command line tool to generate:
   - the Fortran module
@@ -52,7 +52,14 @@ which is a function that takes an annotation and returns a `ParamDescriptor`.
 **Example**
 
 ```python
-@py2fgen.export(annotation_descriptor_hook=...)
+def my_hook(annotation: Any) -> py2fgen.ParamDescriptor:
+    match annotation:
+        case int | np.int64:
+            return py2fgen.ScalarParamDescriptor(py2fgen.INT64)
+        case float | np.float:
+            return py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)
+
+@py2fgen.export(annotation_descriptor_hook=my_hook)
 def foo(scalar: float, array: np.ndarray):
     ...
 ```
