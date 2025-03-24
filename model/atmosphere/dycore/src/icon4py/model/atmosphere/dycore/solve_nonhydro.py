@@ -13,15 +13,21 @@ from typing import Final, Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
+from gt4py.next.embedded.context import offset_provider
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
+
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
+)
+
+from icon4py.model.atmosphere.dycore import (
+    fused_mo_solve_nonhydro_stencils_1_to_13
 )
 
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
@@ -565,6 +571,13 @@ class SolveNonhydro:
         )
         self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
         self._compute_z_raylfac = dycore_utils.compute_z_raylfac.with_backend(self._backend)
+        self._fused_mo_solve_nonhydro_stencils_1_to_13_predictor = fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13_predictor.with_backend(
+            self._backend
+        )
+
+        self._fused_mo_solve_nonhydro_stencils_1_to_13_corrector = fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13_corrector.with_backend(
+            self._backend
+        )
         self._predictor_stencils_2_3 = nhsolve_stencils.predictor_stencils_2_3.with_backend(
             self._backend
         )
@@ -708,6 +721,7 @@ class SolveNonhydro:
         self.z_hydro_corr_horizontal = data_alloc.zero_field(
             self._grid, dims.EdgeDim, backend=self._backend
         )
+        self.cell_field = data_alloc.index_field(self._grid, dims.CellDim, backend=self._backend)
         self.z_raylfac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         self.enh_divdamp_fac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         self._bdy_divdamp = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
@@ -921,185 +935,55 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        # initialize nest boundary points of z_rth_pr with zero
-        if self._grid.limited_area:
-            self._init_two_cell_kdim_fields_with_zero_vp(
-                cell_kdim_field_with_zero_vp_1=self.z_rth_pr_1,
-                cell_kdim_field_with_zero_vp_2=self.z_rth_pr_2,
-                horizontal_start=self._start_cell_lateral_boundary,
-                horizontal_end=self._end_cell_end,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider={},
-            )
-
-        # scidoc:
-        # Outputs:
-        #  - z_exner_ex_pr :
-        #     $$
-        #     \exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k}, \k \in [0, \nlev) \\
-        #     \exnerprime{\ntilde}{\c}{\nlev} = 0
-        #     $$
-        #     Compute the temporal extrapolation of perturbed exner function
-        #     using the time backward scheme (see the |ICONTutorial| page 74).
-        #     This variable has nlev+1 levels even though it is defined on full levels.
-        #  - exner_pr :
-        #     $$
-        #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}
-        #     $$
-        #     Store the perturbed exner function from the previous time step.
-        #
-        # Inputs:
-        #  - $\WtimeExner$ : exner_exfac
-        #  - $\exnerprime{\n}{\c}{\k}$ : exner - exner_ref_mc
-        #  - $\exnerprime{\n-1}{\c}{\k}$ : exner_pr
-        #
-        self._predictor_stencils_2_3(
-            exner_exfac=self._metric_state_nonhydro.exner_exfac,
-            exner=prognostic_states.current.exner,
-            exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
-            exner_pr=diagnostic_state_nh.exner_pr,
-            z_exner_ex_pr=self.z_exner_ex_pr,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels + 1,
-            offset_provider={},
-        )
-
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            # scidoc:
-            # Outputs:
-            #  - z_exner_ic :
-            #     $$
-            #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
-            #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
-            #     $$
-            #     Interpolate the perturbation exner from full to half levels.
-            #     The ground level is based on quadratic extrapolation (with
-            #     hydrostatic assumption?).
-            #  - z_dexner_dz_c_1 :
-            #     $$
-            #     \exnerprimedz{\ntilde}{\c}{\k} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
-            #     $$
-            #     Use the interpolated values to compute the vertical derivative
-            #     of perturbation exner at full levels.
-            #
-            # Inputs:
-            #  - $\Wlev$ : wgtfac_c
-            #  - $\Wlev_{\k}$ : wgtfacq_c
-            #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
-            #  - $\exnerprime{\ntilde}{\c}{\k\pm1/2}$ : z_exner_ic
-            #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
-            #
-            self._predictor_stencils_4_5_6(
-                wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
-                z_exner_ex_pr=self.z_exner_ex_pr,
-                z_exner_ic=self.z_exner_ic,
-                wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
-                inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-                z_dexner_dz_c_1=self.z_dexner_dz_c_1,
-                horizontal_start=self._start_cell_lateral_boundary_level_3,
-                horizontal_end=self._end_cell_halo,
-                vertical_start=max(1, self._vertical_params.nflatlev),
-                vertical_end=self._grid.num_levels + 1,
-                offset_provider=self._grid.offset_providers,
-            )
-
-            if self._vertical_params.nflatlev == 1:
-                # Perturbation Exner pressure on top half level
-                raise NotImplementedError("nflatlev=1 not implemented")
-
-        self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
-            rho=prognostic_states.current.rho,
+        self._fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
+            rho_nnow=prognostic_states.current.rho,
             rho_ref_mc=self._metric_state_nonhydro.rho_ref_mc,
-            theta_v=prognostic_states.current.theta_v,
+            theta_v_nnow=prognostic_states.current.theta_v,
             theta_ref_mc=self._metric_state_nonhydro.theta_ref_mc,
-            rho_ic=diagnostic_state_nh.rho_ic,
             z_rth_pr_1=self.z_rth_pr_1,
             z_rth_pr_2=self.z_rth_pr_2,
+            z_theta_v_pr_ic=self.z_theta_v_pr_ic,
+            theta_ref_ic=self._metric_state_nonhydro.theta_ref_ic,
+            wgtfacq_c=self._metric_state_nonhydro.wgtfacq_c,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
             exner_pr=diagnostic_state_nh.exner_pr,
             d_exner_dz_ref_ic=self._metric_state_nonhydro.d_exner_dz_ref_ic,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
-            z_theta_v_pr_ic=self.z_theta_v_pr_ic,
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             k_field=self.k_field,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
-        )
-
-        # Perturbation theta at top and surface levels
-        self._predictor_stencils_11_lower_upper(
-            wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
-            z_rth_pr=self.z_rth_pr_2,
-            theta_ref_ic=self._metric_state_nonhydro.theta_ref_ic,
-            z_theta_v_pr_ic=self.z_theta_v_pr_ic,
+            rho_ic=diagnostic_state_nh.rho_ic,
+            z_exner_ic=self.z_exner_ic,
+            exner_exfac=self._metric_state_nonhydro.exner_exfac,
+            exner_nnow=prognostic_states.current.exner,
+            exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
+            z_exner_ex_pr=self.z_exner_ex_pr,
+            z_dexner_dz_c_1=self.z_dexner_dz_c_1,
+            z_dexner_dz_c_2=self.z_dexner_dz_c_2,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            k_field=self.k_field,
-            nlev=self._grid.num_levels,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels + 1,
+            inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
+            d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
+            d2dexdz2_fac2_mc=self._metric_state_nonhydro.d2dexdz2_fac2_mc,
+            horz_idx=self.cell_field,
+            vert_idx=self.k_field,
+            limited_area=self._grid.limited_area,
+            igradp_method=self._config.igradp_method,
+            n_lev=self._grid.num_levels,
+            nflatlev=self._vertical_params.nflatlev,
+            nflat_gradp=self._vertical_params.nflat_gradp,
+            start_cell_lateral_boundary=self._start_cell_lateral_boundary,
+            start_cell_lateral_boundary_level_3=self._start_cell_lateral_boundary_level_3,
+            start_cell_halo_level_2=self._start_edge_halo_level_2,
+            end_cell_end=self._end_cell_end,
+            end_cell_halo=self._end_cell_halo,
+            end_cell_halo_level_2=self._end_edge_halo_level_2,
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(self._grid.num_cells),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self._grid.num_levels+1),
             offset_provider=self._grid.offset_providers,
         )
 
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            # scidoc:
-            # Outputs:
-            #  - z_dexner_dz_c_2 :
-            #     $$
-            #     \exnerprimedzz{\ntilde}{\c}{\k} = - \frac{1}{2} \left( (\vpotempprime{\n}{\c}{\k-1/2} - \vpotempprime{\n}{\c}{\k+1/2}) \dexrefdz{\c}{\k} + \vpotempprime{\n}{\c}{\k} \ddexrefdzz{\c}{\k} \right), \quad \k \in [\nflatgradp, \nlev) \\
-            #     \ddz{\exnerref{}{}} = - \frac{g}{\cpd \vpotempref{}{}}
-            #     $$
-            #     Compute the second vertical derivative of the perturbed exner function.
-            #     This uses the hydrostatic approximation (see eqs. 13 and 7,8 in
-            #     |ICONSteepSlopePressurePaper|).
-            #     Note that the reference state of temperature (eq. 15 in
-            #     |ICONSteepSlopePressurePaper|) is used when computing
-            #     $\ddz{\vpotempref{\c}{\k}}$ in $\ddexrefdzz{\c}{\k}$.
-            #
-            # Inputs:
-            #  - $\vpotempprime{\n}{\c}{\k\pm1/2}$ : z_theta_v_pr_ic
-            #  - $\vpotempprime{\n}{\c}{\k}$ : z_rth_pr_2
-            #  - $\dexrefdz{}{}$ : d2dexdz2_fac1_mc
-            #  - $\ddexrefdzz{}{}$ : d2dexdz2_fac2_mc
-            #
-            self._compute_approx_of_2nd_vertical_derivative_of_exner(
-                z_theta_v_pr_ic=self.z_theta_v_pr_ic,
-                d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
-                d2dexdz2_fac2_mc=self._metric_state_nonhydro.d2dexdz2_fac2_mc,
-                z_rth_pr_2=self.z_rth_pr_2,
-                z_dexner_dz_c_2=self.z_dexner_dz_c_2,
-                horizontal_start=self._start_cell_lateral_boundary_level_3,
-                horizontal_end=self._end_cell_halo,
-                vertical_start=self._vertical_params.nflat_gradp,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
-            )
-
-        # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
-        # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
-
-        self._compute_perturbation_of_rho_and_theta(
-            rho=prognostic_states.current.rho,
-            rho_ref_mc=self._metric_state_nonhydro.rho_ref_mc,
-            theta_v=prognostic_states.current.theta_v,
-            theta_ref_mc=self._metric_state_nonhydro.theta_ref_mc,
-            z_rth_pr_1=self.z_rth_pr_1,
-            z_rth_pr_2=self.z_rth_pr_2,
-            horizontal_start=self._start_cell_halo_level_2,
-            horizontal_end=self._end_cell_halo_level_2,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider={},
-        )
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if self._config.iadv_rhotheta == RhoThetaAdvectionType.SIMPLE:

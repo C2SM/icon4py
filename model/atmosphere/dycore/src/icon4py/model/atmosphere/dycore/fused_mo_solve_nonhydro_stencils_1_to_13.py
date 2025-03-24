@@ -92,7 +92,6 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13(
     vert_idx: Field[[KDim], gtx.int32],
     limited_area: bool,
     igradp_method: gtx.int32,
-    n_lev: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_cell_lateral_boundary: gtx.int32,
