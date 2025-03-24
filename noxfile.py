@@ -14,6 +14,7 @@ import glob
 import re
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias
+from datetime import datetime
 
 import nox
 
@@ -102,11 +103,13 @@ def bencher_feature_branch(session: nox.Session) -> None:
     """
     session.run(
         *f"bencher run \
-        --github-actions {os.environ['GD_COMMENT_TOKEN']} \
         --start-point main \
         --start-point-clone-thresholds \
         --start-point-reset \
         --err \
+        --github-actions {os.environ['GD_COMMENT_TOKEN']} \
+        --ci-number {os.environ['PR_ID']} \
+        --ci-id run-{os.environ['BENCHER_TESTBED'].replace(":", "_")}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
         --file pytest_benchmark_results_{session.python}.json".split(),
         env={
             "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
