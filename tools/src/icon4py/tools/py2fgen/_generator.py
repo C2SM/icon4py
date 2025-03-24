@@ -19,6 +19,8 @@ from icon4py.tools.py2fgen import _codegen
 def get_cffi_description(
     module_name: str, functions: list[str], library_name: str
 ) -> _codegen.BindingsLibrary:
+    # TODO(havogt): instead of a list of function names, we could just export all
+    # exportable functions of the module(functions with the `param_descriptors` attribute).
     module = importlib.import_module(module_name)
     parsed_functions = [_get_function_descriptor(getattr(module, f)) for f in functions]
     return _codegen.BindingsLibrary(
