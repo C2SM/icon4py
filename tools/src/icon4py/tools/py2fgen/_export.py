@@ -11,7 +11,7 @@ import functools
 import types
 import typing
 from collections.abc import Mapping
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, TypeAlias
 
 import cffi
 
@@ -28,9 +28,12 @@ def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
     return None
 
 
+AnnotationDescriptorHook: TypeAlias = Callable[[Any], _definitions.ParamDescriptor | None]
+
+
 def param_descriptor_from_annotation(
     annotation: Any,
-    annotation_descriptor_hook: Optional[Callable[[Any], _definitions.ParamDescriptor | None]],
+    annotation_descriptor_hook: AnnotationDescriptorHook | None,
 ) -> _definitions.ParamDescriptor:
     descriptor = None
     if annotation_descriptor_hook is not None:
@@ -45,7 +48,7 @@ def param_descriptor_from_annotation(
 def get_param_descriptors(
     type_hints: dict[str, Any],
     param_descriptors: Optional[_definitions.ParamDescriptors],
-    annotation_descriptor_hook: Optional[Callable[[Any], _definitions.ParamDescriptor]],
+    annotation_descriptor_hook: AnnotationDescriptorHook | None,
 ) -> _definitions.ParamDescriptors:
     if param_descriptors is not None:
         if annotation_descriptor_hook is not None:
@@ -60,12 +63,14 @@ def get_param_descriptors(
     }
 
 
+AnnotationMappingHook: TypeAlias = Callable[
+    [Any, _definitions.ParamDescriptor], _definitions.MapperType | None
+]
+
+
 def get_param_mappings(
     type_hints: dict[str, Any],
-    annotation_mapping_hook: Callable[
-        [Any, _definitions.ParamDescriptor], _definitions.MapperType | None
-    ]
-    | None,
+    annotation_mapping_hook: AnnotationMappingHook | None,
     param_descriptors: _definitions.ParamDescriptors,
 ) -> Mapping[str, _definitions.MapperType]:
     mappings: dict[str, _definitions.MapperType] = {}
@@ -91,9 +96,9 @@ class _DecoratedFunction:
     """
 
     _fun: Callable
-    annotation_descriptor_hook: Optional[Callable]  # TODO type annotation
-    annotation_mapping_hook: Optional[Callable]  # TODO type annotation
-    param_descriptors: Optional[_definitions.ParamDescriptors]
+    annotation_descriptor_hook: AnnotationDescriptorHook | None
+    annotation_mapping_hook: AnnotationMappingHook | None
+    param_descriptors: _definitions.ParamDescriptors | None
     _mapping: Mapping[str, Callable] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
@@ -132,8 +137,8 @@ class _DecoratedFunction:
 
 
 def export(
-    annotation_descriptor_hook: Optional[Callable] = None,
-    annotation_mapping_hook: Optional[Callable] = None,
+    annotation_descriptor_hook: AnnotationDescriptorHook | None = None,
+    annotation_mapping_hook: AnnotationMappingHook | None = None,
     param_descriptors: Optional[_definitions.ParamDescriptors] = None,
 ) -> Callable[[Callable], Callable]:
     """
