@@ -26,9 +26,7 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
     init_cell_kdim_field_with_zero_wp,
 )
 
-from icon4py.model.atmosphere.dycore import (
-    fused_mo_solve_nonhydro_stencils_1_to_13
-)
+from icon4py.model.atmosphere.dycore import fused_mo_solve_nonhydro_stencils_1_to_13
 
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
@@ -980,10 +978,9 @@ class SolveNonhydro:
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(self._grid.num_cells),
             vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self._grid.num_levels+1),
+            vertical_end=gtx.int32(self._grid.num_levels + 1),
             offset_provider=self._grid.offset_providers,
         )
-
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if self._config.iadv_rhotheta == RhoThetaAdvectionType.SIMPLE:

@@ -21,22 +21,16 @@
 
 import gt4py.next as gtx
 from gt4py.next import program
-from icon4py.model.common import field_type_aliases as fa
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field, bool, broadcast, maximum, where
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-
 
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_derivative_of_exner import (
-    _compute_approx_of_2nd_vertical_derivative_of_exner,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import (
-    _compute_first_vertical_derivative_igradp_method,
     _compute_first_and_second_vertical_derivative_exner,
+    _compute_first_vertical_derivative_igradp_method,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
@@ -167,8 +161,6 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13(
         vert_idx == 0, broadcast(0.0, (dims.CellDim, dims.KDim)), z_theta_v_pr_ic
     )
 
-
-
     (z_rth_pr_1, z_rth_pr_2) = where(
         (start_cell_halo_level_2 <= horz_idx < end_cell_halo_level_2),
         _compute_perturbation_of_rho_and_theta(
@@ -193,6 +185,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13(
         z_dexner_dz_c_1,
         z_dexner_dz_c_2,
     )
+
 
 @field_operator
 def _fused_mo_solve_nonhydro_stencils_1_to_13_restriced(
@@ -227,6 +220,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_restriced(
         z_exner_ex_pr,
         z_exner_ic,
     )
+
 
 @field_operator
 def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
@@ -471,8 +465,6 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
-
-
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

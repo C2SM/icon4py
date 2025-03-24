@@ -10,13 +10,12 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
-from icon4py.model.common.type_alias import vpfloat
-
 from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_derivative_of_exner import (
     _compute_approx_of_2nd_vertical_derivative_of_exner,
 )
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
@@ -44,6 +43,7 @@ def _compute_first_vertical_derivative_igradp_method(
     )
     return z_dexner_dz_c_1
 
+
 @field_operator
 def _compute_first_and_second_vertical_derivative_exner(
     z_exner_ic: fa.CellKField[vpfloat],
@@ -56,22 +56,21 @@ def _compute_first_and_second_vertical_derivative_exner(
     z_rth_pr_2: fa.CellKField[vpfloat],
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
-    vert_idx:fa.KField[gtx.int32],
+    vert_idx: fa.KField[gtx.int32],
     nflat_gradp: gtx.int32,
 ) -> tuple[
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-
-    z_dexner_dz_c_1 = (
-        where(
-            (nflatlev <= vert_idx),
+    z_dexner_dz_c_1 = where(
+        (nflatlev <= vert_idx),
         _compute_first_vertical_derivative_igradp_method(
-                    z_exner_ic=z_exner_ic,
-                    inv_ddqz_z_full=inv_ddqz_z_full,
-                    z_dexner_dz_c_1=z_dexner_dz_c_1,
-                    igradp_method=igradp_method), z_dexner_dz_c_1
-        )
+            z_exner_ic=z_exner_ic,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            z_dexner_dz_c_1=z_dexner_dz_c_1,
+            igradp_method=igradp_method,
+        ),
+        z_dexner_dz_c_1,
     )
 
     z_dexner_dz_c_2 = (
@@ -90,7 +89,6 @@ def _compute_first_and_second_vertical_derivative_exner(
     )
 
     return z_dexner_dz_c_1, z_dexner_dz_c_2
-
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
