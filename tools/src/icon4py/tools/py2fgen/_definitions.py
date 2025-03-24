@@ -71,13 +71,13 @@ Mapping of parameter names to their descriptors.
 
 
 # cffi.FFI.CData is not available at runtime, therefore we provide a runtime
-# alias with type `Any` (as the `TypeAlias`` will be runtime evaluated)
+# alias with type `Any` (as the `TypeAlias` will be runtime evaluated)
 if TYPE_CHECKING:
     ArrayInfo: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
     """
     ArrayInfo describes the runtime information of a buffer:
     
-    Attributes
+    Attributes:
         pointer: The CFFI pointer.
         shape: Shape of the buffer.
         on_gpu: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.memory_space is `Host`).
@@ -85,7 +85,7 @@ if TYPE_CHECKING:
 
     Note: We use a plain tuple to minimize runtime overhead in the bindings.
     """
-    # the above is an inofficial pyright way of annotating TypeAlias, however doesn't work within TYPE_CHECKING
+    # the above is an unofficial pyright way of adding a docstring to TypeAlias, however doesn't work within TYPE_CHECKING
 else:
     from typing import Any
 
