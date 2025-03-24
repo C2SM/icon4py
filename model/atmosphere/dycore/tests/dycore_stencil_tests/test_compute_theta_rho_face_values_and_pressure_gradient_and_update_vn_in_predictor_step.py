@@ -37,40 +37,40 @@ from icon4py.model.testing.helpers import StencilTest
 def compute_btraj_numpy(
     p_vn: np.ndarray,
     p_vt: np.ndarray,
-    pos_on_tplane_e_1: np.ndarray,
-    pos_on_tplane_e_2: np.ndarray,
-    primal_normal_cell_1: np.ndarray,
-    dual_normal_cell_1: np.ndarray,
-    primal_normal_cell_2: np.ndarray,
-    dual_normal_cell_2: np.ndarray,
+    pos_on_tplane_e_x: np.ndarray,
+    pos_on_tplane_e_y: np.ndarray,
+    primal_normal_cell_x: np.ndarray,
+    dual_normal_cell_x: np.ndarray,
+    primal_normal_cell_y: np.ndarray,
+    dual_normal_cell_y: np.ndarray,
     p_dthalf: float,
     **kwargs: Any,
 ) -> tuple[np.ndarray, ...]:
     lvn_pos = np.where(p_vn > 0.0, True, False)
-    pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
-    pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
-    primal_normal_cell_1 = np.expand_dims(primal_normal_cell_1, axis=-1)
-    dual_normal_cell_1 = np.expand_dims(dual_normal_cell_1, axis=-1)
-    primal_normal_cell_2 = np.expand_dims(primal_normal_cell_2, axis=-1)
-    dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
+    pos_on_tplane_e_x = np.expand_dims(pos_on_tplane_e_x, axis=-1)
+    pos_on_tplane_e_y = np.expand_dims(pos_on_tplane_e_y, axis=-1)
+    primal_normal_cell_x = np.expand_dims(primal_normal_cell_x, axis=-1)
+    dual_normal_cell_x = np.expand_dims(dual_normal_cell_x, axis=-1)
+    primal_normal_cell_y = np.expand_dims(primal_normal_cell_y, axis=-1)
+    dual_normal_cell_y = np.expand_dims(dual_normal_cell_y, axis=-1)
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
+        p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_x[:, 0], pos_on_tplane_e_x[:, 1])
     )
     z_ntdistv_bary_2 = -(
-        p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
+        p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_y[:, 0], pos_on_tplane_e_y[:, 1])
     )
 
     p_distv_bary_1 = np.where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_1[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
-        z_ntdistv_bary_1 * primal_normal_cell_1[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
+        z_ntdistv_bary_1 * primal_normal_cell_x[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_x[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_x[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_x[:, 1],
     )
 
     p_distv_bary_2 = np.where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_2[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
-        z_ntdistv_bary_1 * primal_normal_cell_2[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
+        z_ntdistv_bary_1 * primal_normal_cell_y[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_y[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_y[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_y[:, 1],
     )
 
     return p_distv_bary_1, p_distv_bary_2
@@ -83,47 +83,47 @@ def sten_16_numpy(
     theta_ref_me: np.ndarray,
     p_distv_bary_1: np.ndarray,
     p_distv_bary_2: np.ndarray,
-    z_grad_rth_1: np.ndarray,
-    z_grad_rth_2: np.ndarray,
-    z_grad_rth_3: np.ndarray,
-    z_grad_rth_4: np.ndarray,
-    z_rth_pr_1: np.ndarray,
-    z_rth_pr_2: np.ndarray,
+    ddx_perturbed_rho: np.ndarray,
+    ddy_perturbed_rho: np.ndarray,
+    ddx_perturbed_theta_v: np.ndarray,
+    ddy_perturbed_theta_v: np.ndarray,
+    perturbed_rho: np.ndarray,
+    perturbed_theta_v: np.ndarray,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray]:
     e2c = connectivities[dims.E2CDim]
-    z_rth_pr_1_e2c = z_rth_pr_1[e2c]
-    z_rth_pr_2_e2c = z_rth_pr_2[e2c]
-    z_grad_rth_1_e2c = z_grad_rth_1[e2c]
-    z_grad_rth_2_e2c = z_grad_rth_2[e2c]
-    z_grad_rth_3_e2c = z_grad_rth_3[e2c]
-    z_grad_rth_4_e2c = z_grad_rth_4[e2c]
+    perturbed_rho_e2c = perturbed_rho[e2c]
+    perturbed_theta_v_e2c = perturbed_theta_v[e2c]
+    ddx_perturbed_rho_e2c = ddx_perturbed_rho[e2c]
+    ddy_perturbed_rho_e2c = ddy_perturbed_rho[e2c]
+    ddx_perturbed_theta_v_e2c = ddx_perturbed_theta_v[e2c]
+    ddy_perturbed_theta_v_e2c = ddy_perturbed_theta_v[e2c]
 
-    z_rho_e = np.where(
+    rho_at_edges_on_model_levels = np.where(
         p_vn > 0,
         rho_ref_me
-        + z_rth_pr_1_e2c[:, 0]
-        + p_distv_bary_1 * z_grad_rth_1_e2c[:, 0]
-        + p_distv_bary_2 * z_grad_rth_2_e2c[:, 0],
+        + perturbed_rho_e2c[:, 0]
+        + p_distv_bary_1 * ddx_perturbed_rho_e2c[:, 0]
+        + p_distv_bary_2 * ddy_perturbed_rho_e2c[:, 0],
         rho_ref_me
-        + z_rth_pr_1_e2c[:, 1]
-        + p_distv_bary_1 * z_grad_rth_1_e2c[:, 1]
-        + p_distv_bary_2 * z_grad_rth_2_e2c[:, 1],
+        + perturbed_rho_e2c[:, 1]
+        + p_distv_bary_1 * ddx_perturbed_rho_e2c[:, 1]
+        + p_distv_bary_2 * ddy_perturbed_rho_e2c[:, 1],
     )
 
-    z_theta_v_e = np.where(
+    theta_v_at_edges_on_model_levels = np.where(
         p_vn > 0,
         theta_ref_me
-        + z_rth_pr_2_e2c[:, 0]
-        + p_distv_bary_1 * z_grad_rth_3_e2c[:, 0]
-        + p_distv_bary_2 * z_grad_rth_4_e2c[:, 0],
+        + perturbed_theta_v_e2c[:, 0]
+        + p_distv_bary_1 * ddx_perturbed_theta_v_e2c[:, 0]
+        + p_distv_bary_2 * ddy_perturbed_theta_v_e2c[:, 0],
         theta_ref_me
-        + z_rth_pr_2_e2c[:, 1]
-        + p_distv_bary_1 * z_grad_rth_3_e2c[:, 1]
-        + p_distv_bary_2 * z_grad_rth_4_e2c[:, 1],
+        + perturbed_theta_v_e2c[:, 1]
+        + p_distv_bary_1 * ddx_perturbed_theta_v_e2c[:, 1]
+        + p_distv_bary_2 * ddy_perturbed_theta_v_e2c[:, 1],
     )
 
-    return z_rho_e, z_theta_v_e
+    return rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels
 
 
 def compute_horizontal_advection_of_rho_and_theta_numpy(

@@ -35,17 +35,17 @@ class TestApplyHydrostaticCorrectionToHorizontalGradientOfExnerPressure(StencilT
         z_gradh_exner: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_hydro_corr = np.expand_dims(z_hydro_corr, axis=-1)
         z_gradh_exner = np.where(
             ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner
         )
+
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ipeidx_dsl = random_mask(grid, dims.EdgeDim, dims.KDim)
         pg_exdist = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_hydro_corr = random_field(grid, dims.EdgeDim, dtype=vpfloat)
+        z_hydro_corr = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
