@@ -31,11 +31,11 @@ def ffi():
 
 
 def test_compile_and_run_cffi_plugin_from_C():
-    plugin_name = "test_plugin"
+    library_name = "test_plugin"
     c_header = "int test_function();"
     c_source_code = f"""
     #include <stdio.h>
-    #include "{plugin_name}.h"
+    #include "{library_name}.h"
 
     int main() {{
         printf("%d\\n", test_function());
@@ -55,9 +55,9 @@ def test_compile_and_run_cffi_plugin_from_C():
         build_path = pathlib.Path(tmpdirname)
 
         try:
-            # Generate and compile the CFFI plugin, which creates lib{plugin_name}.so
-            shared_library = f"{plugin_name}"
-            generate_and_compile_cffi_plugin(plugin_name, c_header, python_wrapper, build_path)
+            # Generate and compile the CFFI plugin, which creates lib{library_name}.so
+            shared_library = f"{library_name}"
+            generate_and_compile_cffi_plugin(library_name, c_header, python_wrapper, build_path)
             compiled_library_path = build_path / f"lib{shared_library}.so"
 
             # Verify the shared library was created

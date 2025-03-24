@@ -25,14 +25,14 @@ from icon4py.tools.py2fgen._codegen import (
 field_2d = py2fgen.ArrayParamDescriptor(
     rank=2,
     dtype=py2fgen.FLOAT32,
-    device=py2fgen.DeviceType.MAYBE_DEVICE,
+    memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
     is_optional=False,
 )
 
 field_1d = py2fgen.ArrayParamDescriptor(
     rank=1,
     dtype=py2fgen.FLOAT32,
-    device=py2fgen.DeviceType.MAYBE_DEVICE,
+    memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
     is_optional=False,
 )
 
@@ -54,7 +54,7 @@ foo = Func(
         "two": py2fgen.ArrayParamDescriptor(
             rank=2,
             dtype=py2fgen.FLOAT64,
-            device=py2fgen.DeviceType.MAYBE_DEVICE,
+            memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
             is_optional=False,
         ),
     },
@@ -66,7 +66,7 @@ bar = Func(
         "one": py2fgen.ArrayParamDescriptor(
             rank=2,
             dtype=py2fgen.FLOAT32,
-            device=py2fgen.DeviceType.MAYBE_DEVICE,
+            memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
             is_optional=False,
         ),
         "two": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
@@ -75,7 +75,7 @@ bar = Func(
 
 
 def test_cheader_generation_for_single_function():
-    plugin = BindingsLibrary(module_name="libtest", plugin_name="libtest_plugin", functions=[foo])
+    plugin = BindingsLibrary(module_name="libtest", library_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
     assert (
@@ -85,7 +85,7 @@ def test_cheader_generation_for_single_function():
 
 
 def test_cheader_for_pointer_args():
-    plugin = BindingsLibrary(module_name="libtest", plugin_name="libtest_plugin", functions=[bar])
+    plugin = BindingsLibrary(module_name="libtest", library_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
     assert (
@@ -111,7 +111,7 @@ def compare_ignore_whitespace(actual: str, expected: str):
 def dummy_plugin():
     return BindingsLibrary(
         module_name="libtest",
-        plugin_name="libtest_plugin",
+        library_name="libtest_plugin",
         functions=[foo, bar],
     )
 

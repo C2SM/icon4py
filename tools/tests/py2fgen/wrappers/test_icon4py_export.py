@@ -19,7 +19,10 @@ export_with_mapping_hook = py2fgen.export(
     annotation_mapping_hook=icon4py_export.field_annotation_mapping_hook,
     param_descriptors={
         "a": py2fgen.ArrayParamDescriptor(
-            rank=1, dtype=ts.ScalarKind.INT32, device=py2fgen.DeviceType.HOST, is_optional=False
+            rank=1,
+            dtype=ts.ScalarKind.INT32,
+            memory_space=py2fgen.MemorySpace.HOST,
+            is_optional=False,
         ),
         "b": py2fgen.ScalarParamDescriptor(dtype=ts.ScalarKind.INT32),
     },

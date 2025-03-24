@@ -22,7 +22,7 @@ logger = _utils.setup_logger("py2fgen")
     type=str,
 )
 @click.argument("functions", type=str, callback=_utils.parse_comma_separated_list)
-@click.argument("plugin_name", type=str)
+@click.argument("library_name", type=str)
 @click.option(
     "--output-path",
     "-o",
@@ -33,13 +33,13 @@ logger = _utils.setup_logger("py2fgen")
 def main(
     module_import_path: str,
     functions: list[str],
-    plugin_name: str,
+    library_name: str,
     output_path: pathlib.Path,
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
 
-    plugin = _generator.get_cffi_description(module_import_path, functions, plugin_name)
+    plugin = _generator.get_cffi_description(module_import_path, functions, library_name)
 
     logger.info("Generating C header...")
     c_header = _codegen.generate_c_header(plugin)

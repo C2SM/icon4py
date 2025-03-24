@@ -110,7 +110,7 @@ def test_default_mapping_hook_array(ffi):
     array_mapper = _conversion.default_mapping(
         None,
         py2fgen.ArrayParamDescriptor(
-            rank=1, dtype=py2fgen.INT32, device=py2fgen.DeviceType.HOST, is_optional=False
+            rank=1, dtype=py2fgen.INT32, memory_space=py2fgen.MemorySpace.HOST, is_optional=False
         ),
     )
     result = array_mapper(

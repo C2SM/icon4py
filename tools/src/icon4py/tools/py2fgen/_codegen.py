@@ -241,6 +241,7 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
             params.append(self.visit_Parameter(name, param))
             if is_array(param):
                 params.extend(f"int {_size_arg_name(name, i)}" for i in range(param.rank))
+        params.append("int on_gpu")
 
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)

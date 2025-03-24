@@ -25,28 +25,30 @@ def square_wrapper_module():
     return "icon4py.tools.py2fgen.wrappers.simple"
 
 
-def compile_fortran_code(plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags):
-    shared_library = f"{plugin_name}"
+def compile_fortran_code(
+    library_name, samples_path, fortran_driver, compiler, extra_compiler_flags
+):
+    shared_library = f"{library_name}"
     command = [
         f"{compiler}",
         "-cpp",
         "-I.",
         "-Wl,-rpath=.",
         "-L.",
-        f"{plugin_name}.f90",
+        f"{library_name}.f90",
         str(samples_path / f"{fortran_driver}.f90"),
         f"-l{shared_library}",
         "-o",
-        plugin_name,
+        library_name,
         *list(extra_compiler_flags),
     ]
     subprocess.run(command, check=True, capture_output=True, text=True)
 
 
-def run_fortran_executable(plugin_name, env):
+def run_fortran_executable(library_name, env):
     try:
         result = subprocess.run(
-            [f"./{plugin_name}"], capture_output=True, text=True, check=True, env=env
+            [f"./{library_name}"], capture_output=True, text=True, check=True, env=env
         )
     except subprocess.CalledProcessError as e:
         # If an error occurs, use the exception's `stdout` and `stderr`.
@@ -58,7 +60,7 @@ def run_test_case(
     cli,
     module,
     function,
-    plugin_name,
+    library_name,
     samples_path,
     fortran_driver,
     test_temp_dir,
@@ -68,9 +70,9 @@ def run_test_case(
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
-        invoke_cli(cli, module, function, plugin_name)
+        invoke_cli(cli, module, function, library_name)
         compile_and_run_fortran(
-            plugin_name,
+            library_name,
             samples_path,
             fortran_driver,
             compiler,
@@ -80,14 +82,14 @@ def run_test_case(
         )
 
 
-def invoke_cli(cli, module, function, plugin_name):
-    cli_args = [module, function, plugin_name]
+def invoke_cli(cli, module, function, library_name):
+    cli_args = [module, function, library_name]
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
 
 def compile_and_run_fortran(
-    plugin_name,
+    library_name,
     samples_path,
     fortran_driver,
     compiler,
@@ -97,7 +99,7 @@ def compile_and_run_fortran(
 ):
     try:
         compile_fortran_code(
-            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags
+            library_name, samples_path, fortran_driver, compiler, extra_compiler_flags
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Compilation failed: {e}\n{e.stderr}\n{e.stdout}")
@@ -106,7 +108,7 @@ def compile_and_run_fortran(
         env = os.environ.copy()
         if env_vars:
             env.update(env_vars)
-        fortran_result = run_fortran_executable(plugin_name, env)
+        fortran_result = run_fortran_executable(library_name, env)
         if expected_error_code == 0:
             assert "passed" in fortran_result.stdout, fortran_result.stderr
         else:
@@ -158,7 +160,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
 
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
-    "function_name, plugin_name, test_name, extra_flags",
+    "function_name, library_name, test_name, extra_flags",
     [
         (
             "square_from_function",
@@ -171,7 +173,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
 def test_py2fgen_compilation_and_execution_gpu(
     cli_runner,
     function_name,
-    plugin_name,
+    library_name,
     test_name,
     samples_path,
     square_wrapper_module,
@@ -182,7 +184,7 @@ def test_py2fgen_compilation_and_execution_gpu(
         cli_runner,
         square_wrapper_module,
         function_name,
-        plugin_name,
+        library_name,
         samples_path,
         test_name,
         test_temp_dir,
