@@ -73,7 +73,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
         vertical_wind_advective_tendency,
     )
     vertical_wind_advective_tendency = concat_where(
-        (maximum(3, nrdmax - 2) - 1) <= dims.KDim < (nlev - 3),
+        ((maximum(3, nrdmax - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 3)),
         where(
             cell_lower_bound <= cell < cell_upper_bound,
             _add_extra_diffusion_for_w_con_approaching_cfl(

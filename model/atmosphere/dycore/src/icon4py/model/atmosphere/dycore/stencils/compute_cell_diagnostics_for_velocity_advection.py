@@ -70,7 +70,7 @@ def _compute_contravariant_corrected_w(
     )
 
     contravariant_corrected_w_at_cells_on_half_levels = concat_where(
-        nflatlev + 1 <= dims.KDim < nlev,
+        (nflatlev + 1 <= dims.KDim) & (dims.KDim < nlev),
         _correct_contravariant_vertical_velocity(
             contravariant_corrected_w_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels,
