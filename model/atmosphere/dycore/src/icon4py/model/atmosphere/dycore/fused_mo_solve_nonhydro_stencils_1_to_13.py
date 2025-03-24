@@ -634,10 +634,10 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
     n_lev: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     end_cell_local: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
+    # horizontal_start: gtx.int32,
+    # horizontal_end: gtx.int32,
+    # vertical_start: gtx.int32,
+    # vertical_end: gtx.int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -670,8 +670,8 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
         start_cell_lateral_boundary_level_3,
         end_cell_local,
         out=(rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end ),
-        },
+        # domain={
+        #     dims.CellDim: (horizontal_start, horizontal_end),
+        #     dims.KDim: (vertical_start, vertical_end ),
+        # },
     )
