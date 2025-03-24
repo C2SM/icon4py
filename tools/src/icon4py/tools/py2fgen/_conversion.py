@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import functools
 import math
-from types import ModuleType
+import types
 from typing import TYPE_CHECKING, Any, Callable, Final, Optional
 
 import numpy as np
@@ -131,7 +131,9 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
     return bool_array
 
 
-def unpack(xp: ModuleType, ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
+def unpack(
+    xp: types.ModuleType, ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int
+) -> np.typing.NDArray:
     if xp is np:
         return _unpack_numpy(ffi, ptr, *sizes)
     elif xp is cp:

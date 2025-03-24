@@ -166,7 +166,7 @@ def solve_nh_init(
     ffi = cffi.FFI()
     dycore_wrapper.solve_nh_init(
         ffi=ffi,
-        meta=None,
+        perf_counters=None,
         vct_a=vct_a,
         vct_b=vct_b,
         c_lin_e=c_lin_e,
@@ -612,7 +612,7 @@ def test_dycore_wrapper_granule_inputs(
     ) as mock_init:
         dycore_wrapper.solve_nh_init(
             ffi=ffi,
-            meta=None,
+            perf_counters=None,
             vct_a=vct_a,
             vct_b=vct_b,
             c_lin_e=c_lin_e,
@@ -758,7 +758,7 @@ def test_dycore_wrapper_granule_inputs(
     ) as mock_init:
         dycore_wrapper.solve_nh_run(
             ffi=ffi,
-            meta=None,
+            perf_counters=None,
             rho_now=rho_now,
             rho_new=rho_new,
             exner_now=exner_now,
@@ -933,7 +933,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     ffi = cffi.FFI()
     dycore_wrapper.solve_nh_run(
         ffi=ffi,
-        meta=None,
+        perf_counters=None,
         rho_now=rho_now,
         rho_new=rho_new,
         exner_now=exner_now,
@@ -1102,7 +1102,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
         dycore_wrapper.solve_nh_run(
             ffi=ffi,
-            meta=None,
+            perf_counters=None,
             rho_now=rho_now,
             rho_new=rho_new,
             exner_now=exner_now,

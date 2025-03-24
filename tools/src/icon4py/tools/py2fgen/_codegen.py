@@ -185,12 +185,12 @@ def {{ func.name }}_wrapper(
                 func_start_time = _runtime.perf_counter()
 
         if __debug__ and runtime_config.PROFILING:
-            meta = {}
+            perf_counters = {}
         else:
-            meta = None
+            perf_counters = None
         {{ func.name }}(
         ffi = ffi,
-        meta = meta,
+        perf_counters = perf_counters,
         {%- for name, arg in func.args.items() -%}
         {{ name }} = {{ name }}{{ "," }}
         {%- endfor -%}
@@ -199,7 +199,7 @@ def {{ func.name }}_wrapper(
         if __debug__:
             if runtime_config.PROFILING:
                 func_end_time = _runtime.perf_counter()
-                logger.info('{{ func.name }} convert time: %s' % str(meta["convert_end_time"] - meta["convert_start_time"]))
+                logger.info('{{ func.name }} convert time: %s' % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"]))
                 logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
 
 

@@ -94,7 +94,7 @@ def grid_init(grid_savepoint):
     ffi = cffi.FFI()
     grid_wrapper.grid_init(
         ffi,
-        meta=None,
+        perf_counters=None,
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,

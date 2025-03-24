@@ -374,12 +374,12 @@ def grid_init_wrapper(
                 func_start_time = _runtime.perf_counter()
 
         if __debug__ and runtime_config.PROFILING:
-            meta = {}
+            perf_counters = {}
         else:
-            meta = None
+            perf_counters = None
         grid_init(
             ffi=ffi,
-            meta=meta,
+            perf_counters=perf_counters,
             cell_starts=cell_starts,
             cell_ends=cell_ends,
             vertex_starts=vertex_starts,
@@ -436,7 +436,7 @@ def grid_init_wrapper(
                 func_end_time = _runtime.perf_counter()
                 logger.info(
                     "grid_init convert time: %s"
-                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
                 )
                 logger.info("grid_init execution time: %s" % str(func_end_time - func_start_time))
 

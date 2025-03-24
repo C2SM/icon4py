@@ -172,7 +172,7 @@ def test_diffusion_wrapper_granule_inputs(
     ) as mock_init:
         diffusion_wrapper.diffusion_init(
             ffi=cffi.FFI(),
-            meta=None,
+            perf_counters=None,
             vct_a=vct_a,
             vct_b=vct_b,
             theta_ref_mc=theta_ref_mc,
@@ -266,7 +266,7 @@ def test_diffusion_wrapper_granule_inputs(
     with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.run") as mock_run:
         diffusion_wrapper.diffusion_run(
             ffi=cffi.FFI(),
-            meta=None,
+            perf_counters=None,
             w=w,
             vn=vn,
             exner=exner,
@@ -384,7 +384,7 @@ def test_diffusion_wrapper_single_step(
     # Call diffusion_init
     diffusion_wrapper.diffusion_init(
         ffi=ffi,
-        meta=None,
+        perf_counters=None,
         vct_a=vct_a,
         vct_b=vct_b,
         theta_ref_mc=theta_ref_mc,
@@ -428,7 +428,7 @@ def test_diffusion_wrapper_single_step(
     # Call diffusion_run
     diffusion_wrapper.diffusion_run(
         ffi=ffi,
-        meta=None,
+        perf_counters=None,
         w=w,
         vn=vn,
         exner=exner,

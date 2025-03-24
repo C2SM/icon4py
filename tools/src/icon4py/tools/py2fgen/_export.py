@@ -22,9 +22,9 @@ from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
 # once https://peps.python.org/pep-0747/ is approved.
 def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
     if hasattr(annotation, "__metadata__"):
-        for meta in annotation.__metadata__:
-            if isinstance(meta, _definitions.ParamDescriptor):
-                return meta
+        for perf_counters in annotation.__metadata__:
+            if isinstance(perf_counters, _definitions.ParamDescriptor):
+                return perf_counters
     return None
 
 
@@ -114,18 +114,20 @@ class _DecoratedFunction:
             type_hints, self.annotation_mapping_hook, self.param_descriptors
         )
 
-    def __call__(self, ffi: cffi.FFI, meta: Optional[dict], **kwargs: Any) -> Any:
+    def __call__(self, ffi: cffi.FFI, perf_counters: Optional[dict], **kwargs: Any) -> Any:
         # Notes: For performance reasons we could switch to positional-only arguments
         # (this is purely internal between the generated Python code and this function).
         # However, an experiment showed that this had small impact.
         # Re-evaluate if we need to tweak performance.
-        if __debug__ and meta is not None:
-            meta["convert_start_time"] = _runtime.perf_counter()
+        if __debug__ and perf_counters is not None:
+            # If `perf_counters` is injected, we store the conversion timers,
+            # the `perf_counters` result is evaluated in the generated python code.
+            perf_counters["convert_start_time"] = _runtime.perf_counter()
         kwargs = {
             k: self._mapping[k](v, ffi=ffi) if k in self._mapping else v for k, v in kwargs.items()
         }
-        if __debug__ and meta is not None:
-            meta["convert_end_time"] = _runtime.perf_counter()
+        if __debug__ and perf_counters is not None:
+            perf_counters["convert_end_time"] = _runtime.perf_counter()
         return self._fun(**kwargs)
 
 
@@ -153,7 +155,7 @@ def export(
     A default mapping is provided, see :func:`_conversion.default_mapping`.
     """
 
-    # precise typing is difficult (impossible?) since we are manipulating the args
+    # precise typing is impossible since we are manipulating the args (e.g. ArrayInfo to the Python runtime objects)
     def impl(fun: Callable) -> Callable:
         return functools.update_wrapper(
             _DecoratedFunction(

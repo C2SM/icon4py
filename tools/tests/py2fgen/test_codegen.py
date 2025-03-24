@@ -306,12 +306,12 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
                 func_start_time = _runtime.perf_counter()
 
         if __debug__ and runtime_config.PROFILING:
-            meta = {}
+            perf_counters = {}
         else:
-            meta = None
+            perf_counters = None
         foo(
             ffi=ffi,
-            meta=meta,
+            perf_counters=perf_counters,
             one=one,
             two=two,
         )
@@ -321,7 +321,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
                 func_end_time = _runtime.perf_counter()
                 logger.info(
                     "foo convert time: %s"
-                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
                 )
                 logger.info("foo execution time: %s" % str(func_end_time - func_start_time))
 
@@ -382,12 +382,12 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
                 func_start_time = _runtime.perf_counter()
 
         if __debug__ and runtime_config.PROFILING:
-            meta = {}
+            perf_counters = {}
         else:
-            meta = None
+            perf_counters = None
         bar(
             ffi=ffi,
-            meta=meta,
+            perf_counters=perf_counters,
             one=one,
             two=two,
         )
@@ -397,7 +397,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
                 func_end_time = _runtime.perf_counter()
                 logger.info(
                     "bar convert time: %s"
-                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
                 )
                 logger.info("bar execution time: %s" % str(func_end_time - func_start_time))
 

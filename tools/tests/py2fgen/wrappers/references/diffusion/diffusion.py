@@ -161,12 +161,12 @@ def diffusion_run_wrapper(
                 func_start_time = _runtime.perf_counter()
 
         if __debug__ and runtime_config.PROFILING:
-            meta = {}
+            perf_counters = {}
         else:
-            meta = None
+            perf_counters = None
         diffusion_run(
             ffi=ffi,
-            meta=meta,
+            perf_counters=perf_counters,
             w=w,
             vn=vn,
             exner=exner,
@@ -185,7 +185,7 @@ def diffusion_run_wrapper(
                 func_end_time = _runtime.perf_counter()
                 logger.info(
                     "diffusion_run convert time: %s"
-                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
                 )
                 logger.info(
                     "diffusion_run execution time: %s" % str(func_end_time - func_start_time)
@@ -533,12 +533,12 @@ def diffusion_init_wrapper(
                 func_start_time = _runtime.perf_counter()
 
         if __debug__ and runtime_config.PROFILING:
-            meta = {}
+            perf_counters = {}
         else:
-            meta = None
+            perf_counters = None
         diffusion_init(
             ffi=ffi,
-            meta=meta,
+            perf_counters=perf_counters,
             vct_a=vct_a,
             vct_b=vct_b,
             theta_ref_mc=theta_ref_mc,
@@ -584,7 +584,7 @@ def diffusion_init_wrapper(
                 func_end_time = _runtime.perf_counter()
                 logger.info(
                     "diffusion_init convert time: %s"
-                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
                 )
                 logger.info(
                     "diffusion_init execution time: %s" % str(func_end_time - func_start_time)

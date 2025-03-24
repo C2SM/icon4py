@@ -464,12 +464,12 @@ def solve_nh_run_wrapper(
                 func_start_time = _runtime.perf_counter()
 
         if __debug__ and runtime_config.PROFILING:
-            meta = {}
+            perf_counters = {}
         else:
-            meta = None
+            perf_counters = None
         solve_nh_run(
             ffi=ffi,
-            meta=meta,
+            perf_counters=perf_counters,
             rho_now=rho_now,
             rho_new=rho_new,
             exner_now=exner_now,
@@ -515,7 +515,7 @@ def solve_nh_run_wrapper(
                 func_end_time = _runtime.perf_counter()
                 logger.info(
                     "solve_nh_run convert time: %s"
-                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
                 )
                 logger.info(
                     "solve_nh_run execution time: %s" % str(func_end_time - func_start_time)
@@ -1523,12 +1523,12 @@ def solve_nh_init_wrapper(
                 func_start_time = _runtime.perf_counter()
 
         if __debug__ and runtime_config.PROFILING:
-            meta = {}
+            perf_counters = {}
         else:
-            meta = None
+            perf_counters = None
         solve_nh_init(
             ffi=ffi,
-            meta=meta,
+            perf_counters=perf_counters,
             vct_a=vct_a,
             vct_b=vct_b,
             c_lin_e=c_lin_e,
@@ -1619,7 +1619,7 @@ def solve_nh_init_wrapper(
                 func_end_time = _runtime.perf_counter()
                 logger.info(
                     "solve_nh_init convert time: %s"
-                    % str(meta["convert_end_time"] - meta["convert_start_time"])
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
                 )
                 logger.info(
                     "solve_nh_init execution time: %s" % str(func_end_time - func_start_time)

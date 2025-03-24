@@ -57,7 +57,7 @@ def test_mapping_hook():
 
     result_a, result_b = foo(
         ffi=ffi,
-        meta={},
+        perf_counters={},
         a=make_array_info(shape=(10,), ptr=array_ptr, on_gpu=False, is_optional=False),
         b=5,
     )
