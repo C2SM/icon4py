@@ -33,6 +33,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO (@nfarabullini) can this be deleted?
 # TODO (magdalena) this stencils has no StencilTest,  (numpy) reference
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
@@ -48,7 +49,6 @@ def _fused_velocity_advection_stencil_8_to_14(
     z_w_concorr_mc: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     istep: gtx.int32,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
@@ -128,7 +128,6 @@ def fused_velocity_advection_stencil_8_to_14(
     w_concorr_c: fa.CellKField[vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     z_w_con_c: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     istep: gtx.int32,
     cfl_w_limit: wpfloat,
     dtime: wpfloat,
@@ -150,7 +149,6 @@ def fused_velocity_advection_stencil_8_to_14(
         z_w_concorr_mc,
         w_concorr_c,
         z_ekinh,
-        k,
         istep,
         cfl_w_limit,
         dtime,

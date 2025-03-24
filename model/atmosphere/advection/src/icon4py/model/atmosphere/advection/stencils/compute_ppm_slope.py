@@ -50,7 +50,6 @@ def _compute_ppm_slope_b(
 def _compute_ppm_slope(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
     elev: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
     z_slope = concat_where(
@@ -66,7 +65,6 @@ def _compute_ppm_slope(
 def compute_ppm_slope(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
     z_slope: fa.CellKField[ta.wpfloat],
     elev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -77,7 +75,6 @@ def compute_ppm_slope(
     _compute_ppm_slope(
         p_cc,
         p_cellhgt_mc_now,
-        k,
         elev,
         out=z_slope,
         domain={

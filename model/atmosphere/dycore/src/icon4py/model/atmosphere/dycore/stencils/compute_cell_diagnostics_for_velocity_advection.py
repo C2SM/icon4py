@@ -29,7 +29,6 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
 ) -> tuple[
     fa.CellKField[vpfloat],
@@ -63,7 +62,6 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
 def _compute_contravariant_corrected_w(
     w: fa.CellKField[wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
@@ -93,7 +91,6 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -109,7 +106,6 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
         contravariant_correction_at_edges_on_model_levels,
         wgtfac_c,
         contravariant_correction_at_cells_on_half_levels,
-        k,
         nflatlev,
         out=(
             horizontal_kinetic_energy_at_cells_on_model_levels,
@@ -124,7 +120,6 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     _compute_contravariant_corrected_w(
         w,
         contravariant_correction_at_cells_on_half_levels,
-        k,
         nflatlev,
         nlev,
         out=contravariant_corrected_w_at_cells_on_half_levels,
@@ -143,7 +138,6 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_cor
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -165,7 +159,6 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_cor
     _compute_contravariant_corrected_w(
         w,
         contravariant_correction_at_cells_on_half_levels,
-        k,
         nflatlev,
         nlev,
         out=contravariant_corrected_w_at_cells_on_half_levels,

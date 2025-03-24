@@ -9,14 +9,13 @@ from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import Dimension
 
 
-def neighbortable_offset_provider_for_1d_sparse_fields(
-    dim: Dimension,
+def connectivity_for_1d_sparse_fields(
+    dim: gtx.Dimension,
     old_shape: tuple[int, int],
-    origin_axis: Dimension,
-    neighbor_axis: Dimension,
+    origin_axis: gtx.Dimension,
+    neighbor_axis: gtx.Dimension,
     has_skip_values: bool,
     array_ns: ModuleType = np,
 ):

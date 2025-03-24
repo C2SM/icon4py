@@ -169,11 +169,11 @@ class BaseGrid(ABC):
             skip_value=-1 if self._has_skip_values(dim) else None,
         )
 
-    def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):
+    def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
         xp = data_alloc.array_ns(self.config.on_gpu)
-        return grid_utils.neighbortable_offset_provider_for_1d_sparse_fields(
+        return grid_utils.connectivity_for_1d_sparse_fields(
             dim,
             self.connectivities[dim].shape,
             from_dim,

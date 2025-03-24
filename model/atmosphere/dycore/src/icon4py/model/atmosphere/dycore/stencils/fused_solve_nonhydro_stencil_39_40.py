@@ -24,7 +24,6 @@ def _fused_solve_nonhydro_stencil_39_40(
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-    vert_idx: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
@@ -44,7 +43,6 @@ def fused_solve_nonhydro_stencil_39_40(
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-    vert_idx: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
     w_concorr_c: fa.CellKField[vpfloat],
@@ -58,7 +56,6 @@ def fused_solve_nonhydro_stencil_39_40(
         z_w_concorr_me,
         wgtfac_c,
         wgtfacq_c,
-        vert_idx,
         nlev,
         nflatlev,
         out=w_concorr_c,
