@@ -58,7 +58,7 @@ def _compute_vt_vn_on_half_levels_and_kinetic_energy(
 
     tangential_wind_on_half_levels = (
         concat_where(
-        (1 <= dims.KDim) & (dims.KDim < nlev),
+            (1 <= dims.KDim) & (dims.KDim < nlev),
             _interpolate_edge_field_to_half_levels_vp(wgtfac_e, tangential_wind),
             tangential_wind_on_half_levels,
         )
