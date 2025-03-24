@@ -190,8 +190,8 @@ def default_mapping(
 ) -> _definitions.MapperType | None:
     """
     Provide default mappings for raw Fortran data to Python data types.
-    The default mapping tranlates 'ArrayInfo's to NumPy/CuPy arrays and
-    scalar bools (represented as 'int32') to Python bools.
+    The default mapping provides mapping functions for 'ArrayInfo's to NumPy/CuPy arrays
+    and scalar bools (represented as 'int32') to Python bools.
     """
     if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
         # ArrayInfos to Numpy/CuPy arrays

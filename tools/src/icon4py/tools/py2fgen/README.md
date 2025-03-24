@@ -29,7 +29,7 @@ The parameter descriptors are used to generate the Fortran interface (and a priv
 ```python
 @py2fgen.export(param_descriptors={
     'scalar': py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64),
-    'array': py2fgen.ArrayParamDescriptor(rank=2, dtype=py2fgen.FLOAT64, device=py2fgen.MAYBE_DEVICE, is_optional=False)
+    'array': py2fgen.ArrayParamDescriptor(rank=2, dtype=py2fgen.FLOAT64, memory_space=py2fgen.MAYBE_DEVICE, is_optional=False)
 })
 def foo(scalar: float, array: np.ndarray):
     ...
@@ -42,7 +42,7 @@ Alternatively, the user can provide the parameter descriptors using `Annotated`.
 ```python
 @py2fgen.export()
 def foo(scalar: Annotated[float, py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)],
-        array: Annotated[np.ndarray, py2fgen.ArrayParamDescriptor(rank=2, dtype=py2fgen.FLOAT64, device=py2fgen.MAYBE_DEVICE, is_optional=False)]):
+        array: Annotated[np.ndarray, py2fgen.ArrayParamDescriptor(rank=2, dtype=py2fgen.FLOAT64, memory_space=py2fgen.MAYBE_DEVICE, is_optional=False)]):
     ...
 ```
 
@@ -73,7 +73,7 @@ We provide 2 kinds of `ParamDescriptor`s:
 - `ArrayParamDescriptor`: for array parameters with attributes
   - `rank`: the rank of the array
   - `dtype`: see `ScalarParamDescriptor`
-  - `device`: which is `py2fgen.HOST` for CPU arrays or `py2fgen.MAYBE_DEVICE` for arrays that are on GPU if compiled with OpenACC, otherwise on CPU
+  - `memory_space`: which is `py2fgen.HOST` for CPU arrays or `py2fgen.MAYBE_DEVICE` for arrays that are on GPU if compiled with OpenACC, otherwise on CPU
   - `is_optional`: whether the array is optional or not, optional arrays need to be passed as Fortran `pointer`
 
 ### Raw argument conversion hooks

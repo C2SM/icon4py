@@ -17,7 +17,7 @@ from icon4py.tools.py2fgen._definitions import (
     INT64,
     ArrayInfo,
     ArrayParamDescriptor,
-    DeviceType,
+    MemorySpace,
     ParamDescriptor,
     ScalarParamDescriptor,
 )
@@ -34,7 +34,7 @@ __all__ = [
     "INT64",
     "ArrayInfo",
     "ArrayParamDescriptor",
-    "DeviceType",
+    "MemorySpace",
     "ParamDescriptor",
     "ScalarParamDescriptor",
     "as_array",

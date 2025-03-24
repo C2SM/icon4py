@@ -44,7 +44,7 @@ NumpyInt32Array1D: TypeAlias = Annotated[
     py2fgen.ArrayParamDescriptor(
         rank=1,
         dtype=ts.ScalarKind.INT32,
-        device=py2fgen.DeviceType.HOST,
+        memory_space=py2fgen.MemorySpace.HOST,
         is_optional=False,
     ),
 ]
@@ -54,7 +54,7 @@ NumpyBoolArray1D: TypeAlias = Annotated[
     py2fgen.ArrayParamDescriptor(
         rank=1,
         dtype=ts.ScalarKind.BOOL,
-        device=py2fgen.DeviceType.HOST,
+        memory_space=py2fgen.MemorySpace.HOST,
         is_optional=False,
     ),
 ]

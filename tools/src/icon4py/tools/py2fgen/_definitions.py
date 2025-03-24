@@ -26,7 +26,7 @@ FLOAT32 = gtx_ts.ScalarKind.FLOAT32
 FLOAT64 = gtx_ts.ScalarKind.FLOAT64
 
 
-class DeviceType(eve.StrEnum):
+class MemorySpace(eve.StrEnum):
     """
     Host: The pointer is always a host pointer.
     MaybeDevice: If the Fortran code is compiled for OpenACC, the pointer will be a device pointer,
@@ -45,13 +45,13 @@ class ArrayParamDescriptor(eve.Node):
     Attributes:
         rank: The rank of the array.
         dtype: The data type of the array.
-        device: 'Host' or 'MaybeDevice', see :class:`DeviceType`.
+        device: 'Host' or 'MaybeDevice', see :class:`MemorySpace`.
         is_optional: If True, the pointer can be NULL.
     """
 
     rank: int
     dtype: ScalarKind
-    device: DeviceType
+    memory_space: MemorySpace
     is_optional: bool
 
 
@@ -80,7 +80,7 @@ if TYPE_CHECKING:
     Attributes
         pointer: The CFFI pointer.
         shape: Shape of the buffer.
-        on_gpu: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.device is `Host`).
+        on_gpu: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.memory_space is `Host`).
         is_optional: If True, the pointer can be NULL.
 
     Note: We use a plain tuple to minimize runtime overhead in the bindings.

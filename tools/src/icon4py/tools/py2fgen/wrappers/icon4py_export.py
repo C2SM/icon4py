@@ -63,7 +63,7 @@ def field_annotation_descriptor_hook(annotation: Any) -> Optional[py2fgen.ParamD
         return py2fgen.ArrayParamDescriptor(
             rank=len(dims),
             dtype=dtype,
-            device=py2fgen.DeviceType.MAYBE_DEVICE,
+            memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
             is_optional=is_optional,
         )
     else:

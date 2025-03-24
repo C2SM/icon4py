@@ -173,7 +173,7 @@ def {{ func.name }}_wrapper(
         # ArrayInfos
         {% for name, arg in func.args.items() %}
         {% if is_array(arg) %}
-        {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.device == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
+        {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
         {% endif %}
         {% endfor %}
 
@@ -419,14 +419,14 @@ end function {{name}}_wrapper
                 for name, param in func.args.items()
                 if is_array(param)
                 and not param.is_optional
-                and param.device == _definitions.DeviceType.MAYBE_DEVICE
+                and param.memory_space == _definitions.MemorySpace.MAYBE_DEVICE
             ],
             optional_arrays=[
                 name
                 for name, param in func.args.items()
                 if is_array(param)
                 and param.is_optional
-                and param.device == _definitions.DeviceType.MAYBE_DEVICE
+                and param.memory_space == _definitions.MemorySpace.MAYBE_DEVICE
             ],
             as_allocatable=True,
             param_declarations=param_declarations,
