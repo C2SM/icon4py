@@ -8,7 +8,8 @@
 
 import dataclasses
 import functools
-import inspect
+import types
+import typing
 from collections.abc import Mapping
 from typing import Any, Callable, Optional
 
@@ -18,7 +19,7 @@ from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
 
 
 # TODO(egparedes): possibly use `TypeForm` for the annotation parameter,
-# once https://peps.python.org/pep-0747/ is approved
+# once https://peps.python.org/pep-0747/ is approved.
 def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
     if hasattr(annotation, "__metadata__"):
         for meta in annotation.__metadata__:
@@ -44,7 +45,7 @@ def param_descriptor_from_annotation(
 
 
 def get_param_descriptors(
-    signature: inspect.Signature,
+    type_hints: dict[str, Any],
     param_descriptors: Optional[_definitions.ParamDescriptors],
     annotation_descriptor_hook: Optional[Callable[[Any], _definitions.ParamDescriptor]],
 ) -> _definitions.ParamDescriptors:
@@ -55,17 +56,14 @@ def get_param_descriptors(
             )
         return param_descriptors
 
-    params = {}
-    for name, param in signature.parameters.items():
-        params[name] = param_descriptor_from_annotation(
-            param.annotation, annotation_descriptor_hook
-        )
-
-    return params
+    return {
+        name: param_descriptor_from_annotation(annotation, annotation_descriptor_hook)
+        for name, annotation in type_hints.items()
+    }
 
 
 def get_param_mappings(
-    signature: inspect.Signature,
+    type_hints: dict[str, Any],
     annotation_mapping_hook: Callable[
         [Any, _definitions.ParamDescriptor], _definitions.MapperType | None
     ]
@@ -73,11 +71,11 @@ def get_param_mappings(
     param_descriptors: _definitions.ParamDescriptors,
 ) -> Mapping[str, _definitions.MapperType]:
     mappings: dict[str, _definitions.MapperType] = {}
-    for name, param in signature.parameters.items():
+    for name, annotation in type_hints.items():
         if annotation_mapping_hook is not None:
-            mapping = annotation_mapping_hook(param.annotation, param_descriptors[name])
+            mapping = annotation_mapping_hook(annotation, param_descriptors[name])
             if mapping is None:
-                mapping = _conversion.default_mapping(param.annotation, param_descriptors[name])
+                mapping = _conversion.default_mapping(annotation, param_descriptors[name])
             if mapping is not None:
                 mappings[name] = mapping
     return mappings
@@ -101,13 +99,21 @@ class _DecoratedFunction:
     _mapping: Mapping[str, Callable] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
-        signature = inspect.signature(self._fun)  # TODO use typing.get_type_hints()
+        type_hints = typing.get_type_hints(self._fun, include_extras=True)
+        if "return" in type_hints:
+            if type_hints["return"] is types.NoneType:
+                type_hints.pop("return")
+            else:
+                raise ValueError(
+                    "Exported functions must not have a return type. Use 'None' instead."
+                )
+
         self.param_descriptors = get_param_descriptors(
-            signature, self.param_descriptors, self.annotation_descriptor_hook
+            type_hints, self.param_descriptors, self.annotation_descriptor_hook
         )
 
         self._mapping = get_param_mappings(
-            signature, self.annotation_mapping_hook, self.param_descriptors
+            type_hints, self.annotation_mapping_hook, self.param_descriptors
         )
 
     def __call__(self, ffi: cffi.FFI, meta: Optional[dict], **kwargs: Any) -> Any:

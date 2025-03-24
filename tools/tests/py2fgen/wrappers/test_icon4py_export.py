@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
 
 import typing
 from typing import Optional
@@ -36,7 +37,7 @@ SomeDim = gtx.Dimension("SomeDim")
 
 
 def make_array_info(
-    ptr: "cffi.FFI.CData",  # TODO don't `from __future__ import annotations` otherwise the gt4py annotation will be a string
+    ptr: cffi.FFI.CData,
     shape: tuple[int, ...],
     on_gpu: bool,
     is_optional: bool,
