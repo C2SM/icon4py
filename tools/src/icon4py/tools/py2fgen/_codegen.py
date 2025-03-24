@@ -6,31 +6,31 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Any, Optional, Sequence, TypeGuard, Union
+from typing import Any, Final, Literal, Sequence, TypeGuard, Union
 
 from gt4py.eve import Node, codegen, datamodels
-from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
+from gt4py.eve.codegen import JinjaTemplate as as_jinja
 
 from icon4py.tools.py2fgen import _definitions, _utils
 
 
 CFFI_DECORATOR = "@ffi.def_extern()"
 
-BUILTIN_TO_ISO_C_TYPE: dict[_definitions.ScalarKind, str] = {
+BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "real(c_double)",
     _definitions.FLOAT32: "real(c_float)",
     _definitions.BOOL: "logical(c_int)",
     _definitions.INT32: "integer(c_int)",
     _definitions.INT64: "integer(c_long)",
 }
-BUILTIN_TO_CPP_TYPE: dict[_definitions.ScalarKind, str] = {
+BUILTIN_TO_CPP_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "double",
     _definitions.FLOAT32: "float",
     _definitions.BOOL: "int",
     _definitions.INT32: "int",
     _definitions.INT64: "long",
 }
-BUILTIN_TO_NUMPY_TYPE: dict[_definitions.ScalarKind, str] = {
+BUILTIN_TO_NUMPY_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "xp.float64",
     _definitions.FLOAT32: "xp.float32",
     _definitions.BOOL: "xp.int32",
@@ -53,15 +53,14 @@ class Func(Node):
         for name, param in self.args.items():
             params.append(name)
             if is_array(param):
-                for i in range(param.rank):
-                    params.append(_size_arg_name(name, i))
+                params.extend(_size_arg_name(name, i) for i in range(param.rank))
         params.append("on_gpu")
         self.rendered_params = ", ".join(params)
 
 
 class BindingsLibrary(Node):
     module_name: str
-    plugin_name: str
+    library_name: str
     functions: list[Func]
 
 
@@ -84,7 +83,7 @@ def to_iso_c_type(scalar_type: _definitions.ScalarKind) -> str:
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
 
-def as_f90_value(param: _definitions.ParamDescriptor) -> Optional[str]:
+def as_f90_value(param: _definitions.ParamDescriptor) -> Literal["value", None]:
     """
     Return the Fortran 90 'value' keyword for scalar types.
 
@@ -92,19 +91,19 @@ def as_f90_value(param: _definitions.ParamDescriptor) -> Optional[str]:
         param: The function parameter to check.
 
     Returns:
-        A string containing 'value,' for scalar types, otherwise an empty string.
+        A string containing 'value' for scalar types, otherwise an empty string.
     """
     return "value" if not is_array(param) else None
 
 
-def render_c_pointer(param: _definitions.ParamDescriptor) -> str:
+def render_c_pointer(param: _definitions.ParamDescriptor) -> Literal["*", ""]:
     """Render a C pointer symbol for array types."""
     return "*" if is_array(param) else ""
 
 
 def render_fortran_array_dimensions(
     param: _definitions.ParamDescriptor, assumed_size_array: bool
-) -> Optional[str]:
+) -> str | None:
     """
     Render Fortran array dimensions for array types.
 
@@ -124,7 +123,7 @@ def render_fortran_array_dimensions(
     return None
 
 
-class PythonWrapperGenerator(TemplatedGenerator):
+class PythonWrapperGenerator(codegen.TemplatedGenerator):
     def visit_PythonWrapper(self, node: PythonWrapper, **kwargs: Any) -> str:
         def render_size_args_tuple(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             size_args = ",".join(f"{_size_arg_name(name, i)}" for i in range(param.rank))
@@ -141,7 +140,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
 import logging
-from {{ plugin_name }} import ffi
+from {{ library_name }} import ffi
 from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
 if __debug__:
@@ -233,17 +232,16 @@ def {{ func.name }}_wrapper(
     )
 
 
-class CHeaderGenerator(TemplatedGenerator):
-    BindingsLibrary = as_jinja("""{{'\n'.join(functions)}}""")
+class CHeaderGenerator(codegen.TemplatedGenerator):
+    BindingsLibrary = as_jinja("{{'\n'.join(functions)}}")
 
     def visit_Func(self, func: Func) -> str:
         params = []
         for name, param in func.args.items():
             params.append(self.visit_Parameter(name, param))
             if is_array(param):
-                for i in range(param.rank):
-                    params.append(f"int {_size_arg_name(name, i)}")
-        params.append("int on_gpu")
+                params.extend(f"int {_size_arg_name(name, i)}" for i in range(param.rank))
+
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)
 
@@ -268,12 +266,12 @@ def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -
 
 
 class F90Interface(Node):
-    cffi_plugin: BindingsLibrary
+    bindings_library: BindingsLibrary
     function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        functions = self.cffi_plugin.functions
+        functions = self.bindings_library.functions
         self.function_declaration = [
             F90FunctionDeclaration(name=f.name, args=f.args) for f in functions
         ]
@@ -294,14 +292,14 @@ def _size_param_declaration(name: str, value: bool = True) -> str:
     return f"integer(c_int){', value' if value else ''} :: {name}"
 
 
-class F90InterfaceGenerator(TemplatedGenerator):
+class F90InterfaceGenerator(codegen.TemplatedGenerator):
     F90Interface = as_jinja(
         """\
-module {{ _this_node.cffi_plugin.plugin_name }}
+module {{ _this_node.bindings_library.library_name }}
     use, intrinsic :: iso_c_binding
     implicit none
 
-    {% for func in _this_node.cffi_plugin.functions %}
+    {% for func in _this_node.bindings_library.functions %}
     public :: {{ func.name }}
     {% endfor %}
 
@@ -375,9 +373,10 @@ end function {{name}}_wrapper
         for name, param in func.args.items():
             args.append(render_args(name, param))
             if is_array(param):
-                for i in range(param.rank):
-                    size_name = _size_arg_name(name, i)
-                    args.append(f"{size_name} = {size_name}")
+                args.extend(
+                    f"{_size_arg_name(name, i)} = {_size_arg_name(name, i)}"
+                    for i in range(param.rank)
+                )
 
         # on_gpu flag
         args.append("on_gpu = on_gpu")
@@ -491,7 +490,7 @@ end subroutine {{name}}
     )
 
 
-def generate_c_header(plugin: BindingsLibrary) -> str:
+def generate_c_header(bindings_library: BindingsLibrary) -> str:
     """
     Generate C header code from the given plugin.
 
@@ -501,11 +500,11 @@ def generate_c_header(plugin: BindingsLibrary) -> str:
     Returns:
         Formatted C header code as a string.
     """
-    generated_code = CHeaderGenerator.apply(plugin)
+    generated_code = CHeaderGenerator.apply(bindings_library)
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
-def generate_python_wrapper(plugin: BindingsLibrary) -> str:
+def generate_python_wrapper(bindings_library: BindingsLibrary) -> str:
     """
     Generate Python wrapper code.
 
@@ -516,21 +515,21 @@ def generate_python_wrapper(plugin: BindingsLibrary) -> str:
         Formatted Python wrapper code as a string.
     """
     python_wrapper = PythonWrapper(
-        module_name=plugin.module_name,
-        plugin_name=plugin.plugin_name,
-        functions=plugin.functions,
+        module_name=bindings_library.module_name,
+        library_name=bindings_library.library_name,
+        functions=bindings_library.functions,
     )
 
     generated_code = PythonWrapperGenerator.apply(python_wrapper)
     return codegen.format_source("python", generated_code)
 
 
-def generate_f90_interface(plugin: BindingsLibrary) -> str:
+def generate_f90_interface(bindings_library: BindingsLibrary) -> str:
     """
     Generate Fortran 90 interface code.
 
     Args:
         plugin: The BindingsLibrary instance containing information for code generation.
     """
-    generated_code = F90InterfaceGenerator.apply(F90Interface(cffi_plugin=plugin))
+    generated_code = F90InterfaceGenerator.apply(F90Interface(bindings_library=bindings_library))
     return _utils.format_fortran_code(generated_code)

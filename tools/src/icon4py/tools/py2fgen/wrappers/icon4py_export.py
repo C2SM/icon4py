@@ -27,6 +27,7 @@ def _parse_type_spec(type_spec: ts.TypeSpec) -> tuple[list[gtx.Dimension], ts.Sc
     if isinstance(type_spec, ts.ScalarType):
         return [], type_spec.kind
     elif isinstance(type_spec, ts.FieldType):
+        assert isinstance(type_spec.dtype, ts.ScalarType)
         return type_spec.dims, type_spec.dtype.kind
     else:
         raise ValueError(f"Unsupported type specification: {type_spec}")

@@ -45,14 +45,14 @@ def main(
     c_header = _codegen.generate_c_header(plugin)
     logger.info("Generating Python wrapper...")
     python_wrapper = _codegen.generate_python_wrapper(plugin)
-    _utils.write_file(python_wrapper, output_path, f"{plugin.plugin_name}.py")
+    _utils.write_file(python_wrapper, output_path, f"{plugin.library_name}.py")
     logger.info("Generating Fortran interface...")
     f90_interface = _codegen.generate_f90_interface(plugin)
-    _utils.write_file(f90_interface, output_path, f"{plugin.plugin_name}.f90")
+    _utils.write_file(f90_interface, output_path, f"{plugin.library_name}.f90")
 
     logger.info("Compiling CFFI dynamic library...")
     _generator.generate_and_compile_cffi_plugin(
-        plugin.plugin_name, c_header, python_wrapper, output_path
+        plugin.library_name, c_header, python_wrapper, output_path
     )
 
 
