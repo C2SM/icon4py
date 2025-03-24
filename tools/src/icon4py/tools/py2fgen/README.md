@@ -48,16 +48,17 @@ def foo(scalar: Annotated[float, py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)]
 
 The most elegant, but most complicated way is to set the `annotation_descriptor_hook`,
 which is a function that takes an annotation and returns a `ParamDescriptor`.
+If `None` is returned we delegate to `Annotated` translation.
 
 **Example**
 
 ```python
 def my_hook(annotation: Any) -> py2fgen.ParamDescriptor:
-    match annotation:
-        case int | np.int64:
-            return py2fgen.ScalarParamDescriptor(py2fgen.INT64)
-        case float | np.float:
-            return py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)
+    if annotation in (int, np.int64):
+        return py2fgen.ScalarParamDescriptor(py2fgen.INT64)
+    if annotation in (float, np.float):
+        return py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)
+    return None
 
 @py2fgen.export(annotation_descriptor_hook=my_hook)
 def foo(scalar: float, array: np.ndarray):

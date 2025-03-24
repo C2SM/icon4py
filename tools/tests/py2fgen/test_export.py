@@ -6,8 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Annotated
+from typing import Annotated, Any
 
+import numpy as np
 import pytest
 
 from icon4py.tools import py2fgen
@@ -27,6 +28,7 @@ def test_from_annotated():
     "testee, expected",
     [
         (float, py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)),
+        (np.float32, py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)),
         (int, pytest.raises),  # no descriptor deducible
         (
             Annotated[int, py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)],
@@ -39,18 +41,18 @@ def test_from_annotated():
     ],
 )
 def test_get_param_descriptor_from_annotation(testee, expected):
-    def param_descriptor_hook(float_param):
-        if float_param is float:
+    def float_param_descriptor_hook(annotation: Any):
+        if annotation in (float, np.float32):
             return py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)
         return None
 
     if expected is pytest.raises:
         with pytest.raises(ValueError):
             _export.param_descriptor_from_annotation(
-                testee, annotation_descriptor_hook=param_descriptor_hook
+                testee, annotation_descriptor_hook=float_param_descriptor_hook
             )
     else:
         result = _export.param_descriptor_from_annotation(
-            testee, annotation_descriptor_hook=param_descriptor_hook
+            testee, annotation_descriptor_hook=float_param_descriptor_hook
         )
         assert result == expected
