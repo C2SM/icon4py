@@ -603,7 +603,7 @@ def _stencils_42_44_45(
     fa.CellKField[float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = concat_where(
-        1 <= dims.KDim < nlev,
+        (1 <= dims.KDim) & (dims.KDim < nlev),
         _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -621,7 +621,7 @@ def _stencils_42_44_45(
     )
 
     (z_beta, z_alpha) = concat_where(
-        0 <= dims.KDim < nlev,
+        dims.KDim < nlev,
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
@@ -749,7 +749,7 @@ def _stencils_43_44_45(
     fa.CellKField[float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = concat_where(
-        1 <= dims.KDim < nlev,
+        (1 <= dims.KDim) & (dims.KDim < nlev),
         _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -763,7 +763,7 @@ def _stencils_43_44_45(
         (z_w_expl, z_contr_w_fl_l),
     )
     (z_beta, z_alpha) = concat_where(
-        0 <= dims.KDim < nlev,
+        dims.KDim < nlev,
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
