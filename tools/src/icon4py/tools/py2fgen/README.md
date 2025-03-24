@@ -46,7 +46,7 @@ def foo(scalar: Annotated[float, py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)]
     ...
 ```
 
-The most elegant, but most complicated way is to set the `annotation_descriptor_hook`,
+The most flexible, but most complicated way is to set the `annotation_descriptor_hook`,
 which is a function that takes an annotation and returns a `ParamDescriptor`.
 If `None` is returned we delegate to `Annotated` translation.
 

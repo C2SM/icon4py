@@ -23,9 +23,7 @@ from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
 def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
     if hasattr(annotation, "__metadata__"):
         for meta in annotation.__metadata__:
-            if isinstance(
-                meta, (_definitions.ArrayParamDescriptor, _definitions.ScalarParamDescriptor)
-            ):
+            if isinstance(meta, _definitions.ParamDescriptor):
                 return meta
     return None
 

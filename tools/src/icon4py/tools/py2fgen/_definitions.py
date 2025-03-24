@@ -64,6 +64,7 @@ ParamDescriptor: TypeAlias = ArrayParamDescriptor | ScalarParamDescriptor
 Describes the parameter type of a function, which is used to generate the
 Fortran signature and semantics.
 """
+
 ParamDescriptors: TypeAlias = Mapping[str, ParamDescriptor]
 """
 Mapping of parameter names to their descriptors.
@@ -85,7 +86,8 @@ if TYPE_CHECKING:
 
     Note: We use a plain tuple to minimize runtime overhead in the bindings.
     """
-    # the above is an unofficial pyright way of adding a docstring to TypeAlias, however doesn't work within TYPE_CHECKING
+    # the docstring above is an unofficial pyright way of adding the docstring to TypeAlias,
+    # however it doesn't work within TYPE_CHECKING, therefore tools will not pick it up
 else:
     from typing import Any
 

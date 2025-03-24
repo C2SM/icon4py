@@ -34,10 +34,16 @@ def test_array_as_array_info(ffi, dtype):
 
 
 def test_array_as_array_info_lifetime(ffi):
-    result = array_to_array_info(np.arange(100000, dtype=np.int32), ffi=ffi)
+    """
+    Test that the passed array is kept alive by the 'array_to_array_info' function.
+    """
+    result = array_to_array_info(np.arange(100000, dtype=np.int32), ffi=ffi, keep_alive=True)
 
     gc.collect()  # Force garbage collection
-    _dummy = np.arange(100000, dtype=np.int32) + 1  # let's hope we get the same memory
+    # If we are lucky the next allocation would give us the same memory in case it wasn't kept alive.
+    # The reversed test was there and most of the time worked, but not reliably. So this test
+    # is "most of the time" testing something, but sometimes not (but also will not fail).
+    _dummy = np.arange(100000, dtype=np.int32) + 1
 
     arr = py2fgen.as_array(ffi, result, from_np_dtype(np.int32))
     assert isinstance(arr, np.ndarray)
