@@ -17,7 +17,9 @@ import cffi
 from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
 
 
-def _from_annotated(annotation: Any) -> Optional[_definitions.ParamDescriptor]:
+# TODO(egparedes): possibly use `TypeForm` for the annotation parameter,
+# once https://peps.python.org/pep-0747/ is approved
+def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
     if hasattr(annotation, "__metadata__"):
         for meta in annotation.__metadata__:
             if isinstance(
@@ -29,7 +31,7 @@ def _from_annotated(annotation: Any) -> Optional[_definitions.ParamDescriptor]:
 
 def param_descriptor_from_annotation(
     annotation: Any,
-    annotation_descriptor_hook: Optional[Callable[[Any], _definitions.ParamDescriptor]],
+    annotation_descriptor_hook: Optional[Callable[[Any], _definitions.ParamDescriptor | None]],
 ) -> _definitions.ParamDescriptor:
     descriptor = None
     if annotation_descriptor_hook is not None:
@@ -64,7 +66,9 @@ def get_param_descriptors(
 
 def get_param_mappings(
     signature: inspect.Signature,
-    annotation_mapping_hook: Callable[[Any, _definitions.ParamDescriptor], _definitions.MapperType]
+    annotation_mapping_hook: Callable[
+        [Any, _definitions.ParamDescriptor], _definitions.MapperType | None
+    ]
     | None,
     param_descriptors: _definitions.ParamDescriptors,
 ) -> Mapping[str, _definitions.MapperType]:
