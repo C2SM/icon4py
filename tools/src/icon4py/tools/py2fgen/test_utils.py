@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 import cffi
 import numpy as np
@@ -70,6 +70,14 @@ def array_to_array_info(
     keep_alive: bool = True,
     as_fortran_layout: bool = True,
 ) -> _definitions.ArrayInfo:
+    """
+    Utility for testing ArrayInfo.
+
+    Takes a NumPy array and translates it to an 'ArrayInfo'.
+    By default
+    - the array is kept alive to avoid deallocation of the array before the pointer in 'ArrayInfo' is used;
+    - the array is converted to Fortran layout.
+    """
     if ffi is None:
         ffi = cffi.FFI()
     # TODO(havogt): need to move bool handling to Fortran side
@@ -82,11 +90,8 @@ def array_to_array_info(
     strtype = _codegen.BUILTIN_TO_CPP_TYPE[from_np_dtype(arr.dtype)]
     ptr = ffi.cast(f"{strtype}*", addr)
 
-    # bind the lifetime of `arr`to `ptr`
-    def nothing(_: Any) -> None:
-        pass
-
     if keep_alive:
-        ptr = ffi.gc(ptr, lambda _: nothing(arr))
+        # bind the lifetime of the `arr` to `ptr`
+        ptr = ffi.gc(ptr, lambda _=arr: None)  # type: ignore[misc] # cannot infer type of lambda
 
     return array_info(ptr, arr.shape, False, False)

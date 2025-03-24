@@ -28,6 +28,15 @@ def ffi():
     return cffi.FFI()
 
 
+@pytest.fixture
+def no_ffi_dummy():
+    """
+    Use to indicate that FFI is not used in the test.
+
+    ... but where an FFI argument is required in the general case."""
+    return None
+
+
 @pytest.fixture(
     params=[
         np,
@@ -121,17 +130,14 @@ def test_default_mapping_hook_array(ffi):
     assert isinstance(result, np.ndarray)
 
 
-_ffi_not_needed = None
-
-
-def test_default_mapping_hook_bool():
+def test_default_mapping_hook_bool(no_ffi_dummy):
     bool_mapper = _conversion.default_mapping(
         None, py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL)
     )
 
-    true_result = bool_mapper(-1, ffi=_ffi_not_needed)
+    true_result = bool_mapper(-1, ffi=no_ffi_dummy)
     assert isinstance(true_result, bool)
     assert true_result
-    false_result = bool_mapper(0, ffi=_ffi_not_needed)
+    false_result = bool_mapper(0, ffi=no_ffi_dummy)
     assert isinstance(false_result, bool)
     assert not false_result
