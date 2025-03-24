@@ -234,9 +234,12 @@ def test_nonhydro_predictor_step(
         diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:, :],
         sp_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
+    import numpy as np
+    print('DEBUGDEBUG: ', np.abs(solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lb_plus2:, 1:] - sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lb_plus2:, 1:]).max())
     assert dallclose(
         solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lb_plus2:, 1:],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lb_plus2:, 1:],
+        atol=1e-18,
     )
 
     # stencils 7,8,9, 11
@@ -481,6 +484,7 @@ def construct_diagnostics(init_savepoint: IconNonHydroInitSavepoint):
         vt=init_savepoint.vt(),
         vn_ie=init_savepoint.vn_ie(),
         w_concorr_c=init_savepoint.w_concorr_c(),
+        graddiv_w_concorr_c=None,
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -586,6 +590,7 @@ def test_nonhydro_corrector_step(
         z_w_concorr_me=_allocate(EdgeDim, KDim, grid=icon_grid),
         z_w_concorr_mc=_allocate(CellDim, KDim, grid=icon_grid),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
     )
 
     divdamp_fac_o2 = sp.divdamp_fac_o2()

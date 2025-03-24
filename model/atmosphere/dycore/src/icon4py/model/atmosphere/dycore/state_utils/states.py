@@ -44,6 +44,9 @@ class DiagnosticStateNonHydro:
     w_concorr_c: Field[
         [CellDim, KDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    graddiv_w_concorr_c: Field[
+        [CellDim, KDim], float
+    ]
     theta_v_ic: Field[[CellDim, KDim], float]
     exner_pr: Field[[CellDim, KDim], float]
     rho_ic: Field[[CellDim, KDim], float]

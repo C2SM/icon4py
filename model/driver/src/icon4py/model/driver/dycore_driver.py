@@ -1417,7 +1417,7 @@ def initialize(
             for v2c_neighbor in v2c[i]:
                 if v2c_neighbor not in v2c_neighbors_noduplicate:
                     v2c_neighbors_noduplicate.append(v2c_neighbor)
-            if not np.array_equal(v2c_neighbors_noduplicate, v2c[i]):
+            if not np.array_equal(np.array(v2c_neighbors_noduplicate), v2c[i]):
                 log.info(f"{i} v2c table duplicate: {v2c[i]}")
                 log.info(
                     f"{i} geofac_rot table: {solve_nonhydro_interpolation_state.geofac_rot.ndarray[i]}"

@@ -79,6 +79,9 @@ from icon4py.model.driver.testcase_functions import (
     hydrostatic_adjustment_ndarray,
 )
 
+U_AMPLIFICATION_FACTOR = 1.0
+WAVENUMBER_FACTOR = 1.0
+
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = (
@@ -101,6 +104,8 @@ class ExperimentType(str, Enum):
     """initial condition of Gauss 3D mountain test"""
     DIVCONVERGE = "div_converge"
     """initial condition of divergence convergence test"""
+    GLOBEDIVCONVERGE = "globe_div_converge"
+    """initial condition of divergence convergence test on a globe"""
     ANY = "any"
     """any test with initial conditions read from serialized data (remember to set correct SIMULATION_START_DATE)"""
 
@@ -208,11 +213,13 @@ def model_initialization_div_converge(
 
     # Horizontal wind field
     vn_ndarray = xp.zeros((num_edges, num_levels), dtype=float)
-    u_factor = 0.25 * xp.sqrt(0.5*105.0/math.pi)
+    global U_AMPLIFICATION_FACTOR
+    global WAVENUMBER_FACTOR
+    u_factor = 0.25 * xp.sqrt(0.5*105.0/math.pi) * U_AMPLIFICATION_FACTOR
     v_factor = -0.5 * xp.sqrt(0.5*15.0/math.pi)
     v_scale = 90.0 / 7.5
-    u_edge = u_factor * xp.cos(2.0 * edge_lon) * xp.cos(edge_lat * v_scale) * xp.cos(edge_lat * v_scale) * xp.sin(edge_lat * v_scale)
-    v_edge = v_factor * xp.cos(edge_lon) * xp.cos(edge_lat * v_scale) * xp.sin(edge_lat * v_scale)
+    u_edge = u_factor * xp.cos(2.0 * edge_lon * WAVENUMBER_FACTOR) * xp.cos(edge_lat * v_scale * WAVENUMBER_FACTOR) * xp.cos(edge_lat * v_scale * WAVENUMBER_FACTOR) * xp.sin(edge_lat * v_scale * WAVENUMBER_FACTOR)
+    v_edge = v_factor * xp.cos(edge_lon * WAVENUMBER_FACTOR) * xp.cos(edge_lat * v_scale * WAVENUMBER_FACTOR) * xp.sin(edge_lat * v_scale * WAVENUMBER_FACTOR)
     for k in range(num_levels):
         vn_ndarray[:, k] = u_edge[:] * primal_normal_x[:] + v_edge[:] * primal_normal_y[:]
     log.info("Wind profile assigned.")
@@ -244,8 +251,8 @@ def model_initialization_div_converge(
     band2 = xp.cos(2.0 * edge_lon[debug_mask2])
     print(band1.max(), band1.min())
     print(band2.max(), band2.min())
-    u_cell = u_factor * xp.cos(2.0 * cell_lon) * xp.cos(cell_lat * v_scale) * xp.cos(cell_lat * v_scale) * xp.sin(cell_lat * v_scale)
-    v_cell = v_factor * xp.cos(cell_lon) * xp.cos(cell_lat * v_scale) * xp.sin(cell_lat * v_scale)
+    u_cell = u_factor * xp.cos(2.0 * cell_lon * WAVENUMBER_FACTOR) * xp.cos(cell_lat * v_scale * WAVENUMBER_FACTOR) * xp.cos(cell_lat * v_scale * WAVENUMBER_FACTOR) * xp.sin(cell_lat * v_scale * WAVENUMBER_FACTOR)
+    v_cell = v_factor * xp.cos(cell_lon * WAVENUMBER_FACTOR) * xp.cos(cell_lat * v_scale * WAVENUMBER_FACTOR) * xp.sin(cell_lat * v_scale * WAVENUMBER_FACTOR)
     debug_mask1 = xp.where((cell_lon > 0.0) & (cell_lat > 0.045) & (cell_lat < 0.055))
     debug_mask2 = xp.where((cell_lon < 0.0) & (cell_lat > 0.045) & (cell_lat < 0.055))
     band1 = xp.cos(2.0 * cell_lon[debug_mask1])
@@ -301,6 +308,171 @@ def model_initialization_div_converge(
         vt=_allocate(EdgeDim, KDim, grid=icon_grid),
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
+        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
+        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dyn_incr=_allocate(CellDim, KDim, grid=icon_grid),
+    )
+
+    prep_adv = PrepAdvection(
+        vn_traj=_allocate(EdgeDim, KDim, grid=icon_grid),
+        mass_flx_me=_allocate(EdgeDim, KDim, grid=icon_grid),
+        mass_flx_ic=_allocate(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+    )
+    log.info("Initialization completed.")
+
+    return (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        0.0,  # divdamp_fac_o2 only != 0 for data assimilation
+        diagnostic_state,
+        prognostic_state_now,
+        prognostic_state_next,
+    )
+
+
+def model_initialization_globe_div_converge(
+    icon_grid: IconGrid,
+    cell_param: CellParams,
+    edge_param: EdgeParams,
+    path: Path,
+    rank=0,
+) -> tuple[
+    DiffusionDiagnosticState,
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+    float,
+    DiagnosticState,
+    PrognosticState,
+    PrognosticState,
+]:
+    """
+    Initial condition for the divergence convergence test.
+
+    Args:
+        grid: IconGrid
+        edge_param: edge properties
+        path: path where to find the input data
+        backend: GT4Py backend
+        rank: mpi rank of the current compute node
+    Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
+        PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
+        variables (now and next).
+    """
+    data_provider = sb.IconSerialDataProvider(
+        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+    )
+
+    primal_normal_x = edge_param.primal_normal[0].ndarray
+    primal_normal_y = edge_param.primal_normal[1].ndarray
+
+    cell_lat = cell_param.cell_center_lat.ndarray
+    cell_lon = cell_param.cell_center_lon.ndarray
+    edge_lat = edge_param.edge_center[0].ndarray
+    edge_lon = edge_param.edge_center[1].ndarray
+
+    num_cells = icon_grid.num_cells
+    num_edges = icon_grid.num_edges
+    num_levels = icon_grid.num_levels
+
+    grid_idx_edge_start_plus1 = icon_grid.get_end_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+    )
+    
+    mask = xp.ones((num_edges, num_levels), dtype=bool)
+    mask[0:grid_idx_edge_start_plus1, :] = False
+    if grid_idx_edge_start_plus1 > 0:
+        raise ValueError(f"grid_idx_edge_start_plus1 must be zero but its value is  {grid_idx_edge_start_plus1}")
+    # primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
+    # primal_normal_y = xp.repeat(xp.expand_dims(primal_normal_y, axis=-1), num_levels, axis=1)
+
+    # Horizontal wind field
+    vn_ndarray = xp.zeros((num_edges, num_levels), dtype=float)
+    global U_AMPLIFICATION_FACTOR
+    u_factor = 0.25 * xp.sqrt(0.5*105.0/math.pi) * U_AMPLIFICATION_FACTOR
+    v_factor = -0.5 * xp.sqrt(0.5*15.0/math.pi)
+    u_edge = u_factor * xp.cos(2.0 * edge_lon) * xp.cos(edge_lat) * xp.cos(edge_lat) * xp.sin(edge_lat)
+    v_edge = v_factor * xp.cos(edge_lon) * xp.cos(edge_lat) * xp.sin(edge_lat)
+    for k in range(num_levels):
+        vn_ndarray[:, k] = u_edge[:] * primal_normal_x[:] + v_edge[:] * primal_normal_y[:]
+    log.info("Wind profile assigned.")
+
+    zero_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    vn = as_field((EdgeDim, KDim), vn_ndarray)
+    w = as_field((CellDim, KDim), w_ndarray)
+    exner = as_field((CellDim, KDim), zero_ndarray)
+    rho = as_field((CellDim, KDim), zero_ndarray)
+    temperature = as_field((CellDim, KDim), zero_ndarray)
+    pressure = as_field((CellDim, KDim), zero_ndarray)
+    theta_v = as_field((CellDim, KDim), zero_ndarray)
+    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    pressure_ifc = as_field((CellDim, KDim), pressure_ifc_ndarray)
+
+    vn_next = as_field((EdgeDim, KDim), vn_ndarray)
+    w_next = as_field((CellDim, KDim), w_ndarray)
+    exner_next = as_field((CellDim, KDim), zero_ndarray)
+    rho_next = as_field((CellDim, KDim), zero_ndarray)
+    theta_v_next = as_field((CellDim, KDim), zero_ndarray)
+
+    exner_pr = as_field((CellDim, KDim), zero_ndarray)
+    log.info("exner_pr initialization completed.")
+
+    u_cell = u_factor * xp.cos(2.0 * cell_lon) * xp.cos(cell_lat) * xp.cos(cell_lat) * xp.sin(cell_lat)
+    v_cell = v_factor * xp.cos(cell_lon) * xp.cos(cell_lat) * xp.sin(cell_lat)
+    u = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(u_cell, axis=-1), num_levels, axis=1))
+    v = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(v_cell, axis=-1), num_levels, axis=1))
+    diagnostic_state = DiagnosticState(
+        pressure=pressure,
+        pressure_ifc=pressure_ifc,
+        temperature=temperature,
+        u=u,
+        v=v,
+    )
+
+    prognostic_state_now = PrognosticState(
+        w=w,
+        vn=vn,
+        theta_v=theta_v,
+        rho=rho,
+        exner=exner,
+    )
+    prognostic_state_next = PrognosticState(
+        w=w_next,
+        vn=vn_next,
+        theta_v=theta_v_next,
+        rho=rho_next,
+        exner=exner_next,
+    )
+
+    diffusion_diagnostic_state = DiffusionDiagnosticState(
+        hdef_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        div_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        dwdx=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        dwdy=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+    )
+    solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
+        theta_v_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        exner_pr=exner_pr,
+        rho_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        ddt_exner_phy=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_rho=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_thv=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_w=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        mass_fl_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_phy=_allocate(EdgeDim, KDim, grid=icon_grid),
+        grf_tend_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_apc_ntl1=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_apc_ntl2=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_w_adv_ntl1=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        ddt_w_adv_ntl2=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        vt=_allocate(EdgeDim, KDim, grid=icon_grid),
+        vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
+        w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -356,6 +528,19 @@ def model_initialization_gauss3d(
     data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
+
+    z_ifc = data_provider.from_metrics_savepoint().z_ifc().ndarray
+    mean1 = xp.average(z_ifc[:,0])
+    mean2 = xp.average(z_ifc[:,1])
+    mean3 = xp.average(z_ifc[:,2])
+
+    for i in range(z_ifc.shape[0]):
+        if xp.abs(z_ifc[i,0] - mean1) > 1.e-8:
+            log.info(f"{i}, level 0: {z_ifc[i,0]}, {mean1}")
+        if xp.abs(z_ifc[i,1] - mean2) > 1.e-8:
+            log.info(f"{i}, level 1: {z_ifc[i,1]}, {mean2}")
+        if xp.abs(z_ifc[i,2] - mean3) > 1.e-8:
+            log.info(f"{i}, level 2: {z_ifc[i,2]}, {mean3}")
 
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
     ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
@@ -561,6 +746,7 @@ def model_initialization_gauss3d(
         vt=_allocate(EdgeDim, KDim, grid=icon_grid),
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -636,7 +822,7 @@ def model_initialization_jabw(
     cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
-
+    
     cell_size = cell_lat.size
     num_levels = icon_grid.num_levels
 
@@ -955,6 +1141,7 @@ def model_initialization_jabw(
         vt=_allocate(EdgeDim, KDim, grid=icon_grid),
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -1038,6 +1225,7 @@ def model_initialization_serialbox(
         vt=velocity_init_savepoint.vt(),
         vn_ie=velocity_init_savepoint.vn_ie(),
         w_concorr_c=velocity_init_savepoint.w_concorr_c(),
+        graddiv_w_concorr_c=None,
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -1138,6 +1326,16 @@ def read_initial_state(
             prognostic_state_now,
             prognostic_state_next,
         ) = model_initialization_div_converge(icon_grid, cell_param, edge_param, path, rank)
+    elif experiment_type == ExperimentType.GLOBEDIVCONVERGE:
+        (
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            prep_adv,
+            divdamp_fac_o2,
+            diagnostic_state,
+            prognostic_state_now,
+            prognostic_state_next,
+        ) = model_initialization_globe_div_converge(icon_grid, cell_param, edge_param, path, rank)
     elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,

@@ -931,7 +931,7 @@ def read_config(
         )
 
         # 14400 for jabw
-        output_interval = timedelta(seconds=output_seconds_interval) if output_seconds_interval is not None else timedelta(seconds=120)
+        output_interval = timedelta(seconds=output_seconds_interval) if output_seconds_interval is not None else timedelta(seconds=14400)
         return IconOutputConfig(
             output_time_interval=output_interval,
             output_file_time_interval=output_interval,
@@ -951,10 +951,12 @@ def read_config(
             type_vn_diffu=1,
             # hdiff_efdt_ratio=10.0,
             # hdiff_w_efdt_ratio=15.0,
-            hdiff_efdt_ratio=1000.0,
-            hdiff_w_efdt_ratio=1000.0,
+            # hdiff_efdt_ratio=36.0,
+            # hdiff_w_efdt_ratio=15.0,
             # hdiff_efdt_ratio=1.e15,
             # hdiff_w_efdt_ratio=1.e15,
+            hdiff_efdt_ratio=1000.0,
+            hdiff_w_efdt_ratio=1000.0,
             # smagorinski_scaling_factor=0.025,
             smagorinski_scaling_factor=0.015,
             # smagorinski_scaling_factor=0.0,
@@ -971,15 +973,26 @@ def read_config(
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
-            divdamp_fac=0.0025,
+            divdamp_fac=0.0,#0.0025,
             # divdamp_fac=0.00025,
             # divdamp_fac=0.0,
+            scal_divsign=1.0,
             do_o2_divdamp=False,
-            do_3d_divergence_damping=False,
-            divergence_order=1,
+            do_3d_divergence_damping=True,
+            divergence_order=2,
             do_multiple_divdamp=True,
             number_of_divdamp_step=50,
-            do_proper_diagnostics_divdamp=True,
+            do_proper_diagnostics_divdamp=False,
+            do_only_divdamp=False,
+            do_proper_contravariant_divdamp=False,
+            suppress_vertical_in_3d_divdamp=True,
+
+            # do_o2_divdamp=False,
+            # do_3d_divergence_damping=False,
+            # divergence_order=1,
+            # do_multiple_divdamp=True,
+            # number_of_divdamp_step=50,
+            # do_proper_diagnostics_divdamp=True,
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
@@ -1020,11 +1033,14 @@ def read_config(
             divdamp_z2=50000.0,
             scal_divsign=1.0,
             do_o2_divdamp=False,
-            do_3d_divergence_damping=False,
+            do_3d_divergence_damping=True,
             divergence_order=1,
-            do_multiple_divdamp=True,
+            do_multiple_divdamp=False,
             number_of_divdamp_step=100,
-            do_proper_diagnostics_divdamp=True,
+            do_proper_diagnostics_divdamp=False,
+            do_only_divdamp = False,
+            do_proper_contravariant_divdamp=False,
+            suppress_vertical_in_3d_divdamp=True,
         )
 
     def _div_converge_diffusion_config(n_substeps: int):
@@ -1041,7 +1057,7 @@ def read_config(
         return NonHydrostaticConfig(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
-            divdamp_fac=0.1,#0.025,
+            divdamp_fac=0.1,#0.025, 0.1 for o2, 0.01 for 04
             divdamp_z=40000.0,
             divdamp_z2=50000.0,
             scal_divsign=1.0,
@@ -1051,14 +1067,16 @@ def read_config(
             do_multiple_divdamp=False,
             number_of_divdamp_step=100,
             do_proper_diagnostics_divdamp=True,
-            do_only_divdamp = True,
+            do_only_divdamp=True,
+            do_proper_contravariant_divdamp=False,
+            suppress_vertical_in_3d_divdamp=True,
         )
 
     def _jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=1200.0),
-            end_date=datetime(1, 1, 15, 0, 0, 0),
-            # end_date=datetime(1, 1, 1, 0, 30, 0),
+            dtime=timedelta(seconds=600.0),
+            # end_date=datetime(1, 1, 15, 0, 0, 0),
+            end_date=datetime(1, 1, 1, 8, 0, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
             n_substeps=5,
@@ -1075,8 +1093,8 @@ def read_config(
 
     def _gauss3d_config():
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=0.3),
-            end_date=datetime(1, 1, 1, 1, 0, 0),
+            dtime=timedelta(seconds=3.0),
+            end_date=datetime(1, 1, 1, 0, 30, 0),
             # end_date=datetime(1, 1, 1, 0, 0, 6),
             damping_height=25000.0,
             apply_initial_stabilization=False,
@@ -1110,6 +1128,26 @@ def read_config(
             div_converge_diffusion_config,
             div_converge_nonhydro_config,
         )
+    
+    def _globe_div_converge_config(dtime_seconds: float, end_date, output_seconds_interval: float):
+        icon_run_config = IconRunConfig(
+            dtime=timedelta(seconds=dtime_seconds),
+            end_date=end_date,
+            damping_height=25000.0,
+            apply_initial_stabilization=False,
+            n_substeps=1,
+            update_diagnostic=False,
+        )
+        globe_div_converge_output_config = _output_config(output_seconds_interval)
+        globe_div_converge_diffusion_config = _div_converge_diffusion_config(icon_run_config.n_substeps)
+        globe_div_converge_nonhydro_config = _div_converge_nonhydro_config(icon_run_config.n_substeps)
+        return (
+            icon_run_config,
+            globe_div_converge_output_config,
+            globe_div_converge_diffusion_config,
+            globe_div_converge_nonhydro_config,
+        )
+
 
 
     if experiment_type == ExperimentType.JABW:
@@ -1133,6 +1171,13 @@ def read_config(
             diffusion_config,
             nonhydro_config,
         ) = _div_converge_config(dtime_seconds, end_date, output_seconds_interval)
+    elif experiment_type == ExperimentType.GLOBEDIVCONVERGE:
+        (
+            model_run_config,
+            output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _globe_div_converge_config(dtime_seconds, end_date, output_seconds_interval)
     else:
         log.warning(
             "Experiment name is not specified, default configuration for mch_ch_r04b09_dsl is used."
