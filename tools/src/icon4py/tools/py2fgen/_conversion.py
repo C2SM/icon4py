@@ -11,7 +11,7 @@ from __future__ import annotations
 import functools
 import math
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Final, Optional
 
 import numpy as np
 
@@ -26,7 +26,7 @@ except ImportError:
 if TYPE_CHECKING:
     import cffi
 
-C_STR_TYPE_TO_NP_DTYPE: dict[str, np.dtype] = {
+C_STR_TYPE_TO_NP_DTYPE: Final[dict[str, np.dtype]] = {
     "int": np.dtype(np.int32),
     "double": np.dtype(np.float64),
     "float": np.dtype(np.float32),
@@ -42,17 +42,17 @@ def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.
     changes made in Python to reflect immediately in the original Fortran memory space.
 
     Args:
-        ffi (cffi.FFI): A CFFI FFI instance.
-        ptr (CData): A CFFI pointer to the beginning of the data array in CPU memory. This pointer
-                     should reference a contiguous block of memory whose total size matches the product
-                     of the specified dimensions.
-        *sizes (int): Variable length argument list specifying the dimensions of the array.
-                      These sizes determine the shape of the resulting NumPy array.
+        ffi:    A CFFI FFI instance.
+        ptr:    A CFFI pointer to the beginning of the data array in CPU memory. This pointer
+                should reference a contiguous block of memory whose total size matches the product
+                of the specified dimensions.
+        *sizes: Variable length argument list specifying the dimensions of the array.
+                These sizes determine the shape of the resulting NumPy array.
 
     Returns:
-        np.ndarray: A NumPy array that provides a direct view of the data pointed to by `ptr`.
-                    This array shares the underlying data with the original Fortran code, allowing
-                    modifications made through the array to affect the original data.
+        A NumPy array that provides a direct view of the data pointed to by `ptr`.
+        This array shares the underlying data with the original Fortran code, allowing
+        modifications made through the array to affect the original data.
     """
     length = math.prod(sizes)
     c_type = ffi.getctype(
@@ -77,18 +77,18 @@ def _unpack_cupy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> cp.ndarray:
     enabling changes made in Python to reflect immediately in the original Fortran memory space.
 
     Args:
-        ffi (cffi.FFI): A CFFI FFI instance.
-        ptr (cffi.CData): A CFFI pointer to GPU memory allocated by OpenACC, representing
-                          the starting address of the data. This pointer must correspond to
-                          a contiguous block of memory whose total size matches the product
-                          of the specified dimensions.
-        *sizes (int): Variable length argument list specifying the dimensions of the array.
-                      These sizes determine the shape of the resulting CuPy array.
+        ffi:    A CFFI FFI instance.
+        ptr:    A CFFI pointer to GPU memory allocated by OpenACC, representing
+                the starting address of the data. This pointer must correspond to
+                a contiguous block of memory whose total size matches the product
+                of the specified dimensions.
+        *sizes: Variable length argument list specifying the dimensions of the array.
+                These sizes determine the shape of the resulting CuPy array.
 
     Returns:
-        cp.ndarray: A CuPy array that provides a direct view of the data pointed to by `ptr`.
-                    This array shares the underlying data with the original Fortran code, allowing
-                    modifications made through the array to affect the original data.
+        A CuPy array that provides a direct view of the data pointed to by `ptr`.
+        This array shares the underlying data with the original Fortran code, allowing
+        modifications made through the array to affect the original data.
     """
     assert cp is not None
 
@@ -132,9 +132,9 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
 
 
 def unpack(xp: ModuleType, ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.NDArray:
-    if xp == np:
+    if xp is np:
         return _unpack_numpy(ffi, ptr, *sizes)
-    elif xp == cp:
+    elif xp is cp:
         return _unpack_cupy(ffi, ptr, *sizes)
     else:
         raise ValueError(f"Unsupported array type: {xp}. Expected Numpy or CuPy.")
@@ -143,13 +143,26 @@ def unpack(xp: ModuleType, ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> n
 def as_array(
     ffi: cffi.FFI, array_info: _definitions.ArrayInfo, dtype: _definitions.ScalarKind
 ) -> Optional[np.ndarray]:  # or cupy
-    xp = cp if array_info[2] else np
-    if array_info[0] == ffi.NULL:
-        if array_info[3]:
+    """
+    Utility function to convert an ArrayInfo to a NumPy or CuPy array.
+
+    Boolean arrays are converted to a NumPy array of dtype 'bool'.
+
+    Args:
+        ffi:        The CFFI FFI instance.
+        array_info: The ArrayInfo object containing the pointer and shape information.
+        dtype:      The data type of the array.
+                    Note, the Fortran/C type is already included 'ArrayInfo', however
+                    for booleans, the ArrayInfo.dtype is 'int32', this 'dtype' should be 'BOOL'.
+    """
+    ptr, shape, on_gpu, is_optional = array_info
+    xp = cp if on_gpu else np
+    if ptr == ffi.NULL:
+        if is_optional:
             return None
         else:
             raise RuntimeError("Parameter is not optional, but received 'NULL'.")
-    arr = unpack(xp, ffi, array_info[0], *array_info[1])
+    arr = unpack(xp, ffi, ptr, *shape)
     if dtype == _definitions.BOOL:
         # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
         # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
@@ -163,8 +176,6 @@ def _as_array_mapping(
     # since we typically create one mapper per parameter, maxsize=2 is a good default for double buffering
     @functools.lru_cache(maxsize=2)
     def impl(array_info: _definitions.ArrayInfo, *, ffi: cffi.FFI) -> _definitions.NDArray:
-        if array_info[3] and array_info is None:
-            return None
         return as_array(ffi, array_info, dtype)
 
     return impl
@@ -177,6 +188,11 @@ def _int_to_bool(x: int, ffi: cffi.FFI) -> bool:
 def default_mapping(
     _: Any, param_descriptor: _definitions.ParamDescriptor
 ) -> _definitions.MapperType | None:
+    """
+    Provide default mappings for raw Fortran data to Python data types.
+    The default mapping tranlates 'ArrayInfo's to NumPy/CuPy arrays and
+    scalar bools (represented as 'int32') to Python bools.
+    """
     if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
         # ArrayInfos to Numpy/CuPy arrays
         return _as_array_mapping(param_descriptor.dtype)
