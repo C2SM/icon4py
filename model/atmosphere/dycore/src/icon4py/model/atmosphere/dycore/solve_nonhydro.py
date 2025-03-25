@@ -461,6 +461,17 @@ class SolveNonhydro:
         self.enh_divdamp_fac: Optional[fa.KField[float]] = None
         self.jk_start = 0  # used in stencil_55
 
+        # since VelocityAdvection runs first, we should start compiling it first (in async compilation)
+        self.velocity_advection = VelocityAdvection(
+            grid,
+            metric_state_nonhydro,
+            interpolation_state,
+            vertical_params,
+            edge_geometry,
+            owner_mask,
+            backend=self._backend,
+        )
+
         self._compute_theta_and_exner = (
             compute_theta_and_exner.with_backend(self._backend)
             .with_connectivities(self._grid.offset_providers)
@@ -760,15 +771,6 @@ class SolveNonhydro:
             .freeze()
         )
 
-        self.velocity_advection = VelocityAdvection(
-            grid,
-            metric_state_nonhydro,
-            interpolation_state,
-            vertical_params,
-            edge_geometry,
-            owner_mask,
-            backend=self._backend,
-        )
         self._allocate_local_fields()
         self._determine_local_domains()
         # TODO (magdalena) vertical nesting is only relevant in the context of
