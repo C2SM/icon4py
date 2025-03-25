@@ -61,14 +61,14 @@ class VelocityAdvection:
             compute_edge_diagnostics_for_velocity_advection.compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
                 self._backend
             )
-            .with_connectivities(self.grid.offset_provider)
+            .with_connectivities(self.grid.offset_providers)
             .freeze()
         )
         self._compute_horizontal_advection_of_w = (
             compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
                 self._backend
             )
-            .with_connectivities(self.grid.offset_provider)
+            .with_connectivities(self.grid.offset_providers)
             .freeze()
         )
 
@@ -76,21 +76,21 @@ class VelocityAdvection:
             compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms.with_backend(
                 self._backend
             )
-            .with_connectivities(self.grid.offset_provider)
+            .with_connectivities(self.grid.offset_providers)
             .freeze()
         )
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity = (
             compute_maximum_cfl_and_clip_contravariant_vertical_velocity.compute_maximum_cfl_and_clip_contravariant_vertical_velocity.with_backend(
                 self._backend
             )
-            .with_connectivities(self.grid.offset_provider)
+            .with_connectivities(self.grid.offset_providers)
             .freeze()
         )
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w = (
             compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w.with_backend(
                 self._backend
             )
-            .with_connectivities(self.grid.offset_provider)
+            .with_connectivities(self.grid.offset_providers)
             .freeze()
         )
 
@@ -98,7 +98,7 @@ class VelocityAdvection:
             compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
                 self._backend
             )
-            .with_connectivities(self.grid.offset_provider)
+            .with_connectivities(self.grid.offset_providers)
             .freeze()
         )
 
@@ -106,7 +106,7 @@ class VelocityAdvection:
             compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
                 self._backend
             )
-            .with_connectivities(self.grid.offset_provider)
+            .with_connectivities(self.grid.offset_providers)
             .freeze()
         )
 
@@ -241,7 +241,7 @@ class VelocityAdvection:
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels + 1),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.offset_providerss,
         )
 
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms(
@@ -259,7 +259,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.offset_providerss,
         )
 
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
@@ -310,7 +310,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.offset_providerss,
         )
 
         self.levelmask = self.levmask
@@ -346,7 +346,7 @@ class VelocityAdvection:
             horizontal_end=gtx.int32(self.grid.num_edges),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.offset_providerss,
         )
 
     def _update_levmask_from_cfl_clipping(self):
@@ -401,7 +401,7 @@ class VelocityAdvection:
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.offset_providerss,
         )
 
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w(
@@ -417,7 +417,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.offset_providerss,
         )
 
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
@@ -468,7 +468,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.offset_providerss,
         )
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
@@ -504,5 +504,5 @@ class VelocityAdvection:
             horizontal_end=gtx.int32(self.grid.num_edges),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.offset_providerss,
         )

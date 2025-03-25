@@ -1395,7 +1395,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/havogt/gt4py?branch=icon4py_staging_async_compile#b54bfc9f75a0b5b055522860f017217f906d21ec" }
+source = { git = "https://github.com/havogt/gt4py?branch=icon4py_staging_async_compile#9e28fefc681416170ea4afae161f028f17f21812" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
