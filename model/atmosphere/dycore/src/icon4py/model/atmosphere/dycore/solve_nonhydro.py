@@ -680,12 +680,12 @@ class SolveNonhydro:
         )
         self._compute_z_raylfac = (
             dycore_utils.compute_z_raylfac.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
+            .with_connectivities({})
             .freeze()
         )
         self._predictor_stencils_2_3 = (
             nhsolve_stencils.predictor_stencils_2_3.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
+            .with_connectivities({})
             .freeze()
         )
         self._predictor_stencils_4_5_6 = (
