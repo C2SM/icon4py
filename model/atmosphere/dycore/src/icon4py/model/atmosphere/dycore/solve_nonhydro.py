@@ -746,7 +746,7 @@ class SolveNonhydro:
         )
         self._en_smag_fac_for_zero_nshift = (
             smagorinsky.en_smag_fac_for_zero_nshift.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
+            .with_connectivities({"Koff": dims.KDim})
             .freeze()
         )
         self._init_test_fields = (
