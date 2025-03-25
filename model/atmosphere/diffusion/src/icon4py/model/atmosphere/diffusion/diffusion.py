@@ -461,7 +461,7 @@ class Diffusion:
 
         self.init_diffusion_local_fields_for_regular_timestep = (
             (init_diffusion_local_fields_for_regular_timestep.with_backend(self._backend))
-            .with_connectivities(self._grid.offset_providers)
+            .with_connectivities({"Koff": dims.KDim})
             .freeze()
         )
 
