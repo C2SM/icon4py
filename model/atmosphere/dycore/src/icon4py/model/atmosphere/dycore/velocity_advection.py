@@ -241,7 +241,7 @@ class VelocityAdvection:
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels + 1),
-            offset_provider=self.grid.offset_providerss,
+            offset_provider=self.grid.offset_providers,
         )
 
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms(
@@ -259,7 +259,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providerss,
+            offset_provider=self.grid.offset_providers,
         )
 
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
@@ -310,7 +310,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providerss,
+            offset_provider=self.grid.offset_providers,
         )
 
         self.levelmask = self.levmask
@@ -346,7 +346,7 @@ class VelocityAdvection:
             horizontal_end=gtx.int32(self.grid.num_edges),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providerss,
+            offset_provider=self.grid.offset_providers,
         )
 
     def _update_levmask_from_cfl_clipping(self):
@@ -401,7 +401,7 @@ class VelocityAdvection:
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providerss,
+            offset_provider=self.grid.offset_providers,
         )
 
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w(
@@ -417,7 +417,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providerss,
+            offset_provider=self.grid.offset_providers,
         )
 
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
@@ -468,7 +468,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providerss,
+            offset_provider=self.grid.offset_providers,
         )
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
@@ -504,5 +504,5 @@ class VelocityAdvection:
             horizontal_end=gtx.int32(self.grid.num_edges),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providerss,
+            offset_provider=self.grid.offset_providers,
         )
