@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40 import (
-    fused_solve_nonhydro_stencil_39_40,
+from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels import (
+    interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
@@ -26,41 +26,49 @@ from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
 )
 
 
-def _fused_solve_nonhydro_stencil_39_40_numpy(
+def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     e_bln_c_s: np.ndarray,
-    z_w_concorr_me: np.ndarray,
+    contravariant_correction_at_edges_on_model_levels: np.ndarray,
     wgtfac_c: np.ndarray,
     wgtfacq_c: np.ndarray,
     vert_idx: np.ndarray,
     nlev: int,
     nflatlev: int,
 ) -> np.ndarray:
-    w_concorr_c = np.where(
+    contravariant_correction_at_cells_on_half_levels = np.where(
         (nflatlev < vert_idx) & (vert_idx < nlev),
         compute_contravariant_correction_of_w_numpy(
-            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c
+            connectivities, e_bln_c_s, contravariant_correction_at_edges_on_model_levels, wgtfac_c
         ),
         compute_contravariant_correction_of_w_for_lower_boundary_numpy(
-            connectivities, e_bln_c_s, z_w_concorr_me, wgtfacq_c
+            connectivities, e_bln_c_s, contravariant_correction_at_edges_on_model_levels, wgtfacq_c
         ),
     )
 
-    w_concorr_c_res = np.zeros_like(w_concorr_c)
-    w_concorr_c_res[:, -1] = w_concorr_c[:, -1]
-    return w_concorr_c_res
+    contravariant_correction_at_cells_on_half_levels_res = np.zeros_like(
+        contravariant_correction_at_cells_on_half_levels
+    )
+    contravariant_correction_at_cells_on_half_levels_res[
+        :, -1
+    ] = contravariant_correction_at_cells_on_half_levels[:, -1]
+    return contravariant_correction_at_cells_on_half_levels_res
 
 
-class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
-    PROGRAM = fused_solve_nonhydro_stencil_39_40
-    OUTPUTS = ("w_concorr_c",)
+class TestInterpolateContravariantCorrectionFromEdgesOnModelLevelsToCellsOnHalfLevels(
+    helpers.StencilTest
+):
+    PROGRAM = (
+        interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels
+    )
+    OUTPUTS = ("contravariant_correction_at_cells_on_half_levels",)
     MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         e_bln_c_s: np.ndarray,
-        z_w_concorr_me: np.ndarray,
+        contravariant_correction_at_edges_on_model_levels: np.ndarray,
         wgtfac_c: np.ndarray,
         wgtfacq_c: np.ndarray,
         vert_idx: np.ndarray,
@@ -68,18 +76,31 @@ class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
         nflatlev: int,
         **kwargs: Any,
     ) -> dict:
-        w_concorr_c_result = _fused_solve_nonhydro_stencil_39_40_numpy(
-            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
+        contravariant_correction_at_cells_on_half_levels_result = _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels_numpy(
+            connectivities,
+            e_bln_c_s,
+            contravariant_correction_at_edges_on_model_levels,
+            wgtfac_c,
+            wgtfacq_c,
+            vert_idx,
+            nlev,
+            nflatlev,
         )
-        return dict(w_concorr_c=w_concorr_c_result)
+        return dict(
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels_result
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
-        z_w_concorr_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+        )
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         wgtfacq_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        w_concorr_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
 
         vert_idx = data_alloc.index_field(grid, dims.KDim, dtype=gtx.int32)
 
@@ -88,13 +109,13 @@ class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
 
         return dict(
             e_bln_c_s=e_bln_c_s,
-            z_w_concorr_me=z_w_concorr_me,
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             wgtfac_c=wgtfac_c,
             wgtfacq_c=wgtfacq_c,
             vert_idx=vert_idx,
             nlev=nlev,
             nflatlev=nflatlev,
-            w_concorr_c=w_concorr_c,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(grid.num_levels - 1),

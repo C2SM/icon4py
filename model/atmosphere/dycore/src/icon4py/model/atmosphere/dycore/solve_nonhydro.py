@@ -1195,10 +1195,10 @@ class SolveNonhydro:
 
         self._stencils_39_40(
             e_bln_c_s=self._interpolation_state.e_bln_c_s,
-            z_w_concorr_me=self._contravariant_correction_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
-            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             k_field=self.k_field,
             nflatlev_startindex_plus1=gtx.int32(self._vertical_params.nflatlev + 1),
             nlev=self._grid.num_levels,

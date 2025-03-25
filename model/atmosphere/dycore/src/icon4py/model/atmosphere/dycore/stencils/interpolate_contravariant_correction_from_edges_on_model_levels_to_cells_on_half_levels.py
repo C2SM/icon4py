@@ -19,49 +19,51 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _fused_solve_nonhydro_stencil_39_40(
+def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
     vert_idx: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
-    w_concorr_c = concat_where(
+    contravariant_correction_at_cells_on_half_levels = concat_where(
         nflatlev + 1 <= dims.KDim < nlev,
-        _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        _compute_contravariant_correction_of_w(
+            e_bln_c_s, contravariant_correction_at_edges_on_model_levels, wgtfac_c
+        ),
         _compute_contravariant_correction_of_w_for_lower_boundary(
-            e_bln_c_s, z_w_concorr_me, wgtfacq_c
+            e_bln_c_s, contravariant_correction_at_edges_on_model_levels, wgtfacq_c
         ),
     )
-    return w_concorr_c
+    return contravariant_correction_at_cells_on_half_levels
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def fused_solve_nonhydro_stencil_39_40(
+def interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
     vert_idx: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
-    w_concorr_c: fa.CellKField[vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _fused_solve_nonhydro_stencil_39_40(
+    _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
         e_bln_c_s,
-        z_w_concorr_me,
+        contravariant_correction_at_edges_on_model_levels,
         wgtfac_c,
         wgtfacq_c,
         vert_idx,
         nlev,
         nflatlev,
-        out=w_concorr_c,
+        out=contravariant_correction_at_cells_on_half_levels,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
