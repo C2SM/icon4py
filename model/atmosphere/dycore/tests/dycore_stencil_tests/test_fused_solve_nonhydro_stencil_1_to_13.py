@@ -43,8 +43,8 @@ from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_virtual_pot
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_extrapolate_temporally_exner_pressure import (
     extrapolate_temporally_exner_pressure_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_interpolate_to_half_levels_vp import (
-    interpolate_to_half_levels_vp_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_interpolate_cell_field_to_half_levels_vp import (
+    interpolate_cell_field_to_half_levels_vp_numpy,
 )
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_interpolate_to_surface import (
     interpolate_to_surface_numpy,
@@ -54,7 +54,7 @@ from model.atmosphere.dycore.tests.dycore_stencil_tests.test_set_theta_v_prime_i
 )
 
 from icon4py.model.atmosphere.dycore.fused_mo_solve_nonhydro_stencils_1_to_13 import (
-    fused_mo_solve_nonhydro_stencils_01_to_13,
+    fused_mo_solve_nonhydro_stencils_1_to_13_predictor,
 )
 from icon4py.model.common.dimension import (
     CellDim,
@@ -66,7 +66,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestFusedMoSolveNonHydroStencil1To13(StencilTest):
-    PROGRAM = fused_mo_solve_nonhydro_stencils_01_to_13
+    PROGRAM = fused_mo_solve_nonhydro_stencils_1_to_13_predictor
     OUTPUTS = (
         "z_exner_ex_pr",
         "exner_pr",
@@ -188,7 +188,7 @@ class TestFusedMoSolveNonHydroStencil1To13(StencilTest):
                 )
                 z_exner_ic[:, :n_lev] = np.where(
                     (start_cell_lateral_boundary_level_3 <= horz_idx) & (horz_idx < end_cell_halo),
-                    interpolate_to_half_levels_vp_numpy(
+                    interpolate_cell_field_to_half_levels_vp_numpy(
                         wgtfac_c=wgtfac_c, interpolant=z_exner_ex_pr
                     ),
                     z_exner_ic[:, :n_lev],
@@ -369,7 +369,7 @@ class TestFusedMoSolveNonHydroStencil1To13(StencilTest):
         wgt_nnow_rth = 0.25
         wgt_nnew_rth = 0.75
         limited_area = True
-        istep = 1
+        istep = 1  # TODO: implement split between predictor and corrector
 
         cell_domain = h_grid.domain(CellDim)
         n_lev = grid.num_levels
