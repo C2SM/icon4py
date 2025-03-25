@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -12,9 +14,10 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -34,7 +37,7 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     dtime: float,
     wgt_nnow_rth: float,
     wgt_nnew_rth: float,
-):
+) -> tuple[np.ndarray]:
     vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
     rho_now_offset = np.roll(rho_now, shift=1, axis=1)
     rho_var_offset = np.roll(rho_var, shift=1, axis=1)
@@ -78,7 +81,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         w: np.ndarray,
         w_concorr_c: np.ndarray,
         ddqz_z_half: np.ndarray,
@@ -91,10 +94,10 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         vwind_expl_wgt: np.ndarray,
         exner_pr: np.ndarray,
         d_exner_dz_ref_ic: np.ndarray,
-        dtime: float,
-        wgt_nnow_rth: float,
-        wgt_nnew_rth: float,
-        **kwargs,
+        dtime: ta.wpfloat,
+        wgt_nnow_rth: ta.wpfloat,
+        wgt_nnew_rth: ta.wpfloat,
+        **kwargs: Any,
     ) -> dict:
         (
             rho_ic,
@@ -126,26 +129,26 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         )
 
     @pytest.fixture
-    def input_data(self, grid):
-        dtime = wpfloat("1.0")
-        wgt_nnow_rth = wpfloat("2.0")
-        wgt_nnew_rth = wpfloat("3.0")
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_var = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_var = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        exner_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        rho_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        dtime = ta.wpfloat("1.0")
+        wgt_nnow_rth = ta.wpfloat("2.0")
+        wgt_nnew_rth = ta.wpfloat("3.0")
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        theta_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        d_exner_dz_ref_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        rho_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_theta_v_pr_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        theta_v_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_th_ddz_exner_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         return dict(
             w=w,
             w_concorr_c=w_concorr_c,

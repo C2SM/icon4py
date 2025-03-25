@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_ter
     compute_hydrostatic_correction_term,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import (
     flatten_first_two_dims,
@@ -37,9 +41,11 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         inv_ddqz_z_full: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         grav_o_cpd: float,
-        **kwargs,
-    ) -> tuple[np.ndarray]:
-        def _apply_index_field(shape, to_index, neighbor_table, offset_field):
+        **kwargs: Any,
+    ) -> dict:
+        def _apply_index_field(
+            shape: tuple, to_index: np.ndarray, neighbor_table: np.ndarray, offset_field: np.ndarray
+        ) -> tuple:
             indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
             for iprimary in range(shape[0]):
                 for isparse in range(shape[1]):
@@ -94,8 +100,8 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         return dict(z_hydro_corr=z_hydro_corr)
 
     @pytest.fixture
-    def input_data(self, grid):
-        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32).asnumpy()
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)

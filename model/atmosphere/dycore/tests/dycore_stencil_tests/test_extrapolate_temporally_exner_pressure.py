@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,13 +15,15 @@ from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_press
     extrapolate_temporally_exner_pressure,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
 def extrapolate_temporally_exner_pressure_numpy(
-    grid,
+    connectivities,
     exner: np.array,
     exner_ref_mc: np.array,
     exner_pr: np.array,
@@ -36,15 +40,15 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        exner: np.array,
-        exner_ref_mc: np.array,
-        exner_pr: np.array,
-        exner_exfac: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        exner: np.ndarray,
+        exner_ref_mc: np.ndarray,
+        exner_pr: np.ndarray,
+        exner_exfac: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         (z_exner_ex_pr, exner_pr) = extrapolate_temporally_exner_pressure_numpy(
-            grid,
+            connectivities,
             exner=exner,
             exner_ref_mc=exner_ref_mc,
             exner_pr=exner_pr,
@@ -54,7 +58,7 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
         return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         exner_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         exner_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
