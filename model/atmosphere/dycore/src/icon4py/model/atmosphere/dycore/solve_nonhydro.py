@@ -461,174 +461,304 @@ class SolveNonhydro:
         self.enh_divdamp_fac: Optional[fa.KField[float]] = None
         self.jk_start = 0  # used in stencil_55
 
-        self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend).freeze()
-        self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(
-            self._backend
-        ).freeze()
-        self._update_theta_v = update_theta_v.with_backend(self._backend).freeze()
+        self._compute_theta_and_exner = (
+            compute_theta_and_exner.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._compute_exner_from_rhotheta = (
+            compute_exner_from_rhotheta.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._update_theta_v = (
+            update_theta_v.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._init_two_cell_kdim_fields_with_zero_vp = (
-            init_two_cell_kdim_fields_with_zero_vp.with_backend(self._backend).freeze()
+            init_two_cell_kdim_fields_with_zero_vp.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._compute_approx_of_2nd_vertical_derivative_of_exner = (
-            compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(self._backend).freeze()
+            compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._compute_perturbation_of_rho_and_theta = (
-            compute_perturbation_of_rho_and_theta.with_backend(self._backend).freeze()
+            compute_perturbation_of_rho_and_theta.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
-                self._backend
-            ).freeze()
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._mo_math_gradients_grad_green_gauss_cell_dsl = (
-            mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(self._backend).freeze()
+            mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._init_two_edge_kdim_fields_with_zero_wp = (
-            init_two_edge_kdim_fields_with_zero_wp.with_backend(self._backend).freeze()
+            init_two_edge_kdim_fields_with_zero_wp.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates = (
             compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(
                 self._backend
-            ).freeze()
+            )
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates = (
             compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates.with_backend(
                 self._backend
-            ).freeze()
+            )
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._compute_horizontal_gradient_of_exner_pressure_for_multiple_levels = (
             compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(
                 self._backend
-            ).freeze()
+            )
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._compute_hydrostatic_correction_term = (
-            compute_hydrostatic_correction_term.with_backend(self._backend).freeze()
+            compute_hydrostatic_correction_term.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure = (
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(
                 self._backend
-            ).freeze()
+            )
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
-        self._add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(
-            self._backend
-        ).freeze()
-        self._add_analysis_increments_to_vn = add_analysis_increments_to_vn.with_backend(
-            self._backend
-        ).freeze()
-        self._compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
-            self._backend
-        ).freeze()
+        self._add_temporal_tendencies_to_vn = (
+            add_temporal_tendencies_to_vn.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._add_analysis_increments_to_vn = (
+            add_analysis_increments_to_vn.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._compute_vn_on_lateral_boundary = (
+            compute_vn_on_lateral_boundary.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._compute_avg_vn_and_graddiv_vn_and_vt = (
-            compute_avg_vn_and_graddiv_vn_and_vt.with_backend(self._backend)
-        ).freeze()
-        self._compute_mass_flux = compute_mass_flux.with_backend(self._backend).freeze()
+            (compute_avg_vn_and_graddiv_vn_and_vt.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._compute_mass_flux = (
+            compute_mass_flux.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._compute_divergence_of_fluxes_of_rho_and_theta = (
-            compute_divergence_of_fluxes_of_rho_and_theta.with_backend(self._backend)
-        ).freeze()
+            (compute_divergence_of_fluxes_of_rho_and_theta.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._init_two_cell_kdim_fields_with_zero_wp = (
-            init_two_cell_kdim_fields_with_zero_wp.with_backend(self._backend)
-        ).freeze()
+            (init_two_cell_kdim_fields_with_zero_wp.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._add_analysis_increments_from_data_assimilation = (
-            add_analysis_increments_from_data_assimilation.with_backend(self._backend)
-        ).freeze()
+            (add_analysis_increments_from_data_assimilation.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._solve_tridiagonal_matrix_for_w_forward_sweep = (
-            solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(self._backend)
-        ).freeze()
+            (solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._solve_tridiagonal_matrix_for_w_back_substitution = (
-            solve_tridiagonal_matrix_for_w_back_substitution.with_backend(self._backend)
-        ).freeze()
-        self._apply_rayleigh_damping_mechanism = apply_rayleigh_damping_mechanism.with_backend(
-            self._backend
-        ).freeze()
+            (solve_tridiagonal_matrix_for_w_back_substitution.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._apply_rayleigh_damping_mechanism = (
+            apply_rayleigh_damping_mechanism.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._compute_results_for_thermodynamic_variables = (
-            compute_results_for_thermodynamic_variables.with_backend(self._backend)
-        ).freeze()
+            (compute_results_for_thermodynamic_variables.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._compute_dwdz_for_divergence_damping = (
-            compute_dwdz_for_divergence_damping.with_backend(self._backend)
-        ).freeze()
-        self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(
-            self._backend
-        ).freeze()
+            (compute_dwdz_for_divergence_damping.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._copy_cell_kdim_field_to_vp = (
+            copy_cell_kdim_field_to_vp.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._compute_rho_virtual_potential_temperatures_and_pressure_gradient = (
             compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(
                 self._backend
-            ).freeze()
+            )
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._add_vertical_wind_derivative_to_divergence_damping = (
-            add_vertical_wind_derivative_to_divergence_damping.with_backend(self._backend).freeze()
+            add_vertical_wind_derivative_to_divergence_damping.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
         self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels = (
             add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(
                 self._backend
-            ).freeze()
+            )
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
-        self._compute_graddiv2_of_vn = compute_graddiv2_of_vn.with_backend(self._backend).freeze()
-        self._apply_2nd_order_divergence_damping = apply_2nd_order_divergence_damping.with_backend(
-            self._backend
-        ).freeze()
+        self._compute_graddiv2_of_vn = (
+            compute_graddiv2_of_vn.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._apply_2nd_order_divergence_damping = (
+            apply_2nd_order_divergence_damping.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
         self._apply_weighted_2nd_and_4th_order_divergence_damping = (
-            apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(self._backend)
-        ).freeze()
-        self._apply_4th_order_divergence_damping = apply_4th_order_divergence_damping.with_backend(
-            self._backend
-        ).freeze()
-        self._compute_avg_vn = compute_avg_vn.with_backend(self._backend).freeze()
-        self._accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(
-            self._backend
-        ).freeze()
-        self._update_mass_volume_flux = update_mass_volume_flux.with_backend(self._backend).freeze()
-        self._update_dynamical_exner_time_increment = (
-            update_dynamical_exner_time_increment.with_backend(self._backend).freeze()
+            (apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
         )
-        self._init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
-            self._backend
-        ).freeze()
-        self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(
-            self._backend
-        ).freeze()
-        self._compute_z_raylfac = dycore_utils.compute_z_raylfac.with_backend(
-            self._backend
-        ).freeze()
-        self._predictor_stencils_2_3 = nhsolve_stencils.predictor_stencils_2_3.with_backend(
-            self._backend
-        ).freeze()
-        self._predictor_stencils_4_5_6 = nhsolve_stencils.predictor_stencils_4_5_6.with_backend(
-            self._backend
-        ).freeze()
-        self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures = nhsolve_stencils.compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures.with_backend(
-            self._backend
-        ).freeze()
-        self._predictor_stencils_11_lower_upper = (
-            nhsolve_stencils.predictor_stencils_11_lower_upper.with_backend(self._backend)
-        ).freeze()
-        self._compute_horizontal_advection_of_rho_and_theta = (
-            nhsolve_stencils.compute_horizontal_advection_of_rho_and_theta.with_backend(
+        self._apply_4th_order_divergence_damping = (
+            apply_4th_order_divergence_damping.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._compute_avg_vn = (
+            compute_avg_vn.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._accumulate_prep_adv_fields = (
+            accumulate_prep_adv_fields.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._update_mass_volume_flux = (
+            update_mass_volume_flux.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._update_dynamical_exner_time_increment = (
+            update_dynamical_exner_time_increment.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._init_cell_kdim_field_with_zero_wp = (
+            init_cell_kdim_field_with_zero_wp.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._update_mass_flux_weighted = (
+            update_mass_flux_weighted.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._compute_z_raylfac = (
+            dycore_utils.compute_z_raylfac.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._predictor_stencils_2_3 = (
+            nhsolve_stencils.predictor_stencils_2_3.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._predictor_stencils_4_5_6 = (
+            nhsolve_stencils.predictor_stencils_4_5_6.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures = (
+            nhsolve_stencils.compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures.with_backend(
                 self._backend
             )
-        ).freeze()
-        self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
-            self._backend
-        ).freeze()
-        self._predictor_stencils_37_38 = nhsolve_stencils.predictor_stencils_37_38.with_backend(
-            self._backend
-        ).freeze()
-        self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend).freeze()
-        self._stencils_43_44_45_45b = nhsolve_stencils.stencils_43_44_45_45b.with_backend(
-            self._backend
-        ).freeze()
-        self._stencils_47_48_49 = nhsolve_stencils.stencils_47_48_49.with_backend(
-            self._backend
-        ).freeze()
-        self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend).freeze()
-        self._en_smag_fac_for_zero_nshift = smagorinsky.en_smag_fac_for_zero_nshift.with_backend(
-            self._backend
-        ).freeze()
-        self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(
-            self._backend
-        ).freeze()
-        self._stencils_42_44_45_45b = nhsolve_stencils.stencils_42_44_45_45b.with_backend(
-            self._backend
-        ).freeze()
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._predictor_stencils_11_lower_upper = (
+            (nhsolve_stencils.predictor_stencils_11_lower_upper.with_backend(self._backend))
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._compute_horizontal_advection_of_rho_and_theta = (
+            (
+                nhsolve_stencils.compute_horizontal_advection_of_rho_and_theta.with_backend(
+                    self._backend
+                )
+            )
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._predictor_stencils_35_36 = (
+            nhsolve_stencils.predictor_stencils_35_36.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._predictor_stencils_37_38 = (
+            nhsolve_stencils.predictor_stencils_37_38.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._stencils_39_40 = (
+            nhsolve_stencils.stencils_39_40.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._stencils_43_44_45_45b = (
+            nhsolve_stencils.stencils_43_44_45_45b.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._stencils_47_48_49 = (
+            nhsolve_stencils.stencils_47_48_49.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._stencils_61_62 = (
+            nhsolve_stencils.stencils_61_62.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._en_smag_fac_for_zero_nshift = (
+            smagorinsky.en_smag_fac_for_zero_nshift.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._init_test_fields = (
+            nhsolve_stencils.init_test_fields.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
+        self._stencils_42_44_45_45b = (
+            nhsolve_stencils.stencils_42_44_45_45b.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_provider)
+            .freeze()
+        )
 
         self.velocity_advection = VelocityAdvection(
             grid,
