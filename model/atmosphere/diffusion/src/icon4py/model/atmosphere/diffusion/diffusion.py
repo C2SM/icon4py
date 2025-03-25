@@ -409,7 +409,11 @@ class Diffusion:
             .with_connectivities(self._grid.offset_providers)
             .freeze()
         )
-        self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(self._backend)
+        self.apply_diffusion_to_vn = (
+            apply_diffusion_to_vn.with_backend(self._backend)
+            .with_connectivities(self._grid.offset_providers)
+            .freeze()
+        )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
             apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
                 self._backend
@@ -448,11 +452,7 @@ class Diffusion:
             .with_connectivities(self._grid.offset_providers)
             .freeze()
         )
-        self.scale_k = (
-            scale_k.with_backend(self._backend)
-            .with_connectivities({})
-            .freeze()
-        )
+        self.scale_k = scale_k.with_backend(self._backend).with_connectivities({}).freeze()
         self.setup_fields_for_initial_step = (
             setup_fields_for_initial_step.with_backend(self._backend)
             .with_connectivities({})
@@ -672,9 +672,7 @@ class Diffusion:
 
         """
         # dtime dependent: enh_smag_factor,
-        self.scale_k(
-            self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
-        )
+        self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
@@ -818,9 +816,7 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field(
-            prognostic_state.w, self.w_tmp, offset_provider={}
-        )
+        self.copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self._cell_params.area,
