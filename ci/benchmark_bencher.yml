@@ -10,15 +10,15 @@ include:
 
 .benchmark_model_stencils:
   stage: benchmark
-  before_script:
+  script:
     - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - export FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
-    - rustup default stable
-    - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Check with Andreas the status of the PR and the use of upstream bencher
     - |
       echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
-  script:
+    - rustup default stable
+    - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Check with Andreas the status of the PR and the use of upstream bencher
     - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
+  after_script:
     - | # Post the Bencher Dashboard link to the PR
       if [[ "$PR_ID" != "" && "$BACKEND" == "gtfn_cpu" && "$GRID" == "icon_grid" ]]; then
         COMMENT_BODY="[Bencher Dashboard](https://bencher.dev/perf/c2sm-icon4py)"
