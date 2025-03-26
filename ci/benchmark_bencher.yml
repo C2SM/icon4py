@@ -10,22 +10,15 @@ include:
   GITHUB_SHA: $CI_COMMIT_SHA # needed for GitHub PR comments - along with --github-actions -
   GITHUB_EVENT_PATH: $CI_PROJECT_DIR/event.json # needed for GitHub PR comments - along with --github-actions -
 
-.bencher_github_actions_setup:
-  script:
-    - |
-      echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
-
-.install_bencher:
-  script:
+.benchmark_model_stencils:
+  stage: benchmark
+  befor_script:
     - rustup default stable
     - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Check with Andreas the status of the PR and the use of upstream bencher
-
-.run_benchmarks:
+    - |
+      echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
   script:
     - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
-
-.post_comment:
-  script:
     - | # Post the Bencher Dashboard link to the PR
       if [[ "$PR_ID" != "" && "$BACKEND" == "gtfn_cpu" && "$GRID" == "icon_grid" ]]; then
         COMMENT_BODY="[Bencher Dashboard](https://bencher.dev/perf/c2sm-icon4py)"
@@ -37,10 +30,6 @@ include:
           https://api.github.com/repos/C2SM/icon4py/issues/$PR_ID/comments \
           -d "{\"body\": \"$COMMENT_BODY\"}"
       fi
-
-.benchmark_model_stencils:
-  stage: benchmark
-  extends: [.bencher_github_actions_setup, .install_bencher, .run_benchmarks, .post_comment]
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
