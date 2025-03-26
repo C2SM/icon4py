@@ -12,7 +12,7 @@ include:
 
 .benchmark_model_stencils:
   stage: benchmark
-  befor_script:
+  before_script:
     - rustup default stable
     - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Check with Andreas the status of the PR and the use of upstream bencher
     - |
