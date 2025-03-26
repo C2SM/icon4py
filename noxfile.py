@@ -103,6 +103,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
     Alerts are raised if the performance of the feature branch is worse than the historical baseline (according to the thresholds).
     Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
     """
+    bencher_testbed = f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
     session.run(
         *f"bencher run \
         --start-point main \
@@ -111,12 +112,12 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
         --err \
         --github-actions {os.environ['GD_COMMENT_TOKEN']} \
         --ci-number {os.environ['PR_ID']} \
-        --ci-id run-{os.environ['BENCHER_TESTBED'].replace(':', '_')}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
+        --ci-id run-{bencher_testbed.replace(':', '_')}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
         --file pytest_benchmark_results_{session.python}.json".split(),
         env={
             "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_BRANCH": os.environ['FEATURE_BRANCH'].strip(),
-            "BENCHER_TESTBED": f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}",
+            "BENCHER_TESTBED": bencher_testbed,
             "BENCHER_ADAPTER": "python_pytest",
             "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
