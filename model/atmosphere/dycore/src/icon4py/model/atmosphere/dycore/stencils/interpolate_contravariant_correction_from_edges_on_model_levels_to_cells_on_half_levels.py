@@ -24,12 +24,11 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-    vert_idx: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
     contravariant_correction_at_cells_on_half_levels = concat_where(
-        nflatlev + 1 <= dims.KDim < nlev,
+        (nflatlev + 1 <= dims.KDim) & (dims.KDim < nlev),
         _compute_contravariant_correction_of_w(
             e_bln_c_s, contravariant_correction_at_edges_on_model_levels, wgtfac_c
         ),
@@ -46,7 +45,6 @@ def interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-    vert_idx: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
@@ -60,7 +58,6 @@ def interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_
         contravariant_correction_at_edges_on_model_levels,
         wgtfac_c,
         wgtfacq_c,
-        vert_idx,
         nlev,
         nflatlev,
         out=contravariant_correction_at_cells_on_half_levels,

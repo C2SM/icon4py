@@ -31,11 +31,12 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         field_index_with_zero_1: np.ndarray,
         field_index_with_zero_2: np.ndarray,
-        k: np.ndarray,
         k1: gtx.int32,
         k2: gtx.int32,
         **kwargs: Any,
     ) -> dict:
+        k = np.arange(field_index_with_zero_1.shape[1], dtype=gtx.int32)
+
         field_index_with_zero_1 = np.where(
             k == k1, np.zeros_like(field_index_with_zero_1), field_index_with_zero_1
         )
@@ -55,15 +56,12 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
         field_index_with_zero_2 = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, dtype=vpfloat
         )
-        k = data_alloc.index_field(grid, dims.KDim)
-
         k1 = 1
         k2 = gtx.int32(grid.num_levels)
 
         return dict(
             field_index_with_zero_1=field_index_with_zero_1,
             field_index_with_zero_2=field_index_with_zero_2,
-            k=k,
             k1=k1,
             k2=k2,
             horizontal_start=0,
