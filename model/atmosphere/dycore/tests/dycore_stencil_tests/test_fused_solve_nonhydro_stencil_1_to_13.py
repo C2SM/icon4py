@@ -63,7 +63,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
 
-class TestFusedMoSolveNonHydroStencil1To13(helpers.StencilTest):
+class TestFusedMoSolveNonHydroStencil1To13Predictor(helpers.StencilTest):
     PROGRAM = fused_mo_solve_nonhydro_stencils_1_to_13_predictor
     OUTPUTS = (
         "z_exner_ex_pr",
