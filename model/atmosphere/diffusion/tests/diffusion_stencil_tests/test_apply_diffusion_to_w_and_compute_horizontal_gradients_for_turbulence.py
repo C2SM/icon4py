@@ -45,13 +45,13 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         dwdy,
         diff_multfac_w,
         diff_multfac_n2w,
-        k,
-        cell,
         nrdmax,
         interior_idx,
         halo_idx,
         **kwargs,
     ) -> dict:
+        k = np.arange(w_old.shape[1])
+        cell = np.arange(w_old.shape[0])
         reshaped_k = k[np.newaxis, :]
         reshaped_cell = cell[:, np.newaxis]
         if type_shear == 2:
@@ -85,14 +85,6 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
-        for lev in range(grid.num_levels):
-            k[lev] = lev
-
-        cell = zero_field(grid, dims.CellDim, dtype=gtx.int32)
-        for c in range(grid.num_cells):
-            cell[c] = c
-
         nrdmax = 13
         interior_idx = 1
         halo_idx = 5
@@ -119,8 +111,6 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             type_shear=type_shear,
             diff_multfac_w=diff_multfac_w,
             diff_multfac_n2w=diff_multfac_n2w,
-            k=k,
-            cell=cell,
             nrdmax=nrdmax,
             interior_idx=interior_idx,
             halo_idx=halo_idx,
