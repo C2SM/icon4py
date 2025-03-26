@@ -18,11 +18,11 @@ include:
 .install_bencher:
   script:
     - rustup default stable
-    - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions
+    - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Check with Andreas the status of the PR and the use of upstream bencher
 
 .run_benchmarks:
   script:
-    - nox -s bencher_feature_branch-3.10 -- --backend=$BACKEND --grid=$GRID
+    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
 
 .post_comment:
   script:
