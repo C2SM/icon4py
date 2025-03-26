@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -12,8 +14,9 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
     compute_advection_in_vertical_momentum_equation,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers as test_helpers
 
@@ -43,9 +46,9 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     ddqz_z_half: np.ndarray,
     area: np.ndarray,
     geofac_n2s: np.ndarray,
-    scalfac_exdiff: np.ndarray,
-    cfl_w_limit: float,
-    dtime: float,
+    scalfac_exdiff: ta.wpfloat,
+    cfl_w_limit: ta.wpfloat,
+    dtime: ta.wpfloat,
     levelmask: np.ndarray,
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
@@ -128,12 +131,12 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         coeff1_dwdz: np.ndarray,
         coeff2_dwdz: np.ndarray,
         e_bln_c_s: np.ndarray,
-        ddqz_z_half,
-        area,
-        geofac_n2s,
-        scalfac_exdiff,
-        cfl_w_limit,
-        dtime,
+        ddqz_z_half: np.ndarray,
+        area: np.ndarray,
+        geofac_n2s: np.ndarray,
+        scalfac_exdiff: ta.wpfloat,
+        cfl_w_limit: ta.wpfloat,
+        dtime: ta.wpfloat,
         skip_compute_predictor_vertical_advection: np.ndarray,
         levelmask: np.ndarray,
         cfl_clipping: np.ndarray,
@@ -146,7 +149,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         nrdmax: int,
         start_cell_lateral_boundary: int,
         end_cell_halo: int,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         # We need to store the initial return field, because we only compute on a subdomain.
         contravariant_corrected_w_at_cells_on_model_levels_ret = (
@@ -212,7 +215,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )

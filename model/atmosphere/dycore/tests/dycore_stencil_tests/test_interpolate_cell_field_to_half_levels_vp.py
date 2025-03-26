@@ -5,15 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     interpolate_cell_field_to_half_levels_vp,
 )
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing import helpers as test_helpers
 
@@ -35,14 +39,19 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
     OUTPUTS = ("interpolation_to_half_levels_vp",)
 
     @staticmethod
-    def reference(grid, wgtfac_c: np.ndarray, interpolant: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_c: np.ndarray,
+        interpolant: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         interpolation_to_half_levels_vp = interpolate_cell_field_to_half_levels_vp_numpy(
             wgtfac_c=wgtfac_c, interpolant=interpolant
         )
         return dict(interpolation_to_half_levels_vp=interpolation_to_half_levels_vp)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         interpolation_to_half_levels_vp = zero_field(
