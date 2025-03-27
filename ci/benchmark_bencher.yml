@@ -1,16 +1,14 @@
 include:
   - local: 'ci/base.yml'
 
-.variables:
-  GITHUB_ACTIONS: true # needed for GitHub PR comments - along with --github-actions -
-  GITHUB_EVENT_NAME: pull_request # needed for GitHub PR comments - along with --github-actions -
-  GITHUB_STEP_SUMMARY: $CI_PROJECT_DIR/step_summary.log # needed for GitHub PR comments - along with --github-actions -
-  GITHUB_SHA: $CI_COMMIT_SHA # needed for GitHub PR comments - along with --github-actions -
-  GITHUB_EVENT_PATH: $CI_PROJECT_DIR/event.json # needed for GitHub PR comments - along with --github-actions -
-
 .benchmark_model_stencils:
   stage: benchmark
   script:
+    - export GITHUB_ACTIONS=true # needed for GitHub PR comments - along with --github-actions -
+    - export GITHUB_EVENT_NAME=pull_request # needed for GitHub PR comments - along with --github-actions -
+    - export GITHUB_STEP_SUMMARY=$CI_PROJECT_DIR/step_summary.log # needed for GitHub PR comments - along with --github-actions -
+    - export GITHUB_SHA=$CI_COMMIT_SHA # needed for GitHub PR comments - along with --github-actions -
+    - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json # needed for GitHub PR comments - along with --github-actions -
     - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - export FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
     - | # needed for GitHub PR comments - along with --github-actions -
