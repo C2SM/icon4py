@@ -8,7 +8,7 @@
 import gt4py.next as gtx
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_to_vn import (
     _apply_nabla2_and_nabla4_global_to_vn,
@@ -38,7 +38,6 @@ def _apply_diffusion_to_vn(
     diff_multfac_vn: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
-    edge: fa.EdgeField[gtx.int32],
     nudgezone_diff: vpfloat,
     fac_bdydiff_v: wpfloat,
     start_2nd_nudge_line_idx_e: gtx.int32,
@@ -56,8 +55,8 @@ def _apply_diffusion_to_vn(
 
     # TODO: Use if-else statement instead
     vn = (
-        where(
-            start_2nd_nudge_line_idx_e <= edge,
+        concat_where(
+            dims.EdgeDim >= start_2nd_nudge_line_idx_e,
             _apply_nabla2_and_nabla4_to_vn(
                 area_edge,
                 kh_smag_e,
@@ -71,8 +70,8 @@ def _apply_diffusion_to_vn(
             _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
         )
         if limited_area
-        else where(
-            start_2nd_nudge_line_idx_e <= edge,
+        else concat_where(
+            dims.EdgeDim >= start_2nd_nudge_line_idx_e,
             _apply_nabla2_and_nabla4_global_to_vn(
                 area_edge,
                 kh_smag_e,
@@ -102,7 +101,6 @@ def apply_diffusion_to_vn(
     diff_multfac_vn: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
-    edge: fa.EdgeField[gtx.int32],
     nudgezone_diff: vpfloat,
     fac_bdydiff_v: wpfloat,
     start_2nd_nudge_line_idx_e: gtx.int32,
@@ -125,7 +123,6 @@ def apply_diffusion_to_vn(
         diff_multfac_vn,
         nudgecoeff_e,
         vn,
-        edge,
         nudgezone_diff,
         fac_bdydiff_v,
         start_2nd_nudge_line_idx_e,
