@@ -5,15 +5,17 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.states.utils as state_utils
 import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
     compute_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -32,7 +34,7 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
     @classmethod
     def reference(
         cls,
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
         w: np.ndarray,
         tangential_wind_on_half_levels: np.ndarray,
@@ -41,8 +43,6 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         inv_dual_edge_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
         tangent_orientation: np.ndarray,
-        edge: np.ndarray,
-        vertex: np.ndarray,
         lateral_boundary_7: int,
         halo_1: int,
         start_vertex_lateral_boundary_level_2: int,
@@ -52,6 +52,8 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
+        edge = np.arange(tangential_wind_on_half_levels.shape[0])
+        vertex = np.arange(c_intp.shape[0])
         edge = edge[:, np.newaxis]
         vertex = vertex[:, np.newaxis]
         condition_mask1 = (start_vertex_lateral_boundary_level_2 <= vertex) & (
@@ -61,14 +63,14 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
 
         w_at_vertices = np.where(
             condition_mask1,
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp),
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(connectivities, w, c_intp),
             0.0,
         )
 
         horizontal_advection_of_w_at_edges_on_half_levels = np.where(
             condition_mask2,
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
-                grid,
+                connectivities,
                 vn_on_half_levels[:, :-1],
                 inv_dual_edge_length,
                 w,
@@ -85,7 +87,7 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base_grid.BaseGrid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn_on_half_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
@@ -98,9 +100,6 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
-
-        edge = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
-        vertex = data_alloc.index_field(dim=dims.VertexDim, grid=grid)
 
         nlev = grid.num_levels
 
@@ -127,8 +126,6 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
             inv_dual_edge_length=inv_dual_edge_length,
             inv_primal_edge_length=inv_primal_edge_length,
             tangent_orientation=tangent_orientation,
-            edge=edge,
-            vertex=vertex,
             lateral_boundary_7=lateral_boundary_7,
             halo_1=halo_1,
             start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,

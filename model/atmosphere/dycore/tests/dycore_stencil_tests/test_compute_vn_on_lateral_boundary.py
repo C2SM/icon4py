@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -12,8 +14,9 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
@@ -23,16 +26,22 @@ class TestComputeVnOnLateralBoundary(StencilTest):
     OUTPUTS = ("vn_new",)
 
     @staticmethod
-    def reference(grid, grf_tend_vn: np.array, vn_now: np.array, dtime, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        grf_tend_vn: np.ndarray,
+        vn_now: np.ndarray,
+        dtime: ta.wpfloat,
+        **kwargs: Any,
+    ) -> dict:
         vn_new = vn_now + dtime * grf_tend_vn
         return dict(vn_new=vn_new)
 
     @pytest.fixture
-    def input_data(self, grid):
-        grf_tend_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vn_now = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vn_new = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        dtime = wpfloat("6.0")
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        grf_tend_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        vn_now = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        vn_new = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        dtime = ta.wpfloat("6.0")
 
         return dict(
             grf_tend_vn=grf_tend_vn,

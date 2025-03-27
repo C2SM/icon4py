@@ -33,7 +33,6 @@ class TestComputePpmSlope(helpers.StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
-        k: np.ndarray,
         elev: gtx.int32,
         **kwargs: Any,
     ) -> dict:
@@ -62,7 +61,7 @@ class TestComputePpmSlope(helpers.StencilTest):
             (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
             + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1
         )
-
+        k = np.arange(p_cc.shape[1])
         z_slope = np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
         return dict(z_slope=z_slope)
 
@@ -73,13 +72,11 @@ class TestComputePpmSlope(helpers.StencilTest):
         p_cellhgt_mc_now = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        k = data_alloc.index_field(grid, dims.KDim, extend={dims.KDim: 1})
 
-        elev = k[-2].as_scalar()
+        elev = grid.num_levels - 2
         return dict(
             p_cc=p_cc,
             p_cellhgt_mc_now=p_cellhgt_mc_now,
-            k=k,
             z_slope=z_slope,
             elev=elev,
             horizontal_start=0,
