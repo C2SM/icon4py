@@ -22,6 +22,13 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_first_vertical_derivative_numpy(
+    z_exner_ic: np.ndarray, inv_ddqz_z_full: np.ndarray
+) -> np.ndarray:
+    z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
+    return z_dexner_dz_c_1
+
+
 class TestComputeFirstVerticalDerivative(StencilTest):
     PROGRAM = compute_first_vertical_derivative
     OUTPUTS = ("z_dexner_dz_c_1",)
@@ -33,7 +40,7 @@ class TestComputeFirstVerticalDerivative(StencilTest):
         inv_ddqz_z_full: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
+        z_dexner_dz_c_1 = compute_first_vertical_derivative_numpy(z_exner_ic, inv_ddqz_z_full)
         return dict(z_dexner_dz_c_1=z_dexner_dz_c_1)
 
     @pytest.fixture

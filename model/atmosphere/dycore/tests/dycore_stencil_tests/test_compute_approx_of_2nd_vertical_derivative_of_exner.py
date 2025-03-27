@@ -22,6 +22,20 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_approx_of_2nd_vertical_derivative_of_exner_numpy(
+    z_theta_v_pr_ic: np.ndarray,
+    d2dexdz2_fac1_mc: np.ndarray,
+    d2dexdz2_fac2_mc: np.ndarray,
+    z_rth_pr_2: np.ndarray,
+) -> np.ndarray:
+    z_theta_v_pr_ic_offset_1 = z_theta_v_pr_ic[:, 1:]
+    z_dexner_dz_c_2 = -0.5 * (
+        (z_theta_v_pr_ic[:, :-1] - z_theta_v_pr_ic_offset_1) * d2dexdz2_fac1_mc
+        + z_rth_pr_2 * d2dexdz2_fac2_mc
+    )
+    return z_dexner_dz_c_2
+
+
 class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
     PROGRAM = compute_approx_of_2nd_vertical_derivative_of_exner
     OUTPUTS = ("z_dexner_dz_c_2",)
@@ -35,10 +49,11 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
         z_rth_pr_2: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_theta_v_pr_ic_offset_1 = z_theta_v_pr_ic[:, 1:]
-        z_dexner_dz_c_2 = -0.5 * (
-            (z_theta_v_pr_ic[:, :-1] - z_theta_v_pr_ic_offset_1) * d2dexdz2_fac1_mc
-            + z_rth_pr_2 * d2dexdz2_fac2_mc
+        z_dexner_dz_c_2 = compute_approx_of_2nd_vertical_derivative_of_exner_numpy(
+            z_theta_v_pr_ic=z_theta_v_pr_ic,
+            d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+            d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+            z_rth_pr_2=z_rth_pr_2,
         )
         return dict(z_dexner_dz_c_2=z_dexner_dz_c_2)
 
