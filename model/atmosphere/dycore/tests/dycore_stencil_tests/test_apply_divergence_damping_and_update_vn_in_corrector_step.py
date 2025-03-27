@@ -41,7 +41,6 @@ class TestApplyDivvergenceDampingCorrector(test_helpers.StencilTest):
 
     @staticmethod
     def reference(
-        cls,
         connectivities: dict[gtx.Dimension, np.ndarray],
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         next_vn: np.ndarray,

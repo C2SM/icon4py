@@ -198,7 +198,6 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
 
     @staticmethod
     def reference(
-        cls,
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho_at_edges_on_model_levels: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
