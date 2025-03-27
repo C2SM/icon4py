@@ -1030,6 +1030,8 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     assert params.wgt_nnow_rth == savepoint_nonhydro_init.wgt_nnow_rth()
 
 
+# TODO (Chia Rui): savepoint for the combined stencil 14 to 28 not available on CI
+@pytest.mark.skip
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -1260,6 +1262,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     )
 
 
+# TODO (Chia Rui): savepoint for the combined stencil 14 to 28 not available on CI
+@pytest.mark.skip
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
