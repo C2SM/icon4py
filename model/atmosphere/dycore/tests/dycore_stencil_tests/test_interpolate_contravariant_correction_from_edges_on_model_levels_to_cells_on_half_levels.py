@@ -32,10 +32,10 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
     contravariant_correction_at_edges_on_model_levels: np.ndarray,
     wgtfac_c: np.ndarray,
     wgtfacq_c: np.ndarray,
-    vert_idx: np.ndarray,
     nlev: int,
     nflatlev: int,
 ) -> np.ndarray:
+    vert_idx = np.arange(nlev)
     contravariant_correction_at_cells_on_half_levels = np.where(
         (nflatlev < vert_idx) & (vert_idx < nlev),
         compute_contravariant_correction_of_w_numpy(
@@ -71,7 +71,6 @@ class TestInterpolateContravariantCorrectionFromEdgesOnModelLevelsToCellsOnHalfL
         contravariant_correction_at_edges_on_model_levels: np.ndarray,
         wgtfac_c: np.ndarray,
         wgtfacq_c: np.ndarray,
-        vert_idx: np.ndarray,
         nlev: int,
         nflatlev: int,
         **kwargs: Any,
@@ -82,7 +81,6 @@ class TestInterpolateContravariantCorrectionFromEdgesOnModelLevelsToCellsOnHalfL
             contravariant_correction_at_edges_on_model_levels,
             wgtfac_c,
             wgtfacq_c,
-            vert_idx,
             nlev,
             nflatlev,
         )
@@ -102,8 +100,6 @@ class TestInterpolateContravariantCorrectionFromEdgesOnModelLevelsToCellsOnHalfL
             grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
 
-        vert_idx = data_alloc.index_field(grid, dims.KDim, dtype=gtx.int32)
-
         nlev = grid.num_levels
         nflatlev = 13
 
@@ -112,7 +108,6 @@ class TestInterpolateContravariantCorrectionFromEdgesOnModelLevelsToCellsOnHalfL
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             wgtfac_c=wgtfac_c,
             wgtfacq_c=wgtfacq_c,
-            vert_idx=vert_idx,
             nlev=nlev,
             nflatlev=nflatlev,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
