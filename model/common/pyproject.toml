@@ -40,7 +40,7 @@ version = "0.0.6"
 all = ["icon4py-common[dace,distributed,io]"]
 cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
-dace = ["dace>=1.0", "gt4py[dace-next]"]
+dace = ["dace<1.0", "gt4py[dace]"] # TODO(egparedes): DaCe max constraint should be transformed to min constraint after updating gt4py
 distributed = ["ghex>=0.3.0", "mpi4py>=3.1.5"]
 io = [
   # external dependencies

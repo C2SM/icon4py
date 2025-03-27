@@ -17,7 +17,7 @@ simple_mesh*.nc
 **/docs/_source/*.rst
 
 ### GT4Py ####
-.gt4py_cache/
+.gt_cache/
 
 # DaCe
 .dacecache
