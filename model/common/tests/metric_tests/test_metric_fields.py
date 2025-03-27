@@ -33,11 +33,11 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_ddxt_z_half_e,
     compute_exner_exfac,
     compute_flat_idx,
-    compute_hmask_dd3d,
+    compute_horizontal_mask_for_3d_divdamp,
     compute_mask_prog_halo_c,
     compute_pressure_gradient_downward_extrapolation_mask_distance,
     compute_rayleigh_w,
-    compute_scalfac_dd3d,
+    compute_scaling_factor_for_3d_divdamp,
     compute_theta_exner_ref_mc,
     compute_vwind_expl_wgt,
     compute_wgtfac_e,
@@ -139,14 +139,16 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
+def test_compute_scaling_factor_for_3d_divdamp(
+    icon_grid, metrics_savepoint, grid_savepoint, backend
+):
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
     scalfac_dd3d_full = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
 
-    compute_scalfac_dd3d.with_backend(backend=backend)(
+    compute_scaling_factor_for_3d_divdamp.with_backend(backend=backend)(
         vct_a=grid_savepoint.vct_a(),
         scalfac_dd3d=scalfac_dd3d_full,
         divdamp_trans_start=divdamp_trans_start,
@@ -654,12 +656,14 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
+def test_compute_horizontal_mask_for_3d_divdamp(
+    metrics_savepoint, icon_grid, grid_savepoint, backend
+):
     hmask_dd3d_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, backend=backend)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
-    compute_hmask_dd3d.with_backend(backend)(
+    compute_horizontal_mask_for_3d_divdamp.with_backend(backend)(
         e_refin_ctrl=e_refin_ctrl,
         hmask_dd3d=hmask_dd3d_full,
         grf_nudge_start_e=gtx.int32(horizontal._GRF_NUDGEZONE_START_EDGES),
