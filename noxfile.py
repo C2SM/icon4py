@@ -61,7 +61,7 @@ def benchmark_model(session: nox.Session) -> None:
         --benchmark-warmup=on \
         --benchmark-warmup-iterations=30 \
         --benchmark-json=pytest_benchmark_results_{session.python}.json \
-        ./model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py".split(),
+        ./model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py".split(),  # ./model
         *session.posargs,
     )
 

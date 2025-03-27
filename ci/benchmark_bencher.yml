@@ -1,14 +1,16 @@
 include:
   - local: 'ci/base.yml'
 
+variables:
+  GITHUB_ACTIONS: true # needed for GitHub PR comments - along with --github-actions -
+  GITHUB_EVENT_NAME: pull_request # needed for GitHub PR comments - along with --github-actions -
+  GITHUB_STEP_SUMMARY: $CI_PROJECT_DIR/step_summary.log # needed for GitHub PR comments - along with --github-actions -
+  GITHUB_SHA: $CI_COMMIT_SHA # needed for GitHub PR comments - along with --github-actions -
+  GITHUB_EVENT_PATH: $CI_PROJECT_DIR/event.json # needed for GitHub PR comments - along with --github-actions -
+
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - export GITHUB_ACTIONS=true # needed for GitHub PR comments - along with --github-actions -
-    - export GITHUB_EVENT_NAME=pull_request # needed for GitHub PR comments - along with --github-actions -
-    - export GITHUB_STEP_SUMMARY=$CI_PROJECT_DIR/step_summary.log # needed for GitHub PR comments - along with --github-actions -
-    - export GITHUB_SHA=$CI_COMMIT_SHA # needed for GitHub PR comments - along with --github-actions -
-    - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json # needed for GitHub PR comments - along with --github-actions -
     - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - export FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
     - | # needed for GitHub PR comments - along with --github-actions -
@@ -16,18 +18,6 @@ include:
     - rustup default stable
     - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Check with Andreas the status of the PR and the use of upstream bencher
     - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
-  after_script:
-    - | # Post the Bencher Dashboard link to the PR
-      if [[ "$PR_ID" != "" && "$BACKEND" == "gtfn_cpu" && "$GRID" == "icon_grid" ]]; then
-        COMMENT_BODY="[Bencher Dashboard](https://bencher.dev/perf/c2sm-icon4py)"
-        curl -L \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: token $GD_COMMENT_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/repos/C2SM/icon4py/issues/$PR_ID/comments \
-          -d "{\"body\": \"$COMMENT_BODY\"}"
-      fi
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
