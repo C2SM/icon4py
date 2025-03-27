@@ -14,12 +14,6 @@ from icon4py.model.atmosphere.dycore.dycore_utils import (
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w import (
-    _compute_contravariant_correction_of_w,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w_for_lower_boundary import (
-    _compute_contravariant_correction_of_w_for_lower_boundary,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_exner import (
     _compute_explicit_part_for_rho_and_exner,
 )
@@ -501,66 +495,6 @@ def predictor_stencils_37_38(
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_end - 1, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _stencils_39_40(
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
-    z_w_concorr_me: fa.EdgeKField[float],
-    wgtfac_c: fa.CellKField[float],
-    wgtfacq_c_dsl: fa.CellKField[float],
-    w_concorr_c: fa.CellKField[float],
-    k_field: fa.KField[gtx.int32],
-    nflatlev_startindex_plus1: gtx.int32,
-    nlev: gtx.int32,
-) -> fa.CellKField[float]:
-    w_concorr_c = where(
-        k_field >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
-        _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
-        w_concorr_c,
-    )
-
-    w_concorr_c = where(
-        k_field == nlev,
-        _compute_contravariant_correction_of_w_for_lower_boundary(
-            e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl
-        ),
-        w_concorr_c,
-    )
-
-    return w_concorr_c
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def stencils_39_40(
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
-    z_w_concorr_me: fa.EdgeKField[float],
-    wgtfac_c: fa.CellKField[float],
-    wgtfacq_c_dsl: fa.CellKField[float],
-    w_concorr_c: fa.CellKField[float],
-    k_field: fa.KField[gtx.int32],
-    nflatlev_startindex_plus1: gtx.int32,
-    nlev: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _stencils_39_40(
-        e_bln_c_s,
-        z_w_concorr_me,
-        wgtfac_c,
-        wgtfacq_c_dsl,
-        w_concorr_c,
-        k_field,
-        nflatlev_startindex_plus1,
-        nlev,
-        out=w_concorr_c,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
