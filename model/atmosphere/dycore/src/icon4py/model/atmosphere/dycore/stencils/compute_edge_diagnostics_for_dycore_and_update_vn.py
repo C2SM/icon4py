@@ -60,19 +60,11 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
-    _compute_hydrostatic_correction_term,
-)
 from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-@gtx.scan_operator(axis=dims.KDim, init=0.0, forward=False)
-def copy_hydrostatic_correction_from_last_lev(state: float, hydrostatic_correction: float) -> float:
-    return state + hydrostatic_correction
 
 
 @gtx.field_operator
@@ -90,8 +82,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    theta_v: fa.CellKField[ta.wpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
@@ -107,14 +98,12 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.ECDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.ECDim, dims.KDim], ta.vpfloat],
-    inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
     cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
-    grav_o_cpd: ta.wpfloat,
     is_iau_active: bool,
     limited_area: bool,
     iadv_rhotheta: gtx.int32,
@@ -123,7 +112,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     TAYLOR_HYDRO_gradp_method: gtx.int32,
     horz_idx: fa.EdgeField[gtx.int32],
     vert_idx: fa.KField[gtx.int32],
-    nlev: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_edge_halo_level_2: gtx.int32,
@@ -261,33 +249,13 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
         else horizontal_pressure_gradient
     )
 
-    hydrostatic_correction = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & ((nlev - 1) <= vert_idx),
-            _compute_hydrostatic_correction_term(
-                theta_v=theta_v,
-                ikoffset=ikoffset,
-                zdiff_gradp=zdiff_gradp,
-                theta_v_ic=theta_v_at_cells_on_half_levels,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                inv_dual_edge_length=inv_dual_edge_length,
-                grav_o_cpd=grav_o_cpd,
-            ),
-            broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-        )
-        if igradp_method == TAYLOR_HYDRO_gradp_method
-        else broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim))
-    )
-
-    hydrostatic_correction = copy_hydrostatic_correction_from_last_lev(hydrostatic_correction)
-
     horizontal_pressure_gradient = (
         where(
             (start_edge_nudging_level_2 <= horz_idx < end_edge_end),
             _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=ipeidx_dsl,
                 pg_exdist=pg_exdist,
-                z_hydro_corr=hydrostatic_correction,
+                z_hydro_corr=hydrostatic_correction_on_lowest_level,
                 z_gradh_exner=horizontal_pressure_gradient,
             ),
             horizontal_pressure_gradient,
@@ -504,8 +472,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    theta_v: fa.CellKField[ta.wpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
@@ -521,14 +488,12 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.ECDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.ECDim, dims.KDim], ta.vpfloat],
-    inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
     cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
-    grav_o_cpd: ta.wpfloat,
     is_iau_active: bool,
     limited_area: bool,
     iadv_rhotheta: gtx.int32,
@@ -537,7 +502,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
     TAYLOR_HYDRO_gradp_method: gtx.int32,
     horz_idx: fa.EdgeField[gtx.int32],
     vert_idx: fa.KField[gtx.int32],
-    nlev: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_edge_halo_level_2: gtx.int32,
@@ -568,8 +532,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        theta_v=theta_v,
-        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
         normal_wind_iau_increments=normal_wind_iau_increments,
@@ -585,14 +548,12 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
         c_lin_e=c_lin_e,
         ikoffset=ikoffset,
         zdiff_gradp=zdiff_gradp,
-        inv_ddqz_z_full=inv_ddqz_z_full,
         ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         dtime=dtime,
         cpd=cpd,
         iau_wgt_dyn=iau_wgt_dyn,
-        grav_o_cpd=grav_o_cpd,
         is_iau_active=is_iau_active,
         limited_area=limited_area,
         iadv_rhotheta=iadv_rhotheta,
@@ -601,7 +562,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
         TAYLOR_HYDRO_gradp_method=TAYLOR_HYDRO_gradp_method,
         horz_idx=horz_idx,
         vert_idx=vert_idx,
-        nlev=nlev,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
         start_edge_halo_level_2=start_edge_halo_level_2,

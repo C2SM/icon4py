@@ -212,8 +212,7 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
         temporal_extrapolation_of_perturbed_exner: np.ndarray,
         ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels: np.ndarray,
         d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels: np.ndarray,
-        theta_v: np.ndarray,
-        theta_v_at_cells_on_half_levels: np.ndarray,
+        hydrostatic_correction_on_lowest_level: np.ndarray,
         predictor_normal_wind_advective_tendency: np.ndarray,
         normal_wind_tendency_due_to_physics_process: np.ndarray,
         normal_wind_iau_increments: np.ndarray,
@@ -229,7 +228,6 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
         c_lin_e: np.ndarray,
         ikoffset: np.ndarray,
         zdiff_gradp: np.ndarray,
-        inv_ddqz_z_full: np.ndarray,
         ipeidx_dsl: np.ndarray,
         pg_exdist: np.ndarray,
         inv_dual_edge_length: np.ndarray,
@@ -237,7 +235,6 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
         cpd: ta.wpfloat,
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
-        grav_o_cpd: gtx.int32,
         limited_area: gtx.int32,
         iadv_rhotheta: gtx.int32,
         igradp_method: gtx.int32,
@@ -263,10 +260,10 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
     ) -> dict:
         horz_idx = horz_idx[:, np.newaxis]
 
-        ddx_perturbed_rho = np.zeros(theta_v.shape)
-        ddy_perturbed_rho = np.zeros(theta_v.shape)
-        ddx_perturbed_theta_v = np.zeros(theta_v.shape)
-        ddy_perturbed_theta_v = np.zeros(theta_v.shape)
+        ddx_perturbed_rho = np.zeros(perturbed_rho.shape)
+        ddy_perturbed_rho = np.zeros(perturbed_rho.shape)
+        ddx_perturbed_theta_v = np.zeros(perturbed_rho.shape)
+        ddy_perturbed_theta_v = np.zeros(perturbed_rho.shape)
 
         if iadv_rhotheta == MIURA_advection_type:
             # Compute Green-Gauss gradients for rho and theta
@@ -384,26 +381,6 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
                             ]
                 return indexed
 
-            def _apply_index_field_for_hydrostatic_correction(
-                shape: tuple,
-                to_index: np.ndarray,
-                neighbor_table: np.ndarray,
-                offset_field: np.ndarray,
-            ) -> tuple:
-                indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
-                for iprimary in range(shape[0]):
-                    for isparse in range(shape[1]):
-                        for ik in range(shape[2]):
-                            indexed[iprimary, isparse, ik] = to_index[
-                                neighbor_table[iprimary, isparse],
-                                ik + offset_field[iprimary, isparse, ik],
-                            ]
-                            indexed_p1[iprimary, isparse, ik] = to_index[
-                                neighbor_table[iprimary, isparse],
-                                ik + offset_field[iprimary, isparse, ik] + 1,
-                            ]
-                return indexed, indexed_p1
-
             def at_neighbor(i: int) -> np.ndarray:
                 return temporal_extrapolation_of_perturbed_exner_at_kidx[:, i, :] + zdiff_gradp[
                     :, i, :
@@ -467,59 +444,12 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
                 horizontal_pressure_gradient,
             )
 
-            # compute hydrostatically approximated correction term that replaces downward extrapolation
-            theta_v_at_kidx, _ = _apply_index_field_for_hydrostatic_correction(
-                full_shape, theta_v, e2c, ikoffset
-            )
-            (
-                theta_v_at_cells_on_half_levels_at_kidx,
-                theta_v_at_cells_on_half_levels_at_kidx_p1,
-            ) = _apply_index_field_for_hydrostatic_correction(
-                full_shape, theta_v_at_cells_on_half_levels, e2c, ikoffset
-            )
-            inv_ddqz_z_full_at_kidx, _ = _apply_index_field_for_hydrostatic_correction(
-                full_shape, inv_ddqz_z_full, e2c, ikoffset
-            )
-            z_theta1 = (
-                theta_v_at_kidx[:, 0, :]
-                + zdiff_gradp[:, 0, :]
-                * (
-                    theta_v_at_cells_on_half_levels_at_kidx[:, 0, :]
-                    - theta_v_at_cells_on_half_levels_at_kidx_p1[:, 0, :]
-                )
-                * inv_ddqz_z_full_at_kidx[:, 0, :]
-            )
-            z_theta2 = (
-                theta_v_at_kidx[:, 1, :]
-                + zdiff_gradp[:, 1, :]
-                * (
-                    theta_v_at_cells_on_half_levels_at_kidx[:, 1, :]
-                    - theta_v_at_cells_on_half_levels_at_kidx_p1[:, 1, :]
-                )
-                * inv_ddqz_z_full_at_kidx[:, 1, :]
-            )
-            # if igradp_method == 3:
-            hydrostatic_correction = np.where(
-                (start_edge_nudging_level_2 <= horz_idx)
-                & (horz_idx < end_edge_local)
-                & (vert_idx >= (nlev - 1)),
-                grav_o_cpd
-                * inv_dual_edge_length
-                * (z_theta2 - z_theta1)
-                * 4.0
-                / ((z_theta1 + z_theta2) ** 2),
-                0.0,
-            )
-
-            # if igradp_method == 3:
-            hydrostatic_correction = np.repeat(
-                np.expand_dims(hydrostatic_correction[:, nlev - 1], axis=-1), nlev, axis=1
-            )
             horizontal_pressure_gradient = np.where(
                 (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_end),
                 np.where(
                     ipeidx_dsl,
-                    horizontal_pressure_gradient + hydrostatic_correction * pg_exdist,
+                    horizontal_pressure_gradient
+                    + hydrostatic_correction_on_lowest_level * pg_exdist,
                     horizontal_pressure_gradient,
                 ),
                 horizontal_pressure_gradient,
@@ -582,10 +512,8 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
         d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
-        theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        hydrostatic_correction_on_lowest_level = data_alloc.random_field(grid, dims.EdgeDim)
         zdiff_gradp = data_alloc.random_field(grid, dims.ECDim, dims.KDim)
-        theta_v_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ipeidx_dsl = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim)
         pg_exdist = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
@@ -619,7 +547,6 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
         vert_idx = data_alloc.index_field(dim=dims.KDim, grid=grid)
         horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
 
-        grav_o_cpd = 9.80665 / 1004.64
         dtime = 0.9
         cpd = 1004.64
         iau_wgt_dyn = 1.0
@@ -659,8 +586,7 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
             temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
             ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            theta_v=theta_v,
-            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+            hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
             predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
             normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
             normal_wind_iau_increments=normal_wind_iau_increments,
@@ -676,14 +602,12 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
             c_lin_e=c_lin_e,
             ikoffset=ikoffset,
             zdiff_gradp=zdiff_gradp,
-            inv_ddqz_z_full=inv_ddqz_z_full,
             ipeidx_dsl=ipeidx_dsl,
             pg_exdist=pg_exdist,
             inv_dual_edge_length=inv_dual_edge_length,
             dtime=dtime,
             cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
-            grav_o_cpd=grav_o_cpd,
             is_iau_active=is_iau_active,
             limited_area=limited_area,
             iadv_rhotheta=iadv_rhotheta,
