@@ -250,7 +250,6 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
         start_edge_nudging_level_2: gtx.int32,
         end_edge_local: gtx.int32,
         end_edge_end: gtx.int32,
-        nlev: gtx.int32,
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
         horizontal_start: gtx.int32,
@@ -444,12 +443,16 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
                 horizontal_pressure_gradient,
             )
 
+            hydrostatic_correction = np.repeat(
+                np.expand_dims(hydrostatic_correction_on_lowest_level, axis=-1),
+                horizontal_pressure_gradient.shape[1],
+                axis=1,
+            )
             horizontal_pressure_gradient = np.where(
                 (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_end),
                 np.where(
                     ipeidx_dsl,
-                    horizontal_pressure_gradient
-                    + hydrostatic_correction_on_lowest_level * pg_exdist,
+                    horizontal_pressure_gradient + hydrostatic_correction * pg_exdist,
                     horizontal_pressure_gradient,
                 ),
                 horizontal_pressure_gradient,
@@ -568,7 +571,6 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
         end_edge_end = grid.num_edges
-        nlev = grid.num_levels
         nflatlev = 4
         nflat_gradp = 27
 
@@ -616,7 +618,6 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
             TAYLOR_HYDRO_gradp_method=TAYLOR_HYDRO_gradp_method,
             horz_idx=horz_idx,
             vert_idx=vert_idx,
-            nlev=nlev,
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
             start_edge_halo_level_2=start_edge_halo_level_2,
