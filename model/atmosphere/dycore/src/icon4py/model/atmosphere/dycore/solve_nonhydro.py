@@ -30,6 +30,9 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
+from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term,
+)
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
 )
@@ -489,6 +492,9 @@ class SolveNonhydro:
         self._init_two_edge_kdim_fields_with_zero_wp = (
             init_two_edge_kdim_fields_with_zero_wp.with_backend(self._backend)
         )
+        self._compute_hydrostatic_correction_term = (
+            compute_hydrostatic_correction_term.with_backend(self._backend)
+        )
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step.with_backend(
             self._backend
         )
@@ -678,6 +684,12 @@ class SolveNonhydro:
         )
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
+        """
+        self.hydrostatic_correction = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+        )
+        """
+        Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
         self.z_raylfac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
@@ -1048,6 +1060,28 @@ class SolveNonhydro:
         log.debug(
             f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step"
         )
+        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+            self._compute_hydrostatic_correction_term(
+                theta_v=prognostic_states.current.theta_v,
+                ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
+                zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,
+                theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
+                inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
+                inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
+                z_hydro_corr=self.hydrostatic_correction,
+                grav_o_cpd=self._params.grav_o_cpd,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
+                vertical_start=self._grid.num_levels - 1,
+                vertical_end=self._grid.num_levels,
+                offset_provider=self._grid.offset_providers,
+            )
+            lowest_level = self._grid.num_levels - 1
+            hydrostatic_correction_on_lowest_level = gtx.as_field(
+                (dims.EdgeDim,),
+                self.hydrostatic_correction.ndarray[:, lowest_level],
+                allocator=self._backend.allocator,
+            )
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
@@ -1062,8 +1096,7 @@ class SolveNonhydro:
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            theta_v=prognostic_states.current.theta_v,
-            theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
+            hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             normal_wind_tendency_due_to_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_physics_process,
             normal_wind_iau_increments=diagnostic_state_nh.normal_wind_iau_increments,
@@ -1079,14 +1112,12 @@ class SolveNonhydro:
             c_lin_e=self._interpolation_state.c_lin_e,
             ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
             zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,
-            inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
             pg_exdist=self._metric_state_nonhydro.pg_exdist,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
             dtime=dtime,
             cpd=constants.CPD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
-            grav_o_cpd=self._params.grav_o_cpd,
             is_iau_active=self._config.is_iau_active,
             limited_area=self._grid.limited_area,
             iadv_rhotheta=self._config.iadv_rhotheta,
@@ -1095,7 +1126,6 @@ class SolveNonhydro:
             TAYLOR_HYDRO_gradp_method=HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
             horz_idx=self.edge_field,
             vert_idx=self.k_field,
-            nlev=self._grid.num_levels,
             nflatlev=self._vertical_params.nflatlev,
             nflat_gradp=self._vertical_params.nflat_gradp,
             start_edge_halo_level_2=self._start_edge_halo_level_2,
@@ -1195,10 +1225,10 @@ class SolveNonhydro:
 
         self._stencils_39_40(
             e_bln_c_s=self._interpolation_state.e_bln_c_s,
-            contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
+            z_w_concorr_me=self._contravariant_correction_at_edges_on_model_levels,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
-            contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             k_field=self.k_field,
             nflatlev_startindex_plus1=gtx.int32(self._vertical_params.nflatlev + 1),
             nlev=self._grid.num_levels,

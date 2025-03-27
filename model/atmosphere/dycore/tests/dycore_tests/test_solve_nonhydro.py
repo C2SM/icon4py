@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore import (
 )
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_edge_diagnostics_for_dycore_and_update_vn,
+    compute_hydrostatic_correction_term,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -1107,6 +1108,9 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
     perturbed_rho = sp_stencil_init.z_rth_pr(0)
     perturbed_theta_v = sp_stencil_init.z_rth_pr(1)
+    hydrostatic_correction = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+    )
     temporal_extrapolation_of_perturbed_exner = sp_stencil_init.z_exner_ex_pr()
     ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(0)
     d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(
@@ -1144,6 +1148,34 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     z_gradh_exner_ref = sp_stencil_exit.z_gradh_exner()
     vn_ref = sp_nh_exit.vn_new()
 
+    if igradp_method.value == solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value:
+        compute_hydrostatic_correction_term.compute_hydrostatic_correction_term.with_backend(
+            backend
+        )(
+            theta_v=theta_v,
+            ikoffset=metrics_savepoint.vertoffset_gradp(),
+            zdiff_gradp=metrics_savepoint.zdiff_gradp(),
+            theta_v_ic=theta_v_at_cells_on_half_levels,
+            inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+            inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
+            z_hydro_corr=hydrostatic_correction,
+            grav_o_cpd=nonhydro_params.grav_o_cpd,
+            horizontal_start=start_edge_nudging_level_2,
+            horizontal_end=end_edge_local,
+            vertical_start=icon_grid.num_levels - 1,
+            vertical_end=icon_grid.num_levels,
+            offset_provider={
+                "E2EC": icon_grid.get_offset_provider("E2EC"),
+                "E2C": icon_grid.get_offset_provider("E2C"),
+                "Koff": dims.KDim,
+            },
+        )
+        lowest_level = icon_grid.num_levels - 1
+        hydrostatic_correction_on_lowest_level = gtx.as_field(
+            (dims.EdgeDim,),
+            hydrostatic_correction.ndarray[:, lowest_level],
+            allocator=backend,
+        )
     compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step.with_backend(
         backend
     )(
@@ -1160,8 +1192,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        theta_v=theta_v,
-        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
         normal_wind_iau_increments=normal_wind_iau_increments,
@@ -1177,14 +1208,12 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         c_lin_e=interpolation_savepoint.c_lin_e(),
         ikoffset=metrics_savepoint.vertoffset_gradp(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
-        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         ipeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         cpd=constants.CPD,
         iau_wgt_dyn=iau_wgt_dyn,
-        grav_o_cpd=nonhydro_params.grav_o_cpd,
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         iadv_rhotheta=iadv_rhotheta,
@@ -1193,7 +1222,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         TAYLOR_HYDRO_gradp_method=solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value,
         horz_idx=horz_idx,
         vert_idx=vert_idx,
-        nlev=icon_grid.num_levels,
         nflatlev=vertical_params.nflatlev,
         nflat_gradp=vertical_params.nflat_gradp,
         start_edge_halo_level_2=start_edge_halo_level_2,
