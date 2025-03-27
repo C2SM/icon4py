@@ -452,8 +452,9 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
 
-        diffusion_utils._init_nabla2_factor_in_upper_damping_zone.with_backend(self._backend)(
+        diffusion_utils._init_nabla2_factor_in_upper_damping_zone(
             physical_heights=self._vertical_grid.interface_physical_height,
+            k_field=self.vertical_index,
             nrdmax=self._vertical_grid.end_index_of_damping_layer,
             nshift=0,
             heights_nrd_shift=self._vertical_grid.interface_physical_height.ndarray[
@@ -467,9 +468,9 @@ class Diffusion:
 
         self._determine_horizontal_domains()
 
-        # TODO(edopao): we should call gtx.common.offset_provider_to_type()
-        # but this requires some changes in type inference.
-        self.compile_time_connectivities = self._grid.offset_providers
+        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
+            self._grid.offset_providers
+        )
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
@@ -771,6 +772,7 @@ class Diffusion:
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=self._interpolation_state.nudgecoeff_e,
             vn=prognostic_state.vn,
+            edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=self._edge_start_nudging_level_2,
@@ -810,6 +812,8 @@ class Diffusion:
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
+            k=self.vertical_index,
+            cell=self.horizontal_cell_index,
             nrdmax=int32(  # DaCe parser peculiarity (does not work as gtx.int32)
                 self._vertical_grid.end_index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
@@ -914,7 +918,6 @@ class Diffusion:
             "_backend",
             "_exchange",
             "_grid",
-            "compile_time_connectivities",
             *[
                 name
                 for name in self.__dict__.keys()

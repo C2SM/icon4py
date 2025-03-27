@@ -115,7 +115,7 @@ def add_halo_tasklet(
         )
 
     # Dummy return: preserve same interface with non-DaCe version
-    sdfg.add_array(name="__return", shape=[1], dtype=dace.int32)
+    sdfg.add_scalar(name="__return", dtype=dace.int32)
     ret = state.add_write("__return")
     state.add_edge(tasklet, "__out", ret, None, dace.memlet.Memlet(data="__return", subset="0"))
     out_connectors["__out"] = dace.int32
@@ -282,7 +282,7 @@ class DummyNestedSDFG:
         sdfg = dace.SDFG("DummyNestedSDFG")
         state = sdfg.add_state()
 
-        sdfg.add_array(name="__return", shape=[1], dtype=dace.int32)
+        sdfg.add_scalar(name="__return", dtype=dace.int32)
 
         tasklet = dace.sdfg.nodes.Tasklet(
             "DummyNestedSDFG",
