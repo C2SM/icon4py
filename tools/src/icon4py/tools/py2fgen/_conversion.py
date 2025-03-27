@@ -154,7 +154,7 @@ def as_array(
         ffi:        The CFFI FFI instance.
         array_info: The ArrayInfo object containing the pointer and shape information.
         dtype:      The data type of the array.
-                    Note, the Fortran/C type is already included 'ArrayInfo', however
+                    Note, the Fortran/C type is already included in 'ArrayInfo', however
                     for booleans, the ArrayInfo.dtype is 'int32', this 'dtype' should be 'BOOL'.
     """
     ptr, shape, on_gpu, is_optional = array_info

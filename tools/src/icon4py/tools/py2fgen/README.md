@@ -53,7 +53,7 @@ If `None` is returned we delegate to `Annotated` translation.
 **Example**
 
 ```python
-def my_hook(annotation: Any) -> py2fgen.ParamDescriptor:
+def my_hook(annotation: Any) -> py2fgen.ParamDescriptor | None:
     if annotation in (int, np.int64):
         return py2fgen.ScalarParamDescriptor(py2fgen.INT64)
     if annotation in (float, np.float):
