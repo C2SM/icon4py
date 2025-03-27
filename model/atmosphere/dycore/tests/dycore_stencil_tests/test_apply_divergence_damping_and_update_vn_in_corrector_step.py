@@ -24,21 +24,22 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
+import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     apply_divergence_damping_and_update_vn_in_corrector_step,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
 
 
-class TestApplyDivvergenceDampingCorrector(StencilTest):
+class TestApplyDivvergenceDampingCorrector(test_helpers.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn_in_corrector_step
     OUTPUTS = ("next_vn",)
 
-    # flake8: noqa: C901
-    @classmethod
+    MARKERS = (pytest.mark.embedded_remap_error,)
+
+    @staticmethod
     def reference(
         cls,
         connectivities: dict[gtx.Dimension, np.ndarray],

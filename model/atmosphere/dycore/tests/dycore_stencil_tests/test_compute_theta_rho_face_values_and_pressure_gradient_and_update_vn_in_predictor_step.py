@@ -25,13 +25,13 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
+import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_btraj_numpy(
@@ -185,7 +185,7 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     return rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels
 
 
-class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
+class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
     PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step
     OUTPUTS = (
         "rho_at_edges_on_model_levels",
@@ -194,8 +194,9 @@ class TestComputeThetaRhoPressureGradientPredictor(StencilTest):
         "next_vn",
     )
 
-    # flake8: noqa: C901
-    @classmethod
+    MARKERS = (pytest.mark.uses_as_offset, pytest.mark.skip_value_error)
+
+    @staticmethod
     def reference(
         cls,
         connectivities: dict[gtx.Dimension, np.ndarray],

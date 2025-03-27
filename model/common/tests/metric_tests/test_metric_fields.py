@@ -143,14 +143,14 @@ def test_compute_scaling_factor_for_3d_divdamp(
     icon_grid, metrics_savepoint, grid_savepoint, backend
 ):
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
-    scalfac_dd3d_full = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
+    scaling_factor_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
 
     compute_scaling_factor_for_3d_divdamp.with_backend(backend=backend)(
         vct_a=grid_savepoint.vct_a(),
-        scalfac_dd3d=scalfac_dd3d_full,
+        scaling_factor_for_3d_divdamp=scaling_factor_for_3d_divdamp,
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
         divdamp_type=divdamp_type,
@@ -159,7 +159,9 @@ def test_compute_scaling_factor_for_3d_divdamp(
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert testing_helpers.dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
+    assert testing_helpers.dallclose(
+        scalfac_dd3d_ref.asnumpy(), scaling_factor_for_3d_divdamp.asnumpy()
+    )
 
 
 @pytest.mark.datatest
@@ -659,13 +661,13 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 def test_compute_horizontal_mask_for_3d_divdamp(
     metrics_savepoint, icon_grid, grid_savepoint, backend
 ):
-    hmask_dd3d_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, backend=backend)
+    horizontal_mask_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.EdgeDim, backend=backend)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
     compute_horizontal_mask_for_3d_divdamp.with_backend(backend)(
         e_refin_ctrl=e_refin_ctrl,
-        hmask_dd3d=hmask_dd3d_full,
+        horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
         grf_nudge_start_e=gtx.int32(horizontal._GRF_NUDGEZONE_START_EDGES),
         grf_nudgezone_width=gtx.int32(horizontal._GRF_NUDGEZONE_WIDTH),
         horizontal_start=horizontal_start,
@@ -673,7 +675,9 @@ def test_compute_horizontal_mask_for_3d_divdamp(
         offset_provider={},
     )
 
-    assert testing_helpers.dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
+    assert testing_helpers.dallclose(
+        horizontal_mask_for_3d_divdamp.asnumpy(), hmask_dd3d_ref.asnumpy()
+    )
 
 
 @pytest.mark.datatest
