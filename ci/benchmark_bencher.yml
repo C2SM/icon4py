@@ -1,22 +1,24 @@
 include:
   - local: 'ci/base.yml'
 
-variables:
-  GITHUB_ACTIONS: true # needed for GitHub PR comments - along with --github-actions -
-  GITHUB_EVENT_NAME: pull_request # needed for GitHub PR comments - along with --github-actions -
-  GITHUB_STEP_SUMMARY: $CI_PROJECT_DIR/step_summary.log # needed for GitHub PR comments - along with --github-actions -
-  GITHUB_SHA: $CI_COMMIT_SHA # needed for GitHub PR comments - along with --github-actions -
-  GITHUB_EVENT_PATH: $CI_PROJECT_DIR/event.json # needed for GitHub PR comments - along with --github-actions -
+.bencher_setup_env:
+  setup:
+    - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
+    - export FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
+    - export GITHUB_ACTIONS=true
+    - export GITHUB_EVENT_NAME=pull_request
+    - export GITHUB_STEP_SUMMARY=$CI_PROJECT_DIR/step_summary.log
+    - export GITHUB_SHA=$CI_COMMIT_SHA
+    - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
+    - |
+      echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
+    - rustup default stable
+    - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Check with Andreas the status of the PR and the use of upstream bencher
 
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
-    - export FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
-    - | # needed for GitHub PR comments - along with --github-actions -
-      echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
-    - rustup default stable
-    - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Check with Andreas the status of the PR and the use of upstream bencher
+    - !reference [.bencher_setup_env, setup]
     - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
