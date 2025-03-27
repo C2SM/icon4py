@@ -29,7 +29,7 @@ def test_from_annotated():
     [
         (float, py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)),
         (np.float32, py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)),
-        (int, pytest.raises),  # no descriptor deducible
+        (int, ValueError),  # no descriptor deducible
         (
             Annotated[int, py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)],
             py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
@@ -46,8 +46,8 @@ def test_get_param_descriptor_from_annotation(testee, expected):
             return py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)
         return None
 
-    if expected is pytest.raises:
-        with pytest.raises(ValueError):
+    if isinstance(expected, type) and issubclass(expected, Exception):
+        with pytest.raises(expected):
             _export.param_descriptor_from_annotation(
                 testee, annotation_descriptor_hook=float_param_descriptor_hook
             )
