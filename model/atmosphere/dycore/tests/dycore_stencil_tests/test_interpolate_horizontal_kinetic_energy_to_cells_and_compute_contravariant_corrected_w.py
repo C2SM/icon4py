@@ -35,7 +35,7 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
         "horizontal_kinetic_energy_at_cells_on_model_levels",
         "contravariant_corrected_w_at_cells_on_half_levels",
     )
-    MARKERS = (pytest.mark.requires_concat_where,)
+    MARKERS = (pytest.mark.infinite_concat_where,)
 
     @staticmethod
     def reference(
@@ -46,7 +46,6 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
         horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         e_bln_c_s: np.ndarray,
-        k: np.ndarray,
         nflatlev: ta.wpfloat,
         nlev: ta.wpfloat,
         horizontal_start: int,
@@ -54,6 +53,7 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
+        k = np.arange(contravariant_corrected_w_at_cells_on_half_levels.shape[1])
         k_nlev = k[:-1]
 
         horizontal_kinetic_energy_at_cells_on_model_levels_cp = (
@@ -116,8 +116,6 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
         )
         e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
 
-        k = data_alloc.index_field(dim=dims.KDim, grid=grid, extend={dims.KDim: 1})
-
         nlev = grid.num_levels
         nflatlev = 4
 
@@ -134,7 +132,6 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             e_bln_c_s=e_bln_c_s,
-            k=k,
             nflatlev=nflatlev,
             nlev=nlev,
             horizontal_start=horizontal_start,

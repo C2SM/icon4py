@@ -8,7 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import maximum, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import maximum
 
 from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
@@ -32,6 +33,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO (@nfarabullini) can this be deleted?
 # TODO (magdalena) this stencils has no StencilTest,  (numpy) reference
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
@@ -47,7 +49,6 @@ def _fused_velocity_advection_stencil_8_to_14(
     z_w_concorr_mc: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     istep: gtx.int32,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
@@ -62,15 +63,15 @@ def _fused_velocity_advection_stencil_8_to_14(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    z_ekinh = where(
-        k < nlev,
+    z_ekinh = concat_where(
+        dims.KDim < nlev,
         _interpolate_to_cell_center(z_kin_hor_e, e_bln_c_s),
         z_ekinh,
     )
 
     z_w_concorr_mc = (
-        where(
-            nflatlev < k < nlev,
+        concat_where(
+            (nflatlev < dims.KDim) & (dims.KDim < nlev),
             _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
             z_w_concorr_mc,
         )
@@ -79,8 +80,8 @@ def _fused_velocity_advection_stencil_8_to_14(
     )
 
     w_concorr_c = (
-        where(
-            nflatlev + 1 < k < nlev,
+        concat_where(
+            (nflatlev + 1 < dims.KDim) & (dims.KDim < nlev),
             _interpolate_cell_field_to_half_levels_vp(
                 interpolant=z_w_concorr_mc, wgtfac_c=wgtfac_c
             ),
@@ -90,19 +91,19 @@ def _fused_velocity_advection_stencil_8_to_14(
         else w_concorr_c
     )
 
-    z_w_con_c = where(
-        k < nlevp1,
+    z_w_con_c = concat_where(
+        dims.KDim < nlevp1,
         _copy_cell_kdim_field_to_vp(w),
         _init_cell_kdim_field_with_zero_vp(),
     )
 
-    z_w_con_c = where(
-        nflatlev + 1 < k < nlev,
+    z_w_con_c = concat_where(
+        (nflatlev + 1 < dims.KDim) & (dims.KDim < nlev),
         _correct_contravariant_vertical_velocity(z_w_con_c, w_concorr_c),
         z_w_con_c,
     )
-    cfl_clipping, vcfl, z_w_con_c = where(
-        maximum(3, nrdmax - 2) < k < nlev - 3,
+    cfl_clipping, vcfl, z_w_con_c = concat_where(
+        (maximum(3, nrdmax - 2) < dims.KDim) & (dims.KDim < nlev - 3),
         _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         ),
@@ -127,7 +128,6 @@ def fused_velocity_advection_stencil_8_to_14(
     w_concorr_c: fa.CellKField[vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     z_w_con_c: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
     istep: gtx.int32,
     cfl_w_limit: wpfloat,
     dtime: wpfloat,
@@ -149,7 +149,6 @@ def fused_velocity_advection_stencil_8_to_14(
         z_w_concorr_mc,
         w_concorr_c,
         z_ekinh,
-        k,
         istep,
         cfl_w_limit,
         dtime,
