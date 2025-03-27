@@ -53,7 +53,7 @@ def setup_logger(name: str, log_level: int = logging.INFO) -> logging.Logger:
     return logger
 
 
-def parse_comma_separated_list(_: click.Context, __: click.Parameter, value: str) -> list[str]:
+def parse_comma_separated_list(_: click.Context, __: click.Parameter, value: str, /) -> list[str]:
     # Used as `click.argument` callback
     # Splits the input string by commas and strips any leading/trailing whitespace from the strings
     return [item.strip() for item in value.split(",")]

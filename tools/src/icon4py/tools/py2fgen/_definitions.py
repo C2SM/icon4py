@@ -45,7 +45,7 @@ class ArrayParamDescriptor(eve.Node):
     Attributes:
         rank: The rank of the array.
         dtype: The data type of the array.
-        device: 'Host' or 'MaybeDevice', see :class:`MemorySpace`.
+        memory_space: 'Host' or 'MaybeDevice', see :class:`MemorySpace`.
         is_optional: If True, the pointer can be NULL.
     """
 
