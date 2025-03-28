@@ -61,7 +61,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry,))
 
     def _register_computed_fields(self):
-        geofac_div = factory.FieldOperatorProvider(
+        geofac_div = factory.EmbeddedFieldOperatorProvider(
             # needs to be computed on fieldview-embedded backend
             func=interpolation_fields.compute_geofac_div.with_backend(None),
             domain=(dims.CellDim, dims.C2EDim),
@@ -74,7 +74,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(geofac_div)
 
-        geofac_rot = factory.FieldOperatorProvider(
+        geofac_rot = factory.EmbeddedFieldOperatorProvider(
             # needs to be computed on fieldview-embedded backend
             func=interpolation_fields.compute_geofac_rot.with_backend(None),
             domain=(dims.VertexDim, dims.V2EDim),
