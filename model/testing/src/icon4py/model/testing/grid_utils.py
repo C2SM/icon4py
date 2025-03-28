@@ -140,7 +140,7 @@ def get_grid_geometry(
 
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):
-            indices = data_alloc.index_field(grid, dim)
+            indices = data_alloc.index_field(grid, dim, backend=backend)
             owner_mask = xp.ones((grid.size[dim],), dtype=bool)
             decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 

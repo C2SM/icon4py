@@ -93,7 +93,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     z_ifc = metrics_savepoint.z_ifc()
 
     nlevp1 = icon_grid.num_levels + 1
-    k_index = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1})
+    k_index = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend)
     z_mc = metrics_savepoint.z_mc()
     ddqz_z_half = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
@@ -412,7 +412,7 @@ def test_compute_ddxt_z_full(
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     exner_expol = 0.333 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.3333333333333
-    cell_index = data_alloc.index_field(icon_grid, dims.CellDim)
+    cell_index = data_alloc.index_field(icon_grid, dims.CellDim, backend=backend)
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
@@ -675,8 +675,8 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
-    exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     t0sl_bg = constants.SEA_LEVEL_TEMPERATURE
     del_t_bg = constants.DELTA_TEMPERATURE
     h_scal_bg = constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
@@ -688,7 +688,7 @@ def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     average_cell_kdim_level_up.with_backend(backend)(
         z_ifc, out=z_mc, offset_provider={"Koff": icon_grid.get_offset_provider("Koff")}
     )
