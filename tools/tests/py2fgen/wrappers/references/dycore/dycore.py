@@ -103,6 +103,9 @@ def solve_nh_run_wrapper(
     vt,
     vt_size_0,
     vt_size_1,
+    vn_incr,
+    vn_incr_size_0,
+    vn_incr_size_1,
     mass_flx_me,
     mass_flx_me_size_0,
     mass_flx_me_size_1,
@@ -413,6 +416,16 @@ def solve_nh_run_wrapper(
             False,
         )
 
+        vn_incr = (
+            vn_incr,
+            (
+                vn_incr_size_0,
+                vn_incr_size_1,
+            ),
+            on_gpu,
+            False,
+        )
+
         mass_flx_me = (
             mass_flx_me,
             (
@@ -498,6 +511,7 @@ def solve_nh_run_wrapper(
             grf_tend_vn=grf_tend_vn,
             vn_ie=vn_ie,
             vt=vt,
+            vn_incr=vn_incr,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,

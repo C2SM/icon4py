@@ -194,7 +194,11 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
         "next_vn",
     )
 
-    MARKERS = (pytest.mark.uses_as_offset, pytest.mark.skip_value_error)
+    MARKERS = (
+        pytest.mark.uses_as_offset,
+        pytest.mark.skip_value_error,
+        pytest.mark.embedded_remap_error,
+    )
 
     @staticmethod
     def reference(
