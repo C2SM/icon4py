@@ -84,8 +84,9 @@ def _compute_ls_params(
     cell_nudging: int,
     n_cells: int,
     nlev: int,
-) -> tuple[list, int, int]:
-    indlist = [0] * n_cells
+    array_ns: ModuleType = np,
+) -> tuple[data_alloc.NDArray, int, int]:
+    indlist = array_ns.zeros(n_cells, dtype=int)
     listreduce = 0
     ji = -1
     ji_ind = -1
@@ -117,9 +118,10 @@ def _compute_k_start_end(
     cell_nudging: int,
     n_cells: int,
     nlev: int,
-) -> tuple[list, list]:
-    k_start = [None] * n_cells
-    k_end = [None] * n_cells
+    array_ns: ModuleType = np,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    k_start = array_ns.zeros(n_cells, dtype=int)
+    k_end = array_ns.zeros(n_cells, dtype=int)
     for jc in range(cell_nudging, n_cells):
         if (
             maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
@@ -173,6 +175,7 @@ def compute_diffusion_metrics(
         cell_nudging=cell_nudging,
         n_cells=n_cells,
         nlev=nlev,
+        array_ns=array_ns,
     )
 
     indlist, listreduce, ji = _compute_ls_params(
@@ -186,6 +189,7 @@ def compute_diffusion_metrics(
         cell_nudging=cell_nudging,
         n_cells=n_cells,
         nlev=nlev,
+        
     )
 
     listdim = ji - listreduce
