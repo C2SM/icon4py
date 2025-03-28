@@ -846,6 +846,17 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
 
+                msg = "shape of vn_incr after computation = %s" % str(
+                    vn_incr.shape if vn_incr is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "vn_incr after computation: %s" % str(
+                    _conversion.as_array(ffi, vn_incr, _definitions.FLOAT64)
+                    if vn_incr is not None
+                    else "None"
+                )
+                logger.debug(msg)
+
                 msg = "shape of mass_flx_me after computation = %s" % str(
                     mass_flx_me.shape if mass_flx_me is not None else "None"
                 )
