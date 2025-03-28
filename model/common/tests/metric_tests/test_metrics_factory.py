@@ -168,7 +168,9 @@ def test_factory_ddqz_z_half(grid_savepoint, metrics_savepoint, grid_file, exper
     ],
 )
 @pytest.mark.datatest
-def test_factory_scalfac_dd3d(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_scaling_factor_for_3d_divdamp(
+    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+):
     field_ref = metrics_savepoint.scalfac_dd3d()
     factory = get_metrics_factory(
         backend=backend,
@@ -177,7 +179,7 @@ def test_factory_scalfac_dd3d(grid_savepoint, metrics_savepoint, grid_file, expe
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
     )
-    field = factory.get(attrs.SCALFAC_DD3D)
+    field = factory.get(attrs.SCALING_FACTOR_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
@@ -442,7 +444,9 @@ def test_factory_mask_bdy_prog_halo_c(
     ],
 )
 @pytest.mark.datatest
-def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_horizontal_mask_for_3d_divdamp(
+    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+):
     field_ref = metrics_savepoint.hmask_dd3d()
     factory = get_metrics_factory(
         backend=backend,
@@ -451,7 +455,7 @@ def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experi
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
     )
-    field = factory.get(attrs.HMASK_DD3D)
+    field = factory.get(attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
