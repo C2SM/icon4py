@@ -138,6 +138,8 @@ class TimeSteppingScheme(enum.IntEnum):
 
 
 class DivergenceDampingType(enum.IntEnum):
+    #: divergence damping acting on 2D divergence
+    TWO_DIMENSIONAL = 2
     #: divergence damping acting on 3D divergence
     THREE_DIMENSIONAL = 3
     #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
@@ -412,9 +414,8 @@ class NonHydrostaticConfig:
         if self.divdamp_order != DivergenceDampingOrder.COMBINED:
             raise NotImplementedError("divdamp_order can only be 24")
 
-        if self.divdamp_type == DivergenceDampingType.COMBINED:
-            raise NotImplementedError("divdamp_type with value 32 not yet implemented")
-
+        if self.divdamp_type == DivergenceDampingType.TWO_DIMENSIONAL:
+            raise NotImplementedError("`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented")
 
 class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
