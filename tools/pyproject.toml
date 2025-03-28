@@ -50,7 +50,7 @@ cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
 f2ser = 'icon4py.tools.f2ser.cli:main'
 icon4pygen = 'icon4py.tools.icon4pygen.cli:main'
 icon_liskov = 'icon4py.tools.liskov.cli:main'
-py2fgen = 'icon4py.tools.py2fgen.cli:main'
+py2fgen = 'icon4py.tools.py2fgen._cli:main'
 
 [project.urls]
 Homepage = 'https://github.com/C2SM/icon4py'
@@ -106,7 +106,7 @@ filename = "src/icon4py/tools/__init__.py"
 # -- ruff --
 [tool.ruff]
 extend = "../pyproject.toml"
-extend-exclude = ["tests/py2fgen/references/*"]
+extend-exclude = ["tests/py2fgen/wrappers/references/*"]
 
 [tool.ruff.lint.isort]
 known-first-party = ['icon4py']

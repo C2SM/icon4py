@@ -9,7 +9,7 @@
 
 import functools
 import logging
-from typing import TypeAlias, Union
+from typing import Callable, TypeAlias, Union
 
 import gt4py.next as gtx
 import numpy as np
@@ -105,12 +105,16 @@ def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backen
     return _BACKEND_MAP[selector]
 
 
-@functools.lru_cache(maxsize=None)
-def cached_dummy_field(
-    _name: str, domain: gtx.Domain, dtype: gt4py_definitions.DType, allocator: gtx_backend.Backend
-) -> gtx.Field:
-    # _name is used to differentiate between different dummy fields
-    return gtx.zeros(domain, dtype=dtype, allocator=allocator)
+def cached_dummy_field_factory(
+    allocator: gtx_backend.Backend,
+) -> Callable[[str, gtx.Domain, gt4py_definitions.DType], gtx.Field]:
+    # curried to exclude non-hashable backend from cache
+    @functools.lru_cache(maxsize=20)
+    def impl(_name: str, domain: gtx.Domain, dtype: gt4py_definitions.DType) -> gtx.Field:
+        # _name is used to differentiate between different dummy fields
+        return gtx.zeros(domain, dtype=dtype, allocator=allocator)
+
+    return impl
 
 
 def adjust_fortran_indices(inp: np.ndarray | NDArray, offset: int) -> np.ndarray | NDArray:
