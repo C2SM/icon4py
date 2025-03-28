@@ -171,4 +171,4 @@ def pytest_benchmark_update_json(output_json):
     "Replace 'fullname' of pytest benchmarks with a shorter name for better readability in bencher."
     for bench in output_json["benchmarks"]:
         # Replace fullname with name and filter unnecessary prefix and suffix
-        bench["fullname"] = bench["name"].replace("test_", "").replace("_benchmark", "")
+        bench["fullname"] = bench["name"].replace("test_", "")

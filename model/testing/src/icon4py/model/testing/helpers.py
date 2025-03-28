@@ -23,12 +23,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-try:
-    import pytest_benchmark
-except ModuleNotFoundError:
-    pytest_benchmark = None
-
-
 @pytest.fixture(scope="session")
 def connectivities_as_numpy(grid, backend) -> dict[gtx.Dimension, np.ndarray]:
     return {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
@@ -110,12 +104,13 @@ class Output:
     gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
 
 
-def _test_validation(
+def _test_validate_benchmark(
     self,
     grid: base.BaseGrid,
     backend: gtx_backend.Backend,
     connectivities_as_numpy: dict,
     input_data: dict,
+    benchmark,  # benchmark fixture
 ):
     if self.MARKERS is not None:
         apply_markers(self.MARKERS, grid, backend)
@@ -128,10 +123,15 @@ def _test_validation(
 
     input_data = allocate_data(backend, input_data)
 
-    self.PROGRAM.with_backend(backend)(
+    benchmark(
+        self.PROGRAM.with_backend(backend),
         **input_data,
         offset_provider=grid.offset_providers,
     )
+
+    if benchmark.enabled:
+        return  # skip validation if benchmark is enabled
+
     for out in self.OUTPUTS:
         name, refslice, gtslice = (
             (out.name, out.refslice, out.gtslice)
@@ -145,30 +145,6 @@ def _test_validation(
             equal_nan=True,
             err_msg=f"Validation failed for '{name}'",
         )
-
-
-if pytest_benchmark:
-
-    def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
-        if self.MARKERS is not None:
-            apply_markers(self.MARKERS, grid, backend)
-
-        if pytestconfig.getoption(
-            "--benchmark-disable"
-        ):  # skipping as otherwise program calls are duplicated in tests.
-            pytest.skip("Test skipped due to 'benchmark-disable' option.")
-        else:
-            input_data = allocate_data(backend, input_data)
-            benchmark(
-                self.PROGRAM.with_backend(backend),
-                **input_data,
-                offset_provider=grid.offset_providers,
-            )
-
-else:
-
-    def _test_execution_benchmark(self, pytestconfig):
-        pytest.skip("Test skipped as `pytest-benchmark` is not installed.")
 
 
 class StencilTest:
@@ -199,8 +175,7 @@ class StencilTest:
         # reflect the name of the test we do this dynamically here instead of using regular
         # inheritance.
         super().__init_subclass__(**kwargs)
-        setattr(cls, f"test_{cls.__name__}", _test_validation)
-        setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
+        setattr(cls, f"test_{cls.__name__}", _test_validate_benchmark)
 
 
 def reshape(arr: np.ndarray, shape: tuple[int, ...]):
