@@ -58,7 +58,7 @@ def _compute_advection_in_horizontal_momentum_equation(
     )
 
     normal_wind_advective_tendency = concat_where(
-        start_edge_nudging_level_2 <= dims.EdgeDim < end_edge_local,
+        (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
         _compute_advective_normal_wind_tendency(
             horizontal_kinetic_energy_at_edges_on_model_levels,
             coeff_gradekin,
