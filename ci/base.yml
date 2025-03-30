@@ -91,5 +91,5 @@ build_image_aarch64:
     # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
     # Another problem, observed in test stage, is that gpu tests hang in combination with CUDA MPS,
     # when high test parallelism is used.
-    NUM_PROCESSES: 16
+    NUM_PROCESSES: 32
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
