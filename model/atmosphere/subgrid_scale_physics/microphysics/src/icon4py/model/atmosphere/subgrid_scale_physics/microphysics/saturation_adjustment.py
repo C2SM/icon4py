@@ -9,6 +9,7 @@ import dataclasses
 from typing import Final, Optional
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.eve.utils import FrozenNamespace
 from gt4py.next import backend as gtx_backend, broadcast
 from gt4py.next.ffront.fbuiltins import (
@@ -28,7 +29,6 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_pressure as pressure,
     diagnose_surface_pressure as surface_pressure,
 )
-from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -232,13 +232,7 @@ class SaturationAdjustment:
         self.grid = grid
         self.vertical_params: v_grid.VerticalGrid = vertical_params
         self.metric_state: MetricStateSaturationAdjustment = metric_state
-        self._determine_local_domains()
-        self._allocate_local_fields()
-
-    def _determine_local_domains(self):
-        cell_domain = h_grid.domain(dims.CellDim)
-        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
+        self._allocate_tendencies()
 
     # TODO (Chia Rui): add in input and output data properties, and refactor this component to follow the physics component protocol.
     def input_properties(self) -> dict[str, model.FieldMetaData]:
@@ -247,7 +241,7 @@ class SaturationAdjustment:
     def output_properties(self) -> dict[str, model.FieldMetaData]:
         raise NotImplementedError
 
-    def _allocate_local_fields(self):
+    def _allocate_tendencies(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
         self._temperature1 = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
@@ -310,33 +304,32 @@ class SaturationAdjustment:
             self.grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
 
-        self._compute_subsaturated_case_and_initialize_newton_iterations = (
+        self.compute_subsaturated_case_and_initialize_newton_iterations = (
             compute_subsaturated_case_and_initialize_newton_iterations.with_backend(self._backend)
         )
-        self._update_temperature_by_newton_iteration = (
+        self.update_temperature_by_newton_iteration = (
             update_temperature_by_newton_iteration.with_backend(self._backend)
         )
-        self._compute_newton_iteration_mask_and_copy_temperature_on_converged_cells = (
-            compute_newton_iteration_mask_and_copy_temperature_on_converged_cells.with_backend(
-                self._backend
-            )
+        self.compute_newton_iteration_mask = compute_newton_iteration_mask.with_backend(
+            self._backend
         )
-        self._update_temperature_qv_qc_tendencies = (
-            update_temperature_qv_qc_tendencies.with_backend(self._backend)
+        self.copy_temperature = copy_temperature.with_backend(self._backend)
+        self.update_temperature_qv_qc_tendencies = update_temperature_qv_qc_tendencies.with_backend(
+            self._backend
         )
-        self._compute_temperature_and_exner_tendencies_after_saturation_adjustment = (
+        self.compute_temperature_and_exner_tendencies_after_saturation_adjustment = (
             compute_temperature_and_exner_tendencies_after_saturation_adjustment.with_backend(
                 self._backend
             )
         )
-        self._diagnose_surface_pressure = surface_pressure.diagnose_surface_pressure.with_backend(
+        self.diagnose_surface_pressure = surface_pressure.diagnose_surface_pressure.with_backend(
             self._backend
         )
-        self._diagnose_pressure = pressure.diagnose_pressure.with_backend(self._backend)
-        self._compute_pressure_tendency_after_saturation_adjustment = (
+        self.diagnose_pressure = pressure.diagnose_pressure.with_backend(self._backend)
+        self.compute_pressure_tendency_after_saturation_adjustment = (
             compute_pressure_tendency_after_saturation_adjustment.with_backend(self._backend)
         )
-        self._compute_pressure_ifc_tendency_after_saturation_adjustment = (
+        self.compute_pressure_ifc_tendency_after_saturation_adjustment = (
             compute_pressure_ifc_tendency_after_saturation_adjustment.with_backend(self._backend)
         )
 
@@ -361,7 +354,12 @@ class SaturationAdjustment:
         Originally inspired from satad_v_3D of ICON.
         """
 
-        self._compute_subsaturated_case_and_initialize_newton_iterations(
+        # TODO (Chia Rui): move this to initialization following the style in dycore granules
+        cell_domain = h_grid.domain(dims.CellDim)
+        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
+
+        self.compute_subsaturated_case_and_initialize_newton_iterations(
             self.config.tolerance,
             diagnostic_state.temperature,
             tracer_state.qv,
@@ -372,8 +370,8 @@ class SaturationAdjustment:
             self._temperature1,
             self._temperature2,
             self._newton_iteration_mask,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -381,57 +379,63 @@ class SaturationAdjustment:
 
         # TODO (Chia Rui): this is inspired by the cpu version of the original ICON saturation_adjustment code. Consider to refactor this code when break and for loop features are ready in gt4py.
         temperature_list = [self._temperature1, self._temperature2]
-        ncurrent, nnext, num_iter = 0, 1, 1
-        xp = data_alloc.import_array_ns(self._backend)
-        not_converged = xp.any(
-            self._newton_iteration_mask.ndarray[
-                self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
-            ]
-        )
-        while not_converged:
-            if num_iter > self.config.max_iter:
-                raise ConvergenceError(
-                    f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {xp.abs(self._temperature1.ndarray - self._temperature2.ndarray).max()} . Please raise max_iter"
+        ncurrent, nnext = 0, 1
+        for _ in range(self.config.max_iter):
+            if np.any(
+                self._newton_iteration_mask.ndarray[
+                    start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
+                ]
+            ):
+                self.update_temperature_by_newton_iteration(
+                    diagnostic_state.temperature,
+                    tracer_state.qv,
+                    prognostic_state.rho,
+                    self._newton_iteration_mask,
+                    self._lwdocvd,
+                    temperature_list[nnext],
+                    temperature_list[ncurrent],
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
+                    vertical_start=gtx.int32(0),
+                    vertical_end=self.grid.num_levels,
+                    offset_provider={},
                 )
 
-            self._update_temperature_by_newton_iteration(
-                diagnostic_state.temperature,
-                tracer_state.qv,
-                prognostic_state.rho,
-                self._newton_iteration_mask,
-                self._lwdocvd,
-                temperature_list[nnext],
-                temperature_list[ncurrent],
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
+                self.compute_newton_iteration_mask(
+                    self.config.tolerance,
+                    temperature_list[ncurrent],
+                    temperature_list[nnext],
+                    self._newton_iteration_mask,
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
+                    vertical_start=gtx.int32(0),
+                    vertical_end=self.grid.num_levels,
+                    offset_provider={},
+                )
+
+                self.copy_temperature(
+                    self._newton_iteration_mask,
+                    temperature_list[ncurrent],
+                    temperature_list[nnext],
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
+                    vertical_start=gtx.int32(0),
+                    vertical_end=self.grid.num_levels,
+                    offset_provider={},
+                )
+                ncurrent = (ncurrent + 1) % 2
+                nnext = (nnext + 1) % 2
+            else:
+                break
+        if np.any(
+            self._newton_iteration_mask.ndarray[
+                start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
+            ]
+        ):
+            raise ConvergenceError(
+                f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {np.abs(self.new_temperature1.ndarray - self.new_temperature2.ndarray).max()} . Please raise max_iter"
             )
-
-            self._compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
-                self.config.tolerance,
-                temperature_list[ncurrent],
-                temperature_list[nnext],
-                self._newton_iteration_mask,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
-
-            not_converged = xp.any(
-                self._newton_iteration_mask.ndarray[
-                    self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
-                ]
-            )
-
-            ncurrent = (ncurrent + 1) % 2
-            nnext = (nnext + 1) % 2
-            num_iter = num_iter + 1
-
-        self._update_temperature_qv_qc_tendencies(
+        self.update_temperature_qv_qc_tendencies(
             dtime,
             diagnostic_state.temperature,
             temperature_list[ncurrent],
@@ -442,8 +446,8 @@ class SaturationAdjustment:
             self.temperature_tendency,
             self.qv_tendency,
             self.qc_tendency,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -451,7 +455,7 @@ class SaturationAdjustment:
 
         if self.config.diagnose_variables_from_new_temperature:
             # TODO (Chia Rui): Consider to merge the gt4py stencils below if scan operator can be called in the intermediate step
-            self._compute_temperature_and_exner_tendencies_after_saturation_adjustment(
+            self.compute_temperature_and_exner_tendencies_after_saturation_adjustment(
                 dtime,
                 tracer_state.qv,
                 tracer_state.qc,
@@ -470,14 +474,14 @@ class SaturationAdjustment:
                 self._new_virtual_temperature,
                 self._k_field,
                 self.vertical_params.kstart_moist,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
 
-            self._diagnose_surface_pressure(
+            self.diagnose_surface_pressure(
                 self._new_exner,
                 self._new_virtual_temperature,
                 self.metric_state.ddqz_z_full,
@@ -485,46 +489,46 @@ class SaturationAdjustment:
                 phy_const.CPD_O_RD,
                 phy_const.P0REF,
                 phy_const.GRAV_O_RD,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
                 vertical_start=self.grid.num_levels,
                 vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={"Koff": dims.KDim},
             )
 
-            self._diagnose_pressure(
+            self.diagnose_pressure(
                 self.metric_state.ddqz_z_full,
                 self._new_virtual_temperature,
                 gtx.as_field((dims.CellDim,), self._pressure_ifc.ndarray[:, -1]),
                 self._pressure,
                 self._pressure_ifc,
                 phy_const.GRAV_O_RD,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
 
-            self._compute_pressure_tendency_after_saturation_adjustment(
+            self.compute_pressure_tendency_after_saturation_adjustment(
                 dtime,
                 diagnostic_state.pressure,
                 self._pressure,
                 self.pressure_tendency,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
 
-            self._compute_pressure_ifc_tendency_after_saturation_adjustment(
+            self.compute_pressure_ifc_tendency_after_saturation_adjustment(
                 dtime,
                 diagnostic_state.pressure_ifc,
                 self._pressure_ifc,
                 self.pressure_ifc_tendency,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={},
@@ -682,55 +686,6 @@ def update_temperature_by_newton_iteration(
         lwdocvd,
         new_temperature2,
         out=new_temperature1,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
-    tolerance: ta.wpfloat,
-    temperature_current: fa.CellKField[ta.wpfloat],
-    temperature_next: fa.CellKField[ta.wpfloat],
-) -> tuple[fa.CellKField[bool], fa.CellKField[ta.wpfloat]]:
-    """
-    Compute a mask for the next Newton iteration when the difference between new and old temperature is larger
-    than the tolerance.
-    Then, copy temperature from the current to the new temperature field where the convergence criterion is already met.
-    Otherwise, it is zero (the value does not matter because it will be updated in next iteration).
-
-    Args:
-        newton_iteration_mask: mask for the next Newton iteration to be executed
-        temperature_current: temperature at previous Newtion iteration [K]
-        temperature_next: temperature  at current Newtion iteration [K]
-    Returns:
-        new temperature [K]
-    """
-    newton_iteration_mask = where(
-        abs(temperature_current - temperature_next) > tolerance, True, False
-    )
-    new_temperature = where(newton_iteration_mask, 0.0, temperature_current)
-    return newton_iteration_mask, new_temperature
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
-    tolerance: ta.wpfloat,
-    temperature_current: fa.CellKField[ta.wpfloat],
-    temperature_next: fa.CellKField[ta.wpfloat],
-    newton_iteration_mask: fa.CellKField[bool],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
-        tolerance,
-        temperature_current,
-        temperature_next,
-        out=(newton_iteration_mask, temperature_next),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -902,6 +857,77 @@ def compute_subsaturated_case_and_initialize_newton_iterations(
 
 
 @gtx.field_operator
+def _compute_newton_iteration_mask(
+    tolerance: ta.wpfloat,
+    temperature_current: fa.CellKField[ta.wpfloat],
+    temperature_next: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[bool]:
+    return where(abs(temperature_current - temperature_next) > tolerance, True, False)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_newton_iteration_mask(
+    tolerance: ta.wpfloat,
+    temperature_current: fa.CellKField[ta.wpfloat],
+    temperature_next: fa.CellKField[ta.wpfloat],
+    newton_iteration_mask: fa.CellKField[bool],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _compute_newton_iteration_mask(
+        tolerance,
+        temperature_current,
+        temperature_next,
+        out=newton_iteration_mask,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _copy_temperature(
+    newton_iteration_mask: fa.CellKField[bool],
+    temperature_current: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Copy temperature from the current to the new temperature field where the convergence criterion is already met.
+    Otherwise, it is zero (the value does not matter because it will be updated in next iteration).
+
+    Args:
+        newton_iteration_mask: mask for the next Newton iteration to be executed
+        temperature: current temperature [K]
+    Returns:
+        new temperature [K]
+    """
+    return where(newton_iteration_mask, 0.0, temperature_current)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def copy_temperature(
+    newton_iteration_mask: fa.CellKField[bool],
+    temperature_current: fa.CellKField[ta.wpfloat],
+    temperature_next: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _copy_temperature(
+        newton_iteration_mask,
+        temperature_current,
+        out=temperature_next,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
 def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
     dtime: ta.wpfloat,
     qv: fa.CellKField[ta.wpfloat],
@@ -946,7 +972,7 @@ def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
     """
     qsum = where(
         k_field < kstart_moist,
-        broadcast(0.0, (CellDim, KDim)),  # TODO: use dims module import when ready in gt4px
+        broadcast(0.0, (dims.CellDim, dims.KDim)),
         qc + qc_tendency * dtime + qi + qr + qs + qg,
     )
 
