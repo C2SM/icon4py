@@ -903,7 +903,7 @@ def test_compute_advection_in_vertical_momentum_equation(
         savepoint_compute_cell_diagnostics_for_velocity_advection_exit.z_w_con_c().asnumpy()
     )
     cfl_clipping_np = z_w_con_c_8_13 > (cfl_w_limit * ddqz_z_half.asnumpy())
-    cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np)
+    cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np, allocator=backend)
     contravariant_corrected_w_at_cells_on_half_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c()
     )
@@ -925,7 +925,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
     e_bln_c_s = data_alloc.flatten_first_two_dims(
-        dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+        dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
     )
     owner_mask = grid_savepoint.c_owner_mask()
     area = grid_savepoint.cell_areas()
