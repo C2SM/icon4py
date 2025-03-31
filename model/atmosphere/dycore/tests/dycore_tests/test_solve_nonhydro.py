@@ -1191,7 +1191,6 @@ def test_run_solve_nonhydro_1_to_13_predictor(
         d_exner_dz_ref_ic=d_exner_dz_ref_ic,
         ddqz_z_half=ddqz_z_half,
         z_th_ddz_exner_c=z_th_ddz_exner_c,
-        k_field=k_field,
         rho_ic=rho_ic,
         z_exner_ic=z_exner_ic,
         exner_exfac=exner_exfac,

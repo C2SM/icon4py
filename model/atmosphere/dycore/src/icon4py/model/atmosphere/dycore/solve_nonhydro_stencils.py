@@ -205,7 +205,6 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     z_theta_v_pr_ic: fa.CellKField[float],
     theta_v_ic: fa.CellKField[float],
     z_th_ddz_exner_c: fa.CellKField[float],
-    k_field: fa.KField[gtx.int32],
 ) -> tuple[
     fa.CellKField[float],
     fa.CellKField[float],
@@ -262,7 +261,6 @@ def compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     z_theta_v_pr_ic: fa.CellKField[float],
     theta_v_ic: fa.CellKField[float],
     z_th_ddz_exner_c: fa.CellKField[float],
-    k_field: fa.KField[gtx.int32],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -284,7 +282,6 @@ def compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
         z_theta_v_pr_ic,
         theta_v_ic,
         z_th_ddz_exner_c,
-        k_field,
         out=(
             z_rth_pr_1,
             z_rth_pr_2,

@@ -965,7 +965,6 @@ class SolveNonhydro:
             d_exner_dz_ref_ic=self._metric_state_nonhydro.d_exner_dz_ref_ic,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
-            k_field=self.k_field,
             rho_ic=diagnostic_state_nh.rho_ic,
             z_exner_ic=self.z_exner_ic,
             exner_exfac=self._metric_state_nonhydro.exner_exfac,
