@@ -115,16 +115,11 @@ def _compute_advection_in_vertical_momentum_equation(
     cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    start_cell_lateral_boundary: gtx.int32,
-    end_cell_halo: gtx.int32,
 ) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat]]:
-    contravariant_corrected_w_at_cells_on_model_levels = where(
-        start_cell_lateral_boundary <= cell < end_cell_halo,
-        _interpolate_contravariant_vertical_velocity_to_full_levels(
-            contravariant_corrected_w_at_cells_on_half_levels
-        ),
-        contravariant_corrected_w_at_cells_on_model_levels,
+    contravariant_corrected_w_at_cells_on_model_levels = _interpolate_contravariant_vertical_velocity_to_full_levels(
+        contravariant_corrected_w_at_cells_on_half_levels
     )
+
     vertical_wind_advective_tendency = (
         _compute_advective_vertical_wind_tendency_and_apply_diffusion(
             vertical_wind_advective_tendency,
@@ -183,8 +178,6 @@ def compute_advection_in_vertical_momentum_equation(
     cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    start_cell_lateral_boundary: gtx.int32,
-    end_cell_halo: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -217,8 +210,6 @@ def compute_advection_in_vertical_momentum_equation(
         cell_upper_bound,
         nlev,
         nrdmax,
-        start_cell_lateral_boundary,
-        end_cell_halo,
         out=(contravariant_corrected_w_at_cells_on_model_levels, vertical_wind_advective_tendency),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
