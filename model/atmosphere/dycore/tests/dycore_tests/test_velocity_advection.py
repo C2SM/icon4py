@@ -498,14 +498,10 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
-    k = data_alloc.index_field(
-        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
-    )
 
     skip_compute_predictor_vertical_advection = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.lvn_only()
     )
-    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
@@ -542,8 +538,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-        k=k,
-        edge=edge,
         nflatlev=gtx.int32(nflatlev),
         nlev=gtx.int32(icon_grid.num_levels),
         lateral_boundary_7=lateral_boundary_7,
@@ -591,6 +585,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
 
 
 @pytest.mark.dataset
+@pytest.mark.infinite_concat_where
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -631,8 +626,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
 
-    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
-    vertex = data_alloc.index_field(dim=dims.VertexDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
@@ -656,8 +649,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
         inv_dual_edge_length=inv_dual_edge_length,
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
-        edge=edge,
-        vertex=vertex,
         lateral_boundary_7=lateral_boundary_7,
         halo_1=halo_1,
         start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
@@ -735,9 +726,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    k = data_alloc.index_field(
-        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
-    )
+
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
@@ -753,7 +742,6 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         e_bln_c_s=e_bln_c_s,
         wgtfac_c=wgtfac_c,
-        k=k,
         nflatlev=nflatlev,
         nlev=icon_grid.num_levels,
         horizontal_start=lateral_boundary_4,
@@ -833,9 +821,6 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     e_bln_c_s = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
-    k = data_alloc.index_field(
-        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
-    )
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
@@ -849,7 +834,6 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
         w=w,
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
         e_bln_c_s=e_bln_c_s,
-        k=k,
         nflatlev=nflatlev,
         nlev=icon_grid.num_levels,
         # TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
@@ -952,7 +936,6 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     ddt_w_adv_ref = savepoint_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
 
-    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
 
     nrdmax = grid_savepoint.nrdmax()[0]
@@ -994,7 +977,6 @@ def test_compute_advection_in_vertical_momentum_equation(
         dtime=dtime,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
         cell=cell,
-        k=k,
         cell_lower_bound=cell_lower_bound,
         cell_upper_bound=cell_upper_bound,
         nlev=icon_grid.num_levels,
@@ -1077,9 +1059,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
-    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
-    vertex = data_alloc.index_field(dim=dims.VertexDim, grid=icon_grid, backend=backend)
-    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
     edge_domain = h_grid.domain(dims.EdgeDim)
     vertex_domain = h_grid.domain(dims.VertexDim)
@@ -1119,9 +1098,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
         tangent_orientation=tangent_orientation,
         inv_primal_edge_length=inv_primal_edge_length,
         geofac_grdiv=geofac_grdiv,
-        k=k,
-        vertex=vertex,
-        edge=edge,
         cfl_w_limit=cfl_w_limit,
         scalfac_exdiff=scalfac_exdiff,
         d_time=d_time,

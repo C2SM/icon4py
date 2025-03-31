@@ -12,13 +12,13 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
+import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels import (
     interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers
 
 from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
 from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
@@ -56,7 +56,7 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
 
 
 class TestInterpolateContravariantCorrectionFromEdgesOnModelLevelsToCellsOnHalfLevels(
-    helpers.StencilTest
+    test_helpers.StencilTest
 ):
     PROGRAM = (
         interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels

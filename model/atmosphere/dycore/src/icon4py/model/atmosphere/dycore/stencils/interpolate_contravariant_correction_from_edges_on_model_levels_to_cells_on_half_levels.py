@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.decorator import GridType, field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
@@ -19,18 +18,17 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-    vert_idx: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
-    contravariant_correction_at_cells_on_half_levels = where(
-        nflatlev + 1 <= vert_idx < nlev,
+    contravariant_correction_at_cells_on_half_levels = concat_where(
+        (nflatlev + 1 <= dims.KDim) & (dims.KDim < nlev),
         _compute_contravariant_correction_of_w(
             e_bln_c_s, contravariant_correction_at_edges_on_model_levels, wgtfac_c
         ),
@@ -41,13 +39,12 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
     return contravariant_correction_at_cells_on_half_levels
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-    vert_idx: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
@@ -61,7 +58,6 @@ def interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_
         contravariant_correction_at_edges_on_model_levels,
         wgtfac_c,
         wgtfacq_c,
-        vert_idx,
         nlev,
         nflatlev,
         out=contravariant_correction_at_cells_on_half_levels,
