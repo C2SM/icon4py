@@ -437,34 +437,29 @@ class TestFusedMoSolveNonHydroStencil1To13Corrector(helpers.StencilTest):
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
     ):
-        horz_idx = horz_idx[:, np.newaxis]
-        n_lev = vert_idx.shape[0]
-
-
-        (rho_ic, z_theta_v_pr_ic[:, :n_lev], theta_v_ic, z_th_ddz_exner_c) = np.where(
-            (start_cell_lateral_boundary_level_3 <= horz_idx)
-            & (horz_idx < end_cell_local)
-            & (int32(1) <= vert_idx[:n_lev]),
-            compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
-                w=w,
-                w_concorr_c=w_concorr_c,
-                ddqz_z_half=ddqz_z_half,
-                rho_now=rho_nnow,
-                rho_var=rho_nvar,
-                theta_now=theta_v_nnow,
-                theta_var=theta_v_nvar,
-                wgtfac_c=wgtfac_c,
-                theta_ref_mc=theta_ref_mc,
-                vwind_expl_wgt=vwind_expl_wgt,
-                exner_pr=exner_pr,
-                d_exner_dz_ref_ic=d_exner_dz_ref_ic,
-                dtime=dtime,
-                wgt_nnow_rth=wgt_nnow_rth,
-                wgt_nnew_rth=wgt_nnew_rth,
-            ),
-            (rho_ic, z_theta_v_pr_ic[:, :n_lev], theta_v_ic, z_th_ddz_exner_c),
+        lb = start_cell_lateral_boundary_level_3
+        n_lev = vert_idx.shape[0] - 1
+        rho_ic_full, z_theta_v_pr_ic_full, theta_v_ic_full, z_th_ddz_exner_c_full = compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
+            w=w,
+            w_concorr_c=w_concorr_c,
+            ddqz_z_half=ddqz_z_half,
+            rho_now=rho_nnow,
+            rho_var=rho_nvar,
+            theta_now=theta_v_nnow,
+            theta_var=theta_v_nvar,
+            wgtfac_c=wgtfac_c,
+            theta_ref_mc=theta_ref_mc,
+            vwind_expl_wgt=vwind_expl_wgt,
+            exner_pr=exner_pr,
+            d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+            dtime=dtime,
+            wgt_nnow_rth=wgt_nnow_rth,
+            wgt_nnew_rth=wgt_nnew_rth,
         )
-
+        rho_ic[lb:end_cell_local, : n_lev] = rho_ic_full[lb:end_cell_local, : n_lev]
+        z_theta_v_pr_ic[lb:end_cell_local, : n_lev] = z_theta_v_pr_ic_full[lb:end_cell_local, : n_lev]
+        theta_v_ic[lb:end_cell_local, : n_lev] = theta_v_ic_full[lb:end_cell_local, : n_lev]
+        z_th_ddz_exner_c[lb:end_cell_local, : n_lev] = z_th_ddz_exner_c_full[lb:end_cell_local, : n_lev]
         return dict(
             rho_ic=rho_ic,
             z_theta_v_pr_ic=z_theta_v_pr_ic,

@@ -588,23 +588,7 @@ class SolveNonhydro:
         self._fused_mo_solve_nonhydro_stencils_1_to_13_corrector = fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13_corrector.with_backend(
             self._backend
         )
-        self._predictor_stencils_2_3 = nhsolve_stencils.predictor_stencils_2_3.with_backend(
-            self._backend
-        )
-        self._predictor_stencils_4_5_6 = nhsolve_stencils.predictor_stencils_4_5_6.with_backend(
-            self._backend
-        )
-        self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures = nhsolve_stencils.compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures.with_backend(
-            self._backend
-        )
-        self._predictor_stencils_11_lower_upper = (
-            nhsolve_stencils.predictor_stencils_11_lower_upper.with_backend(self._backend)
-        )
-        self._compute_horizontal_advection_of_rho_and_theta = (
-            nhsolve_stencils.compute_horizontal_advection_of_rho_and_theta.with_backend(
-                self._backend
-            )
-        )
+
         self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
             self._backend
         )
