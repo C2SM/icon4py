@@ -1169,10 +1169,6 @@ def test_run_solve_nonhydro_1_to_13_predictor(
     z_dexner_dz_c_1_ref = savepoint_nonhydro_15_28_init.z_dexner_dz_c(0)
     z_dexner_dz_c_2_ref = savepoint_nonhydro_15_28_init.z_dexner_dz_c(1)
 
-    k_field = data_alloc.index_field(
-        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
-    )
-
     fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13_predictor.with_backend(
         backend
     )(

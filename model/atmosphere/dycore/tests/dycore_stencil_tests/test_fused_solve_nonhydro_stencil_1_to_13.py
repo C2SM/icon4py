@@ -38,7 +38,6 @@ from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_perturbatio
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy,
 )
-
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_virtual_potential_temperatures_and_pressure_gradient import (
     compute_virtual_potential_temperatures_and_pressure_gradient_numpy,
 )
@@ -56,15 +55,16 @@ from model.atmosphere.dycore.tests.dycore_stencil_tests.test_set_theta_v_prime_i
 )
 
 from icon4py.model.atmosphere.dycore.fused_mo_solve_nonhydro_stencils_1_to_13 import (
+    fused_mo_solve_nonhydro_stencils_1_to_13_corrector,
     fused_mo_solve_nonhydro_stencils_1_to_13_predictor,
-    fused_mo_solve_nonhydro_stencils_1_to_13_corrector
 )
+from icon4py.model.common import type_alias as ta
+
 # TODO
 from icon4py.model.common.dimension import (
     CellDim,
     KDim,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
@@ -439,7 +439,12 @@ class TestFusedMoSolveNonHydroStencil1To13Corrector(helpers.StencilTest):
     ):
         lb = start_cell_lateral_boundary_level_3
         n_lev = vert_idx.shape[0] - 1
-        rho_ic_full, z_theta_v_pr_ic_full, theta_v_ic_full, z_th_ddz_exner_c_full = compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
+        (
+            rho_ic_full,
+            z_theta_v_pr_ic_full,
+            theta_v_ic_full,
+            z_th_ddz_exner_c_full,
+        ) = compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
             w=w,
             w_concorr_c=w_concorr_c,
             ddqz_z_half=ddqz_z_half,
@@ -456,10 +461,12 @@ class TestFusedMoSolveNonHydroStencil1To13Corrector(helpers.StencilTest):
             wgt_nnow_rth=wgt_nnow_rth,
             wgt_nnew_rth=wgt_nnew_rth,
         )
-        rho_ic[lb:end_cell_local, : n_lev] = rho_ic_full[lb:end_cell_local, : n_lev]
-        z_theta_v_pr_ic[lb:end_cell_local, : n_lev] = z_theta_v_pr_ic_full[lb:end_cell_local, : n_lev]
-        theta_v_ic[lb:end_cell_local, : n_lev] = theta_v_ic_full[lb:end_cell_local, : n_lev]
-        z_th_ddz_exner_c[lb:end_cell_local, : n_lev] = z_th_ddz_exner_c_full[lb:end_cell_local, : n_lev]
+        rho_ic[lb:end_cell_local, :n_lev] = rho_ic_full[lb:end_cell_local, :n_lev]
+        z_theta_v_pr_ic[lb:end_cell_local, :n_lev] = z_theta_v_pr_ic_full[lb:end_cell_local, :n_lev]
+        theta_v_ic[lb:end_cell_local, :n_lev] = theta_v_ic_full[lb:end_cell_local, :n_lev]
+        z_th_ddz_exner_c[lb:end_cell_local, :n_lev] = z_th_ddz_exner_c_full[
+            lb:end_cell_local, :n_lev
+        ]
         return dict(
             rho_ic=rho_ic,
             z_theta_v_pr_ic=z_theta_v_pr_ic,

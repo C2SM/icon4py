@@ -24,10 +24,10 @@ from icon4py.model.testing.helpers import StencilTest
 
 def extrapolate_temporally_exner_pressure_numpy(
     connectivities,
-    exner: np.array,
-    exner_ref_mc: np.array,
-    exner_pr: np.array,
-    exner_exfac: np.array,
+    exner: np.ndarray,
+    exner_ref_mc: np.ndarray,
+    exner_pr: np.ndarray,
+    exner_exfac: np.ndarray,
 ) -> tuple[np.ndarray]:
     z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
     exner_pr = exner - exner_ref_mc

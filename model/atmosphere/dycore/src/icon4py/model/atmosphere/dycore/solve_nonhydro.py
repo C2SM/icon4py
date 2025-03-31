@@ -468,14 +468,8 @@ class SolveNonhydro:
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend)
         self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(self._backend)
         self._update_theta_v = update_theta_v.with_backend(self._backend)
-        self._init_two_cell_kdim_fields_with_zero_vp = (
-            init_two_cell_kdim_fields_with_zero_vp.with_backend(self._backend)
-        )
         self._compute_approx_of_2nd_vertical_derivative_of_exner = (
             compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(self._backend)
-        )
-        self._compute_perturbation_of_rho_and_theta = (
-            compute_perturbation_of_rho_and_theta.with_backend(self._backend)
         )
         self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
@@ -547,11 +541,6 @@ class SolveNonhydro:
             compute_dwdz_for_divergence_damping.with_backend(self._backend)
         )
         self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(self._backend)
-        self._compute_rho_virtual_potential_temperatures_and_pressure_gradient = (
-            compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(
-                self._backend
-            )
-        )
         self._add_vertical_wind_derivative_to_divergence_damping = (
             add_vertical_wind_derivative_to_divergence_damping.with_backend(self._backend)
         )
@@ -580,7 +569,6 @@ class SolveNonhydro:
             self._backend
         )
         self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
-        self._compute_z_raylfac = dycore_utils.compute_z_raylfac.with_backend(self._backend)
         self._fused_mo_solve_nonhydro_stencils_1_to_13_predictor = fused_mo_solve_nonhydro_stencils_1_to_13.fused_mo_solve_nonhydro_stencils_1_to_13_predictor.with_backend(
             self._backend
         )
@@ -744,14 +732,11 @@ class SolveNonhydro:
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._start_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.LOCAL))
         self._start_cell_halo = self._grid.start_index(cell_domain(h_grid.Zone.HALO))
-        self._start_cell_halo_level_2 = self._grid.start_index(cell_halo_level_2)
         self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
-        self._end_cell_nudging = self._grid.end_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
-        self._end_cell_halo_level_2 = self._grid.end_index(cell_halo_level_2)
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         self._start_edge_lateral_boundary = self._grid.start_index(
