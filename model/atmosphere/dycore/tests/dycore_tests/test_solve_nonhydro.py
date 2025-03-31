@@ -132,9 +132,7 @@ def test_time_step_flags(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 1, 1, True)]
-)
+@pytest.mark.parametrize("at_initial_timestep", [True])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -1033,10 +1031,6 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 @pytest.mark.embedded_remap_error
 @pytest.mark.uses_as_offset
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "istep_init, substep_init, istep_exit, substep_exit",
-    [(1, 1, 1, 1)],
-)
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
