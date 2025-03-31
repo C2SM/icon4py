@@ -310,25 +310,25 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
     Agrs:
         - tangential_wind: tangential wind at model levels
         - tangential_wind_on_half_levels: tangential wind interpolated to half levels
-        - vn_on_half_levels: normal component of velocity on half levels
+        - vn_on_half_levels: normal wind on half levels
         - horizontal_kinetic_energy_at_edges_on_model_levels: horizontal kinetic energy computed at edge of model levels
         - contravariant_correction_at_edges_on_model_levels: contravariant metric correction at edge of model levels
-        - horizontal_advection_of_w_at_edges_on_half_levels: hozriontal advection for vertical velocity
+        - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity
         - vn: normal wind at edges
         - w: vertical wind at cell centers
-        - rbf_vec_coeff_e: interpolation field/RBF vector coefficient on edges
+        - rbf_vec_coeff_e: interpolation field (RBF vector coefficient on edges)
         - wgtfac_e: metrics field
-        - ddxn_z_full: metrics field/derivative in the x-direction
-        - ddxt_z_full: metrics field/derivative in the tangential direction
+        - ddxn_z_full: metrics field (derivative in the x-direction)
+        - ddxt_z_full: metrics field (derivative in the tangential direction)
         - c_intp: interpolation field
-        - inv_dual_edge_length: inverse dual edge length from grid_savepoint
-        - inv_primal_edge_length: inverse primal edge length from grid_savepoint
-        - tangent_orientation: Orientation of the edge with respect to the grid from grid_savepoint
-        - skip_compute_predictor_vertical_advection: logical flag to skip the vertical advection from grid savepoint
+        - inv_dual_edge_length: inverse dual edge length
+        - inv_primal_edge_length: inverse primal edge length
+        - tangent_orientation: orientation of the edge with respect to the grid
+        - skip_compute_predictor_vertical_advection: logical flag to skip the vertical advection
         - nflatlev: number of flat levels
         - nlev: total number of vertical levels
         - lateral_boundary_7: start index of lateral boundary level 7 on edges
-        - halo_1: end index of halo halo on edges
+        - halo_1: end index of halo on edges
 
     Returns:
         -  tangential_wind
@@ -404,7 +404,28 @@ def compute_horizontal_advection_of_w(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """Formerly known as fused_velocity_advection_stencil_1_to_7_corrector."""
+    """
+    Formerly known as fused_velocity_advection_stencil_1_to_7_corrector.
+
+    This computes the horizontal advection of the vertical wind
+
+    Agrs:
+        - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity
+        - w: vertical wind at cell centers
+        - tangential_wind_on_half_levels: tangential wind interpolated to half levels
+        - vn_on_half_levels: normal wind on half levels
+        - c_intp: interpolation field
+        - inv_dual_edge_length: inverse dual edge length
+        - inv_primal_edge_length: inverse primal edge length
+        - tangent_orientation: orientation of the edge with respect to the grid
+        - lateral_boundary_7: start index of lateral boundary level 7 on edges
+        - halo_1: end index of halo on edges
+        - start_vertex_lateral_boundary_level_2: start index of lateral boundary level 2 on vertex
+        - end_vertex_halo: end index of halo on vertex
+
+    Returns:
+        - horizontal_advection_of_w_at_edges_on_half_levels
+    """
 
     _compute_horizontal_advection_of_w(
         horizontal_advection_of_w_at_edges_on_half_levels,

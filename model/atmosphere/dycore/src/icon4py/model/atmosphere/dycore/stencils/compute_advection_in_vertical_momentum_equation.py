@@ -196,7 +196,47 @@ def compute_advection_in_vertical_momentum_equation(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """Formerly known as fused_velocity_advection_stencil_15_to_18."""
+    """
+    Formerly known as fused_velocity_advection_stencil_15_to_18.
+
+    This computes the vertical momentum advection in the vertical momentum equation
+
+    Args:
+        - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at model levels
+        - vertical_wind_advective_tendency: vertical advection tendency
+        - w: vertical wind at cell centers
+        - contravariant_corrected_w_at_cells_on_half_levels: contravariant-corrected vertical velocity at cells on half levels
+        - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity at edges on half levels
+        - coeff1_dwdz: metrics field (first coefficient for vertical derivative of 'w')
+        - coeff2_dwdz: metrics field (second coefficient for vertical derivative of 'w')
+        - e_bln_c_s: interpolation field (edge-to-cell interpolation weights)
+        - ddqz_z_half: metrics field
+        - area: cell area
+        - geofac_n2s: interpolation field
+        - scalfac_exdiff: scalar factor for external diffusion
+        - cfl_w_limit: CFL limit for vertical velocity
+        - dtime: time step
+        - skip_compute_predictor_vertical_advection: logical flag to skip the vertical advection
+        - levelmask: mask for valid vertical levels
+        - cfl_clipping: boolean field indicating CFL clipping applied per cell and level
+        - owner_mask: ownership mask for each cell
+        - cell: cell indices
+        - cell_lower_bound: lower index for active cells
+        - cell_upper_bound: upper index for active cells
+        - nlev: total number of vertical levels
+        - nrdmax: vertical index where damping ends.
+        - start_cell_lateral_boundary: start index of lateral boundary on cells
+        - end_cell_halo: end index of halo on cells
+        - horizontal_start: start index in the horizontal dimension
+        - horizontal_end: end index in the horizontal dimension
+        - vertical_start: start index in the vertical dimension
+        - vertical_end: end index in the vertical dimension
+
+    Returns:
+        - contravariant_corrected_w_at_cells_on_model_levels
+        - vertical_wind_advective_tendency
+
+    """
 
     _compute_advection_in_vertical_momentum_equation(
         contravariant_corrected_w_at_cells_on_model_levels,
