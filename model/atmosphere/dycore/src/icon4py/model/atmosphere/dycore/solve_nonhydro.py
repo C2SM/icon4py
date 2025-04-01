@@ -918,7 +918,7 @@ class SolveNonhydro:
         dycore_utils._compute_z_raylfac(
             rayleigh_w=self._metric_state_nonhydro.rayleigh_w,
             dtime=dtime,
-            z_raylfac=self.z_raylfac,
+            out=self.z_raylfac,
             offset_provider={},
         )
 
