@@ -24,6 +24,7 @@ from gt4py.next import program
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field, bool, broadcast, maximum, where
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
@@ -251,29 +252,31 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-    vert_idx = broadcast(vert_idx, (CellDim, KDim))
-
-    (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_local) & (1 <= vert_idx),
-        _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
-            w=w,
-            w_concorr_c=w_concorr_c,
-            ddqz_z_half=ddqz_z_half,
-            rho_now=rho_nnow,
-            rho_var=rho_nvar,
-            theta_now=theta_v_nnow,
-            theta_var=theta_v_nvar,
-            wgtfac_c=wgtfac_c,
-            theta_ref_mc=theta_ref_mc,
-            vwind_expl_wgt=vwind_expl_wgt,
-            exner_pr=exner_pr,
-            d_exner_dz_ref_ic=d_exner_dz_ref_ic,
-            dtime=dtime,
-            wgt_nnow_rth=wgt_nnow_rth,
-            wgt_nnew_rth=wgt_nnew_rth,
-        ),
-        (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
-    )
+    (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = concat_where(
+            1 <= dims.KDim,
+            concat_where(
+                (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_local),
+                _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
+                    w=w,
+                    w_concorr_c=w_concorr_c,
+                    ddqz_z_half=ddqz_z_half,
+                    rho_now=rho_nnow,
+                    rho_var=rho_nvar,
+                    theta_now=theta_v_nnow,
+                    theta_var=theta_v_nvar,
+                    wgtfac_c=wgtfac_c,
+                    theta_ref_mc=theta_ref_mc,
+                    vwind_expl_wgt=vwind_expl_wgt,
+                    exner_pr=exner_pr,
+                    d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+                    dtime=dtime,
+                    wgt_nnow_rth=wgt_nnow_rth,
+                    wgt_nnew_rth=wgt_nnew_rth,
+                ),
+                (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
+            ),
+            (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
+        )
     return (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c)
 
 
