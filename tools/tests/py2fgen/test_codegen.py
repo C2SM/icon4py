@@ -9,35 +9,35 @@
 import string
 
 import pytest
-from gt4py.next.type_system.type_specifications import ScalarKind
 
-from icon4py.model.common import dimension as dims
-from icon4py.tools.py2fgen.generate import (
+from icon4py.tools import py2fgen
+from icon4py.tools.py2fgen._codegen import (
+    BindingsLibrary,
+    CHeaderGenerator,
+    Func,
+    as_f90_value,
     generate_c_header,
     generate_f90_interface,
     generate_python_wrapper,
 )
-from icon4py.tools.py2fgen.template import (
-    CffiPlugin,
-    CHeaderGenerator,
-    Func,
-    FuncParameter,
-    as_f90_value,
+
+
+field_2d = py2fgen.ArrayParamDescriptor(
+    rank=2,
+    dtype=py2fgen.FLOAT32,
+    memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+    is_optional=False,
+)
+
+field_1d = py2fgen.ArrayParamDescriptor(
+    rank=1,
+    dtype=py2fgen.FLOAT32,
+    memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+    is_optional=False,
 )
 
 
-field_2d = FuncParameter(
-    name="name",
-    d_type=ScalarKind.FLOAT32,
-    dimensions=[dims.CellDim, dims.KDim],
-)
-field_1d = FuncParameter(
-    name="name",
-    d_type=ScalarKind.FLOAT32,
-    dimensions=[dims.KDim],
-)
-
-simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[])
+simple_type = py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)
 
 
 @pytest.mark.parametrize(
@@ -49,34 +49,33 @@ def test_as_target(param, expected):
 
 foo = Func(
     name="foo",
-    args=[
-        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[]),
-        FuncParameter(
-            name="two",
-            d_type=ScalarKind.FLOAT64,
-            dimensions=[dims.CellDim, dims.KDim],
+    args={
+        "one": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
+        "two": py2fgen.ArrayParamDescriptor(
+            rank=2,
+            dtype=py2fgen.FLOAT64,
+            memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+            is_optional=False,
         ),
-    ],
+    },
 )
 
 bar = Func(
     name="bar",
-    args=[
-        FuncParameter(
-            name="one",
-            d_type=ScalarKind.FLOAT32,
-            dimensions=[
-                dims.CellDim,
-                dims.KDim,
-            ],
+    args={
+        "one": py2fgen.ArrayParamDescriptor(
+            rank=2,
+            dtype=py2fgen.FLOAT32,
+            memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+            is_optional=False,
         ),
-        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[]),
-    ],
+        "two": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
+    },
 )
 
 
 def test_cheader_generation_for_single_function():
-    plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[foo])
+    plugin = BindingsLibrary(module_name="libtest", library_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
     assert (
@@ -86,7 +85,7 @@ def test_cheader_generation_for_single_function():
 
 
 def test_cheader_for_pointer_args():
-    plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[bar])
+    plugin = BindingsLibrary(module_name="libtest", library_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
     assert (
@@ -110,9 +109,9 @@ def compare_ignore_whitespace(actual: str, expected: str):
 
 @pytest.fixture
 def dummy_plugin():
-    return CffiPlugin(
+    return BindingsLibrary(
         module_name="libtest",
-        plugin_name="libtest_plugin",
+        library_name="libtest_plugin",
         functions=[foo, bar],
     )
 
@@ -254,50 +253,97 @@ end module
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(dummy_plugin, False, profile=False)
-    expected = """# imports for generated wrapper code
-import logging
-
+    interface = generate_python_wrapper(dummy_plugin)
+    expected = """import logging
 from libtest_plugin import ffi
+from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
-try:
-    import cupy as cp  # TODO remove this import
-except ImportError:
-    cp = None
-import gt4py.next as gtx
-from gt4py.next.type_system import type_specifications as ts
-from icon4py.tools.py2fgen import wrapper_utils
+if __debug__:
+    logger = logging.getLogger(__name__)
+    log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+    logging.basicConfig(
+        level=getattr(logging, runtime_config.LOG_LEVEL),
+        format=log_format,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
-# logger setup
-log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
-logging.basicConfig(level=logging.ERROR, format=log_format, datefmt="%Y-%m-%d %H:%M:%S")
-
-if cp is not None:
-    logging.info(cp.show_config())
 
 # embedded function imports
 from libtest import foo
 from libtest import bar
 
 
-Cell = gtx.Dimension("Cell", kind=gtx.DimensionKind.HORIZONTAL)
-K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
-
-
 @ffi.def_extern()
 def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
     try:
+        if __debug__:
+            logger.info("Python execution of foo started.")
 
-        # Convert ptr to GT4Py fields
+        if __debug__:
+            if runtime_config.PROFILING:
+                unpack_start_time = _runtime.perf_counter()
 
-        two = wrapper_utils.as_field(
-            ffi, on_gpu, two, ts.ScalarKind.FLOAT64, {Cell: two_size_0, K: two_size_1}, False
+        # ArrayInfos
+
+        two = (
+            two,
+            (
+                two_size_0,
+                two_size_1,
+            ),
+            on_gpu,
+            False,
         )
 
-        foo(one, two)
+        if __debug__:
+            if runtime_config.PROFILING:
+                allocate_end_time = _runtime.perf_counter()
+                logger.info(
+                    "foo constructing `ArrayInfos` time: %s"
+                    % str(allocate_end_time - unpack_start_time)
+                )
+
+                func_start_time = _runtime.perf_counter()
+
+        if __debug__ and runtime_config.PROFILING:
+            perf_counters = {}
+        else:
+            perf_counters = None
+        foo(
+            ffi=ffi,
+            perf_counters=perf_counters,
+            one=one,
+            two=two,
+        )
+
+        if __debug__:
+            if runtime_config.PROFILING:
+                func_end_time = _runtime.perf_counter()
+                logger.info(
+                    "foo convert time: %s"
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
+                )
+                logger.info("foo execution time: %s" % str(func_end_time - func_start_time))
+
+        if __debug__:
+            if logger.isEnabledFor(logging.DEBUG):
+
+                msg = "shape of two after computation = %s" % str(
+                    two.shape if two is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "two after computation: %s" % str(
+                    _conversion.as_array(ffi, two, _definitions.FLOAT64)
+                    if two is not None
+                    else "None"
+                )
+                logger.debug(msg)
+
+        if __debug__:
+            logger.info("Python execution of foo completed.")
 
     except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
+        logger.exception(f"A Python error occurred: {e}")
         return 1
 
     return 0
@@ -306,17 +352,74 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
 @ffi.def_extern()
 def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
     try:
+        if __debug__:
+            logger.info("Python execution of bar started.")
 
-        # Convert ptr to GT4Py fields
+        if __debug__:
+            if runtime_config.PROFILING:
+                unpack_start_time = _runtime.perf_counter()
 
-        one = wrapper_utils.as_field(
-            ffi, on_gpu, one, ts.ScalarKind.FLOAT32, {Cell: one_size_0, K: one_size_1}, False
+        # ArrayInfos
+
+        one = (
+            one,
+            (
+                one_size_0,
+                one_size_1,
+            ),
+            on_gpu,
+            False,
         )
 
-        bar(one, two)
+        if __debug__:
+            if runtime_config.PROFILING:
+                allocate_end_time = _runtime.perf_counter()
+                logger.info(
+                    "bar constructing `ArrayInfos` time: %s"
+                    % str(allocate_end_time - unpack_start_time)
+                )
+
+                func_start_time = _runtime.perf_counter()
+
+        if __debug__ and runtime_config.PROFILING:
+            perf_counters = {}
+        else:
+            perf_counters = None
+        bar(
+            ffi=ffi,
+            perf_counters=perf_counters,
+            one=one,
+            two=two,
+        )
+
+        if __debug__:
+            if runtime_config.PROFILING:
+                func_end_time = _runtime.perf_counter()
+                logger.info(
+                    "bar convert time: %s"
+                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
+                )
+                logger.info("bar execution time: %s" % str(func_end_time - func_start_time))
+
+        if __debug__:
+            if logger.isEnabledFor(logging.DEBUG):
+
+                msg = "shape of one after computation = %s" % str(
+                    one.shape if one is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "one after computation: %s" % str(
+                    _conversion.as_array(ffi, one, _definitions.FLOAT32)
+                    if one is not None
+                    else "None"
+                )
+                logger.debug(msg)
+
+        if __debug__:
+            logger.info("Python execution of bar completed.")
 
     except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
+        logger.exception(f"A Python error occurred: {e}")
         return 1
 
     return 0
