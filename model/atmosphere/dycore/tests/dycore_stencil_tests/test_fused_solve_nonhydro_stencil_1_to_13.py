@@ -28,36 +28,6 @@ from icon4py.model.atmosphere.dycore.fused_mo_solve_nonhydro_stencils_1_to_13 im
     fused_mo_solve_nonhydro_stencils_1_to_13_corrector,
     fused_mo_solve_nonhydro_stencils_1_to_13_predictor,
 )
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_approx_of_2nd_vertical_derivative_of_exner import (
-    compute_approx_of_2nd_vertical_derivative_of_exner_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_first_vertical_derivative import (
-    compute_first_vertical_derivative_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_perturbation_of_rho_and_theta import (
-    compute_perturbation_of_rho_and_theta_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import (
-    compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
-    compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_virtual_potential_temperatures_and_pressure_gradient import (
-    compute_virtual_potential_temperatures_and_pressure_gradient_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_extrapolate_temporally_exner_pressure import (
-    extrapolate_temporally_exner_pressure_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_interpolate_cell_field_to_half_levels_vp import (
-    interpolate_cell_field_to_half_levels_vp_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_interpolate_to_surface import (
-    interpolate_to_surface_numpy,
-)
-from icon4py.model.atmosphere.dycore.tests.dycore_stencil_tests.test_set_theta_v_prime_ic_at_lower_boundary import (
-    set_theta_v_prime_ic_at_lower_boundary_numpy,
-)
 from icon4py.model.common import type_alias as ta
 
 # TODO
@@ -69,6 +39,37 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
+
+from .test_compute_approx_of_2nd_vertical_derivative_of_exner import (
+    compute_approx_of_2nd_vertical_derivative_of_exner_numpy,
+)
+from .test_compute_first_vertical_derivative import (
+    compute_first_vertical_derivative_numpy,
+)
+from .test_compute_perturbation_of_rho_and_theta import (
+    compute_perturbation_of_rho_and_theta_numpy,
+)
+from .test_compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import (
+    compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy,
+)
+from .test_compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
+    compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy,
+)
+from .test_compute_virtual_potential_temperatures_and_pressure_gradient import (
+    compute_virtual_potential_temperatures_and_pressure_gradient_numpy,
+)
+from .test_extrapolate_temporally_exner_pressure import (
+    extrapolate_temporally_exner_pressure_numpy,
+)
+from .test_interpolate_cell_field_to_half_levels_vp import (
+    interpolate_cell_field_to_half_levels_vp_numpy,
+)
+from .test_interpolate_to_surface import (
+    interpolate_to_surface_numpy,
+)
+from .test_set_theta_v_prime_ic_at_lower_boundary import (
+    set_theta_v_prime_ic_at_lower_boundary_numpy,
+)
 
 
 class TestFusedMoSolveNonHydroStencil1To13Predictor(helpers.StencilTest):
