@@ -1546,10 +1546,10 @@ class SolveNonhydro:
             cell_areas=self._cell_params.area,
         )
 
-        self._compute_z_raylfac(
+        dycore_utils._compute_z_raylfac(
             self._metric_state_nonhydro.rayleigh_w,
             dtime,
-            self.z_raylfac,
+            out=self.z_raylfac,
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
