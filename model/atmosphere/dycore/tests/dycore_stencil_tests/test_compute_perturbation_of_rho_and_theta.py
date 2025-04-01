@@ -27,10 +27,10 @@ def compute_perturbation_of_rho_and_theta_numpy(
     rho_ref_mc: np.ndarray,
     theta_v: np.ndarray,
     theta_ref_mc: np.ndarray,
-) -> tuple[np.ndarray]:
+) -> tuple[np.ndarray, ...]:
     z_rth_pr_1 = rho - rho_ref_mc
     z_rth_pr_2 = theta_v - theta_ref_mc
-    return z_rth_pr_1, z_rth_pr_2
+    return (z_rth_pr_1, z_rth_pr_2)
 
 
 class TestComputePerturbationOfRhoAndTheta(StencilTest):

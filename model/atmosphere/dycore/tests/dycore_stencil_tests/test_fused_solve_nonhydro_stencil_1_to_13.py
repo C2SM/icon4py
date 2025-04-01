@@ -65,7 +65,8 @@ from icon4py.model.common.dimension import (
     CellDim,
     KDim,
 )
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -135,7 +136,7 @@ class TestFusedMoSolveNonHydroStencil1To13Predictor(helpers.StencilTest):
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
-    ):
+    ) -> dict:
         horz_idx = horz_idx[:, np.newaxis]
 
         # if istep == 1:
@@ -297,7 +298,7 @@ class TestFusedMoSolveNonHydroStencil1To13Predictor(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_ref_mc = data_alloc.random_field(grid, CellDim, KDim)
         theta_ref_mc = data_alloc.random_field(grid, CellDim, KDim)
         wgtfacq_c = data_alloc.random_field(grid, CellDim, KDim, extend={KDim: 1})
@@ -342,7 +343,6 @@ class TestFusedMoSolveNonHydroStencil1To13Predictor(helpers.StencilTest):
         end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
         start_cell_halo_level_2 = grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
-        # end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         nflatlev = 4
         nflat_gradp = 27
@@ -436,7 +436,7 @@ class TestFusedMoSolveNonHydroStencil1To13Corrector(helpers.StencilTest):
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
-    ):
+    ) -> dict:
         lb = start_cell_lateral_boundary_level_3
         n_lev = vert_idx.shape[0] - 1
         (
@@ -475,7 +475,7 @@ class TestFusedMoSolveNonHydroStencil1To13Corrector(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w = data_alloc.random_field(grid, CellDim, KDim)
         w_concorr_c = data_alloc.random_field(grid, CellDim, KDim)
         ddqz_z_half = data_alloc.random_field(grid, CellDim, KDim)

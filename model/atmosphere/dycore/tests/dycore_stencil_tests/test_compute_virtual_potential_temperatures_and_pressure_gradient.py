@@ -61,7 +61,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities,
         wgtfac_c: np.ndarray,
         z_rth_pr_2: np.ndarray,
         theta_v: np.ndarray,
@@ -76,6 +76,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
             theta_v_ic,
             z_th_ddz_exner_c,
         ) = compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
+            connectivities=connectivities,
             wgtfac_c=wgtfac_c,
             z_rth_pr_2=z_rth_pr_2,
             theta_v=theta_v,

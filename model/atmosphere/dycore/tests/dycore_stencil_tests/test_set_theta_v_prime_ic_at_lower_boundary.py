@@ -30,14 +30,14 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
     theta_ref_ic: np.ndarray,
     z_theta_v_pr_ic: np.ndarray,
     theta_v_ic: np.ndarray,
-) -> tuple[np.ndarray]:
+) -> tuple[np.ndarray, ...]:
     z_theta_v_pr_ic = interpolate_to_surface_numpy(
         wgtfacq_c=wgtfacq_c,
         interpolant=z_rth_pr,
         interpolation_to_surface=z_theta_v_pr_ic,
     )
     theta_v_ic[:, 3:] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:]
-    return z_theta_v_pr_ic, theta_v_ic
+    return (z_theta_v_pr_ic, theta_v_ic)
 
 
 class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):

@@ -34,10 +34,10 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     vwind_expl_wgt: np.ndarray,
     exner_pr: np.ndarray,
     d_exner_dz_ref_ic: np.ndarray,
-    dtime: float,
-    wgt_nnow_rth: float,
-    wgt_nnew_rth: float,
-) -> tuple[np.ndarray]:
+    dtime: ta.wpfloat,
+    wgt_nnow_rth: ta.wpfloat,
+    wgt_nnew_rth: ta.wpfloat,
+) -> tuple[np.ndarray, ...]:
     vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
     rho_now_offset = np.roll(rho_now, shift=1, axis=1)
     rho_var_offset = np.roll(rho_var, shift=1, axis=1)

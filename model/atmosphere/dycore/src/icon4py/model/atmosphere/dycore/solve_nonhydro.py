@@ -408,7 +408,10 @@ class NonHydrostaticConfig:
             raise NotImplementedError("divdamp_order can only be 24")
 
         if self.divdamp_type == DivergenceDampingType.TWO_DIMENSIONAL:
-            raise NotImplementedError("`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented")
+            raise NotImplementedError(
+                "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
+            )
+
 
 class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
@@ -912,7 +915,7 @@ class SolveNonhydro:
             )
 
         #  Precompute Rayleigh damping factor
-        self._compute_z_raylfac(
+        dycore_utils._compute_z_raylfac(
             rayleigh_w=self._metric_state_nonhydro.rayleigh_w,
             dtime=dtime,
             z_raylfac=self.z_raylfac,
