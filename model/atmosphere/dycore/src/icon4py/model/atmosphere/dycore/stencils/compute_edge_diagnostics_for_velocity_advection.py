@@ -49,8 +49,6 @@ def _compute_horizontal_kinetic_energy(
 @gtx.field_operator
 def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
     tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
@@ -80,8 +78,6 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     )
     vn_on_half_levels = _interpolate_to_half_levels(k, wgtfac_e, vn)
 
-    # TODO(havogt): for now and performance, we should split this into two programs for
-    # skip_compute_predictor_vertical_advection True/False
     tangential_wind_on_half_levels = (
         _interpolate_to_half_levels(k, wgtfac_e, tangential_wind)
         if not skip_compute_predictor_vertical_advection
@@ -121,7 +117,6 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
 
 @gtx.field_operator
 def _compute_horizontal_advection_of_w(
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
     tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
     vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
@@ -177,8 +172,6 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
     """Formerly known as fused_velocity_advection_stencil_1_to_7_predictor."""
     _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
         tangential_wind_on_half_levels,
-        vn_on_half_levels,
-        horizontal_kinetic_energy_at_edges_on_model_levels,
         contravariant_correction_at_edges_on_model_levels,
         horizontal_advection_of_w_at_edges_on_half_levels,
         vn,
@@ -236,7 +229,6 @@ def compute_horizontal_advection_of_w(
     """Formerly known as fused_velocity_advection_stencil_1_to_7_corrector."""
 
     _compute_horizontal_advection_of_w(
-        horizontal_advection_of_w_at_edges_on_half_levels,
         w,
         tangential_wind_on_half_levels,
         vn_on_half_levels,
