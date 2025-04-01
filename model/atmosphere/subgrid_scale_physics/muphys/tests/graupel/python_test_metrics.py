@@ -7,6 +7,7 @@ import pdb
 import gt4py.next as gtx
 
 from icon4py.model.common import model_backends
+from gt4py.next import metrics
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import saturation_adjustment
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import graupel_run
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
@@ -261,6 +262,8 @@ graupel_run( k = k,
              pre    = pre_out,
              offset_provider={"Koff": K}
              )
+
+metrics.summary()
 
 data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize-1)].asnumpy())
 data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize-1)].asnumpy())
