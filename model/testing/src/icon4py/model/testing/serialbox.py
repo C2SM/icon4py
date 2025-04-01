@@ -2170,7 +2170,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep: int
     ) -> NonHydroInitEdgeDiagnosticsUpdateVnSavepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-14to28-init"]  # TODO
+            self.serializer.savepoint["solve-nonhydro-14to28-init_1to13-exit"]  # TODO
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]
