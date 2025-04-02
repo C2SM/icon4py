@@ -23,7 +23,7 @@ Immersed boundary method module
 """
 
 log = logging.getLogger(__name__)
-DEBUG_LEVEL = 4
+DEBUG_LEVEL = 2
 
 
 class ImmersedBoundaryMethod:
@@ -133,7 +133,7 @@ class ImmersedBoundaryMethod:
         buildings = [
             #[390, 400, 0, 1000,  40],
             #[497, 503, 0, 1000, 105],
-            [350, 400, 0, 1000, 75],
+            #[350, 400, 0, 1000, 75],
         ]
         for k in range(half_cell_mask_np.shape[1]):
             #half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
