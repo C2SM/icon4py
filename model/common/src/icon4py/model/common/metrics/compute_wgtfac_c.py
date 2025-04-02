@@ -8,10 +8,10 @@
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
@@ -46,9 +46,11 @@ def _compute_wgtfac_c(
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
-    wgt_fac_c = where((k > 0) & (k < nlev), _compute_wgtfac_c_inner(z_ifc), z_ifc)
-    wgt_fac_c = where(k == 0, _compute_wgtfac_c_0(z_ifc=z_ifc), wgt_fac_c)
-    wgt_fac_c = where(k == nlev, _compute_wgtfac_c_nlev(z_ifc=z_ifc), wgt_fac_c)
+    wgt_fac_c = concat_where(
+        (0 < dims.KDim) & (dims.KDim < nlev), _compute_wgtfac_c_inner(z_ifc), z_ifc
+    )
+    wgt_fac_c = concat_where(dims.KDim == 0, _compute_wgtfac_c_0(z_ifc=z_ifc), wgt_fac_c)
+    wgt_fac_c = concat_where(dims.KDim == nlev, _compute_wgtfac_c_nlev(z_ifc=z_ifc), wgt_fac_c)
 
     return wgt_fac_c
 

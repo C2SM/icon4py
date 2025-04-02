@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, maximum, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import maximum, where
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     _add_extra_diffusion_for_w_con_approaching_cfl,
@@ -37,29 +38,25 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-    cell: fa.CellField[gtx.int32],
-    k: fa.KField[gtx.int32],
     scalfac_exdiff: ta.wpfloat,
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
-    cell_lower_bound: gtx.int32,
-    cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
 ) -> fa.CellKField[ta.vpfloat]:
-    k = broadcast(k, (dims.CellDim, dims.KDim))
+    # k = broadcast(k, (dims.CellDim, dims.KDim))
 
     # TODO(havogt): we should get rid of the cell_lower_bound and cell_upper_bound,
     # they are only to protect write to halo (if I understand correctly)
     vertical_wind_advective_tendency = where(
-        1 <= k,
+        1 <= dims.KDim,
         _compute_advective_vertical_wind_tendency(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
         ),
         vertical_wind_advective_tendency,
     )
-    vertical_wind_advective_tendency = where(
-        1 <= k,
+    vertical_wind_advective_tendency = concat_where(
+        1 <= dims.KDim,
         _add_interpolated_horizontal_advection_of_w(
             e_bln_c_s,
             horizontal_advection_of_w_at_edges_on_half_levels,
@@ -67,8 +64,8 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
         ),
         vertical_wind_advective_tendency,
     )
-    vertical_wind_advective_tendency = where(
-        (maximum(3, nrdmax - 2) - 1) <= k < nlev - 3,
+    vertical_wind_advective_tendency = concat_where(
+        ((maximum(3, nrdmax - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 3)),
         _add_extra_diffusion_for_w_con_approaching_cfl(
             cfl_clipping,
             owner_mask,
@@ -106,10 +103,6 @@ def _compute_advection_in_vertical_momentum_equation(
     skip_compute_predictor_vertical_advection: bool,
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
-    cell: fa.CellField[gtx.int32],
-    k: fa.KField[gtx.int32],
-    cell_lower_bound: gtx.int32,
-    cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
 ) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat]]:
@@ -132,13 +125,9 @@ def _compute_advection_in_vertical_momentum_equation(
             ddqz_z_half,
             area,
             geofac_n2s,
-            cell,
-            k,
             scalfac_exdiff,
             cfl_w_limit,
             dtime,
-            cell_lower_bound,
-            cell_upper_bound,
             nlev,
             nrdmax,
         )
@@ -168,10 +157,6 @@ def compute_advection_in_vertical_momentum_equation(
     skip_compute_predictor_vertical_advection: bool,
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
-    cell: fa.CellField[gtx.int32],
-    k: fa.KField[gtx.int32],
-    cell_lower_bound: gtx.int32,
-    cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
     horizontal_start: gtx.int32,
@@ -198,10 +183,6 @@ def compute_advection_in_vertical_momentum_equation(
         skip_compute_predictor_vertical_advection,
         cfl_clipping,
         owner_mask,
-        cell,
-        k,
-        cell_lower_bound,
-        cell_upper_bound,
         nlev,
         nrdmax,
         out=(contravariant_corrected_w_at_cells_on_model_levels, vertical_wind_advective_tendency),

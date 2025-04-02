@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import astype, where
+from gt4py.next.ffront.experimental import astype, concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -28,13 +28,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _interpolate_to_half_levels(
-    k: fa.KField[gtx.int32],
     wgtfac_e: fa.EdgeKField[ta.vpfloat],
     x: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.vpfloat]:
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
     x_ie_wp = wgtfac_e_wp * x + (wpfloat("1.0") - wgtfac_e_wp) * x(Koff[-1])
-    return where(k > 0, astype(x_ie_wp, vpfloat), x)
+    return concat_where(dims.KDim > 0, astype(x_ie_wp, vpfloat), x)
 
 
 @gtx.field_operator
@@ -62,7 +61,6 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     skip_compute_predictor_vertical_advection: bool,
-    k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[ta.vpfloat],
@@ -76,7 +74,7 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     horizontal_kinetic_energy_at_edges_on_model_levels = _compute_horizontal_kinetic_energy(
         vn, tangential_wind
     )
-    vn_on_half_levels = _interpolate_to_half_levels(k, wgtfac_e, vn)
+    vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
 
     tangential_wind_on_half_levels = (
         _interpolate_to_half_levels(k, wgtfac_e, tangential_wind)
@@ -84,8 +82,8 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
         else tangential_wind_on_half_levels
     )
 
-    contravariant_correction_at_edges_on_model_levels = where(
-        nflatlev <= k,
+    contravariant_correction_at_edges_on_model_levels = concat_where(
+        nflatlev <= dims.KDim,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
         contravariant_correction_at_edges_on_model_levels,
     )
@@ -162,7 +160,6 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     skip_compute_predictor_vertical_advection: bool,
-    k: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -185,7 +182,6 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
         inv_primal_edge_length,
         tangent_orientation,
         skip_compute_predictor_vertical_advection,
-        k,
         nflatlev,
         out=(
             tangential_wind,

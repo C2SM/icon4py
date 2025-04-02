@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import broadcast
-from gt4py.next.ffront.fbuiltins import maximum, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import maximum
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
@@ -42,7 +42,6 @@ def _compute_advection_in_horizontal_momentum_equation(
     scalfac_exdiff: ta.wpfloat,
     d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nrdmax: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
@@ -61,9 +60,9 @@ def _compute_advection_in_horizontal_momentum_equation(
         ddqz_z_full_e,
     )
 
-    k = broadcast(k, (dims.EdgeDim, dims.KDim))
-    normal_wind_advective_tendency = where(
-        (maximum(3, nrdmax - 2) - 1) <= k < nlev - 4,
+    # k = broadcast(k, (dims.EdgeDim, dims.KDim))
+    normal_wind_advective_tendency = concat_where(
+        ((maximum(3, nrdmax - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 4)),
         _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask,
             c_lin_e,
@@ -79,6 +78,7 @@ def _compute_advection_in_horizontal_momentum_equation(
             cfl_w_limit,
             scalfac_exdiff,
             d_time,
+            normal_wind_advective_tendency,
         ),
         normal_wind_advective_tendency,
     )
@@ -107,7 +107,6 @@ def compute_advection_in_horizontal_momentum_equation(
     scalfac_exdiff: ta.wpfloat,
     d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nrdmax: gtx.int32,
     horizontal_start: gtx.int32,
@@ -137,7 +136,6 @@ def compute_advection_in_horizontal_momentum_equation(
         scalfac_exdiff,
         d_time,
         levelmask,
-        k,
         nlev,
         nrdmax,
         out=normal_wind_advective_tendency,
