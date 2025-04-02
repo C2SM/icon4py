@@ -6,18 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Any
 
 import gt4py.next as gtx
@@ -26,12 +14,20 @@ import pytest
 
 import icon4py.model.common.type_alias as ta
 import icon4py.model.testing.helpers as test_helpers
+from icon4py.model.atmosphere.dycore.dycore_states import (
+    HorizontalPressureDiscretizationType,
+    RhoThetaAdvectionType,
+)
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+rhotheta_avd_type = RhoThetaAdvectionType()
+horzpres_discr_type = HorizontalPressureDiscretizationType()
 
 
 def compute_btraj_numpy(
@@ -242,10 +238,6 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
         limited_area: gtx.int32,
         iadv_rhotheta: gtx.int32,
         igradp_method: gtx.int32,
-        miura_advection_type: gtx.int32,
-        taylor_hydro_gradp_method: gtx.int32,
-        horz_idx: np.ndarray,
-        vert_idx: np.ndarray,
         start_edge_halo_level_2: gtx.int32,
         end_edge_halo_level_2: gtx.int32,
         start_edge_lateral_boundary: gtx.int32,
@@ -261,14 +253,15 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
     ) -> dict:
-        horz_idx = horz_idx[:, np.newaxis]
+        vert_idx = np.arange(vertical_end)
+        horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 
         ddx_perturbed_rho = np.zeros(perturbed_rho.shape)
         ddy_perturbed_rho = np.zeros(perturbed_rho.shape)
         ddx_perturbed_theta_v = np.zeros(perturbed_rho.shape)
         ddy_perturbed_theta_v = np.zeros(perturbed_rho.shape)
 
-        if iadv_rhotheta == miura_advection_type:
+        if iadv_rhotheta == rhotheta_avd_type.MIURA:
             # Compute Green-Gauss gradients for rho and theta
             c2e2cO = connectivities[dims.C2E2CODim]
 
@@ -318,7 +311,7 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
                     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
                 )
 
-            if iadv_rhotheta == miura_advection_type:
+            if iadv_rhotheta == rhotheta_avd_type.MIURA:
                 # Compute upwind-biased values for rho and theta starting from centered differences
                 # Note: the length of the backward trajectory should be 0.5*dtime*(vn,tangential_wind) in order to arrive
                 # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
@@ -366,7 +359,7 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
             horizontal_pressure_gradient,
         )
 
-        if igradp_method == taylor_hydro_gradp_method:
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
 
             def _apply_index_field_for_multi_level_pressure_gradient(
                 shape: tuple,
@@ -551,9 +544,6 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
             )
         ikoffset = data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset)
 
-        vert_idx = data_alloc.index_field(dim=dims.KDim, grid=grid)
-        horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
-
         dtime = 0.9
         cpd = 1004.64
         iau_wgt_dyn = 1.0
@@ -561,8 +551,6 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
         limited_area = True
         iadv_rhotheta = 2
         igradp_method = 3
-        miura_advection_type = 2
-        taylor_hydro_gradp_method = 3
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         start_edge_halo_level_2 = grid.start_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -618,10 +606,6 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
             limited_area=limited_area,
             iadv_rhotheta=iadv_rhotheta,
             igradp_method=igradp_method,
-            miura_advection_type=miura_advection_type,
-            taylor_hydro_gradp_method=taylor_hydro_gradp_method,
-            horz_idx=horz_idx,
-            vert_idx=vert_idx,
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
             start_edge_halo_level_2=start_edge_halo_level_2,

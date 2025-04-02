@@ -120,63 +120,10 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common import field_type_aliases as fa
-import enum
+
 
 # flake8: noqa
 log = logging.getLogger(__name__)
-
-
-class TimeSteppingScheme(enum.IntEnum):
-    """Parameter called `itime_scheme` in ICON namelist."""
-
-    #: Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
-    MOST_EFFICIENT = 4
-    #: Contravariant vertical velocity is computed in both substeps (beneficial for numerical stability in very-high resolution setups with extremely steep slopes)
-    STABLE = 5
-    #:  As STABLE, but velocity tendencies are also computed in both substeps (no benefit, but more expensive)
-    EXPENSIVE = 6
-
-
-class DivergenceDampingType(enum.IntEnum):
-    #: divergence damping acting on 2D divergence
-    TWO_DIMENSIONAL = 2
-    #: divergence damping acting on 3D divergence
-    THREE_DIMENSIONAL = 3
-    #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
-    COMBINED = 32
-
-
-class DivergenceDampingOrder(enum.IntEnum):
-    #: 2nd order divergence damping
-    SECOND_ORDER = 2
-    #: 4th order divergence damping
-    FOURTH_ORDER = 4
-    #: combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
-    COMBINED = 24
-
-
-class HorizontalPressureDiscretizationType(enum.IntEnum):
-    """Parameter called igradp_method in ICON namelist."""
-
-    #: conventional discretization with metric correction term
-    CONVENTIONAL = 1
-    #: Taylor-expansion-based reconstruction of pressure
-    TAYLOR = 2
-    #: Similar discretization as igradp_method_taylor, but uses hydrostatic approximation for downward extrapolation over steep slopes
-    TAYLOR_HYDRO = 3
-    #: Cubic / quadratic polynomial interpolation for pressure reconstruction
-    POLYNOMIAL = 4
-    #: Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
-    POLYNOMIAL_HYDRO = 5
-
-
-class RhoThetaAdvectionType(enum.IntEnum):
-    """Parameter called iadv_rhotheta in ICON namelist."""
-
-    #: simple 2nd order upwind-biased scheme
-    SIMPLE = 1
-    #: 2nd order Miura horizontal
-    MIURA = 2
 
 
 @dataclasses.dataclass
@@ -289,16 +236,16 @@ class NonHydrostaticConfig:
 
     def __init__(
         self,
-        itime_scheme: TimeSteppingScheme = TimeSteppingScheme.MOST_EFFICIENT,
-        iadv_rhotheta: RhoThetaAdvectionType = RhoThetaAdvectionType.MIURA,
-        igradp_method: HorizontalPressureDiscretizationType = HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
+        itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
+        iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
+        igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         ndyn_substeps_var: float = 5.0,
         rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
-        divdamp_order: DivergenceDampingOrder = DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
+        divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
-        divdamp_type: DivergenceDampingType = DivergenceDampingType.THREE_DIMENSIONAL,
+        divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
         divdamp_trans_start: float = 12500.0,
         divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
@@ -405,16 +352,16 @@ class NonHydrostaticConfig:
         if self.l_vert_nested:
             raise NotImplementedError("Vertical nesting support not implemented")
 
-        if self.igradp_method != HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+        if self.igradp_method != dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             raise NotImplementedError("igradp_method can only be 3")
 
-        if self.itime_scheme != TimeSteppingScheme.MOST_EFFICIENT:
+        if self.itime_scheme != dycore_states.TimeSteppingScheme.MOST_EFFICIENT:
             raise NotImplementedError("itime_scheme can only be 4")
 
-        if self.divdamp_order != DivergenceDampingOrder.COMBINED:
+        if self.divdamp_order != dycore_states.DivergenceDampingOrder.COMBINED:
             raise NotImplementedError("divdamp_order can only be 24")
 
-        if self.divdamp_type == DivergenceDampingType.TWO_DIMENSIONAL:
+        if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
             raise NotImplementedError(
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
             )
@@ -900,7 +847,7 @@ class SolveNonhydro:
         if at_first_substep:
             # Recompute only vn tendency
             skip_compute_predictor_vertical_advection: bool = (
-                self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
+                self._config.itime_scheme == dycore_states.TimeSteppingScheme.MOST_EFFICIENT
                 and not (at_initial_timestep and at_first_substep)
             )
 
@@ -948,7 +895,10 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+        if (
+            self._config.igradp_method
+            == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+        ):
             self._predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
                 z_exner_ex_pr=self.temporal_extrapolation_of_perturbed_exner,
@@ -1007,7 +957,10 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+        if (
+            self._config.igradp_method
+            == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+        ):
             self._compute_approx_of_2nd_vertical_derivative_of_exner(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
@@ -1039,7 +992,7 @@ class SolveNonhydro:
         )
 
         # Compute rho and theta at edges for horizontal flux divergence term
-        if self._config.iadv_rhotheta == RhoThetaAdvectionType.SIMPLE:
+        if self._config.iadv_rhotheta == dycore_states.RhoThetaAdvectionType.SIMPLE:
             self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_states.current.rho,
                 c_intp=self._interpolation_state.c_intp,
@@ -1064,7 +1017,10 @@ class SolveNonhydro:
         log.debug(
             f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step"
         )
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+        if (
+            self._config.igradp_method
+            == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+        ):
             self._compute_hydrostatic_correction_term(
                 theta_v=prognostic_states.current.theta_v,
                 ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
@@ -1126,10 +1082,6 @@ class SolveNonhydro:
             limited_area=self._grid.limited_area,
             iadv_rhotheta=self._config.iadv_rhotheta,
             igradp_method=self._config.igradp_method,
-            miura_advection_type=RhoThetaAdvectionType.MIURA,
-            taylor_hydro_gradp_method=HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
-            horz_idx=self.edge_field,
-            vert_idx=self.k_field,
             nflatlev=self._vertical_params.nflatlev,
             nflat_gradp=self._vertical_params.nflat_gradp,
             start_edge_halo_level_2=self._start_edge_halo_level_2,
@@ -1587,10 +1539,6 @@ class SolveNonhydro:
             itime_scheme=self._config.itime_scheme,
             limited_area=self._grid.limited_area,
             divdamp_order=self._config.divdamp_order,
-            combined_divdamp_order=DivergenceDampingOrder.COMBINED,
-            fourth_divdamp_order=DivergenceDampingOrder.FOURTH_ORDER,
-            horz_idx=self.edge_field,
-            vert_idx=self.k_field,
             starting_index_for_3d_divdamp=self._params.starting_index_for_3d_divdamp,
             end_edge_halo_level_2=self._end_edge_halo_level_2,
             start_edge_lateral_boundary_level_7=self._start_edge_lateral_boundary_level_7,
@@ -1674,7 +1622,7 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
+        if self._config.itime_scheme == dycore_states.TimeSteppingScheme.MOST_EFFICIENT:
             log.debug(f"corrector start stencil 42 44 45 45b")
             self._stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,

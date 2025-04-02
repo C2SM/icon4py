@@ -6,31 +6,22 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
 import icon4py.model.testing.helpers as test_helpers
+from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     apply_divergence_damping_and_update_vn_in_corrector_step,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+divergence_damp_order = DivergenceDampingOrder()
 
 
 class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilTest):
@@ -71,10 +62,6 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
         limited_area: gtx.int32,
         itime_scheme: gtx.int32,
         divdamp_order: gtx.int32,
-        combined_divdamp_order: gtx.int32,
-        fourth_divdamp_order: gtx.int32,
-        horz_idx: np.ndarray,
-        vert_idx: np.ndarray,
         starting_index_for_3d_divdamp: gtx.int32,
         end_edge_halo_level_2: gtx.int32,
         start_edge_lateral_boundary_level_7: gtx.int32,
@@ -85,7 +72,8 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
     ) -> dict:
-        horz_idx = horz_idx[:, np.newaxis]
+        vert_idx = np.arange(vertical_end)
+        horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 
         scaling_factor_for_3d_divdamp = np.expand_dims(scaling_factor_for_3d_divdamp, axis=0)
         horizontal_mask_for_3d_divdamp = np.expand_dims(horizontal_mask_for_3d_divdamp, axis=-1)
@@ -125,7 +113,10 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
                 next_vn,
             )
 
-        if divdamp_order == combined_divdamp_order or divdamp_order == fourth_divdamp_order:
+        if (
+            divdamp_order == divergence_damp_order.COMBINED
+            or divdamp_order == divergence_damp_order.FOURTH_ORDER
+        ):
             e2c2eO = connectivities[dims.E2C2EODim]
             # verified for e-10
             squared_horizontal_gradient_of_total_divergence = np.where(
@@ -142,7 +133,10 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
                 np.zeros_like(horizontal_gradient_of_total_divergence),
             )
 
-        if divdamp_order == combined_divdamp_order and second_order_divdamp_scaling_coeff > 1.0e-6:
+        if (
+            divdamp_order == divergence_damp_order.COMBINED
+            and second_order_divdamp_scaling_coeff > 1.0e-6
+        ):
             next_vn = np.where(
                 (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                 next_vn
@@ -151,7 +145,7 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
             )
 
         if (
-            divdamp_order == combined_divdamp_order
+            divdamp_order == divergence_damp_order.COMBINED
             and second_order_divdamp_factor <= 4 * fourth_order_divdamp_factor
         ):
             if limited_area:
@@ -216,9 +210,6 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
         )
         nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim)
 
-        vert_idx = data_alloc.index_field(dim=dims.KDim, grid=grid)
-        horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
-
         dtime = 0.9
         wgt_nnew_vel = 0.75
         wgt_nnow_vel = 0.25
@@ -231,8 +222,6 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
         second_order_divdamp_scaling_coeff = 194588.14247428576
         limited_area = True
         itime_scheme = 4
-        combined_divdamp_order = 24
-        fourth_divdamp_order = 4
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         end_edge_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -273,10 +262,6 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
             itime_scheme=itime_scheme,
             limited_area=limited_area,
             divdamp_order=divdamp_order,
-            combined_divdamp_order=combined_divdamp_order,
-            fourth_divdamp_order=fourth_divdamp_order,
-            horz_idx=horz_idx,
-            vert_idx=vert_idx,
             starting_index_for_3d_divdamp=starting_index_for_3d_divdamp,
             end_edge_halo_level_2=end_edge_halo_level_2,
             start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,

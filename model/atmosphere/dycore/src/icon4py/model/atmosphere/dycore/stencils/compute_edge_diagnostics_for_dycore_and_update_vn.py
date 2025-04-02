@@ -6,23 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next.common import GridType
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast
 
+from icon4py.model.atmosphere.dycore.dycore_states import (
+    DivergenceDampingOrder,
+    HorizontalPressureDiscretizationType,
+    RhoThetaAdvectionType,
+)
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
 )
@@ -67,6 +62,11 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+rhotheta_avd_type: Final = RhoThetaAdvectionType()
+horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
+divergence_damp_order: Final = DivergenceDampingOrder()
+
+
 @gtx.field_operator
 def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -108,10 +108,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     limited_area: bool,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
-    miura_advection_type: gtx.int32,
-    taylor_hydro_gradp_method: gtx.int32,
-    horz_idx: fa.EdgeField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_edge_halo_level_2: gtx.int32,
@@ -128,8 +124,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
 ]:
-    vert_idx = broadcast(vert_idx, (dims.EdgeDim, dims.KDim))
-
     (
         ddx_perturbed_rho,
         ddy_perturbed_rho,
@@ -142,7 +136,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
         )
-        if (iadv_rhotheta == miura_advection_type)
+        if (iadv_rhotheta == rhotheta_avd_type.MIURA)
         else (
             broadcast(0.0, (dims.CellDim, dims.KDim)),
             broadcast(0.0, (dims.CellDim, dims.KDim)),
@@ -152,8 +146,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     )
 
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
-        where(
-            (start_edge_halo_level_2 <= horz_idx < end_edge_halo_level_2),
+        concat_where(
+            (start_edge_halo_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo_level_2),
             (
                 broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
                 broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
@@ -165,8 +159,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     )
 
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
-        where(
-            (start_edge_lateral_boundary <= horz_idx < end_edge_halo),
+        concat_where(
+            (start_edge_lateral_boundary <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
             (
                 broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
                 broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
@@ -178,8 +172,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     )
 
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
-        where(
-            (start_edge_lateral_boundary_level_7 <= horz_idx < end_edge_halo),
+        concat_where(
+            (start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
             _compute_horizontal_advection_of_rho_and_theta(
                 p_vn=current_vn,
                 p_vt=tangential_wind,
@@ -201,57 +195,67 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
             ),
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
         )
-        if (iadv_rhotheta == miura_advection_type) & (iadv_rhotheta <= 2)
+        if (iadv_rhotheta == rhotheta_avd_type.MIURA) & (iadv_rhotheta <= 2)
         else (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels)
     )
 
-    horizontal_pressure_gradient = where(
-        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx < nflatlev),
-        _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
-            inv_dual_edge_length=inv_dual_edge_length,
-            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+    horizontal_pressure_gradient = concat_where(
+        dims.KDim < nflatlev,
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+            _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
+                inv_dual_edge_length=inv_dual_edge_length,
+                z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+            ),
+            horizontal_pressure_gradient,
         ),
         horizontal_pressure_gradient,
     )
 
     horizontal_pressure_gradient = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
-            & (nflatlev <= vert_idx < (nflat_gradp + 1)),
-            _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-                inv_dual_edge_length=inv_dual_edge_length,
-                z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
-                ddxn_z_full=ddxn_z_full,
-                c_lin_e=c_lin_e,
-                z_dexner_dz_c_1=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        concat_where(
+            (nflatlev <= dims.KDim) & (dims.KDim < (nflat_gradp + 1)),
+            concat_where(
+                (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+                _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+                    inv_dual_edge_length=inv_dual_edge_length,
+                    z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+                    ddxn_z_full=ddxn_z_full,
+                    c_lin_e=c_lin_e,
+                    z_dexner_dz_c_1=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                ),
+                horizontal_pressure_gradient,
             ),
             horizontal_pressure_gradient,
         )
-        if (igradp_method == taylor_hydro_gradp_method) & (nflatlev < (nflat_gradp + 1))
+        if (igradp_method == horzpres_discr_type.TAYLOR_HYDRO) & (nflatlev < (nflat_gradp + 1))
         else horizontal_pressure_gradient
     )
 
     horizontal_pressure_gradient = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
-            & ((nflat_gradp + 1) <= vert_idx),
-            _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
-                inv_dual_edge_length=inv_dual_edge_length,
-                z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
-                zdiff_gradp=zdiff_gradp,
-                ikoffset=ikoffset,
-                z_dexner_dz_c_1=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-                z_dexner_dz_c_2=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        concat_where(
+            (nflat_gradp + 1) <= dims.KDim,
+            concat_where(
+                (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+                _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
+                    inv_dual_edge_length=inv_dual_edge_length,
+                    z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+                    zdiff_gradp=zdiff_gradp,
+                    ikoffset=ikoffset,
+                    z_dexner_dz_c_1=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                    z_dexner_dz_c_2=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                ),
+                horizontal_pressure_gradient,
             ),
             horizontal_pressure_gradient,
         )
-        if igradp_method == taylor_hydro_gradp_method
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
         else horizontal_pressure_gradient
     )
 
     horizontal_pressure_gradient = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_end),
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_end),
             _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=ipeidx_dsl,
                 pg_exdist=pg_exdist,
@@ -260,12 +264,12 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
             ),
             horizontal_pressure_gradient,
         )
-        if igradp_method == taylor_hydro_gradp_method
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
         else horizontal_pressure_gradient
     )
 
-    next_vn = where(
-        (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+    next_vn = concat_where(
+        (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
         _add_temporal_tendencies_to_vn(
             vn_nnow=current_vn,
             ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
@@ -279,8 +283,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     )
 
     next_vn = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _add_analysis_increments_to_vn(
                 vn_incr=normal_wind_iau_increments, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
             ),
@@ -329,46 +333,45 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
     itime_scheme: gtx.int32,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    combined_divdamp_order: gtx.int32,
-    fourth_divdamp_order: gtx.int32,
-    horz_idx: fa.EdgeField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
     starting_index_for_3d_divdamp: gtx.int32,
     end_edge_halo_level_2: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
     end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.wpfloat]:
-    vert_idx = broadcast(vert_idx, (dims.EdgeDim, dims.KDim))
-
-    horizontal_gradient_of_total_divergence = where(
-        (start_edge_lateral_boundary_level_7 <= horz_idx < end_edge_halo_level_2)
-        & (starting_index_for_3d_divdamp <= vert_idx),
-        _add_vertical_wind_derivative_to_divergence_damping(
-            hmask_dd3d=horizontal_mask_for_3d_divdamp,
-            scalfac_dd3d=scaling_factor_for_3d_divdamp,
-            inv_dual_edge_length=inv_dual_edge_length,
-            z_dwdz_dd=dwdz_at_cells_on_model_levels,
-            z_graddiv_vn=horizontal_gradient_of_normal_wind_divergence,
+    horizontal_gradient_of_total_divergence = concat_where(
+        starting_index_for_3d_divdamp <= dims.KDim,
+        concat_where(
+            (start_edge_lateral_boundary_level_7 <= dims.EdgeDim)
+            & (dims.EdgeDim < end_edge_halo_level_2),
+            _add_vertical_wind_derivative_to_divergence_damping(
+                hmask_dd3d=horizontal_mask_for_3d_divdamp,
+                scalfac_dd3d=scaling_factor_for_3d_divdamp,
+                inv_dual_edge_length=inv_dual_edge_length,
+                z_dwdz_dd=dwdz_at_cells_on_model_levels,
+                z_graddiv_vn=horizontal_gradient_of_normal_wind_divergence,
+            ),
+            horizontal_gradient_of_normal_wind_divergence,
         ),
         horizontal_gradient_of_normal_wind_divergence,
     )
 
     squared_horizontal_gradient_of_total_divergence = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _compute_graddiv2_of_vn(
                 geofac_grdiv=geofac_grdiv, z_graddiv_vn=horizontal_gradient_of_total_divergence
             ),
             broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
         )
-        if (divdamp_order == combined_divdamp_order) | (divdamp_order == fourth_divdamp_order)
+        if (divdamp_order == divergence_damp_order.COMBINED)
+        | (divdamp_order == divergence_damp_order.FOURTH_ORDER)
         else broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim))
     )
 
     next_vn = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=current_vn,
                 ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
@@ -388,8 +391,8 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
     )
 
     next_vn = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _apply_2nd_order_divergence_damping(
                 z_graddiv_vn=horizontal_gradient_of_total_divergence,
                 vn=next_vn,
@@ -398,15 +401,15 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
             next_vn,
         )
         if (
-            (divdamp_order == combined_divdamp_order)
+            (divdamp_order == divergence_damp_order.COMBINED)
             & (second_order_divdamp_scaling_coeff > 1.0e-6)
         )
         else next_vn
     )
 
     next_vn = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _apply_weighted_2nd_and_4th_order_divergence_damping(
                 scal_divdamp=fourth_order_divdamp_scaling_coeff,
                 bdy_divdamp=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
@@ -417,7 +420,7 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
             next_vn,
         )
         if (
-            (divdamp_order == combined_divdamp_order)
+            (divdamp_order == divergence_damp_order.COMBINED)
             & (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
             & limited_area
         )
@@ -425,8 +428,8 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
     )
 
     next_vn = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _apply_4th_order_divergence_damping(
                 scal_divdamp=fourth_order_divdamp_scaling_coeff,
                 z_graddiv2_vn=squared_horizontal_gradient_of_total_divergence,
@@ -435,7 +438,7 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
             next_vn,
         )
         if (
-            (divdamp_order == combined_divdamp_order)
+            (divdamp_order == divergence_damp_order.COMBINED)
             & (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
             & (not limited_area)
         )
@@ -443,8 +446,8 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
     )
 
     next_vn = (
-        where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local),
+        concat_where(
+            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _add_analysis_increments_to_vn(
                 vn_incr=normal_wind_iau_increments, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
             ),
@@ -498,10 +501,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
     limited_area: bool,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
-    miura_advection_type: gtx.int32,
-    taylor_hydro_gradp_method: gtx.int32,
-    horz_idx: fa.EdgeField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_edge_halo_level_2: gtx.int32,
@@ -558,10 +557,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
         limited_area=limited_area,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
-        miura_advection_type=miura_advection_type,
-        taylor_hydro_gradp_method=taylor_hydro_gradp_method,
-        horz_idx=horz_idx,
-        vert_idx=vert_idx,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
         start_edge_halo_level_2=start_edge_halo_level_2,
@@ -616,10 +611,6 @@ def apply_divergence_damping_and_update_vn_in_corrector_step(
     itime_scheme: gtx.int32,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    combined_divdamp_order: gtx.int32,
-    fourth_divdamp_order: gtx.int32,
-    horz_idx: fa.EdgeField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
     starting_index_for_3d_divdamp: gtx.int32,
     end_edge_halo_level_2: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
@@ -661,10 +652,6 @@ def apply_divergence_damping_and_update_vn_in_corrector_step(
         itime_scheme=itime_scheme,
         limited_area=limited_area,
         divdamp_order=divdamp_order,
-        combined_divdamp_order=combined_divdamp_order,
-        fourth_divdamp_order=fourth_divdamp_order,
-        horz_idx=horz_idx,
-        vert_idx=vert_idx,
         starting_index_for_3d_divdamp=starting_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,

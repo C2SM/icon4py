@@ -9,15 +9,70 @@
 from __future__ import annotations
 
 import dataclasses
+import enum
 from typing import Optional
 
 import gt4py.next as gtx
+from gt4py.eve.utils import FrozenNamespace
 
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     utils as common_utils,
 )
+
+
+class TimeSteppingScheme(enum.IntEnum):
+    """Parameter called `itime_scheme` in ICON namelist."""
+
+    #: Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
+    MOST_EFFICIENT = 4
+    #: Contravariant vertical velocity is computed in both substeps (beneficial for numerical stability in very-high resolution setups with extremely steep slopes)
+    STABLE = 5
+    #:  As STABLE, but velocity tendencies are also computed in both substeps (no benefit, but more expensive)
+    EXPENSIVE = 6
+
+
+class DivergenceDampingType(enum.IntEnum):
+    #: divergence damping acting on 2D divergence
+    TWO_DIMENSIONAL = 2
+    #: divergence damping acting on 3D divergence
+    THREE_DIMENSIONAL = 3
+    #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
+    COMBINED = 32
+
+
+class DivergenceDampingOrder(FrozenNamespace):
+    #: 2nd order divergence damping
+    SECOND_ORDER = 2
+    #: 4th order divergence damping
+    FOURTH_ORDER = 4
+    #: combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
+    COMBINED = 24
+
+
+class HorizontalPressureDiscretizationType(FrozenNamespace):
+    """Parameter called igradp_method in ICON namelist."""
+
+    #: conventional discretization with metric correction term
+    CONVENTIONAL = 1
+    #: Taylor-expansion-based reconstruction of pressure
+    TAYLOR = 2
+    #: Similar discretization as igradp_method_taylor, but uses hydrostatic approximation for downward extrapolation over steep slopes
+    TAYLOR_HYDRO = 3
+    #: Cubic / quadratic polynomial interpolation for pressure reconstruction
+    POLYNOMIAL = 4
+    #: Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
+    POLYNOMIAL_HYDRO = 5
+
+
+class RhoThetaAdvectionType(FrozenNamespace):
+    """Parameter called iadv_rhotheta in ICON namelist."""
+
+    #: simple 2nd order upwind-biased scheme
+    SIMPLE = 1
+    #: 2nd order Miura horizontal
+    MIURA = 2
 
 
 @dataclasses.dataclass

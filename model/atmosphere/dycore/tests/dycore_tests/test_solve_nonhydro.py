@@ -1094,8 +1094,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
-    horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
     current_vn = sp_stencil_init.vn()
     next_vn = sp_nh_init.vn_new()
@@ -1213,10 +1211,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method.value,
-        miura_advection_type=solve_nh.RhoThetaAdvectionType.MIURA.value,
-        taylor_hydro_gradp_method=solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value,
-        horz_idx=horz_idx,
-        vert_idx=vert_idx,
         nflatlev=vertical_params.nflatlev,
         nflat_gradp=vertical_params.nflat_gradp,
         start_edge_halo_level_2=start_edge_halo_level_2,
@@ -1311,9 +1305,6 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
-    horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
-
     dwdz_at_cells_on_model_levels = sp_stencil_init.z_dwdz_dd()
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
     corrector_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(1)
@@ -1371,10 +1362,6 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
         itime_scheme=itime_scheme,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
-        combined_divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
-        fourth_divdamp_order=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
-        horz_idx=horz_idx,
-        vert_idx=vert_idx,
         starting_index_for_3d_divdamp=nonhydro_params.starting_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
