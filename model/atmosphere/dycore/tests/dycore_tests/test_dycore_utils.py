@@ -104,7 +104,7 @@ def test_calculate_divdamp_fields(backend):
     nudge_max_coeff = 0.3
 
     scaled_ref = fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
-        np.asarray(divdamp_field), second_order_divdamp_factor, mean_cell_area
+        divdamp_field.asnumpy(), second_order_divdamp_factor, mean_cell_area
     )
 
     reduced_fourth_order_divdamp_coeff_at_nest_boundary_ref = (
