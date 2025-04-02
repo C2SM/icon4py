@@ -89,7 +89,6 @@ def test_verify_velocity_init_against_savepoint(
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
     assert helpers.dallclose(velocity_advection.cfl_clipping.asnumpy(), 0.0)
-    assert helpers.dallclose(velocity_advection.levmask.asnumpy(), False)
     assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
 
 

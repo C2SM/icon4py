@@ -414,7 +414,6 @@ class VelocityAdvection:
         levmask = gtx.as_field(
             domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
-
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
             vn=prognostic_state.vn,
