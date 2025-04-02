@@ -189,7 +189,6 @@ def compute_diffusion_metrics(
         cell_nudging=cell_nudging,
         n_cells=n_cells,
         nlev=nlev,
-        
     )
 
     listdim = ji - listreduce
