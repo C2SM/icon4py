@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,8 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_and_vt_to_ie_and_co
     interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,8 +28,12 @@ class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(StencilTest):
 
     @staticmethod
     def reference(
-        grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
-    ) -> tuple[np.array, np.array]:
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_e: np.ndarray,
+        vn: np.ndarray,
+        vt: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         vn_offset_1 = np.roll(vn, shift=1, axis=1)
         vt_offset_1 = np.roll(vt, shift=1, axis=1)
 
@@ -38,7 +46,7 @@ class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(StencilTest):
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_e = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,12 +15,14 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy 
     compute_horizontal_kinetic_energy,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def compute_horizontal_kinetic_energy_numpy(vn: np.array, vt: np.array) -> tuple:
+def compute_horizontal_kinetic_energy_numpy(vn: np.ndarray, vt: np.ndarray) -> tuple:
     vn_ie = vn
     z_vt_ie = vt
     z_kin_hor_e = 0.5 * ((vn * vn) + (vt * vt))
@@ -30,12 +34,17 @@ class TestComputeHorizontalKineticEnergy(StencilTest):
     OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
 
     @staticmethod
-    def reference(grid, vn: np.array, vt: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        vn: np.ndarray,
+        vt: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         vn_ie, z_vt_ie, z_kin_hor_e = compute_horizontal_kinetic_energy_numpy(vn, vt)
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 

@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
@@ -50,11 +50,10 @@ def _compute_ppm_slope_b(
 def _compute_ppm_slope(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
     elev: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    z_slope = where(
-        k == elev,
+    z_slope = concat_where(
+        dims.KDim == elev,
         _compute_ppm_slope_b(p_cc, p_cellhgt_mc_now),
         _compute_ppm_slope_a(p_cc, p_cellhgt_mc_now),
     )
@@ -66,7 +65,6 @@ def _compute_ppm_slope(
 def compute_ppm_slope(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
     z_slope: fa.CellKField[ta.wpfloat],
     elev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -77,7 +75,6 @@ def compute_ppm_slope(
     _compute_ppm_slope(
         p_cc,
         p_cellhgt_mc_now,
-        k,
         elev,
         out=z_slope,
         domain={

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative 
     compute_first_vertical_derivative,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -23,12 +27,17 @@ class TestComputeFirstVerticalDerivative(StencilTest):
     OUTPUTS = ("z_dexner_dz_c_1",)
 
     @staticmethod
-    def reference(grid, z_exner_ic: np.array, inv_ddqz_z_full: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_exner_ic: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
         return dict(z_dexner_dz_c_1=z_dexner_dz_c_1)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_exner_ic = random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )

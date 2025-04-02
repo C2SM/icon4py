@@ -125,10 +125,10 @@ def model_initialization_serialbox(
         linit=True, date=SIMULATION_START_DATE
     )
     solve_nonhydro_init_savepoint = data_provider.from_savepoint_nonhydro_init(
-        istep=1, date=SIMULATION_START_DATE, jstep=0
+        istep=1, date=SIMULATION_START_DATE, substep=1
     )
     velocity_init_savepoint = data_provider.from_savepoint_velocity_init(
-        istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
+        istep=1, date=SIMULATION_START_DATE, substep=1
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
     diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
@@ -145,17 +145,17 @@ def model_initialization_serialbox(
         mass_fl_e=solve_nonhydro_init_savepoint.mass_fl_e(),
         ddt_vn_phy=solve_nonhydro_init_savepoint.ddt_vn_phy(),
         grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             velocity_init_savepoint.ddt_vn_apc_pc(1),
             velocity_init_savepoint.ddt_vn_apc_pc(2),
         ),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             velocity_init_savepoint.ddt_w_adv_pc(1),
             velocity_init_savepoint.ddt_w_adv_pc(2),
         ),
-        vt=velocity_init_savepoint.vt(),
-        vn_ie=velocity_init_savepoint.vn_ie(),
-        w_concorr_c=velocity_init_savepoint.w_concorr_c(),
+        tangential_wind=velocity_init_savepoint.vt(),
+        vn_on_half_levels=velocity_init_savepoint.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=velocity_init_savepoint.w_concorr_c(),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -493,7 +493,7 @@ def read_static_fields(
             ddxn_z_full=metrics_savepoint.ddxn_z_full(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-            ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+            pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),

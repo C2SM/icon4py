@@ -5,12 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_airmass import compute_airmass
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -22,13 +26,17 @@ class TestComputeAirmass(StencilTest):
 
     @staticmethod
     def reference(
-        grid, rho_in: np.array, ddqz_z_full_in: np.array, deepatmo_t1mc_in: np.array, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        rho_in: np.ndarray,
+        ddqz_z_full_in: np.ndarray,
+        deepatmo_t1mc_in: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         airmass_out = rho_in * ddqz_z_full_in * deepatmo_t1mc_in
         return dict(airmass_out=airmass_out)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddqz_z_full_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         deepatmo_t1mc_in = random_field(grid, dims.KDim, dtype=wpfloat)

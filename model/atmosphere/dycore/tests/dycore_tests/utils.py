@@ -64,7 +64,7 @@ def construct_metric_state(
         ddxn_z_full=savepoint.ddxn_z_full(),
         zdiff_gradp=savepoint.zdiff_gradp(),
         vertoffset_gradp=savepoint.vertoffset_gradp(),
-        ipeidx_dsl=savepoint.ipeidx_dsl(),
+        pg_edgeidx_dsl=savepoint.pg_edgeidx_dsl(),
         pg_exdist=savepoint.pg_exdist(),
         ddqz_z_full_e=savepoint.ddqz_z_full_e(),
         ddxt_z_full=savepoint.ddxt_z_full(),
@@ -90,7 +90,7 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
         ndyn_substeps_var=ndyn,
-        divdamp_order=24,
+        divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         divdamp_fac=0.004,
         max_nudging_coeff=0.075,
@@ -120,9 +120,10 @@ def create_vertical_params(
 
 
 def construct_diagnostics(
-    init_savepoint: sb.IconNonHydroInitSavepoint, swap_ddt_w_adv_pc: bool = False
+    init_savepoint: sb.IconNonHydroInitSavepoint,
+    swap_vertical_wind_advective_tendency: bool = False,
 ):
-    current_index, next_index = (2, 1) if swap_ddt_w_adv_pc else (1, 2)
+    current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
@@ -134,15 +135,15 @@ def construct_diagnostics(
         mass_fl_e=init_savepoint.mass_fl_e(),
         ddt_vn_phy=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            init_savepoint.ddt_vn_apc_pc(1), init_savepoint.ddt_vn_apc_pc(2)
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)
         ),
-        vt=init_savepoint.vt(),
-        vn_ie=init_savepoint.vn_ie(),
-        w_concorr_c=init_savepoint.w_concorr_c(),
+        tangential_wind=init_savepoint.vt(),
+        vn_on_half_levels=init_savepoint.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),

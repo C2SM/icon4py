@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperat
     compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,16 +28,16 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        wgtfac_c: np.array,
-        z_rth_pr_2: np.array,
-        theta_v: np.array,
-        vwind_expl_wgt: np.array,
-        exner_pr: np.array,
-        d_exner_dz_ref_ic: np.array,
-        ddqz_z_half: np.array,
-        **kwargs,
-    ) -> tuple[np.array, np.array, np.array]:
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_c: np.ndarray,
+        z_rth_pr_2: np.ndarray,
+        theta_v: np.ndarray,
+        vwind_expl_wgt: np.ndarray,
+        exner_pr: np.ndarray,
+        d_exner_dz_ref_ic: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
         theta_v_offset = np.roll(theta_v, axis=1, shift=1)
         exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)
@@ -55,7 +59,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

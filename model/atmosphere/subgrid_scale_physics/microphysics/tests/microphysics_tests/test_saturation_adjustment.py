@@ -20,6 +20,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
+@pytest.skip("FIXME: Need to update data for Weisman Klemp", allow_module_level=True)
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor, date",
     [
