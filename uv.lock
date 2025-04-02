@@ -1394,7 +1394,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace#66fd3d7c342ab7214e70005f953365cf28737536" }
+source = { git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace#233082e7e3d8d42b7938554a4bf8a895b3860fa9" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
