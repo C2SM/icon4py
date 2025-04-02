@@ -22,7 +22,7 @@ def fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
     return -a * mean_cell_area**2
 
 
-def reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(coeff: float, field: np.array):
+def reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(coeff: float, field: np.ndarray):
     return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
