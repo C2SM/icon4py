@@ -60,7 +60,6 @@ def _compute_advection_in_horizontal_momentum_equation(
         ddqz_z_full_e,
     )
 
-    # k = broadcast(k, (dims.EdgeDim, dims.KDim))
     normal_wind_advective_tendency = concat_where(
         ((maximum(3, nrdmax - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 4)),
         _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
@@ -78,7 +77,6 @@ def _compute_advection_in_horizontal_momentum_equation(
             cfl_w_limit,
             scalfac_exdiff,
             d_time,
-            normal_wind_advective_tendency,
         ),
         normal_wind_advective_tendency,
     )

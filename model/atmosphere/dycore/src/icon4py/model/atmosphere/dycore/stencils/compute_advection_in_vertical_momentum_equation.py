@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import maximum, where
+from gt4py.next.ffront.fbuiltins import maximum
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     _add_extra_diffusion_for_w_con_approaching_cfl,
@@ -44,11 +44,9 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     nlev: gtx.int32,
     nrdmax: gtx.int32,
 ) -> fa.CellKField[ta.vpfloat]:
-    # k = broadcast(k, (dims.CellDim, dims.KDim))
-
     # TODO(havogt): we should get rid of the cell_lower_bound and cell_upper_bound,
     # they are only to protect write to halo (if I understand correctly)
-    vertical_wind_advective_tendency = where(
+    vertical_wind_advective_tendency = concat_where(
         1 <= dims.KDim,
         _compute_advective_vertical_wind_tendency(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz

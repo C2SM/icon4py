@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.experimental import astype, concat_where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -77,7 +78,7 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
 
     tangential_wind_on_half_levels = (
-        _interpolate_to_half_levels(k, wgtfac_e, tangential_wind)
+        _interpolate_to_half_levels(wgtfac_e, tangential_wind)
         if not skip_compute_predictor_vertical_advection
         else tangential_wind_on_half_levels
     )

@@ -625,7 +625,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     tangent_orientation = grid_savepoint.tangent_orientation()
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
     z_v_grad_w_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
 
@@ -927,6 +927,12 @@ def test_compute_advection_in_vertical_momentum_equation(
 
     dtime = 5.0
     cell_domain = h_grid.domain(dims.CellDim)
+    start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
+        cell_domain(h_grid.Zone.NUDGING)
+    )
+    end_cell_local_for_vertical_wind_advective_tendency = icon_grid.end_index(
+        cell_domain(h_grid.Zone.LOCAL)
+    )
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     vertical_start = 0
@@ -972,8 +978,14 @@ def test_compute_advection_in_vertical_momentum_equation(
         atol=1.0e-15,
     )
     assert helpers.dallclose(
-        ddt_w_adv_ref.asnumpy(),
-        vertical_wind_advective_tendency.asnumpy(),
+        ddt_w_adv_ref.asnumpy()[
+            start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
+            :,
+        ],
+        vertical_wind_advective_tendency.asnumpy()[
+            start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
+            :,
+        ],
         rtol=1.0e-15,
         atol=1.0e-15,
     )

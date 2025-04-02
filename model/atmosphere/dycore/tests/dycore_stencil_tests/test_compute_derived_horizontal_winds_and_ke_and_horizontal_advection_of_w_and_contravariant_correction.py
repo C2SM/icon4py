@@ -63,27 +63,22 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         ddxt_z_full: np.ndarray,
         wgtfacq_e: np.ndarray,
         skip_compute_predictor_vertical_advection: bool,
-        k: np.ndarray,
         nflatlev: int,
+        nlevp1: int,
     ) -> tuple[np.ndarray, ...]:
+        k = np.arange(nlevp1)
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
-        nlev = k_nlev.shape[1]
+        
+        tangential_wind = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
 
-        condition1 = k_nlev < nlev
-        tangential_wind = np.where(
-            condition1,
-            compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
-            tangential_wind,
-        )
-
-        condition2 = (1 <= k_nlev) & (k_nlev < nlev)
+        condition2 = 1 <= k_nlev
         vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
             condition2,
             interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
                 wgtfac_e, vn, tangential_wind
             ),
-            (vn_on_half_levels[:, :nlev], horizontal_kinetic_energy_at_edges_on_model_levels),
+            (vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels),
         )
 
         if not skip_compute_predictor_vertical_advection:
@@ -95,27 +90,27 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
 
         condition3 = k_nlev == 0
         (
-            vn_on_half_levels[:, :nlev],
+            vn_on_half_levels[:, :-1],
             tangential_wind_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels,
         ) = np.where(
             condition3,
             compute_horizontal_kinetic_energy_numpy(vn, tangential_wind),
             (
-                vn_on_half_levels[:, :nlev],
+                vn_on_half_levels[:, :-1],
                 tangential_wind_on_half_levels,
                 horizontal_kinetic_energy_at_edges_on_model_levels,
             ),
         )
 
-        condition4 = k == nlev
+        condition4 = k == nlevp1 - 1
         vn_on_half_levels = np.where(
             condition4,
             extrapolate_at_top_numpy(wgtfacq_e, vn),
             vn_on_half_levels,
         )
 
-        condition5 = (nflatlev <= k_nlev) & (k_nlev < nlev)
+        condition5 = nflatlev <= k_nlev
         contravariant_correction_at_edges_on_model_levels = np.where(
             condition5,
             compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
@@ -158,10 +153,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
-        k = np.arange(vertical_end) # nlev + 1
-        k_nlev = k[:-1]
-        nlev = k_nlev.shape[1]
-
         (
             tangential_wind,
             tangential_wind_on_half_levels,
@@ -182,22 +173,16 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             ddxt_z_full,
             wgtfacq_e,
             skip_compute_predictor_vertical_advection,
-            k,
             nflatlev,
+            vertical_end,
         )
-
-        edge = np.arange(tangential_wind.shape[0])
-        edge = edge[:, np.newaxis]
-
-        condition_mask = k_nlev < nlev
 
         khalf_w_at_edge = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
             connectivities, w, c_intp
         )
 
         if not skip_compute_predictor_vertical_advection:
-            horizontal_advection_of_w_at_edges_on_half_levels = np.where(
-                condition_mask,
+            horizontal_advection_of_w_at_edges_on_half_levels = (
                 compute_horizontal_advection_term_for_vertical_velocity_numpy(
                     connectivities,
                     vn_on_half_levels[:, :-1],
@@ -207,8 +192,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
                     inv_primal_edge_length,
                     tangent_orientation,
                     khalf_w_at_edge,
-                ),
-                horizontal_advection_of_w_at_edges_on_half_levels,
+                )
             )
 
         return dict(

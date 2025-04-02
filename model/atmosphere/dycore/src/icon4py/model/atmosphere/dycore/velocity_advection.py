@@ -118,7 +118,6 @@ class VelocityAdvection:
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
-
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
@@ -346,8 +345,8 @@ class VelocityAdvection:
             inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             tangent_orientation=self.edge_params.tangent_orientation,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
+            horizontal_start=self._start_edge_lateral_boundary_level_7,
+            horizontal_end=self._end_edge_halo,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,

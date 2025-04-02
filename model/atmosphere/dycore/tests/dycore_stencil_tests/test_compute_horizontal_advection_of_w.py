@@ -43,32 +43,16 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         inv_dual_edge_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
         tangent_orientation: np.ndarray,
-        lateral_boundary_7: int,
-        halo_1: int,
-        start_vertex_lateral_boundary_level_2: int,
-        end_vertex_halo: int,
         horizontal_start: int,
         horizontal_end: int,
         vertical_start: int,
         vertical_end: int,
     ) -> dict:
-        edge = np.arange(tangential_wind_on_half_levels.shape[0])
-        vertex = np.arange(c_intp.shape[0])
-        edge = edge[:, np.newaxis]
-        vertex = vertex[:, np.newaxis]
-        condition_mask1 = (start_vertex_lateral_boundary_level_2 <= vertex) & (
-            vertex < end_vertex_halo
-        )
-        condition_mask2 = (lateral_boundary_7 <= edge) & (edge < halo_1)
-
-        w_at_vertices = np.where(
-            condition_mask1,
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(connectivities, w, c_intp),
-            0.0,
+        w_at_vertices = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
+            connectivities, w, c_intp
         )
 
-        horizontal_advection_of_w_at_edges_on_half_levels = np.where(
-            condition_mask2,
+        horizontal_advection_of_w_at_edges_on_half_levels = (
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
                 connectivities,
                 vn_on_half_levels[:, :-1],
@@ -78,8 +62,7 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
                 inv_primal_edge_length,
                 tangent_orientation,
                 w_at_vertices,
-            ),
-            horizontal_advection_of_w_at_edges_on_half_levels,
+            )
         )
 
         return dict(
@@ -104,10 +87,9 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
         nlev = grid.num_levels
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        vertex_domain = h_grid.domain(dims.VertexDim)
         # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO))
         vertical_start = 0
         vertical_end = nlev
 
@@ -120,13 +102,6 @@ class TestComputeHorizontalAdvectionOfW(test_helpers.StencilTest):
             inv_dual_edge_length=inv_dual_edge_length,
             inv_primal_edge_length=inv_primal_edge_length,
             tangent_orientation=tangent_orientation,
-            # TODO fix reference
-            # edge=edge,
-            # vertex=vertex,
-            # lateral_boundary_7=lateral_boundary_7,
-            # halo_1=halo_1,
-            # start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
-            # end_vertex_halo=end_vertex_halo,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=vertical_start,
