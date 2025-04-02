@@ -33,7 +33,7 @@ from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestApplyDivvergenceDampingCorrector(test_helpers.StencilTest):
+class TestApplyDivergenceDampingCorrector(test_helpers.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn_in_corrector_step
     OUTPUTS = ("next_vn",)
 
