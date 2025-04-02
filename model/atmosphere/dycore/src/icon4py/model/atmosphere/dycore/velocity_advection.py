@@ -298,10 +298,8 @@ class VelocityAdvection:
             levelmask=levmask,  # TODO(havogt): can we get rid of the levelmask here?
             nlev=self.grid.num_levels,
             nrdmax=self.vertical_params.nrdmax,
-            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
-            end_edge_local=self._end_edge_local,
-            horizontal_start=gtx.int32(0),
-            horizontal_end=gtx.int32(self.grid.num_edges),
+            horizontal_start=self._start_edge_nudging_level_2,
+            horizontal_end=self._end_edge_local,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
@@ -367,6 +365,7 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
         )
+
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             z_w_con_c=self._contravariant_corrected_w_at_cells_on_half_levels,
@@ -439,10 +438,8 @@ class VelocityAdvection:
             levelmask=levmask,  # TODO(havogt): can we get rid of the levelmask here?
             nlev=self.grid.num_levels,
             nrdmax=self.vertical_params.nrdmax,
-            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
-            end_edge_local=self._end_edge_local,
-            horizontal_start=gtx.int32(0),
-            horizontal_end=gtx.int32(self.grid.num_edges),
+            horizontal_start=self._start_edge_nudging_level_2,
+            horizontal_end=self._end_edge_local,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
