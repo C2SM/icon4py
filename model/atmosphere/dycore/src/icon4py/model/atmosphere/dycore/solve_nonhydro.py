@@ -963,9 +963,9 @@ class SolveNonhydro:
                 offset_provider=self._grid.offset_providers,
             )
 
-        #     if self._vertical_params.nflatlev == 1:
-        #         # Perturbation Exner pressure on top half level
-        #         raise NotImplementedError("nflatlev=1 not implemented")
+            if self._vertical_params.nflatlev == 1:
+                # Perturbation Exner pressure on top half level
+                raise NotImplementedError("nflatlev=1 not implemented")
 
         self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
             rho=prognostic_states.current.rho,
@@ -1126,8 +1126,8 @@ class SolveNonhydro:
             limited_area=self._grid.limited_area,
             iadv_rhotheta=self._config.iadv_rhotheta,
             igradp_method=self._config.igradp_method,
-            MIURA_advection_type=RhoThetaAdvectionType.MIURA,
-            TAYLOR_HYDRO_gradp_method=HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
+            miura_advection_type=RhoThetaAdvectionType.MIURA,
+            taylor_hydro_gradp_method=HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
             horz_idx=self.edge_field,
             vert_idx=self.k_field,
             nflatlev=self._vertical_params.nflatlev,
@@ -1587,8 +1587,8 @@ class SolveNonhydro:
             itime_scheme=self._config.itime_scheme,
             limited_area=self._grid.limited_area,
             divdamp_order=self._config.divdamp_order,
-            COMBINED_divdamp_order=DivergenceDampingOrder.COMBINED,
-            FOURTH_ORDER_divdamp_order=DivergenceDampingOrder.FOURTH_ORDER,
+            combined_divdamp_order=DivergenceDampingOrder.COMBINED,
+            fourth_divdamp_order=DivergenceDampingOrder.FOURTH_ORDER,
             horz_idx=self.edge_field,
             vert_idx=self.k_field,
             starting_index_for_3d_divdamp=self._params.starting_index_for_3d_divdamp,

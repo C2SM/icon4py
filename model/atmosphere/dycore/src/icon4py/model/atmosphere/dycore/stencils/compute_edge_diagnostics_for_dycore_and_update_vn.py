@@ -108,8 +108,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
     limited_area: bool,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
-    MIURA_advection_type: gtx.int32,
-    TAYLOR_HYDRO_gradp_method: gtx.int32,
+    miura_advection_type: gtx.int32,
+    taylor_hydro_gradp_method: gtx.int32,
     horz_idx: fa.EdgeField[gtx.int32],
     vert_idx: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
@@ -142,7 +142,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
         )
-        if (iadv_rhotheta == MIURA_advection_type)
+        if (iadv_rhotheta == miura_advection_type)
         else (
             broadcast(0.0, (dims.CellDim, dims.KDim)),
             broadcast(0.0, (dims.CellDim, dims.KDim)),
@@ -201,7 +201,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
             ),
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
         )
-        if (iadv_rhotheta == MIURA_advection_type) & (iadv_rhotheta <= 2)
+        if (iadv_rhotheta == miura_advection_type) & (iadv_rhotheta <= 2)
         else (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels)
     )
 
@@ -227,7 +227,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
             ),
             horizontal_pressure_gradient,
         )
-        if (igradp_method == TAYLOR_HYDRO_gradp_method) & (nflatlev < (nflat_gradp + 1))
+        if (igradp_method == taylor_hydro_gradp_method) & (nflatlev < (nflat_gradp + 1))
         else horizontal_pressure_gradient
     )
 
@@ -245,7 +245,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
             ),
             horizontal_pressure_gradient,
         )
-        if igradp_method == TAYLOR_HYDRO_gradp_method
+        if igradp_method == taylor_hydro_gradp_method
         else horizontal_pressure_gradient
     )
 
@@ -260,7 +260,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
             ),
             horizontal_pressure_gradient,
         )
-        if igradp_method == TAYLOR_HYDRO_gradp_method
+        if igradp_method == taylor_hydro_gradp_method
         else horizontal_pressure_gradient
     )
 
@@ -329,8 +329,8 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
     itime_scheme: gtx.int32,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    COMBINED_divdamp_order: gtx.int32,
-    FOURTH_ORDER_divdamp_order: gtx.int32,
+    combined_divdamp_order: gtx.int32,
+    fourth_divdamp_order: gtx.int32,
     horz_idx: fa.EdgeField[gtx.int32],
     vert_idx: fa.KField[gtx.int32],
     starting_index_for_3d_divdamp: gtx.int32,
@@ -362,7 +362,7 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
             ),
             broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
         )
-        if (divdamp_order == COMBINED_divdamp_order) | (divdamp_order == FOURTH_ORDER_divdamp_order)
+        if (divdamp_order == combined_divdamp_order) | (divdamp_order == fourth_divdamp_order)
         else broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim))
     )
 
@@ -398,7 +398,7 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
             next_vn,
         )
         if (
-            (divdamp_order == COMBINED_divdamp_order)
+            (divdamp_order == combined_divdamp_order)
             & (second_order_divdamp_scaling_coeff > 1.0e-6)
         )
         else next_vn
@@ -417,7 +417,7 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
             next_vn,
         )
         if (
-            (divdamp_order == COMBINED_divdamp_order)
+            (divdamp_order == combined_divdamp_order)
             & (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
             & limited_area
         )
@@ -435,7 +435,7 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
             next_vn,
         )
         if (
-            (divdamp_order == COMBINED_divdamp_order)
+            (divdamp_order == combined_divdamp_order)
             & (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
             & (not limited_area)
         )
@@ -498,8 +498,8 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
     limited_area: bool,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
-    MIURA_advection_type: gtx.int32,
-    TAYLOR_HYDRO_gradp_method: gtx.int32,
+    miura_advection_type: gtx.int32,
+    taylor_hydro_gradp_method: gtx.int32,
     horz_idx: fa.EdgeField[gtx.int32],
     vert_idx: fa.KField[gtx.int32],
     nflatlev: gtx.int32,
@@ -558,8 +558,8 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
         limited_area=limited_area,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
-        MIURA_advection_type=MIURA_advection_type,
-        TAYLOR_HYDRO_gradp_method=TAYLOR_HYDRO_gradp_method,
+        miura_advection_type=miura_advection_type,
+        taylor_hydro_gradp_method=taylor_hydro_gradp_method,
         horz_idx=horz_idx,
         vert_idx=vert_idx,
         nflatlev=nflatlev,
@@ -616,8 +616,8 @@ def apply_divergence_damping_and_update_vn_in_corrector_step(
     itime_scheme: gtx.int32,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    COMBINED_divdamp_order: gtx.int32,
-    FOURTH_ORDER_divdamp_order: gtx.int32,
+    combined_divdamp_order: gtx.int32,
+    fourth_divdamp_order: gtx.int32,
     horz_idx: fa.EdgeField[gtx.int32],
     vert_idx: fa.KField[gtx.int32],
     starting_index_for_3d_divdamp: gtx.int32,
@@ -661,8 +661,8 @@ def apply_divergence_damping_and_update_vn_in_corrector_step(
         itime_scheme=itime_scheme,
         limited_area=limited_area,
         divdamp_order=divdamp_order,
-        COMBINED_divdamp_order=COMBINED_divdamp_order,
-        FOURTH_ORDER_divdamp_order=FOURTH_ORDER_divdamp_order,
+        combined_divdamp_order=combined_divdamp_order,
+        fourth_divdamp_order=fourth_divdamp_order,
         horz_idx=horz_idx,
         vert_idx=vert_idx,
         starting_index_for_3d_divdamp=starting_index_for_3d_divdamp,

@@ -33,7 +33,7 @@ from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestApplyDivergenceDampingCorrector(test_helpers.StencilTest):
+class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn_in_corrector_step
     OUTPUTS = ("next_vn",)
 
@@ -71,8 +71,8 @@ class TestApplyDivergenceDampingCorrector(test_helpers.StencilTest):
         limited_area: gtx.int32,
         itime_scheme: gtx.int32,
         divdamp_order: gtx.int32,
-        COMBINED_divdamp_order: gtx.int32,
-        FOURTH_ORDER_divdamp_order: gtx.int32,
+        combined_divdamp_order: gtx.int32,
+        fourth_divdamp_order: gtx.int32,
         horz_idx: np.ndarray,
         vert_idx: np.ndarray,
         starting_index_for_3d_divdamp: gtx.int32,
@@ -125,7 +125,7 @@ class TestApplyDivergenceDampingCorrector(test_helpers.StencilTest):
                 next_vn,
             )
 
-        if divdamp_order == COMBINED_divdamp_order or divdamp_order == FOURTH_ORDER_divdamp_order:
+        if divdamp_order == combined_divdamp_order or divdamp_order == fourth_divdamp_order:
             e2c2eO = connectivities[dims.E2C2EODim]
             # verified for e-10
             squared_horizontal_gradient_of_total_divergence = np.where(
@@ -142,46 +142,40 @@ class TestApplyDivergenceDampingCorrector(test_helpers.StencilTest):
                 np.zeros_like(horizontal_gradient_of_total_divergence),
             )
 
-        if True:
-            if (
-                divdamp_order == COMBINED_divdamp_order
-                and second_order_divdamp_scaling_coeff > 1.0e-6
-            ):
+        if divdamp_order == combined_divdamp_order and second_order_divdamp_scaling_coeff > 1.0e-6:
+            next_vn = np.where(
+                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+                next_vn
+                + (second_order_divdamp_scaling_coeff * horizontal_gradient_of_total_divergence),
+                next_vn,
+            )
+
+        if (
+            divdamp_order == combined_divdamp_order
+            and second_order_divdamp_factor <= 4 * fourth_order_divdamp_factor
+        ):
+            if limited_area:
                 next_vn = np.where(
                     (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                     next_vn
                     + (
-                        second_order_divdamp_scaling_coeff * horizontal_gradient_of_total_divergence
+                        fourth_order_divdamp_scaling_coeff
+                        + reduced_fourth_order_divdamp_coeff_at_nest_boundary
+                        * np.expand_dims(nudgecoeff_e, axis=-1)
+                    )
+                    * squared_horizontal_gradient_of_total_divergence,
+                    next_vn,
+                )
+            else:
+                next_vn = np.where(
+                    (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+                    next_vn
+                    + (
+                        np.expand_dims(fourth_order_divdamp_scaling_coeff, axis=0)
+                        * squared_horizontal_gradient_of_total_divergence
                     ),
                     next_vn,
                 )
-
-            if (
-                divdamp_order == COMBINED_divdamp_order
-                and second_order_divdamp_factor <= 4 * fourth_order_divdamp_factor
-            ):
-                if limited_area:
-                    next_vn = np.where(
-                        (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
-                        next_vn
-                        + (
-                            fourth_order_divdamp_scaling_coeff
-                            + reduced_fourth_order_divdamp_coeff_at_nest_boundary
-                            * np.expand_dims(nudgecoeff_e, axis=-1)
-                        )
-                        * squared_horizontal_gradient_of_total_divergence,
-                        next_vn,
-                    )
-                else:
-                    next_vn = np.where(
-                        (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
-                        next_vn
-                        + (
-                            np.expand_dims(fourth_order_divdamp_scaling_coeff, axis=0)
-                            * squared_horizontal_gradient_of_total_divergence
-                        ),
-                        next_vn,
-                    )
 
         if is_iau_active:
             next_vn = np.where(
@@ -237,8 +231,8 @@ class TestApplyDivergenceDampingCorrector(test_helpers.StencilTest):
         second_order_divdamp_scaling_coeff = 194588.14247428576
         limited_area = True
         itime_scheme = 4
-        COMBINED_divdamp_order = 24
-        FOURTH_ORDER_divdamp_order = 4
+        combined_divdamp_order = 24
+        fourth_divdamp_order = 4
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         end_edge_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -279,8 +273,8 @@ class TestApplyDivergenceDampingCorrector(test_helpers.StencilTest):
             itime_scheme=itime_scheme,
             limited_area=limited_area,
             divdamp_order=divdamp_order,
-            COMBINED_divdamp_order=COMBINED_divdamp_order,
-            FOURTH_ORDER_divdamp_order=FOURTH_ORDER_divdamp_order,
+            combined_divdamp_order=combined_divdamp_order,
+            fourth_divdamp_order=fourth_divdamp_order,
             horz_idx=horz_idx,
             vert_idx=vert_idx,
             starting_index_for_3d_divdamp=starting_index_for_3d_divdamp,

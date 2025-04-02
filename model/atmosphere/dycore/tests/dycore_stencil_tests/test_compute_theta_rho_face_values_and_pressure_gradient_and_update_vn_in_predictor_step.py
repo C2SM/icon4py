@@ -242,8 +242,8 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
         limited_area: gtx.int32,
         iadv_rhotheta: gtx.int32,
         igradp_method: gtx.int32,
-        MIURA_advection_type: gtx.int32,
-        TAYLOR_HYDRO_gradp_method: gtx.int32,
+        miura_advection_type: gtx.int32,
+        taylor_hydro_gradp_method: gtx.int32,
         horz_idx: np.ndarray,
         vert_idx: np.ndarray,
         start_edge_halo_level_2: gtx.int32,
@@ -268,7 +268,7 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
         ddx_perturbed_theta_v = np.zeros(perturbed_rho.shape)
         ddy_perturbed_theta_v = np.zeros(perturbed_rho.shape)
 
-        if iadv_rhotheta == MIURA_advection_type:
+        if iadv_rhotheta == miura_advection_type:
             # Compute Green-Gauss gradients for rho and theta
             c2e2cO = connectivities[dims.C2E2CODim]
 
@@ -318,7 +318,7 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
                     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
                 )
 
-            if iadv_rhotheta == MIURA_advection_type:
+            if iadv_rhotheta == miura_advection_type:
                 # Compute upwind-biased values for rho and theta starting from centered differences
                 # Note: the length of the backward trajectory should be 0.5*dtime*(vn,tangential_wind) in order to arrive
                 # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
@@ -366,7 +366,7 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
             horizontal_pressure_gradient,
         )
 
-        if igradp_method == TAYLOR_HYDRO_gradp_method:
+        if igradp_method == taylor_hydro_gradp_method:
 
             def _apply_index_field_for_multi_level_pressure_gradient(
                 shape: tuple,
@@ -561,8 +561,8 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
         limited_area = True
         iadv_rhotheta = 2
         igradp_method = 3
-        MIURA_advection_type = 2
-        TAYLOR_HYDRO_gradp_method = 3
+        miura_advection_type = 2
+        taylor_hydro_gradp_method = 3
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         start_edge_halo_level_2 = grid.start_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -618,8 +618,8 @@ class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
             limited_area=limited_area,
             iadv_rhotheta=iadv_rhotheta,
             igradp_method=igradp_method,
-            MIURA_advection_type=MIURA_advection_type,
-            TAYLOR_HYDRO_gradp_method=TAYLOR_HYDRO_gradp_method,
+            miura_advection_type=miura_advection_type,
+            taylor_hydro_gradp_method=taylor_hydro_gradp_method,
             horz_idx=horz_idx,
             vert_idx=vert_idx,
             nflatlev=nflatlev,
