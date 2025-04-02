@@ -63,7 +63,7 @@ def _diagnose_pressure(
 def diagnose_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
-    surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
+    surface_pressure: fa.CellField[ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
     pressure_ifc: fa.CellKField[ta.wpfloat],
     grav_o_rd: ta.wpfloat,

@@ -814,7 +814,6 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._compute_ppm_slope(
             p_cc=p_tracer_now,
             p_cellhgt_mc_now=self._metric_state.ddqz_z_full,
-            k=self._k_field,
             z_slope=self._z_slope,
             elev=self._elev,
             horizontal_start=horizontal_start,

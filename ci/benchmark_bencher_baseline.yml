@@ -1,0 +1,17 @@
+include:
+  - local: 'ci/base.yml'
+
+.benchmark_model_stencils:
+  stage: benchmark
+  script:
+    - nox -s __bencher_baseline_CI-3.10 -- --backend=$BACKEND --grid=$GRID
+  parallel:
+    matrix:
+      - BACKEND: [gtfn_cpu, gtfn_gpu]
+        GRID: [icon_grid, icon_grid_global]
+
+# benchmark_bencher_baseline_x86_64:
+#   extends: [.benchmark_model_stencils, .test_template_x86_64]
+
+benchmark_bencher_baseline_aarch64:
+  extends: [.benchmark_model_stencils, .test_template_aarch64]

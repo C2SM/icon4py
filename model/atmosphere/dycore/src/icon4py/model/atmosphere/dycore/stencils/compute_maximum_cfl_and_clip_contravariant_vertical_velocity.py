@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
     abs,
@@ -15,20 +14,20 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-    ddqz_z_half: fa.CellKField[vpfloat],
-    z_w_con_c: fa.CellKField[vpfloat],
-    cfl_w_limit: vpfloat,
-    dtime: wpfloat,
+    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    z_w_con_c: fa.CellKField[ta.vpfloat],
+    cfl_w_limit: ta.vpfloat,
+    dtime: ta.wpfloat,
 ) -> tuple[
     fa.CellKField[bool],
-    fa.CellKField[vpfloat],
-    fa.CellKField[vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
 ]:
     """Formerly know as _mo_velocity_advection_stencil_14."""
     z_w_con_c_wp, ddqz_z_half_wp = astype((z_w_con_c, ddqz_z_half), wpfloat)
@@ -57,7 +56,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     return cfl_clipping, vcfl_vp, astype(z_w_con_c_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     ddqz_z_half: fa.CellKField[vpfloat],
     z_w_con_c: fa.CellKField[vpfloat],

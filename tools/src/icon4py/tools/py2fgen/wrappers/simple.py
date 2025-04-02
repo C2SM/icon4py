@@ -16,7 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.tools.py2fgen.settings import backend
+from icon4py.tools.py2fgen.wrappers.icon4py_export import export
 
 
 # global profiler object
@@ -25,10 +25,12 @@ profiler = cProfile.Profile()
 grid = SimpleGrid()
 
 
+@export
 def profile_enable():
     profiler.enable()
 
 
+@export
 def profile_disable():
     profiler.disable()
     stats = pstats.Stats(profiler)
@@ -42,7 +44,7 @@ def _square(
     return inp**2
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def square(
     inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
     result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
@@ -50,6 +52,7 @@ def square(
     _square(inp, out=result)
 
 
+@export
 def square_from_function(
     inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
     result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
@@ -57,6 +60,7 @@ def square_from_function(
     square(inp, result, offset_provider={})
 
 
+@export
 def square_error(
     inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
     result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
