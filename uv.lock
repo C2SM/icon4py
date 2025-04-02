@@ -19,6 +19,7 @@ members = [
     "icon4py-atmosphere-diffusion",
     "icon4py-atmosphere-dycore",
     "icon4py-atmosphere-microphysics",
+    "icon4py-atmosphere-muphys",
     "icon4py-common",
     "icon4py-driver",
     "icon4py-testing",
@@ -1522,6 +1523,7 @@ dependencies = [
     { name = "icon4py-atmosphere-diffusion" },
     { name = "icon4py-atmosphere-dycore" },
     { name = "icon4py-atmosphere-microphysics" },
+    { name = "icon4py-atmosphere-muphys" },
     { name = "icon4py-common" },
     { name = "icon4py-driver" },
 ]
@@ -1631,6 +1633,7 @@ requires-dist = [
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics" },
+    { name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda11"], marker = "extra == 'cuda11'", editable = "model/common" },
     { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
@@ -1779,6 +1782,20 @@ requires-dist = [
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
+]
+
+[[package]]
+name = "icon4py-atmosphere-muphys"
+source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
+dependencies = [
+    { name = "gt4py" },
+    { name = "icon4py-common" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "icon4py-common", editable = "model/common" },
 ]
 
 [[package]]

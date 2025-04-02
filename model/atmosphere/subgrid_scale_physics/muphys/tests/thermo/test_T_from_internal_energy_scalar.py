@@ -14,7 +14,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing.helpers import StencilTest
 
-class TestTFromInternalEnergy(StencilTest):
+class TestTFromInternalEnergyScalar(StencilTest):
     PROGRAM = T_from_internal_energy_scalar
     OUTPUTS = ("temperature",)
 
