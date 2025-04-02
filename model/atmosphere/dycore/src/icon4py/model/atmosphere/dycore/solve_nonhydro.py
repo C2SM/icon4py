@@ -887,7 +887,6 @@ class SolveNonhydro:
         #---> IBM
         if at_initial_timestep and at_first_substep:
             if ibm.DEBUG_LEVEL >= 3:
-                # save prognostic state for testing
                 self._plot.pickle_data(prognostic_states.current, "prognostic_state_initial")
             log.info(" ***IBM fixing initial conditions")
             self._ibm.set_dirichlet_value_vn(prognostic_states.current.vn)
@@ -901,9 +900,6 @@ class SolveNonhydro:
             # self._plot.plot_levels(prognostic_states.current.rho,     label=f"IC_rho")
             # self._plot.plot_levels(prognostic_states.current.exner,   label=f"IC_exner")
             # self._plot.plot_levels(prognostic_states.current.theta_v, label=f"IC_theta_v")
-        if at_first_substep and ibm.DEBUG_LEVEL >= 3:
-            # save state
-            self._plot.pickle_data(prognostic_states.current, "start_of_timestep")
         #<--- IBM
 
         self.run_predictor_step(
