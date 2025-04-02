@@ -16,7 +16,7 @@ from icon4py.model.testing import helpers
 
 
 def fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
-    a: np.array, factor: float, mean_cell_area: float
+    a: np.ndarray, factor: float, mean_cell_area: float
 ):
     a = np.maximum(0.0, a - 0.25 * factor)
     return -a * mean_cell_area**2
