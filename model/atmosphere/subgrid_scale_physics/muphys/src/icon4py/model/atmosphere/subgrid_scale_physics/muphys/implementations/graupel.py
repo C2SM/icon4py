@@ -9,7 +9,7 @@ import gt4py.next as gtx
 
 from gt4py.next.ffront.fbuiltins import where, maximum, minimum, power, sqrt
 from gt4py.next.ffront.experimental import concat_where
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import idx, g_ct, t_d
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda, \
@@ -288,19 +288,19 @@ def _precipitation_effects(
     vc_i = _vel_scale_factor_ice( xrho )
     vc_g = _vel_scale_factor_default( xrho )
 
-    q_kp1        = concat_where( k < last_lev, qr(Koff[1]), qr )
+    q_kp1        = concat_where( dims.KDim < last_lev, qr(Koff[1]), qr )
     qr, pr, _, _ = _precip( idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho, kmin_r )
-    q_kp1        = concat_where( k < last_lev, qs( Koff[1] ), qs )
+    q_kp1        = concat_where( dims.KDim < last_lev, qs( Koff[1] ), qs )
     qs, ps, _, _ = _precip( idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, qs, q_kp1, rho, kmin_s )
-    q_kp1        = concat_where( k < last_lev, qi(Koff[1]), qi )
+    q_kp1        = concat_where( dims.KDim < last_lev, qi(Koff[1]), qi )
     qi, pi, _, _ = _precip( idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho, kmin_i )
-    q_kp1        = concat_where( k < last_lev, qg(Koff[1]), qg )
+    q_kp1        = concat_where( dims.KDim < last_lev, qg(Koff[1]), qg )
     qg, pg, _, _ = _precip( idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho, kmin_g )
 
     qliq       = qc + qr
     qice       = qs + qi + qg
     p_sig      = ps + pi + pg
-    t_kp1      = concat_where( k < last_lev, t(Koff[1]), t )
+    t_kp1      = concat_where( dims.KDim < last_lev, t(Koff[1]), t )
     kmin_rsig  = kmin_r | kmin_s | kmin_i | kmin_g
     t, eflx, _ = _temperature_update( t, t_kp1, ei_old, pr, p_sig, qv, qliq, qice, rho, dz, dt, kmin_rsig )
 
