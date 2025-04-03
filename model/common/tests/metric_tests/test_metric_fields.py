@@ -93,7 +93,9 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     z_ifc = metrics_savepoint.z_ifc()
 
     nlevp1 = icon_grid.num_levels + 1
-    k_index = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend)
+    k_index = data_alloc.index_field(
+        icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend
+    )
     z_mc = metrics_savepoint.z_mc()
     ddqz_z_half = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
