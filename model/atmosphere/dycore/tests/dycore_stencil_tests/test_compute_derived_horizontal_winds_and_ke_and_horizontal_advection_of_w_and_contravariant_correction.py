@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing import helpers as test_helpers
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -24,7 +24,6 @@ from .test_compute_horizontal_advection_term_for_vertical_velocity import (
 )
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
 from .test_compute_tangential_wind import compute_tangential_wind_numpy
-from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
     interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
 )
@@ -34,8 +33,23 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 )
 
 
+def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
+    vn_k_minus_1 = vn[:, -1]
+    vn_k_minus_2 = vn[:, -2]
+    vn_k_minus_3 = vn[:, -3]
+    wgtfacq_e_k_minus_1 = wgtfacq_e[:, -1]
+    wgtfacq_e_k_minus_2 = wgtfacq_e[:, -2]
+    wgtfacq_e_k_minus_3 = wgtfacq_e[:, -3]
+    vn_at_surface = (
+        wgtfacq_e_k_minus_1 * vn_k_minus_1
+        + wgtfacq_e_k_minus_2 * vn_k_minus_2
+        + wgtfacq_e_k_minus_3 * vn_k_minus_3
+    )
+    return vn_at_surface
+
+
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
-    StencilTest
+    test_helpers.StencilTest
 ):
     PROGRAM = compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction
     OUTPUTS = (
@@ -102,12 +116,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             ),
         )
 
-        condition4 = k == nlevp1 - 1
-        vn_on_half_levels = np.where(
-            condition4,
-            extrapolate_at_top_numpy(wgtfacq_e, vn),
-            vn_on_half_levels,
-        )
+        vn_on_half_levels[:, -1] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
 
         condition5 = nflatlev <= k_nlev
         contravariant_correction_at_edges_on_model_levels = np.where(
