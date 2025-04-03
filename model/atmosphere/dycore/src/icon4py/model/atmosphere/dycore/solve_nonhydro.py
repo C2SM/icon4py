@@ -298,35 +298,46 @@ class NonHydrostaticConfig:
         #: scaling factor for divergence damping
         self.fourth_order_divdamp_factor: float = fourth_order_divdamp_factor
         """
-        Declared as divdamp_fac in ICON.
+        Declared as divdamp_fac in ICON. It is a scaling factor for fourth order divergence damping between
+        heights of fourth_order_divdamp_z and fourth_order_divdamp_z2.
         """
         self.fourth_order_divdamp_factor2: float = fourth_order_divdamp_factor2
         """
-        Declared as divdamp_fac2 in ICON.
+        Declared as divdamp_fac2 in ICON. It is a scaling factor for fourth order divergence damping between
+        heights of fourth_order_divdamp_z and fourth_order_divdamp_z2. Divergence damping factor reaches
+        fourth_order_divdamp_factor2 at fourth_order_divdamp_z2.
         """
         self.fourth_order_divdamp_factor3: float = fourth_order_divdamp_factor3
         """
-        Declared as divdamp_fac3 in ICON.
+        Declared as divdamp_fac3 in ICON. It is a scaling factor to determine the quadratic vertical
+        profile of fourth order divergence damping factor between heights of fourth_order_divdamp_z2
+        and fourth_order_divdamp_z4.
         """
         self.fourth_order_divdamp_factor4: float = fourth_order_divdamp_factor4
         """
-        Declared as divdamp_fac4 in ICON.
+        Declared as divdamp_fac4 in ICON. It is a scaling factor to determine the quadratic vertical
+        profile of fourth order divergence damping factor between heights of fourth_order_divdamp_z2
+        and fourth_order_divdamp_z4. Divergence damping factor reaches fourth_order_divdamp_factor4
+        at fourth_order_divdamp_z4.
         """
         self.fourth_order_divdamp_z: float = fourth_order_divdamp_z
         """
-        Declared as divdamp_z in ICON.
+        Declared as divdamp_z in ICON. The upper limit in height where divergence damping factor is a constant.
         """
         self.fourth_order_divdamp_z2: float = fourth_order_divdamp_z2
         """
-        Declared as divdamp_z2 in ICON.
+        Declared as divdamp_z2 in ICON. The upper limit in height above fourth_order_divdamp_z where divergence
+        damping factor decreases as a linear function of height.
         """
         self.fourth_order_divdamp_z3: float = fourth_order_divdamp_z3
         """
-        Declared as divdamp_z3 in ICON.
+        Declared as divdamp_z3 in ICON. Am intermediate height between fourth_order_divdamp_z2 and
+        fourth_order_divdamp_z4 where divergence damping factor decreases quadratically with height.
         """
         self.fourth_order_divdamp_z4: float = fourth_order_divdamp_z4
         """
-        Declared as divdamp_z4 in ICON.
+        Declared as divdamp_z4 in ICON. The upper limit in height where divergence damping factor decreases
+        quadratically with height.
         """
 
         #: parameters from other namelists:

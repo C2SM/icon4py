@@ -219,11 +219,12 @@ class MetricStateNonHydro:
 
     horizontal_mask_for_3d_divdamp: fa.EdgeField[float]
     """
-    Declared as hmask_dd3d in ICON.
+    Declared as hmask_dd3d in ICON. A horizontal mask where 3D divergence is computed for the divergence damping.
+    3D divergence is defined as divergence of horizontal wind plus vertical derivative of vertical wind (dw/dz).
     """
     scaling_factor_for_3d_divdamp: fa.KField[float]
     """
-    Declared as scalfac_dd3d in ICON.
+    Declared as scalfac_dd3d in ICON. A scaling factor in vertical dimension for 3D divergence damping. 
     """
 
     coeff1_dwdz: fa.CellKField[float]
