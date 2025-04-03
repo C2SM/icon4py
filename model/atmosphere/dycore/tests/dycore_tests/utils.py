@@ -7,9 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+from typing import Optional
+
+from gt4py.next import backend as gtx_backend
+
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
@@ -59,8 +63,8 @@ def construct_metric_state(
         theta_ref_ic=savepoint.theta_ref_ic(),
         d2dexdz2_fac1_mc=savepoint.d2dexdz2_fac1_mc(),
         d2dexdz2_fac2_mc=savepoint.d2dexdz2_fac2_mc(),
-        rho_ref_me=savepoint.rho_ref_me(),
-        theta_ref_me=savepoint.theta_ref_me(),
+        reference_rho_at_edges_on_model_levels=savepoint.rho_ref_me(),
+        reference_theta_at_edges_on_model_levels=savepoint.theta_ref_me(),
         ddxn_z_full=savepoint.ddxn_z_full(),
         zdiff_gradp=savepoint.zdiff_gradp(),
         vertoffset_gradp=savepoint.vertoffset_gradp(),
@@ -71,8 +75,8 @@ def construct_metric_state(
         wgtfac_e=savepoint.wgtfac_e(),
         wgtfacq_e=savepoint.wgtfacq_e_dsl(num_k_lev),
         vwind_impl_wgt=savepoint.vwind_impl_wgt(),
-        hmask_dd3d=savepoint.hmask_dd3d(),
-        scalfac_dd3d=savepoint.scalfac_dd3d(),
+        horizontal_mask_for_3d_divdamp=savepoint.hmask_dd3d(),
+        scaling_factor_for_3d_divdamp=savepoint.scalfac_dd3d(),
         coeff1_dwdz=savepoint.coeff1_dwdz(),
         coeff2_dwdz=savepoint.coeff2_dwdz(),
         coeff_gradekin=savepoint.coeff_gradekin(),
@@ -90,9 +94,9 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
         ndyn_substeps_var=ndyn,
-        divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
-        divdamp_fac=0.004,
+        fourth_order_divdamp_factor=0.004,
         max_nudging_coeff=0.075,
     )
     return config
@@ -121,11 +125,13 @@ def create_vertical_params(
 
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
+    grid: icon_grid.IconGrid,
+    backend: Optional[gtx_backend.Backend],
     swap_vertical_wind_advective_tendency: bool = False,
 ):
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=init_savepoint.theta_v_ic(),
+        theta_v_at_cells_on_half_levels=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
         rho_ic=init_savepoint.rho_ic(),
         ddt_exner_phy=init_savepoint.ddt_exner_phy(),
@@ -133,7 +139,7 @@ def construct_diagnostics(
         grf_tend_thv=init_savepoint.grf_tend_thv(),
         grf_tend_w=init_savepoint.grf_tend_w(),
         mass_fl_e=init_savepoint.mass_fl_e(),
-        ddt_vn_phy=init_savepoint.ddt_vn_phy(),
+        normal_wind_tendency_due_to_physics_process=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
@@ -144,9 +150,11 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
+        rho_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        normal_wind_iau_increments=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),
+        exner_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
         exner_dyn_incr=init_savepoint.exner_dyn_incr(),
     )
 

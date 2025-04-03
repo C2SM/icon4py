@@ -120,7 +120,6 @@ def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -158,7 +157,7 @@ def test_velocity_predictor_step(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_ic=None,
+        theta_v_at_cells_on_half_levels=None,
         exner_pr=None,
         rho_ic=None,
         ddt_exner_phy=None,
@@ -166,7 +165,7 @@ def test_velocity_predictor_step(
         grf_tend_thv=None,
         grf_tend_w=None,
         mass_fl_e=None,
-        ddt_vn_phy=None,
+        normal_wind_tendency_due_to_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
@@ -175,7 +174,7 @@ def test_velocity_predictor_step(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,
-        vn_incr=None,
+        normal_wind_iau_increments=None,
         exner_incr=None,
         exner_dyn_incr=None,
     )
@@ -333,7 +332,7 @@ def test_velocity_corrector_step(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_ic=None,
+        theta_v_at_cells_on_half_levels=None,
         exner_pr=None,
         rho_ic=None,
         ddt_exner_phy=None,
@@ -341,7 +340,7 @@ def test_velocity_corrector_step(
         grf_tend_thv=None,
         grf_tend_w=None,
         mass_fl_e=None,
-        ddt_vn_phy=None,
+        normal_wind_tendency_due_to_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
@@ -350,7 +349,7 @@ def test_velocity_corrector_step(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
+        normal_wind_iau_increments=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=None,
     )
@@ -453,7 +452,6 @@ def test_velocity_corrector_step(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init", [1])
 def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     icon_grid,
     grid_savepoint,
@@ -467,6 +465,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     step_date_exit,
     substep_init,
     istep_init,
+    istep_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -593,7 +592,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init", [2])
+@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     icon_grid,
     grid_savepoint,
@@ -607,6 +606,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     step_date_exit,
     substep_init,
     istep_init,
+    istep_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -685,7 +685,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init", [1])
 def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     icon_grid,
     grid_savepoint,
@@ -694,6 +693,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     metrics_savepoint,
     interpolation_savepoint,
     istep_init,
+    istep_exit,
     substep_init,
     substep_exit,
     step_date_init,
@@ -784,7 +784,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init", [2])
+@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     icon_grid,
     grid_savepoint,
@@ -793,6 +793,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     metrics_savepoint,
     interpolation_savepoint,
     istep_init,
+    istep_exit,
     substep_init,
     substep_exit,
     step_date_init,
@@ -877,7 +878,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init", [1, 2])
+@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_vertical_momentum_equation(
     icon_grid,
     grid_savepoint,
@@ -894,6 +895,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     substep_init,
     substep_exit,
     istep_init,
+    istep_exit,
 ):
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
@@ -1018,7 +1020,7 @@ def test_compute_advection_in_vertical_momentum_equation(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init", [1, 2])
+@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_horizontal_momentum_equation(
     icon_grid,
     grid_savepoint,
@@ -1029,6 +1031,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     backend,
     savepoint_velocity_init,
     istep_init,
+    istep_exit,
     substep_init,
     step_date_init,
     step_date_exit,
