@@ -389,7 +389,7 @@ class NonHydrostaticParams:
 
         #:  start level for 3D divergence damping terms
         #: this is only different from 0 if divdamp_type == 32: calculation done in mo_vertical_grid.f90
-        self.starting_index_for_3d_divdamp: Final[int] = 0
+        self.starting_vertical_index_for_3d_divdamp: Final[int] = 0
         """
         Declared as kstart_dd3d in ICON.
         """
@@ -1373,7 +1373,7 @@ class SolveNonhydro:
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
-                vertical_start=self._params.starting_index_for_3d_divdamp,
+                vertical_start=self._params.starting_vertical_index_for_3d_divdamp,
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
@@ -1416,7 +1416,7 @@ class SolveNonhydro:
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
                 horizontal_start=self._start_cell_lateral_boundary,
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
-                vertical_start=self._params.starting_index_for_3d_divdamp,
+                vertical_start=self._params.starting_vertical_index_for_3d_divdamp,
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
@@ -1548,7 +1548,7 @@ class SolveNonhydro:
             itime_scheme=self._config.itime_scheme,
             limited_area=self._grid.limited_area,
             divdamp_order=self._config.divdamp_order,
-            starting_index_for_3d_divdamp=self._params.starting_index_for_3d_divdamp,
+            starting_vertical_index_for_3d_divdamp=self._params.starting_vertical_index_for_3d_divdamp,
             end_edge_halo_level_2=self._end_edge_halo_level_2,
             start_edge_lateral_boundary_level_7=self._start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=self._start_edge_nudging_level_2,

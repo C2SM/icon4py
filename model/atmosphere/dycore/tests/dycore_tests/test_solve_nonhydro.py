@@ -1362,7 +1362,7 @@ def test_apply_divergence_damping_and_update_vn(
         itime_scheme=itime_scheme,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
-        starting_index_for_3d_divdamp=nonhydro_params.starting_index_for_3d_divdamp,
+        starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,

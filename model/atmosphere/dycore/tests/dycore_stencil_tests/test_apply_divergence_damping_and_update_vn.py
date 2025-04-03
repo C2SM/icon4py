@@ -62,7 +62,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         limited_area: gtx.int32,
         itime_scheme: gtx.int32,
         divdamp_order: gtx.int32,
-        starting_index_for_3d_divdamp: gtx.int32,
+        starting_vertical_index_for_3d_divdamp: gtx.int32,
         end_edge_halo_level_2: gtx.int32,
         start_edge_lateral_boundary_level_7: gtx.int32,
         start_edge_nudging_level_2: gtx.int32,
@@ -88,7 +88,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         horizontal_gradient_of_total_divergence = np.where(
             (start_edge_lateral_boundary_level_7 <= horz_idx)
             & (horz_idx < end_edge_halo_level_2)
-            & (vert_idx >= starting_index_for_3d_divdamp),
+            & (vert_idx >= starting_vertical_index_for_3d_divdamp),
             horizontal_gradient_of_normal_wind_divergence
             + (
                 horizontal_mask_for_3d_divdamp
@@ -230,7 +230,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         )
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-        starting_index_for_3d_divdamp = 0
+        starting_vertical_index_for_3d_divdamp = 0
 
         return dict(
             horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
@@ -262,7 +262,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             itime_scheme=itime_scheme,
             limited_area=limited_area,
             divdamp_order=divdamp_order,
-            starting_index_for_3d_divdamp=starting_index_for_3d_divdamp,
+            starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
             end_edge_halo_level_2=end_edge_halo_level_2,
             start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=start_edge_nudging_level_2,

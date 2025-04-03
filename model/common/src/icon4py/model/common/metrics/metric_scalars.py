@@ -9,5 +9,5 @@
 import numpy as np
 
 
-def compute_starting_index_for_3d_divdamp(scaling_factor_for_3d_divdamp: np.array) -> int:
+def compute_starting_vertical_index_for_3d_divdamp(scaling_factor_for_3d_divdamp: np.array) -> int:
     return np.min(np.where(scaling_factor_for_3d_divdamp > 0.0))

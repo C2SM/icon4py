@@ -333,14 +333,14 @@ def _apply_divergence_damping_and_update_vn(
     itime_scheme: gtx.int32,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    starting_index_for_3d_divdamp: gtx.int32,
+    starting_vertical_index_for_3d_divdamp: gtx.int32,
     end_edge_halo_level_2: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
     end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.wpfloat]:
     horizontal_gradient_of_total_divergence = concat_where(
-        starting_index_for_3d_divdamp <= dims.KDim,
+        starting_vertical_index_for_3d_divdamp <= dims.KDim,
         concat_where(
             (start_edge_lateral_boundary_level_7 <= dims.EdgeDim)
             & (dims.EdgeDim < end_edge_halo_level_2),
@@ -516,7 +516,67 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """Formerly known as fused_solve_nonhydro_stencil_15_to_28_predictor."""
+    """
+    Formerly known as fused_solve_nonhydro_stencil_15_to_28_predictor.
+
+    This program computes the air densitiy and virtual potential temperature at edges on model levels.
+    It also computes horizontal pressure gradient and updates normal wind by adding all the tendency terms
+    in the Navier-Stokes equation. If data assimilation is considered, an increment is added to
+    normal wind.
+
+    Args:
+        - rho_at_edges_on_model_levels: air density at cells on model levels [kg m-3]
+        - theta_v_at_edges_on_model_levels: virtual potential temperature at edges on model levels [K]
+        - horizontal_pressure_gradient: horizontal pressure gradient at edges on model levels [Pa m-1]
+        - next_vn: normal wind to be updated [m s-1]
+        - current_vn: normal wind at previous substep [m s-1]
+        - tangential_wind: tangential wind at edges on model levels [m s-1]
+        - reference_rho_at_edges_on_model_levels: reference air density at cells on model levels [kg m-3]
+        - reference_theta_at_edges_on_model_levels: reference virtual potential temperature at edges on model levels [K]
+        - perturbed_rho: perturbed air density (actual density minus reference density) at cells on model levels [kg m-3]
+        - perturbed_theta: reference virtual potential temperature (actual potential temperature minus reference potential temperature) at cells on model levels [K]
+        - temporal_extrapolation_of_perturbed_exner: temporal extrapolation of perturbed exner function (actual exner function minus reference exner function)
+        - ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels: vertical gradient of temporal extrapolation of perturbed exner function [m-1]
+        - d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels: second vertical gradient of temporal extrapolation of perturbed exner function [m-2]
+        - hydrostatic_correction_on_lowest_level: hydrostatic correction for steep slope (see https://doi.org/10.1175/MWR-D-12-00049.1) [m-1]
+        - predictor_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at predictor step [m s-2]
+        - normal_wind_tendency_due_to_physics_process: normal wind tendeny due to slow physics [m s-2]
+        - normal_wind_iau_increments: iau increment to normal wind (data assimilation) [m s-1]
+        - geofac_grg_x: interpolation coefficient for computation of x-derivative of a cell-based variable at cell center using Green-Gauss theorem [m-1]
+        - geofac_grg_y: interpolation coefficient for computation of y-derivative of a cell-based variable at cell center using Green-Gauss theorem [m-1]
+        - pos_on_tplane_e_x: x-position of the edge on the tangential plane centered at cell center [m]
+        - pos_on_tplane_e_y: y-position of the edge on the tangential plane centered at cell center [m]
+        - primal_normal_cell_x: x component of normal vector of edges of triangles
+        - primal_normal_cell_y: y component of normal vector of edges of triangles
+        - dual_normal_cell_x: x component of normal vector of edges of dual hexagons
+        - dual_normal_cell_y: y component of normal vector of edges of dual hexagons
+        - ddxn_z_full: metric coefficient for computation of vertical derivative at model levels
+        - c_lin_e: interpolation coefficient for computation of interpolating a cell-based variables to an edge-based variable
+        - ikoffset: k offset index (offset from the lowest k index where the neighboring cell centers lie within the thickness of the layer) for hyrostatic correction
+        - zdiff_gradp: vertical distance between current cell height and neighboring cell height for pressure gradient over multiple levels [m]
+        - ipeidx_dsl: A mask for hydrostatic correction
+        - pg_exdist: vertical distance between current cell height and neighboring cell height for hydrostatic correction [m]
+        - inv_dual_edge_length: inverse dual edge length [m]
+        - dtime: time step [s]
+        - cpd: specific heat at constant pressure [J/K/kg]
+        - iau_wgt_dyn: a scaling factor for iau increment
+        - is_iau_active: option for iau increment analysis
+        - limited_area: option indicating the grid is limited area or not
+        - iadv_rhotheta: advection type for air density and virtual potential temperature (see RhoThetaAdvectionType)
+        - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
+        - nflatlev: starting vertical index of flat levels
+        - nflat_gradp: starting vertical index when neighboring cell centers lie within the thickness of the layer
+        - start_edge_halo_level_2: start index of second halo level zone for edges
+        - end_edge_halo_level_2: end index of second halo level zone for edges
+        - start_edge_lateral_boundary: start index of first lateral boundary level (counting from outermost) zone for edges
+        - end_edge_halo: end index of first halo level zone for edges
+        - start_edge_lateral_boundary_level_7: start index of 7th lateral boundary level (counting from outermost) zone for edges
+        - start_edge_nudging_level_2: start index of second nudging level zone for edges
+        - end_edge_local: end index of local zone for edges
+
+    Returns:
+        - next_vn: normal wind to be updated [m s-1]
+    """
     _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
@@ -611,7 +671,7 @@ def apply_divergence_damping_and_update_vn(
     itime_scheme: gtx.int32,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    starting_index_for_3d_divdamp: gtx.int32,
+    starting_vertical_index_for_3d_divdamp: gtx.int32,
     end_edge_halo_level_2: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
@@ -621,7 +681,53 @@ def apply_divergence_damping_and_update_vn(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """Formerly known as fused_solve_nonhydro_stencil_15_to_28_corrector."""
+    """
+    Formerly known as fused_solve_nonhydro_stencil_15_to_28_corrector.
+
+    This program updates normal wind by adding all tendency terms in the Navier-Stokes equation with
+    interpolated advective tendency computed in the predictor and corrector steps, and then computes
+    the divergence damping and add it to normal wind. If data assimilation is considered, an
+    increment is added to normal wind.
+
+    Args:
+        - horizontal_gradient_of_normal_wind_divergence: horizontal gradient of divergence of normal wind at edges [m-1 s-1]
+        - next_vn: normal wind to be updated [m s-1]
+        - current_vn: normal wind at previous substep [m s-1]
+        - dwdz_at_cells_on_model_levels: vertical derivative of vertical wind [s-1]
+        - predictor_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at predictor step [m s-2]
+        - corrector_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at corrector step [m s-2]
+        - normal_wind_tendency_due_to_physics_process: normal wind tendeny due to slow physics [m s-2]
+        - normal_wind_iau_increments: iau increment to normal wind (data assimilation) [m s-1]
+        - reduced_fourth_order_divdamp_coeff_at_nest_boundary: fourth order divergence damping coefficient at nest boundary [m2 s2]
+        - fourth_order_divdamp_scaling_coeff: fourth order divergence damping coefficient [m2 s2]
+        - second_order_divdamp_scaling_coeff: second order divergence damping coefficient [m s]
+        - theta_v_at_edges_on_model_levels: virtual potential temperature at edges on model levels [K]
+        - horizontal_pressure_gradient: horizontal pressure gradient at edges on model levels [Pa m-1]
+        - horizontal_mask_for_3d_divdamp: horizontal mask for 3D divergence damping (including dw/dz) at edges on model levels
+        - scaling_factor_for_3d_divdamp: scaling factor in vertical dimension for 3D divergence damping (including dw/dz) on model levels
+        - inv_dual_edge_length: inverse dual edge length
+        - nudgecoeff_e: nudging coefficient for fourth order divergence damping at nest boundary
+        - geofac_grdiv: metric coefficient for computation of horizontal gradient of divergence
+        - fourth_order_divdamp_factor: scaling factor for fourth order divergence damping
+        - second_order_divdamp_factor: scaling factor for second order divergence damping
+        - wgt_nnow_vel: interpolation coefficient of normal_wind_advective_tendency at predictor step
+        - wgt_nnew_vel: interpolation coefficient of normal_wind_advective_tendency at corrector step
+        - dtime: time step [s]
+        - cpd: specific heat at constant pressure [J/K/kg]
+        - iau_wgt_dyn: a scaling factor for iau increment
+        - is_iau_active: option for iau increment analysis
+        - itime_scheme: ICON itime scheme (see ICON tutorial)
+        - limited_area: option indicating the grid is limited area or not
+        - divdamp_order: divergence damping order (see the class DivergenceDampingOrder)
+        - starting_vertical_index_for_3d_divdamp: starting vertical level index for 3D divergence damping (including dw/dz)
+        - end_edge_halo_level_2: end index of second halo level zone for edges
+        - start_edge_lateral_boundary_level_7: start index of 7th lateral boundary level (counting from outermost) zone for edges
+        - start_edge_nudging_level_2: start index of second nudging level zone for edges
+        - end_edge_local: end index of local zone for edges
+
+    Returns:
+        - next_vn: normal wind to be updated [m s-1]
+    """
     _apply_divergence_damping_and_update_vn(
         horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
         next_vn=next_vn,
@@ -652,7 +758,7 @@ def apply_divergence_damping_and_update_vn(
         itime_scheme=itime_scheme,
         limited_area=limited_area,
         divdamp_order=divdamp_order,
-        starting_index_for_3d_divdamp=starting_index_for_3d_divdamp,
+        starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
