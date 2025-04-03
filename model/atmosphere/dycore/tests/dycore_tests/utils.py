@@ -94,7 +94,7 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
         ndyn_substeps_var=ndyn,
-        divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coeff=0.075,

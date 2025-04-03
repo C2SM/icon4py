@@ -1141,7 +1141,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
     z_gradh_exner_ref = sp_stencil_exit.z_gradh_exner()
     vn_ref = sp_nh_exit.vn_new()
 
-    if igradp_method.value == solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value:
+    if igradp_method.value == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value:
         compute_hydrostatic_correction_term.compute_hydrostatic_correction_term.with_backend(
             backend
         )(
