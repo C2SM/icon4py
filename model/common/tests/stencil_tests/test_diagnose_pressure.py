@@ -32,8 +32,8 @@ class TestDiagnosePressure(helpers.StencilTest):
         ddqz_z_full: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        pressure_ifc = np.zeros_like(virtual_temperature)
-        pressure = np.zeros_like(virtual_temperature)
+        pressure_ifc = np.full_like(virtual_temperature, np.nan)
+        pressure = np.full_like(virtual_temperature, np.nan)
         ground_level = virtual_temperature.shape[1] - 1
         pressure_ifc[:, ground_level] = surface_pressure * np.exp(
             -phy_const.GRAV_O_RD
