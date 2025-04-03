@@ -32,8 +32,8 @@ class TestDiagnosePressure(helpers.StencilTest):
         ddqz_z_full: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        pressure_ifc = np.full_like(virtual_temperature, np.nan)
-        pressure = np.full_like(virtual_temperature, np.nan)
+        pressure_ifc = np.zeros_like(virtual_temperature)
+        pressure = np.zeros_like(virtual_temperature)
         ground_level = virtual_temperature.shape[1] - 1
         pressure_ifc[:, ground_level] = surface_pressure * np.exp(
             -phy_const.GRAV_O_RD
@@ -55,12 +55,12 @@ class TestDiagnosePressure(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
         ddqz_z_full = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0, dtype=ta.wpfloat
         )
         virtual_temperature = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0, dtype=ta.wpfloat
         )
-        surface_pressure = data_alloc.random_field(grid, dims.CellDim, low=1.0e-4, dtype=ta.wpfloat)
+        surface_pressure = data_alloc.random_field(grid, dims.CellDim, low=1.0, dtype=ta.wpfloat)
         pressure = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         pressure_ifc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
