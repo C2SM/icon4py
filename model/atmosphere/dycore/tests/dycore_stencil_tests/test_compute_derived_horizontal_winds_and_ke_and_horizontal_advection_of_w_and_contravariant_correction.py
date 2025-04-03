@@ -69,8 +69,13 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         k = np.arange(nlevp1)
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
-        
-        tangential_wind = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
+
+        condition1 = k_nlev < nlevp1 - 1
+        tangential_wind = np.where(
+            condition1,
+            compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
+            tangential_wind,
+        )
 
         condition2 = 1 <= k_nlev
         vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
