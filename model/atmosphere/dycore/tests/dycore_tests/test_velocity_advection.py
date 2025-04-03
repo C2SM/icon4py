@@ -89,7 +89,6 @@ def test_verify_velocity_init_against_savepoint(
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
     assert helpers.dallclose(velocity_advection.cfl_clipping.asnumpy(), 0.0)
-    assert helpers.dallclose(velocity_advection.levmask.asnumpy(), False)
     assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
 
 
@@ -502,8 +501,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     skip_compute_predictor_vertical_advection = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.lvn_only()
     )
-    lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-    halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
+    # TODO(havogt): we need a test where skip_compute_predictor_vertical_advection is True!
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
     horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -539,9 +537,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         tangent_orientation=tangent_orientation,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
         nflatlev=gtx.int32(nflatlev),
-        nlev=gtx.int32(icon_grid.num_levels),
-        lateral_boundary_7=lateral_boundary_7,
-        halo_1=halo_1,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         vertical_start=gtx.int32(0),
@@ -576,9 +571,12 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         rtol=1.0e-15,
         atol=1.0e-15,
     )
+    # the restriction is ok, as this is a velocity advection temporary
+    lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+    halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
     assert helpers.dallclose(
-        z_v_grad_w_ref.asnumpy(),
-        horizontal_advection_of_w_at_edges_on_half_levels.asnumpy(),
+        z_v_grad_w_ref.asnumpy()[lateral_boundary_7:halo_1, :],
+        horizontal_advection_of_w_at_edges_on_half_levels.asnumpy()[lateral_boundary_7:halo_1, :],
         rtol=1.0e-15,
         atol=1.0e-15,
     )
@@ -610,7 +608,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
-    vertex_domain = h_grid.domain(dims.VertexDim)
 
     tangential_wind_on_half_levels = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
@@ -626,17 +623,10 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
 
-    lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-    halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
-
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
     z_v_grad_w_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
-    start_vertex_lateral_boundary_level_2 = icon_grid.start_index(
-        vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
     compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
         backend
@@ -649,10 +639,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
         inv_dual_edge_length=inv_dual_edge_length,
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
-        lateral_boundary_7=lateral_boundary_7,
-        halo_1=halo_1,
-        start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
-        end_vertex_halo=end_vertex_halo,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         vertical_start=gtx.int32(0),
@@ -914,7 +900,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     horizontal_advection_of_w_at_edges_on_half_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_v_grad_w()
     )
-    levmask = savepoint_compute_advection_in_vertical_momentum_equation_init.levmask()
+
     contravariant_corrected_w_at_cells_on_model_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
     )
@@ -936,21 +922,16 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     ddt_w_adv_ref = savepoint_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
 
-    cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
-
     nrdmax = grid_savepoint.nrdmax()[0]
 
-    cell_domain = h_grid.domain(dims.CellDim)
-    cell_lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-    cell_upper_bound = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-
     dtime = 5.0
-    start_cell_lateral_boundary = (
-        icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
-        if istep_init == 1
-        else icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+    cell_domain = h_grid.domain(dims.CellDim)
+    start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
+        cell_domain(h_grid.Zone.NUDGING)
     )
-    end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+    end_cell_local_for_vertical_wind_advective_tendency = icon_grid.end_index(
+        cell_domain(h_grid.Zone.LOCAL)
+    )
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     vertical_start = 0
@@ -969,20 +950,14 @@ def test_compute_advection_in_vertical_momentum_equation(
         ddqz_z_half=ddqz_z_half,
         area=area,
         geofac_n2s=geofac_n2s,
-        levelmask=levmask,
         cfl_clipping=cfl_clipping,
         owner_mask=owner_mask,
         scalfac_exdiff=scalfac_exdiff,
         cfl_w_limit=cfl_w_limit,
         dtime=dtime,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-        cell=cell,
-        cell_lower_bound=cell_lower_bound,
-        cell_upper_bound=cell_upper_bound,
         nlev=icon_grid.num_levels,
         nrdmax=nrdmax,
-        start_cell_lateral_boundary=start_cell_lateral_boundary,
-        end_cell_halo=end_cell_halo,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         vertical_start=vertical_start,
@@ -1002,8 +977,14 @@ def test_compute_advection_in_vertical_momentum_equation(
         atol=1.0e-15,
     )
     assert helpers.dallclose(
-        ddt_w_adv_ref.asnumpy(),
-        vertical_wind_advective_tendency.asnumpy(),
+        ddt_w_adv_ref.asnumpy()[
+            start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
+            :,
+        ],
+        vertical_wind_advective_tendency.asnumpy()[
+            start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
+            :,
+        ],
         rtol=1.0e-15,
         atol=1.0e-15,
     )
@@ -1061,12 +1042,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
 
     edge_domain = h_grid.domain(dims.EdgeDim)
-    vertex_domain = h_grid.domain(dims.VertexDim)
 
-    start_vertex_lateral_boundary_level_2 = icon_grid.start_index(
-        vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
@@ -1103,12 +1079,8 @@ def test_compute_advection_in_horizontal_momentum_equation(
         d_time=d_time,
         nlev=icon_grid.num_levels,
         nrdmax=nrdmax,
-        start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
-        end_vertex_halo=end_vertex_halo,
-        start_edge_nudging_level_2=start_edge_nudging_level_2,
-        end_edge_local=end_edge_local,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_edges,
+        horizontal_start=start_edge_nudging_level_2,
+        horizontal_end=end_edge_local,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
