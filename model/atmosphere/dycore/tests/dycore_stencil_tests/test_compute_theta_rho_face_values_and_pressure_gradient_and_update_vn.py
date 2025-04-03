@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.dycore_states import (
     RhoThetaAdvectionType,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
-    compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step,
+    compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
@@ -182,7 +182,7 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
 
 
 class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
-    PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step
+    PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn
     OUTPUTS = (
         "rho_at_edges_on_model_levels",
         "theta_v_at_edges_on_model_levels",

@@ -68,7 +68,7 @@ divergence_damp_order: Final = DivergenceDampingOrder()
 
 
 @gtx.field_operator
-def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step(
+def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat],
@@ -303,7 +303,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predic
 
 
 @gtx.field_operator
-def _apply_divergence_damping_and_update_vn_in_corrector_step(
+def _apply_divergence_damping_and_update_vn(
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat],
     next_vn: fa.EdgeKField[ta.wpfloat],
     current_vn: fa.EdgeKField[ta.wpfloat],
@@ -461,7 +461,7 @@ def _apply_divergence_damping_and_update_vn_in_corrector_step(
 
 
 @gtx.program(grid_type=GridType.UNSTRUCTURED)
-def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step(
+def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat],
@@ -517,7 +517,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
     vertical_end: gtx.int32,
 ):
     """Formerly known as fused_solve_nonhydro_stencil_15_to_28_predictor."""
-    _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step(
+    _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,
@@ -581,7 +581,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predict
 
 
 @gtx.program(grid_type=GridType.UNSTRUCTURED)
-def apply_divergence_damping_and_update_vn_in_corrector_step(
+def apply_divergence_damping_and_update_vn(
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat],
     next_vn: fa.EdgeKField[ta.wpfloat],
     current_vn: fa.EdgeKField[ta.wpfloat],
@@ -622,7 +622,7 @@ def apply_divergence_damping_and_update_vn_in_corrector_step(
     vertical_end: gtx.int32,
 ):
     """Formerly known as fused_solve_nonhydro_stencil_15_to_28_corrector."""
-    _apply_divergence_damping_and_update_vn_in_corrector_step(
+    _apply_divergence_damping_and_update_vn(
         horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
         next_vn=next_vn,
         current_vn=current_vn,

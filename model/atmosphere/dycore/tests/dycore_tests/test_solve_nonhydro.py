@@ -1046,7 +1046,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
         ),
     ],
 )
-def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step(
+def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     step_date_init,
     step_date_exit,
     experiment,
@@ -1169,7 +1169,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
             hydrostatic_correction.ndarray[:, lowest_level],
             allocator=backend,
         )
-    compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step.with_backend(
+    compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
         backend
     )(
         rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
@@ -1270,7 +1270,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_pr
         ),
     ],
 )
-def test_apply_divergence_damping_and_update_vn_in_corrector_step(
+def test_apply_divergence_damping_and_update_vn(
     step_date_init,
     step_date_exit,
     experiment,
@@ -1330,7 +1330,7 @@ def test_apply_divergence_damping_and_update_vn_in_corrector_step(
 
     vn_ref = sp_nh_exit.vn_new()
 
-    compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn_in_corrector_step.with_backend(
+    compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn.with_backend(
         backend
     )(
         horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,

@@ -446,10 +446,10 @@ class SolveNonhydro:
         self._compute_hydrostatic_correction_term = (
             compute_hydrostatic_correction_term.with_backend(self._backend)
         )
-        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step.with_backend(
+        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
             self._backend
         )
-        self._apply_divergence_damping_and_update_vn_in_corrector_step = compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn_in_corrector_step.with_backend(
+        self._apply_divergence_damping_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn.with_backend(
             self._backend
         )
         self._compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
@@ -1015,7 +1015,7 @@ class SolveNonhydro:
             )
 
         log.debug(
-            f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step"
+            f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
         )
         if (
             self._config.igradp_method
@@ -1042,7 +1042,7 @@ class SolveNonhydro:
                 self.hydrostatic_correction.ndarray[:, lowest_level],
                 allocator=self._backend.allocator,
             )
-        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn_in_predictor_step(
+        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
@@ -1506,10 +1506,8 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        log.debug(
-            f"corrector: start stencil apply_divergence_damping_and_update_vn_in_corrector_step"
-        )
-        self._apply_divergence_damping_and_update_vn_in_corrector_step(
+        log.debug(f"corrector: start stencil apply_divergence_damping_and_update_vn")
+        self._apply_divergence_damping_and_update_vn(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             next_vn=prognostic_states.next.vn,
             current_vn=prognostic_states.current.vn,
