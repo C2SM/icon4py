@@ -181,7 +181,7 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     return rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels
 
 
-class TestComputeThetaRhoPressureGradientPredictor(test_helpers.StencilTest):
+class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
     PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn
     OUTPUTS = (
         "rho_at_edges_on_model_levels",

@@ -13,6 +13,9 @@ import pytest
 import icon4py.model.common.type_alias as ta
 import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
+from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
+    apply_divergence_damping_and_update_vn,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -21,7 +24,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 divergence_damp_order = DivergenceDampingOrder()
 
 
-class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilTest):
+class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn
     OUTPUTS = ("next_vn",)
 
@@ -177,8 +180,8 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
 
         return dict(next_vn=next_vn)
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @pytest.fixture(params=[True, False])
+    def input_data(self, grid, request):
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
         scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim)
@@ -214,10 +217,10 @@ class TestApplyDivergenceDampingAndUpdateVnInCorrectorStep(test_helpers.StencilT
         iau_wgt_dyn = 1.0
         is_iau_active = True
         fourth_order_divdamp_factor = 0.004
-        second_order_divdamp_factor = 0.032
+        second_order_divdamp_factor = 0.012
         divdamp_order = 24
         second_order_divdamp_scaling_coeff = 194588.14247428576
-        limited_area = True
+        limited_area = request.param
         itime_scheme = 4
         edge_domain = h_grid.domain(dims.EdgeDim)
 
