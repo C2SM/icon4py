@@ -24,7 +24,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.ndarray,
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
@@ -33,19 +33,20 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
         dbl_eps,
         **kwargs,
     ) -> dict:
-        geofac_div = helpers.reshape(geofac_div, grid.connectivities[dims.C2EDim].shape)
+        c2e = connectivities[dims.C2EDim]
+        geofac_div = helpers.reshape(geofac_div, c2e.shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         p_m_0 = np.maximum(
             0.0,
-            p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 0]] * geofac_div[:, 0] * p_dtime,
+            p_mflx_tracer_h[c2e[:, 0]] * geofac_div[:, 0] * p_dtime,
         )
         p_m_1 = np.maximum(
             0.0,
-            p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 1]] * geofac_div[:, 1] * p_dtime,
+            p_mflx_tracer_h[c2e[:, 1]] * geofac_div[:, 1] * p_dtime,
         )
         p_m_2 = np.maximum(
             0.0,
-            p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 2]] * geofac_div[:, 2] * p_dtime,
+            p_mflx_tracer_h[c2e[:, 2]] * geofac_div[:, 2] * p_dtime,
         )
 
         p_m = p_m_0 + p_m_1 + p_m_2
@@ -55,8 +56,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        geofac_div_new = data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim)
+        geofac_div = data_alloc.random_field(grid, dims.CEDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -64,7 +64,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
         p_dtime = np.float64(5)
         dbl_eps = np.float64(1e-9)
         return dict(
-            geofac_div=geofac_div_new,
+            geofac_div=geofac_div,
             p_cc=p_cc,
             p_rhodz_now=p_rhodz_now,
             p_mflx_tracer_h=p_mflx_tracer_h,

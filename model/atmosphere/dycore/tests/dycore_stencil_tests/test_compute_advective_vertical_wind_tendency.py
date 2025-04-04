@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,18 +15,20 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advective_vertical_wind_te
     compute_advective_vertical_wind_tendency,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_advective_vertical_wind_tendency_numpy(
-    z_w_con_c: np.array,
-    w: np.array,
-    coeff1_dwdz: np.array,
-    coeff2_dwdz: np.array,
-    **kwargs,
-) -> np.array:
+    z_w_con_c: np.ndarray,
+    w: np.ndarray,
+    coeff1_dwdz: np.ndarray,
+    coeff2_dwdz: np.ndarray,
+    **kwargs: Any,
+) -> np.ndarray:
     ddt_w_adv = np.zeros_like(coeff1_dwdz)
     ddt_w_adv[:, 1:] = -z_w_con_c[:, 1:] * (
         w[:, :-2] * coeff1_dwdz[:, 1:]
@@ -40,12 +44,12 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_w_con_c: np.array,
-        w: np.array,
-        coeff1_dwdz: np.array,
-        coeff2_dwdz: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_w_con_c: np.ndarray,
+        w: np.ndarray,
+        coeff1_dwdz: np.ndarray,
+        coeff2_dwdz: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         ddt_w_adv = compute_advective_vertical_wind_tendency_numpy(
             z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
@@ -53,7 +57,7 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
         coeff1_dwdz = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

@@ -13,8 +13,8 @@ import uuid
 from typing import Callable, NamedTuple
 
 import click
+import numpy as np
 from devtools import Timer
-from gt4py.next import gtfn_cpu
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
@@ -148,13 +148,13 @@ class TimeLoop:
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.info(
-                f" MAX VN: {prognostic_states.current.vn.asnumpy().max():.15e} , MAX W: {prognostic_states.current.w.asnumpy().max():.15e}"
+            log.debug(
+                f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
             )
-            log.info(
-                f" MAX RHO: {prognostic_states.current.rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_states.current.theta_v.asnumpy().max():.15e}"
+            log.debug(
+                f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
             )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
+            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
@@ -209,7 +209,46 @@ class TimeLoop:
 
         prognostic_states.swap()
 
-        # TODO (Chia Rui): add tracer advection here
+    # TODO (Chia Rui): add tracer advection here
+
+    def _update_time_levels_for_velocity_tendencies(
+        self,
+        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        at_first_substep: bool,
+        at_initial_timestep: bool,
+    ):
+        """
+        Set time levels of advective tendency fields for call to velocity_tendencies.
+
+        When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
+        `vertical_wind_advective_tendency.predictor` (advection term in vertical momentum equation in
+        predictor step) is not computed in the predictor step of each substep.
+        Instead, the advection term computed in the corrector step during the
+        previous substep is reused for efficiency (except, of course, in the
+        very first substep of the initial time step).
+        `normal_wind_advective_tendency.predictor` (advection term in horizontal momentum equation in
+        predictor step) is only computed in the predictor step of the first
+        substep and the advection term in the corrector step during the previous
+        substep is reused for `normal_wind_advective_tendency.predictor` from the second substep onwards.
+        Additionally, in this scheme the predictor and corrector outputs are kept
+        in separate elements of the pair (.predictor for the predictor step and
+        .corrector for the corrector step) and interpoolated at the end of the
+        corrector step to get the final output.
+
+        No other time stepping schemes are currently supported.
+
+        Args:
+            diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)
+            at_first_substep: Flag indicating if this is the first substep of the time step.
+            at_initial_timestep: Flag indicating if this is the first time step.
+
+        Returns:
+            The index of the pair element to be used for the corrector output.
+        """
+        if not (at_initial_timestep and at_first_substep):
+            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+        if not at_first_substep:
+            diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     def _do_dyn_substepping(
         self,
@@ -226,6 +265,13 @@ class TimeLoop:
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
+
+            self._update_time_levels_for_velocity_tendencies(
+                solve_nonhydro_diagnostic_state,
+                at_first_substep=self._is_first_substep(dyn_substep),
+                at_initial_timestep=self._is_first_step_in_simulation,
+            )
+
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
@@ -282,6 +328,7 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
+    icon4py_driver_backend: str,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
     Initialize the driver run.
@@ -309,15 +356,22 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type)
+    config = driver_config.read_config(icon4py_driver_backend, experiment_type)
 
     decomp_info = driver_init.read_decomp_info(
-        file_path, props, serialization_type, grid_id, grid_root, grid_level
+        file_path,
+        props,
+        config.run_config.backend,
+        serialization_type,
+        grid_id,
+        grid_root,
+        grid_level,
     )
 
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = driver_init.read_icon_grid(
         file_path,
+        backend=config.run_config.backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -333,6 +387,7 @@ def initialize(
     ) = driver_init.read_geometry_fields(
         file_path,
         vertical_grid_config=config.vertical_grid_config,
+        backend=config.run_config.backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -348,6 +403,7 @@ def initialize(
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,
+        config.run_config.backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -365,14 +421,14 @@ def initialize(
         edge_geometry,
         cell_geometry,
         exchange=exchange,
-        backend=gtfn_cpu,
+        backend=config.run_config.backend,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=icon_grid,
-        backend=gtfn_cpu,
+        backend=config.run_config.backend,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
@@ -396,6 +452,7 @@ def initialize(
         cell_geometry,
         edge_geometry,
         file_path,
+        backend=config.run_config.backend,
         rank=props.rank,
         experiment_type=experiment_type,
     )
@@ -435,13 +492,13 @@ def initialize(
 )
 @click.option(
     "--serialization_type",
-    default="serialbox",
+    default=driver_init.SerializationType.SB.value,
     show_default=True,
     help="Serialization type for grid info and static fields. This is currently the only possible way to load the grid info and static fields.",
 )
 @click.option(
     "--experiment_type",
-    default="any",
+    default=driver_init.ExperimentType.ANY.value,
     show_default=True,
     help="Option for configuration and how the initial state is generated. "
     "Setting it to the default value will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data. "
@@ -464,8 +521,28 @@ def initialize(
     default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
     help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
 )
+@click.option(
+    "--enable_output",
+    is_flag=True,
+    help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
+)
+@click.option(
+    "--icon4py_driver_backend",
+    "-b",
+    required=True,
+    help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_cpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
+)
 def icon4py_driver(
-    input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
+    input_path,
+    run_path,
+    mpi,
+    serialization_type,
+    experiment_type,
+    grid_id,
+    grid_root,
+    grid_level,
+    enable_output,
+    icon4py_driver_backend,
 ) -> None:
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -489,7 +566,7 @@ def icon4py_driver(
     """
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     grid_id = uuid.UUID(grid_id)
-    driver_init.configure_logging(run_path, experiment_type, parallel_props)
+    driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
 
     time_loop: TimeLoop
     ds: DriverStates
@@ -502,6 +579,7 @@ def icon4py_driver(
         grid_id,
         grid_root,
         grid_level,
+        icon4py_driver_backend,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
     log.info(

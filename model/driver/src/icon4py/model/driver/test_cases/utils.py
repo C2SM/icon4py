@@ -5,30 +5,39 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from types import ModuleType
+from typing import Optional
+
 import gt4py.next as gtx
 import numpy as np
+from gt4py.next import backend as gtx_backend
 
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
     field_type_aliases as fa,
     type_alias as ta,
+    utils as common_utils,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def hydrostatic_adjustment_numpy(
-    wgtfac_c: np.ndarray,
-    ddqz_z_half: np.ndarray,
-    exner_ref_mc: np.ndarray,
-    d_exner_dz_ref_ic: np.ndarray,
-    theta_ref_mc: np.ndarray,
-    theta_ref_ic: np.ndarray,
-    rho: np.ndarray,
-    exner: np.ndarray,
-    theta_v: np.ndarray,
+def hydrostatic_adjustment_ndarray(
+    wgtfac_c: data_alloc.NDArray,
+    ddqz_z_half: data_alloc.NDArray,
+    exner_ref_mc: data_alloc.NDArray,
+    d_exner_dz_ref_ic: data_alloc.NDArray,
+    theta_ref_mc: data_alloc.NDArray,
+    theta_ref_ic: data_alloc.NDArray,
+    rho: data_alloc.NDArray,
+    exner: data_alloc.NDArray,
+    theta_v: data_alloc.NDArray,
     num_levels: int,
-):
+    array_ns: ModuleType = np,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     # virtual temperature
     temp_v = theta_v * exner
 
@@ -46,9 +55,9 @@ def hydrostatic_adjustment_numpy(
         )
         quadratic_c = -(fac2 * fac3 / ddqz_z_half[:, k + 1] + fac2 * d_exner_dz_ref_ic[:, k + 1])
 
-        exner[:, k] = (quadratic_b + np.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
-            2.0 * quadratic_a
-        )
+        exner[:, k] = (
+            quadratic_b + array_ns.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)
+        ) / (2.0 * quadratic_a)
         theta_v[:, k] = temp_v[:, k] / exner[:, k]
         rho[:, k] = (
             exner[:, k] ** phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v[:, k])
@@ -57,21 +66,21 @@ def hydrostatic_adjustment_numpy(
     return rho, exner, theta_v
 
 
-def hydrostatic_adjustment_constant_thetav_numpy(
-    wgtfac_c: np.ndarray,
-    ddqz_z_half: np.ndarray,
-    exner_ref_mc: np.ndarray,
-    d_exner_dz_ref_ic: np.ndarray,
-    theta_ref_mc: np.ndarray,
-    theta_ref_ic: np.ndarray,
-    rho: np.ndarray,
-    exner: np.ndarray,
-    theta_v: np.ndarray,
+def hydrostatic_adjustment_constant_thetav_ndarray(
+    wgtfac_c: data_alloc.NDArray,
+    ddqz_z_half: data_alloc.NDArray,
+    exner_ref_mc: data_alloc.NDArray,
+    d_exner_dz_ref_ic: data_alloc.NDArray,
+    theta_ref_mc: data_alloc.NDArray,
+    theta_ref_ic: data_alloc.NDArray,
+    rho: data_alloc.NDArray,
+    exner: data_alloc.NDArray,
+    theta_v: data_alloc.NDArray,
     num_levels: int,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
-    hydrostatic_adjustment_numpy, the virtual temperature is kept (assumed)
+    hydrostatic_adjustment_ndarray, the virtual temperature is kept (assumed)
     constant during the adjustment, leading to a simpler formula.
     """
 
@@ -97,17 +106,18 @@ def hydrostatic_adjustment_constant_thetav_numpy(
     return rho, exner
 
 
-def zonalwind_2_normalwind_numpy(
+def zonalwind_2_normalwind_ndarray(
     grid: icon_grid.IconGrid,
     jw_u0: float,
     jw_up: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
-    edge_lat: np.ndarray,
-    edge_lon: np.ndarray,
-    primal_normal_x: np.ndarray,
-    eta_v_e: np.ndarray,
-):
+    edge_lat: data_alloc.NDArray,
+    edge_lon: data_alloc.NDArray,
+    primal_normal_x: data_alloc.NDArray,
+    eta_v_e: data_alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
 
@@ -125,29 +135,33 @@ def zonalwind_2_normalwind_numpy(
     """
     # TODO (Chia Rui) this function needs a test
 
-    mask = np.ones((grid.num_edges, grid.num_levels), dtype=bool)
+    mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
         0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         :,
     ] = False
-    edge_lat = np.repeat(np.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
-    edge_lon = np.repeat(np.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
-    primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
-    u = np.where(mask, jw_u0 * (np.cos(eta_v_e) ** 1.5) * (np.sin(2.0 * edge_lat) ** 2), 0.0)
+    edge_lat = array_ns.repeat(array_ns.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lon = array_ns.repeat(array_ns.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
+    primal_normal_x = array_ns.repeat(
+        array_ns.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1
+    )
+    u = array_ns.where(
+        mask, jw_u0 * (array_ns.cos(eta_v_e) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2), 0.0
+    )
     if jw_up > 1.0e-20:
-        u = np.where(
+        u = array_ns.where(
             mask,
             u
             + jw_up
-            * np.exp(
+            * array_ns.exp(
                 -(
                     (
                         10.0
-                        * np.arccos(
-                            np.sin(lat_perturbation_center) * np.sin(edge_lat)
-                            + np.cos(lat_perturbation_center)
-                            * np.cos(edge_lat)
-                            * np.cos(edge_lon - lon_perturbation_center)
+                        * array_ns.arccos(
+                            array_ns.sin(lat_perturbation_center) * array_ns.sin(edge_lat)
+                            + array_ns.cos(lat_perturbation_center)
+                            * array_ns.cos(edge_lat)
+                            * array_ns.cos(edge_lon - lon_perturbation_center)
                         )
                     )
                     ** 2
@@ -201,4 +215,154 @@ def compute_perturbed_exner(
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
         },
+    )
+
+
+def initialize_diffusion_diagnostic_state(
+    grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]
+) -> diffusion_states.DiffusionDiagnosticState:
+    return diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        div_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        dwdx=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        dwdy=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+    )
+
+
+def initialize_solve_nonhydro_diagnostic_state(
+    exner_pr: fa.CellKField[ta.wpfloat],
+    grid: icon_grid.IconGrid,
+    backend: Optional[gtx_backend.Backend],
+) -> dycore_states.DiagnosticStateNonHydro:
+    normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
+        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+    )
+    vertical_wind_advective_tendency = common_utils.PredictorCorrectorPair(
+        data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+    )
+    return dycore_states.DiagnosticStateNonHydro(
+        theta_v_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        exner_pr=exner_pr,
+        rho_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        ddt_exner_phy=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_rho=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_thv=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_w=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        mass_fl_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        ddt_vn_phy=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        grf_tend_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        normal_wind_advective_tendency=normal_wind_advective_tendency,
+        vertical_wind_advective_tendency=vertical_wind_advective_tendency,
+        tangential_wind=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        vn_on_half_levels=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
+        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
+        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dyn_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+    )
+
+
+def initialize_prep_advection(
+    grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]
+) -> dycore_states.PrepAdvection:
+    return dycore_states.PrepAdvection(
+        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        vol_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+    )
+
+
+def create_gt4py_field_for_prognostic_and_diagnostic_variables(
+    vn_ndarray: data_alloc.NDArray,
+    w_ndarray: data_alloc.NDArray,
+    exner_ndarray: data_alloc.NDArray,
+    rho_ndarray: data_alloc.NDArray,
+    theta_v_ndarray: data_alloc.NDArray,
+    temperature_ndarray: data_alloc.NDArray,
+    pressure_ndarray: data_alloc.NDArray,
+    pressure_ifc_ndarray: data_alloc.NDArray,
+    grid: icon_grid.IconGrid,
+    backend: Optional[gtx_backend.Backend],
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+]:
+    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
+    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
+    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
+    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
+    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend)
+    virutal_temperature = gtx.as_field(
+        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend
+    )
+    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=backend)
+    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
+    pressure_ifc = gtx.as_field((dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=backend)
+
+    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
+    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
+    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
+    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
+    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
+
+    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
+    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
+
+    return (
+        vn,
+        w,
+        exner,
+        rho,
+        theta_v,
+        vn_next,
+        w_next,
+        exner_next,
+        rho_next,
+        theta_v_next,
+        temperature,
+        virutal_temperature,
+        pressure,
+        pressure_ifc,
+        u,
+        v,
     )

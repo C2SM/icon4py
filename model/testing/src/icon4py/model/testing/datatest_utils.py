@@ -10,6 +10,9 @@ import os
 import pathlib
 import re
 import uuid
+from typing import Optional
+
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.decomposition import definitions as decomposition
 
@@ -58,15 +61,14 @@ SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
 GRIDS_PATH = TEST_DATA_ROOT.joinpath("grids")
 
 DATA_URIS = {
-    1: "https://polybox.ethz.ch/index.php/s/xhooaubvGffG8Qy/download",
+    1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",
     2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
     4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
 }
-DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
-DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
-DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/IiRimdJH2ZBZ1od/download"}
+DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download"}
+DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download"}
+DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download"}
 DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/91DEUGmAkBgrXO6/download"}
-DATA_URIS_ADVECTION = {1: "https://polybox.ethz.ch/index.php/s/3rTia1A41YW7KX9/download"}
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
@@ -116,30 +118,16 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
-def get_datapath_for_experiment_advection(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
-    return ranked_base_path.joinpath(f"{experiment}/advection/ser_data")
-
-
-def create_icon_serial_data_provider(datapath, processor_props):
+def create_icon_serial_data_provider(
+    datapath, processor_props, backend: Optional[gtx_backend.Backend]
+):
     # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.testing.serialbox import IconSerialDataProvider
 
     return IconSerialDataProvider(
+        backend=backend,
         fname_prefix="icon_pydycore",
         path=str(datapath),
         mpi_rank=processor_props.rank,
         do_print=True,
-    )
-
-
-def create_icon_serial_data_provider_advection(datapath, processor_props):
-    # note: this needs to be here, otherwise spack doesn't find serialbox
-    from icon4py.model.testing.serialbox import IconSerialDataProvider
-
-    return IconSerialDataProvider(
-        fname_prefix="icon_pyadvection",
-        path=str(datapath),
-        mpi_rank=processor_props.rank,
-        do_print=True,
-        advection=True,
     )

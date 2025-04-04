@@ -5,17 +5,20 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40 import (
     fused_solve_nonhydro_stencil_39_40,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.testing import helpers
 
 from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
 from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
@@ -24,13 +27,22 @@ from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
 
 
 def _fused_solve_nonhydro_stencil_39_40_numpy(
-    grid, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
-):
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    e_bln_c_s: np.ndarray,
+    z_w_concorr_me: np.ndarray,
+    wgtfac_c: np.ndarray,
+    wgtfacq_c: np.ndarray,
+    nlev: int,
+    nflatlev: int,
+) -> np.ndarray:
+    vert_idx = np.arange(nlev)
     w_concorr_c = np.where(
         (nflatlev < vert_idx) & (vert_idx < nlev),
-        compute_contravariant_correction_of_w_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        compute_contravariant_correction_of_w_numpy(
+            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c
+        ),
         compute_contravariant_correction_of_w_for_lower_boundary_numpy(
-            grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c
+            connectivities, e_bln_c_s, z_w_concorr_me, wgtfacq_c
         ),
     )
 
@@ -39,38 +51,34 @@ def _fused_solve_nonhydro_stencil_39_40_numpy(
     return w_concorr_c_res
 
 
-class TestFusedSolveNonhydroStencil39To40(StencilTest):
+class TestFusedSolveNonhydroStencil39To40(helpers.StencilTest):
     PROGRAM = fused_solve_nonhydro_stencil_39_40
     OUTPUTS = ("w_concorr_c",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
-        e_bln_c_s: np.array,
-        z_w_concorr_me: np.array,
-        wgtfac_c: np.array,
-        wgtfacq_c: np.array,
-        vert_idx: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        e_bln_c_s: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfac_c: np.ndarray,
+        wgtfacq_c: np.ndarray,
         nlev: int,
         nflatlev: int,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         w_concorr_c_result = _fused_solve_nonhydro_stencil_39_40_numpy(
-            grid, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
+            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, nlev, nflatlev
         )
         return dict(w_concorr_c=w_concorr_c_result)
 
     @pytest.fixture
-    def input_data(self, grid):
-        e_bln_c_s = random_field(grid, dims.CEDim, dtype=wpfloat)
-        z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w_concorr_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-
-        vert_idx = zero_field(grid, dims.KDim, dtype=gtx.int32)
-        for level in range(grid.num_levels):
-            vert_idx[level] = level
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
+        z_w_concorr_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfacq_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        w_concorr_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         nlev = grid.num_levels
         nflatlev = 13
@@ -80,7 +88,6 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             wgtfacq_c=wgtfacq_c,
-            vert_idx=vert_idx,
             nlev=nlev,
             nflatlev=nflatlev,
             w_concorr_c=w_concorr_c,

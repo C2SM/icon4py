@@ -6,6 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from types import ModuleType
+
+import numpy as np
 from gt4py import next as gtx
 from gt4py.next import sin, where
 
@@ -19,6 +22,7 @@ from icon4py.model.common.math.helpers import (
     normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
 )
+from icon4py.model.common.utils import data_allocation as alloc
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -567,3 +571,21 @@ def compute_coriolis_parameter_on_edges(
         out=coriolis_parameter,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
+
+
+def compute_primal_cart_normal(
+    primal_cart_normal_x: alloc.NDArray,
+    primal_cart_normal_y: alloc.NDArray,
+    primal_cart_normal_z: alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> alloc.NDArray:
+    primal_cart_normal = array_ns.transpose(
+        array_ns.stack(
+            (
+                primal_cart_normal_x,
+                primal_cart_normal_y,
+                primal_cart_normal_z,
+            )
+        )
+    )
+    return primal_cart_normal

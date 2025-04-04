@@ -57,41 +57,40 @@ depends_on = [
 ]
 
 [[modules]]
-path = "icon4pytools"
+path = "icon4py.tools"
 depends_on = []
 
 [[modules]]
-path = "icon4pytools.common"
+path = "icon4py.tools.common"
 depends_on = [
     { path = "icon4py.model.common" },
 ]
 
 [[modules]]
-path = "icon4pytools.f2ser"
+path = "icon4py.tools.f2ser"
 depends_on = [
-    { path = "icon4pytools.liskov" },
+    { path = "icon4py.tools.liskov" },
 ]
 
 [[modules]]
-path = "icon4pytools.icon4pygen"
+path = "icon4py.tools.icon4pygen"
 depends_on = [
     { path = "icon4py.model.common" },
-    { path = "icon4pytools.common" },
+    { path = "icon4py.tools.common" },
 ]
 
 [[modules]]
-path = "icon4pytools.liskov"
+path = "icon4py.tools.liskov"
 depends_on = [
-    { path = "icon4pytools" },
-    { path = "icon4pytools.common" },
+    { path = "icon4py.tools" },
+    { path = "icon4py.tools.common" },
 ]
 
 [[modules]]
-path = "icon4pytools.py2fgen"
+path = "icon4py.tools.py2fgen"
 depends_on = [
     { path = "icon4py.model.atmosphere.diffusion" },
     { path = "icon4py.model.atmosphere.dycore" },
     { path = "icon4py.model.common" },
-    { path = "icon4pytools.common" },
-    { path = "icon4pytools.icon4pygen" },
+    { path = "icon4py.tools.common" },
 ]

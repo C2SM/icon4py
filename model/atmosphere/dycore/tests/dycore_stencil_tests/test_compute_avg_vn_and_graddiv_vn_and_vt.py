@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -21,18 +25,19 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
     PROGRAM = compute_avg_vn_and_graddiv_vn_and_vt
     OUTPUTS = ("z_vn_avg", "z_graddiv_vn", "vt")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
-        e_flx_avg: np.array,
-        vn: np.array,
-        geofac_grdiv: np.array,
-        rbf_vec_coeff_e: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        e_flx_avg: np.ndarray,
+        vn: np.ndarray,
+        geofac_grdiv: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
-        e2c2eO = grid.connectivities[dims.E2C2EODim]
-        e2c2e = grid.connectivities[dims.E2C2EDim]
+        e2c2eO = connectivities[dims.E2C2EODim]
+        e2c2e = connectivities[dims.E2C2EDim]
         e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
         z_vn_avg = np.sum(
             np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1
@@ -48,7 +53,7 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         return dict(z_vn_avg=z_vn_avg, z_graddiv_vn=z_graddiv_vn, vt=vt)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)

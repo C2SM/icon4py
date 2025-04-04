@@ -11,8 +11,9 @@ import uuid
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridSize
+from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid.base import BaseGrid, GeometryType, GridConfig, HorizontalGridSize
 
 # periodic
 #
@@ -400,7 +401,7 @@ class SimpleGrid(BaseGrid):
             "E2V": (self._get_offset_provider, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
             "E2C2V": (self._get_offset_provider, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
             "C2CE": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.C2EDim,
                 dims.CellDim,
                 dims.CEDim,
@@ -409,25 +410,25 @@ class SimpleGrid(BaseGrid):
             "C2E2C2E": (self._get_offset_provider, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
             "C2E2C2E2C": (self._get_offset_provider, dims.C2E2C2E2CDim, dims.CellDim, dims.CellDim),
             "E2ECV": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.E2C2VDim,
                 dims.EdgeDim,
                 dims.ECVDim,
             ),
             "E2EC": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.E2CDim,
                 dims.EdgeDim,
                 dims.ECDim,
             ),
             "C2CEC": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.C2E2CDim,
                 dims.CellDim,
                 dims.CECDim,
             ),
             "C2CECEC": (
-                self._get_offset_provider_for_sparse_fields,
+                self._get_connectivity_sparse_fields,
                 dims.C2E2C2E2CDim,
                 dims.CellDim,
                 dims.CECECDim,
@@ -455,6 +456,10 @@ class SimpleGrid(BaseGrid):
         return self.config.num_levels
 
     @property
+    def geometry_type(self) -> GeometryType:
+        return GeometryType.TORUS
+
+    @property
     def id(self) -> uuid.UUID:
         return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
 
@@ -469,6 +474,7 @@ class SimpleGrid(BaseGrid):
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
             vertical_size=vertical_grid_config.num_levels,
+            limited_area=False,
         )
 
         connectivity_dict = {
@@ -495,3 +501,25 @@ class SimpleGrid(BaseGrid):
                 dims.ECDim: self.size[dims.EdgeDim] * self.size[dims.E2CDim],
             }
         )
+
+    def start_index(self, domain: h_grid.Domain) -> gtx.int32:
+        num = self._match_grid_size(domain) if domain.zone.is_halo() else 0
+        return gtx.int32(num)
+
+    def end_index(self, domain: h_grid.Domain) -> gtx.int32:
+        num = self._match_grid_size(domain)
+        return gtx.int32(num)
+
+    def _match_grid_size(self, domain: h_grid.Domain) -> int:
+        dimension = domain.dim
+        match dimension:
+            case dims.VertexDim:
+                return self.num_vertices
+            case dims.CellDim:
+                return self.num_cells
+            case dims.EdgeDim:
+                return self.num_edges
+            case _:
+                raise exceptions.IconGridError(
+                    f" {domain} : Not a valid horizontal Domain implementation {type(domain)}"
+                )

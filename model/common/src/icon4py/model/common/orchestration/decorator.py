@@ -55,9 +55,7 @@ except ImportError:
 if dace:
     from dace import hooks
     from dace.transformation.passes.simplify import SimplifyPass
-    from gt4py.next.program_processors.runners.dace_common.utility import (
-        connectivity_identifier,
-    )
+    from gt4py.next.program_processors.runners.dace import utils as gtx_dace_utils
 
 
 P = ParamSpec("P")
@@ -105,7 +103,7 @@ def orchestrate(
             if self._orchestration:
                 # Add DaCe data types annotations for **all args and kwargs**
                 dace_annotations = to_dace_annotations(fuse_func)
-                if "dace" not in self._backend.name.lower():
+                if self._backend is None or "dace" not in self._backend.name.lower():
                     raise ValueError(
                         "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
                     )
@@ -169,7 +167,7 @@ def orchestrate(
                         {
                             k: v
                             for k, v in grid.offset_providers.items()
-                            if connectivity_identifier(k) in sdfg.arrays
+                            if gtx_dace_utils.connectivity_identifier(k) in sdfg.arrays
                         },
                     ),
                 }
@@ -510,7 +508,7 @@ if dace:
             "optimizer", "automatic_simplification", value=False
         )  # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
         dace.config.Config.set("optimizer", "autooptimize", value=False)
-        device_type = backend.executor.step.translation.device_type
+        device_type = backend.executor.step.translation.device_type if backend else None
         if device_type == core_defs.DeviceType.CPU:
             device = "cpu"
             compiler_args = dace.config.Config.get("compiler", "cpu", "args")
@@ -547,7 +545,7 @@ if dace:
         return {
             # connectivity tables at runtime
             **{
-                connectivity_identifier(k): v.table
+                gtx_dace_utils.connectivity_identifier(k): v.table
                 for k, v in offset_providers.items()
                 if hasattr(v, "table")
             },
