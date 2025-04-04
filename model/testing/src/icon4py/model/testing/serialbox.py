@@ -626,17 +626,21 @@ class InterpolationSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)

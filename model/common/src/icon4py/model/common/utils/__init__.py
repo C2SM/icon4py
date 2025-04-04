@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-from . import data_allocation
 from ._common import (
     DoubleBuffering,
     Pair,
