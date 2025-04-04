@@ -444,12 +444,12 @@ class Diffusion:
         )
         self.update_theta_and_exner = (
             update_theta_and_exner.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
+            .with_connectivities({})
             .freeze()
         )
         self.copy_field = (
             copy_field.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
+            .with_connectivities({})
             .freeze()
         )
         self.scale_k = scale_k.with_backend(self._backend).with_connectivities({}).freeze()

@@ -766,7 +766,7 @@ class SolveNonhydro:
         )
         self._init_test_fields = (
             nhsolve_stencils.init_test_fields.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
+            .with_connectivities({})
             .freeze()
         )
         self._stencils_42_44_45_45b = (
