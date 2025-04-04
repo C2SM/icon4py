@@ -162,11 +162,13 @@ class GridGeometry(factory.FieldSource):
                     (dims.VertexDim,),
                     decomposition_info.owner_mask(dims.VertexDim),
                     allocator=self._backend,
+                    dtype=bool,
                 ),
                 "cell_owner_mask": gtx.as_field(
-                    (dims.VertexDim,),
+                    (dims.CellDim,),
                     decomposition_info.owner_mask(dims.CellDim),
                     allocator=self._backend,
+                    dtype=bool,
                 ),
             }
         )
