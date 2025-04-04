@@ -215,12 +215,12 @@ class VerticalGrid:
 
     @functools.cached_property
     def nrdmax(self) -> gtx.int32:
-        """Vertical index where damping starts."""
+        """Vertical index where damping ends."""
         return self.end_index_of_damping_layer
 
     @functools.cached_property
     def end_index_of_damping_layer(self) -> gtx.int32:
-        """Vertical index where damping starts."""
+        """Vertical index where damping ends."""
         return self.index(Domain(dims.KDim, Zone.DAMPING))
 
     @property
