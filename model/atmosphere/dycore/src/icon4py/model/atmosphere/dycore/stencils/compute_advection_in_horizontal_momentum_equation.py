@@ -23,7 +23,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 
 @gtx.field_operator
 def _compute_advection_in_horizontal_momentum_equation(
-    normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -45,56 +44,39 @@ def _compute_advection_in_horizontal_momentum_equation(
     levelmask: fa.KField[bool],
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    start_vertex_lateral_boundary_level_2: gtx.int32,
-    end_vertex_halo: gtx.int32,
-    start_edge_nudging_level_2: gtx.int32,
-    end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
-    upward_vorticity_at_vertices_on_model_levels = concat_where(
-        (start_vertex_lateral_boundary_level_2 <= dims.VertexDim)
-        & (dims.VertexDim < end_vertex_halo),
-        _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot),
-        0.0,
-    )
+    upward_vorticity_at_vertices_on_model_levels = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
 
-    normal_wind_advective_tendency = concat_where(
-        (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-        _compute_advective_normal_wind_tendency(
-            horizontal_kinetic_energy_at_edges_on_model_levels,
-            coeff_gradekin,
-            horizontal_kinetic_energy_at_cells_on_model_levels,
-            upward_vorticity_at_vertices_on_model_levels,
-            tangential_wind,
-            coriolis_frequency,
-            c_lin_e,
-            contravariant_corrected_w_at_cells_on_model_levels,
-            vn_on_half_levels,
-            ddqz_z_full_e,
-        ),
-        normal_wind_advective_tendency,
+    normal_wind_advective_tendency = _compute_advective_normal_wind_tendency(
+        horizontal_kinetic_energy_at_edges_on_model_levels,
+        coeff_gradekin,
+        horizontal_kinetic_energy_at_cells_on_model_levels,
+        upward_vorticity_at_vertices_on_model_levels,
+        tangential_wind,
+        coriolis_frequency,
+        c_lin_e,
+        contravariant_corrected_w_at_cells_on_model_levels,
+        vn_on_half_levels,
+        ddqz_z_full_e,
     )
 
     normal_wind_advective_tendency = concat_where(
         ((maximum(3, nrdmax - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 4)),
-        concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-            _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-                levelmask,
-                c_lin_e,
-                contravariant_corrected_w_at_cells_on_model_levels,
-                ddqz_z_full_e,
-                area_edge,
-                tangent_orientation,
-                inv_primal_edge_length,
-                upward_vorticity_at_vertices_on_model_levels,
-                geofac_grdiv,
-                vn,
-                normal_wind_advective_tendency,
-                cfl_w_limit,
-                scalfac_exdiff,
-                d_time,
-            ),
+        _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
+            levelmask,
+            c_lin_e,
+            contravariant_corrected_w_at_cells_on_model_levels,
+            ddqz_z_full_e,
+            area_edge,
+            tangent_orientation,
+            inv_primal_edge_length,
+            upward_vorticity_at_vertices_on_model_levels,
+            geofac_grdiv,
+            vn,
             normal_wind_advective_tendency,
+            cfl_w_limit,
+            scalfac_exdiff,
+            d_time,
         ),
         normal_wind_advective_tendency,
     )
@@ -125,10 +107,6 @@ def compute_advection_in_horizontal_momentum_equation(
     levelmask: fa.KField[bool],
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    start_vertex_lateral_boundary_level_2: gtx.int32,
-    end_vertex_halo: gtx.int32,
-    start_edge_nudging_level_2: gtx.int32,
-    end_edge_local: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -137,7 +115,6 @@ def compute_advection_in_horizontal_momentum_equation(
     """Formerly known as fused_velocity_advection_stencil_19_to_20."""
 
     _compute_advection_in_horizontal_momentum_equation(
-        normal_wind_advective_tendency,
         vn,
         horizontal_kinetic_energy_at_edges_on_model_levels,
         horizontal_kinetic_energy_at_cells_on_model_levels,
@@ -159,10 +136,6 @@ def compute_advection_in_horizontal_momentum_equation(
         levelmask,
         nlev,
         nrdmax,
-        start_vertex_lateral_boundary_level_2,
-        end_vertex_halo,
-        start_edge_nudging_level_2,
-        end_edge_local,
         out=normal_wind_advective_tendency,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
