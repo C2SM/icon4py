@@ -53,10 +53,6 @@ def is_roundtrip(backend: gtx_backend.Backend | None) -> bool:
     return backend.name == "roundtrip" if backend else False
 
 
-def extract_backend_name(backend: gtx_backend.Backend | None) -> str:
-    return "embedded" if backend is None else backend.name
-
-
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
