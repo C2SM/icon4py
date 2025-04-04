@@ -141,6 +141,7 @@ def _compute_k_start_end(
 
     return k_start, k_end
 
+
 # TODO (@halungge) refactor this to fully get rid of the lists
 def compute_diffusion_metrics(
     c2e2c: data_alloc.NDArray,
