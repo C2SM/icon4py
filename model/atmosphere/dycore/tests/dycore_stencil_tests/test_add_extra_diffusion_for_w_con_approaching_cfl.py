@@ -25,7 +25,6 @@ from icon4py.model.testing.helpers import StencilTest
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    levmask: np.ndarray,
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     z_w_con_c: np.ndarray,
@@ -38,13 +37,12 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     cfl_w_limit: ta.wpfloat,
     dtime: ta.wpfloat,
 ) -> np.ndarray:
-    levmask = np.expand_dims(levmask, axis=0)
     owner_mask = np.expand_dims(owner_mask, axis=-1)
     area = np.expand_dims(area, axis=-1)
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
 
     difcoef = np.where(
-        (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+        (cfl_clipping == 1) & (owner_mask == 1),
         scalfac_exdiff
         * np.minimum(
             0.85 - cfl_w_limit * dtime,
@@ -55,7 +53,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
 
     c2e2cO = connectivities[dims.C2E2CODim]
     ddt_w_adv = np.where(
-        (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+        (cfl_clipping == 1) & (owner_mask == 1),
         ddt_w_adv
         + difcoef
         * area
@@ -80,7 +78,6 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        levmask: np.ndarray,
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
         z_w_con_c: np.ndarray,
@@ -96,7 +93,6 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     ) -> dict:
         ddt_w_adv = add_extra_diffusion_for_w_con_approaching_cfl_numpy(
             connectivities,
-            levmask,
             cfl_clipping,
             owner_mask,
             z_w_con_c,
@@ -113,7 +109,6 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        levmask = random_mask(grid, dims.KDim)
         cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)
         owner_mask = random_mask(grid, dims.CellDim)
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
@@ -127,7 +122,6 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         dtime = wpfloat("2.0")
 
         return dict(
-            levmask=levmask,
             cfl_clipping=cfl_clipping,
             owner_mask=owner_mask,
             z_w_con_c=z_w_con_c,
