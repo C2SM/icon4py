@@ -468,7 +468,7 @@ class Diffusion:
         self._determine_horizontal_domains()
 
         # TODO(edopao): we should call gtx.common.offset_provider_to_type()
-        # but this requires some changes in type inference.
+        #   but this requires some changes in gt4py domain inference.
         self.compile_time_connectivities = self._grid.offset_providers
 
     def _allocate_temporary_fields(self):
