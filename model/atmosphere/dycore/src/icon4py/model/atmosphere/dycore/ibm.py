@@ -42,6 +42,8 @@ class ImmersedBoundaryMethod:
         Initialize the immersed boundary method.
         """
 
+        self.DEBUG_LEVEL = DEBUG_LEVEL
+
         self._make_masks(
             grid=grid,
             savepoint_path=savepoint_path,

@@ -33,6 +33,9 @@ from icon4py.model.driver import (
     initialization_utils as driver_init,
 )
 
+from icon4py.model.common.io import plots
+from icon4py.model.atmosphere.dycore import ibm
+
 
 log = logging.getLogger(__name__)
 
@@ -409,6 +412,23 @@ def initialize(
         ser_type=serialization_type,
     )
 
+    #---> IBM
+    savepoint_path = "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
+    grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
+    _ibm = ibm.ImmersedBoundaryMethod(
+        grid=icon_grid,
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        backend = config.run_config.backend,
+        )
+    _plot = plots.Plot(
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        n_levels_to_plot=8,
+        backend = config.run_config.backend,
+        )
+    #<--- IBM
+
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
@@ -438,6 +458,10 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        extras = {
+            "ibm": _ibm,
+            "plot": _plot,
+        },
     )
 
     (

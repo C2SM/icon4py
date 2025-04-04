@@ -11,12 +11,8 @@ import logging
 import dataclasses
 from typing import Final, Optional
 
-import numpy as np
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
-
-from icon4py.model.common.io import plots
-from icon4py.model.atmosphere.dycore import ibm
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -450,26 +446,16 @@ class SolveNonhydro:
         owner_mask: fa.CellField[bool],
         backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        extras: dict = {},
     ):
         self._exchange = exchange
         self._backend = backend
 
         #---> IBM
-        savepoint_path = "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
-        #grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res100m.nc"
-        grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
-        self._ibm = ibm.ImmersedBoundaryMethod(
-            grid=grid,
-            savepoint_path=savepoint_path,
-            grid_file_path=grid_file_path,
-            backend = self._backend,
-            )
-        self._plot = plots.Plot(
-            savepoint_path=savepoint_path,
-            grid_file_path=grid_file_path,
-            n_levels_to_plot=8,
-            backend = self._backend,
-            )
+        if "ibm" in extras:
+            self._ibm = extras["ibm"]
+        if "plot" in extras:
+            self._plot = extras["plot"]
         #<--- IBM
 
         self._grid = grid
@@ -853,7 +839,7 @@ class SolveNonhydro:
 
         #---> IBM
         if at_initial_timestep and at_first_substep:
-            if ibm.DEBUG_LEVEL >= 3:
+            if self._ibm.DEBUG_LEVEL >= 3:
                 self._plot.pickle_data(prognostic_states.current, "prognostic_state_initial")
             log.info(" ***IBM fixing initial conditions")
             self._ibm.set_dirichlet_value_vn(prognostic_states.current.vn)
@@ -1210,15 +1196,6 @@ class SolveNonhydro:
                     vertical_end=self._grid.num_levels,
                     offset_provider=self._grid.offset_providers,
                 )
-
-                # #---> IBM
-                # self._plot.plot_levels(self.z_grad_rth_1, label=f"inside_predictor_miura_ddx_rho")
-                # self._plot.plot_levels(self.z_grad_rth_2, label=f"inside_predictor_miura_ddy_rho")
-                # self._plot.plot_levels(self.z_grad_rth_3, label=f"inside_predictor_miura_ddx_theta_v")
-                # self._plot.plot_levels(self.z_grad_rth_4, label=f"inside_predictor_miura_ddy_theta_v")
-                # self._plot.plot_levels(z_fields.z_rho_e, label=f"inside_predictor_miura_rho_e")
-                # self._plot.plot_levels(z_fields.z_theta_v_e, label=f"inside_predictor_miura_theta_v_e")
-                # #<--- IBM
 
         self._compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
