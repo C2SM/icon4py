@@ -394,76 +394,50 @@ class Diffusion:
         self.thresh_tdiff: float = -5.0
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
-        self.mo_intp_rbf_rbf_vec_interpol_vertex = (
-            mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
-            .freeze()
-        )
+        self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(
+            self._backend
+        ).compile(offset_provider_type=self._grid.offset_providers)
         self.calculate_nabla2_and_smag_coefficients_for_vn = (
-            (calculate_nabla2_and_smag_coefficients_for_vn.with_backend(self._backend))
-            .with_connectivities(self._grid.offset_providers)
-            .freeze()
+            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(self._backend).compile(
+                self._grid.offset_providers
+            )
         )
         self.calculate_diagnostic_quantities_for_turbulence = (
-            (calculate_diagnostic_quantities_for_turbulence.with_backend(self._backend))
-            .with_connectivities(self._grid.offset_providers)
-            .freeze()
+            calculate_diagnostic_quantities_for_turbulence.with_backend(self._backend).compile(
+                offset_provider_type=self._grid.offset_providers
+            )
         )
-        self.apply_diffusion_to_vn = (
-            apply_diffusion_to_vn.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
-            .freeze()
+        self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(self._backend).compile(
+            offset_provider_type=self._grid.offset_providers
         )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
             apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
                 self._backend
-            )
-            .with_connectivities(self._grid.offset_providers)
-            .freeze()
+            ).compile(offset_provider_type=self._grid.offset_providers)
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
             calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
                 self._backend
-            )
-            .with_connectivities(self._grid.offset_providers)
-            .freeze()
+            ).compile(offset_provider_type=self._grid.offset_providers)
         )
-        self.calculate_nabla2_for_theta = (
-            calculate_nabla2_for_theta.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
-            .freeze()
-        )
+        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(
+            self._backend
+        ).compile(offset_provider_type=self._grid.offset_providers)
         self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
-            (
-                truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(
-                    self._backend
-                )
-            )
-            .with_connectivities(self._grid.offset_providers)
-            .freeze()
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(self._backend)
+        ).compile(offset_provider_type=self._grid.offset_providers)
+        self.update_theta_and_exner = update_theta_and_exner.with_backend(self._backend).compile(
+            offset_provider_type={}
         )
-        self.update_theta_and_exner = (
-            update_theta_and_exner.with_backend(self._backend)
-            .with_connectivities({})
-            .freeze()
-        )
-        self.copy_field = (
-            copy_field.with_backend(self._backend)
-            .with_connectivities({})
-            .freeze()
-        )
-        self.scale_k = scale_k.with_backend(self._backend).with_connectivities({}).freeze()
-        self.setup_fields_for_initial_step = (
-            setup_fields_for_initial_step.with_backend(self._backend)
-            .with_connectivities({})
-            .freeze()
-        )
+        self.copy_field = copy_field.with_backend(self._backend).compile(offset_provider_type={})
+        self.copy_field = copy_field.with_backend(self._backend).compile(offset_provider_type={})
+        self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(
+            self._backend
+        ).compile(offset_provider_type={})
 
         self.init_diffusion_local_fields_for_regular_timestep = (
-            (init_diffusion_local_fields_for_regular_timestep.with_backend(self._backend))
-            .with_connectivities({"Koff": dims.KDim})
-            .freeze()
-        )
+            init_diffusion_local_fields_for_regular_timestep.with_backend(self._backend)
+        ).compile(offset_provider_type={"Koff": dims.KDim})
 
         self._allocate_temporary_fields()
 

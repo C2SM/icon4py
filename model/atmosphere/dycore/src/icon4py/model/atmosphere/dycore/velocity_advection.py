@@ -57,58 +57,30 @@ class VelocityAdvection:
         self._allocate_local_fields()
         self._determine_local_domains()
 
-        self._compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction = (
-            compute_edge_diagnostics_for_velocity_advection.compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
-                self._backend
-            )
-            .with_connectivities(self.grid.offset_providers)
-            .freeze()
-        )
-        self._compute_horizontal_advection_of_w = (
-            compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
-                self._backend
-            )
-            .with_connectivities(self.grid.offset_providers)
-            .freeze()
-        )
+        self._compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction = compute_edge_diagnostics_for_velocity_advection.compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
+            self._backend
+        ).compile(offset_provider_type=self.grid.offset_providers)
+        self._compute_horizontal_advection_of_w = compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
+            self._backend
+        ).compile(offset_provider_type=self.grid.offset_providers)
 
-        self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms = (
-            compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms.with_backend(
-                self._backend
-            )
-            .with_connectivities(self.grid.offset_providers)
-            .freeze()
-        )
-        self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity = (
-            compute_maximum_cfl_and_clip_contravariant_vertical_velocity.compute_maximum_cfl_and_clip_contravariant_vertical_velocity.with_backend(
-                self._backend
-            )
-            .with_connectivities(self.grid.offset_providers)
-            .freeze()
-        )
-        self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w = (
-            compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w.with_backend(
-                self._backend
-            )
-            .with_connectivities(self.grid.offset_providers)
-            .freeze()
-        )
+        self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms = compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms.with_backend(
+            self._backend
+        ).compile(offset_provider_type=self.grid.offset_providers)
+        self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity = compute_maximum_cfl_and_clip_contravariant_vertical_velocity.compute_maximum_cfl_and_clip_contravariant_vertical_velocity.with_backend(
+            self._backend
+        ).compile(offset_provider_type={})
+        self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w = compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w.with_backend(
+            self._backend
+        ).compile(offset_provider_type=self.grid.offset_providers)
 
-        self._compute_advection_in_vertical_momentum_equation = (
-            compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
-                self._backend
-            )
-            .with_connectivities(self.grid.offset_providers)
-            .freeze()
-        )
+        self._compute_advection_in_vertical_momentum_equation = compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
+            self._backend
+        ).compile(offset_provider_type=self.grid.offset_providers)
 
-        self._compute_advection_in_horizontal_momentum_equation = (
-            compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
-                self._backend
-            )
-            .with_connectivities(self.grid.offset_providers)
-            .freeze()
-        )
+        self._compute_advection_in_horizontal_momentum_equation = compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
+            self._backend
+        ).compile(offset_provider_type=self.grid.offset_providers)
 
     def _allocate_local_fields(self):
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
