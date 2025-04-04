@@ -914,7 +914,7 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "1.0.1"
+version = "1.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aenum" },
@@ -929,7 +929,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sympy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/67/fb1be2673868ee1f08e9c7bacc0b9b77d2bd5ff17ab47896f20006a2a1a5/dace-1.0.1.tar.gz", hash = "sha256:6f7a5defb082ed4f1a81f857d4268ed2bb606f6d9ea9c28d2831d1151e3a80f7", size = 5801727 }
+sdist = { url = "https://files.pythonhosted.org/packages/53/02/1a2ece00b229710a4db8f301bba6097eacfbc2a9af84d8746089242d1cf5/dace-1.0.2.tar.gz", hash = "sha256:6728f4bcf584b9f5bbb9c9a393fbdd87364af0c6ad9120da0302b8b470f4f71c", size = 5801789 }
 
 [[package]]
 name = "dask"
@@ -1417,7 +1417,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock#f27206386dd272c83081c138be08d5e2dea10de3" }
+source = { git = "https://github.com/havogt/gt4py?branch=precompile_variants#bfc29bdb333874415f24aaa7c32917abcf5b5250" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1430,7 +1430,6 @@ dependencies = [
     { name = "devtools" },
     { name = "diskcache" },
     { name = "factory-boy" },
-    { name = "filelock" },
     { name = "flufl-lock" },
     { name = "frozendict" },
     { name = "gridtools-cpp" },
@@ -1748,7 +1747,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1765,7 +1764,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1782,7 +1781,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1799,7 +1798,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1868,10 +1867,10 @@ requires-dist = [
     { name = "dace", marker = "extra == 'dace'", specifier = ">=1.0" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
-    { name = "gt4py", extras = ["dace"], marker = "extra == 'dace'", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
+    { name = "gt4py", extras = ["dace"], marker = "extra == 'dace'", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["dace", "distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1905,7 +1904,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1930,7 +1929,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1972,9 +1971,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=icon4py_staging_compiledb_lock" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=precompile_variants" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
