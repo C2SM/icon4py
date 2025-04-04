@@ -23,9 +23,9 @@ BACKENDS: dict[str, gtx_backend.Backend | None] = {
 
 try:
     from gt4py.next.program_processors.runners.dace import (
-        run_dace_cpu,
+        run_dace_cpu_cached as run_dace_cpu,
         run_dace_cpu_noopt,
-        run_dace_gpu,
+        run_dace_gpu_cached as run_dace_gpu,
         run_dace_gpu_noopt,
     )
 
