@@ -677,6 +677,7 @@ def create_inverse_neighbor_index(
     return inv_neighbor_idx
 
 
+# TODO (@halungge) this can be simplified using only
 def compute_e_flx_avg(
     c_bln_avg: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
