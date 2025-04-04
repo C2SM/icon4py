@@ -141,7 +141,7 @@ def _compute_k_start_end(
 
     return k_start, k_end
 
-
+# TODO (@halungge) refactor this to fully get rid of the lists
 def compute_diffusion_metrics(
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
@@ -195,7 +195,7 @@ def compute_diffusion_metrics(
 
     for ji in range(listdim):
         jc = indlist[ji]
-        k_range = range(k_start[jc], k_end[jc])
+        k_range = range(k_start[jc].item(), k_end[jc].item())
         if all(k_range):
             nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)
             z_vintcoeff[jc, :, :] = _compute_z_vintcoeff(
