@@ -12,6 +12,7 @@ import os
 import re
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias
+from datetime import datetime
 
 import nox
 
@@ -64,11 +65,13 @@ def benchmark_model(session: nox.Session) -> None:
     )
 
 @nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
-def bencher_baseline(session: nox.Session) -> None:
+def __bencher_baseline_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
     This session is used only on the main branch to create the historical baseline.
     The historical baseline is used to compare the performance of the code in the PRs.
+    Alerts are raised if there is performance regression according to the thresholds.
+    Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
     """
     session.run(
         *f"bencher run \
@@ -83,6 +86,37 @@ def bencher_baseline(session: nox.Session) -> None:
             "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_BRANCH": "main",
             "BENCHER_TESTBED": f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}",
+            "BENCHER_ADAPTER": "python_pytest",
+            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+        },
+        external=True,
+        silent=True,
+    )
+
+@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+def __bencher_feature_branch_CI(session: nox.Session) -> None:
+    """
+    Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
+    This session compares the performance of the feature branch with the historical baseline (as built from __bencher_baseline_CI session).
+    Alerts are raised if the performance of the feature branch is worse than the historical baseline (according to the thresholds).
+    Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
+    """
+    bencher_testbed = f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
+    session.run(
+        *f"bencher run \
+        --start-point main \
+        --start-point-clone-thresholds \
+        --start-point-reset \
+        --err \
+        --github-actions {os.environ['GD_COMMENT_TOKEN']} \
+        --ci-number {os.environ['PR_ID']} \
+        --ci-id run-{bencher_testbed.replace(':', '_')}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
+        --file pytest_benchmark_results_{session.python}.json".split(),
+        env={
+            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_BRANCH": os.environ['FEATURE_BRANCH'].strip(),
+            "BENCHER_TESTBED": bencher_testbed,
             "BENCHER_ADAPTER": "python_pytest",
             "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),

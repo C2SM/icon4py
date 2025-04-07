@@ -57,58 +57,30 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         scalfac_exdiff: ta.wpfloat,
         d_time: ta.wpfloat,
         levelmask: np.ndarray,
-        k: np.ndarray,
-        vertex: np.ndarray,
-        edge: np.ndarray,
         nlev: int,
         nrdmax: int,
-        start_vertex_lateral_boundary_level_2: gtx.int32,
-        end_vertex_halo: gtx.int32,
-        start_edge_nudging_level_2: gtx.int32,
-        end_edge_local: gtx.int32,
         **kwargs: Any,
     ) -> dict:
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
+        k = np.arange(nlev)
 
-        vertex = vertex[:, np.newaxis]
-        edge = edge[:, np.newaxis]
+        upward_vorticity_at_vertices = mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vn, geofac_rot)
 
-        vorticity_condition = (
-            (start_vertex_lateral_boundary_level_2 <= vertex)
-            & (vertex < end_vertex_halo)
-            & (k >= 0)
+        normal_wind_advective_tendency = compute_advective_normal_wind_tendency_numpy(
+            connectivities,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
+            coeff_gradekin,
+            horizontal_kinetic_energy_at_cells_on_model_levels,
+            upward_vorticity_at_vertices,
+            tangential_wind,
+            coriolis_frequency,
+            c_lin_e,
+            contravariant_corrected_w_at_cells_on_model_levels,
+            vn_on_half_levels,
+            ddqz_z_full_e,
         )
-        upward_vorticity_at_vertices = np.where(
-            vorticity_condition,
-            mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vn, geofac_rot),
-            0.0,
-        )
-
-        edge_condition = (start_edge_nudging_level_2 <= edge) & (edge < end_edge_local) & (k >= 0)
-        normal_wind_advective_tendency = np.where(
-            edge_condition,
-            compute_advective_normal_wind_tendency_numpy(
-                connectivities,
-                horizontal_kinetic_energy_at_edges_on_model_levels,
-                coeff_gradekin,
-                horizontal_kinetic_energy_at_cells_on_model_levels,
-                upward_vorticity_at_vertices,
-                tangential_wind,
-                coriolis_frequency,
-                c_lin_e,
-                contravariant_corrected_w_at_cells_on_model_levels,
-                vn_on_half_levels,
-                ddqz_z_full_e,
-            ),
-            normal_wind_advective_tendency,
-        )
-
-        condition = (
-            (start_edge_nudging_level_2 <= edge)
-            & (edge < end_edge_local)
-            & (np.maximum(3, nrdmax - 2) - 1 <= k)
-            & (k < nlev - 4)
-        )
+        
+        condition = (np.maximum(3, nrdmax - 2) - 1 <= k) & (k < nlev - 4)
         normal_wind_advective_tendency_extra_diffu = (
             add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
                 connectivities,
@@ -162,7 +134,9 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         )
         coeff_gradekin = data_alloc.random_field(grid, dims.ECDim)
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddqz_z_full_e = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, low=0.0
+        )  # this makes sure that the simplified stencil produces the same result as the numpy version
         levelmask = data_alloc.random_mask(grid, dims.KDim, extend={dims.KDim: 1})
         area_edge = data_alloc.random_field(grid, dims.EdgeDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
@@ -174,22 +148,12 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = data_alloc.index_field(grid, dims.KDim)
-        vertex = data_alloc.index_field(grid, dims.VertexDim)
-        edge = data_alloc.index_field(grid, dims.EdgeDim)
         nlev = grid.num_levels
 
         nrdmax = 5
         edge_domain = h_grid.domain(dims.EdgeDim)
-        vertex_domain = h_grid.domain(dims.VertexDim)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-
-        start_vertex_lateral_boundary_level_2 = grid.start_index(
-            vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        )
-        end_vertex_halo = grid.end_index(vertex_domain(h_grid.Zone.HALO))
-        start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
-        end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         return dict(
             normal_wind_advective_tendency=normal_wind_advective_tendency,
@@ -212,17 +176,10 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             scalfac_exdiff=scalfac_exdiff,
             d_time=d_time,
             levelmask=levelmask,
-            k=k,
-            vertex=vertex,
-            edge=edge,
             nlev=nlev,
             nrdmax=nrdmax,
-            start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
-            end_vertex_halo=end_vertex_halo,
-            start_edge_nudging_level_2=start_edge_nudging_level_2,
-            end_edge_local=end_edge_local,
             horizontal_start=horizontal_start,
-            horizontal_end=gtx.int32(grid.num_edges),
+            horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
