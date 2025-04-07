@@ -11,8 +11,8 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs
-from icon4py.model.common.interpolation import rbf_interplation as rbf
-from icon4py.model.common.interpolation.rbf_interplation import RBF_STENCIL_SIZE
+from icon4py.model.common.interpolation import rbf_interpolation as rbf
+from icon4py.model.common.interpolation.rbf_interpolation import RBF_STENCIL_SIZE
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
