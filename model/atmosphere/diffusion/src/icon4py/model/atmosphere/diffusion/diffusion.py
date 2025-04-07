@@ -396,38 +396,70 @@ class Diffusion:
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(
             self._backend
-        ).compile(offset_provider_type=self._grid.offset_providers)
+        ).compile(
+            vertical_start=[0],
+            vertical_end=[self._grid.num_levels],
+            offset_provider_type=self._grid.offset_providers,
+        )
         self.calculate_nabla2_and_smag_coefficients_for_vn = (
             calculate_nabla2_and_smag_coefficients_for_vn.with_backend(self._backend).compile(
-                self._grid.offset_providers
+                vertical_start=[0],
+                vertical_end=[self._grid.num_levels],
+                offset_provider_type=self._grid.offset_providers,
             )
         )
+
         self.calculate_diagnostic_quantities_for_turbulence = (
             calculate_diagnostic_quantities_for_turbulence.with_backend(self._backend).compile(
-                offset_provider_type=self._grid.offset_providers
+                vertical_start=[1],
+                vertical_end=[self._grid.num_levels],
+                offset_provider_type=self._grid.offset_providers,
             )
         )
         self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(self._backend).compile(
-            offset_provider_type=self._grid.offset_providers
+            limited_area=[self._grid.limited_area],
+            vertical_start=[0],
+            vertical_end=[self._grid.num_levels],
+            offset_provider_type=self._grid.offset_providers,
         )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
             apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
                 self._backend
-            ).compile(offset_provider_type=self._grid.offset_providers)
+            ).compile(
+                type_shear=[int32(self.config.shear_type.value)],
+                nrdmax=[int32(self._vertical_grid.end_index_of_damping_layer + 1)],
+                vertical_start=[0],
+                vertical_end=[self._grid.num_levels],
+                offset_provider_type=self._grid.offset_providers,
+            )
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
             calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
                 self._backend
-            ).compile(offset_provider_type=self._grid.offset_providers)
+            ).compile(
+                vertical_start=[(self._grid.num_levels - 2)],
+                vertical_end=[self._grid.num_levels],
+                offset_provider_type=self._grid.offset_providers,
+            )
         )
         self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(
             self._backend
-        ).compile(offset_provider_type=self._grid.offset_providers)
+        ).compile(
+            vertical_start=[0],
+            vertical_end=[self._grid.num_levels],
+            offset_provider_type=self._grid.offset_providers,
+        )
         self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
             truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(self._backend)
-        ).compile(offset_provider_type=self._grid.offset_providers)
+        ).compile(
+            vertical_start=[0],
+            vertical_end=[self._grid.num_levels],
+            offset_provider_type=self._grid.offset_providers,
+        )
         self.update_theta_and_exner = update_theta_and_exner.with_backend(self._backend).compile(
-            offset_provider_type={}
+            vertical_start=[0],
+            vertical_end=[self._grid.num_levels],
+            offset_provider_type={},
         )
         self.copy_field = copy_field.with_backend(self._backend).compile(offset_provider_type={})
         self.scale_k = scale_k.with_backend(self._backend).compile(offset_provider_type={})
