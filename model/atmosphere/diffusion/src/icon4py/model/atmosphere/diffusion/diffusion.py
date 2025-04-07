@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
+    scale_k,
     setup_fields_for_initial_step,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
@@ -429,7 +430,7 @@ class Diffusion:
             offset_provider_type={}
         )
         self.copy_field = copy_field.with_backend(self._backend).compile(offset_provider_type={})
-        self.copy_field = copy_field.with_backend(self._backend).compile(offset_provider_type={})
+        self.scale_k = scale_k.with_backend(self._backend).compile(offset_provider_type={})
         self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(
             self._backend
         ).compile(offset_provider_type={})
@@ -644,6 +645,8 @@ class Diffusion:
             smag_offset:
 
         """
+        self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
+
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
