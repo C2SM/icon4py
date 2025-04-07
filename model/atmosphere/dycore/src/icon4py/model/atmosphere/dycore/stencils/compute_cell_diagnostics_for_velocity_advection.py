@@ -102,8 +102,8 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     Formerly known as fused_velocity_advection_stencil_8_to_13_predictor.
 
     This interpolates horizontal kinetic energy from edges to cells on models levels
-    and compute the contravariant correction term on half levels
-    It also computes the vertical velocity with the contravariant correction term
+    and compute the contravariant correction term on half levels.
+    It also computes the vertical velocity with the contravariant correction term.
 
     Args:
         - horizontal_kinetic_energy_at_cells_on_model_levels: horizontal kinetic energy computed at cell centers of model levels

@@ -305,12 +305,12 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
 
     This computes the derived horizontal wind components, kinetic energy, horizontal advection of the vertical velocity,
     and the contravariant correction.
-    It also extrapolates vertical velocity at the top level
+    It also extrapolates vertical velocity at the top level.
 
     Agrs:
         - tangential_wind: tangential wind at model levels
         - tangential_wind_on_half_levels: tangential wind interpolated to half levels
-        - vn_on_half_levels: normal wind on half levels
+        - vn_on_half_levels: normal wind interpolated to half levels
         - horizontal_kinetic_energy_at_edges_on_model_levels: horizontal kinetic energy computed at edge of model levels
         - contravariant_correction_at_edges_on_model_levels: contravariant metric correction at edge of model levels
         - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity
@@ -331,7 +331,7 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
         - halo_1: end index of halo on edges
 
     Returns:
-        -  tangential_wind
+        - tangential_wind
         - tangential_wind_on_half_levels
         - vn_on_half_levels
         - horizontal_kinetic_energy_at_edges_on_model_levels

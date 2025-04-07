@@ -203,12 +203,12 @@ def compute_advection_in_vertical_momentum_equation(
 
     Args:
         - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at model levels
-        - vertical_wind_advective_tendency: vertical advection tendency
+        - vertical_wind_advective_tendency: vertical advection tendency of the vertical wind
         - w: vertical wind at cell centers
         - contravariant_corrected_w_at_cells_on_half_levels: contravariant-corrected vertical velocity at cells on half levels
         - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity at edges on half levels
-        - coeff1_dwdz: metrics field (first coefficient for vertical derivative of 'w')
-        - coeff2_dwdz: metrics field (second coefficient for vertical derivative of 'w')
+        - coeff1_dwdz: metrics field (first coefficient for vertical derivative of vertical wind)
+        - coeff2_dwdz: metrics field (second coefficient for vertical derivative of vertical wind)
         - e_bln_c_s: interpolation field (edge-to-cell interpolation weights)
         - ddqz_z_half: metrics field
         - area: cell area
@@ -223,8 +223,8 @@ def compute_advection_in_vertical_momentum_equation(
         - cell: cell indices
         - cell_lower_bound: lower index for active cells
         - cell_upper_bound: upper index for active cells
-        - nlev: total number of vertical levels
-        - nrdmax: vertical index where damping ends.
+        - nlev: number of (full/model) vertical levels
+        - nrdmax: vertical index where damping ends
         - start_cell_lateral_boundary: start index of lateral boundary on cells
         - end_cell_halo: end index of halo on cells
         - horizontal_start: start index in the horizontal dimension

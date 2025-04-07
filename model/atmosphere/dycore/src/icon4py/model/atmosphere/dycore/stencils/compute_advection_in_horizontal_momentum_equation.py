@@ -142,28 +142,28 @@ def compute_advection_in_horizontal_momentum_equation(
     Args:
         - normal_wind_advective_tendency: horizontal advection tendency of the normal wind
         - vn: normal wind at edges
-        - horizontal_kinetic_energy_at_edges_on_model_levels: horizontal kinematic energy at edges on model levels
-        - horizontal_kinetic_energy_at_cells_on_model_levels: horizontal kinematic energy at cell centers on model levels
+        - horizontal_kinetic_energy_at_edges_on_model_levels: horizontal kinetic energy at edges on model levels
+        - horizontal_kinetic_energy_at_cells_on_model_levels: horizontal kinetic energy at cell centers on model levels
         - tangential_wind: tangential wind at model levels
         - coriolis_frequency: coriolis frequency parameter
         - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at model levels
         - vn_on_half_levels: normal wind on half levels
-        - geofac_rot: interpolation field
+        - geofac_rot: metric field for rotor computation
         - coeff_gradekin: metrics field/coefficient for the gradient of kinematic energy
-        - c_lin_e: interpolation field/linear interpolation coefficients from cells to edges
-        - ddqz_z_full_e: metrics field
+        - c_lin_e: metrics field for linear interpolation from cells to edges
+        - ddqz_z_full_e: metrics field equal to vertical spacing
         - area_edge: area associated with each edge
         - tangent_orientation: orientation of the edge with respect to the grid
         - inv_primal_edge_length: inverse primal edge length
-        - geofac_grdiv: interpolation field =
+        - geofac_grdiv: metrics field used to compute the gradient of a divergence (of vn)
         - cfl_w_limit: CFL limit for vertical velocity
         - scalfac_exdiff: scalar factor for external diffusion
         - d_time: time step
         - levelmask: mask for valid vertical levels
-        - nlev: total number of vertical levels
-        - nrdmax: vertical index where damping ends.
+        - nlev: number of (full/model) vertical levels
+        - nrdmax: vertical index where damping ends
         - start_vertex_lateral_boundary_level_2: start index of lateral boundary level 2 on vertex
-        - end_vertex_halo: ebd index of halo on vertex
+        - end_vertex_halo: end index of halo on vertex
         - start_edge_nudging_level_2: start index of nudging level 2 on edge
         - end_edge_local: end index of local on edge
         - horizontal_start: start index in the horizontal domain
@@ -172,7 +172,7 @@ def compute_advection_in_horizontal_momentum_equation(
         - vertical_end: end index in the vertical domain
 
     Returns:
-        - normal_wind_advective_tendency
+        - normal_wind_advective_tendency: horizontal advection tendency of the normal wind
 
     """
 
