@@ -516,7 +516,7 @@ def test_run_diffusion_single_step(
         dtime=dtime,
     )
 
-    if not benchmark.enabled:
+    if benchmark.disabled:
         verify_diffusion_fields(
             config, diagnostic_state, prognostic_state, savepoint_diffusion_exit
         )
