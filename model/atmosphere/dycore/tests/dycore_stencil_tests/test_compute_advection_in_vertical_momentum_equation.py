@@ -20,9 +20,6 @@ from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers as test_helpers
 
-from .test_add_extra_diffusion_for_w_con_approaching_cfl import (
-    add_extra_diffusion_for_w_con_approaching_cfl_numpy,
-)
 from .test_add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w_numpy,
 )
@@ -32,6 +29,53 @@ from .test_compute_advective_vertical_wind_tendency import (
 from .test_interpolate_contravariant_vertical_velocity_to_full_levels import (
     interpolate_contravariant_vertical_velocity_to_full_levels_numpy,
 )
+
+
+def _add_extra_diffusion_for_w_con_approaching_cfl_wihtout_levmask_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    cfl_clipping: np.ndarray,
+    owner_mask: np.ndarray,
+    z_w_con_c: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    area: np.ndarray,
+    geofac_n2s: np.ndarray,
+    w: np.ndarray,
+    ddt_w_adv: np.ndarray,
+    scalfac_exdiff: ta.wpfloat,
+    cfl_w_limit: ta.wpfloat,
+    dtime: ta.wpfloat,
+) -> np.ndarray:
+    owner_mask = np.expand_dims(owner_mask, axis=-1)
+    area = np.expand_dims(area, axis=-1)
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+
+    difcoef = np.where(
+        (cfl_clipping == 1) & (owner_mask == 1),
+        scalfac_exdiff
+        * np.minimum(
+            0.85 - cfl_w_limit * dtime,
+            np.abs(z_w_con_c) * dtime / ddqz_z_half - cfl_w_limit * dtime,
+        ),
+        0,
+    )
+
+    c2e2cO = connectivities[dims.C2E2CODim]
+    ddt_w_adv = np.where(
+        (cfl_clipping == 1) & (owner_mask == 1),
+        ddt_w_adv
+        + difcoef
+        * area
+        * np.sum(
+            np.where(
+                (c2e2cO != -1)[:, :, np.newaxis],
+                w[c2e2cO] * geofac_n2s,
+                0,
+            ),
+            axis=1,
+        ),
+        ddt_w_adv,
+    )
+    return ddt_w_adv
 
 
 def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
@@ -49,20 +93,14 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     scalfac_exdiff: ta.wpfloat,
     cfl_w_limit: ta.wpfloat,
     dtime: ta.wpfloat,
-    levelmask: np.ndarray,
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
-    cell: np.ndarray,
-    cell_lower_bound: int,
-    cell_upper_bound: int,
     nlev: int,
     nrdmax: int,
 ) -> np.ndarray:
-    cell = cell[:, np.newaxis]
     k = np.arange(nlev)
 
-    condition1 = (cell_lower_bound <= cell) & (cell < cell_upper_bound) & (k >= 1)
-
+    condition1 = k >= 1
     vertical_wind_advective_tendency = np.where(
         condition1,
         compute_advective_vertical_wind_tendency_numpy(
@@ -82,18 +120,12 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
         vertical_wind_advective_tendency,
     )
 
-    condition2 = (
-        (cell_lower_bound <= cell)
-        & (cell < cell_upper_bound)
-        & (np.maximum(3, nrdmax - 2) - 1 <= k)
-        & (k < nlev - 3)
-    )
+    condition2 = (np.maximum(3, nrdmax - 2) - 1 <= k) & (k < nlev - 3)
 
     vertical_wind_advective_tendency = np.where(
         condition2,
-        add_extra_diffusion_for_w_con_approaching_cfl_numpy(
+        _add_extra_diffusion_for_w_con_approaching_cfl_wihtout_levmask_numpy(
             connectivities,
-            levelmask,
             cfl_clipping,
             owner_mask,
             contravariant_corrected_w_at_cells_on_half_levels[:, :-1],
@@ -138,16 +170,10 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         cfl_w_limit: ta.wpfloat,
         dtime: ta.wpfloat,
         skip_compute_predictor_vertical_advection: np.ndarray,
-        levelmask: np.ndarray,
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
-        cell: np.ndarray,
-        cell_lower_bound: int,
-        cell_upper_bound: int,
         nlev: int,
         nrdmax: int,
-        start_cell_lateral_boundary: int,
-        end_cell_halo: int,
         **kwargs: Any,
     ) -> dict:
         # We need to store the initial return field, because we only compute on a subdomain.
@@ -179,12 +205,8 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
                     scalfac_exdiff,
                     cfl_w_limit,
                     dtime,
-                    levelmask,
                     cfl_clipping,
                     owner_mask,
-                    cell,
-                    cell_lower_bound,
-                    cell_upper_bound,
                     nlev,
                     nrdmax,
                 )
@@ -197,9 +219,9 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         vertical_end = kwargs["vertical_end"]
 
         contravariant_corrected_w_at_cells_on_model_levels_ret[
-            start_cell_lateral_boundary:end_cell_halo, vertical_start:vertical_end
+            horizontal_start:horizontal_end, vertical_start:vertical_end
         ] = contravariant_corrected_w_at_cells_on_model_levels[
-            start_cell_lateral_boundary:end_cell_halo, vertical_start:vertical_end
+            horizontal_start:horizontal_end, vertical_start:vertical_end
         ]
         vertical_wind_advective_tendency_ret[
             horizontal_start:horizontal_end, vertical_start:vertical_end
@@ -230,7 +252,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
 
         e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
 
-        levelmask = data_alloc.random_mask(grid, dims.KDim)
         cfl_clipping = data_alloc.random_mask(grid, dims.CellDim, dims.KDim)
         owner_mask = data_alloc.random_mask(grid, dims.CellDim)
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -241,21 +262,13 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        cell = data_alloc.index_field(grid, dims.CellDim)
-
         nlev = grid.num_levels
         nrdmax = 5
         skip_compute_predictor_vertical_advection = False
 
         cell_domain = h_grid.domain(dims.CellDim)
-        cell_lower_bound = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        cell_upper_bound = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
         horizontal_end = grid.end_index(cell_domain(h_grid.Zone.HALO))
-        start_cell_lateral_boundary = grid.start_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
-        )
-        end_cell_halo = grid.end_index(cell_domain(h_grid.Zone.HALO))
         vertical_start = 0
         vertical_end = nlev
 
@@ -275,16 +288,10 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-            levelmask=levelmask,
             cfl_clipping=cfl_clipping,
             owner_mask=owner_mask,
-            cell=cell,
-            cell_lower_bound=cell_lower_bound,
-            cell_upper_bound=cell_upper_bound,
             nlev=nlev,
             nrdmax=nrdmax,
-            start_cell_lateral_boundary=start_cell_lateral_boundary,
-            end_cell_halo=end_cell_halo,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=vertical_start,
