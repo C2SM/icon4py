@@ -1297,35 +1297,6 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
 
 
-class VelocityInitEdgeDiagnosticsSavepoint(IconSavepoint):
-    def lvn_only(self) -> bool:
-        return bool(self.serializer.read("vn_only", self.savepoint)[0])
-
-    def vn(self):
-        return self._get_field("vn", dims.EdgeDim, dims.KDim)
-
-    def vn_ie(self):
-        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
-
-    def vt(self):
-        return self._get_field("vt", dims.EdgeDim, dims.KDim)
-
-    def w(self):
-        return self._get_field("w", dims.CellDim, dims.KDim)
-
-    def z_kin_hor_e(self):
-        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
-
-    def z_v_grad_w(self):
-        return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
-
-    def z_vt_ie(self):
-        return self._get_field("z_vt_ie", dims.EdgeDim, dims.KDim)
-
-    def z_w_concorr_me(self):
-        return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
-
-
 class VelocityAdvectionCellDiagnosticsInitSavepoint(IconSavepoint):
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
@@ -1999,21 +1970,6 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconVelocityInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    # TODO (halungge) remove function and class in a followup PR, once data is updated
-    def from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep_init: int
-    ) -> VelocityInitEdgeDiagnosticsSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-init"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep_init]
-            .as_savepoint()
-        )
-        return VelocityInitEdgeDiagnosticsSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
