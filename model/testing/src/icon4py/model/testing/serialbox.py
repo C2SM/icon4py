@@ -2002,6 +2002,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
+    # TODO (halungge) remove function and class in a followup PR, once data is updated
     def from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep_init: int
     ) -> VelocityInitEdgeDiagnosticsSavepoint:
