@@ -23,7 +23,6 @@ Immersed boundary method module
 """
 
 log = logging.getLogger(__name__)
-DEBUG_LEVEL = 2
 
 
 class ImmersedBoundaryMethod:
@@ -41,6 +40,7 @@ class ImmersedBoundaryMethod:
         """
         Initialize the immersed boundary method.
         """
+        self.DEBUG_LEVEL = 2
 
         self._make_masks(
             grid=grid,
@@ -136,23 +136,12 @@ class ImmersedBoundaryMethod:
             #[350, 400, 0, 1000, 75],
         ]
         for k in range(half_cell_mask_np.shape[1]):
-            #half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
+            half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
             for building in buildings:
                 xmin, xmax, ymin, ymax, top = building
                 half_cell_mask_np[
                     (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (half_level_heights[:,k] <= top), k
                 ] = True
-        #if DEBUG_LEVEL >= 4:
-        #    with open("testdata/hill_elevation_cells.csv", "r") as f:
-        #        hill_elevation_cells = np.loadtxt(f, delimiter=",")
-        #    for i in range(cell_x.shape[0]):
-        #        print(f"cell {i:03d}: {cell_x[i]:8.4e} {cell_y[i]:8.4e} {compute_distance_from_hill(cell_x[i], cell_y[i]):8.4e} {compute_hill_elevation(cell_x[i], cell_y[i]):8.4e}")
-        #        print(f"          {hill_elevation_cells[i,2]:8.4e} {hill_elevation_cells[i,3]:8.4e} {hill_elevation_cells[i,4]:8.4e} {hill_elevation_cells[i,5]:8.4e}")
-        #    import matplotlib.pyplot as plt
-        #    plt.figure(1); plt.clf(); plt.show(block=False)
-        #    plt.plot(compute_distance_from_hill(cell_x, cell_y), compute_hill_elevation(cell_x, cell_y), 'o')
-        #    plt.plot(hill_elevation_cells[:,4], hill_elevation_cells[:,5], '+')
-        #    plt.draw()
         return half_cell_mask_np
 
 

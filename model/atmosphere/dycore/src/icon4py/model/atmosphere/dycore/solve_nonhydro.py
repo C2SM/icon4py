@@ -15,9 +15,6 @@ import numpy as np
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common.io import plots
-from icon4py.model.atmosphere.dycore import ibm
-
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
@@ -435,27 +432,10 @@ class SolveNonhydro:
         owner_mask: fa.CellField[bool],
         backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        extras: dict = None,
     ):
         self._exchange = exchange
         self._backend = backend
-
-        #---> IBM
-        savepoint_path = "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
-        #grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res100m.nc"
-        grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
-        self._ibm = ibm.ImmersedBoundaryMethod(
-            grid=grid,
-            savepoint_path=savepoint_path,
-            grid_file_path=grid_file_path,
-            backend = self._backend,
-            )
-        self._plot = plots.Plot(
-            savepoint_path=savepoint_path,
-            grid_file_path=grid_file_path,
-            n_levels_to_plot=8,
-            backend = self._backend,
-            )
-        #<--- IBM
 
         self._grid = grid
         self._config = config
@@ -657,6 +637,13 @@ class SolveNonhydro:
         )
 
         self.p_test_run = True
+
+        #---> IBM
+        if "ibm" in extras:
+            self._ibm = extras["ibm"]
+        if "plot" in extras:
+            self._plot = extras["plot"]
+        #<--- IBM
 
     def _allocate_local_fields(self):
         self.z_exner_ex_pr = data_alloc.zero_field(
@@ -886,7 +873,7 @@ class SolveNonhydro:
 
         #---> IBM
         if at_initial_timestep and at_first_substep:
-            if ibm.DEBUG_LEVEL >= 3:
+            if self._ibm.DEBUG_LEVEL >= 3:
                 self._plot.pickle_data(prognostic_states.current, "prognostic_state_initial")
             log.info(" ***IBM fixing initial conditions")
             self._ibm.set_dirichlet_value_vn(prognostic_states.current.vn)

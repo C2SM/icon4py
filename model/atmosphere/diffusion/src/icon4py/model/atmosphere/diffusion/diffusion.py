@@ -371,6 +371,7 @@ class Diffusion:
         backend: Optional[gtx_backend.Backend],
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        extras: dict = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
@@ -471,6 +472,13 @@ class Diffusion:
         self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
             self._grid.offset_providers
         )
+
+        #---> IBM
+        if "ibm" in extras:
+            self._ibm = extras["ibm"]
+        if "plot" in extras:
+            self._plot = extras["plot"]
+        #<--- IBM
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
