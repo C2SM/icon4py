@@ -60,7 +60,7 @@ class VelocityAdvection:
         self._compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction = compute_edge_diagnostics_for_velocity_advection.compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
             self._backend
         ).compile(
-            # skip_compute_predictor_vertical_advection=[False, True],
+            skip_compute_predictor_vertical_advection=[False, True],
             nflatlev=[self.vertical_params.nflatlev],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self.grid.num_levels + 1)],

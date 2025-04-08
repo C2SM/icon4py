@@ -1417,7 +1417,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/havogt/gt4py?branch=icon4py_staging_precompile_variants#f5b147d4aa48591ce55486ade4da9e01720080ff" }
+source = { git = "https://github.com/havogt/gt4py?branch=icon4py_staging_precompile_variants#d11762cb412938de09a789278ecbbc4181372213" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
