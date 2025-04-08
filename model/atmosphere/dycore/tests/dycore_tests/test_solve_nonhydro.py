@@ -1141,7 +1141,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     z_gradh_exner_ref = sp_stencil_exit.z_gradh_exner()
     vn_ref = sp_nh_exit.vn_new()
 
-    if igradp_method.value == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO.value:
+    if igradp_method == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
         compute_hydrostatic_correction_term.compute_hydrostatic_correction_term.with_backend(
             backend
         )(
@@ -1210,7 +1210,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         iadv_rhotheta=iadv_rhotheta,
-        igradp_method=igradp_method.value,
+        igradp_method=igradp_method,
         nflatlev=vertical_params.nflatlev,
         nflat_gradp=vertical_params.nflat_gradp,
         start_edge_halo_level_2=start_edge_halo_level_2,

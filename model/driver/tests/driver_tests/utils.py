@@ -9,7 +9,7 @@
 from datetime import datetime, timedelta
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.driver import icon4py_configuration as driver_config
 
 
