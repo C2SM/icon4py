@@ -469,16 +469,12 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    tangential_wind_on_half_levels = (
-        savepoint_velocity_init.z_vt_ie()
-    )
+    tangential_wind_on_half_levels = savepoint_velocity_init.z_vt_ie()
     tangential_wind = savepoint_velocity_init.vt()
     vn_on_half_levels = savepoint_velocity_init.vn_ie()
-    horizontal_kinetic_energy_at_edges_on_model_levels = (
-        savepoint_velocity_init.z_kin_hor_e()
-    )
-    horizontal_advection_of_w_at_edges_on_half_levels = (
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
+    horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_init.z_kin_hor_e()
+    horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
     )
     vn = savepoint_velocity_init.vn()
     w = savepoint_velocity_init.w()
@@ -487,9 +483,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     wgtfac_e = metrics_savepoint.wgtfac_e()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
-    contravariant_correction_at_edges_on_model_levels = (
-        savepoint_velocity_init.z_w_concorr_me()
-    )
+    contravariant_correction_at_edges_on_model_levels = savepoint_velocity_init.z_w_concorr_me()
     wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
     nflatlev = grid_savepoint.nflatlev()
     c_intp = interpolation_savepoint.c_intp()
@@ -497,9 +491,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
 
-    skip_compute_predictor_vertical_advection = (
-        savepoint_velocity_init.vn_only()
-    )
+    skip_compute_predictor_vertical_advection = savepoint_velocity_init.vn_only()
     # TODO(havogt): we need a test where skip_compute_predictor_vertical_advection is True!
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
@@ -607,11 +599,11 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    tangential_wind_on_half_levels = (
-        savepoint_velocity_init.z_vt_ie()
-    )
+    tangential_wind_on_half_levels = savepoint_velocity_init.z_vt_ie()
     vn_on_half_levels = savepoint_velocity_init.vn_ie()
-    horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
+    horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+    )
     w = savepoint_velocity_init.w()
 
     c_intp = interpolation_savepoint.c_intp()

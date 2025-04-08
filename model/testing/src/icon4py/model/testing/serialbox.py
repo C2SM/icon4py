@@ -1579,7 +1579,6 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
 
 
-
 class IconGraupelEntrySavepoint(IconSavepoint):
     def temperature(self):
         return self._get_field("ser_in_graupel_temperature", dims.CellDim, dims.KDim)

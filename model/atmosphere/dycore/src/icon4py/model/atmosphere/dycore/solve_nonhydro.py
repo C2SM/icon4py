@@ -404,7 +404,10 @@ class NonHydrostaticConfig:
             raise NotImplementedError("divdamp_order can only be 24")
 
         if self.divdamp_type == DivergenceDampingType.TWO_DIMENSIONAL:
-            raise NotImplementedError("`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented")
+            raise NotImplementedError(
+                "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
+            )
+
 
 class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
