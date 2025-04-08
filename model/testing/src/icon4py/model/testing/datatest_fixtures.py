@@ -188,7 +188,7 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_i
         istep=istep_init, date=step_date_init, substep=substep_init
     )
 
-
+# TODO (halungge) remove fixture (and class) in a followup PR, once data is updated
 @pytest.fixture
 def savepoint_compute_edge_diagnostics_for_velocity_advection_init(
     data_provider, step_date_init, istep_init, substep_init
@@ -319,7 +319,6 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
     return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
-
 
 @pytest.fixture
 def savepoint_compute_advection_in_vertical_momentum_equation_exit(

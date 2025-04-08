@@ -344,7 +344,7 @@ class IconGridSavepoint(IconSavepoint):
                 : self.sizes[target_dim], :
             ]
         else:
-            connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
+            connectivity = np.squeeze(self._read_int32(name, offset=1)[: self.sizes[target_dim], :])
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
@@ -1578,20 +1578,6 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def theta_v_now(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
 
-    def pressure_ifc(self):
-        return self._get_field("pressure_ifc", dims.CellDim, dims.KDim)
-
-    def pressure_sfc(self):
-        return self._get_field("pressure_sfc", dims.CellDim)
-
-    def virtual_temperature(self):
-        return self._get_field("virtual_temperature", dims.CellDim, dims.KDim)
-
-    def zonal_wind(self):
-        return self._get_field("u", dims.CellDim, dims.KDim)
-
-    def meridional_wind(self):
-        return self._get_field("v", dims.CellDim, dims.KDim)
 
 
 class IconGraupelEntrySavepoint(IconSavepoint):
@@ -2021,7 +2007,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep_init: int
     ) -> VelocityInitEdgeDiagnosticsSavepoint:
         savepoint = (
-            self.serializer.savepoint["velocity-tendencies-1to7-init"]
+            self.serializer.savepoint["velocity-tendencies-init"]
             .istep[istep]
             .date[date]
             .dyn_timestep[substep_init]
