@@ -1535,6 +1535,9 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def rho_now(self):
         return self._get_field("rho_now", dims.CellDim, dims.KDim)
 
+    def vn_now(self):
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+
     def theta_v_now(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
 

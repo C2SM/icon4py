@@ -38,9 +38,9 @@ def test_diagnose_temperature(
     diagnostic_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
     temperature_ref = diagnostic_reference_savepoint.temperature().asnumpy()
     virtual_temperature_ref = diagnostic_reference_savepoint.virtual_temperature().asnumpy()
-    initial_prognostic_savepoint = data_provider.from_savepoint_jabw_exit()
-    exner = initial_prognostic_savepoint.exner()
-    theta_v = initial_prognostic_savepoint.theta_v()
+    initial_prognostic_savepoint = data_provider.from_savepoint_prognostics_initial()
+    exner = initial_prognostic_savepoint.exner_now()
+    theta_v = initial_prognostic_savepoint.theta_v_now()
 
     temperature = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
@@ -100,7 +100,7 @@ def test_diagnose_meridional_and_zonal_winds(
     icon_grid,
     backend,
 ):
-    prognostics_init_savepoint = data_provider.from_savepoint_jabw_exit()
+    prognostics_init_savepoint = data_provider.from_savepoint_prognostics_initial()
     vn = prognostics_init_savepoint.vn()
     rbv_vec_coeff_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
     rbv_vec_coeff_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
@@ -157,8 +157,8 @@ def test_diagnose_surface_pressure(
 ):
     initial_diagnostic_savepoint = data_provider.from_savepoint_diagnostics_initial()
     surface_pressure_ref = initial_diagnostic_savepoint.pressure_sfc().asnumpy()
-    initial_prognostic_savepoint = data_provider.from_savepoint_jabw_exit()
-    exner = initial_prognostic_savepoint.exner()
+    initial_prognostic_savepoint = data_provider.from_savepoint_prognostics_initial()
+    exner = initial_prognostic_savepoint.exner_now()
     virtual_temperature = initial_diagnostic_savepoint.virtual_temperature()
     ddqz_z_full = metrics_savepoint.ddqz_z_full()
 
