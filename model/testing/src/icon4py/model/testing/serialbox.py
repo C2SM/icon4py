@@ -1552,13 +1552,13 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
 
 class IconGraupelEntrySavepoint(IconSavepoint):
     def temperature(self):
-        return self._get_field("ser_in_graupel_temperature", dims.CellDim, dims.KDim)
+        return self._get_field("temperature", dims.CellDim, dims.KDim)
 
     def pres(self):
-        return self._get_field("ser_in_graupel_pres", dims.CellDim, dims.KDim)
+        return self._get_field("pressure", dims.CellDim, dims.KDim)
 
     def rho(self):
-        return self._get_field("ser_in_graupel_rho", dims.CellDim, dims.KDim)
+        return self._get_field("rho", dims.CellDim, dims.KDim)
 
     def qv(self):
         return self._get_field("ser_in_graupel_qv", dims.CellDim, dims.KDim)
@@ -1584,33 +1584,14 @@ class IconGraupelEntrySavepoint(IconSavepoint):
     def dt_microphysics(self):
         return self.serializer.read("ser_in_graupel_dt", self.savepoint)[0]
 
-    def qc0(self):
-        return self.serializer.read("ser_in_graupel_qc0", self.savepoint)[0]
-
-    def qi0(self):
-        return self.serializer.read("ser_in_graupel_qi0", self.savepoint)[0]
-
+   
+    
     def kstart_moist(self):
         return self.serializer.read("ser_in_graupel_kstart_moist", self.savepoint)[0]
 
-    def l_cv(self):
-        return self.serializer.read("ser_in_graupel_l_cv", self.savepoint)[0]
-
-    def ithermo_water(self):
-        return self.serializer.read("ser_in_graupel_ithermo_water", self.savepoint)[0]
-
-    def ldiag_ttend(self):
-        return self.serializer.read("ser_in_graupel_ldiag_ttend", self.savepoint)[0]
-
-    def ldiag_qtend(self):
-        return self.serializer.read("ser_in_graupel_ldiag_qtend", self.savepoint)[0]
-
-    def istart_idx(self):
-        return self.serializer.read("ser_in_graupel_istart", self.savepoint)[0]
-
-    def iend_idx(self):
-        return self.serializer.read("ser_in_graupel_iend", self.savepoint)[0]
-
+    
+    
+    
 
 class IconGraupelExitSavepoint(IconSavepoint):
     def temperature(self):
