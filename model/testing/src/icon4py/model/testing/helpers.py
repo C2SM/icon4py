@@ -9,7 +9,7 @@
 import hashlib
 import typing
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Any, Callable, ClassVar
 
 import gt4py.next as gtx
 import numpy as np
@@ -104,7 +104,53 @@ class Output:
     gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
 
 
-def _test_validate_benchmark(
+def run_validate_and_benchmark(
+    func: Callable,
+    benchmark_fixture: pytest.FixtureRequest,
+    verification_func: Callable,
+    verify_args: dict[str, Any],
+    *args: Any,
+    **kwargs: Any,
+) -> None:
+    """
+    Function to perform validation and benchmarking of func (along with normally executing it).
+
+    Args:
+        func: function to be ran, validated and benchmarked
+        benchmark_fixture: pytest-benchmark fixture
+        verification_func: function to be used for verification
+        verify_args: dictionary of arguments to be passed to the verification function
+        *args: positional arguments to be passed to func
+        **kwargs: keyword arguments to be passed to func
+    """
+    func(*args, **kwargs)
+    verification_func(**verify_args)
+
+    if benchmark_fixture.enabled:
+        benchmark_fixture(func, *args, **kwargs)
+
+
+def _validate_stencil_test(
+    self,
+    input_data: dict,
+    reference_outputs,
+) -> None:
+    for out in self.OUTPUTS:
+        name, refslice, gtslice = (
+            (out.name, out.refslice, out.gtslice)
+            if isinstance(out, Output)
+            else (out, (slice(None),), (slice(None),))
+        )
+
+        np.testing.assert_allclose(
+            input_data[name].asnumpy()[gtslice],
+            reference_outputs[name][refslice],
+            equal_nan=True,
+            err_msg=f"Validation failed for '{name}'",
+        )
+
+
+def _test_and_benchmark(
     self,
     grid: base.BaseGrid,
     backend: gtx_backend.Backend,
@@ -123,28 +169,14 @@ def _test_validate_benchmark(
 
     input_data = allocate_data(backend, input_data)
 
-    benchmark(
+    run_validate_and_benchmark(
         self.PROGRAM.with_backend(backend),
+        benchmark,
+        _validate_stencil_test,
+        {"self": self, "input_data": input_data, "reference_outputs": reference_outputs},
         **input_data,
         offset_provider=grid.offset_providers,
     )
-
-    if benchmark.enabled:
-        return  # skip validation if benchmark is enabled
-
-    for out in self.OUTPUTS:
-        name, refslice, gtslice = (
-            (out.name, out.refslice, out.gtslice)
-            if isinstance(out, Output)
-            else (out, (slice(None),), (slice(None),))
-        )
-
-        np.testing.assert_allclose(
-            input_data[name].asnumpy()[gtslice],
-            reference_outputs[name][refslice],
-            equal_nan=True,
-            err_msg=f"Validation failed for '{name}'",
-        )
 
 
 class StencilTest:
@@ -175,7 +207,7 @@ class StencilTest:
         # reflect the name of the test we do this dynamically here instead of using regular
         # inheritance.
         super().__init_subclass__(**kwargs)
-        setattr(cls, f"test_{cls.__name__}", _test_validate_benchmark)
+        setattr(cls, f"test_{cls.__name__}", _test_and_benchmark)
 
 
 def reshape(arr: np.ndarray, shape: tuple[int, ...]):

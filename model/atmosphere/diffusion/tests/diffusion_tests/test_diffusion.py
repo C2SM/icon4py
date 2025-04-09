@@ -509,17 +509,20 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    benchmark(
+    helpers.run_validate_and_benchmark(
         diffusion_granule.run,
+        benchmark,
+        verify_diffusion_fields,
+        {
+            "config": config,
+            "diagnostic_state": diagnostic_state,
+            "prognostic_state": prognostic_state,
+            "diffusion_savepoint": savepoint_diffusion_exit,
+        },
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
     )
-
-    if benchmark.disabled:
-        verify_diffusion_fields(
-            config, diagnostic_state, prognostic_state, savepoint_diffusion_exit
-        )
 
 
 @pytest.mark.datatest
