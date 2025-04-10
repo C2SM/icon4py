@@ -101,7 +101,7 @@ def test_diagnose_meridional_and_zonal_winds(
     backend,
 ):
     prognostics_init_savepoint = data_provider.from_savepoint_prognostics_initial()
-    vn = prognostics_init_savepoint.vn()
+    vn = prognostics_init_savepoint.vn_now()
     rbv_vec_coeff_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
     rbv_vec_coeff_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
 
