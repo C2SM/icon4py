@@ -106,17 +106,20 @@ class Output:
 
 
 def run_verify_and_benchmark(
-    test_func: Callable,
-    verification_func: Callable,
+    test_func: Callable[[], None],
+    verification_func: Callable[[], None],
     benchmark_fixture: pytest.FixtureRequest,
 ) -> None:
     """
     Function to perform verification and benchmarking of test_func (along with normally executing it).
 
     Args:
-        test_func: function to be ran, verified and benchmarked ** with binded arguments -functools.partial()- **
-        verification_func: function to be used for verification of test_func ** with binded arguments -functools.partial()- **
-        benchmark_fixture: pytest-benchmark fixture
+        test_func: Function to be ran, verified and benchmarked.
+        verification_func: Function to be used for verification of test_func.
+        benchmark_fixture: pytest-benchmark fixture.
+
+    Note:
+        - test_func and verification_func should be provided with binded arguments, i.e. with functools.partial.
     """
     test_func()
     verification_func()
@@ -127,8 +130,8 @@ def run_verify_and_benchmark(
 
 def _verify_stencil_test(
     self,
-    input_data: dict,
-    reference_outputs,
+    input_data: dict[str, gtx.Field],
+    reference_outputs: dict[str, np.ndarray],
 ) -> None:
     for out in self.OUTPUTS:
         name, refslice, gtslice = (
@@ -149,8 +152,8 @@ def _test_and_benchmark(
     self,
     grid: base.BaseGrid,
     backend: gtx_backend.Backend,
-    connectivities_as_numpy: dict,
-    input_data: dict,
+    connectivities_as_numpy: dict[str, np.ndarray],
+    input_data: dict[str, gtx.Field],
     benchmark,  # benchmark fixture
 ):
     if self.MARKERS is not None:
