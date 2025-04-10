@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import functools
 import hashlib
 import typing
 from dataclasses import dataclass, field
@@ -108,7 +109,6 @@ def run_validate_and_benchmark(
     func: Callable,
     benchmark_fixture: pytest.FixtureRequest,
     verification_func: Callable,
-    verify_args: dict[str, Any],
     *args: Any,
     **kwargs: Any,
 ) -> None:
@@ -118,13 +118,12 @@ def run_validate_and_benchmark(
     Args:
         func: function to be ran, validated and benchmarked
         benchmark_fixture: pytest-benchmark fixture
-        verification_func: function to be used for verification
-        verify_args: dictionary of arguments to be passed to the verification function
+        verification_func: function to be used for verification with binded arguments -functools.partial()-
         *args: positional arguments to be passed to func
         **kwargs: keyword arguments to be passed to func
     """
     func(*args, **kwargs)
-    verification_func(**verify_args)
+    verification_func()
 
     if benchmark_fixture.enabled:
         benchmark_fixture(func, *args, **kwargs)
@@ -172,8 +171,12 @@ def _test_and_benchmark(
     run_validate_and_benchmark(
         self.PROGRAM.with_backend(backend),
         benchmark,
-        _validate_stencil_test,
-        {"self": self, "input_data": input_data, "reference_outputs": reference_outputs},
+        functools.partial(
+            _validate_stencil_test,
+            self=self,
+            input_data=input_data,
+            reference_outputs=reference_outputs,
+        ),
         **input_data,
         offset_provider=grid.offset_providers,
     )

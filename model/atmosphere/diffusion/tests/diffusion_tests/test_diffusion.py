@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
+
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -512,13 +514,13 @@ def test_run_diffusion_single_step(
     helpers.run_validate_and_benchmark(
         diffusion_granule.run,
         benchmark,
-        verify_diffusion_fields,
-        {
-            "config": config,
-            "diagnostic_state": diagnostic_state,
-            "prognostic_state": prognostic_state,
-            "diffusion_savepoint": savepoint_diffusion_exit,
-        },
+        functools.partial(
+            verify_diffusion_fields,
+            config=config,
+            diagnostic_state=diagnostic_state,
+            prognostic_state=prognostic_state,
+            diffusion_savepoint=savepoint_diffusion_exit,
+        ),
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
