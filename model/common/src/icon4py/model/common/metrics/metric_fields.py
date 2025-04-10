@@ -195,28 +195,30 @@ def compute_ddqz_z_full_and_inverse(
 
 
 @field_operator
-def _compute_scalfac_dd3d(
+def _compute_scaling_factor_for_3d_divdamp(
     vct_a: fa.KField[wpfloat],
     divdamp_trans_start: wpfloat,
     divdamp_trans_end: wpfloat,
     divdamp_type: gtx.int32,
 ) -> fa.KField[wpfloat]:
-    scalfac_dd3d = broadcast(1.0, (dims.KDim,))
+    scaling_factor_for_3d_divdamp = broadcast(1.0, (dims.KDim,))
     if divdamp_type == 32:
         zf = 0.5 * (vct_a + vct_a(Koff[1]))  # depends on nshift_total, assumed to be always 0
-        scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
-        scalfac_dd3d = where(
+        scaling_factor_for_3d_divdamp = where(
+            zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
+        )
+        scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_start,
             (divdamp_trans_end - zf) / (divdamp_trans_end - divdamp_trans_start),
-            scalfac_dd3d,
+            scaling_factor_for_3d_divdamp,
         )
-    return scalfac_dd3d
+    return scaling_factor_for_3d_divdamp
 
 
 @program
-def compute_scalfac_dd3d(
+def compute_scaling_factor_for_3d_divdamp(
     vct_a: fa.KField[wpfloat],
-    scalfac_dd3d: fa.KField[wpfloat],
+    scaling_factor_for_3d_divdamp: fa.KField[wpfloat],
     divdamp_trans_start: wpfloat,
     divdamp_trans_end: wpfloat,
     divdamp_type: gtx.int32,
@@ -224,25 +226,25 @@ def compute_scalfac_dd3d(
     vertical_end: gtx.int32,
 ):
     """
-    Compute scaling factor for 3D divergence damping terms.
+    Compute scaling factor for 3D divergence damping terms (declared as scalfac_dd3d in ICON).
 
     See mo_vertical_grid.f90
 
     Args:
         vct_a: Field[Dims[dims.KDim], float],
-        scalfac_dd3d: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
+        scaling_factor_for_3d_divdamp: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
         divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_type: type of divergence damping (2D or 3D divergence)
         vertical_start: vertical start index
         vertical_end: vertical end index
     """
-    _compute_scalfac_dd3d(
+    _compute_scaling_factor_for_3d_divdamp(
         vct_a,
         divdamp_trans_start,
         divdamp_trans_end,
         divdamp_type,
-        out=scalfac_dd3d,
+        out=scaling_factor_for_3d_divdamp,
         domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
@@ -983,7 +985,7 @@ def compute_mask_bdy_halo_c(
 
 
 @field_operator
-def _compute_hmask_dd3d(
+def _compute_horizontal_mask_for_3d_divdamp(
     e_refin_ctrl: fa.EdgeField[gtx.int32],
     grf_nudge_start_e: gtx.int32,
     grf_nudgezone_width: gtx.int32,
@@ -991,49 +993,49 @@ def _compute_hmask_dd3d(
     e_refin_ctrl_wp = astype(e_refin_ctrl, wpfloat)
     grf_nudge_start_e_wp = astype(grf_nudge_start_e, wpfloat)
     grf_nudgezone_width_wp = astype(grf_nudgezone_width, wpfloat)
-    hmask_dd3d = where(
+    horizontal_mask_for_3d_divdamp = where(
         (e_refin_ctrl > (grf_nudge_start_e + grf_nudgezone_width - 1)),
         1.0
         / (grf_nudgezone_width_wp - 1.0)
         * (e_refin_ctrl_wp - (grf_nudge_start_e_wp + grf_nudgezone_width_wp - 1.0)),
         0.0,
     )
-    hmask_dd3d = where(
+    horizontal_mask_for_3d_divdamp = where(
         (e_refin_ctrl <= 0)
         | (e_refin_ctrl_wp >= (grf_nudge_start_e_wp + 2.0 * (grf_nudgezone_width_wp - 1.0))),
         1.0,
-        hmask_dd3d,
+        horizontal_mask_for_3d_divdamp,
     )
-    return hmask_dd3d
+    return horizontal_mask_for_3d_divdamp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_hmask_dd3d(
+def compute_horizontal_mask_for_3d_divdamp(
     e_refin_ctrl: fa.EdgeField[gtx.int32],
-    hmask_dd3d: fa.EdgeField[wpfloat],
+    horizontal_mask_for_3d_divdamp: fa.EdgeField[wpfloat],
     grf_nudge_start_e: gtx.int32,
     grf_nudgezone_width: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
     """
-    Compute hmask_dd3d.
+    Compute horizontal_mask_for_3d_divdamp (declared as hmask_dd3d in ICON).
 
     See mo_vertical_grid.f90. Horizontal mask field for 3D divergence damping term.
 
     Args:
         e_refin_ctrl: Edge field of refin_ctrl
-        hmask_dd3d: output
+        horizontal_mask_for_3d_divdamp: output
         grf_nudge_start_e: mo_impl_constants_grf constant
         grf_nudgezone_width: mo_impl_constants_grf constant
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
     """
-    _compute_hmask_dd3d(
+    _compute_horizontal_mask_for_3d_divdamp(
         e_refin_ctrl=e_refin_ctrl,
         grf_nudge_start_e=grf_nudge_start_e,
         grf_nudgezone_width=grf_nudgezone_width,
-        out=hmask_dd3d,
+        out=horizontal_mask_for_3d_divdamp,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 

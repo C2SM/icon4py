@@ -157,7 +157,7 @@ def test_velocity_predictor_step(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_ic=None,
+        theta_v_at_cells_on_half_levels=None,
         exner_pr=None,
         rho_ic=None,
         ddt_exner_phy=None,
@@ -165,7 +165,7 @@ def test_velocity_predictor_step(
         grf_tend_thv=None,
         grf_tend_w=None,
         mass_fl_e=None,
-        ddt_vn_phy=None,
+        normal_wind_tendency_due_to_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
@@ -174,7 +174,7 @@ def test_velocity_predictor_step(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,
-        vn_incr=None,
+        normal_wind_iau_increments=None,
         exner_incr=None,
         exner_dyn_incr=None,
     )
@@ -332,7 +332,7 @@ def test_velocity_corrector_step(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_ic=None,
+        theta_v_at_cells_on_half_levels=None,
         exner_pr=None,
         rho_ic=None,
         ddt_exner_phy=None,
@@ -340,7 +340,7 @@ def test_velocity_corrector_step(
         grf_tend_thv=None,
         grf_tend_w=None,
         mass_fl_e=None,
-        ddt_vn_phy=None,
+        normal_wind_tendency_due_to_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
@@ -349,7 +349,7 @@ def test_velocity_corrector_step(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
+        normal_wind_iau_increments=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=None,
     )
@@ -452,7 +452,6 @@ def test_velocity_corrector_step(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init", [1])
 def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     icon_grid,
     grid_savepoint,
@@ -466,6 +465,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     step_date_exit,
     substep_init,
     istep_init,
+    istep_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)

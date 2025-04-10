@@ -1119,30 +1119,63 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
 
 
-class IconNonHydroInit15to28Savepoint(IconSavepoint):
+class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
+    def vn(self):
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+
+    def vt(self):
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
+
     def z_rth_pr(self, ind: TwoIndex):
         return self._get_field_component("z_rth_pr", ind, (dims.CellDim, dims.KDim))
 
     def z_exner_ex_pr(self):
         return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)
 
-    def exner_pr(self):
-        return self._get_field("exner_pr", dims.CellDim, dims.KDim)
+    def z_dexner_dz_c(self, ntnd: TimeIndex):
+        return self._get_field_component("z_dexner_dz_c", ntnd, (dims.CellDim, dims.KDim))
 
-    def rho_ic(self):
-        return self._get_field("rho_ic", dims.CellDim, dims.KDim)
-
-    def z_exner_ic(self):
-        return self._get_field("z_exner_ic", dims.CellDim, dims.KDim)
-
-    def z_theta_v_pr_ic(self):
-        return self._get_field("z_theta_v_pr_ic", dims.CellDim, dims.KDim)
+    def theta_v(self):
+        return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
 
     def theta_v_ic(self):
         return self._get_field("theta_v_ic", dims.CellDim, dims.KDim)
 
-    def z_dexner_dz_c(self, ntnd: TimeIndex):
-        return self._get_field_component("z_dexner_dz_c", ntnd, (dims.CellDim, dims.KDim))
+    def z_dwdz_dd(self):
+        return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
+
+    def ddt_vn_apc_ntl(self, ntnd):
+        return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
+
+    def ddt_vn_phy(self):
+        return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim)
+
+    def vn_incr(self):  # TODO should be vn_incr
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+
+    def bdy_divdamp(self):
+        return self._get_field("bdy_divdamp", dims.KDim)
+
+    def z_hydro_corr(self):
+        return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv2_vn(self):
+        return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
+
+    def scal_divdamp(self):
+        return self._get_field("scal_divdamp", dims.KDim)
+
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_gradh_exner(self):
+        return self._get_field("z_gradh_exner", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
 
 
 class IconNonHydroExitSavepoint(IconSavepoint):
@@ -1268,6 +1301,26 @@ class IconNonHydroExitSavepoint(IconSavepoint):
 
     def z_theta_v_fl_e(self):
         return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
+
+
+class NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_gradh_exner(self):
+        return self._get_field("z_gradd_exner", dims.EdgeDim, dims.KDim)
+
+    def vn(self):
+        return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv2_vn(self):
+        return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
 
 
 # TODO (magdalena) rename?
@@ -2044,13 +2097,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityInitEdgeDiagnosticsSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-1to7-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityInitEdgeDiagnosticsSavepoint(
@@ -2058,13 +2111,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionCellDiagnosticsInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to14-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionCellDiagnosticsInitSavepoint(
@@ -2072,13 +2125,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionVerticalMomentumInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionVerticalMomentumInitSavepoint(
@@ -2086,13 +2139,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionHorizontalMomentumInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionHorizontalMomentumInitSavepoint(
@@ -2113,17 +2166,17 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_nonhydro_15_28_init(
+    def from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
         self, istep: int, date: str, substep: int
-    ) -> IconNonHydroInit15to28Savepoint:
+    ) -> NonHydroInitEdgeDiagnosticsUpdateVnSavepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-14to28-init_1to13-exit"]
+            self.serializer.savepoint["solve-nonhydro-14to28-init_1to13-exit"]  # TODO
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]
             .as_savepoint()
         )
-        return IconNonHydroInit15to28Savepoint(
+        return NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
@@ -2170,13 +2223,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionEdgeDiagnosticsExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-1to7-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionEdgeDiagnosticsExitSavepoint(
@@ -2184,13 +2237,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionCellDiagnosticsExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to13-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionCellDiagnosticsExitSavepoint(
@@ -2198,13 +2251,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionVerticalMomentumExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionVerticalMomentumExitSavepoint(
@@ -2212,13 +2265,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionHorizontalMomentumExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionHorizontalMomentumExitSavepoint(
@@ -2236,6 +2289,20 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
+        self, istep: int, date: str, substep: int
+    ) -> NonHydroExitEdgeDiagnosticsUpdateVnSavepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-14to28-exit"]  # TODO
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 

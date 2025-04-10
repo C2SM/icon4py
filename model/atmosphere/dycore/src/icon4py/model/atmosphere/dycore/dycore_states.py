@@ -43,7 +43,11 @@ class DiagnosticStateNonHydro:
     Declared as w_concorr_c in ICON. Contravariant correction at cell center on k-half levels. vn dz/dn + vt dz/dt, z is topography height
     """
 
-    theta_v_ic: fa.CellKField[float]
+    theta_v_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as theta_v_ic in ICON.
+    """
+
     exner_pr: fa.CellKField[float]
     rho_ic: fa.CellKField[float]
     ddt_exner_phy: fa.CellKField[float]
@@ -51,7 +55,10 @@ class DiagnosticStateNonHydro:
     grf_tend_thv: fa.CellKField[float]
     grf_tend_w: fa.CellKField[float]
     mass_fl_e: fa.EdgeKField[float]
-    ddt_vn_phy: fa.EdgeKField[float]
+    normal_wind_tendency_due_to_physics_process: fa.EdgeKField[float]
+    """
+    Declared as ddt_vn_phy in ICON.
+    """
     grf_tend_vn: fa.EdgeKField[float]
     normal_wind_advective_tendency: common_utils.PredictorCorrectorPair[fa.EdgeKField[float]]
     """
@@ -65,7 +72,10 @@ class DiagnosticStateNonHydro:
 
     # Analysis increments
     rho_incr: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
-    vn_incr: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    normal_wind_iau_increments: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    """
+    Declared as vn_incr in ICON.
+    """
     exner_incr: Optional[fa.EdgeKField[float]]  # exner increment [- ]
     exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
 
@@ -125,8 +135,14 @@ class MetricStateNonHydro:
     exner_ref_mc: fa.CellKField[float]
     rho_ref_mc: fa.CellKField[float]
     theta_ref_mc: fa.CellKField[float]
-    rho_ref_me: fa.EdgeKField[float]
-    theta_ref_me: fa.EdgeKField[float]
+    reference_rho_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as rho_ref_me in ICON.
+    """
+    reference_theta_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as theta_ref_me in ICON.
+    """
     theta_ref_ic: fa.CellKField[float]
 
     d_exner_dz_ref_ic: fa.CellKField[float]
@@ -146,8 +162,15 @@ class MetricStateNonHydro:
     vwind_expl_wgt: fa.CellField[float]
     vwind_impl_wgt: fa.CellField[float]
 
-    hmask_dd3d: fa.EdgeField[float]
-    scalfac_dd3d: fa.KField[float]
+    horizontal_mask_for_3d_divdamp: fa.EdgeField[float]
+    """
+    Declared as hmask_dd3d in ICON. A horizontal mask where 3D divergence is computed for the divergence damping.
+    3D divergence is defined as divergence of horizontal wind plus vertical derivative of vertical wind (dw/dz).
+    """
+    scaling_factor_for_3d_divdamp: fa.KField[float]
+    """
+    Declared as scalfac_dd3d in ICON. A scaling factor in vertical dimension for 3D divergence damping. 
+    """
 
     coeff1_dwdz: fa.CellKField[float]
     coeff2_dwdz: fa.CellKField[float]

@@ -8,21 +8,23 @@
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.metrics.metric_scalars import compute_kstart_dd3d
+from icon4py.model.common.metrics.metric_scalars import (
+    compute_starting_vertical_index_for_3d_divdamp,
+)
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def test_compute_kstart_dd3d():
+def test_compute_starting_vertical_index_for_3d_divdamp():
     grid = SimpleGrid()
 
-    scalfac_dd3d_full = data_alloc.random_field(
+    scaling_factor_for_3d_divdamp = data_alloc.random_field(
         grid, dims.KDim, low=0.1, high=3.0, dtype=wpfloat
     ).asnumpy()
-    scalfac_dd3d_full[0:3] = 0.0
+    scaling_factor_for_3d_divdamp[0:3] = 0.0
     kstart_dd3d_ref = 3
 
-    kstart_dd3d_full = compute_kstart_dd3d(
-        scalfac_dd3d=scalfac_dd3d_full,
+    starting_vertical_index_for_3d_divdamp = compute_starting_vertical_index_for_3d_divdamp(
+        scaling_factor_for_3d_divdamp=scaling_factor_for_3d_divdamp,
     )
-    assert kstart_dd3d_ref == kstart_dd3d_full
+    assert kstart_dd3d_ref == starting_vertical_index_for_3d_divdamp
