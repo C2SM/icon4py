@@ -43,7 +43,7 @@ def _compute_advection_in_horizontal_momentum_equation(
     d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
     nlev: gtx.int32,
-    nrdmax: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
     upward_vorticity_at_vertices_on_model_levels = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
 
@@ -61,7 +61,7 @@ def _compute_advection_in_horizontal_momentum_equation(
     )
 
     normal_wind_advective_tendency = concat_where(
-        ((maximum(3, nrdmax - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 4)),
+        ((maximum(3, end_index_of_damping_layer - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 4)),
         _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask,
             c_lin_e,
@@ -106,7 +106,7 @@ def compute_advection_in_horizontal_momentum_equation(
     d_time: ta.wpfloat,
     levelmask: fa.KField[bool],
     nlev: gtx.int32,
-    nrdmax: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -139,7 +139,7 @@ def compute_advection_in_horizontal_momentum_equation(
         - d_time: time step
         - levelmask: mask for valid vertical levels
         - nlev: number of (full/model) vertical levels
-        - nrdmax: vertical index where damping ends
+        - end_index_of_damping_layer: vertical index where damping ends
         - horizontal_start: start index in the horizontal domain
         - horizontal_end: end index in the horizontal domain
         - vertical_start: start index in the vertical domain
@@ -171,7 +171,7 @@ def compute_advection_in_horizontal_momentum_equation(
         d_time,
         levelmask,
         nlev,
-        nrdmax,
+        end_index_of_damping_layer,
         out=normal_wind_advective_tendency,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
