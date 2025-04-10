@@ -48,14 +48,20 @@ class DiagnosticStateNonHydro:
     Declared as theta_v_ic in ICON.
     """
 
-    exner_pr: fa.CellKField[float]
-    rho_ic: fa.CellKField[float]
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as exner_pr in ICON.
+    """
+    rho_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as rho_ic in ICON.
+    """
     ddt_exner_phy: fa.CellKField[float]
     grf_tend_rho: fa.CellKField[float]
     grf_tend_thv: fa.CellKField[float]
     grf_tend_w: fa.CellKField[float]
     mass_fl_e: fa.EdgeKField[float]
-    normal_wind_tendency_due_to_physics_process: fa.EdgeKField[float]
+    normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[float]
     """
     Declared as ddt_vn_phy in ICON.
     """
@@ -131,10 +137,22 @@ class MetricStateNonHydro:
     wgtfac_e: fa.EdgeKField[float]
     wgtfacq_e: fa.EdgeKField[float]
 
-    exner_exfac: fa.CellKField[float]
-    exner_ref_mc: fa.CellKField[float]
-    rho_ref_mc: fa.CellKField[float]
-    theta_ref_mc: fa.CellKField[float]
+    time_extrapolation_parameter_for_exner: fa.CellKField[float]
+    """
+    Declared as exner_exfac in ICON.
+    """
+    reference_exner_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as exner_ref_mc in ICON.
+    """
+    reference_rho_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as rho_ref_mc in ICON.
+    """
+    reference_theta_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as theta_ref_mc in ICON.
+    """
     reference_rho_at_edges_on_model_levels: fa.EdgeKField[float]
     """
     Declared as rho_ref_me in ICON.
@@ -143,9 +161,14 @@ class MetricStateNonHydro:
     """
     Declared as theta_ref_me in ICON.
     """
-    theta_ref_ic: fa.CellKField[float]
-
-    d_exner_dz_ref_ic: fa.CellKField[float]
+    reference_theta_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as theta_ref_ic in ICON.
+    """
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as d_exner_dz_ref_ic in ICON.
+    """
     ddqz_z_half: fa.CellKField[float]  # half dims.KDim ?
     d2dexdz2_fac1_mc: fa.CellKField[float]
     d2dexdz2_fac2_mc: fa.CellKField[float]

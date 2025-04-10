@@ -36,9 +36,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative 
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
-    _compute_rho_virtual_potential_temperatures_and_pressure_gradient,
-)
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
@@ -60,7 +57,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
 
 
 @field_operator
-def _fused_mo_solve_nonhydro_stencils_1_to_13(
+def _compute_perturbed_quantities_and_interpolation(
     rho_nnow: fa.CellKField[ta.wpfloat],
     rho_ref_mc: fa.CellKField[ta.wpfloat],
     theta_v_nnow: fa.CellKField[ta.wpfloat],
@@ -187,7 +184,7 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13(
 
 
 @field_operator
-def _fused_mo_solve_nonhydro_stencils_1_to_13_restriced(
+def _surface_computations(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     z_exner_ic: fa.CellKField[ta.wpfloat],
     z_exner_ex_pr: fa.CellKField[ta.wpfloat],
@@ -221,91 +218,32 @@ def _fused_mo_solve_nonhydro_stencils_1_to_13_restriced(
     )
 
 
-@field_operator
-def _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
-    w: fa.CellKField[ta.vpfloat],
-    w_concorr_c: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    rho_nnow: fa.CellKField[ta.vpfloat],
-    rho_nvar: fa.CellKField[ta.vpfloat],
-    theta_v_nnow: fa.CellKField[ta.vpfloat],
-    theta_v_nvar: fa.CellKField[ta.vpfloat],
-    wgtfac_c: fa.CellKField[ta.wpfloat],
-    theta_ref_mc: fa.CellKField[ta.wpfloat],
-    vwind_expl_wgt: fa.CellField[ta.wpfloat],
-    exner_pr: fa.CellKField[ta.wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[ta.wpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
-    z_theta_v_pr_ic: fa.CellKField[ta.wpfloat],
-    theta_v_ic: fa.CellKField[ta.wpfloat],
-    z_th_ddz_exner_c: fa.CellKField[ta.wpfloat],
-    dtime: ta.wpfloat,
-    wgt_nnow_rth: ta.wpfloat,
-    wgt_nnew_rth: ta.wpfloat,
-    horz_idx: fa.CellField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
-    start_cell_lateral_boundary_level_3: gtx.int32,
-    end_cell_local: gtx.int32,
-) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-]:
-    (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = concat_where(
-            1 <= dims.KDim,
-            concat_where(
-                (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_local),
-                _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
-                    w=w,
-                    w_concorr_c=w_concorr_c,
-                    ddqz_z_half=ddqz_z_half,
-                    rho_now=rho_nnow,
-                    rho_var=rho_nvar,
-                    theta_now=theta_v_nnow,
-                    theta_var=theta_v_nvar,
-                    wgtfac_c=wgtfac_c,
-                    theta_ref_mc=theta_ref_mc,
-                    vwind_expl_wgt=vwind_expl_wgt,
-                    exner_pr=exner_pr,
-                    d_exner_dz_ref_ic=d_exner_dz_ref_ic,
-                    dtime=dtime,
-                    wgt_nnow_rth=wgt_nnow_rth,
-                    wgt_nnew_rth=wgt_nnew_rth,
-                ),
-                (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
-            ),
-            (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
-        )
-    return (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c)
-
-
 @program(grid_type=GridType.UNSTRUCTURED)
-def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
-    rho_nnow: fa.CellKField[ta.wpfloat],
-    rho_ref_mc: fa.CellKField[ta.wpfloat],
-    theta_v_nnow: fa.CellKField[ta.wpfloat],
-    theta_ref_mc: fa.CellKField[ta.wpfloat],
-    z_rth_pr_1: fa.CellKField[ta.wpfloat],
-    z_rth_pr_2: fa.CellKField[ta.wpfloat],
-    z_theta_v_pr_ic: fa.CellKField[ta.wpfloat],
-    theta_ref_ic: fa.CellKField[ta.wpfloat],
+def compute_perturbed_quantities_and_interpolation(
+    current_rho: fa.CellKField[ta.wpfloat],
+    reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    current_theta_v: fa.CellKField[ta.wpfloat],
+    reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    reference_theta_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     wgtfac_c: fa.CellKField[ta.wpfloat],
     vwind_expl_wgt: fa.CellField[ta.wpfloat],
-    exner_pr: fa.CellKField[ta.wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[ta.wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     ddqz_z_half: fa.CellKField[ta.wpfloat],
-    z_th_ddz_exner_c: fa.CellKField[ta.wpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
-    z_exner_ic: fa.CellKField[ta.wpfloat],
-    exner_exfac: fa.CellKField[ta.wpfloat],
-    exner_nnow: fa.CellKField[ta.wpfloat],
-    exner_ref_mc: fa.CellKField[ta.wpfloat],
-    z_exner_ex_pr: fa.CellKField[ta.wpfloat],
-    z_dexner_dz_c_1: fa.CellKField[ta.wpfloat],
-    z_dexner_dz_c_2: fa.CellKField[ta.wpfloat],
-    theta_v_ic: fa.CellKField[ta.wpfloat],
+    ddz_of_perturbed_temperature_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    exner_on_half_levels: fa.CellKField[ta.wpfloat],
+    time_extrapolation_parameter_for_exner: fa.CellKField[ta.wpfloat],
+    current_exner: fa.CellKField[ta.wpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.wpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.wpfloat],
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     inv_ddqz_z_full: fa.CellKField[ta.wpfloat],
     d2dexdz2_fac1_mc: fa.CellKField[ta.wpfloat],
     d2dexdz2_fac2_mc: fa.CellKField[ta.wpfloat],
@@ -339,7 +277,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         },
     )
 
-    _fused_mo_solve_nonhydro_stencils_1_to_13_restriced(
+    _surface_computations(
         wgtfacq_c=wgtfacq_c,
         z_exner_ic=z_exner_ic,
         z_exner_ex_pr=z_exner_ex_pr,
@@ -357,7 +295,7 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         },
     )
 
-    _fused_mo_solve_nonhydro_stencils_1_to_13(
+    _compute_perturbed_quantities_and_interpolation(
         rho_nnow=rho_nnow,
         rho_ref_mc=rho_ref_mc,
         theta_v_nnow=theta_v_nnow,
@@ -462,67 +400,5 @@ def fused_mo_solve_nonhydro_stencils_1_to_13_predictor(
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (vertical_start, vertical_end - 1),
-        },
-    )
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
-    w: fa.CellKField[ta.wpfloat],
-    w_concorr_c: fa.CellKField[ta.wpfloat],
-    ddqz_z_half: fa.CellKField[ta.wpfloat],
-    rho_nnow: fa.CellKField[ta.wpfloat],
-    rho_nvar: fa.CellKField[ta.wpfloat],
-    theta_v_nnow: fa.CellKField[ta.wpfloat],
-    theta_v_nvar: fa.CellKField[ta.wpfloat],
-    wgtfac_c: fa.CellKField[ta.wpfloat],
-    theta_ref_mc: fa.CellKField[ta.wpfloat],
-    vwind_expl_wgt: fa.CellField[ta.wpfloat],
-    exner_pr: fa.CellKField[ta.wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[ta.wpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
-    z_theta_v_pr_ic: fa.CellKField[ta.wpfloat],
-    theta_v_ic: fa.CellKField[ta.wpfloat],
-    z_th_ddz_exner_c: fa.CellKField[ta.wpfloat],
-    dtime: ta.wpfloat,
-    wgt_nnow_rth: ta.wpfloat,
-    wgt_nnew_rth: ta.wpfloat,
-    horz_idx: fa.CellField[gtx.int32],
-    vert_idx: fa.KField[gtx.int32],
-    start_cell_lateral_boundary_level_3: gtx.int32,
-    end_cell_local: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _fused_mo_solve_nonhydro_stencils_1_to_13_corrector(
-        w,
-        w_concorr_c,
-        ddqz_z_half,
-        rho_nnow,
-        rho_nvar,
-        theta_v_nnow,
-        theta_v_nvar,
-        wgtfac_c,
-        theta_ref_mc,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        rho_ic,
-        z_theta_v_pr_ic,
-        theta_v_ic,
-        z_th_ddz_exner_c,
-        dtime,
-        wgt_nnow_rth,
-        wgt_nnew_rth,
-        horz_idx,
-        vert_idx,
-        start_cell_lateral_boundary_level_3,
-        end_cell_local,
-        out=(rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
         },
     )

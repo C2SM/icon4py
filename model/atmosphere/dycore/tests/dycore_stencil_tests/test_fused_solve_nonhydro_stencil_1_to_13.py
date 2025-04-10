@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_mo_solve_nonhydro_stencils_1_to_13 import (
+from icon4py.model.atmosphere.dycore.compute_perturbed_quantities_and_interpolation import (
     fused_mo_solve_nonhydro_stencils_1_to_13_corrector,
     fused_mo_solve_nonhydro_stencils_1_to_13_predictor,
 )
