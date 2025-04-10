@@ -1527,7 +1527,6 @@ class IconDiagnosticsInitSavepoint(IconSavepoint):
         return self._get_field("v", dims.CellDim, dims.KDim)
 
 
-
 class IconPrognosticsInitSavepoint(IconSavepoint):
     def exner_now(self):
         return self._get_field("exner_now", dims.CellDim, dims.KDim)
