@@ -511,9 +511,13 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    helpers.run_validate_and_benchmark(
-        diffusion_granule.run,
-        benchmark,
+    helpers.run_verify_and_benchmark(
+        functools.partial(
+            diffusion_granule.run,
+            diagnostic_state=diagnostic_state,
+            prognostic_state=prognostic_state,
+            dtime=dtime,
+        ),
         functools.partial(
             verify_diffusion_fields,
             config=config,
@@ -521,9 +525,7 @@ def test_run_diffusion_single_step(
             prognostic_state=prognostic_state,
             diffusion_savepoint=savepoint_diffusion_exit,
         ),
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        dtime=dtime,
+        benchmark,
     )
 
 

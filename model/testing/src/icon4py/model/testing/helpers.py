@@ -10,7 +10,7 @@ import functools
 import hashlib
 import typing
 from dataclasses import dataclass, field
-from typing import Any, Callable, ClassVar
+from typing import Callable, ClassVar
 
 import gt4py.next as gtx
 import numpy as np
@@ -105,31 +105,27 @@ class Output:
     gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
 
 
-def run_validate_and_benchmark(
-    func: Callable,
-    benchmark_fixture: pytest.FixtureRequest,
+def run_verify_and_benchmark(
+    test_func: Callable,
     verification_func: Callable,
-    *args: Any,
-    **kwargs: Any,
+    benchmark_fixture: pytest.FixtureRequest,
 ) -> None:
     """
-    Function to perform validation and benchmarking of func (along with normally executing it).
+    Function to perform verification and benchmarking of test_func (along with normally executing it).
 
     Args:
-        func: function to be ran, validated and benchmarked
+        test_func: function to be ran, verified and benchmarked ** with binded arguments -functools.partial()- **
+        verification_func: function to be used for verification of test_func ** with binded arguments -functools.partial()- **
         benchmark_fixture: pytest-benchmark fixture
-        verification_func: function to be used for verification with binded arguments -functools.partial()-
-        *args: positional arguments to be passed to func
-        **kwargs: keyword arguments to be passed to func
     """
-    func(*args, **kwargs)
+    test_func()
     verification_func()
 
     if benchmark_fixture.enabled:
-        benchmark_fixture(func, *args, **kwargs)
+        benchmark_fixture(test_func)
 
 
-def _validate_stencil_test(
+def _verify_stencil_test(
     self,
     input_data: dict,
     reference_outputs,
@@ -145,7 +141,7 @@ def _validate_stencil_test(
             input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
-            err_msg=f"Validation failed for '{name}'",
+            err_msg=f"Verification failed for '{name}'",
         )
 
 
@@ -168,17 +164,19 @@ def _test_and_benchmark(
 
     input_data = allocate_data(backend, input_data)
 
-    run_validate_and_benchmark(
-        self.PROGRAM.with_backend(backend),
-        benchmark,
+    run_verify_and_benchmark(
         functools.partial(
-            _validate_stencil_test,
+            self.PROGRAM.with_backend(backend),
+            **input_data,
+            offset_provider=grid.offset_providers,
+        ),
+        functools.partial(
+            _verify_stencil_test,
             self=self,
             input_data=input_data,
             reference_outputs=reference_outputs,
         ),
-        **input_data,
-        offset_provider=grid.offset_providers,
+        benchmark,
     )
 
 
