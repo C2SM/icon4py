@@ -10,7 +10,7 @@ import functools
 import hashlib
 import typing
 from dataclasses import dataclass, field
-from typing import Callable, ClassVar
+from typing import Callable, ClassVar, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -108,7 +108,7 @@ class Output:
 def run_verify_and_benchmark(
     test_func: Callable[[], None],
     verification_func: Callable[[], None],
-    benchmark_fixture: pytest.FixtureRequest,
+    benchmark_fixture: Optional[pytest.FixtureRequest],
 ) -> None:
     """
     Function to perform verification and benchmarking of test_func (along with normally executing it).
@@ -124,7 +124,7 @@ def run_verify_and_benchmark(
     test_func()
     verification_func()
 
-    if benchmark_fixture.enabled:
+    if benchmark_fixture is not None and benchmark_fixture.enabled:
         benchmark_fixture(test_func)
 
 
@@ -154,7 +154,7 @@ def _test_and_benchmark(
     backend: gtx_backend.Backend,
     connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field],
-    benchmark,  # benchmark fixture
+    benchmark: pytest.FixtureRequest,
 ):
     if self.MARKERS is not None:
         apply_markers(self.MARKERS, grid, backend)

@@ -435,8 +435,9 @@ def test_run_diffusion_single_step(
     if orchestration and not helpers.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
 
-    if benchmark.enabled and experiment == dt_utils.REGIONAL_EXPERIMENT:
-        pytest.skip("Benchmarking skipped for this parameter subset.")
+    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+        # Skip benchmarks for this experiment
+        benchmark = None
 
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
