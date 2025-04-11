@@ -83,7 +83,7 @@ def _compute_k_start_end(
     thhgtd_zdiffu: float,
     nlev: int,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     
     condition1 = array_ns.logical_or(maxslp_avg >= thslp_zdiffu, maxhgtd_avg >= thhgtd_zdiffu)
     cell_mask = array_ns.tile(
