@@ -369,8 +369,7 @@ def _apply_divergence_damping_and_update_vn(
         else broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim))
     )
 
-    next_vn = (
-        concat_where(
+    next_vn = concat_where(
             (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=current_vn,
@@ -386,9 +385,9 @@ def _apply_divergence_damping_and_update_vn(
             ),
             next_vn,
         )
-        if itime_scheme == 4
-        else next_vn
-    )
+    #     if (itime_scheme == 4)
+    #     else next_vn
+    # )
 
     next_vn = (
         concat_where(
@@ -453,7 +452,7 @@ def _apply_divergence_damping_and_update_vn(
             ),
             next_vn,
         )
-        if is_iau_active
+        if (is_iau_active)
         else next_vn
     )
 

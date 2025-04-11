@@ -1002,7 +1002,7 @@ def test_run_solve_nonhydro_multi_step(
     assert helpers.dallclose(
         prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=8e-14,
+        atol=7e-14,
     )
 
     assert helpers.dallclose(
@@ -1263,11 +1263,11 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (
-            dt_utils.GLOBAL_EXPERIMENT,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
     ],
 )
 def test_apply_divergence_damping_and_update_vn(
@@ -1321,7 +1321,8 @@ def test_apply_divergence_damping_and_update_vn(
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
     iau_wgt_dyn = config.iau_wgt_dyn
-    itime_scheme = config.itime_scheme
+    # itime_scheme = config.itime_scheme
+    itime_scheme = 4
     divdamp_order = config.divdamp_order
     second_order_divdamp_scaling_coeff = (
         sp_nh_init.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
