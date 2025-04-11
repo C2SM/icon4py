@@ -81,14 +81,10 @@ def _compute_k_start_end(
     c_owner_mask: data_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
-    cell_nudging: int,
-    n_cells: int,
     nlev: int,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    k_start = array_ns.zeros(n_cells, dtype=int)
-    k_end = array_ns.zeros(n_cells, dtype=int)
-
+    
     condition1 = array_ns.logical_or(maxslp_avg >= thslp_zdiffu, maxhgtd_avg >= thhgtd_zdiffu)
     cell_mask = array_ns.tile(
         array_ns.where(condition1[:, nlev - 1], c_owner_mask, False), (nlev, 1)
@@ -104,26 +100,7 @@ def _compute_k_start_end(
     kstart = array_ns.where(kstart > kend, nlev, kstart)
     cell_index_cell_mask = array_ns.where(kend > kstart, True, False)
     
-    for jc in range(cell_nudging, n_cells):
-        if (
-            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
-        ) and c_owner_mask[jc]:
-            for jk in reversed(range(nlev)):
-                if z_mc[jc, jk] >= max_nbhgt[jc]:
-                    k_end[jc] = jk + 1
-                    break
-
-            for jk in range(nlev):
-                if maxslp_avg[jc, jk] >= thslp_zdiffu or maxhgtd_avg[jc, jk] >= thhgtd_zdiffu:
-                    k_start[jc] = jk
-                    break
-
-            if all((k_start[jc], k_end[jc])) and k_start[jc] > k_end[jc]:
-                k_start[jc] = nlev
-
-    assert array_ns.allclose(k_start[cell_nudging:], kstart[cell_nudging:])
-    assert array_ns.allclose(k_end[cell_nudging:], kend[cell_nudging:])
-    return k_start, k_end, kstart, kend, cell_index_cell_mask
+    return kstart, kend, cell_index_cell_mask
 
 
 # TODO (@halungge) refactor this to fully get rid of the lists
@@ -150,7 +127,7 @@ def compute_diffusion_metrics(
     zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
-    k_start, k_end, kstart, kend, mask = _compute_k_start_end(
+    k_start, k_end, mask = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
         maxslp_avg=maxslp_avg,
@@ -158,8 +135,6 @@ def compute_diffusion_metrics(
         c_owner_mask=c_owner_mask,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
-        cell_nudging=cell_nudging,
-        n_cells=n_cells,
         nlev=nlev,
         array_ns=array_ns,
     )
@@ -168,7 +143,7 @@ def compute_diffusion_metrics(
 
     # go back to loop for now... then fix _compute_nbidx, _compute_z_vintcoeff
     for jc  in range(cell_nudging, n_cells):
-        if kend[jc] > kstart[jc]:
+        if k_end[jc] > k_start[jc]:
             k_range = range(k_start[jc], k_end[jc])
             nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)
             z_vintcoeff[jc, :, :] = _compute_z_vintcoeff(
