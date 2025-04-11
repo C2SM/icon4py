@@ -26,9 +26,7 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
     init_cell_kdim_field_with_zero_wp,
 )
 
-from icon4py.model.atmosphere.dycore.stencils.compute_perturbed_quantities_and_interpolation import compute_perturbed_quantities_and_interpolation
-from icon4py.model.atmosphere.dycore.stencils.interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient import interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient
-
+from icon4py.model.atmosphere.dycore.stencils import compute_cell_diagnostics_for_dycore
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
@@ -627,11 +625,11 @@ class SolveNonhydro:
             self._backend
         )
         self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
-        self._compute_perturbed_quantities_and_interpolation = compute_perturbed_quantities_and_interpolation.with_backend(
+        self._compute_perturbed_quantities_and_interpolation = compute_cell_diagnostics_for_dycore.compute_perturbed_quantities_and_interpolation.with_backend(
             self._backend
         )
 
-        self._interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient = interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient.with_backend(
+        self._interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient = compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient.with_backend(
             self._backend
         )
         self._compute_horizontal_advection_of_rho_and_theta = (
@@ -702,7 +700,7 @@ class SolveNonhydro:
         """
         Declared as z_exner_ex_pr in ICON.
         """
-        self.exner_on_half_levels = data_alloc.zero_field(
+        self.exner_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
         """
@@ -1020,30 +1018,30 @@ class SolveNonhydro:
         )
 
         self._compute_perturbed_quantities_and_interpolation(
+            temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            perturbed_exner_at_cells_on_model_levels=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
+            exner_at_cells_on_half_levels=self.exner_at_cells_on_half_levels,
+            perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
+            perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
+            rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
+            perturbed_theta_v_at_cells_on_half_levels=self.perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             current_rho=prognostic_states.current.rho,
             reference_rho_at_cells_on_model_levels=self._metric_state_nonhydro.reference_rho_at_cells_on_model_levels,
             current_theta_v=prognostic_states.current.theta_v,
             reference_rho_at_cells_on_model_levels=self._metric_state_nonhydro.reference_rho_at_cells_on_model_levels,
-            perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_half_levels=self.perturbed_theta_v_at_cells_on_half_levels,
             reference_theta_at_cells_on_half_levels=self._metric_state_nonhydro.reference_theta_at_cells_on_half_levels,
             wgtfacq_c=self._metric_state_nonhydro.wgtfacq_c,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
-            perturbed_exner_at_cells_on_model_levels=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
             ddz_of_reference_exner_at_cells_on_half_levels=self._metric_state_nonhydro.ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             ddz_of_perturbed_temperature_at_cells_on_half_levels=self.ddz_of_perturbed_temperature_at_cells_on_half_levels,
-            rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
-            exner_on_half_levels=self.exner_on_half_levels,
             time_extrapolation_parameter_for_exner=self._metric_state_nonhydro.time_extrapolation_parameter_for_exner,
             current_exner=prognostic_states.current.exner,
             reference_exner_at_cells_on_model_levels=self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
-            temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
             d2dexdz2_fac2_mc=self._metric_state_nonhydro.d2dexdz2_fac2_mc,
@@ -1652,31 +1650,29 @@ class SolveNonhydro:
         log.debug(f"corrector: start stencil 10")
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient(
+            rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
+            perturbed_theta_v_at_cells_on_half_levels=self.perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
+            ddz_of_perturbed_temperature_at_cells_on_half_levels=self.ddz_of_perturbed_temperature_at_cells_on_half_levels,
             w=prognostic_states.next.w,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             current_rho=prognostic_states.current.rho,
             next_rho=prognostic_states.next.rho,
             current_theta_v=prognostic_states.current.theta_v,
             next_theta_v=prognostic_states.next.theta_v,
-            wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
+            perturbed_exner_at_cells_on_model_levels=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
             reference_theta_at_cells_on_model_levels=self._metric_state_nonhydro.reference_theta_at_cells_on_model_levels,
-            vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
-            exner_pr=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
             ddz_of_reference_exner_at_cells_on_half_levels=self._metric_state_nonhydro.ddz_of_reference_exner_at_cells_on_half_levels,
-            rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
-            z_theta_v_pr_ic=self.perturbed_theta_v_at_cells_on_half_levels,
-            theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            z_th_ddz_exner_c=self.ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
+            wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
+            vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
             dtime=dtime,
             wgt_nnow_rth=self._params.wgt_nnow_rth,
             wgt_nnew_rth=self._params.wgt_nnew_rth,
             horz_idx=self.cell_field,
             vert_idx=self.k_field,
-            start_cell_lateral_boundary_level_3=self._start_cell_lateral_boundary_level_3,
-            end_cell_local=self._end_cell_local,
-            horizontal_start=gtx.int32(0),
-            horizontal_end=gtx.int32(self._grid.num_cells),
+            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(1),
             vertical_end=gtx.int32(self._grid.num_levels),
             offset_provider=self._grid.offset_providers,
@@ -1753,7 +1749,7 @@ class SolveNonhydro:
         # TODO: this does not get accessed in FORTRAN
         if (
             self._config.divdamp_order == DivergenceDampingOrder.COMBINED
-            and divdamp_fac_o2 <= 4 * self._config.divdamp_fac
+            and divdamp_fac_o2 <= 4 * self._config.fourth_order_divdamp_factor
         ):
             if self._grid.limited_area:
                 log.debug("corrector: start stencil 27")
