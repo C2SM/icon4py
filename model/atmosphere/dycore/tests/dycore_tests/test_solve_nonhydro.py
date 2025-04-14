@@ -1429,16 +1429,14 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical
 
     assert helpers.dallclose(
         perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_local, 1:
-        ],
-        z_theta_v_pr_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_local, 1:],
-        atol=1e-9,
+            start_cell_lateral_boundary_level_3:end_cell_local, 1:icon_grid.num_levels],
+        z_theta_v_pr_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_local, 1:icon_grid.num_levels],
+        rtol=1e-10,
     )
 
     assert helpers.dallclose(
         ddz_of_perturbed_temperature_at_cells_on_half_levels.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_local, 1:
-        ],
-        z_th_ddz_exner_c_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_local, 1:],
-        atol=1e-9,
+            start_cell_lateral_boundary_level_3:end_cell_local, 1:icon_grid.num_levels],
+        z_th_ddz_exner_c_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_local, 1:icon_grid.num_levels],
+        rtol=1e-10,
     )
