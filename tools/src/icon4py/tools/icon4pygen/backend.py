@@ -10,7 +10,7 @@ import warnings
 from pathlib import Path
 from typing import Any, Iterable, List
 
-from gt4py.next.common import DimensionKind, OffsetProvider
+from gt4py.next import common as gtx_common
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.ir_utils import ir_makers as im
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
@@ -67,7 +67,9 @@ def transform_and_configure_fencil(
                 itir.FunCall(
                     fun=itir.SymRef(id="named_range"),
                     args=[
-                        itir.AxisLiteral(value=dims.Koff.source.value, kind=DimensionKind.VERTICAL),
+                        itir.AxisLiteral(
+                            value=dims.Koff.source.value, kind=gtx_common.DimensionKind.VERTICAL
+                        ),
                         itir.SymRef(id=V_START),
                         itir.SymRef(id=V_END),
                     ],
@@ -120,7 +122,7 @@ def check_for_domain_bounds(program: itir.Program) -> None:
 
 def generate_gtheader(
     program: itir.Program,
-    offset_provider: OffsetProvider,
+    offset_provider: gtx_common.OffsetProvider,
     imperative: bool,
     temporaries: bool,
     **kwargs: Any,

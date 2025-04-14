@@ -5,19 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import update_mass_volume_flux
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
 def update_mass_volume_flux_numpy(
-    grid,
+    connectivities,
     z_contr_w_fl_l: np.ndarray,
     rho_ic: np.ndarray,
     vwind_impl_wgt: np.ndarray,
@@ -42,7 +45,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         z_contr_w_fl_l: np.ndarray,
         rho_ic: np.ndarray,
         vwind_impl_wgt: np.ndarray,
@@ -50,10 +53,10 @@ class TestUpdateMassVolumeFlux(StencilTest):
         mass_flx_ic: np.ndarray,
         vol_flx_ic: np.ndarray,
         r_nsubsteps: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         (mass_flx_ic, mass_flx_ic) = update_mass_volume_flux_numpy(
-            grid,
+            connectivities,
             z_contr_w_fl_l=z_contr_w_fl_l,
             rho_ic=rho_ic,
             vwind_impl_wgt=vwind_impl_wgt,
@@ -65,13 +68,13 @@ class TestUpdateMassVolumeFlux(StencilTest):
         return dict(mass_flx_ic=mass_flx_ic, vol_flx_ic=vol_flx_ic)
 
     @pytest.fixture
-    def input_data(self, grid):
-        z_contr_w_fl_l = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        mass_flx_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        vol_flx_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_contr_w_fl_l = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        mass_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        vol_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         r_nsubsteps = 7.0
 
         return dict(

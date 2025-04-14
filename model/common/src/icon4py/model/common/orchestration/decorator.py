@@ -179,12 +179,22 @@ def orchestrate(
                 }
 
                 sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
+                if func_is_method:
+                    del sdfg_args[self_name]
 
                 with dace.config.temporary_config():
                     configure_dace_temp_env(default_build_folder, self._backend)
                     return compiled_sdfg(**sdfg_args)
             else:
                 return fuse_func(*args, **kwargs)
+
+        # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
+        # This leads to corrupted cache and subsequent errors.
+        # To avoid this, we provide a way to clear the cache.
+        def clear_cache():
+            orchestrator_cache.clear()
+
+        wrapper.clear_cache = clear_cache
 
         return wrapper
 
@@ -306,6 +316,21 @@ def wait(comm_handle: Union[int, decomposition.ExchangeResult]):
         pass
     else:
         comm_handle.wait()
+
+
+def build_compile_time_connectivities(
+    offset_providers: dict[str, gtx.common.Connectivity],
+) -> dict[str, gtx.common.Connectivity]:
+    connectivities = {}
+    for k, v in offset_providers.items():
+        if hasattr(v, "table"):
+            connectivities[k] = gtx.otf.arguments.CompileTimeConnectivity(
+                v.max_neighbors, v.has_skip_values, v.origin_axis, v.neighbor_axis, v.table.dtype
+            )
+        else:
+            connectivities[k] = v
+
+    return connectivities
 
 
 if dace:
@@ -520,9 +545,9 @@ if dace:
         return {
             # connectivity tables at runtime
             **{
-                gtx_dace_utils.connectivity_identifier(k): v.ndarray
+                gtx_dace_utils.connectivity_identifier(k): v.table
                 for k, v in offset_providers.items()
-                if hasattr(v, "ndarray")
+                if hasattr(v, "table")
             },
             # GHEX C++ ptrs
             "__context_ptr": expose_cpp_ptr(exchange_obj._context)
@@ -611,8 +636,8 @@ if dace:
 
         return {
             **{
-                "CellDim_sym": grid.offset_providers["C2E"].ndarray.shape[0],
-                "EdgeDim_sym": grid.offset_providers["E2C"].ndarray.shape[0],
+                "CellDim_sym": grid.offset_providers["C2E"].table.shape[0],
+                "EdgeDim_sym": grid.offset_providers["E2C"].table.shape[0],
                 "KDim_sym": grid.num_levels,
             },
             **concretize_symbols_for_dace_structure,

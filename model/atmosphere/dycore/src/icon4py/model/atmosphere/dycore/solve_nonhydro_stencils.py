@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
@@ -61,9 +60,6 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp 
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     _init_cell_kdim_field_with_zero_wp,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
-    _interpolate_to_half_levels_vp,
-)
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
@@ -79,7 +75,9 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
+    _interpolate_cell_field_to_half_levels_vp,
+)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -169,7 +167,7 @@ def predictor_stencils_4_5_6(
             dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
-    _interpolate_to_half_levels_vp(
+    _interpolate_cell_field_to_half_levels_vp(
         wgtfac_c,
         z_exner_ex_pr,
         out=z_exner_ic,
@@ -517,7 +515,7 @@ def _stencils_39_40(
     nlev: gtx.int32,
 ) -> fa.CellKField[float]:
     w_concorr_c = concat_where(
-        dims.KDim >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
+        dims.KDim >= nflatlev_startindex_plus1,
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )
@@ -600,7 +598,7 @@ def _stencils_42_44_45(
     fa.CellKField[float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = concat_where(
-        1 <= dims.KDim < nlev,
+        (1 <= dims.KDim) & (dims.KDim < nlev),
         _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -618,7 +616,7 @@ def _stencils_42_44_45(
     )
 
     (z_beta, z_alpha) = concat_where(
-        0 <= dims.KDim < nlev,
+        dims.KDim < nlev,
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
@@ -633,7 +631,7 @@ def _stencils_42_44_45(
         ),
         (z_beta, z_alpha),
     )
-    z_q = concat_where(dims.KDim == 0, broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), z_q)
+    z_q = concat_where(dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -744,7 +742,7 @@ def _stencils_43_44_45(
     fa.CellKField[float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = concat_where(
-        1 <= dims.KDim < nlev,
+        (1 <= dims.KDim) & (dims.KDim < nlev),
         _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -758,7 +756,7 @@ def _stencils_43_44_45(
         (z_w_expl, z_contr_w_fl_l),
     )
     (z_beta, z_alpha) = concat_where(
-        0 <= dims.KDim < nlev,
+        dims.KDim < nlev,
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
@@ -773,8 +771,7 @@ def _stencils_43_44_45(
         ),
         (z_beta, z_alpha),
     )
-    # z_q = concat_where(dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
-    z_q = concat_where(dims.KDim == 0, broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), z_q)
+    z_q = concat_where(dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 

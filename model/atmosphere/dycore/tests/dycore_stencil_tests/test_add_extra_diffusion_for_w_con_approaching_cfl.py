@@ -5,14 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.type_alias as ta
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, random_mask
 from icon4py.model.testing.helpers import StencilTest
@@ -20,7 +25,6 @@ from icon4py.model.testing.helpers import StencilTest
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    levmask: np.ndarray,
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     z_w_con_c: np.ndarray,
@@ -29,17 +33,16 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     geofac_n2s: np.ndarray,
     w: np.ndarray,
     ddt_w_adv: np.ndarray,
-    scalfac_exdiff: float,
-    cfl_w_limit: float,
-    dtime: float,
+    scalfac_exdiff: ta.wpfloat,
+    cfl_w_limit: ta.wpfloat,
+    dtime: ta.wpfloat,
 ) -> np.ndarray:
-    levmask = np.expand_dims(levmask, axis=0)
     owner_mask = np.expand_dims(owner_mask, axis=-1)
     area = np.expand_dims(area, axis=-1)
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
 
     difcoef = np.where(
-        (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+        (cfl_clipping == 1) & (owner_mask == 1),
         scalfac_exdiff
         * np.minimum(
             0.85 - cfl_w_limit * dtime,
@@ -50,7 +53,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
 
     c2e2cO = connectivities[dims.C2E2CODim]
     ddt_w_adv = np.where(
-        (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+        (cfl_clipping == 1) & (owner_mask == 1),
         ddt_w_adv
         + difcoef
         * area
@@ -75,7 +78,6 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        levmask: np.ndarray,
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
         z_w_con_c: np.ndarray,
@@ -84,14 +86,13 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         geofac_n2s: np.ndarray,
         w: np.ndarray,
         ddt_w_adv: np.ndarray,
-        scalfac_exdiff: wpfloat,
-        cfl_w_limit: wpfloat,
-        dtime: wpfloat,
-        **kwargs,
-    ):
+        scalfac_exdiff: ta.wpfloat,
+        cfl_w_limit: ta.wpfloat,
+        dtime: ta.wpfloat,
+        **kwargs: Any,
+    ) -> dict:
         ddt_w_adv = add_extra_diffusion_for_w_con_approaching_cfl_numpy(
             connectivities,
-            levmask,
             cfl_clipping,
             owner_mask,
             z_w_con_c,
@@ -107,8 +108,7 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
-    def input_data(self, grid):
-        levmask = random_mask(grid, dims.KDim)
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)
         owner_mask = random_mask(grid, dims.CellDim)
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
@@ -122,7 +122,6 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         dtime = wpfloat("2.0")
 
         return dict(
-            levmask=levmask,
             cfl_clipping=cfl_clipping,
             owner_mask=owner_mask,
             z_w_con_c=z_w_con_c,

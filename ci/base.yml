@@ -61,7 +61,7 @@ build_image_aarch64:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
-    SLURM_TIMELIMIT: '06:00:00'
+    SLURM_TIMELIMIT: '03:00:00'
     CRAY_CUDA_MPS: 1
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
@@ -81,6 +81,8 @@ build_image_aarch64:
   extends: [.container-runner-santis-gh200, .test_template]
   needs: [build_image_aarch64]
   variables:
+    RUNNER: "ci-runner"
+    SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_002:$TEST_DATA_PATH"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build

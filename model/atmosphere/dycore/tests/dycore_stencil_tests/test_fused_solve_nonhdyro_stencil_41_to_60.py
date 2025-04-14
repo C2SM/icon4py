@@ -19,6 +19,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
@@ -27,8 +28,13 @@ from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_41_to_60 impor
     fused_solve_nonhydro_stencil_41_to_60,
 )
 from icon4py.model.atmosphere.dycore.solve_nonhydro import TimeSteppingScheme
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    type_alias as ta,
+)
+from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -71,12 +77,12 @@ from .test_update_mass_volume_flux import (
 
 
 def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-    grid,
+    connectivities,
     geofac_div: np.ndarray,
     mass_fl_e: np.ndarray,
     z_theta_v_fl_e: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    c2e = grid[dims.C2EDim]
+    c2e = connectivities[dims.C2EDim]
     c2ce = helpers.as_1d_connectivity(c2e)
     geofac_div = np.expand_dims(geofac_div, axis=-1)
 
@@ -111,7 +117,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
     @classmethod
     def reference(
         cls,
-        grid,
+        connectivities,
         geofac_div: np.ndarray,
         mass_fl_e: np.ndarray,
         z_theta_v_fl_e: np.ndarray,
@@ -153,17 +159,17 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
         vert_idx: np.ndarray,
         mass_flx_ic: np.ndarray,
         vol_flx_ic: np.ndarray,
-        wgt_nnow_vel: float,
-        wgt_nnew_vel: float,
-        itime_scheme: float,
+        wgt_nnow_vel: ta.wpfloat,
+        wgt_nnew_vel: ta.wpfloat,
+        itime_scheme: ta.wpfloat,
         lprep_adv: bool,
-        r_nsubsteps: float,
-        cvd_o_rd: float,
-        iau_wgt_dyn: float,
-        dtime: float,
-        rd: float,
-        cvd: float,
-        cpd: float,
+        r_nsubsteps: ta.wpfloat,
+        cvd_o_rd: ta.wpfloat,
+        iau_wgt_dyn: ta.wpfloat,
+        dtime: ta.wpfloat,
+        rd: ta.wpfloat,
+        cvd: ta.wpfloat,
+        cpd: ta.wpfloat,
         rayleigh_klemp: int,
         l_vert_nested: bool,
         is_iau_active: bool,
@@ -180,7 +186,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
         at_first_substep: bool,
         vertical_start: int,
         vertical_end: int,
-    ):
+    ) -> tuple[np.ndarray]:
         horz_idx = np.asarray(np.arange(vol_flx_ic.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
         if istep == 1:
@@ -188,7 +194,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
             z_flxdiv_mass, z_flxdiv_theta = np.where(
                 (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
                 compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     geofac_div=geofac_div,
                     mass_fl_e=mass_fl_e,
                     z_theta_v_fl_e=z_theta_v_fl_e,
@@ -202,7 +208,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 & (vert_idx >= int32(1))
                 & (vert_idx < n_lev),
                 compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     w_nnow=w_nnow,
                     ddt_w_adv_ntl1=ddt_w_adv_ntl1,
                     z_th_ddz_exner_c=z_th_ddz_exner_c,
@@ -220,7 +226,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 & (vert_idx >= int32(0))
                 & (vert_idx < n_lev),
                 compute_solver_coefficients_matrix_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     exner_nnow=exner_nnow,
                     rho_nnow=rho_nnow,
                     theta_v_nnow=theta_v_nnow,
@@ -238,7 +244,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 (start_cell_nudging <= horz_idx)
                 & (horz_idx < end_cell_local)
                 & (vert_idx == n_lev),
-                0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(grid=grid, z_alpha=z_alpha[:, :n_lev]),
+                0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha[:, :n_lev]),
                 z_alpha[:, :n_lev],
             )
             z_q = np.where(
@@ -258,7 +264,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 & (horz_idx < end_cell_local)
                 & (vert_idx == n_lev),
                 set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     w_concorr_c=w_concorr_c[:, :n_lev],
                     z_contr_w_fl_l=z_contr_w_fl_l[:, :n_lev],
                 ),
@@ -271,7 +277,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 & (vert_idx >= int32(0))
                 & (vert_idx < n_lev),
                 compute_explicit_part_for_rho_and_exner_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     rho_nnow=rho_nnow,
                     inv_ddqz_z_full=inv_ddqz_z_full,
                     z_flxdiv_mass=z_flxdiv_mass,
@@ -290,7 +296,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 (z_rho_expl, z_exner_expl) = np.where(
                     (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
                     add_analysis_increments_from_data_assimilation_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         z_rho_expl=z_rho_expl,
                         z_exner_expl=z_exner_expl,
                         rho_incr=rho_incr,
@@ -320,7 +326,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
             w[:, :n_lev] = np.where(
                 (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
                 solve_tridiagonal_matrix_for_w_back_substitution_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     z_q=z_q,
                     w=w[:, :n_lev],
                 ),
@@ -335,7 +341,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     & (vert_idx >= 1)
                     & (vert_idx < (index_of_damping_layer + 1)),
                     apply_rayleigh_damping_mechanism_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         z_raylfac=z_raylfac,
                         w_1=w_1,
                         w=w[:, :n_lev],
@@ -348,7 +354,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 & (horz_idx < end_cell_local)
                 & (vert_idx >= jk_start),
                 compute_results_for_thermodynamic_variables_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     z_rho_expl=z_rho_expl,
                     vwind_impl_wgt=vwind_impl_wgt,
                     inv_ddqz_z_full=inv_ddqz_z_full,
@@ -374,7 +380,10 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     & (horz_idx < end_cell_local)
                     & (vert_idx >= kstart_dd3d),
                     compute_dwdz_for_divergence_damping_numpy(
-                        grid=grid, inv_ddqz_z_full=inv_ddqz_z_full, w=w, w_concorr_c=w_concorr_c
+                        connectivities=connectivities,
+                        inv_ddqz_z_full=inv_ddqz_z_full,
+                        w=w,
+                        w_concorr_c=w_concorr_c,
                     ),
                     z_dwdz_dd,
                 )
@@ -384,7 +393,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     (start_cell_nudging <= horz_idx)
                     & (horz_idx < end_cell_local)
                     & (vert_idx >= kstart_moist),
-                    exner_dyn_incr.astype(fa.vpfloat),
+                    exner_dyn_incr.astype(ta.vpfloat),
                     # _copy_cell_kdim_field_to_vp_numpy(),
                     exner_dyn_incr,
                 )
@@ -394,7 +403,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
             z_flxdiv_mass, z_flxdiv_theta = np.where(
                 (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
                 compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     geofac_div=geofac_div,
                     mass_fl_e=mass_fl_e,
                     z_theta_v_fl_e=z_theta_v_fl_e,
@@ -409,7 +418,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     & (vert_idx >= int32(1))
                     & (vert_idx < n_lev),
                     compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         w_nnow=w_nnow,
                         ddt_w_adv_ntl1=ddt_w_adv_ntl1,
                         ddt_w_adv_ntl2=ddt_w_adv_ntl2,
@@ -431,7 +440,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     & (vert_idx >= int32(0))
                     & (vert_idx < n_lev),
                     compute_solver_coefficients_matrix_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         exner_nnow=exner_nnow,
                         rho_nnow=rho_nnow,
                         theta_v_nnow=theta_v_nnow,
@@ -449,7 +458,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     (start_cell_nudging <= horz_idx)
                     & (horz_idx < end_cell_local)
                     & (vert_idx == n_lev),
-                    0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(grid=grid, z_alpha=z_alpha[:, :n_lev]),
+                    0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha[:, :n_lev]),
                     z_alpha[:, :n_lev],
                 )
 
@@ -468,7 +477,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     & (vert_idx >= int32(1))
                     & (vert_idx < n_lev),
                     compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         w_nnow=w_nnow,
                         ddt_w_adv_ntl1=ddt_w_adv_ntl1,
                         z_th_ddz_exner_c=z_th_ddz_exner_c,
@@ -486,7 +495,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     & (vert_idx >= int32(0))
                     & (vert_idx < n_lev),
                     compute_solver_coefficients_matrix_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         exner_nnow=exner_nnow,
                         rho_nnow=rho_nnow,
                         theta_v_nnow=theta_v_nnow,
@@ -504,7 +513,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     (start_cell_nudging <= horz_idx)
                     & (horz_idx < end_cell_local)
                     & (vert_idx == n_lev),
-                    0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(grid=grid, z_alpha=z_alpha),
+                    0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha),
                     z_alpha,
                 )
                 z_q = np.where(
@@ -524,7 +533,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 #     & (vert_idx == 0),
                 #     (0., 0.),
                 #     # _init_two_cell_kdim_fields_with_zero_wp_numpy(
-                #     #     grid=grid,
+                #     #     connectivities=connectivities,
                 #     #     w_nnew=w[:, :n_lev],
                 #     #     z_contr_w_fl_l=z_contr_w_fl_l[:, :n_lev],
                 #     # ),
@@ -536,7 +545,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 & (horz_idx < end_cell_local)
                 & (vert_idx == n_lev),
                 set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-                    grid, w_concorr_c[:, :n_lev], z_contr_w_fl_l[:, :n_lev]
+                    connectivities, w_concorr_c[:, :n_lev], z_contr_w_fl_l[:, :n_lev]
                 ),
                 (w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
             )
@@ -547,7 +556,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 & (vert_idx >= int32(0))
                 & (vert_idx < n_lev),
                 compute_explicit_part_for_rho_and_exner_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     rho_nnow=rho_nnow,
                     inv_ddqz_z_full=inv_ddqz_z_full,
                     z_flxdiv_mass=z_flxdiv_mass,
@@ -566,7 +575,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 (z_rho_expl, z_exner_expl) = np.where(
                     (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
                     add_analysis_increments_from_data_assimilation_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         z_rho_expl=z_rho_expl,
                         z_exner_expl=z_exner_expl,
                         rho_incr=rho_incr,
@@ -597,7 +606,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
             w[:, :n_lev] = np.where(
                 (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
                 solve_tridiagonal_matrix_for_w_back_substitution_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     z_q=z_q,
                     w=w[:, :n_lev],
                 ),
@@ -612,7 +621,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                     & (vert_idx >= 1)
                     & (vert_idx < (index_of_damping_layer + 1)),
                     apply_rayleigh_damping_mechanism_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         z_raylfac=z_raylfac,
                         w_1=w_1,
                         w=w[:, :n_lev],
@@ -625,7 +634,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
                 & (horz_idx < end_cell_local)
                 & (vert_idx >= jk_start),
                 compute_results_for_thermodynamic_variables_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     z_rho_expl=z_rho_expl,
                     vwind_impl_wgt=vwind_impl_wgt,
                     inv_ddqz_z_full=inv_ddqz_z_full,
@@ -652,12 +661,13 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
             (mass_flx_ic, vol_flx_ic) = np.where(
                 (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
                 update_mass_volume_flux_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     z_contr_w_fl_l=z_contr_w_fl_l[:, :n_lev],
                     rho_ic=rho_ic[:, :n_lev],
                     vwind_impl_wgt=vwind_impl_wgt,
                     w=w[:, :n_lev],
                     mass_flx_ic=mass_flx_ic,
+                    vol_flx_ic=vol_flx_ic,
                     r_nsubsteps=r_nsubsteps,
                 ),
                 (mass_flx_ic, vol_flx_ic),
@@ -684,7 +694,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CEDim)
         mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -751,7 +761,7 @@ class TestFusedMoSolveNonHydroStencil41To60(helpers.StencilTest):
         start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
-        vert_idx = data_alloc.index_field(grid=grid, dim=dims.KDim)
+        vert_idx = data_alloc.index_field(grid, dim=dims.KDim)
 
         return dict(
             geofac_div=geofac_div,

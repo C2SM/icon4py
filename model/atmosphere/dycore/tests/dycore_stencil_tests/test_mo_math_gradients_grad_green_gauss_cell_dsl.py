@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,8 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -60,7 +64,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         p_ccpr2: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         (
             p_grad_1_u,
@@ -78,7 +82,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         p_ccpr1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         p_ccpr2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)

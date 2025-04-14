@@ -33,7 +33,7 @@ from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
 
 logger = setup_logger(__name__)
@@ -61,6 +61,7 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
+@icon4py_export.export
 def solve_nh_init(
     vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
@@ -285,6 +286,7 @@ def solve_nh_init(
     )
 
 
+@icon4py_export.export
 def solve_nh_run(
     rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     rho_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -347,11 +349,15 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         ddt_vn_phy=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
-        vt=vt,
-        vn_ie=vn_ie,
-        w_concorr_c=w_concorr_c,
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            ddt_vn_apc_ntl1, ddt_vn_apc_ntl2
+        ),
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            ddt_w_adv_ntl1, ddt_w_adv_ntl2
+        ),
+        tangential_wind=vt,
+        vn_on_half_levels=vn_ie,
+        contravariant_correction_at_cells_on_half_levels=w_concorr_c,
         rho_incr=None,  # sp.rho_incr,
         vn_incr=None,  # sp.vn_incr,
         exner_incr=None,  # sp.exner_incr,
