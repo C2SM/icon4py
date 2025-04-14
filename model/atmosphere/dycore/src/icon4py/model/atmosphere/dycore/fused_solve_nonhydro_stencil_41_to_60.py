@@ -19,7 +19,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.ffront.decorator import field_operator, program
+import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
 
@@ -66,8 +66,11 @@ from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+@gtx.scan_operator(axis=KDim, forward=False, init=0.0)
+def _w_1_scan(state: wpfloat, w_1: wpfloat) -> wpfloat:
+    return w_1 + state
 
-@field_operator
+@gtx.field_operator
 def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     geofac_div: Field[[CEDim], wpfloat],
     mass_fl_e: fa.EdgeKField[wpfloat],
@@ -137,15 +140,15 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    z_flxdiv_mass, z_flxdiv_theta = _compute_divergence_of_fluxes_of_rho_and_theta(
+    z_flxdiv_mass, z_flxdiv_theta = concat_where(
+        KDim < n_lev,
+        _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
-    )
+    ), (0.0, 0.0))
 
-    z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = concat_where(
-        KDim < n_lev,
-        _stencils_43_44_45(
+    z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = _stencils_43_44_45(
             z_w_expl=z_w_expl,
             w_nnow=w,
             ddt_w_adv_ntl1=ddt_w_adv_ntl1,
@@ -168,14 +171,13 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             dtime=dtime,
             cpd=cpd,
             nlev=n_lev,
-        ),
-        (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
-    )
+        )
+
     z_alpha = concat_where(KDim == n_lev, broadcast(vpfloat("0.0"), (CellDim, KDim)), z_alpha)
 
     w, z_contr_w_fl_l = (
         concat_where(
-            KDim < 1,
+            KDim == 0,
             (
                 broadcast(wpfloat("0.0"), (CellDim, KDim)),
                 broadcast(wpfloat("0.0"), (CellDim, KDim)),
@@ -209,19 +211,37 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         (z_rho_expl, z_exner_expl),
     )
 
-    z_rho_expl, z_exner_expl = (
+    z_rho_expl, z_exner_expl = concat_where(
+        KDim < n_lev,
         _add_analysis_increments_from_data_assimilation(
             z_rho_expl=z_rho_expl,
             z_exner_expl=z_exner_expl,
             rho_incr=rho_incr,
             exner_incr=exner_incr,
             iau_wgt_dyn=iau_wgt_dyn,
-        )
-        if is_iau_active
-        else (z_rho_expl, z_exner_expl)
-    )
+        ), (z_rho_expl, z_exner_expl)) if is_iau_active else (z_rho_expl, z_exner_expl)
 
-    (w_prev, z_q_prev, z_a, z_b, z_c, w_prep) = _solve_tridiagonal_matrix_for_w_forward_sweep(
+
+    # (w_prev, z_q_prev, z_a, z_b, z_c, w_prep) = concat_where(
+    #     KDim > 0,
+    #     _solve_tridiagonal_matrix_for_w_forward_sweep(
+    #     vwind_impl_wgt=vwind_impl_wgt,
+    #     theta_v_ic=theta_v_ic,
+    #     ddqz_z_half=ddqz_z_half,
+    #     z_alpha=z_alpha,
+    #     z_beta=z_beta,
+    #     z_w_expl=z_w_expl,
+    #     z_exner_expl=z_exner_expl,
+    #     z_q=z_q,
+    #     w=w,
+    #     dtime=dtime,
+    #     cpd=cpd,
+    # ), (0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    #
+    # (z_q, w, buffer) = _w(w_prev, z_q_prev, z_a, z_b, z_c, w_prep)
+
+    z_q, w = concat_where((KDim > 0) & (KDim < n_lev),
+        _solve_tridiagonal_matrix_for_w_forward_sweep_2(
         vwind_impl_wgt=vwind_impl_wgt,
         theta_v_ic=theta_v_ic,
         ddqz_z_half=ddqz_z_half,
@@ -233,17 +253,15 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         w=w,
         dtime=dtime,
         cpd=cpd,
-    )
-
-    (z_q, w, buffer) = _w(w_prev, z_q_prev, z_a, z_b, z_c, w_prep)
+    ), (z_q, w))
 
     w = _solve_tridiagonal_matrix_for_w_back_substitution_scan(z_q=z_q, w=w)
 
     w_1 = concat_where(KDim == 0, w, 0.0)
+    w_1 = _w_1_scan(w_1)
 
     w = (
-        concat_where(
-            1 <= KDim < index_of_damping_layer + 1,
+        concat_where((KDim > 0) & (KDim < index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism_w_1_broadcasted(
                 z_raylfac=z_raylfac,
                 w_1=w_1,
@@ -256,7 +274,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     )
 
     rho, exner, theta_v = concat_where(
-        jk_start <= KDim,
+        (jk_start <= KDim) & (KDim < n_lev),
         _compute_results_for_thermodynamic_variables(
             z_rho_expl=z_rho_expl,
             vwind_impl_wgt=vwind_impl_wgt,
@@ -279,7 +297,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     # compute dw/dz for divergence damping term
     z_dwdz_dd = (
         concat_where(
-            kstart_dd3d <= KDim,
+            (kstart_dd3d <= KDim) & (KDim < n_lev),
             _compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 w=w,
@@ -293,7 +311,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
 
     exner_dyn_incr = (
         concat_where(
-            kstart_moist <= KDim,
+            (kstart_moist <= KDim) & (KDim < n_lev),
             astype(exner_nnow, vpfloat),
             exner_dyn_incr,
         )
@@ -319,7 +337,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     geofac_div: Field[[CEDim], wpfloat],
     mass_fl_e: fa.EdgeKField[wpfloat],
@@ -610,7 +628,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     )
 
 
-@program
+@gtx.program
 def fused_solve_nonhydro_stencil_41_to_60_predictor(
     geofac_div: Field[[CEDim], wpfloat],
     mass_fl_e: fa.EdgeKField[wpfloat],
@@ -821,7 +839,7 @@ def fused_solve_nonhydro_stencil_41_to_60_predictor(
     )
 
 
-@program
+@gtx.program
 def fused_solve_nonhydro_stencil_41_to_60_corrector(
     geofac_div: Field[[CEDim], wpfloat],
     mass_fl_e: fa.EdgeKField[wpfloat],

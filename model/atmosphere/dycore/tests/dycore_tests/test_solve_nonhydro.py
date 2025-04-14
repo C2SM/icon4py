@@ -1029,7 +1029,7 @@ def test_run_solve_nonhydro_multi_step(
     assert helpers.dallclose(
         prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=8e-14,
+        atol=7e-14,
     )
 
     assert helpers.dallclose(
@@ -1360,7 +1360,7 @@ def test_run_solve_nonhydro_41_to_60(
     is_iau_active = params_config.is_iau_active
     divdamp_type = params_config.divdamp_type
     l_vert_nested = params_config.l_vert_nested
-    jk_start = icon_grid.num_levels - 1  # TODO: check - savepoint_nonhydro_41_60_init.jk_start()
+    jk_start = 0  # TODO: check - savepoint_nonhydro_41_60_init.jk_start()
 
     z_flxdiv_mass_ref = savepoint_nonhydro_exit.z_flxdiv_mass()
     z_flxdiv_theta_ref = savepoint_nonhydro_exit.z_flxdiv_theta()
