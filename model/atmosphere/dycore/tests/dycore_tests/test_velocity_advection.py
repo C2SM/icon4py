@@ -443,7 +443,7 @@ def test_velocity_corrector_step(
     )
 
 
-@pytest.mark.dataset
+@pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -582,7 +582,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     )
 
 
-@pytest.mark.dataset
+@pytest.mark.datatest
 @pytest.mark.infinite_concat_where
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
