@@ -4,8 +4,10 @@ include:
 .test_model_stencils:
   stage: test
   script:
-	@@ -11,12 +10,7 @@ include:
-      GRID: [simple_grid, icon_grid]
+    - nox -s test_model-3.10 -t stencils -- --backend=$BACKEND --grid=$GRID
+  parallel:
+    matrix:
+    - BACKEND: [dace_cpu, dace_gpu]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
