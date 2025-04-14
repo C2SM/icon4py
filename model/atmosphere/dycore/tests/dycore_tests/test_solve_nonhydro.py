@@ -1202,7 +1202,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     z_rth_pr_1_ref = sp_ref.z_rth_pr(0)
     z_rth_pr_2_ref = sp_ref.z_rth_pr(1)
     z_exner_ex_pr_ref = sp_ref.z_exner_ex_pr()
-    exner_pr_ref = sp_ref.exner_pr()
+    exner_pr_ref = sp_exit.exner_pr()
     rho_ic_ref = sp_exit.rho_ic()
     z_exner_ic_ref = sp_exit.z_exner_ic()
     z_theta_v_pr_ic_ref = sp_ref.z_theta_v_pr_ic()
