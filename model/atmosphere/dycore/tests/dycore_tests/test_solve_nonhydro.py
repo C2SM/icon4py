@@ -1203,7 +1203,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     z_rth_pr_2_ref = sp_ref.z_rth_pr(1)
     z_exner_ex_pr_ref = sp_ref.z_exner_ex_pr()
     exner_pr_ref = sp_ref.exner_pr()
-    rho_ic_ref = sp_ref.rho_ic()
+    rho_ic_ref = sp_exit.rho_ic()
     z_exner_ic_ref = sp_exit.z_exner_ic()
     z_theta_v_pr_ic_ref = sp_ref.z_theta_v_pr_ic()
     theta_v_ic_ref = sp_ref.theta_v_ic()
@@ -1428,8 +1428,10 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical
     )
 
     assert helpers.dallclose(
-        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[:, :],
-        z_theta_v_pr_ic_ref.asnumpy()[:, :],
+        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_local, 1:
+        ],
+        z_theta_v_pr_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_local, 1:],
         atol=1e-9,
     )
 

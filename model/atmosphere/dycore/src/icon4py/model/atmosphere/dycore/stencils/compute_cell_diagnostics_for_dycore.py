@@ -23,7 +23,7 @@ import gt4py.next as gtx
 from gt4py.next import program
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator
-from gt4py.next.ffront.fbuiltins import bool, broadcast, maximum, where, astype, 
+from gt4py.next.ffront.fbuiltins import astype, bool, broadcast, maximum, where
 
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
@@ -50,10 +50,10 @@ from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boun
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.type_alias import wpfloat, vpfloat
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator

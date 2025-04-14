@@ -706,8 +706,8 @@ class SolveNonhydro:
         """
         Declared as z_exner_ic in ICON.
         """
-        self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+        self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+            data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, backend=self._backend)
         )
         """
         Declared as z_dexner_dz_c_1 in ICON.
@@ -722,7 +722,9 @@ class SolveNonhydro:
             self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         """
-        Declared as z_th_ddz_exner_c in ICON.
+        Declared as z_th_ddz_exner_c in ICON. theta' dpi0/dz + theta (1 - eta_impl) dpi'/dz.
+        Note that it only has nlev because it is only used in computation of the explicit 
+        term for updating w, and w at model top/bottom is diagnosed.
         """
         self.perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, backend=self._backend
@@ -805,7 +807,7 @@ class SolveNonhydro:
         self.fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
             self._grid, dims.KDim, backend=self._backend
         )
-        self.z_graddiv2_vn=data_alloc.zero_field(
+        self.z_graddiv2_vn = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
         """
@@ -1031,7 +1033,7 @@ class SolveNonhydro:
             current_rho=prognostic_states.current.rho,
             reference_rho_at_cells_on_model_levels=self._metric_state_nonhydro.reference_rho_at_cells_on_model_levels,
             current_theta_v=prognostic_states.current.theta_v,
-            reference_rho_at_cells_on_model_levels=self._metric_state_nonhydro.reference_rho_at_cells_on_model_levels,
+            reference_theta_at_cells_on_model_levels=self._metric_state_nonhydro.reference_theta_at_cells_on_model_levels,
             reference_theta_at_cells_on_half_levels=self._metric_state_nonhydro.reference_theta_at_cells_on_half_levels,
             wgtfacq_c=self._metric_state_nonhydro.wgtfacq_c,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
@@ -1627,7 +1629,10 @@ class SolveNonhydro:
             divdamp_fac_o2,
             self._config.nudge_max_coeff,
             constants.DBL_EPS,
-            out=(self.fourth_order_divdamp_scaling_coeff, self.reduced_fourth_order_divdamp_coeff_at_nest_boundary),
+            out=(
+                self.fourth_order_divdamp_scaling_coeff,
+                self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+            ),
             offset_provider={},
         )
 
@@ -1669,8 +1674,6 @@ class SolveNonhydro:
             dtime=dtime,
             wgt_nnow_rth=self._params.wgt_nnow_rth,
             wgt_nnew_rth=self._params.wgt_nnew_rth,
-            horz_idx=self.cell_field,
-            vert_idx=self.k_field,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(1),
