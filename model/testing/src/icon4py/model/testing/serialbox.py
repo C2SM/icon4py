@@ -1963,7 +1963,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_satad_exit(self, location, date: str) -> IconSatadExitSavepoint:
+    def from_savepoint_satad_exit(self, location:str, date: str) -> IconSatadExitSavepoint:
         savepoint = (
             self.serializer.savepoint["satad-exit"].date[date].location[location].as_savepoint()
         )
