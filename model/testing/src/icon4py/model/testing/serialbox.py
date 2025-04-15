@@ -351,7 +351,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_connectivity_array(self, name: str, target_dim: gtx.Dimension, reverse: bool = False):
         if reverse:
-            connectivity = np.transpose(np.squeeze(self._read_int32(name, offset=1)))[
+            connectivity = np.transpose(self._read_int32(name, offset=1))[
                 : self.sizes[target_dim], :
             ]
         else:
