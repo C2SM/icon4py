@@ -28,7 +28,13 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
-    metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend, benchmark
+    metrics_savepoint,
+    experiment,
+    interpolation_savepoint,
+    icon_grid,
+    grid_savepoint,
+    backend,
+    benchmark,
 ):
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")
@@ -50,8 +56,7 @@ def test_compute_diffusion_metrics(
     )
 
     nlev = icon_grid.num_levels
-    
-   
+
     compute_maxslp_maxhgtd.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
@@ -65,7 +70,6 @@ def test_compute_diffusion_metrics(
     )
 
     z_mc = metrics_savepoint.z_mc()
-   
 
     compute_weighted_cell_neighbor_sum.with_backend(backend)(
         maxslp=maxslp,

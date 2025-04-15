@@ -84,7 +84,6 @@ def _compute_k_start_end(
     nlev: int,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-    
     condition1 = array_ns.logical_or(maxslp_avg >= thslp_zdiffu, maxhgtd_avg >= thhgtd_zdiffu)
     cell_mask = array_ns.tile(
         array_ns.where(condition1[:, nlev - 1], c_owner_mask, False), (nlev, 1)
@@ -93,13 +92,15 @@ def _compute_k_start_end(
     owned_cell_above_threshold = array_ns.logical_and(cell_mask, z_mc >= threshold)
     last_true_indices = nlev - 1 - array_ns.argmax(owned_cell_above_threshold[:, ::-1], axis=1)
     # is a zero else value correct?
-    kend = array_ns.where(array_ns.any(owned_cell_above_threshold, axis=1), last_true_indices + 1, 0)
+    kend = array_ns.where(
+        array_ns.any(owned_cell_above_threshold, axis=1), last_true_indices + 1, 0
+    )
 
     kstart = np.argmax(condition1, axis=1)
     # reset the values where start > end to be an empty range(start, end)
     kstart = array_ns.where(kstart > kend, nlev, kstart)
     cell_index_cell_mask = array_ns.where(kend > kstart, True, False)
-    
+
     return kstart, kend, cell_index_cell_mask
 
 
@@ -123,7 +124,6 @@ def compute_diffusion_metrics(
     nbidx = array_ns.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
     z_vintcoeff = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     mask_hdiff = array_ns.zeros(shape=(n_cells, nlev), dtype=bool)
-    mask_hdiff1 = array_ns.zeros(shape=(n_cells, nlev), dtype=bool)
     zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
@@ -138,12 +138,9 @@ def compute_diffusion_metrics(
         nlev=nlev,
         array_ns=array_ns,
     )
-    #k_index = array_ns.arange(nlev)
-    
-    #mask_hdiff1= array_ns.where(k_start <= k_index < k_end , True, False)
 
     # go back to loop for now... then fix _compute_nbidx, _compute_z_vintcoeff
-    for jc  in range(cell_nudging, n_cells):
+    for jc in range(cell_nudging, n_cells):
         if k_end[jc] > k_start[jc]:
             k_range = range(k_start[jc], k_end[jc])
             nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)
@@ -177,7 +174,5 @@ def compute_diffusion_metrics(
     zd_vertoffset_dsl = zd_vertoffset_dsl.reshape(
         (zd_vertoffset_dsl.shape[0] * zd_vertoffset_dsl.shape[1],) + zd_vertoffset_dsl.shape[2:]
     )
-    #assert array_ns.allclose(
-    #    mask_hdiff[cell_nudging:], mask_hdiff1[cell_nudging:]
-    #), "mask_hdiff does not match"
+
     return mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl
