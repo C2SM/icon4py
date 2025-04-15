@@ -26,6 +26,17 @@ def _apply_rayleigh_damping_mechanism(
     return w_wp
 
 
+@field_operator
+def _apply_rayleigh_damping_mechanism_w_1_broadcasted(
+    z_raylfac: fa.KField[wpfloat],
+    w_1: fa.CellKField[wpfloat],
+    w: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    z_raylfac = broadcast(z_raylfac, (dims.CellDim, dims.KDim))
+    w_wp = z_raylfac * w + (wpfloat("1.0") - z_raylfac) * w_1
+    return w_wp
+
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def apply_rayleigh_damping_mechanism(
     z_raylfac: fa.KField[wpfloat],

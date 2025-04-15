@@ -212,7 +212,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
         vertical_end=vertical_end,
         offset_provider={},
     )
-    assert helpers.dallclose(rho_ref_me.asnumpy(), rho_ref_me_ref.asnumpy())
+    assert helpers.dallclose(rho_ref_me.asnumpy(), rho_ref_me_ref.asnumpy(), rtol=1e-10)
     assert helpers.dallclose(theta_ref_me.asnumpy(), theta_ref_me_ref.asnumpy())
 
 

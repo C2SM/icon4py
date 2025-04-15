@@ -337,7 +337,7 @@ class NonHydrostaticConfig:
         self.igradp_method: int = igradp_method
 
         #: number of dynamics substeps per fast-physics timestep
-        self.ndyn_substeps_var = ndyn_substeps_var
+        self.ndyn_substeps_var: float = ndyn_substeps_var
 
         #: type of Rayleigh damping
         self.rayleigh_type: int = rayleigh_type
@@ -404,7 +404,10 @@ class NonHydrostaticConfig:
             raise NotImplementedError("divdamp_order can only be 24")
 
         if self.divdamp_type == DivergenceDampingType.TWO_DIMENSIONAL:
-            raise NotImplementedError("`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented")
+            raise NotImplementedError(
+                "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
+            )
+
 
 class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
@@ -998,7 +1001,6 @@ class SolveNonhydro:
             z_theta_v_pr_ic=self.z_theta_v_pr_ic,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
-            k_field=self.k_field,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
@@ -1376,7 +1378,6 @@ class SolveNonhydro:
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_q=z_fields.z_q,
-            k_field=self.k_field,
             rd=constants.RD,
             cvd=constants.CVD,
             dtime=dtime,
@@ -1717,7 +1718,6 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # TODO: this does not get accessed in FORTRAN
         if (
             self._config.divdamp_order == DivergenceDampingOrder.COMBINED
             and divdamp_fac_o2 <= 4 * self._config.divdamp_fac
@@ -1749,13 +1749,12 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
-        # TODO: this does not get accessed in FORTRAN
         if self._config.is_iau_active:
             log.debug("corrector start stencil 28")
             self._add_analysis_increments_to_vn(
-                diagnostic_state_nh.vn_incr,
-                prognostic_states.next.vn,
-                self._config.iau_wgt_dyn,
+                vn_incr=diagnostic_state_nh.vn_incr,
+                vn=prognostic_states.next.vn,
+                iau_wgt_dyn=self._config.iau_wgt_dyn,
                 horizontal_start=self._start_edge_nudging_level_2,
                 horizontal_end=self._end_edge_local,
                 vertical_start=0,
@@ -1854,7 +1853,6 @@ class SolveNonhydro:
                 vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
                 theta_v_ic=diagnostic_state_nh.theta_v_ic,
                 z_q=z_fields.z_q,
-                k_field=self.k_field,
                 rd=constants.RD,
                 cvd=constants.CVD,
                 dtime=dtime,
@@ -1888,7 +1886,6 @@ class SolveNonhydro:
                 vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
                 theta_v_ic=diagnostic_state_nh.theta_v_ic,
                 z_q=z_fields.z_q,
-                k_field=self.k_field,
                 rd=constants.RD,
                 cvd=constants.CVD,
                 dtime=dtime,
