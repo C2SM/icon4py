@@ -122,7 +122,7 @@ class IconSavepoint:
         return self._read(name, offset=0, dtype=bool)
 
     def _read(self, name: str, offset=0, dtype=int):
-        return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
+        return np.squeeze(self.serializer.read(name, self.savepoint) - offset).astype(dtype)
 
 
 class IconGridSavepoint(IconSavepoint):
@@ -310,10 +310,10 @@ class IconGridSavepoint(IconSavepoint):
         return self._read_int32_shift1("e_start_index")
 
     def nflatlev(self):
-        return self._read_int32_shift1("nflatlev")[0]
+        return self._read_int32_shift1("nflatlev")
 
     def nflat_gradp(self):
-        return self._read_int32_shift1("nflat_gradp")[0]
+        return self._read_int32_shift1("nflat_gradp")
 
     def edge_end_index(self):
         # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
