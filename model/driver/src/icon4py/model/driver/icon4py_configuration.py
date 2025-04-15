@@ -125,7 +125,7 @@ def read_config(
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
-            divdamp_fac=0.0025,
+            fourth_order_divdamp_factor=0.0025,
         )
 
     def _mch_ch_r04b09_config():
@@ -175,7 +175,7 @@ def read_config(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
-            divdamp_fac=0.0025,
+            fourth_order_divdamp_factor=0.0025,
         )
 
     def _gauss3d_config():

@@ -115,7 +115,7 @@ class TimeLoop:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
         log.info(
@@ -166,7 +166,7 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                initial_divdamp_fac_o2,
+                second_order_divdamp_factor,
                 do_prep_adv,
             )
             timer.capture()
@@ -187,16 +187,16 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
+        # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
             prep_adv,
-            initial_divdamp_fac_o2,
+            second_order_divdamp_factor,
             do_prep_adv,
         )
 
@@ -255,7 +255,7 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
@@ -276,7 +276,7 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv=prep_adv,
-                divdamp_fac_o2=initial_divdamp_fac_o2,
+                second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
@@ -314,10 +314,10 @@ class DriverParams(NamedTuple):
     Parameters for the driver run.
 
     Attributes:
-        divdamp_fac_o2: Second order divergence damping factor.
+        second_order_divdamp_factor: Second order divergence damping factor.
     """
 
-    divdamp_fac_o2: float
+    second_order_divdamp_factor: float
 
 
 def initialize(
@@ -443,7 +443,7 @@ def initialize(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prep_adv,
-        initial_divdamp_fac_o2,
+        second_order_divdamp_factor,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
@@ -473,7 +473,7 @@ def initialize(
             prognostics=prognostics_states,
             diagnostic=diagnostic_state,
         ),
-        DriverParams(divdamp_fac_o2=initial_divdamp_fac_o2),
+        DriverParams(second_order_divdamp_factor=second_order_divdamp_factor),
     )
 
 
@@ -596,7 +596,7 @@ def icon4py_driver(
         ds.solve_nonhydro_diagnostic,
         ds.prognostics,
         ds.prep_advection_prognostic,
-        dp.divdamp_fac_o2,
+        dp.second_order_divdamp_factor,
         do_prep_adv=False,
     )
 
