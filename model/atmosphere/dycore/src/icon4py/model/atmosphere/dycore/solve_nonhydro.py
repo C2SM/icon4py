@@ -337,7 +337,7 @@ class NonHydrostaticConfig:
         self.igradp_method: int = igradp_method
 
         #: number of dynamics substeps per fast-physics timestep
-        self.ndyn_substeps_var = ndyn_substeps_var
+        self.ndyn_substeps_var: float = ndyn_substeps_var
 
         #: type of Rayleigh damping
         self.rayleigh_type: int = rayleigh_type
@@ -1378,7 +1378,6 @@ class SolveNonhydro:
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_q=z_fields.z_q,
-            k_field=self.k_field,
             rd=constants.RD,
             cvd=constants.CVD,
             dtime=dtime,
@@ -1854,7 +1853,6 @@ class SolveNonhydro:
                 vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
                 theta_v_ic=diagnostic_state_nh.theta_v_ic,
                 z_q=z_fields.z_q,
-                k_field=self.k_field,
                 rd=constants.RD,
                 cvd=constants.CVD,
                 dtime=dtime,
@@ -1888,7 +1886,6 @@ class SolveNonhydro:
                 vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
                 theta_v_ic=diagnostic_state_nh.theta_v_ic,
                 z_q=z_fields.z_q,
-                k_field=self.k_field,
                 rd=constants.RD,
                 cvd=constants.CVD,
                 dtime=dtime,
