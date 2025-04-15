@@ -29,8 +29,8 @@ from icon4py.model.common.grid import base, horizontal, icon
 try:
     import dace  # type: ignore[import-untyped]
     from gt4py.next.program_processors.runners.dace import (
-        run_dace_cpu,
-        run_dace_gpu,
+        run_dace_cpu_cached,
+        run_dace_gpu_cached,
     )
 except ImportError:
     from types import ModuleType
@@ -71,8 +71,8 @@ _BACKEND_MAP = {
 }
 if dace:
     _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: run_dace_cpu,
-        BackendIntEnum._DACE_GPU: run_dace_gpu,
+        BackendIntEnum._DACE_CPU: run_dace_cpu_cached,
+        BackendIntEnum._DACE_GPU: run_dace_gpu_cached,
     }
 
 
