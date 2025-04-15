@@ -184,7 +184,7 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
         vct_a_1=vct_a_1,
         pi_const=math.pi,
         vertical_start=0,
-        vertical_end=grid_savepoint.nrdmax().item() + 1,
+        vertical_end=gtx.int32(grid_savepoint.nrdmax() + 1),
         offset_provider={},
     )
 

@@ -398,7 +398,7 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("c2v", dims.CellDim)
 
     def nrdmax(self):
-        return self._read_int32_shift1("nrdmax")
+        return gtx.int32(self._read_int32_shift1("nrdmax").item())
 
     def refin_ctrl(self, dim: gtx.Dimension):
         field_name = "refin_ctl"
