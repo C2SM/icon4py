@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import functools
 import logging
 
 import pytest
@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore import (
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -729,6 +730,45 @@ def test_nonhydro_corrector_step(
     )
 
 
+def _verify_solve_nonhydro_single_step(
+    prognostic_state_nnew: prognostics.PrognosticState,
+    sp_step_exit: pytest.FixtureRequest,
+    savepoint_nonhydro_exit: pytest.FixtureRequest,
+    diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+):
+    assert helpers.dallclose(
+        prognostic_state_nnew.theta_v.asnumpy(),
+        sp_step_exit.theta_v_new().asnumpy(),
+    )
+
+    assert helpers.dallclose(
+        prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy()
+    )
+
+    assert helpers.dallclose(
+        prognostic_state_nnew.vn.asnumpy(),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
+        rtol=1e-12,
+        atol=1e-13,
+    )
+
+    assert helpers.dallclose(
+        prognostic_state_nnew.rho.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
+    )
+
+    assert helpers.dallclose(
+        prognostic_state_nnew.w.asnumpy(),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
+        atol=8e-14,
+    )
+
+    assert helpers.dallclose(
+        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
+        savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
+        atol=1e-14,
+    )
+
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -772,7 +812,12 @@ def test_run_solve_nonhydro_single_step(
     at_initial_timestep,
     caplog,
     backend,
+    benchmark,
 ):
+    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+        # Skip benchmarks for this experiment
+        benchmark = None
+
     caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
 
@@ -820,48 +865,28 @@ def test_run_solve_nonhydro_single_step(
     prognostic_states = utils.create_prognostic_states(sp)
 
     initial_divdamp_fac = sp.divdamp_fac_o2()
-    solve_nonhydro.time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
-        divdamp_fac_o2=initial_divdamp_fac,
-        dtime=dtime,
-        at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
-        at_first_substep=substep_init == 1,
-        at_last_substep=substep_init == ndyn_substeps,
-    )
-    prognostic_state_nnew = prognostic_states.next
-    assert helpers.dallclose(
-        prognostic_state_nnew.theta_v.asnumpy(),
-        sp_step_exit.theta_v_new().asnumpy(),
-    )
 
-    assert helpers.dallclose(
-        prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy()
-    )
-
-    assert helpers.dallclose(
-        prognostic_state_nnew.vn.asnumpy(),
-        savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-12,
-        atol=1e-13,
-    )
-
-    assert helpers.dallclose(
-        prognostic_state_nnew.rho.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
-    )
-
-    assert helpers.dallclose(
-        prognostic_state_nnew.w.asnumpy(),
-        savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=8e-14,
-    )
-
-    assert helpers.dallclose(
-        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
-        savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
-        atol=1e-14,
+    helpers.run_verify_and_benchmark(
+        functools.partial(
+            solve_nonhydro.time_step,
+            diagnostic_state_nh=diagnostic_state_nh,
+            prognostic_states=prognostic_states,
+            prep_adv=prep_adv,
+            divdamp_fac_o2=initial_divdamp_fac,
+            dtime=dtime,
+            at_initial_timestep=at_initial_timestep,
+            lprep_adv=lprep_adv,
+            at_first_substep=substep_init == 1,
+            at_last_substep=substep_init == ndyn_substeps,
+        ),
+        functools.partial(
+            _verify_solve_nonhydro_single_step,
+            prognostic_states.next,
+            sp_step_exit,
+            savepoint_nonhydro_exit,
+            diagnostic_state_nh,
+        ),
+        benchmark,
     )
 
 
