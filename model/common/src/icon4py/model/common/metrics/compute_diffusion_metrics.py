@@ -139,6 +139,7 @@ def compute_diffusion_metrics(
         array_ns=array_ns,
     )
     #k_index = array_ns.arange(nlev)
+    
     #mask_hdiff1= array_ns.where(k_start <= k_index < k_end , True, False)
 
     # go back to loop for now... then fix _compute_nbidx, _compute_z_vintcoeff
