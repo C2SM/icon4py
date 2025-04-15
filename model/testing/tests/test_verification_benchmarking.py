@@ -6,8 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+from typing import Optional
 
 import numpy as np
+import pytest
 from numpy.typing import NDArray
 
 from icon4py.model.testing import helpers
@@ -31,7 +33,7 @@ def verify_field(
     np.testing.assert_allclose(field, base_value + increment)
 
 
-def test_verification_benchmarking_infrastructure(benchmark):
+def test_verification_benchmarking_infrastructure(benchmark: Optional[pytest.FixtureRequest]):
     base_value = 1
     field = np.array((base_value * np.ones((), dtype=BASE_DTYPE)))
 
@@ -40,13 +42,20 @@ def test_verification_benchmarking_infrastructure(benchmark):
     helpers.run_verify_and_benchmark(
         functools.partial(incr_func, field=field, increment=increment),
         functools.partial(verify_field, field=field, increment=increment, base_value=base_value),
-        None,  # no need to benchmark this test
+        benchmark_fixture=None,  # no need to benchmark this test
     )
 
     current_base_value = field[()]
     assert (
         current_base_value != base_value
-    ), "Base values should not be equal. Otherwise, the test did not go through incr_func and/or verify_field functions."
+    ), "Base values should not be equal. Otherwise, the test did not go through incr_func/ verify_field functions."
 
-    incr_func(field, increment)
-    verify_field(field, increment, current_base_value)
+    # Expect AssertionError
+    with pytest.raises(AssertionError):
+        helpers.run_verify_and_benchmark(
+            functools.partial(incr_func, field=field, increment=increment),
+            functools.partial(
+                verify_field, field=field, increment=increment, base_value=base_value
+            ),  # base_value should be current_base_value
+            benchmark_fixture=None,  # no need to benchmark this test
+        )
