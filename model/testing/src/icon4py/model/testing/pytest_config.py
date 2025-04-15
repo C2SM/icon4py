@@ -91,7 +91,24 @@ def pytest_addoption(parser):
         )
     except ValueError:
         pass
-
+    try:
+        parser.addoption(
+            "--datatest-only",
+            action="store_true",
+            help="Run only tests that use serialized data, can be slow since data might be downloaded from online storage.",
+            default=False,
+        )
+    except ValueError:
+        pass
+    try:
+        parser.addoption(
+            "--datatest-skip",
+            action="store_true",
+            help="Skip all tests that use serialized data, can be slow since data might be downloaded from online storage.",
+            default=False,
+        )
+    except ValueError:
+        pass
     try:
         # TODO (samkellerhals): set embedded to default as soon as all tests run in embedded mode
         parser.addoption(
@@ -163,6 +180,19 @@ def pytest_runtest_setup(item):
         backend,
         is_datatest=item.config.getoption("--datatest"),
     )
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--datatest-skip"):
+        # --datatest-only given in cli: skip all tests that are not marked with @pytest.mark.datatest
+        for item in items:
+            if "datatest" in item.own_markers:
+                item.add_marker(pytest.mark.skip(reason="skipping - only running test with 'datatest' are run"))
+
+    if config.getoption("--datatest-only"):
+        # --datatest-only given in cli: skip all tests that are not marked with @pytest.mark.datatest
+        for item in items:
+            if "datatest" not in item.own_markers:
+                item.add_marker(pytest.mark.skip(reason="skipping - only running test with 'datatest' are run"))
 
 
 # pytest benchmark hook, see:
