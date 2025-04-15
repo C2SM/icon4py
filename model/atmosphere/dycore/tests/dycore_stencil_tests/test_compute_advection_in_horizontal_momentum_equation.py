@@ -64,9 +64,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
         k = np.arange(nlev)
 
-        upward_vorticity_at_vertices = mo_math_divrot_rot_vertex_ri_dsl_numpy(
-            connectivities, vn, geofac_rot
-        )
+        upward_vorticity_at_vertices = mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vn, geofac_rot)
 
         normal_wind_advective_tendency = compute_advective_normal_wind_tendency_numpy(
             connectivities,
@@ -81,7 +79,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             vn_on_half_levels,
             ddqz_z_full_e,
         )
-
+        
         condition = (np.maximum(3, nrdmax - 2) - 1 <= k) & (k < nlev - 4)
         normal_wind_advective_tendency_extra_diffu = (
             add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
