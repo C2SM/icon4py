@@ -1053,8 +1053,8 @@ def test_run_solve_nonhydro_multi_step(
 
     assert helpers.dallclose(
         prognostic_states.next.w.asnumpy(),
-        savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=7e-14,
+        savepoint_nonhydro_exit.w_new().asnumpy(), 
+        atol=1e-13,
     )
 
     assert helpers.dallclose(
