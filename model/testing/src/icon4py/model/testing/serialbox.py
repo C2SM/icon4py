@@ -321,10 +321,10 @@ class IconGridSavepoint(IconSavepoint):
         return self._read_int32_shift1("e_start_index")
 
     def nflatlev(self):
-        return self._read_int32_shift1("nflatlev")
+        return self._read_int32_shift1("nflatlev").item()
 
     def nflat_gradp(self):
-        return self._read_int32_shift1("nflat_gradp")
+        return self._read_int32_shift1("nflat_gradp").item()
 
     def edge_end_index(self):
         # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
@@ -355,7 +355,7 @@ class IconGridSavepoint(IconSavepoint):
                 : self.sizes[target_dim], :
             ]
         else:
-            connectivity = np.squeeze(self._read_int32(name, offset=1)[: self.sizes[target_dim], :])
+            connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
@@ -404,9 +404,7 @@ class IconGridSavepoint(IconSavepoint):
         field_name = "refin_ctl"
         return gtx.as_field(
             (dim,),
-            np.squeeze(
-                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
-            ),
+            self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)],
             allocator=self.backend,
         )
 
@@ -430,7 +428,7 @@ class IconGridSavepoint(IconSavepoint):
     def owner_mask(self, dim: gtx.Dimension):
         field_name = "owner_mask"
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
-        return np.squeeze(mask)
+        return mask
 
     def global_index(self, dim: gtx.Dimension):
         field_name = "glb_index"
