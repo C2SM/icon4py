@@ -385,9 +385,6 @@ def _apply_divergence_damping_and_update_vn(
             ),
             next_vn,
         )
-    #     if (itime_scheme == 4)
-    #     else next_vn
-    # )
 
     next_vn = (
         concat_where(
