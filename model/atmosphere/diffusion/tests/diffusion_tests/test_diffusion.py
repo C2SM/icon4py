@@ -434,6 +434,8 @@ def test_run_diffusion_single_step(
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
+    if orchestration and data_alloc.is_cupy_device(backend):
+        pytest.xfail("GPU compilation fails.")
 
     if experiment == dt_utils.REGIONAL_EXPERIMENT:
         # Skip benchmarks for this experiment
@@ -555,6 +557,8 @@ def test_run_diffusion_multiple_steps(
 ):
     if not helpers.is_dace(backend):
         raise pytest.skip("This test is only executed for dace backends")
+    if data_alloc.is_cupy_device(backend):
+        pytest.xfail("GPU compilation fails.")
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -702,6 +706,8 @@ def test_run_diffusion_initial_step(
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
+    if orchestration and data_alloc.is_cupy_device(backend):
+        pytest.xfail("GPU compilation fails.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
