@@ -190,23 +190,6 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_i
 
 
 @pytest.fixture
-def savepoint_compute_edge_diagnostics_for_velocity_advection_init(
-    data_provider, step_date_init, istep_init, substep_init
-):  # F811
-    """
-    Load data from ICON savepoint at start of velocity_advection module for edge diagnostics.
-
-     metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
-        istep=istep_init, date=step_date_init, substep_init=substep_init
-    )
-
-
-@pytest.fixture
 def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
     data_provider, step_date_init, istep_init, substep_init
 ):  # F811
