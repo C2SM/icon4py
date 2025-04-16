@@ -25,6 +25,7 @@ from gt4py.next import (
     tanh,
     where,
 )
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (
@@ -63,10 +64,11 @@ def _compute_ddqz_z_half(
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
-    # TODO: change this to concat_where once it's merged
-    ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
-    ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
-    ddqz_z_half = where(k == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
+    ddqz_z_half = concat_where((dims.KDim > 0) & (dims.KDim < nlev), 0.0, 2.0 * (z_ifc - z_mc))
+    ddqz_z_half = concat_where(
+        (0 < dims.KDim) & (dims.KDim < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half
+    )
+    ddqz_z_half = concat_where(dims.KDim == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
 
 

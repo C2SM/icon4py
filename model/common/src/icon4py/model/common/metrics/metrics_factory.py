@@ -103,7 +103,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "vct_a_1": vct_a_1,
         }
         z_ifc_sliced = gtx.as_field(
-            (dims.CellDim,), interface_model_height.asnumpy()[:, self._grid.num_levels]
+            (dims.CellDim,), interface_model_height.ndarray[:, self._grid.num_levels]
         )
         k_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend

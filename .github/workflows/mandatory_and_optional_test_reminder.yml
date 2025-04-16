@@ -23,7 +23,7 @@ jobs:
 
                       To run benchmarks you can use:
 
-                      * `cscs-ci run benchmark`
+                      * `cscs-ci run benchmark-bencher`
 
                       To run tests and benchmarks with the DaCe backend you can use:
 

@@ -187,8 +187,8 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
     d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()
 
-    d2dexdz2_fac1_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    d2dexdz2_fac2_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    d2dexdz2_fac1_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    d2dexdz2_fac2_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
 
     compute_d2dexdz2_fac_mc.with_backend(backend=backend)(
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),

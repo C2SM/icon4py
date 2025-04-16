@@ -19,10 +19,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.settings import config
 
-
-xp = config.array_ns
 
 log = setup_logger(__name__)
 
@@ -103,8 +100,6 @@ def print_grid_decomp_info(
         icon_grid.connectivities[E2CDim],
     )
 
-    xp.set_printoptions(edgeitems=20)
-
     log.info(
         "c_glb_index for rank %s is.... %s",
         processor_props.rank,
@@ -137,9 +132,6 @@ def print_grid_decomp_info(
         decomposition_info.owner_mask(VertexDim)[0:num_verts],
     )
 
-    log.info(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
-    )
     log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels} "
         f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
