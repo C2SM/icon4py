@@ -18,6 +18,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -128,10 +129,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         end_cell_end: gtx.int32,
         end_cell_halo: gtx.int32,
         end_cell_halo_level_2: gtx.int32,
-        horizontal_start: gtx.int32,
-        horizontal_end: gtx.int32,
-        vertical_start: gtx.int32,
-        vertical_end: gtx.int32,
+        **kwargs: Any,
     ) -> dict:
         horz_idx = horz_idx[:, np.newaxis]
 

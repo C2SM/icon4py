@@ -96,7 +96,6 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             + back_trajectory_w_at_cells_on_half_levels
             * (time_averaged_rho_kup - time_averaged_rho)
         )
-        # rho_ic[:, 0] = 0
         time_averaged_perturbed_theta_v_kup = (
             time_averaged_theta_v_kup - koffset_reference_theta_at_cells_on_model_levels
         )
@@ -107,14 +106,12 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             wgtfac_c * time_averaged_perturbed_theta_v
             + (1 - wgtfac_c) * time_averaged_perturbed_theta_v_kup
         )
-        # z_theta_v_pr_ic[:, 0] = 0
         theta_v_at_cells_on_half_levels_full = (
             wgtfac_c * time_averaged_theta_v
             + (1 - wgtfac_c) * time_averaged_theta_v_kup
             + back_trajectory_w_at_cells_on_half_levels
             * (time_averaged_theta_v_kup - time_averaged_theta_v)
         )
-        # theta_v_ic[:, 0] = 0
         pressure_buoyancy_acceleration_at_cells_on_half_levels_full = (
             vwind_expl_wgt
             * theta_v_at_cells_on_half_levels_full
@@ -126,7 +123,6 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             + perturbed_theta_v_at_cells_on_half_levels_full
             * ddz_of_reference_exner_at_cells_on_half_levels
         )
-        # z_th_ddz_exner_c[:, 0] = 0
 
         horizontal_start = kwargs["horizontal_start"]
         horizontal_end = kwargs["horizontal_end"]
