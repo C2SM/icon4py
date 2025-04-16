@@ -83,34 +83,22 @@ def pytest_configure(config):
 def pytest_addoption(parser):
     """Add custom commandline options for pytest."""
     try:
-        parser.addoption(
+        datatest = parser.getgroup("datatest", "Options for data testing")
+        datatest.addoption(
             "--datatest",
             action="store_true",
-            help="Run tests that use serialized data, can be slow since data might be downloaded from online storage.",
             default=False,
+            help="Enable data tests",
         )
-    except ValueError:
-        pass
-    try:
-        parser.addoption(
+        datatest.addoption(
             "--datatest-only",
             action="store_true",
-            help="Run only tests that use serialized data, can be slow since data might be downloaded from online storage.",
             default=False,
+            help="Run only data tests",
         )
     except ValueError:
         pass
     try:
-        parser.addoption(
-            "--datatest-skip",
-            action="store_true",
-            help="Skip all tests that use serialized data, can be slow since data might be downloaded from online storage.",
-            default=False,
-        )
-    except ValueError:
-        pass
-    try:
-        # TODO (samkellerhals): set embedded to default as soon as all tests run in embedded mode
         parser.addoption(
             "--backend",
             action="store",
@@ -178,21 +166,21 @@ def pytest_runtest_setup(item):
         item.own_markers,
         grid,
         backend,
-        is_datatest=item.config.getoption("--datatest"),
     )
 
-def pytest_collection_modifyitems(config, items):
-    if config.getoption("--datatest-skip"):
-        # --datatest-only given in cli: skip all tests that are not marked with @pytest.mark.datatest
-        for item in items:
-            if "datatest" in item.own_markers:
-                item.add_marker(pytest.mark.skip(reason="skipping - only running test with 'datatest' are run"))
 
+def pytest_collection_modifyitems(config, items):
     if config.getoption("--datatest-only"):
         # --datatest-only given in cli: skip all tests that are not marked with @pytest.mark.datatest
         for item in items:
-            if "datatest" not in item.own_markers:
-                item.add_marker(pytest.mark.skip(reason="skipping - only running test with 'datatest' are run"))
+            if not [mark.name for mark in item.own_markers if mark.name == "datatest"]:
+                item.add_marker(
+                    pytest.mark.skip(reason="skipping - only running test with 'datatest' marker")
+                )
+    elif not config.getoption("--datatest"):
+        for item in items:
+            if [mark.name for mark in item.own_markers if mark.name == "datatest"]:
+                item.add_marker(pytest.mark.skip(reason="need '--datatest' option to run"))
 
 
 # pytest benchmark hook, see:
