@@ -26,7 +26,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 @pytest.mark.cpu_only
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
     metrics_savepoint,
     experiment,
@@ -34,7 +34,6 @@ def test_compute_diffusion_metrics(
     icon_grid,
     grid_savepoint,
     backend,
-    benchmark,
 ):
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")

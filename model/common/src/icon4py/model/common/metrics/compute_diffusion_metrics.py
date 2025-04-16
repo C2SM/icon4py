@@ -104,7 +104,6 @@ def _compute_k_start_end(
     return kstart, kend, cell_index_cell_mask
 
 
-# TODO (@halungge) refactor this to fully get rid of the lists
 def compute_diffusion_metrics(
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
@@ -139,7 +138,7 @@ def compute_diffusion_metrics(
         array_ns=array_ns,
     )
 
-    # go back to loop for now... then fix _compute_nbidx, _compute_z_vintcoeff
+    # go back to loop for now... fix _compute_nbidx, _compute_z_vintcoeff later
     for jc in range(cell_nudging, n_cells):
         if k_end[jc] > k_start[jc]:
             k_range = range(k_start[jc], k_end[jc])
