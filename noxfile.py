@@ -9,8 +9,6 @@
 from __future__ import annotations
 
 import os
-import json
-import glob
 import re
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias
@@ -58,6 +56,7 @@ def benchmark_model(session: nox.Session) -> None:
         *f"pytest \
         -v \
         --benchmark-only \
+        --datatest \
         --benchmark-warmup=on \
         --benchmark-warmup-iterations=30 \
         --benchmark-json=pytest_benchmark_results_{session.python}.json \
@@ -139,7 +138,7 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
+            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
@@ -166,7 +165,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("tools"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
+            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
             *session.posargs
         )
 
