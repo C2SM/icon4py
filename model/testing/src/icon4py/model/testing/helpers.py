@@ -155,7 +155,7 @@ def _test_and_benchmark(
     connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field],
     benchmark: pytest.FixtureRequest,
-):
+) -> None:
     if self.MARKERS is not None:
         apply_markers(self.MARKERS, grid, backend)
 
@@ -214,7 +214,7 @@ class StencilTest:
         setattr(cls, f"test_{cls.__name__}", _test_and_benchmark)
 
 
-def reshape(arr: np.ndarray, shape: tuple[int, ...]):
+def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
     return np.reshape(arr, shape)
 
 

@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-from typing import Optional
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -33,17 +33,21 @@ def verify_field(
     np.testing.assert_allclose(field, base_value + increment)
 
 
-def test_verification_benchmarking_infrastructure(benchmark: Optional[pytest.FixtureRequest]):
+def test_verification_benchmarking_infrastructure():
     base_value = 1
     field = np.array((base_value * np.ones((), dtype=BASE_DTYPE)))
 
     increment = 6
 
+    benchmark = mock.Mock(enabled=False)
+
     helpers.run_verify_and_benchmark(
         functools.partial(incr_func, field=field, increment=increment),
         functools.partial(verify_field, field=field, increment=increment, base_value=base_value),
-        benchmark_fixture=None,  # no need to benchmark this test
+        benchmark_fixture=benchmark,
     )
+
+    benchmark.assert_not_called()
 
     current_base_value = field[()]
     assert (
@@ -57,5 +61,5 @@ def test_verification_benchmarking_infrastructure(benchmark: Optional[pytest.Fix
             functools.partial(
                 verify_field, field=field, increment=increment, base_value=base_value
             ),  # base_value should be current_base_value
-            benchmark_fixture=None,  # no need to benchmark this test
+            benchmark_fixture=None,
         )
