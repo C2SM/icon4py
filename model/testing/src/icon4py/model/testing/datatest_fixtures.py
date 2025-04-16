@@ -36,7 +36,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
     try:
-        if not request.config.getoption("datatest") or request.config.getoption("datatest-only"):
+        if not (request.config.getoption("datatest") or request.config.getoption("datatest-only")):
             return
     except ValueError:
         pass
