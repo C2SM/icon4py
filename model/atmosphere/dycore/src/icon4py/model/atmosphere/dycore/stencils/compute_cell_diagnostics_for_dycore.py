@@ -70,7 +70,7 @@ def _compute_perturbed_quantities_and_interpolation(
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     ddqz_z_half: fa.CellKField[ta.wpfloat],
-    ddz_of_perturbed_temperature_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.wpfloat],
@@ -134,7 +134,7 @@ def _compute_perturbed_quantities_and_interpolation(
         rho_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
-        ddz_of_perturbed_temperature_at_cells_on_half_levels,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels,
     ) = where(
         (start_cell_lateral_boundary_level_3 <= horz_idx < end_cell_halo),
         _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
@@ -152,7 +152,7 @@ def _compute_perturbed_quantities_and_interpolation(
             ddqz_z_half=ddqz_z_half,
             z_theta_v_pr_ic=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_ic=theta_v_at_cells_on_half_levels,
-            z_th_ddz_exner_c=ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            z_th_ddz_exner_c=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         ),
         (
             perturbed_rho_at_cells_on_model_levels,
@@ -160,7 +160,7 @@ def _compute_perturbed_quantities_and_interpolation(
             rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels,
         ),
     )
 
@@ -190,7 +190,7 @@ def _compute_perturbed_quantities_and_interpolation(
         exner_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
-        ddz_of_perturbed_temperature_at_cells_on_half_levels,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels,
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
     )
@@ -255,7 +255,7 @@ def compute_perturbed_quantities_and_interpolation(
     vwind_expl_wgt: fa.CellField[ta.wpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
-    ddz_of_perturbed_temperature_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     time_extrapolation_parameter_for_exner: fa.CellKField[ta.vpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -323,7 +323,7 @@ def compute_perturbed_quantities_and_interpolation(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
-        ddz_of_perturbed_temperature_at_cells_on_half_levels=ddz_of_perturbed_temperature_at_cells_on_half_levels,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
@@ -350,7 +350,7 @@ def compute_perturbed_quantities_and_interpolation(
             exner_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         ),
@@ -418,7 +418,7 @@ def compute_perturbed_quantities_and_interpolation(
 
 
 @field_operator
-def _interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient(
+def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
     w: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
@@ -497,7 +497,7 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gra
         + back_trajectory_w_at_cells_on_half_levels
         * (time_averaged_theta_v_kup - time_averaged_theta_v)
     )
-    ddz_of_perturbed_temperature_at_cells_on_half_levels = (
+    pressure_buoyancy_acceleration_at_cells_on_half_levels = (
         vwind_expl_wgt
         * theta_v_at_cells_on_half_levels
         * (
@@ -515,16 +515,16 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gra
         rho_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
-        astype(ddz_of_perturbed_temperature_at_cells_on_half_levels, vpfloat),
+        astype(pressure_buoyancy_acceleration_at_cells_on_half_levels, vpfloat),
     )
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient(
+def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    ddz_of_perturbed_temperature_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
@@ -545,7 +545,7 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_grad
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient(
+    _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
         w,
         contravariant_correction_at_cells_on_half_levels,
         current_rho,
@@ -565,7 +565,7 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_grad
             rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels,
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

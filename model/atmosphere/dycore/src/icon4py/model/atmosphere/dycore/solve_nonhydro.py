@@ -518,7 +518,7 @@ class SolveNonhydro:
         self._edge_geometry = edge_geometry
         self._cell_params = cell_geometry
 
-        self.enh_divdamp_fac: Optional[fa.KField[float]] = None
+        self.interpolated_fourth_order_divdamp_factor: Optional[fa.KField[float]] = None
         self.jk_start = 0  # used in stencil_55
 
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend)
@@ -629,7 +629,7 @@ class SolveNonhydro:
             self._backend
         )
 
-        self._interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient = compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient.with_backend(
+        self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration.with_backend(
             self._backend
         )
         self._compute_horizontal_advection_of_rho_and_theta = (
@@ -718,11 +718,12 @@ class SolveNonhydro:
         """
         Declared as z_theta_v_pr_ic in ICON.
         """
-        self.ddz_of_perturbed_temperature_at_cells_on_half_levels = data_alloc.zero_field(
+        self.pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         """
         Declared as z_th_ddz_exner_c in ICON. theta' dpi0/dz + theta (1 - eta_impl) dpi'/dz.
+        It represents the vertical pressure gradient and buoyancy acceleration.
         Note that it only has nlev because it is only used in computation of the explicit 
         term for updating w, and w at model top/bottom is diagnosed.
         """
@@ -1040,7 +1041,7 @@ class SolveNonhydro:
             vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
             ddz_of_reference_exner_at_cells_on_half_levels=self._metric_state_nonhydro.ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels=self.ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
             time_extrapolation_parameter_for_exner=self._metric_state_nonhydro.time_extrapolation_parameter_for_exner,
             current_exner=prognostic_states.current.exner,
             reference_exner_at_cells_on_model_levels=self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
@@ -1163,7 +1164,7 @@ class SolveNonhydro:
                     z_grad_rth_3=self.z_grad_rth_3,
                     z_grad_rth_4=self.z_grad_rth_4,
                     z_rth_pr_1=self.perturbed_rho_at_cells_on_model_levels,
-                    z_rth_pr_2=self.perturbed_theta_v_at_cells_on_half_levels,
+                    z_rth_pr_2=self.perturbed_theta_v_at_cells_on_model_levels,
                     z_rho_e=z_fields.rho_at_edges_on_model_levels,
                     z_theta_v_e=z_fields.theta_v_at_edges_on_model_levels,
                     horizontal_start=self._start_edge_lateral_boundary_level_7,
@@ -1235,7 +1236,7 @@ class SolveNonhydro:
             lowest_level = self._grid.num_levels - 1
             hydro_corr_horizontal = gtx.as_field(
                 (dims.EdgeDim,),
-                self.z_hydro_corr.ndarray[:, lowest_level],
+                self.hydrostatic_correction.ndarray[:, lowest_level],
                 allocator=self._backend.allocator,
             )
 
@@ -1292,7 +1293,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
-        self._exchange.exchange_and_wait(dims.EdgeDim, prognostic_states.next.vn, z_fields.z_rho_e)
+        self._exchange.exchange_and_wait(
+            dims.EdgeDim, prognostic_states.next.vn, z_fields.rho_at_edges_on_model_levels
+        )
 
         self._compute_avg_vn_and_graddiv_vn_and_vt(
             e_flx_avg=self._interpolation_state.e_flx_avg,
@@ -1390,7 +1393,7 @@ class SolveNonhydro:
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_states.current.w,
             ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
-            z_th_ddz_exner_c=self.ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            z_th_ddz_exner_c=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
             w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
@@ -1600,7 +1603,7 @@ class SolveNonhydro:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
-        divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         prep_adv: dycore_states.PrepAdvection,
         dtime: float,
         lprep_adv: bool,
@@ -1609,7 +1612,7 @@ class SolveNonhydro:
     ):
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
-            f"divdamp_fac_o2 = {divdamp_fac_o2}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
+            f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
         )
 
         # TODO (magdalena) is it correct to to use a config parameter here? the actual number of substeps can vary dynmically...
@@ -1617,16 +1620,18 @@ class SolveNonhydro:
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / self._config.ndyn_substeps_var
 
-        # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
+        # scaling factor for second-order divergence damping: second_order_divdamp_factor*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
-        scal_divdamp_o2 = divdamp_fac_o2 * self._cell_params.mean_cell_area
+        second_order_divdamp_scaling_coeff = (
+            second_order_divdamp_factor * self._cell_params.mean_cell_area
+        )
 
         dycore_utils._calculate_divdamp_fields(
-            self.enh_divdamp_fac,
+            self.interpolated_fourth_order_divdamp_factor,
             gtx.int32(self._config.divdamp_order),
             self._cell_params.mean_cell_area,
-            divdamp_fac_o2,
+            second_order_divdamp_factor,
             self._config.nudge_max_coeff,
             constants.DBL_EPS,
             out=(
@@ -1654,11 +1659,11 @@ class SolveNonhydro:
         )
         log.debug(f"corrector: start stencil 10")
 
-        self._interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient(
+        self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=self.perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels=self.ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
             w=prognostic_states.next.w,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             current_rho=prognostic_states.current.rho,
@@ -1735,13 +1740,13 @@ class SolveNonhydro:
 
         if (
             self._config.divdamp_order == DivergenceDampingOrder.COMBINED
-            and scal_divdamp_o2 > 1.0e-6
+            and second_order_divdamp_scaling_coeff > 1.0e-6
         ):
             log.debug(f"corrector: start stencil 26")
             self._apply_2nd_order_divergence_damping(
                 z_graddiv_vn=z_fields.horizontal_gradient_of_normal_wind_divergence,
                 vn=prognostic_states.next.vn,
-                scal_divdamp_o2=scal_divdamp_o2,
+                scal_divdamp_o2=second_order_divdamp_scaling_coeff,
                 horizontal_start=self._start_edge_nudging_level_2,
                 horizontal_end=self._end_edge_local,
                 vertical_start=0,
@@ -1752,7 +1757,7 @@ class SolveNonhydro:
         # TODO: this does not get accessed in FORTRAN
         if (
             self._config.divdamp_order == DivergenceDampingOrder.COMBINED
-            and divdamp_fac_o2 <= 4 * self._config.fourth_order_divdamp_factor
+            and second_order_divdamp_factor <= 4 * self._config.fourth_order_divdamp_factor
         ):
             if self._grid.limited_area:
                 log.debug("corrector: start stencil 27")
@@ -1810,7 +1815,7 @@ class SolveNonhydro:
 
         log.debug("corrector: start stencil 32")
         self._compute_mass_flux(
-            z_rho_e=z_fields.z_rho_e,
+            z_rho_e=z_fields.rho_at_edges_on_model_levels,
             z_vn_avg=self.z_vn_avg,
             ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
             z_theta_v_e=z_fields.theta_v_at_edges_on_model_levels,
@@ -1872,7 +1877,7 @@ class SolveNonhydro:
                 w_nnow=prognostic_states.current.w,
                 ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
                 ddt_w_adv_ntl2=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
-                z_th_ddz_exner_c=self.ddz_of_perturbed_temperature_at_cells_on_half_levels,
+                z_th_ddz_exner_c=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
@@ -1906,7 +1911,7 @@ class SolveNonhydro:
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
                 ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
-                z_th_ddz_exner_c=self.ddz_of_perturbed_temperature_at_cells_on_half_levels,
+                z_th_ddz_exner_c=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
@@ -2105,7 +2110,7 @@ class SolveNonhydro:
                 )
             log.debug(f" corrector: start stencil 65")
             self._update_mass_flux_weighted(
-                rho_ic=diagnostic_state_nh.rho_ic,
+                rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
                 vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
                 vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
                 w_now=prognostic_states.current.w,

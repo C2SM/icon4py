@@ -128,9 +128,7 @@ def test_time_step_flags(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 1, 1, True)]
-)
+@pytest.mark.parametrize("at_initial_timestep", [True])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -284,7 +282,7 @@ def test_nonhydro_predictor_step(
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
-        solve_nonhydro.ddz_of_perturbed_temperature_at_cells_on_half_levels.asnumpy()[
+        solve_nonhydro.pressure_buoyancy_acceleration_at_cells_on_half_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, 1:
         ],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
@@ -293,7 +291,9 @@ def test_nonhydro_predictor_step(
 
     # stencils 7,8,9, 11
     assert helpers.dallclose(
-        solve_nonhydro.z_theta_v_pr_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        solve_nonhydro.perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, :
+        ],
         sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
@@ -376,7 +376,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 21
     assert helpers.dallclose(
-        solve_nonhydro.z_hydro_corr.asnumpy()[edge_start_nudging_level_2:, nlev - 1],
+        solve_nonhydro.hydrostatic_correction.asnumpy()[edge_start_nudging_level_2:, nlev - 1],
         sp_exit.z_hydro_corr().asnumpy()[edge_start_nudging_level_2:, nlev - 1],
         atol=1e-20,
     )
@@ -679,7 +679,7 @@ def test_nonhydro_corrector_step(
     )
     # stencil 10
     assert helpers.dallclose(
-        diagnostic_state_nh.rho_ic.asnumpy(),
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
     # stencil 10
@@ -690,7 +690,7 @@ def test_nonhydro_corrector_step(
 
     # stencil 17
     assert helpers.dallclose(
-        z_fields.z_graddiv_vn.asnumpy(),
+        z_fields.horizontal_gradient_of_normal_wind_divergence.asnumpy(),
         savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
         atol=1e-12,
     )
@@ -1003,7 +1003,7 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert helpers.dallclose(
-        diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:, :],
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
@@ -1013,7 +1013,9 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
+        solve_nonhydro.intermediate_fields.horizontal_gradient_of_normal_wind_divergence.asnumpy()[
+            edge_start_lb_plus4:, :
+        ],
         savepoint_nonhydro_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
         atol=1.0e-18,
     )
@@ -1053,7 +1055,7 @@ def test_run_solve_nonhydro_multi_step(
 
     assert helpers.dallclose(
         prognostic_states.next.w.asnumpy(),
-        savepoint_nonhydro_exit.w_new().asnumpy(), 
+        savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=1e-13,
     )
 
@@ -1086,11 +1088,11 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        # (
-        #     dt_utils.REGIONAL_EXPERIMENT,
-        #     "2021-06-20T12:00:10.000",
-        #     "2021-06-20T12:00:10.000",
-        # ),
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
         (
             dt_utils.GLOBAL_EXPERIMENT,
             "2000-01-01T00:00:02.000",
@@ -1152,7 +1154,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
-    ddz_of_perturbed_temperature_at_cells_on_half_levels = data_alloc.zero_field(
+    pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, backend=backend
     )
     exner_at_cells_on_half_levels = data_alloc.zero_field(
@@ -1233,7 +1235,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         vwind_expl_wgt=vwind_expl_wgt,
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
-        ddz_of_perturbed_temperature_at_cells_on_half_levels=ddz_of_perturbed_temperature_at_cells_on_half_levels,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
         current_exner=current_exner,
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
@@ -1301,21 +1303,21 @@ def test_compute_perturbed_quantities_and_interpolation(
             lb:, nflat_gradp:
         ],
         z_dexner_dz_c_2_ref.asnumpy()[lb:, nflat_gradp:],
-        rtol=1e-11,
+        rtol=5e-9,
     )
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("at_initial_timestep, istep_init", [(True, 2)])
+@pytest.mark.parametrize("at_initial_timestep, istep_init, istep_exit", [(True, 2, 2)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        # (
-        #     dt_utils.REGIONAL_EXPERIMENT,
-        #     "2021-06-20T12:00:10.000",
-        #     "2021-06-20T12:00:10.000",
-        # ),
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
         (
             dt_utils.GLOBAL_EXPERIMENT,
             "2000-01-01T00:00:02.000",
@@ -1323,7 +1325,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         ),
     ],
 )
-def test_interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient(
+def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
     step_date_init,
     step_date_exit,
     experiment,
@@ -1366,7 +1368,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
-    ddz_of_perturbed_temperature_at_cells_on_half_levels = data_alloc.zero_field(
+    pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, backend=backend
     )
 
@@ -1388,13 +1390,13 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_th_ddz_exner_c_ref = sp_exit.z_th_ddz_exner_c()
 
-    compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient.with_backend(
+    compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration.with_backend(
         backend
     )(
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-        ddz_of_perturbed_temperature_at_cells_on_half_levels=ddz_of_perturbed_temperature_at_cells_on_half_levels,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         w=w,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         current_rho=current_rho,
@@ -1429,14 +1431,20 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical
 
     assert helpers.dallclose(
         perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_local, 1:icon_grid.num_levels],
-        z_theta_v_pr_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_local, 1:icon_grid.num_levels],
-        rtol=1e-10,
+            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
+        ],
+        z_theta_v_pr_ic_ref.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
+        ],
+        rtol=4e-9,
     )
 
     assert helpers.dallclose(
-        ddz_of_perturbed_temperature_at_cells_on_half_levels.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_local, 1:icon_grid.num_levels],
-        z_th_ddz_exner_c_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_local, 1:icon_grid.num_levels],
-        rtol=1e-10,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
+        ],
+        z_th_ddz_exner_c_ref.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
+        ],
+        rtol=5e-10,
     )

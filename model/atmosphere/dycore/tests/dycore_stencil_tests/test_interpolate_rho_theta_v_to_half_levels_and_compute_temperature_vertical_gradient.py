@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycore import (
-    interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient,
+    interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -34,15 +34,15 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
 
-class TestInterpolateRhoThetaVToHalfLevelsAndComputeTemperatureVerticalGradient(
+class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration(
     helpers.StencilTest
 ):
-    PROGRAM = interpolate_rho_theta_v_to_half_levels_and_compute_temperature_vertical_gradient
+    PROGRAM = interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration
     OUTPUTS = (
         "rho_at_cells_on_half_levels",
         "perturbed_theta_v_at_cells_on_half_levels",
         "theta_v_at_cells_on_half_levels",
-        "ddz_of_perturbed_temperature_at_cells_on_half_levels",
+        "pressure_buoyancy_acceleration_at_cells_on_half_levels",
     )
 
     @staticmethod
@@ -51,7 +51,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputeTemperatureVerticalGradient(
         rho_at_cells_on_half_levels: np.ndarray,
         perturbed_theta_v_at_cells_on_half_levels: np.ndarray,
         theta_v_at_cells_on_half_levels: np.ndarray,
-        ddz_of_perturbed_temperature_at_cells_on_half_levels: np.ndarray,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
         w: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         current_rho: np.ndarray,
@@ -115,7 +115,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputeTemperatureVerticalGradient(
             * (time_averaged_theta_v_kup - time_averaged_theta_v)
         )
         # theta_v_ic[:, 0] = 0
-        ddz_of_perturbed_temperature_at_cells_on_half_levels_full = (
+        pressure_buoyancy_acceleration_at_cells_on_half_levels_full = (
             vwind_expl_wgt
             * theta_v_at_cells_on_half_levels_full
             * (
@@ -148,16 +148,16 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputeTemperatureVerticalGradient(
         ] = theta_v_at_cells_on_half_levels_full[
             horizontal_start:horizontal_end, vertical_start:vertical_end
         ]
-        ddz_of_perturbed_temperature_at_cells_on_half_levels[
+        pressure_buoyancy_acceleration_at_cells_on_half_levels[
             horizontal_start:horizontal_end, vertical_start:vertical_end
-        ] = ddz_of_perturbed_temperature_at_cells_on_half_levels_full[
+        ] = pressure_buoyancy_acceleration_at_cells_on_half_levels_full[
             horizontal_start:horizontal_end, vertical_start:vertical_end
         ]
         return dict(
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels=ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         )
 
     @pytest.fixture
@@ -189,7 +189,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputeTemperatureVerticalGradient(
         theta_v_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        ddz_of_perturbed_temperature_at_cells_on_half_levels = data_alloc.zero_field(
+        pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )
 
@@ -207,7 +207,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputeTemperatureVerticalGradient(
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels=ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
             w=w,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             current_rho=current_rho,

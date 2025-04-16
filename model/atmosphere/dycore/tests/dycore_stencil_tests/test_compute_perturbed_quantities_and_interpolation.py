@@ -79,7 +79,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         "rho_at_cells_on_half_levels",
         "perturbed_theta_v_at_cells_on_half_levels",
         "theta_v_at_cells_on_half_levels",
-        "ddz_of_perturbed_temperature_at_cells_on_half_levels",
+        "pressure_buoyancy_acceleration_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
 
@@ -102,7 +102,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         perturbed_exner_at_cells_on_model_levels: np.ndarray,
         ddz_of_reference_exner_at_cells_on_half_levels: np.ndarray,
         ddqz_z_half: np.ndarray,
-        ddz_of_perturbed_temperature_at_cells_on_half_levels: np.ndarray,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
         rho_at_cells_on_half_levels: np.ndarray,
         exner_at_cells_on_half_levels: np.ndarray,
         time_extrapolation_parameter_for_exner: np.ndarray,
@@ -255,7 +255,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         (
             perturbed_theta_v_at_cells_on_half_levels[:, :n_lev],
             theta_v_at_cells_on_half_levels[:, :n_lev],
-            ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels,
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
@@ -273,7 +273,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             (
                 perturbed_theta_v_at_cells_on_half_levels[:, :n_lev],
                 theta_v_at_cells_on_half_levels[:, :n_lev],
-                ddz_of_perturbed_temperature_at_cells_on_half_levels,
+                pressure_buoyancy_acceleration_at_cells_on_half_levels,
             ),
         )
 
@@ -332,7 +332,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels=ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
 
@@ -360,7 +360,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             grid, CellDim, KDim
         )
         ddqz_z_half = data_alloc.random_field(grid, CellDim, KDim)
-        ddz_of_perturbed_temperature_at_cells_on_half_levels = data_alloc.zero_field(
+        pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
             grid, CellDim, KDim
         )
         rho_at_cells_on_half_levels = data_alloc.zero_field(grid, CellDim, KDim)
@@ -425,7 +425,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             vwind_expl_wgt=vwind_expl_wgt,
             ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
-            ddz_of_perturbed_temperature_at_cells_on_half_levels=ddz_of_perturbed_temperature_at_cells_on_half_levels,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
             time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
             current_exner=current_exner,
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
