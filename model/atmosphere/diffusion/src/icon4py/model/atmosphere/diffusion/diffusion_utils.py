@@ -40,15 +40,6 @@ def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[floa
     _scale_k(field, factor, out=scaled_field)
 
 
-@gtx.field_operator
-def _init_zero_v_k() -> gtx.Field[[dims.VertexDim, dims.KDim], float]:
-    return broadcast(0.0, (VertexDim, KDim))
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def init_zero_v_k(field: gtx.Field[[dims.VertexDim, dims.KDim], float]):
-    _init_zero_v_k(out=field)
-
 
 @gtx.field_operator
 def _setup_smag_limit(diff_multfac_vn: fa.KField[float]) -> fa.KField[float]:
