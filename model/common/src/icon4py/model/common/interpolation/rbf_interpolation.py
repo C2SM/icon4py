@@ -256,11 +256,22 @@ def compute_rbf_interpolation_matrix(
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     # compute neighbor list and create "cartesian coordinate" vectors (x,y,z) in last dimension
     # 1) get the rbf offset (neighbor list) - currently: input
+    # Pad edge normals and centers with a dummy zero for easier vectorized
+    # computation. This may produce nans (e.g. arc length between (0,0,0) and
+    # another point on the sphere), but these don't hurt the computation.
+    # TODO: Can nans be signaling? default is warn:
+    # https://numpy.org/doc/stable/user/misc.html#how-numpy-handles-numerical-exceptions
+    edge_normal_x = np.pad(edge_normal_x, (0, 1), mode="constant", constant_values=0.0)
+    edge_normal_y = np.pad(edge_normal_y, (0, 1), mode="constant", constant_values=0.0)
+    edge_normal_z = np.pad(edge_normal_z, (0, 1), mode="constant", constant_values=0.0)
     x_normal = edge_normal_x[rbf_offset]
     y_normal = edge_normal_y[rbf_offset]
     z_normal = edge_normal_z[rbf_offset]
     edge_normal = np.stack((x_normal, y_normal, z_normal), axis=-1)
     assert edge_normal.shape == (*rbf_offset.shape, 3)
+    edge_center_x = np.pad(edge_center_x, (0, 1), mode="constant", constant_values=0.0)
+    edge_center_y = np.pad(edge_center_y, (0, 1), mode="constant", constant_values=0.0)
+    edge_center_z = np.pad(edge_center_z, (0, 1), mode="constant", constant_values=0.0)
     x_center = edge_center_x[rbf_offset]
     y_center = edge_center_y[rbf_offset]
     z_center = edge_center_z[rbf_offset]
@@ -317,25 +328,24 @@ def compute_rbf_interpolation_matrix(
 
     # TODO: vectorize this?
     for i in range(z_rbfmat.shape[0]):
-        z_diag = sla.cho_factor(z_rbfmat[i, :])
-        rbf_vec_coeff_1[i, :] = sla.cho_solve(z_diag, rhs1[i, :])
-        rbf_vec_coeff_2[i, :] = sla.cho_solve(z_diag, rhs2[i, :])
+        # Require filling in potential nans on the diagonal (from invalid neighbors)
+        # np.fill_diagonal(z_rbfmat[i, :], 1.0)
+        # Alternative: only do cholesky decomposition on valid neighbors
+        # (invalid always at the end?)
+        invalid_neighbors = np.where(rbf_offset[i, :] < 0)[0]
+        num_neighbors = rbf_offset.shape[1] - invalid_neighbors.size
+        rbfmat = z_rbfmat[i, :num_neighbors, :num_neighbors]
+        # z_diag = sla.cho_factor(np.nan_to_num(z_rbfmat[i, :]))
+        z_diag = sla.cho_factor(rbfmat)
+        # rbf_vec_coeff_1[i, :] = sla.cho_solve(z_diag, np.nan_to_num(rhs1[i, :]))
+        # rbf_vec_coeff_2[i, :] = sla.cho_solve(z_diag, np.nan_to_num(rhs2[i, :]))
+        rbf_vec_coeff_1[i, :num_neighbors] = sla.cho_solve(z_diag, np.nan_to_num(rhs1[i, :num_neighbors]))
+        rbf_vec_coeff_2[i, :num_neighbors] = sla.cho_solve(z_diag, np.nan_to_num(rhs2[i, :num_neighbors]))
     assert nx1nx3.shape == rbf_vec_coeff_1.shape
     assert nx2nx3.shape == rbf_vec_coeff_2.shape
-
-    # TODO: check that zeroed out entries don't affect the result, probably they do?
-    # TODO: the below is probably not sufficient, zero out entries earlier? do
-    # cholesky only on valid entries?
-    nx1nx3[rbf_offset == -1] = 0.0
-    nx2nx3[rbf_offset == -1] = 0.0
-    rbf_vec_coeff_1[rbf_offset == -1] = 0.0
-    rbf_vec_coeff_2[rbf_offset == -1] = 0.0
 
     # Normalize coefficients
     rbf_vec_coeff_1 /= np.sum(nx1nx3 * rbf_vec_coeff_1, axis=1)[:, np.newaxis]
     rbf_vec_coeff_2 /= np.sum(nx2nx3 * rbf_vec_coeff_2, axis=1)[:, np.newaxis]
-
-    rbf_vec_coeff_1[rbf_offset == -1] = 0.0
-    rbf_vec_coeff_2[rbf_offset == -1] = 0.0
 
     return rbf_vec_coeff_1, rbf_vec_coeff_2
