@@ -201,15 +201,17 @@ def multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
 
     """
     val = distance * scale
-    return np.sqrt(1.0 + val * val)
+    return 1.0 / np.sqrt(1.0 + val * val)
 
 
 def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
-    return (
-        gaussian(lengths, scale)
-        if kernel == InterpolationKernel.GAUSSIAN
-        else multiquadratic(lengths, scale)
-    )
+    match kernel:
+        case InterpolationKernel.GAUSSIAN:
+            return gaussian(lengths, scale)
+        case InterpolationKernel.INVERSE_MULTI_QUADRATIC:
+            return multiquadratic(lengths, scale)
+        case _:
+            assert False # TODO: error?
 
 
 # TODO proper name...
