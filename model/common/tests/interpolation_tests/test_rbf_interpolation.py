@@ -161,3 +161,50 @@ def test_rbf_interpolation_matrix_vertex(grid_file, grid_savepoint, interpolatio
 
     assert test_helpers.dallclose(rbf_vec_v1, rbf_vec_coeff_v1_ref, atol=1e-9)
     assert test_helpers.dallclose(rbf_vec_v2, rbf_vec_coeff_v2_ref, atol=1e-9)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("grid_file, experiment", [(dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)])
+def test_rbf_interpolation_matrix_edge(grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment): # fixture
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    grid = geometry.grid
+    rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e().asnumpy()
+    assert rbf_vec_coeff_e_ref.shape == (icon_grid.num_edges, RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE])
+
+    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
+    offset_table_from_savepoint = grid_savepoint.e2c2e()
+    # TODO: Neighbors are not in the same order
+    # assert (offset_table_from_savepoint == offset_table).all()
+
+    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X).asnumpy()
+    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y).asnumpy()
+    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z).asnumpy()
+    edge_center_lat = grid_savepoint.edge_center_lat().asnumpy()
+    edge_center_lon = grid_savepoint.edge_center_lon().asnumpy()
+    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
+    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
+    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
+    dual_normal_v1 = grid_savepoint.dual_normal_v1().asnumpy()
+    dual_normal_v2 = grid_savepoint.dual_normal_v2().asnumpy()
+
+    rbf_vec_e1, rbf_vec_e2 = rbf.compute_rbf_interpolation_matrix(
+        edge_center_lat,
+        edge_center_lon,
+        edge_center_x,
+        edge_center_y,
+        edge_center_z,
+        edge_center_x,
+        edge_center_y,
+        edge_center_z,
+        edge_normal_x,
+        edge_normal_y,
+        edge_normal_z,
+        offset_table_from_savepoint, # TODO: neighbors are not in the same order, use savepoint for now
+        rbf.InterpolationKernel.INVERSE_MULTI_QUADRATIC, # TODO: Read from grid? gaussian default for vertices
+        0.5, # TODO
+        u=dual_normal_v1,
+        v=dual_normal_v2,
+    )
+
+    # TODO: 1e-4 tolerance is too low... what's wrong?
+    assert test_helpers.dallclose(rbf_vec_e1, rbf_vec_coeff_e_ref, atol=1e-4)

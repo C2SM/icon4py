@@ -253,6 +253,10 @@ def compute_rbf_interpolation_matrix(
     rbf_offset: data_alloc.NDArray,  # field_alloc.NDArray, [num_dim, RBFDimension(dim)]
     rbf_kernel: InterpolationKernel,
     scale_factor: float,
+    # TODO: Find another interface to handle edge field (only one set of
+    # coefficients needed, different input for u and v)
+    u: data_alloc.NDArray = None,
+    v: data_alloc.NDArray = None,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     # compute neighbor list and create "cartesian coordinate" vectors (x,y,z) in last dimension
     # 1) get the rbf offset (neighbor list) - currently: input
@@ -290,13 +294,24 @@ def compute_rbf_interpolation_matrix(
     ones = np.ones(thing_center_lat.shape, dtype=float)
     zeros = np.zeros(thing_center_lat.shape, dtype=float)
 
-    z_nx1 = zonal_meridional_component(
-        thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=ones, v=zeros
-    )
+    # TODO: This is dumb. For the edge field we only compute one array of
+    # coefficients, with given u and v components. Right now this computes z_nx1
+    # and z_nx2 identically for that case.
+    assert (u is None and v is None ) or (u is not None and v is not None)
+    if u is None:
+        z_nx1 = zonal_meridional_component(
+            thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=ones, v=zeros
+        )
+        z_nx2 = zonal_meridional_component(
+            thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=zeros, v=ones
+        )
+    else:
+        z_nx1 = zonal_meridional_component(
+            thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=u, v=v
+        )
+        z_nx2 = z_nx1
+
     assert z_nx1.shape == (rbf_offset.shape[0], 3)
-    z_nx2 = zonal_meridional_component(
-        thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=zeros, v=ones
-    )
     assert z_nx2.shape == (rbf_offset.shape[0], 3)
     z_nx3 = edge_normal
     assert z_nx3.shape == (*rbf_offset.shape, 3)
