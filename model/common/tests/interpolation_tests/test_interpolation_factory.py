@@ -232,6 +232,7 @@ def test_get_mass_conserving_cell_average_weight(
 #   -> connectivity order between reference from serialbox and computed value is different
 ## TODO (@halungge) rtol is from parametrization is overwritten in assert - function is most probably wrong
 #  TODO (@halungge) global grid is not tested
+@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -266,6 +267,7 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
 
+@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -284,6 +286,7 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-8)
 
 
+@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
