@@ -410,7 +410,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start_cell": self._grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
-                "n_cells": self._grid.num_cells,
             },
         )
         self.register_provider(compute_vwind_impl_wgt_np)
