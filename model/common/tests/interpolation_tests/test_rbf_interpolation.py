@@ -159,6 +159,5 @@ def test_rbf_interpolation_matrix_vertex(grid_file, grid_savepoint, interpolatio
         0.5, # TODO
     )
 
-    # TODO: low tolerance? do non-neighbors affect results after all?
     assert test_helpers.dallclose(rbf_vec_v1, rbf_vec_coeff_v1_ref, atol=1e-9)
     assert test_helpers.dallclose(rbf_vec_v2, rbf_vec_coeff_v2_ref, atol=1e-9)
