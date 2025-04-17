@@ -215,23 +215,25 @@ def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
 
 
 # TODO proper name...
+# TODO: Use function from helpers.py?
 def zonal_meridional_component(
-    cell_center_lat: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    cell_center_lon: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    thing_center_lat: data_alloc.NDArray,  # fa.CellField[ta.wpfloat], # TODO: type? not always CellField
+    thing_center_lon: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
     u: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
     v: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
 ) -> data_alloc.NDArray:
     """compute z_nx1 and z_nx2"""
-    sin_lat = np.sin(cell_center_lat)
-    sin_lon = np.sin(cell_center_lon)
-    cos_lat = np.cos(cell_center_lat)
-    cos_lon = np.cos(cell_center_lon)
+    sin_lat = np.sin(thing_center_lat)
+    sin_lon = np.sin(thing_center_lon)
+    cos_lat = np.cos(thing_center_lat)
+    cos_lon = np.cos(thing_center_lon)
 
-    x = -1.0 * (sin_lon * u + sin_lat * sin_lon * v)
+    x = -1.0 * (sin_lon * u + sin_lat * cos_lon * v)
     y = cos_lon * u - sin_lat * sin_lon * v
     z = cos_lat * v
     cartesian_v = np.stack((x, y, z), axis=-1)
-    norms = np.sqrt(np.sum(cartesian_v, axis=-1))
+    # TODO: Always 1 or almost 1?
+    norms = np.linalg.norm(cartesian_v, axis=-1)
     return cartesian_v / norms[:, np.newaxis]
 
 
