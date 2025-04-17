@@ -155,7 +155,7 @@ def arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
     # inaccuracies)
     f = np.clip(e, -1.0, 1.0)
-    return np.arccos(f)
+    return np.squeeze(np.arccos(f), axis=1)
 
 
 # TODO: Use?
@@ -238,11 +238,12 @@ def zonal_meridional_component(
 
 
 def compute_rbf_interpolation_matrix(
-    cell_center_lat: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    cell_center_lon: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    cell_center_x: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    cell_center_y: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    cell_center_z: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    # TODO: naming
+    thing_center_lat: data_alloc.NDArray,  # fa.CellField[ta.wpfloat], TODO: any of CellField, EdgeField, VertexField
+    thing_center_lon: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    thing_center_x: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    thing_center_y: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    thing_center_z: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
     edge_center_x: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
     edge_center_y: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
     edge_center_z: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
@@ -259,44 +260,82 @@ def compute_rbf_interpolation_matrix(
     y_normal = edge_normal_y[rbf_offset]
     z_normal = edge_normal_z[rbf_offset]
     edge_normal = np.stack((x_normal, y_normal, z_normal), axis=-1)
+    assert edge_normal.shape == (*rbf_offset.shape, 3)
     x_center = edge_center_x[rbf_offset]
     y_center = edge_center_y[rbf_offset]
     z_center = edge_center_z[rbf_offset]
     edge_centers = np.stack((x_center, y_center, z_center), axis=-1)
+    assert edge_centers.shape == (*rbf_offset.shape, 3)
 
     z_nxprod = dot_product(edge_normal, edge_normal)
+    assert z_nxprod.shape == (rbf_offset.shape[0], rbf_offset.shape[1], rbf_offset.shape[1])
     z_dist = arc_length_matrix(edge_centers)
+    assert z_dist.shape == (rbf_offset.shape[0], rbf_offset.shape[1], rbf_offset.shape[1])
 
     z_rbfmat = z_nxprod * kernel(rbf_kernel, z_dist, scale_factor)
+    assert z_rbfmat.shape == (rbf_offset.shape[0], rbf_offset.shape[1], rbf_offset.shape[1])
 
     # 3) z_nx2, z_nx1
-    ones = np.ones(cell_center_lat.shape, dtype=float)
-    zeros = np.zeros(cell_center_lat.shape, dtype=float)
+    ones = np.ones(thing_center_lat.shape, dtype=float)
+    zeros = np.zeros(thing_center_lat.shape, dtype=float)
 
     z_nx1 = zonal_meridional_component(
-        cell_center_lat=cell_center_lat, cell_center_lon=cell_center_lon, u=ones, v=zeros
+        thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=ones, v=zeros
     )
+    assert z_nx1.shape == (rbf_offset.shape[0], 3)
     z_nx2 = zonal_meridional_component(
-        cell_center_lat=cell_center_lat, cell_center_lon=cell_center_lon, u=zeros, v=ones
+        thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=zeros, v=ones
     )
+    assert z_nx2.shape == (rbf_offset.shape[0], 3)
     z_nx3 = edge_normal
+    assert z_nx3.shape == (*rbf_offset.shape, 3)
 
     # 4 right hand side
-    cell_centers = np.stack((cell_center_x, cell_center_y, cell_center_z), axis=-1)
-    vector_dist = arc_length(cell_centers, edge_centers)
+    thing_centers = np.stack((thing_center_x, thing_center_y, thing_center_z), axis=-1)
+    assert thing_centers.shape == (rbf_offset.shape[0], 3)
+    vector_dist = arc_length_2(thing_centers[:, np.newaxis, :], edge_centers)
+    assert vector_dist.shape == rbf_offset.shape
     rbf_val = kernel(rbf_kernel, vector_dist, scale_factor)
+    assert rbf_val.shape == rbf_offset.shape
     # projection
-    rhs1 = rbf_val * dot_product(z_nx1, z_nx3)
-    rhs2 = rbf_val * dot_product(z_nx2, z_nx3)
+    # TODO: dot_product is not the same as the matmul below?
+    # more memory? more compute? wrong result?
+    # nx1nx3 = dot_product(z_nx1, z_nx3)
+    # nx2nx3 = dot_product(z_nx2, z_nx3)
+    nx1nx3 = np.matmul(z_nx1[:, np.newaxis], z_nx3.transpose(0, 2, 1)).squeeze()
+    nx2nx3 = np.matmul(z_nx2[:, np.newaxis], z_nx3.transpose(0, 2, 1)).squeeze()
+    assert nx1nx3.shape == rbf_offset.shape
+    assert nx2nx3.shape == rbf_offset.shape
+    rhs1 = rbf_val * nx1nx3
+    rhs2 = rbf_val * nx2nx3
+    assert rhs1.shape == rbf_offset.shape
+    assert rhs2.shape == rbf_offset.shape
 
-    # 2, 5) solve choleski system
+    # 2, 5) solve cholesky system
     rbf_vec_coeff_1 = np.zeros(rbf_offset.shape, dtype=float)
     rbf_vec_coeff_2 = np.zeros(rbf_offset.shape, dtype=float)
 
+    # TODO: vectorize this?
     for i in range(z_rbfmat.shape[0]):
-        mat = z_rbfmat[i, :]
-        z_diag = np.linalg.cholesky(mat, upper=False)
-        rbf_vec_coeff_1[i, :] = sla.solve_triangular(z_diag, rhs1)
-        rbf_vec_coeff_2[i, :] = sla.solve_triangular(z_diag, rhs2)
+        z_diag = sla.cho_factor(z_rbfmat[i, :])
+        rbf_vec_coeff_1[i, :] = sla.cho_solve(z_diag, rhs1[i, :])
+        rbf_vec_coeff_2[i, :] = sla.cho_solve(z_diag, rhs2[i, :])
+    assert nx1nx3.shape == rbf_vec_coeff_1.shape
+    assert nx2nx3.shape == rbf_vec_coeff_2.shape
+
+    # TODO: check that zeroed out entries don't affect the result, probably they do?
+    # TODO: the below is probably not sufficient, zero out entries earlier? do
+    # cholesky only on valid entries?
+    nx1nx3[rbf_offset == -1] = 0.0
+    nx2nx3[rbf_offset == -1] = 0.0
+    rbf_vec_coeff_1[rbf_offset == -1] = 0.0
+    rbf_vec_coeff_2[rbf_offset == -1] = 0.0
+
+    # Normalize coefficients
+    rbf_vec_coeff_1 /= np.sum(nx1nx3 * rbf_vec_coeff_1, axis=1)[:, np.newaxis]
+    rbf_vec_coeff_2 /= np.sum(nx2nx3 * rbf_vec_coeff_2, axis=1)[:, np.newaxis]
+
+    rbf_vec_coeff_1[rbf_offset == -1] = 0.0
+    rbf_vec_coeff_2[rbf_offset == -1] = 0.0
 
     return rbf_vec_coeff_1, rbf_vec_coeff_2
