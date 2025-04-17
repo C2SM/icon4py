@@ -24,6 +24,10 @@ EDGE_LON: Final[str] = "grid_longitude_of_edge_midpoint"
 EDGE_LAT: Final[str] = "grid_latitude_of_edge_midpoint"
 VERTEX_LON: Final[str] = "grid_longitude_of_vertex"
 VERTEX_LAT: Final[str] = "grid_latitude_of_vertex"
+# TODO: Just VERTEX_X/Y/Z?
+VERTEX_CENTER_X: Final[str] = "x_component_of_vertex_center"
+VERTEX_CENTER_Y: Final[str] = "y_component_of_vertex_center"
+VERTEX_CENTER_Z: Final[str] = "z_component_of_vertex_center"
 
 CELL_LON: Final[str] = "grid_longitude_of_cell_center"
 CELL_LAT: Final[str] = "grid_latitude_of_cell_center"
@@ -99,6 +103,30 @@ attrs: dict[str, model.FieldMetaData] = {
         units="radian",
         dims=(dims.VertexDim,),
         icon_var_name="t_grid_vertices%vertex%lon",
+        dtype=ta.wpfloat,
+    ),
+    VERTEX_CENTER_X: dict(
+        standard_name=VERTEX_CENTER_X,
+        long_name="x component of cartesian coordinates of vertex centers",
+        units="1",
+        dims=(dims.VertexDim,),
+        icon_var_name="t_grid_vertices%vertex%x(1)",
+        dtype=ta.wpfloat,
+    ),
+    VERTEX_CENTER_Y: dict(
+        standard_name=VERTEX_CENTER_Y,
+        long_name="x component of cartesian coordinates of vertex centers",
+        units="1",
+        dims=(dims.VertexDim,),
+        icon_var_name="t_grid_vertices%vertex%x(2)",
+        dtype=ta.wpfloat,
+    ),
+    VERTEX_CENTER_Z: dict(
+        standard_name=VERTEX_CENTER_Z,
+        long_name="z component of cartesian coordinates of vertex centers",
+        units="1",
+        dims=(dims.VertexDim,),
+        icon_var_name="t_grid_vertices%vertex%x(3)",
         dtype=ta.wpfloat,
     ),
     EDGE_LAT: dict(
