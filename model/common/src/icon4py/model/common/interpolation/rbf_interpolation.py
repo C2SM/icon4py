@@ -103,16 +103,62 @@ def construct_rbf_matrix_offsets_tables_for_vertices(grid: base_grid.BaseGrid) -
 
 
 def dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+    # alias: np.transpose(v2, axes=(0, 2, 1)) for 3d array
     v2_tilde = np.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
     return np.matmul(v1, v2_tilde)
 
 
+# NOTE: this one computes the pairwise arc lengths between elements in v, the
+# next version computes pairwise arc lengths between two different arrays
+# TODO: Combine?
 def arc_length_matrix(v: np.ndarray) -> np.ndarray:
-    v_norm = _normalize_along_last_axis(v)
-    return _arc_length_of_normalized_input(v_norm, v_norm)
+    # TODO: equivalent?
+    # v_norm = _normalize_along_last_axis(v)
+    # return _arc_length_of_normalized_input(v_norm, v_norm)
+
+    # For pairs of points p1 and p2 compute:
+    # arccos(dot(p1, p2) / (norm(p1) * norm(p2)))
+    # Compute all pairs of dot products
+    a = np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
+    # Use the dot product of the diagonals to get the norm of each point
+    # TODO: Always 1? Almost 1? Points on the unit sphere?
+    b = np.sqrt(np.diagonal(a, axis1=1, axis2=2))
+    # Divide the dot products by the broadcasted norms
+    # TODO: Use newaxis instead?
+    c = np.divide(a, np.reshape(b, shape=(b.shape[0], b.shape[1], 1)))
+    d = np.divide(c, np.reshape(b, shape=(b.shape[0], 1, b.shape[1])))
+    # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
+    # inaccuracies)
+    e = np.clip(d, -1.0, 1.0)
+    # TODO: avoid intermediates?
+    return np.arccos(e)
 
 
+# TODO: This assumes v1 is 2d and v3 is 3d
+# TODO: name?
+# TODO: this is pretty much the same as above, except we don't get the squares
+# of the norms directly from the first matmul
+# TODO: this is used only in one place, it's probably not as generic as it looks
+def arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+    # For pairs of points p1 and p2 compute:
+    # arccos(dot(p1, p2) / (norm(p1) * norm(p2)))
+    # Compute all pairs of dot products
+    a = np.matmul(v1, np.transpose(v2, axes=(0, 2, 1)))
+    # TODO: Always 1? Almost 1? Points on the unit sphere?
+    b = np.linalg.norm(v1, axis=-1)
+    c = np.linalg.norm(v2, axis=-1)
+    # Divide the dot products by the broadcasted norms
+    # TODO: Use newaxis instead?
+    d = np.divide(a, np.reshape(b, shape=(b.shape[0], b.shape[1], 1)))
+    e = np.divide(d, np.reshape(c, shape=(c.shape[0], 1, c.shape[1])))
+    # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
+    # inaccuracies)
+    f = np.clip(e, -1.0, 1.0)
+    return np.arccos(f)
+
+
+# TODO: Use?
 def arc_length(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     v1_norm = _normalize_along_last_axis(v1)
     v2_norm = _normalize_along_last_axis(v2)
@@ -120,14 +166,23 @@ def arc_length(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     return _arc_length_of_normalized_input(v1_norm, v2_norm)
 
 
+# TODO: Use?
 def _arc_length_of_normalized_input(v1_norm, v2_norm):
     d = dot_product(v1_norm, v2_norm)
-    return np.arccos(d)
+    d_clip = np.clip(d, -1.0, 1.0)
+    r = np.arccos(d_clip)
+    return r
 
 
 def _normalize_along_last_axis(v: np.ndarray):
     norms = np.sqrt(np.sum(v * 1, axis=-1))
-    return v / norms[..., np.newaxis]
+    # print("_normalize_along_last_axis")
+    # print("norms")
+    # print(norms)
+    # print("v / norms[..., np.newaxis]")
+    r = v / norms[..., np.newaxis]
+    # print(r)
+    return r
 
 
 def gaussian(lengths: np.ndarray, scale: float) -> np.ndarray:
