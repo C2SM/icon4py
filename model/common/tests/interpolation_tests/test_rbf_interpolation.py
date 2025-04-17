@@ -27,22 +27,43 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file):
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
     assert offset_table.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
     assert np.max(offset_table) == grid.num_edges - 1
+    # TODO: This is literally doing the same as the implementation, access directly with c2c etc. in test?
     c2e = grid.connectivities[dims.C2EDim]
     c2e2c = grid.connectivities[dims.C2E2CDim]
     for i in range(offset_table.shape[0]):
-        offset_table[i][:3] = c2e[c2e2c[i][0]]
-        offset_table[i][3:6] = c2e[c2e2c[i][1]]
-        offset_table[i][6:] = c2e[c2e2c[i][2]]
+        assert (offset_table[i][:3] == c2e[c2e2c[i][0]]).all()
+        assert (offset_table[i][3:6] == c2e[c2e2c[i][1]]).all()
+        assert (offset_table[i][6:] == c2e[c2e2c[i][2]]).all()
 
 
-# TODO make cupy ready
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.R02B04_GLOBAL, dt_utils.JABW_EXPERIMENT),
-    ],
-)
-def test_rbf_interpolation_matrix(grid_file, experiment, backend, interpolation_savepoint):
+@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
+def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file):
+    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
+    grid = grid_manager.grid
+    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
+    assert offset_table.shape == (grid.num_edges, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE])
+    assert np.max(offset_table) == grid.num_edges - 1
+    e2c2e = grid.connectivities[dims.E2C2EDim]
+    assert (offset_table == e2c2e).all()
+
+
+@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
+def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file):
+    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
+    grid = grid_manager.grid
+    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
+    assert offset_table.shape == (grid.num_vertices, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
+    assert np.max(offset_table) == grid.num_edges - 1
+    v2e = grid.connectivities[dims.V2EDim]
+    # for i in range(offset_table.shape[0]):
+    assert (offset_table == v2e).all()
+
+# TODO: make cupy ready
+# TODO: grid_file here only for comparison?
+# TODO: more experiments? at least one regional (with missing neighbors)
+@pytest.mark.datatest
+@pytest.mark.parametrize("grid_file, experiment", [(dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)])
+def test_rbf_interpolation_matrix_cell(grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment): # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
