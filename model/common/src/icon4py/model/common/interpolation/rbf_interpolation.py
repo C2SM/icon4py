@@ -99,7 +99,7 @@ def dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
 # NOTE: this one computes the pairwise arc lengths between elements in v, the
 # next version computes pairwise arc lengths between two different arrays
 # TODO: Combine?
-def arc_length_matrix(v: np.ndarray) -> np.ndarray:
+def arc_length_pairwise(v: np.ndarray) -> np.ndarray:
     # TODO: equivalent?
     # v_norm = _normalize_along_last_axis(v)
     # return _arc_length_of_normalized_input(v_norm, v_norm)
@@ -107,19 +107,20 @@ def arc_length_matrix(v: np.ndarray) -> np.ndarray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2)))
     # Compute all pairs of dot products
-    a = np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
+    arc_lengths = dot_product(v, v) # np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
     # Use the dot product of the diagonals to get the norm of each point
-    # TODO: Always 1? Almost 1? Points on the unit sphere?
-    b = np.sqrt(np.diagonal(a, axis1=1, axis2=2))
+    norms = np.sqrt(np.diagonal(arc_lengths, axis1=1, axis2=2))
     # Divide the dot products by the broadcasted norms
-    # TODO: Use newaxis instead?
-    c = np.divide(a, np.reshape(b, shape=(b.shape[0], b.shape[1], 1)))
-    d = np.divide(c, np.reshape(b, shape=(b.shape[0], 1, b.shape[1])))
+    # TODO: Check that these are broadcast correctly. Leaving them out has
+    # almost no impact on result, since they're close to 1, but may affect
+    # precision.
+    arc_lengths = np.divide(arc_lengths, norms[:, :, np.newaxis])
+    arc_lengths = np.divide(arc_lengths, norms[:, np.newaxis, :])
     # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
     # inaccuracies)
-    e = np.clip(d, -1.0, 1.0)
+    arc_lengths = np.clip(arc_lengths, -1.0, 1.0)
     # TODO: avoid intermediates?
-    return np.arccos(e)
+    return np.arccos(arc_lengths)
 
 
 # TODO: This assumes v1 is 2d and v3 is 3d
@@ -131,18 +132,16 @@ def arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2)))
     # Compute all pairs of dot products
-    a = np.matmul(v1, np.transpose(v2, axes=(0, 2, 1)))
-    # TODO: Always 1? Almost 1? Points on the unit sphere?
-    b = np.linalg.norm(v1, axis=-1)
-    c = np.linalg.norm(v2, axis=-1)
+    arc_lengths = dot_product(v1, v2)
+    v1_norm = np.linalg.norm(v1, axis=-1)
+    v2_norm = np.linalg.norm(v2, axis=-1)
     # Divide the dot products by the broadcasted norms
-    # TODO: Use newaxis instead?
-    d = np.divide(a, np.reshape(b, shape=(b.shape[0], b.shape[1], 1)))
-    e = np.divide(d, np.reshape(c, shape=(c.shape[0], 1, c.shape[1])))
+    arc_lengths = np.divide(arc_lengths, v1_norm[:, :, np.newaxis])
+    arc_lengths = np.divide(arc_lengths, v2_norm[:, np.newaxis, :])
     # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
     # inaccuracies)
-    f = np.clip(e, -1.0, 1.0)
-    return np.squeeze(np.arccos(f), axis=1)
+    arc_lengths = np.clip(arc_lengths, -1.0, 1.0)
+    return np.squeeze(np.arccos(arc_lengths), axis=1)
 
 
 # TODO: Use?
@@ -271,7 +270,7 @@ def compute_rbf_interpolation_matrix(
 
     z_nxprod = dot_product(edge_normal, edge_normal)
     assert z_nxprod.shape == (rbf_offset.shape[0], rbf_offset.shape[1], rbf_offset.shape[1])
-    z_dist = arc_length_matrix(edge_centers)
+    z_dist = arc_length_pairwise(edge_centers)
     assert z_dist.shape == (rbf_offset.shape[0], rbf_offset.shape[1], rbf_offset.shape[1])
 
     z_rbfmat = z_nxprod * kernel(rbf_kernel, z_dist, scale_factor)
