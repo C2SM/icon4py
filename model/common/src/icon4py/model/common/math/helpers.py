@@ -117,7 +117,7 @@ def _grad_fd_tang(
     return grad_tang_psi_e
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def geographical_to_cartesian_on_cells(
     lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat]
 ) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
@@ -140,7 +140,7 @@ def geographical_to_cartesian_on_cells(
     return x, y, z
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def geographical_to_cartesian_on_edges(
     lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat]
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
@@ -392,6 +392,7 @@ def compute_zonal_and_meridional_components_on_edges(
     )
 
 
+# TODO: Use in rbf interpolation?
 @gtx.field_operator
 def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     lat: fa.EdgeField[ta.wpfloat],
@@ -400,7 +401,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     v: fa.EdgeField[ta.wpfloat],
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     """
-    Compute cartesian coordinates form zonal an meridonal components at position (lat, lon)
+    Compute cartesian coordinates from zonal an meridional components at position (lat, lon)
     Args:
         lat: latitude
         lon: longitude
@@ -501,7 +502,7 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
 
 
 @gtx.field_operator
-def arc_length(
+def arc_length_on_edges(
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
     y0: fa.EdgeField[ta.wpfloat],

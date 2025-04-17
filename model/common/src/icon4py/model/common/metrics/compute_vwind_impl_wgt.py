@@ -12,6 +12,7 @@ import numpy as np
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+# TODO @halungge the experiment argument in here needs to go away.
 def compute_vwind_impl_wgt(
     c2e: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
