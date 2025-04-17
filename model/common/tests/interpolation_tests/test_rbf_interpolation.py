@@ -67,22 +67,31 @@ def test_rbf_interpolation_matrix_cell(grid_file, grid_savepoint, interpolation_
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
-    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
-    assert rbf_vec_coeff_c2_ref.shape == (grid.num_cells, RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
-    assert rbf_vec_coeff_c1_ref.shape == (grid.num_cells, RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
+    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2().asnumpy()
+    assert rbf_vec_coeff_c1_ref.shape == (icon_grid.num_cells, RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
+    assert rbf_vec_coeff_c2_ref.shape == (icon_grid.num_cells, RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
 
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
-    edge_x = geometry.get(geometry_attrs.EDGE_CENTER_X).asnumpy()
-    edge_y = geometry.get(geometry_attrs.EDGE_CENTER_Y).asnumpy()
-    edge_z = geometry.get(geometry_attrs.EDGE_CENTER_Z).asnumpy()
-    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
-    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
-    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
+
+    # cell center
     cell_center_lat = geometry.get(geometry_attrs.CELL_LAT).asnumpy()
     cell_center_lon = geometry.get(geometry_attrs.CELL_LON).asnumpy()
     cell_center_x = geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
     cell_center_y = geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
     cell_center_z = geometry.get(geometry_attrs.CELL_CENTER_Z).asnumpy()
+
+    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X).asnumpy()
+    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y).asnumpy()
+    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z).asnumpy()
+    edge_center_lat = grid_savepoint.edge_center_lat().asnumpy()
+    edge_center_lon = grid_savepoint.edge_center_lon().asnumpy()
+    # TODO: normals not dallclose? check
+    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
+    # edge_normal_x_from_savepoint = grid_savepoint.primal_cart_normal_x().asnumpy()
+    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
+    # edge_normal_y_from_savepoint = grid_savepoint.primal_cart_normal_y().asnumpy()
+    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
+    # edge_normal_z_from_savepoint = grid_savepoint.primal_cart_normal_z().asnumpy()
 
     rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix(
         cell_center_lat,
@@ -90,15 +99,16 @@ def test_rbf_interpolation_matrix_cell(grid_file, grid_savepoint, interpolation_
         cell_center_x,
         cell_center_y,
         cell_center_z,
-        edge_x,
-        edge_y,
-        edge_z,
+        edge_center_x,
+        edge_center_y,
+        edge_center_z,
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
         offset_table,
         rbf.InterpolationKernel.GAUSSIAN,
-        1.0,
+        0.5, # TODO: correct for r02b04 grid, smaller for smaller grids
     )
-    test_helpers.dallclose(rbf_vec_c1, rbf_vec_coeff_c1_ref)
-    test_helpers.dallclose(rbf_vec_c2, rbf_vec_coeff_c2_ref)
+
+    assert test_helpers.dallclose(rbf_vec_c1, rbf_vec_coeff_c1_ref, atol=1e-8)
+    assert test_helpers.dallclose(rbf_vec_c2, rbf_vec_coeff_c2_ref, atol=1e-8)
