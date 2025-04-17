@@ -112,3 +112,53 @@ def test_rbf_interpolation_matrix_cell(grid_file, grid_savepoint, interpolation_
 
     assert test_helpers.dallclose(rbf_vec_c1, rbf_vec_coeff_c1_ref, atol=1e-8)
     assert test_helpers.dallclose(rbf_vec_c2, rbf_vec_coeff_c2_ref, atol=1e-8)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("grid_file, experiment", [(dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)])
+def test_rbf_interpolation_matrix_vertex(grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment): # fixture
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    grid = geometry.grid
+    rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1().asnumpy()
+    rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2().asnumpy()
+    assert rbf_vec_coeff_v1_ref.shape == (icon_grid.num_vertices, RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
+    assert rbf_vec_coeff_v2_ref.shape == (icon_grid.num_vertices, RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
+
+    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
+
+    # vertex center
+    vertex_lat = geometry.get(geometry_attrs.VERTEX_LAT).asnumpy()
+    vertex_lon = geometry.get(geometry_attrs.VERTEX_LON).asnumpy()
+    vertex_x = geometry.get(geometry_attrs.VERTEX_CENTER_X).asnumpy()
+    vertex_y = geometry.get(geometry_attrs.VERTEX_CENTER_Y).asnumpy()
+    vertex_z = geometry.get(geometry_attrs.VERTEX_CENTER_Z).asnumpy()
+
+    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X).asnumpy()
+    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y).asnumpy()
+    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z).asnumpy()
+    edge_center_lat = grid_savepoint.edge_center_lat().asnumpy()
+    edge_center_lon = grid_savepoint.edge_center_lon().asnumpy()
+    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
+    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
+    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
+
+    rbf_vec_v1, rbf_vec_v2 = rbf.compute_rbf_interpolation_matrix(
+        vertex_lat,
+        vertex_lon,
+        vertex_x,
+        vertex_y,
+        vertex_z,
+        edge_center_x,
+        edge_center_y,
+        edge_center_z,
+        edge_normal_x,
+        edge_normal_y,
+        edge_normal_z,
+        offset_table,
+        rbf.InterpolationKernel.GAUSSIAN, # TODO: Read from grid? gaussian default for vertices
+        0.5, # TODO
+    )
+
+    # TODO: low tolerance? do non-neighbors affect results after all?
+    assert test_helpers.dallclose(rbf_vec_v1, rbf_vec_coeff_v1_ref, atol=9e-5)
+    assert test_helpers.dallclose(rbf_vec_v2, rbf_vec_coeff_v2_ref, atol=9e-5)
