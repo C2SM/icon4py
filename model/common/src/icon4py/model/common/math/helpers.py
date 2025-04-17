@@ -392,6 +392,7 @@ def compute_zonal_and_meridional_components_on_edges(
     )
 
 
+# TODO: Use in rbf interpolation?
 @gtx.field_operator
 def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     lat: fa.EdgeField[ta.wpfloat],
