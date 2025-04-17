@@ -400,7 +400,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     v: fa.EdgeField[ta.wpfloat],
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     """
-    Compute cartesian coordinates form zonal an meridonal components at position (lat, lon)
+    Compute cartesian coordinates from zonal an meridional components at position (lat, lon)
     Args:
         lat: latitude
         lon: longitude
