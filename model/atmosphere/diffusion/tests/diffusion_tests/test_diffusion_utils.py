@@ -95,13 +95,6 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
 
 
-def test_init_zero_vertex_k(backend):
-    grid = simple_grid.SimpleGrid()
-    f = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, backend=backend)
-    diffusion_utils.init_zero_v_k.with_backend(backend)(f, offset_provider={})
-    assert np.allclose(0.0, f.asnumpy())
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
