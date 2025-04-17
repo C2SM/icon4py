@@ -93,9 +93,6 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     z_ifc = metrics_savepoint.z_ifc()
 
     nlevp1 = icon_grid.num_levels + 1
-    k_index = data_alloc.index_field(
-        icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend
-    )
     z_mc = metrics_savepoint.z_mc()
     ddqz_z_half = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
@@ -104,7 +101,6 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     compute_ddqz_z_half.with_backend(backend=backend)(
         z_ifc=z_ifc,
         z_mc=z_mc,
-        k=k_index,
         nlev=icon_grid.num_levels,
         ddqz_z_half=ddqz_z_half,
         horizontal_start=0,
@@ -414,13 +410,11 @@ def test_compute_ddxt_z_full(
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     exner_expol = 0.333 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.3333333333333
-    cell_index = data_alloc.index_field(icon_grid, dims.CellDim, backend=backend)
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
-        cell=cell_index,
         exner_exfac=exner_exfac,
         exner_expol=exner_expol,
         lateral_boundary_level_2=horizontal_start,
