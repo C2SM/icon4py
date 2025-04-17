@@ -235,6 +235,10 @@ class SaturationAdjustment:
         self._allocate_tendencies()
         self._determine_horizontal_domains()
 
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
+
     # TODO (Chia Rui): add in input and output data properties, and refactor this component to follow the physics component protocol.
     def input_properties(self) -> dict[str, model.FieldMetaData]:
         raise NotImplementedError
