@@ -63,42 +63,29 @@ class InterpolationConfig:
 
 
 def construct_rbf_matrix_offsets_tables_for_cells(grid: base_grid.BaseGrid) -> data_alloc.NDArray:
-    """Compute the neighbor tables for the cell RBF matrix: rbf_vec_index_c
-
-    TODO: deal with Invalid C2E2C neighbors: either because of lateral boundaries or because of halos
-    """
+    """Compute the neighbor tables for the cell RBF matrix: rbf_vec_index_c"""
     c2e2c = grid.connectivities[dims.C2E2CDim]
     c2e = grid.connectivities[dims.C2EDim]
     offset = c2e[c2e2c]
-    shp = offset.shape
-    assert len(shp) == 3
+    assert len(offset.shape) == 3
     # flatten this offset to construct a (num_cells, RBFDimension.CELL) shape offset matrix
-    new_shape = (shp[0], shp[1] * shp[2])
-    flattened_offset = offset.reshape(new_shape)
+    flattened_offset = offset.reshape((offset.shape[0], offset.shape[1] * offset.shape[2]))
+    assert flattened_offset.shape == (grid.num_cells, RBF_STENCIL_SIZE[RBFDimension.CELL])
     return flattened_offset
 
 
 def construct_rbf_matrix_offsets_tables_for_edges(grid: base_grid.BaseGrid) -> data_alloc.NDArray:
-    """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e
-
-    TODO: edge cases? -1 signals no neighbor
-    """
+    """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e"""
     e2c2e = grid.connectivities[dims.E2C2EDim]
     offset = e2c2e
-    shp = offset.shape
-    assert len(shp) == 2
+    assert offset.shape == (grid.num_edges, RBF_STENCIL_SIZE[RBFDimension.EDGE])
     return offset
 
 
 def construct_rbf_matrix_offsets_tables_for_vertices(grid: base_grid.BaseGrid) -> data_alloc.NDArray:
-    """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_v
-
-    TODO: edge cases? -1 signals no neighbor
-    """
-    v2e = grid.connectivities[dims.V2EDim]
-    offset = v2e
-    shp = offset.shape
-    assert len(shp) == 2
+    """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_v"""
+    offset = grid.connectivities[dims.V2EDim]
+    assert offset.shape == (grid.num_vertices, RBF_STENCIL_SIZE[RBFDimension.VERTEX])
     return offset
 
 
