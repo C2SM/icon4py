@@ -78,6 +78,30 @@ def construct_rbf_matrix_offsets_tables_for_cells(grid: base_grid.BaseGrid) -> d
     return flattened_offset
 
 
+def construct_rbf_matrix_offsets_tables_for_edges(grid: base_grid.BaseGrid) -> data_alloc.NDArray:
+    """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e
+
+    TODO: edge cases? -1 signals no neighbor
+    """
+    e2c2e = grid.connectivities[dims.E2C2EDim]
+    offset = e2c2e
+    shp = offset.shape
+    assert len(shp) == 2
+    return offset
+
+
+def construct_rbf_matrix_offsets_tables_for_vertices(grid: base_grid.BaseGrid) -> data_alloc.NDArray:
+    """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_v
+
+    TODO: edge cases? -1 signals no neighbor
+    """
+    v2e = grid.connectivities[dims.V2EDim]
+    offset = v2e
+    shp = offset.shape
+    assert len(shp) == 2
+    return offset
+
+
 def dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     v2_tilde = np.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
