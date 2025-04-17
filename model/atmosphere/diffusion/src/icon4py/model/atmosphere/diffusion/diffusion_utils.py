@@ -11,7 +11,7 @@ from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import broadcast, minimum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim, VertexDim
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 
@@ -38,7 +38,6 @@ def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
 @gtx.program
 def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
     _scale_k(field, factor, out=scaled_field)
-
 
 
 @gtx.field_operator
