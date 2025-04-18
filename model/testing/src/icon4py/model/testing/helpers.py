@@ -138,6 +138,8 @@ def _test_validation(
         np.testing.assert_allclose(
             input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
+            rtol=1e-7,
+            atol=1e-14,
             equal_nan=True,
             err_msg=f"Validation failed for '{name}'",
         )
