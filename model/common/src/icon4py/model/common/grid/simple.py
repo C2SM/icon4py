@@ -499,7 +499,7 @@ class SimpleGrid(BaseGrid):
             num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
         )
         vertical_grid_config = VerticalGridConfig(num_levels=10)
-        on_gpu = backend is None or data_alloc.is_cupy_device(backend)
+        on_gpu = False if backend is None else data_alloc.is_cupy_device(backend)
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
             vertical_size=vertical_grid_config.num_levels,
