@@ -9,7 +9,6 @@ import functools
 import uuid
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims, exceptions
