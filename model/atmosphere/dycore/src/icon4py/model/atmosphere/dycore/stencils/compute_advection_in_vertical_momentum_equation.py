@@ -42,7 +42,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
     nlev: gtx.int32,
-    nrdmax: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
 ) -> fa.CellKField[ta.vpfloat]:
     # TODO(havogt): we should get rid of the cell_lower_bound and cell_upper_bound,
     # they are only to protect write to halo (if I understand correctly)
@@ -63,7 +63,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
         vertical_wind_advective_tendency,
     )
     vertical_wind_advective_tendency = concat_where(
-        ((maximum(3, nrdmax - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 3)),
+        ((maximum(3, end_index_of_damping_layer - 2) - 1) <= dims.KDim) & (dims.KDim < (nlev - 3)),
         _add_extra_diffusion_for_w_con_approaching_cfl(
             cfl_clipping,
             owner_mask,
@@ -102,7 +102,7 @@ def _compute_advection_in_vertical_momentum_equation(
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     nlev: gtx.int32,
-    nrdmax: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
 ) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat]]:
     contravariant_corrected_w_at_cells_on_model_levels = (
         _interpolate_contravariant_vertical_velocity_to_full_levels(
@@ -127,7 +127,7 @@ def _compute_advection_in_vertical_momentum_equation(
             cfl_w_limit,
             dtime,
             nlev,
-            nrdmax,
+            end_index_of_damping_layer,
         )
         if not skip_compute_predictor_vertical_advection
         else vertical_wind_advective_tendency
@@ -156,13 +156,47 @@ def compute_advection_in_vertical_momentum_equation(
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     nlev: gtx.int32,
-    nrdmax: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """Formerly known as fused_velocity_advection_stencil_15_to_18."""
+    """
+    Formerly known as fused_velocity_advection_stencil_15_to_18.
+
+    This computes the vertical momentum advection in the vertical momentum equation
+
+    Args:
+        - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at model levels
+        - vertical_wind_advective_tendency: vertical advection tendency of the vertical wind
+        - w: vertical wind at cell centers
+        - contravariant_corrected_w_at_cells_on_half_levels: contravariant-corrected vertical velocity at cells on half levels
+        - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity at edges on half levels
+        - coeff1_dwdz: metrics field (first coefficient for vertical derivative of vertical wind)
+        - coeff2_dwdz: metrics field (second coefficient for vertical derivative of vertical wind)
+        - e_bln_c_s: interpolation field (edge-to-cell interpolation weights)
+        - ddqz_z_half: metrics field
+        - area: cell area
+        - geofac_n2s: interpolation field
+        - scalfac_exdiff: scalar factor for external diffusion
+        - cfl_w_limit: CFL limit for vertical velocity
+        - dtime: time step
+        - skip_compute_predictor_vertical_advection: logical flag to skip the vertical advection
+        - cfl_clipping: boolean field indicating CFL clipping applied per cell and level
+        - owner_mask: ownership mask for each cell
+        - nlev: number of (full/model) vertical levels
+        - end_index_of_damping_layer: vertical index where damping ends
+        - horizontal_start: start index in the horizontal dimension
+        - horizontal_end: end index in the horizontal dimension
+        - vertical_start: start index in the vertical dimension
+        - vertical_end: end index in the vertical dimension
+
+    Returns:
+        - contravariant_corrected_w_at_cells_on_model_levels
+        - vertical_wind_advective_tendency
+
+    """
 
     _compute_advection_in_vertical_momentum_equation(
         vertical_wind_advective_tendency,
@@ -182,7 +216,7 @@ def compute_advection_in_vertical_momentum_equation(
         cfl_clipping,
         owner_mask,
         nlev,
-        nrdmax,
+        end_index_of_damping_layer,
         out=(contravariant_corrected_w_at_cells_on_model_levels, vertical_wind_advective_tendency),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
