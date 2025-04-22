@@ -1439,7 +1439,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         rayleigh_type=config.rayleigh_type.value,
         divdamp_type=divdamp_type.value,
         at_first_substep=at_first_substep,
-        index_of_damping_layer=grid_savepoint.nrdmax()[0],
+        index_of_damping_layer=grid_savepoint.nrdmax(),
         n_lev=icon_grid.num_levels,
         jk_start=jk_start,
         kstart_dd3d=nonhydro_params.kstart_dd3d,
@@ -1447,7 +1447,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         start_cell_nudging=start_cell_nudging,
         end_cell_local=end_cell_local,
         vertical_start=0,
-        vertical_end=icon_grid.num_levels+1,
+        vertical_end=icon_grid.num_levels + 1,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),
             "C2CE": icon_grid.get_offset_provider("C2CE"),
@@ -1471,6 +1471,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
     # TODO: cannot find exit point for this
     # assert helpers.dallclose(z_dwdz_dd.asnumpy(), z_dwdz_dd_ref.asnumpy())
     assert helpers.dallclose(exner_dyn_incr.asnumpy(), exner_dyn_incr_ref.asnumpy())
+
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
@@ -1515,7 +1516,6 @@ def test_run_solve_nonhydro_41_to_60_corrector(
     savepoint_nonhydro_41_60_init,
     backend,
 ):
-
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -1657,14 +1657,14 @@ def test_run_solve_nonhydro_41_to_60_corrector(
         rayleigh_type=config.rayleigh_type.value,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
-        index_of_damping_layer=grid_savepoint.nrdmax()[0],
+        index_of_damping_layer=grid_savepoint.nrdmax(),
         n_lev=icon_grid.num_levels,
         jk_start=jk_start,
         kstart_moist=kstart_moist,
         start_cell_nudging=start_cell_nudging,
         end_cell_local=end_cell_local,
         vertical_start=0,
-        vertical_end=icon_grid.num_levels+1,
+        vertical_end=icon_grid.num_levels + 1,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),
             "C2CE": icon_grid.get_offset_provider("C2CE"),
@@ -1686,4 +1686,3 @@ def test_run_solve_nonhydro_41_to_60_corrector(
     # assert helpers.dallclose(mass_flx_ic.asnumpy(), mass_flx_ic_ref.asnumpy())
     # assert helpers.dallclose(vol_flx_ic.asnumpy(), vol_flx_ic_ref.asnumpy())
     assert helpers.dallclose(exner_dyn_incr.asnumpy(), exner_dyn_incr_ref.asnumpy())
-
