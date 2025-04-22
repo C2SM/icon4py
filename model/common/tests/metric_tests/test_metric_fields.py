@@ -404,7 +404,7 @@ def test_compute_ddxt_z_full(
         ddxt_z_full.asnumpy(), ddxt_z_full_ref, rtol=1.0e-5, atol=1.0e-8
     )
 
-
+@pytest.mark.infinite_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):

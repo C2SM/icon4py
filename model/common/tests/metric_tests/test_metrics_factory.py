@@ -344,7 +344,7 @@ def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
     field = factory.get(attrs.VWIND_EXPL_WGT)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
-
+@pytest.mark.infinite_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
