@@ -443,7 +443,7 @@ def test_velocity_corrector_step(
     )
 
 
-@pytest.mark.dataset
+@pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -456,7 +456,6 @@ def test_velocity_corrector_step(
 def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     icon_grid,
     grid_savepoint,
-    savepoint_compute_edge_diagnostics_for_velocity_advection_init,
     savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
@@ -470,27 +469,21 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    tangential_wind_on_half_levels = (
-        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
+    tangential_wind_on_half_levels = savepoint_velocity_init.z_vt_ie()
+    tangential_wind = savepoint_velocity_init.vt()
+    vn_on_half_levels = savepoint_velocity_init.vn_ie()
+    horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_init.z_kin_hor_e()
+    horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
     )
-    tangential_wind = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vt()
-    vn_on_half_levels = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
-    horizontal_kinetic_energy_at_edges_on_model_levels = (
-        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_kin_hor_e()
-    )
-    horizontal_advection_of_w_at_edges_on_half_levels = (
-        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_v_grad_w()
-    )
-    vn = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn()
-    w = savepoint_compute_edge_diagnostics_for_velocity_advection_init.w()
+    vn = savepoint_velocity_init.vn()
+    w = savepoint_velocity_init.w()
 
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     wgtfac_e = metrics_savepoint.wgtfac_e()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
-    contravariant_correction_at_edges_on_model_levels = (
-        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_w_concorr_me()
-    )
+    contravariant_correction_at_edges_on_model_levels = savepoint_velocity_init.z_w_concorr_me()
     wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
     nflatlev = grid_savepoint.nflatlev()
     c_intp = interpolation_savepoint.c_intp()
@@ -498,9 +491,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
 
-    skip_compute_predictor_vertical_advection = (
-        savepoint_compute_edge_diagnostics_for_velocity_advection_init.lvn_only()
-    )
+    skip_compute_predictor_vertical_advection = savepoint_velocity_init.vn_only()
     # TODO(havogt): we need a test where skip_compute_predictor_vertical_advection is True!
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
@@ -582,7 +573,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     )
 
 
-@pytest.mark.dataset
+@pytest.mark.datatest
 @pytest.mark.infinite_concat_where
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -595,7 +586,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
 def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     icon_grid,
     grid_savepoint,
-    savepoint_compute_edge_diagnostics_for_velocity_advection_init,
     savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
@@ -609,14 +599,12 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    tangential_wind_on_half_levels = (
-        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_vt_ie()
+    tangential_wind_on_half_levels = savepoint_velocity_init.z_vt_ie()
+    vn_on_half_levels = savepoint_velocity_init.vn_ie()
+    horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
     )
-    vn_on_half_levels = savepoint_compute_edge_diagnostics_for_velocity_advection_init.vn_ie()
-    horizontal_advection_of_w_at_edges_on_half_levels = (
-        savepoint_compute_edge_diagnostics_for_velocity_advection_init.z_v_grad_w()
-    )
-    w = savepoint_compute_edge_diagnostics_for_velocity_advection_init.w()
+    w = savepoint_velocity_init.w()
 
     c_intp = interpolation_savepoint.c_intp()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
@@ -922,7 +910,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     ddt_w_adv_ref = savepoint_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
 
-    nrdmax = grid_savepoint.nrdmax()[0]
+    nrdmax = grid_savepoint.nrdmax()
 
     dtime = 5.0
     cell_domain = h_grid.domain(dims.CellDim)
@@ -1047,7 +1035,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
     d_time = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    nrdmax = grid_savepoint.nrdmax()[0]
+    nrdmax = grid_savepoint.nrdmax()
 
     ddt_vn_apc_ref = savepoint_compute_advection_in_horizontal_momentum_equation_exit.ddt_vn_apc()
 
