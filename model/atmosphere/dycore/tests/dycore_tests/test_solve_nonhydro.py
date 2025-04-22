@@ -1305,7 +1305,7 @@ def test_apply_divergence_damping_and_update_vn(
     corrector_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(1)
     normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increments = sp_stencil_init.vn_incr()
-    reduced_fourth_order_divdamp_coeff_at_nest_boundary = sp_stencil_init.bdy_divdamp()
+    reduced_fourth_order_divdamp_coeff_at_nest_boundary = sp_nh_init.bdy_divdamp()
     fourth_order_divdamp_scaling_coeff = sp_stencil_init.scal_divdamp()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
