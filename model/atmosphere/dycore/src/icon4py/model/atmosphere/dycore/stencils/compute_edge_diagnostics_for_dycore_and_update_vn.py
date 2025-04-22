@@ -370,21 +370,21 @@ def _apply_divergence_damping_and_update_vn(
     )
 
     next_vn = concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-            _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
-                vn_nnow=current_vn,
-                ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
-                ddt_vn_apc_ntl2=corrector_normal_wind_advective_tendency,
-                ddt_vn_phy=normal_wind_tendency_due_to_physics_process,
-                z_theta_v_e=theta_v_at_edges_on_model_levels,
-                z_gradh_exner=horizontal_pressure_gradient,
-                dtime=dtime,
-                wgt_nnow_vel=wgt_nnow_vel,
-                wgt_nnew_vel=wgt_nnew_vel,
-                cpd=cpd,
-            ),
-            next_vn,
-        )
+        (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+        _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
+            vn_nnow=current_vn,
+            ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
+            ddt_vn_apc_ntl2=corrector_normal_wind_advective_tendency,
+            ddt_vn_phy=normal_wind_tendency_due_to_physics_process,
+            z_theta_v_e=theta_v_at_edges_on_model_levels,
+            z_gradh_exner=horizontal_pressure_gradient,
+            dtime=dtime,
+            wgt_nnow_vel=wgt_nnow_vel,
+            wgt_nnew_vel=wgt_nnew_vel,
+            cpd=cpd,
+        ),
+        next_vn,
+    )
 
     next_vn = (
         concat_where(

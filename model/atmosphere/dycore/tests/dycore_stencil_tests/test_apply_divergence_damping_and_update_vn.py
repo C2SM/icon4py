@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
     apply_divergence_damping_and_update_vn,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -181,7 +181,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         return dict(next_vn=next_vn)
 
     @pytest.fixture(params=[True, False])
-    def input_data(self, grid, request):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
         scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim)

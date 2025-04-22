@@ -37,7 +37,6 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     savepoint_velocity_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
-    savepoint_compute_edge_diagnostics_for_velocity_advection_init,
     savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
     savepoint_compute_cell_diagnostics_for_velocity_advection_init,
     savepoint_compute_cell_diagnostics_for_velocity_advection_exit,

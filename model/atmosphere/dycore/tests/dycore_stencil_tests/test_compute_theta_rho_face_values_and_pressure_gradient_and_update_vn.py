@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
     compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -327,7 +327,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
                         dual_normal_cell_x=dual_normal_cell_x,
                         primal_normal_cell_y=primal_normal_cell_y,
                         dual_normal_cell_y=dual_normal_cell_y,
-                        p_dthalf=0.5 * dtime,
+                        p_dthalf=float(0.5 * dtime),
                         reference_rho_at_edges_on_model_levels=reference_rho_at_edges_on_model_levels,
                         reference_theta_at_edges_on_model_levels=reference_theta_at_edges_on_model_levels,
                         ddx_perturbed_rho=ddx_perturbed_rho,
@@ -482,7 +482,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

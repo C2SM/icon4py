@@ -1817,20 +1817,6 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep: int
-    ) -> VelocityInitEdgeDiagnosticsSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-1to7-init"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep]
-            .as_savepoint()
-        )
-        return VelocityInitEdgeDiagnosticsSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionCellDiagnosticsInitSavepoint:
