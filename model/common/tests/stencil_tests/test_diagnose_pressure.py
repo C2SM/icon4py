@@ -58,7 +58,7 @@ class TestDiagnosePressure(helpers.StencilTest):
             grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
         )
         virtual_temperature = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-2, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
         )
         surface_pressure = data_alloc.random_field(grid, dims.CellDim, low=1.0e-6, dtype=ta.wpfloat)
         pressure = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
