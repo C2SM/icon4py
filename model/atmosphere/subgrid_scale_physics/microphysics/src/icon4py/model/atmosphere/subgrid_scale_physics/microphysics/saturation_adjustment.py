@@ -234,6 +234,10 @@ class SaturationAdjustment:
         self.metric_state: MetricStateSaturationAdjustment = metric_state
         self._allocate_tendencies()
 
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
+
     # TODO (Chia Rui): add in input and output data properties, and refactor this component to follow the physics component protocol.
     def input_properties(self) -> dict[str, model.FieldMetaData]:
         raise NotImplementedError
@@ -354,11 +358,6 @@ class SaturationAdjustment:
         Originally inspired from satad_v_3D of ICON.
         """
 
-        # TODO (Chia Rui): move this to initialization following the style in dycore granules
-        cell_domain = h_grid.domain(dims.CellDim)
-        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
-
         self.compute_subsaturated_case_and_initialize_newton_iterations(
             self.config.tolerance,
             diagnostic_state.temperature,
@@ -370,8 +369,8 @@ class SaturationAdjustment:
             self._temperature1,
             self._temperature2,
             self._newton_iteration_mask,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -383,7 +382,7 @@ class SaturationAdjustment:
         for _ in range(self.config.max_iter):
             if np.any(
                 self._newton_iteration_mask.ndarray[
-                    start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
+                    self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
                 ]
             ):
                 self.update_temperature_by_newton_iteration(
@@ -394,8 +393,8 @@ class SaturationAdjustment:
                     self._lwdocvd,
                     temperature_list[nnext],
                     temperature_list[ncurrent],
-                    horizontal_start=start_cell_nudging,
-                    horizontal_end=end_cell_local,
+                    horizontal_start=self._start_cell_nudging,
+                    horizontal_end=self._end_cell_local,
                     vertical_start=gtx.int32(0),
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
@@ -406,8 +405,8 @@ class SaturationAdjustment:
                     temperature_list[ncurrent],
                     temperature_list[nnext],
                     self._newton_iteration_mask,
-                    horizontal_start=start_cell_nudging,
-                    horizontal_end=end_cell_local,
+                    horizontal_start=self._start_cell_nudging,
+                    horizontal_end=self._end_cell_local,
                     vertical_start=gtx.int32(0),
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
@@ -417,8 +416,8 @@ class SaturationAdjustment:
                     self._newton_iteration_mask,
                     temperature_list[ncurrent],
                     temperature_list[nnext],
-                    horizontal_start=start_cell_nudging,
-                    horizontal_end=end_cell_local,
+                    horizontal_start=self._start_cell_nudging,
+                    horizontal_end=self._end_cell_local,
                     vertical_start=gtx.int32(0),
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
@@ -429,7 +428,7 @@ class SaturationAdjustment:
                 break
         if np.any(
             self._newton_iteration_mask.ndarray[
-                start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
+                self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
             ]
         ):
             raise ConvergenceError(
@@ -446,8 +445,8 @@ class SaturationAdjustment:
             self.temperature_tendency,
             self.qv_tendency,
             self.qc_tendency,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -474,8 +473,8 @@ class SaturationAdjustment:
                 self._new_virtual_temperature,
                 self._k_field,
                 self.vertical_params.kstart_moist,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -489,8 +488,8 @@ class SaturationAdjustment:
                 phy_const.CPD_O_RD,
                 phy_const.P0REF,
                 phy_const.GRAV_O_RD,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=self.grid.num_levels,
                 vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={"Koff": dims.KDim},
@@ -503,8 +502,8 @@ class SaturationAdjustment:
                 self._pressure,
                 self._pressure_ifc,
                 phy_const.GRAV_O_RD,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -515,8 +514,8 @@ class SaturationAdjustment:
                 diagnostic_state.pressure,
                 self._pressure,
                 self.pressure_tendency,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -527,8 +526,8 @@ class SaturationAdjustment:
                 diagnostic_state.pressure_ifc,
                 self._pressure_ifc,
                 self.pressure_ifc_tendency,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={},
