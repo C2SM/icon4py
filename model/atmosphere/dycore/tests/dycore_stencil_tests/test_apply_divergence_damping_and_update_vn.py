@@ -99,19 +99,18 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             horizontal_gradient_of_normal_wind_divergence,
         )
 
-        if itime_scheme == 4:
-            next_vn = np.where(
-                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
-                current_vn
-                + dtime
-                * (
-                    wgt_nnow_vel * predictor_normal_wind_advective_tendency
-                    + wgt_nnew_vel * corrector_normal_wind_advective_tendency
-                    + normal_wind_tendency_due_to_physics_process
-                    - cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
-                ),
-                next_vn,
-            )
+        next_vn = np.where(
+            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+            current_vn
+            + dtime
+            * (
+                wgt_nnow_vel * predictor_normal_wind_advective_tendency
+                + wgt_nnew_vel * corrector_normal_wind_advective_tendency
+                + normal_wind_tendency_due_to_physics_process
+                - cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
+            ),
+            next_vn,
+        )
 
         if (
             divdamp_order == divergence_damp_order.COMBINED
@@ -221,7 +220,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         divdamp_order = 24
         second_order_divdamp_scaling_coeff = 194588.14247428576
         limited_area = request.param
-        itime_scheme = 4
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         end_edge_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -259,7 +257,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
-            itime_scheme=itime_scheme,
             limited_area=limited_area,
             divdamp_order=divdamp_order,
             starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,

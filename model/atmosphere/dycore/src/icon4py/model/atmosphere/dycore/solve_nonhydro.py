@@ -1545,7 +1545,6 @@ class SolveNonhydro:
             cpd=constants.CPD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
-            itime_scheme=self._config.itime_scheme,
             limited_area=self._grid.limited_area,
             divdamp_order=self._config.divdamp_order,
             starting_vertical_index_for_3d_divdamp=self._params.starting_vertical_index_for_3d_divdamp,
