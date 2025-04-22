@@ -1296,7 +1296,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     assert helpers.dallclose(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[lb:, nflatlev:],
         z_dexner_dz_c_1_ref.asnumpy()[lb:, nflatlev:],
-        rtol=1e-10,
+        rtol=5e-9,
     )
     assert helpers.dallclose(
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[

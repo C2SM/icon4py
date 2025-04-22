@@ -20,60 +20,60 @@ def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: 
     return -a * mean_cell_area**2
 
 
-def bdy_divdamp_numpy(coeff: float, field: np.array):
+def calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(coeff: float, field: np.array):
     return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
-def test_calculate_scal_divdamp_order_24(backend):
-    divdamp_fac_o2 = 3.0
+def test_calculate_fourth_order_divdamp_scaling_coeff_order_24(backend):
+    second_order_divdamp_factor = 3.0
     divdamp_order = 24
     mean_cell_area = 1000.0
     grid = simple_grid.SimpleGrid()
-    enh_divdamp_fac = data_alloc.random_field(grid, dims.KDim, backend=backend)
+    interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim, backend=backend)
     out = data_alloc.random_field(grid, dims.KDim, backend=backend)
 
-    dycore_utils._calculate_scal_divdamp.with_backend(backend)(
-        enh_divdamp_fac=enh_divdamp_fac,
-        divdamp_fac_o2=divdamp_fac_o2,
+    dycore_utils._calculate_fourth_order_divdamp_scaling_coeff.with_backend(backend)(
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        second_order_divdamp_factor=second_order_divdamp_factor,
         divdamp_order=divdamp_order,
         mean_cell_area=mean_cell_area,
         out=out,
         offset_provider={},
     )
 
-    ref = scal_divdamp_for_order_24_numpy(enh_divdamp_fac.asnumpy(), divdamp_fac_o2, mean_cell_area)
+    ref = scal_divdamp_for_order_24_numpy(interpolated_fourth_order_divdamp_factor.asnumpy(), second_order_divdamp_factor, mean_cell_area)
     assert helpers.dallclose(ref, out.asnumpy())
 
 
-def test_calculate_scal_divdamp_any_order(backend):
-    divdamp_fac_o2 = 4.2
+def test_calculate_fourth_order_divdamp_scaling_coeff_any_order(backend):
+    second_order_divdamp_factor = 4.2
     divdamp_order = 3
     mean_cell_area = 1000.0
     grid = simple_grid.SimpleGrid()
-    enh_divdamp_fac = data_alloc.random_field(grid, dims.KDim, backend=backend)
+    interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim, backend=backend)
     out = data_alloc.random_field(grid, dims.KDim, backend=backend)
 
-    dycore_utils._calculate_scal_divdamp.with_backend(backend)(
-        enh_divdamp_fac=enh_divdamp_fac,
-        divdamp_fac_o2=divdamp_fac_o2,
+    dycore_utils._calculate_fourth_order_divdamp_scaling_coeff.with_backend(backend)(
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        second_order_divdamp_factor=second_order_divdamp_factor,
         divdamp_order=divdamp_order,
         mean_cell_area=mean_cell_area,
         out=out,
         offset_provider={},
     )
-    enhanced_factor = -enh_divdamp_fac.asnumpy() * mean_cell_area**2
+    enhanced_factor = -interpolated_fourth_order_divdamp_factor.asnumpy() * mean_cell_area**2
     assert helpers.dallclose(enhanced_factor, out.asnumpy())
 
 
-def test_calculate_bdy_divdamp(backend):
+def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(backend):
     grid = simple_grid.SimpleGrid()
     scal_divdamp = data_alloc.random_field(grid, dims.KDim, backend=backend)
     out = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     coeff = 0.3
-    dycore_utils._calculate_bdy_divdamp.with_backend(backend)(
+    dycore_utils._calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary.with_backend(backend)(
         scal_divdamp, coeff, constants.DBL_EPS, out=out, offset_provider={}
     )
-    assert helpers.dallclose(out.asnumpy(), bdy_divdamp_numpy(coeff, scal_divdamp.asnumpy()))
+    assert helpers.dallclose(out.asnumpy(), calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(coeff, scal_divdamp.asnumpy()))
 
 
 def test_calculate_divdamp_fields(backend):
@@ -90,7 +90,7 @@ def test_calculate_divdamp_fields(backend):
         np.asarray(divdamp_field), divdamp_fac_o2, mean_cell_area
     )
 
-    boundary_ref = bdy_divdamp_numpy(nudge_max_coeff, scaled_ref)
+    boundary_ref = calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(nudge_max_coeff, scaled_ref)
 
     dycore_utils._calculate_divdamp_fields.with_backend(backend)(
         divdamp_field,
