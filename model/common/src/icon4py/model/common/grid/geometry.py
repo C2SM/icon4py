@@ -6,10 +6,17 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    TypeAlias,
+    TypeVar,
+)
 
-# TODO (@halungge ) test on GPU (NEP 18 ?)
-import numpy as np
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
 
@@ -30,7 +37,7 @@ from icon4py.model.common.grid import (
     icon,
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.utils import data_allocation as alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
@@ -96,7 +103,6 @@ class GridGeometry(factory.FieldSource):
         """
         self._providers = {}
         self._backend = backend
-        self._xp = alloc.import_array_ns(backend)
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
         self._decomposition_info = decomposition_info
@@ -115,6 +121,7 @@ class GridGeometry(factory.FieldSource):
             coordinates[dims.CellDim]["lon"],
             coordinates[dims.EdgeDim]["lat"],
             coordinates[dims.EdgeDim]["lon"],
+            self._backend,
         )
         coordinates_ = {
             attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
@@ -140,7 +147,10 @@ class GridGeometry(factory.FieldSource):
                 attrs.DUAL_AREA: extra_fields[gm.GeometryName.DUAL_AREA],
                 attrs.TANGENT_ORIENTATION: extra_fields[gm.GeometryName.TANGENT_ORIENTATION],
                 "edge_owner_mask": gtx.as_field(
-                    (dims.EdgeDim,), decomposition_info.owner_mask(dims.EdgeDim), dtype=bool
+                    (dims.EdgeDim,),
+                    decomposition_info.owner_mask(dims.EdgeDim),
+                    dtype=bool,
+                    allocator=self._backend,
                 ),
                 attrs.CELL_NORMAL_ORIENTATION: extra_fields[
                     gm.GeometryName.CELL_NORMAL_ORIENTATION
@@ -149,10 +159,16 @@ class GridGeometry(factory.FieldSource):
                     gm.GeometryName.EDGE_ORIENTATION_ON_VERTEX
                 ],
                 "vertex_owner_mask": gtx.as_field(
-                    (dims.VertexDim,), decomposition_info.owner_mask(dims.VertexDim)
+                    (dims.VertexDim,),
+                    decomposition_info.owner_mask(dims.VertexDim),
+                    allocator=self._backend,
+                    dtype=bool,
                 ),
                 "cell_owner_mask": gtx.as_field(
-                    (dims.VertexDim,), decomposition_info.owner_mask(dims.CellDim)
+                    (dims.CellDim,),
+                    decomposition_info.owner_mask(dims.CellDim),
+                    allocator=self._backend,
+                    dtype=bool,
                 ),
             }
         )
@@ -533,7 +549,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
             for p in self._pairs:
                 t = tuple([self._wrapped_provider(name, field_src, backend, grid) for name in p])
                 input_fields.append(t)
-            sparse_fields = self.func(input_fields)
+            sparse_fields = self.func(input_fields, backend=backend)
             self._fields = {k: sparse_fields[i] for i, k in enumerate(self.fields)}
         return self._fields[field_name]
 
@@ -553,14 +569,19 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
 def as_sparse_field(
     target_dims: tuple[HorizontalD, SparseD],
     data: Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]],
+    backend: Optional[gtx_backend.Backend] = None,
 ):
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL
+    on_gpu = data_alloc.is_cupy_device(backend)
+    xp = data_alloc.array_ns(on_gpu)
     fields = []
     for t in data:
         buffers = list(b.ndarray for b in t)
-        field = gtx.as_field(target_dims, data=(np.vstack(buffers).T), dtype=buffers[0].dtype)
+        field = gtx.as_field(
+            target_dims, data=(xp.vstack(buffers).T), dtype=buffers[0].dtype, allocator=backend
+        )
         fields.append(field)
     return fields
 
@@ -571,6 +592,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
+    backend: Optional[gtx_backend.Backend],
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],
@@ -597,17 +619,18 @@ def create_auxiliary_coordinate_arrays_for_orientation(
         latitude of second neighbor
         longitude of second neighbor
     """
+    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
     e2c_table = grid.connectivities[dims.E2CDim]
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):
-        boundary_edges = np.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
+        boundary_edges = xp.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
         lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
         lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
 
     return (
-        gtx.as_field((dims.EdgeDim,), lat[:, 0]),
-        gtx.as_field((dims.EdgeDim,), lon[:, 0]),
-        gtx.as_field((dims.EdgeDim,), lat[:, 1]),
-        gtx.as_field((dims.EdgeDim,), lon[:, 1]),
+        gtx.as_field((dims.EdgeDim,), lat[:, 0], allocator=backend),
+        gtx.as_field((dims.EdgeDim,), lon[:, 0], allocator=backend),
+        gtx.as_field((dims.EdgeDim,), lat[:, 1], allocator=backend),
+        gtx.as_field((dims.EdgeDim,), lon[:, 1], allocator=backend),
     )
