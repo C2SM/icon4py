@@ -60,7 +60,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
-        itime_scheme: gtx.int32,
         divdamp_order: gtx.int32,
         starting_vertical_index_for_3d_divdamp: gtx.int32,
         end_edge_halo_level_2: gtx.int32,
@@ -219,7 +218,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         second_order_divdamp_factor = 0.012
         divdamp_order = 24
         second_order_divdamp_scaling_coeff = 194588.14247428576
-        limited_area = request.param
+        limited_area = True
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         end_edge_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))

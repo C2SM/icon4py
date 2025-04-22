@@ -1263,11 +1263,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #     dt_utils.GLOBAL_EXPERIMENT,
-        #     "2000-01-01T00:00:02.000",
-        #     "2000-01-01T00:00:02.000",
-        # ),
     ],
 )
 def test_apply_divergence_damping_and_update_vn(
@@ -1321,8 +1316,6 @@ def test_apply_divergence_damping_and_update_vn(
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
     iau_wgt_dyn = config.iau_wgt_dyn
-    # itime_scheme = config.itime_scheme
-    itime_scheme = 4
     divdamp_order = config.divdamp_order
     second_order_divdamp_scaling_coeff = (
         sp_nh_init.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
@@ -1360,7 +1353,6 @@ def test_apply_divergence_damping_and_update_vn(
         cpd=constants.CPD,
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
-        itime_scheme=itime_scheme,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
         starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
