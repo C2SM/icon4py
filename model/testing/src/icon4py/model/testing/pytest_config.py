@@ -78,6 +78,20 @@ def pytest_configure(config):
     if config.getoption("--backend"):
         backend_option = config.getoption("--backend")
         _check_backend_validity(backend_option)
+    if config.getoption("--datatest-only"):
+        k_option = config.getoption("-k")
+        if not k_option:
+            config.option.keyword = "datatest"
+        else:
+            new_option = f"({k_option}) and datatest"
+            config.option.keyword = new_option
+    if config.getoption("--datatest-skip"):
+        k_option = config.getoption("-k")
+        if not k_option:
+            config.option.keyword = "not datatest"
+        else:
+            new_option = f"({k_option}) and not datatest"
+            config.option.keyword = new_option
 
 
 def pytest_addoption(parser):
@@ -85,10 +99,10 @@ def pytest_addoption(parser):
     try:
         datatest = parser.getgroup("datatest", "Options for data testing")
         datatest.addoption(
-            "--datatest",
+            "--datatest-skip",
             action="store_true",
             default=False,
-            help="Enable data tests",
+            help="Skip all data tests",
         )
         datatest.addoption(
             "--datatest-only",
@@ -167,20 +181,6 @@ def pytest_runtest_setup(item):
         grid,
         backend,
     )
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption("--datatest-only"):
-        # --datatest-only given in cli: skip all tests that are not marked with @pytest.mark.datatest
-        for item in items:
-            if not [mark.name for mark in item.own_markers if mark.name == "datatest"]:
-                item.add_marker(
-                    pytest.mark.skip(reason="skipping - only running test with 'datatest' marker")
-                )
-    elif not config.getoption("--datatest"):
-        for item in items:
-            if [mark.name for mark in item.own_markers if mark.name == "datatest"]:
-                item.add_marker(pytest.mark.skip(reason="need '--datatest' option to run"))
 
 
 # pytest benchmark hook, see:
