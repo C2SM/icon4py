@@ -344,6 +344,7 @@ def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
     field = factory.get(attrs.VWIND_EXPL_WGT)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
+
 @pytest.mark.infinite_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -366,6 +367,7 @@ def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1.0e-5)
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -387,6 +389,7 @@ def test_factory_pg_edgeidx_dsl(grid_savepoint, metrics_savepoint, grid_file, ex
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -455,6 +458,7 @@ def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experi
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
