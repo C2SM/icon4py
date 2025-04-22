@@ -922,7 +922,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     ddt_w_adv_ref = savepoint_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
 
-    nrdmax = grid_savepoint.nrdmax()[0]
+    end_index_of_damping_layer = grid_savepoint.nrdmax()[0]
 
     dtime = 5.0
     cell_domain = h_grid.domain(dims.CellDim)
@@ -957,7 +957,7 @@ def test_compute_advection_in_vertical_momentum_equation(
         dtime=dtime,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
         nlev=icon_grid.num_levels,
-        nrdmax=nrdmax,
+        end_index_of_damping_layer=end_index_of_damping_layer,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         vertical_start=vertical_start,
@@ -1047,7 +1047,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
     d_time = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    nrdmax = grid_savepoint.nrdmax()[0]
+    end_index_of_damping_layer = grid_savepoint.nrdmax()[0]
 
     ddt_vn_apc_ref = savepoint_compute_advection_in_horizontal_momentum_equation_exit.ddt_vn_apc()
 
@@ -1078,7 +1078,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
         scalfac_exdiff=scalfac_exdiff,
         d_time=d_time,
         nlev=icon_grid.num_levels,
-        nrdmax=nrdmax,
+        end_index_of_damping_layer=end_index_of_damping_layer,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
         vertical_start=0,
