@@ -70,7 +70,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
     )
-    config.addinivalue_line("markers", "duplicate: functionality under tests is tested twice")
+    config.addinivalue_line(
+        "markers", "duplicate(level): functionality under tests is tested twice"
+    )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
@@ -124,6 +126,16 @@ def pytest_addoption(parser):
     except ValueError:
         pass
 
+    try:
+        parser.addoption(
+            "--level",
+            action="store",
+            help="use the level of the test",
+            default="any",
+        )
+    except ValueError:
+        pass
+
 
 def _get_grid(
     selected_grid_type: str, selected_backend: gtx_backend.Backend | None
@@ -149,6 +161,20 @@ def _get_grid(
             return grid_instance
         case _:
             return simple_grid.SimpleGrid(selected_backend)
+
+
+def pytest_collection_modifyitems(config, items):
+    test_level = config.getoption("--level")
+    if test_level == "any":
+        return
+    for item in items:
+        marker = item.get_closest_marker("duplicate")
+        if marker is not None and test_level not in marker.args:
+            item.add_marker(
+                pytest.mark.skip(
+                    reason=f"Test level '{test_level}' does not match the required '{marker.args}' level for this test."
+                )
+            )
 
 
 def pytest_runtest_setup(item):

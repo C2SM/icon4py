@@ -118,6 +118,7 @@ def _get_metrics_factory(
     return factory
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -139,6 +140,7 @@ def test_factory_inv_ddqz_z(grid_savepoint, metrics_savepoint, grid_file, experi
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -160,6 +162,7 @@ def test_factory_ddqz_z_half(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -181,6 +184,7 @@ def test_factory_scalfac_dd3d(grid_savepoint, metrics_savepoint, grid_file, expe
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -202,6 +206,7 @@ def test_factory_rayleigh_w(grid_savepoint, metrics_savepoint, grid_file, experi
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -226,6 +231,7 @@ def test_factory_coeffs_dwdz(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -295,6 +301,7 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -319,6 +326,7 @@ def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -343,6 +351,7 @@ def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.infinite_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -365,6 +374,7 @@ def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1.0e-5)
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -374,8 +384,11 @@ def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, exper
     ],
 )
 @pytest.mark.datatest
-def test_factory_pg_edgeidx_dsl(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
-    field_ref = metrics_savepoint.pg_edgeidx_dsl()
+def test_factory_pressure_gradient_fields(
+    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+):
+    field_1_ref = metrics_savepoint.pg_exdist()
+    field_2_ref = metrics_savepoint.pg_edgeidx_dsl()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -383,30 +396,10 @@ def test_factory_pg_edgeidx_dsl(grid_savepoint, metrics_savepoint, grid_file, ex
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
     )
-    field = factory.get(attrs.PG_EDGEIDX_DSL)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
-
-
-@pytest.mark.embedded_remap_error
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
-@pytest.mark.datatest
-def test_factory_pg_exdist_dsl(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
-    field_ref = metrics_savepoint.pg_exdist()
-    factory = _get_metrics_factory(
-        backend=backend,
-        experiment=experiment,
-        grid_file=grid_file,
-        grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
-    )
-    field = factory.get(attrs.PG_EDGEDIST_DSL)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-5)
+    field_1 = factory.get(attrs.PG_EDGEDIST_DSL)
+    assert test_helpers.dallclose(field_1_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
+    field_2 = factory.get(attrs.PG_EDGEIDX_DSL)
+    assert test_helpers.dallclose(field_2_ref.asnumpy(), field_2.asnumpy())
 
 
 @pytest.mark.parametrize(
@@ -435,6 +428,7 @@ def test_factory_mask_bdy_prog_halo_c(
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
 
 
+@pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [

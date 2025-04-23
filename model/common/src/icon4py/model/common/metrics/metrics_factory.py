@@ -518,7 +518,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(max_flat_index_provider)
 
-        compute_pg_idx_exdist = factory.ProgramFieldProvider(
+        pressure_gradient_fields = factory.ProgramFieldProvider(
             func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
                 self._backend
             ),
@@ -547,7 +547,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL, "pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
         )
-        self.register_provider(compute_pg_idx_exdist)
+        self.register_provider(pressure_gradient_fields)
 
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),

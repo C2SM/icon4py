@@ -24,7 +24,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
-@pytest.mark.duplicate
+@pytest.mark.duplicate("unit")
 @pytest.mark.cpu_only  # TODO (@halungge: fixed with PR https://github.com/C2SM/icon4py/pull/715)
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
