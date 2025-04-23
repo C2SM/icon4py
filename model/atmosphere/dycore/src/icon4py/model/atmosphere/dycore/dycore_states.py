@@ -66,7 +66,7 @@ class HorizontalPressureDiscretizationType(FrozenNamespace):
     POLYNOMIAL_HYDRO = 5
 
 
-class RhoThetaAdvectionType(FrozenNamespace):
+class RhoThetaAdvectionType(FrozenNamespace[int]):
     """Parameter called iadv_rhotheta in ICON namelist."""
 
     #: simple 2nd order upwind-biased scheme
