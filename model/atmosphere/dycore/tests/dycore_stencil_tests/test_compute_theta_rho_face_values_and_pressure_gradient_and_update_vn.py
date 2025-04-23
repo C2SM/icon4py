@@ -188,10 +188,9 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         end_edge_end: gtx.int32,
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
-        horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-        vertical_start: gtx.int32,
         vertical_end: gtx.int32,
+        **kwargs,
     ) -> dict:
         vert_idx = np.arange(vertical_end)
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
