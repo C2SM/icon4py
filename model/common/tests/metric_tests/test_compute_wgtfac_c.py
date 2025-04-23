@@ -24,16 +24,12 @@ def test_compute_wgtfac_c(icon_grid, metrics_savepoint, backend):  # fixture
     )
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()
-    k = data_alloc.index_field(
-        grid=icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend
-    )
 
     vertical_end = icon_grid.num_levels
 
     compute_wgtfac_c.with_backend(backend)(
         wgtfac_c,
         z_ifc,
-        k,
         nlev=vertical_end,
         offset_provider={"Koff": dims.KDim},
     )
