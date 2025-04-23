@@ -348,7 +348,7 @@ def test_velocity_corrector_step(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
-        normal_wind_iau_increments=None,  # sp.vn_incr(),
+        normal_wind_iau_increments=None, 
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=None,
     )
