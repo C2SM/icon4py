@@ -598,7 +598,6 @@ def compute_exner_exfac(
     )
 
 
-
 @program
 def compute_wgtfac_e(
     wgtfac_c: fa.CellKField[wpfloat],
