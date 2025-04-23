@@ -234,9 +234,9 @@ def compute_rbf_interpolation_matrix(
     # another point on the sphere), but these don't hurt the computation.
     # TODO: Can nans be signaling? default is warn:
     # https://numpy.org/doc/stable/user/misc.html#how-numpy-handles-numerical-exceptions
-    edge_normal_x = np.pad(edge_normal_x, (0, 1), mode="constant", constant_values=0.0)
-    edge_normal_y = np.pad(edge_normal_y, (0, 1), mode="constant", constant_values=0.0)
-    edge_normal_z = np.pad(edge_normal_z, (0, 1), mode="constant", constant_values=0.0)
+    edge_normal_x = np.pad(edge_normal_x.asnumpy(), (0, 1), mode="constant", constant_values=0.0)
+    edge_normal_y = np.pad(edge_normal_y.asnumpy(), (0, 1), mode="constant", constant_values=0.0)
+    edge_normal_z = np.pad(edge_normal_z.asnumpy(), (0, 1), mode="constant", constant_values=0.0)
     x_normal = edge_normal_x[rbf_offset]
     y_normal = edge_normal_y[rbf_offset]
     z_normal = edge_normal_z[rbf_offset]

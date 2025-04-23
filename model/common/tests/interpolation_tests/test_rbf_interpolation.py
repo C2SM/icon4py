@@ -110,11 +110,11 @@ def test_rbf_interpolation_matrix_cell(
     edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
     edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
     # TODO: normals not dallclose? check
-    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
+    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X)
     # edge_normal_x_from_savepoint = grid_savepoint.primal_cart_normal_x().asnumpy()
-    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
+    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
     # edge_normal_y_from_savepoint = grid_savepoint.primal_cart_normal_y().asnumpy()
-    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
+    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
     # edge_normal_z_from_savepoint = grid_savepoint.primal_cart_normal_z().asnumpy()
 
     rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix(
@@ -170,9 +170,9 @@ def test_rbf_interpolation_matrix_vertex(
     edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
     edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
     edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
-    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
-    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
-    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
+    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X)
+    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
+    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
 
     rbf_vec_v1, rbf_vec_v2 = rbf.compute_rbf_interpolation_matrix(
         vertex_lat,
@@ -220,9 +220,9 @@ def test_rbf_interpolation_matrix_edge(
     edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
-    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
-    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
+    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X)
+    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
+    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
     dual_normal_v1 = grid_savepoint.dual_normal_v1()
     dual_normal_v2 = grid_savepoint.dual_normal_v2()
 
