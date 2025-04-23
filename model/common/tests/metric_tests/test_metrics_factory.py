@@ -295,7 +295,6 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU due to vwind_impl_wgt computation)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -345,6 +344,7 @@ def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
+@pytest.mark.infinite_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -366,6 +366,7 @@ def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1.0e-5)
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -387,6 +388,7 @@ def test_factory_pg_edgeidx_dsl(grid_savepoint, metrics_savepoint, grid_file, ex
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -455,6 +457,7 @@ def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experi
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.cpu_only  # TODO (@halungge: slow on GPU due to vwind_impl_wgt computation)
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -463,6 +466,7 @@ def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experi
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
+@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_factory_zdiff_gradp(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.zdiff_gradp()

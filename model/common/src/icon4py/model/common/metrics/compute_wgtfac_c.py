@@ -43,7 +43,6 @@ def _compute_wgtfac_c_inner(
 @field_operator
 def _compute_wgtfac_c(
     z_ifc: fa.CellKField[wpfloat],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     wgt_fac_c = concat_where(
@@ -59,12 +58,10 @@ def _compute_wgtfac_c(
 def compute_wgtfac_c(
     wgtfac_c: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ):
     _compute_wgtfac_c(
         z_ifc,
-        k,
         nlev,
         out=wgtfac_c,
     )
