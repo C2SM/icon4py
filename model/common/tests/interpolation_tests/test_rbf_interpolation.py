@@ -109,8 +109,6 @@ def test_rbf_interpolation_matrix_cell(
     edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
     edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
     edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
-    edge_center_lat = grid_savepoint.edge_center_lat().asnumpy()
-    edge_center_lon = grid_savepoint.edge_center_lon().asnumpy()
     # TODO: normals not dallclose? check
     edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
     # edge_normal_x_from_savepoint = grid_savepoint.primal_cart_normal_x().asnumpy()
@@ -172,8 +170,6 @@ def test_rbf_interpolation_matrix_vertex(
     edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
     edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
     edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
-    edge_center_lat = grid_savepoint.edge_center_lat().asnumpy()
-    edge_center_lon = grid_savepoint.edge_center_lon().asnumpy()
     edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
     edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
     edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
