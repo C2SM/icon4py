@@ -289,7 +289,6 @@ def test_dycore_wrapper_granule_inputs(
     caplog,
     icon_grid,
     at_initial_timestep,
-    backend,
 ):
     caplog.set_level(logging.DEBUG)
 

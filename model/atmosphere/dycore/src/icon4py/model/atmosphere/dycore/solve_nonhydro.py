@@ -10,6 +10,7 @@
 import logging
 import dataclasses
 from typing import Final, Optional
+import numpy as np
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -542,6 +543,10 @@ class SolveNonhydro:
         self._stencils_42_44_45_45b = nhsolve_stencils.stencils_42_44_45_45b.with_backend(
             self._backend
         )
+        if self._config.divdamp_type == 32:
+            self.starting_vertical_index_for_3d_divdamp = np.min(
+                np.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.asnumpy() > 0.0)
+            )
 
         self.velocity_advection = VelocityAdvection(
             grid,

@@ -317,7 +317,6 @@ def test_nonhydro_predictor_step(
         atol=1e-22,
     )
 
-    # TODO Fix REGIONAL
     # compute_horizontal_advection_of_rho_and_theta
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.rho_at_edges_on_model_levels.asnumpy()[

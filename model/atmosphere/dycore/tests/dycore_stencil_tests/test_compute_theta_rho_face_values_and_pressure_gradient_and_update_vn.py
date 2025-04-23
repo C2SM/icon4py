@@ -142,7 +142,7 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     perturbed_rho: np.ndarray,
     perturbed_theta_v: np.ndarray,
     **kwargs: Any,
-) -> dict:
+) -> tuple[np.ndarray, np.ndarray]:
     e2c = connectivities[dims.E2CDim]
     pos_on_tplane_e_x = pos_on_tplane_e_x.reshape(e2c.shape)
     pos_on_tplane_e_y = pos_on_tplane_e_y.reshape(e2c.shape)
@@ -535,14 +535,15 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         rng = np.random.default_rng()
         k_levels = grid.num_levels
 
+        ikoffset_np = np.zeros_like(ikoffset.asnumpy())
         for k in range(k_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            ikoffset[:, :, k] = rng.integers(
+            ikoffset_np[:, :, k] = rng.integers(
                 low=0 - k,
                 high=k_levels - k - 1,
                 size=(ikoffset.asnumpy().shape[0], ikoffset.asnumpy().shape[1]),
             )
-        ikoffset = data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset)
+        ikoffset = data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset_np)
 
         dtime = 0.9
         cpd = 1004.64
