@@ -19,8 +19,9 @@ from icon4py.model.common.states import model
 Z_MC: Final[str] = "height"
 FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
-DDQZ_Z_FULL: Final[str] = "ddqz_z_full"
-INV_DDQZ_Z_FULL: Final[str] = "inv_ddqz_z_full"
+DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
+DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
+INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
 SCALFAC_DD3D: Final[str] = "scaling_factor_for_3d_divergence_damping"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
 COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
@@ -33,6 +34,7 @@ VERT_OUT: Final[str] = "vert_out"
 DDXT_Z_HALF_E: Final[str] = "ddxt_z_half_e"
 DDXN_Z_HALF_E: Final[str] = "ddxn_z_half_e"
 DDXN_Z_FULL: Final[str] = "ddxn_z_full"
+DDXT_Z_FULL: Final[str] = "ddxt_z_full"
 VWIND_IMPL_WGT: Final[str] = "vwind_impl_wgt"
 VWIND_EXPL_WGT: Final[str] = "vwind_expl_wgt"
 EXNER_EXFAC: Final[str] = "exner_exfac"
@@ -86,10 +88,18 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     DDQZ_Z_FULL: dict(
         standard_name=DDQZ_Z_FULL,
-        long_name="ddqz_z_full",
+        long_name="functional determinant of the metrics (is positive), full levels",
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="ddqz_z_full",
+        dtype=ta.wpfloat,
+    ),
+    DDQZ_Z_FULL_E: dict(
+        standard_name=DDQZ_Z_FULL,
+        long_name="functional determinant at full level on edges",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="ddqz_z_full_e",
         dtype=ta.wpfloat,
     ),
     INV_DDQZ_Z_FULL: dict(
@@ -190,10 +200,18 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     DDXN_Z_FULL: dict(
         standard_name=DDXN_Z_FULL,
-        long_name="ddxn_z_full",
+        long_name="normal_direction_of_slope",
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="ddxn_z_full",
+        dtype=ta.wpfloat,
+    ),
+    DDXT_Z_FULL: dict(
+        standard_name="tangential_direction_of_slope",
+        long_name="slope of the terrain (tangential direction)",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="ddxt_z_full",
         dtype=ta.wpfloat,
     ),
     VWIND_IMPL_WGT: dict(

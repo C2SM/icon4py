@@ -154,6 +154,9 @@ class FieldSource(GridProvider, Protocol):
     def backend(self) -> gtx_backend.Backend:
         ...
 
+    def _backend_name(self) -> str:
+        return "embedded" if self.backend is None else self.backend.name
+
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
     ) -> Union[state_utils.FieldType, xa.DataArray, model.FieldMetaData]:
