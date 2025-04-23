@@ -84,6 +84,7 @@ class TestComputeZMc(testing_helpers.StencilTest):
         )
 
 
+@pytest.mark.duplicate
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
@@ -112,6 +113,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     assert testing_helpers.dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
+@pytest.mark.duplicate
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
@@ -134,6 +136,7 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
     assert testing_helpers.dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
 
 
+@pytest.mark.duplicate
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
@@ -157,6 +160,7 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
     assert testing_helpers.dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
 
 
+@pytest.mark.duplicate
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savepoint, backend):
@@ -186,6 +190,7 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
     assert testing_helpers.dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())
 
 
+@pytest.mark.duplicate
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backend):
@@ -273,6 +278,7 @@ def test_compute_ddxt_z_full_e(
     assert testing_helpers.dallclose(ddxn_z_full.asnumpy(), ddxn_z_full_ref)
 
 
+@pytest.mark.duplicate
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
@@ -404,6 +410,7 @@ def test_compute_ddxt_z_full(
     )
 
 
+@pytest.mark.duplicate
 @pytest.mark.infinite_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
@@ -428,6 +435,7 @@ def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_save
     assert testing_helpers.dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
 
 
+@pytest.mark.duplicate
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.GLOBAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT])
 def test_compute_vwind_impl_wgt(
@@ -507,6 +515,7 @@ def test_compute_vwind_impl_wgt(
     )
 
 
+# TODO (@halungge) add test in test_metric_factory.py?
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -527,6 +536,7 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
     assert testing_helpers.dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
 
 
+@pytest.mark.duplicate
 @pytest.mark.embedded_remap_error
 @pytest.mark.skip_value_error
 @pytest.mark.datatest
@@ -648,6 +658,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
     assert testing_helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
 
 
+@pytest.mark.duplicate
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
@@ -668,6 +679,7 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
     assert testing_helpers.dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
 
 
+@pytest.mark.duplicate
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):

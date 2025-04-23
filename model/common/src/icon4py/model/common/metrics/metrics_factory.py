@@ -11,6 +11,7 @@ import math
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
+import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -29,8 +30,6 @@ from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
     compute_vwind_impl_wgt,
-    compute_wgtfac_c,
-    compute_wgtfacq,
     compute_zdiff_gradp_dsl,
     metric_fields as mf,
     metrics_attributes as attrs,
@@ -453,7 +452,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_exner_exfac)
 
         wgtfac_c_provider = factory.ProgramFieldProvider(
-            func=compute_wgtfac_c.compute_wgtfac_c.with_backend(self._backend),
+            func=weight_factors.compute_wgtfac_c.with_backend(self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
             },
@@ -633,7 +632,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(coeff_gradekin)
 
         compute_wgtfacq_c = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_wgtfacq.compute_wgtfacq_c_dsl, array_ns=self._xp),
+            func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL},
@@ -643,7 +642,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_wgtfacq.compute_wgtfacq_e_dsl, array_ns=self._xp),
+            func=functools.partial(weight_factors.compute_wgtfacq_e_dsl, array_ns=self._xp),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
