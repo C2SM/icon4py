@@ -42,7 +42,7 @@ class DivergenceDampingType(enum.IntEnum):
     COMBINED = 32
 
 
-class DivergenceDampingOrder(FrozenNamespace):
+class DivergenceDampingOrder(FrozenNamespace[int]):
     #: 2nd order divergence damping
     SECOND_ORDER = 2
     #: 4th order divergence damping
