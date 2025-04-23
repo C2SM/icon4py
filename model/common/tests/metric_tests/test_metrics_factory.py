@@ -305,7 +305,6 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
 @pytest.mark.datatest
 def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.vwind_impl_wgt()
@@ -458,7 +457,6 @@ def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experi
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU due to vwind_impl_wgt computation)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -466,7 +464,6 @@ def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experi
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_factory_zdiff_gradp(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.zdiff_gradp()
@@ -523,7 +520,6 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
-@pytest.mark.cpu_only  # TODO (@halungge: fixed with PR https://github.com/C2SM/icon4py/pull/715)
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
