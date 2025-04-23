@@ -130,7 +130,7 @@ def pytest_addoption(parser):
         parser.addoption(
             "--level",
             action="store",
-            help="use the level of the test",
+            help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
             default="any",
         )
     except ValueError:
@@ -172,7 +172,7 @@ def pytest_collection_modifyitems(config, items):
         if marker is not None and test_level not in marker.args:
             item.add_marker(
                 pytest.mark.skip(
-                    reason=f"Test level '{test_level}' does not match the required '{marker.args}' level for this test."
+                    reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
                 )
             )
 

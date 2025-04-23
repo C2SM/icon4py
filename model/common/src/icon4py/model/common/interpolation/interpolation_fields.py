@@ -171,7 +171,7 @@ def _compute_primal_normal_ec(
 
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
 
-    inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
+    inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e, array_ns)
     u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
     v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
     return (array_ns.where(owned, u_component, 0.0), array_ns.where(owned, v_component, 0.0))
@@ -210,7 +210,7 @@ def _compute_geofac_grg(
     geofac_grg_x = array_ns.zeros(target_shape)
     geofac_grg_y = array_ns.zeros(target_shape)
 
-    inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
+    inverse_neighbor = _create_inverse_neighbor_index(e2c, c2e, array_ns)
 
     tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
     geofac_grg_x[horizontal_start:, 0] = array_ns.sum(primal_normal_ec_u * tmp, axis=1)[
@@ -324,7 +324,7 @@ def compute_geofac_grdiv(
     return geofac_grdiv
 
 
-def rotate_latlon(
+def _rotate_latlon(
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     pollat: data_alloc.NDArray,
@@ -394,7 +394,7 @@ def _weighting_factors(
         Returns:
             wgt: numpy array of size [[3, flexible], ta.wpfloat]
     """
-    rotate = functools.partial(rotate_latlon, array_ns=array_ns)
+    rotate = functools.partial(_rotate_latlon, array_ns=array_ns)
 
     pollat = array_ns.where(yloc >= 0.0, yloc - math.pi * 0.5, yloc + math.pi * 0.5)
     pollon = xloc
@@ -588,7 +588,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
-    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
+    inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -643,7 +643,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     )
 
 
-def create_inverse_neighbor_index(
+def _create_inverse_neighbor_index(
     source_offset, inverse_offset, array_ns: ModuleType
 ) -> data_alloc.NDArray:
     """
