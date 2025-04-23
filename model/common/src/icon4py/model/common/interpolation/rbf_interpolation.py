@@ -15,8 +15,14 @@ import scipy.linalg as sla
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.math.helpers import (
+    cartesian_coordinates_from_zonal_and_meridional_components_on_cells,
+    cartesian_coordinates_from_zonal_and_meridional_components_on_edges,
+    cartesian_coordinates_from_zonal_and_meridional_components_on_vertices,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+import gt4py.next as gtx
 
 class RBFDimension(enum.Enum):
     CELL = "cell"
@@ -200,28 +206,17 @@ def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
             assert False # TODO: error?
 
 
-# TODO proper name...
-# TODO: Use function from helpers.py?
-def zonal_meridional_component(
-    thing_center_lat: data_alloc.NDArray,  # fa.CellField[ta.wpfloat], # TODO: type? not always CellField
-    thing_center_lon: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    u: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    v: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-) -> data_alloc.NDArray:
-    """compute z_nx1 and z_nx2"""
-    sin_lat = np.sin(thing_center_lat)
-    sin_lon = np.sin(thing_center_lon)
-    cos_lat = np.cos(thing_center_lat)
-    cos_lon = np.cos(thing_center_lon)
-
-    x = -1.0 * (sin_lon * u + sin_lat * cos_lon * v)
-    y = cos_lon * u - sin_lat * sin_lon * v
-    z = cos_lat * v
-    cartesian_v = np.stack((x, y, z), axis=-1)
-    # TODO: Always 1 or almost 1?
-    norms = np.linalg.norm(cartesian_v, axis=-1)
-    return cartesian_v / norms[:, np.newaxis]
-
+def get_zonal_meridional_f(domain: gtx.Domain):
+    # TODO: Must be a nicer way...
+    match domain[0].dim:
+        case gtx.Dimension("Cell"):
+            return cartesian_coordinates_from_zonal_and_meridional_components_on_cells
+        case gtx.Dimension("Edge"):
+            return cartesian_coordinates_from_zonal_and_meridional_components_on_edges
+        case gtx.Dimension("Vertex"):
+            return cartesian_coordinates_from_zonal_and_meridional_components_on_vertices
+        case _:
+            assert False # TODO
 
 def compute_rbf_interpolation_matrix(
     # TODO: naming
@@ -284,17 +279,27 @@ def compute_rbf_interpolation_matrix(
     # coefficients, with given u and v components. Right now this computes z_nx1
     # and z_nx2 identically for that case.
     assert (u is None and v is None ) or (u is not None and v is not None)
+
+    domain = gtx.domain(thing_center_lat.domain)
+    dtype = thing_center_lat.dtype
+
+    zeros_field = gtx.zeros(domain, dtype=dtype)
+    ones_field = gtx.ones(domain, dtype=dtype)
+
+    z_nx_x = gtx.zeros(domain, dtype=dtype)
+    z_nx_y = gtx.zeros(domain, dtype=dtype)
+    z_nx_z = gtx.zeros(domain, dtype=dtype)
+
+    zonal_meridional_f = get_zonal_meridional_f(thing_center_lat.domain)
     if u is None:
-        z_nx1 = zonal_meridional_component(
-            thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=ones, v=zeros
-        )
-        z_nx2 = zonal_meridional_component(
-            thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=zeros, v=ones
-        )
+        zonal_meridional_f(thing_center_lat, thing_center_lon, ones_field, zeros_field, out=(z_nx_x, z_nx_y, z_nx_z), offset_provider={})
+        z_nx1 = np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1)
+
+        zonal_meridional_f(thing_center_lat, thing_center_lon, zeros_field, ones_field, out=(z_nx_x, z_nx_y, z_nx_z), offset_provider={})
+        z_nx2 = np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1)
     else:
-        z_nx1 = zonal_meridional_component(
-            thing_center_lat=thing_center_lat, thing_center_lon=thing_center_lon, u=u, v=v
-        )
+        zonal_meridional_f(thing_center_lat, thing_center_lon, u, v, out=(z_nx_x, z_nx_y, z_nx_z), offset_provider={})
+        z_nx1 = np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1)
         z_nx2 = z_nx1
 
     assert z_nx1.shape == (rbf_offset.shape[0], 3)

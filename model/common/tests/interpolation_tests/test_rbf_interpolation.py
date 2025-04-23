@@ -74,8 +74,8 @@ def test_rbf_interpolation_matrix_cell(grid_file, grid_savepoint, interpolation_
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
 
     # cell center
-    cell_center_lat = geometry.get(geometry_attrs.CELL_LAT).asnumpy()
-    cell_center_lon = geometry.get(geometry_attrs.CELL_LON).asnumpy()
+    cell_center_lat = geometry.get(geometry_attrs.CELL_LAT)
+    cell_center_lon = geometry.get(geometry_attrs.CELL_LON)
     cell_center_x = geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
     cell_center_y = geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
     cell_center_z = geometry.get(geometry_attrs.CELL_CENTER_Z).asnumpy()
@@ -127,8 +127,8 @@ def test_rbf_interpolation_matrix_vertex(grid_file, grid_savepoint, interpolatio
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
 
     # vertex center
-    vertex_lat = geometry.get(geometry_attrs.VERTEX_LAT).asnumpy()
-    vertex_lon = geometry.get(geometry_attrs.VERTEX_LON).asnumpy()
+    vertex_lat = geometry.get(geometry_attrs.VERTEX_LAT)
+    vertex_lon = geometry.get(geometry_attrs.VERTEX_LON)
     vertex_x = geometry.get(geometry_attrs.VERTEX_CENTER_X).asnumpy()
     vertex_y = geometry.get(geometry_attrs.VERTEX_CENTER_Y).asnumpy()
     vertex_z = geometry.get(geometry_attrs.VERTEX_CENTER_Z).asnumpy()
@@ -179,13 +179,13 @@ def test_rbf_interpolation_matrix_edge(grid_file, grid_savepoint, interpolation_
     edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X).asnumpy()
     edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y).asnumpy()
     edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z).asnumpy()
-    edge_center_lat = grid_savepoint.edge_center_lat().asnumpy()
-    edge_center_lon = grid_savepoint.edge_center_lon().asnumpy()
+    edge_center_lat = grid_savepoint.edge_center_lat()
+    edge_center_lon = grid_savepoint.edge_center_lon()
     edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
     edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y).asnumpy()
     edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z).asnumpy()
-    dual_normal_v1 = grid_savepoint.dual_normal_v1().asnumpy()
-    dual_normal_v2 = grid_savepoint.dual_normal_v2().asnumpy()
+    dual_normal_v1 = grid_savepoint.dual_normal_v1()
+    dual_normal_v2 = grid_savepoint.dual_normal_v2()
 
     rbf_vec_e1, rbf_vec_e2 = rbf.compute_rbf_interpolation_matrix(
         edge_center_lat,

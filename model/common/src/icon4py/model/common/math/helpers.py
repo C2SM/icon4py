@@ -213,6 +213,19 @@ def dot_product_on_cells(
 
 
 @gtx.field_operator
+def dot_product_on_vertices(
+    x1: fa.VertexField[ta.wpfloat],
+    x2: fa.VertexField[ta.wpfloat],
+    y1: fa.VertexField[ta.wpfloat],
+    y2: fa.VertexField[ta.wpfloat],
+    z1: fa.VertexField[ta.wpfloat],
+    z2: fa.VertexField[ta.wpfloat],
+) -> fa.VertexField[ta.wpfloat]:
+    """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
+    return x1 * x2 + y1 * y2 + z1 * z2
+
+
+@gtx.field_operator
 def cross_product_on_edges(
     x1: fa.EdgeField[ta.wpfloat],
     x2: fa.EdgeField[ta.wpfloat],
@@ -262,6 +275,24 @@ def norm2_on_cells(
 
     """
     return sqrt(dot_product_on_cells(x, x, y, y, z, z))
+
+
+@gtx.field_operator
+def norm2_on_vertices(
+    x: fa.VertexField[ta.wpfloat], y: fa.VertexField[ta.wpfloat], z: fa.VertexField[ta.wpfloat]
+) -> fa.VertexField[ta.wpfloat]:
+    """
+    Compute 2 norm of a cartesian vector (x, y, z)
+    Args:
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    Returns:
+        norma
+
+    """
+    return sqrt(dot_product_on_vertices(x, x, y, y, z, z))
 
 
 @gtx.field_operator
@@ -498,6 +529,60 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
         v,
         out=(x, y, z),
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.field_operator
+def cartesian_coordinates_from_zonal_and_meridional_components_on_vertices(
+    lat: fa.VertexField[ta.wpfloat],
+    lon: fa.VertexField[ta.wpfloat],
+    u: fa.VertexField[ta.wpfloat],
+    v: fa.VertexField[ta.wpfloat],
+) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
+    """
+    Compute cartesian coordinates form zonal an meridonal components at position (lat, lon)
+    Args:
+        lat: latitude
+        lon: longitude
+        u: zonal component
+        v: meridional component
+
+    Returns:
+        x, y, z cartesian components
+
+    """
+    cos_lat = cos(lat)
+    sin_lat = sin(lat)
+    cos_lon = cos(lon)
+    sin_lon = sin(lon)
+
+    x = -u * sin_lon - v * sin_lat * cos_lon
+    y = u * cos_lon - v * sin_lat * sin_lon
+    z = cos_lat * v
+
+    norm = norm2_on_vertices(x, y, z)
+    return x / norm, y / norm, z / norm
+
+
+@gtx.program
+def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_vertices(
+    vertex_lat: fa.VertexField[ta.wpfloat],
+    vertex_lon: fa.VertexField[ta.wpfloat],
+    u: fa.VertexField[ta.wpfloat],
+    v: fa.VertexField[ta.wpfloat],
+    x: fa.VertexField[ta.wpfloat],
+    y: fa.VertexField[ta.wpfloat],
+    z: fa.VertexField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    cartesian_coordinates_from_zonal_and_meridional_components_on_vertices(
+        vertex_lat,
+        vertex_lon,
+        u,
+        v,
+        out=(x, y, z),
+        domain={dims.VertexDim: (horizontal_start, horizontal_end)},
     )
 
 
