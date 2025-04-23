@@ -102,13 +102,13 @@ def test_rbf_interpolation_matrix_cell(
     # cell center
     cell_center_lat = geometry.get(geometry_attrs.CELL_LAT)
     cell_center_lon = geometry.get(geometry_attrs.CELL_LON)
-    cell_center_x = geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
-    cell_center_y = geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
-    cell_center_z = geometry.get(geometry_attrs.CELL_CENTER_Z).asnumpy()
+    cell_center_x = geometry.get(geometry_attrs.CELL_CENTER_X)
+    cell_center_y = geometry.get(geometry_attrs.CELL_CENTER_Y)
+    cell_center_z = geometry.get(geometry_attrs.CELL_CENTER_Z)
 
-    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X).asnumpy()
-    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y).asnumpy()
-    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z).asnumpy()
+    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
+    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
+    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
     edge_center_lat = grid_savepoint.edge_center_lat().asnumpy()
     edge_center_lon = grid_savepoint.edge_center_lon().asnumpy()
     # TODO: normals not dallclose? check
@@ -165,13 +165,13 @@ def test_rbf_interpolation_matrix_vertex(
     # vertex center
     vertex_lat = geometry.get(geometry_attrs.VERTEX_LAT)
     vertex_lon = geometry.get(geometry_attrs.VERTEX_LON)
-    vertex_x = geometry.get(geometry_attrs.VERTEX_CENTER_X).asnumpy()
-    vertex_y = geometry.get(geometry_attrs.VERTEX_CENTER_Y).asnumpy()
-    vertex_z = geometry.get(geometry_attrs.VERTEX_CENTER_Z).asnumpy()
+    vertex_x = geometry.get(geometry_attrs.VERTEX_CENTER_X)
+    vertex_y = geometry.get(geometry_attrs.VERTEX_CENTER_Y)
+    vertex_z = geometry.get(geometry_attrs.VERTEX_CENTER_Z)
 
-    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X).asnumpy()
-    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y).asnumpy()
-    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z).asnumpy()
+    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
+    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
+    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
     edge_center_lat = grid_savepoint.edge_center_lat().asnumpy()
     edge_center_lon = grid_savepoint.edge_center_lon().asnumpy()
     edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()
@@ -219,9 +219,9 @@ def test_rbf_interpolation_matrix_edge(
     # TODO: Neighbors are not in the same order
     # assert (offset_table_from_savepoint == offset_table).all()
 
-    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X).asnumpy()
-    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y).asnumpy()
-    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z).asnumpy()
+    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
+    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
+    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
     edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X).asnumpy()

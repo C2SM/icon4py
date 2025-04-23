@@ -242,9 +242,15 @@ def compute_rbf_interpolation_matrix(
     z_normal = edge_normal_z[rbf_offset]
     edge_normal = np.stack((x_normal, y_normal, z_normal), axis=-1)
     assert edge_normal.shape == (*rbf_offset.shape, 3)
-    edge_center_x = np.pad(edge_center_x, (0, 1), mode="constant", constant_values=0.0)
-    edge_center_y = np.pad(edge_center_y, (0, 1), mode="constant", constant_values=0.0)
-    edge_center_z = np.pad(edge_center_z, (0, 1), mode="constant", constant_values=0.0)
+    edge_center_x = np.pad(
+        edge_center_x.asnumpy(), (0, 1), mode="constant", constant_values=0.0
+    )
+    edge_center_y = np.pad(
+        edge_center_y.asnumpy(), (0, 1), mode="constant", constant_values=0.0
+    )
+    edge_center_z = np.pad(
+        edge_center_z.asnumpy(), (0, 1), mode="constant", constant_values=0.0
+    )
     x_center = edge_center_x[rbf_offset]
     y_center = edge_center_y[rbf_offset]
     z_center = edge_center_z[rbf_offset]
@@ -335,7 +341,10 @@ def compute_rbf_interpolation_matrix(
     assert z_nx3.shape == (*rbf_offset.shape, 3)
 
     # 4 right hand side
-    thing_centers = np.stack((thing_center_x, thing_center_y, thing_center_z), axis=-1)
+    thing_centers = np.stack(
+        (thing_center_x.asnumpy(), thing_center_y.asnumpy(), thing_center_z.asnumpy()),
+        axis=-1,
+    )
     assert thing_centers.shape == (rbf_offset.shape[0], 3)
     vector_dist = arc_length_2(thing_centers[:, np.newaxis, :], edge_centers)
     assert vector_dist.shape == rbf_offset.shape
