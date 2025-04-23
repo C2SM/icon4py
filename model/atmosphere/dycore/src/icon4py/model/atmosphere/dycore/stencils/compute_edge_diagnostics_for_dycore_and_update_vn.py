@@ -167,7 +167,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             ),
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
         )
-        if limited_area & (iadv_rhotheta <= 2)
+        if limited_area & (iadv_rhotheta <= rhotheta_avd_type.MIURA)
         else (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels)
     )
 
