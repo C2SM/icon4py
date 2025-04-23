@@ -162,33 +162,6 @@ def arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     return np.squeeze(np.arccos(arc_lengths), axis=1)
 
 
-# TODO: Use?
-def arc_length(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
-    v1_norm = _normalize_along_last_axis(v1)
-    v2_norm = _normalize_along_last_axis(v2)
-
-    return _arc_length_of_normalized_input(v1_norm, v2_norm)
-
-
-# TODO: Use?
-def _arc_length_of_normalized_input(v1_norm, v2_norm):
-    d = dot_product(v1_norm, v2_norm)
-    d_clip = np.clip(d, -1.0, 1.0)
-    r = np.arccos(d_clip)
-    return r
-
-
-def _normalize_along_last_axis(v: np.ndarray):
-    norms = np.sqrt(np.sum(v * 1, axis=-1))
-    # print("_normalize_along_last_axis")
-    # print("norms")
-    # print(norms)
-    # print("v / norms[..., np.newaxis]")
-    r = v / norms[..., np.newaxis]
-    # print(r)
-    return r
-
-
 def gaussian(lengths: np.ndarray, scale: float) -> np.ndarray:
     val = lengths / scale
     return np.exp(-1.0 * val * val)
