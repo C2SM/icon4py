@@ -51,7 +51,7 @@ class DivergenceDampingOrder(FrozenNamespace[int]):
     COMBINED = 24
 
 
-class HorizontalPressureDiscretizationType(FrozenNamespace):
+class HorizontalPressureDiscretizationType(FrozenNamespace[int]):
     """Parameter called igradp_method in ICON namelist."""
 
     #: conventional discretization with metric correction term
