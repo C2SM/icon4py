@@ -8,6 +8,8 @@
 
 from typing import Final
 
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
@@ -15,6 +17,7 @@ from icon4py.model.common.states import model
 # TODO: revise names with domain scientists
 
 Z_MC: Final[str] = "height"
+FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
 DDQZ_Z_FULL: Final[str] = "ddqz_z_full"
 INV_DDQZ_Z_FULL: Final[str] = "inv_ddqz_z_full"
@@ -57,6 +60,14 @@ ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
 
 
 attrs: dict[str, model.FieldMetaData] = {
+    FLAT_EDGE_INDEX: dict(
+        standard_name=FLAT_EDGE_INDEX,
+        long_name="indices of flat edges",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="flat_idx",
+        dtype=gtx.int32,
+    ),
     Z_MC: dict(
         standard_name=Z_MC,
         long_name="height",
