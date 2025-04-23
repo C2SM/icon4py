@@ -675,7 +675,7 @@ def test_nonhydro_corrector_step(
         prognostic_states.next.theta_v.asnumpy(),
         savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
-    # stencil 31 - TODO savepoint value starts differing from 0.0 at 1688 which is a n edge boundary
+    # stencil 31
     assert helpers.dallclose(
         solve_nonhydro.z_vn_avg.asnumpy()[solve_nonhydro._start_edge_lateral_boundary_level_5 :, :],
         savepoint_nonhydro_exit.z_vn_avg().asnumpy()[
