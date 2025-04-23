@@ -70,6 +70,7 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
     )
+    config.addinivalue_line("markers", "duplicate: functionality under tests is tested twice")
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
