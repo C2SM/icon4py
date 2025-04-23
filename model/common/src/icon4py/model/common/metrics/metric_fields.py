@@ -5,8 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from types import ModuleType
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import (
     GridType,
     abs,
@@ -50,6 +52,7 @@ from icon4py.model.common.math.helpers import (
     grad_fd_norm,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -97,7 +100,6 @@ def compute_z_mc(
 def _compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     ddqz_z_half = concat_where((dims.KDim > 0) & (dims.KDim < nlev), 0.0, 2.0 * (z_ifc - z_mc))
@@ -112,7 +114,6 @@ def _compute_ddqz_z_half(
 def compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
-    k: fa.KField[gtx.int32],
     ddqz_z_half: fa.CellKField[wpfloat],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -139,7 +140,6 @@ def compute_ddqz_z_half(
     _compute_ddqz_z_half(
         z_ifc,
         z_mc,
-        k,
         nlev,
         out=ddqz_z_half,
         domain={
@@ -539,14 +539,13 @@ def compute_maxslp_maxhgtd(
 def _compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
-    cell: fa.CellField[gtx.int32],
     exner_expol: wpfloat,
     lateral_boundary_level_2: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     z_maxslp, z_maxhgtd = _compute_maxslp_maxhgtd(ddxn_z_full, dual_edge_length)
 
-    exner_exfac = where(
-        cell >= lateral_boundary_level_2,
+    exner_exfac = concat_where(
+        dims.CellDim >= lateral_boundary_level_2,
         exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2),
         exner_expol,
     )
@@ -562,7 +561,6 @@ def _compute_exner_exfac(
 def compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
-    cell: fa.CellField[gtx.int32],
     exner_exfac: fa.CellKField[wpfloat],
     exner_expol: wpfloat,
     lateral_boundary_level_2: gtx.int32,
@@ -590,7 +588,6 @@ def compute_exner_exfac(
     _compute_exner_exfac(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
-        cell=cell,
         exner_expol=exner_expol,
         lateral_boundary_level_2=lateral_boundary_level_2,
         out=exner_exfac,
@@ -683,6 +680,18 @@ def compute_flat_idx(
     )
 
 
+def compute_max_index(
+    flat_idx: data_alloc.NDArray, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
+    """
+    Reduces a 2d array to a 1d array by taking the maximum value along axis 1.
+
+    Usage example in ICON: to compute the max index of flat levels along a horizontal dimension.
+    """
+    max_idx = array_ns.amax(flat_idx, axis=1)
+    return max_idx
+
+
 @field_operator
 def _compute_downward_extrapolation_distance(
     z_ifc: fa.CellField[wpfloat],
@@ -731,17 +740,13 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(z_ifc_sliced)
-    extrapolation_distance = where(
-        horizontal_start_distance <= e_lev < horizontal_end_distance,
+    extrapolation_distance = concat_where(
+        (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
         downward_distance,
         0.0,
     )
-    pg_edgeidx = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask, e_lev, 0
-    )
-    pg_vertidx = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask, k_lev, 0
-    )
+    flatness_condition = (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask
+    pg_edgeidx, pg_vertidx = where(flatness_condition, (e_lev, k_lev), (0, 0))
     pg_edge_mask = (pg_edgeidx > 0) & (pg_vertidx > 0)
 
     pg_exdist_dsl = where(

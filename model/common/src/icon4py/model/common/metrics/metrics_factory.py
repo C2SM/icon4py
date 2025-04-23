@@ -28,7 +28,6 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
-    compute_flat_idx_max,
     compute_vwind_impl_wgt,
     compute_wgtfac_c,
     compute_wgtfacq,
@@ -102,7 +101,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
         e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, backend=self._backend)
-        c_lev = data_alloc.index_field(self._grid, dims.CellDim, backend=self._backend)
         e_owner_mask = gtx.as_field(
             (dims.EdgeDim,), self._decomposition_info.owner_mask(dims.EdgeDim)
         )
@@ -122,7 +120,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "c_owner_mask": c_owner_mask,
                     "k_lev": k_index,
                     "e_lev": e_lev,
-                    "c_lev": c_lev,
                 }
             )
         )
@@ -166,7 +163,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "z_mc": attrs.Z_MC,
-                "k": "k_lev",
             },
             params={"nlev": self._grid.num_levels},
         )
@@ -434,7 +430,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "ddxn_z_full": attrs.DDXN_Z_FULL,
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
-                "cell": "c_lev",
             },
             domain={
                 dims.CellDim: (
@@ -456,11 +451,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_exner_exfac)
 
-        compute_wgtfac_c_np = factory.ProgramFieldProvider(
+        wgtfac_c_provider = factory.ProgramFieldProvider(
             func=compute_wgtfac_c.compute_wgtfac_c.with_backend(self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
-                "k": "k_lev",
             },
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
@@ -472,7 +466,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={attrs.WGTFAC_C: attrs.WGTFAC_C},
             params={"nlev": self._grid.num_levels},
         )
-        self.register_provider(compute_wgtfac_c_np)
+        self.register_provider(wgtfac_c_provider)
 
         compute_wgtfac_e = factory.ProgramFieldProvider(
             func=mf.compute_wgtfac_e.with_backend(self._backend),
@@ -493,26 +487,36 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={attrs.WGTFAC_E: attrs.WGTFAC_E},
         )
         self.register_provider(compute_wgtfac_e)
-
-        compute_flat_idx_max_np = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_flat_idx_max.compute_flat_idx_max, array_ns=self._xp),
-            domain=(dims.EdgeDim,),
-            fields=(attrs.FLAT_IDX_MAX,),
+        compute_flat_edge_idx = factory.ProgramFieldProvider(
+            func=mf.compute_flat_idx.with_backend(self._backend),
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "k_lev": "k_lev",
             },
-            connectivities={"e2c": dims.E2CDim},
-            params={
-                "horizontal_lower": self._grid.start_index(
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+            domain={
+                dims.EdgeDim: (
+                    edge_domain(h_grid.Zone.LOCAL),
+                    edge_domain(h_grid.Zone.LOCAL),
                 ),
-                "horizontal_upper": self._grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"flat_idx": attrs.FLAT_EDGE_INDEX},
+        )
+        self.register_provider(compute_flat_edge_idx)
+        max_flat_index_provider = factory.NumpyFieldsProvider(
+            func=functools.partial(mf.compute_max_index, array_ns=self._xp),
+            domain=(dims.EdgeDim,),
+            fields=(attrs.FLAT_IDX_MAX,),
+            deps={
+                "flat_idx": attrs.FLAT_EDGE_INDEX,
             },
         )
-        self.register_provider(compute_flat_idx_max_np)
+        self.register_provider(max_flat_index_provider)
 
         compute_pg_idx_exdist = factory.ProgramFieldProvider(
             func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
