@@ -24,6 +24,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 import gt4py.next as gtx
 
+
 class RBFDimension(enum.Enum):
     CELL = "cell"
     EDGE = "edge"
@@ -40,7 +41,7 @@ RBF_STENCIL_SIZE: dict[RBFDimension, int] = {
 
 
 class InterpolationKernel(enum.Enum):
-    GAUSSIAN = (1,) # TODO: why tuple?
+    GAUSSIAN = (1,)  # TODO: why tuple?
     INVERSE_MULTI_QUADRATIC = 3
 
 
@@ -68,19 +69,28 @@ class InterpolationConfig:
     )
 
 
-def construct_rbf_matrix_offsets_tables_for_cells(grid: base_grid.BaseGrid) -> data_alloc.NDArray:
+def construct_rbf_matrix_offsets_tables_for_cells(
+    grid: base_grid.BaseGrid,
+) -> data_alloc.NDArray:
     """Compute the neighbor tables for the cell RBF matrix: rbf_vec_index_c"""
     c2e2c = grid.connectivities[dims.C2E2CDim]
     c2e = grid.connectivities[dims.C2EDim]
     offset = c2e[c2e2c]
     assert len(offset.shape) == 3
     # flatten this offset to construct a (num_cells, RBFDimension.CELL) shape offset matrix
-    flattened_offset = offset.reshape((offset.shape[0], offset.shape[1] * offset.shape[2]))
-    assert flattened_offset.shape == (grid.num_cells, RBF_STENCIL_SIZE[RBFDimension.CELL])
+    flattened_offset = offset.reshape(
+        (offset.shape[0], offset.shape[1] * offset.shape[2])
+    )
+    assert flattened_offset.shape == (
+        grid.num_cells,
+        RBF_STENCIL_SIZE[RBFDimension.CELL],
+    )
     return flattened_offset
 
 
-def construct_rbf_matrix_offsets_tables_for_edges(grid: base_grid.BaseGrid) -> data_alloc.NDArray:
+def construct_rbf_matrix_offsets_tables_for_edges(
+    grid: base_grid.BaseGrid,
+) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e"""
     e2c2e = grid.connectivities[dims.E2C2EDim]
     offset = e2c2e
@@ -88,7 +98,9 @@ def construct_rbf_matrix_offsets_tables_for_edges(grid: base_grid.BaseGrid) -> d
     return offset
 
 
-def construct_rbf_matrix_offsets_tables_for_vertices(grid: base_grid.BaseGrid) -> data_alloc.NDArray:
+def construct_rbf_matrix_offsets_tables_for_vertices(
+    grid: base_grid.BaseGrid,
+) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_v"""
     offset = grid.connectivities[dims.V2EDim]
     assert offset.shape == (grid.num_vertices, RBF_STENCIL_SIZE[RBFDimension.VERTEX])
@@ -113,7 +125,7 @@ def arc_length_pairwise(v: np.ndarray) -> np.ndarray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2)))
     # Compute all pairs of dot products
-    arc_lengths = dot_product(v, v) # np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
+    arc_lengths = dot_product(v, v)  # np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
     # Use the dot product of the diagonals to get the norm of each point
     norms = np.sqrt(np.diagonal(arc_lengths, axis1=1, axis2=2))
     # Divide the dot products by the broadcasted norms
@@ -203,7 +215,7 @@ def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
         case InterpolationKernel.INVERSE_MULTI_QUADRATIC:
             return multiquadratic(lengths, scale)
         case _:
-            assert False # TODO: error?
+            assert False  # TODO: error?
 
 
 def get_zonal_meridional_f(domain: gtx.Domain):
@@ -214,9 +226,12 @@ def get_zonal_meridional_f(domain: gtx.Domain):
         case gtx.Dimension("Edge"):
             return cartesian_coordinates_from_zonal_and_meridional_components_on_edges
         case gtx.Dimension("Vertex"):
-            return cartesian_coordinates_from_zonal_and_meridional_components_on_vertices
+            return (
+                cartesian_coordinates_from_zonal_and_meridional_components_on_vertices
+            )
         case _:
-            assert False # TODO
+            assert False  # TODO
+
 
 def compute_rbf_interpolation_matrix(
     # TODO: naming
@@ -264,12 +279,24 @@ def compute_rbf_interpolation_matrix(
     assert edge_centers.shape == (*rbf_offset.shape, 3)
 
     z_nxprod = dot_product(edge_normal, edge_normal)
-    assert z_nxprod.shape == (rbf_offset.shape[0], rbf_offset.shape[1], rbf_offset.shape[1])
+    assert z_nxprod.shape == (
+        rbf_offset.shape[0],
+        rbf_offset.shape[1],
+        rbf_offset.shape[1],
+    )
     z_dist = arc_length_pairwise(edge_centers)
-    assert z_dist.shape == (rbf_offset.shape[0], rbf_offset.shape[1], rbf_offset.shape[1])
+    assert z_dist.shape == (
+        rbf_offset.shape[0],
+        rbf_offset.shape[1],
+        rbf_offset.shape[1],
+    )
 
     z_rbfmat = z_nxprod * kernel(rbf_kernel, z_dist, scale_factor)
-    assert z_rbfmat.shape == (rbf_offset.shape[0], rbf_offset.shape[1], rbf_offset.shape[1])
+    assert z_rbfmat.shape == (
+        rbf_offset.shape[0],
+        rbf_offset.shape[1],
+        rbf_offset.shape[1],
+    )
 
     # 3) z_nx2, z_nx1
     ones = np.ones(thing_center_lat.shape, dtype=float)
@@ -278,7 +305,7 @@ def compute_rbf_interpolation_matrix(
     # TODO: This is dumb. For the edge field we only compute one array of
     # coefficients, with given u and v components. Right now this computes z_nx1
     # and z_nx2 identically for that case.
-    assert (u is None and v is None ) or (u is not None and v is not None)
+    assert (u is None and v is None) or (u is not None and v is not None)
 
     domain = gtx.domain(thing_center_lat.domain)
     dtype = thing_center_lat.dtype
@@ -292,14 +319,41 @@ def compute_rbf_interpolation_matrix(
 
     zonal_meridional_f = get_zonal_meridional_f(thing_center_lat.domain)
     if u is None:
-        zonal_meridional_f(thing_center_lat, thing_center_lon, ones_field, zeros_field, out=(z_nx_x, z_nx_y, z_nx_z), offset_provider={})
-        z_nx1 = np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1)
+        zonal_meridional_f(
+            thing_center_lat,
+            thing_center_lon,
+            ones_field,
+            zeros_field,
+            out=(z_nx_x, z_nx_y, z_nx_z),
+            offset_provider={},
+        )
+        z_nx1 = np.stack(
+            (z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1
+        )
 
-        zonal_meridional_f(thing_center_lat, thing_center_lon, zeros_field, ones_field, out=(z_nx_x, z_nx_y, z_nx_z), offset_provider={})
-        z_nx2 = np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1)
+        zonal_meridional_f(
+            thing_center_lat,
+            thing_center_lon,
+            zeros_field,
+            ones_field,
+            out=(z_nx_x, z_nx_y, z_nx_z),
+            offset_provider={},
+        )
+        z_nx2 = np.stack(
+            (z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1
+        )
     else:
-        zonal_meridional_f(thing_center_lat, thing_center_lon, u, v, out=(z_nx_x, z_nx_y, z_nx_z), offset_provider={})
-        z_nx1 = np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1)
+        zonal_meridional_f(
+            thing_center_lat,
+            thing_center_lon,
+            u,
+            v,
+            out=(z_nx_x, z_nx_y, z_nx_z),
+            offset_provider={},
+        )
+        z_nx1 = np.stack(
+            (z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1
+        )
         z_nx2 = z_nx1
 
     assert z_nx1.shape == (rbf_offset.shape[0], 3)
@@ -345,8 +399,12 @@ def compute_rbf_interpolation_matrix(
         z_diag = sla.cho_factor(rbfmat)
         # rbf_vec_coeff_1[i, :] = sla.cho_solve(z_diag, np.nan_to_num(rhs1[i, :]))
         # rbf_vec_coeff_2[i, :] = sla.cho_solve(z_diag, np.nan_to_num(rhs2[i, :]))
-        rbf_vec_coeff_1[i, :num_neighbors] = sla.cho_solve(z_diag, np.nan_to_num(rhs1[i, :num_neighbors]))
-        rbf_vec_coeff_2[i, :num_neighbors] = sla.cho_solve(z_diag, np.nan_to_num(rhs2[i, :num_neighbors]))
+        rbf_vec_coeff_1[i, :num_neighbors] = sla.cho_solve(
+            z_diag, np.nan_to_num(rhs1[i, :num_neighbors])
+        )
+        rbf_vec_coeff_2[i, :num_neighbors] = sla.cho_solve(
+            z_diag, np.nan_to_num(rhs2[i, :num_neighbors])
+        )
     assert nx1nx3.shape == rbf_vec_coeff_1.shape
     assert nx2nx3.shape == rbf_vec_coeff_2.shape
 
