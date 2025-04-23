@@ -84,10 +84,8 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
 
-    # flake8: noqa: C901
-    @classmethod
+    @staticmethod
     def reference(
-        cls,
         connectivities: dict[gtx.Dimension, np.ndarray],
         current_rho: np.ndarray,
         reference_rho_at_cells_on_model_levels: np.ndarray,
@@ -133,7 +131,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
     ) -> dict:
         horz_idx = horz_idx[:, np.newaxis]
 
-        # if istep == 1:
         if limited_area:
             (
                 perturbed_rho_at_cells_on_model_levels,
