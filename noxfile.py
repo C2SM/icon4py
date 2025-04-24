@@ -50,22 +50,44 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
-def benchmark_model(session: nox.Session) -> None:
-    """Run pytest benchmarks."""
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+    """Run pytest benchmarks for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
-    session.run(
-        *f"pytest \
-        -v \
-        --benchmark-only \
-        --benchmark-warmup=on \
-        --benchmark-warmup-iterations=30 \
-        --benchmark-json=pytest_benchmark_results_{session.python}.json \
-        ./model".split(),
-        *session.posargs,
-    )
+    results_json_path = os.path.abspath(f"pytest_benchmark_results_{session.python}_{subpackage.replace('/', '_')}.json")
+    with session.chdir(f"model/{subpackage}"):
+        session.run(
+            *f"pytest \
+            -v \
+            --benchmark-only \
+            --benchmark-warmup=on \
+            --benchmark-warmup-iterations=30 \
+            --benchmark-json={results_json_path}".split(),
+            *session.posargs,
+            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+        )
 
-@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+def merge_pytest_benchmark_results(bencher_json_file_name: str, session_python: str) -> None:
+    """Gather all benchmark results files and merge them into a single file."""
+    merged_results = {"benchmarks": []}
+    for file in glob.glob(f"pytest_benchmark_results_{session_python}_*.json"):
+        try:
+            with open(file, "r") as f:
+                data = json.load(f)
+                merged_results["benchmarks"].extend(data["benchmarks"])
+                # preserve the first file's metadata for a valid pytest-benchmark json file
+                for key in data.keys():
+                    if key != "benchmarks" and key not in merged_results:
+                        merged_results[key] = data[key]
+        except:
+            # Empty file, i.e. no benchmarks
+            continue
+    with open(bencher_json_file_name, "w") as f:
+        json.dump(merged_results, f, indent=4)
+
+@nox.session(python=["3.10", "3.11"],
+             requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
 def __bencher_baseline_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
@@ -74,6 +96,9 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
     Alerts are raised if there is performance regression according to the thresholds.
     Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
     """
+    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
+    merge_pytest_benchmark_results(bencher_json_file_name, session.python)
+
     session.run(
         *f"bencher run \
         --threshold-measure latency \
@@ -82,7 +107,7 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
         --threshold-upper-boundary 0.1 \
         --thresholds-reset \
         --err \
-        --file pytest_benchmark_results_{session.python}.json".split(),
+        --file {bencher_json_file_name}".split(),
         env={
             "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_BRANCH": "main",
@@ -95,7 +120,8 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
         silent=True,
     )
 
-@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+@nox.session(python=["3.10", "3.11"],
+             requires=["benchmark_model-{python}" + f"({subpackage.id})" for subpackage in MODEL_SUBPACKAGE_PATHS])
 def __bencher_feature_branch_CI(session: nox.Session) -> None:
     """
     Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
@@ -103,7 +129,11 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
     Alerts are raised if the performance of the feature branch is worse than the historical baseline (according to the thresholds).
     Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
     """
+    bencher_json_file_name = f"merged_benchmark_results_{session.python}.json"
+    merge_pytest_benchmark_results(bencher_json_file_name, session.python)
+    
     bencher_testbed = f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
+    
     session.run(
         *f"bencher run \
         --start-point main \
@@ -113,7 +143,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
         --github-actions {os.environ['GD_COMMENT_TOKEN']} \
         --ci-number {os.environ['PR_ID']} \
         --ci-id run-{bencher_testbed.replace(':', '_')}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
-        --file pytest_benchmark_results_{session.python}.json".split(),
+        --file {bencher_json_file_name}".split(),
         env={
             "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_BRANCH": os.environ['FEATURE_BRANCH'].strip(),
