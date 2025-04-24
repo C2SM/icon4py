@@ -38,19 +38,14 @@ def compute_vwind_impl_wgt(
     )
     vwind_impl_wgt = 0.5 + offctr
 
-    n_cells = c2e.shape[0]
     k_start = max(0, nlev - 9)
 
     zdiff2 = (z_ifc[:, 0:nlev] - z_ifc[:, 1 : nlev + 1]) / (vct_a[0:nlev] - vct_a[1 : nlev + 1])
+
     for jk in range(k_start, nlev):
-        zdiff2_sliced = zdiff2[:, jk]
-        wind_impl = np.where(
-            zdiff2_sliced < 0.6, np.maximum(1.2 - zdiff2_sliced, vwind_impl_wgt), vwind_impl_wgt
-        )
-    for jk in range(k_start, nlev):
-        for je in range(horizontal_start_cell, n_cells):
-            z_diff_2 = zdiff2[je, jk]
-            if z_diff_2 < 0.6:
-                vwind_impl_wgt[je] = max(vwind_impl_wgt[je], 1.2 - z_diff_2)
-    assert array_ns.allclose(wind_impl, vwind_impl_wgt)
+        zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
+        index_for_k = np.where(zdiff2_sliced < 0.6)[0]
+        max_value_k = np.maximum(1.2 - zdiff2_sliced, vwind_impl_wgt[horizontal_start_cell:])
+        vwind_impl_wgt[index_for_k + horizontal_start_cell] = max_value_k[index_for_k]
+
     return vwind_impl_wgt
