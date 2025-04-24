@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import math
 import numpy as np
 import pytest
 
@@ -106,7 +107,7 @@ def test_rbf_interpolation_matrix_cell(
         # grid_savepoint.primal_cart_normal_z(),
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
-        0.5,  # TODO: correct for r02b04 grid, smaller for smaller grids
+        rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
     )
 
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
@@ -160,7 +161,7 @@ def test_rbf_interpolation_matrix_vertex(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z),
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
-        0.5,  # TODO
+        rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
     )
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
@@ -214,7 +215,7 @@ def test_rbf_interpolation_matrix_edge(
         # rbf.construct_rbf_matrix_offsets_tables_for_edges(grid),
         grid_savepoint.e2c2e(),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
-        0.5,  # TODO
+        rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
     )
 
     rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
