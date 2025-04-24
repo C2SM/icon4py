@@ -123,10 +123,6 @@ def dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
 # next version computes pairwise arc lengths between two different arrays
 # TODO: Combine?
 def arc_length_pairwise(v: np.ndarray) -> np.ndarray:
-    # TODO: equivalent?
-    # v_norm = _normalize_along_last_axis(v)
-    # return _arc_length_of_normalized_input(v_norm, v_norm)
-
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2)))
     # Compute all pairs of dot products
@@ -193,11 +189,10 @@ def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
         case InterpolationKernel.INVERSE_MULTIQUADRATIC:
             return inverse_multiquadratic(lengths, scale)
         case _:
-            assert False  # TODO: error?
+            raise ValueError(f"Unsupported kernel: {kernel}")
 
 
 def get_zonal_meridional_f(dim: gtx.Dimension):
-    # TODO: Must be a nicer way...
     match dim:
         case gtx.Dimension("Cell"):
             return cartesian_coordinates_from_zonal_and_meridional_components_on_cells
@@ -208,7 +203,7 @@ def get_zonal_meridional_f(dim: gtx.Dimension):
                 cartesian_coordinates_from_zonal_and_meridional_components_on_vertices
             )
         case _:
-            assert False  # TODO
+            raise ValueError(f"Unsupported dimension: {dim}")
 
 
 def compute_rbf_interpolation_matrix(
