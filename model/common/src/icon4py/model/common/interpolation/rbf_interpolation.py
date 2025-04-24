@@ -207,12 +207,11 @@ def get_zonal_meridional_f(dim: gtx.Dimension):
 
 
 def compute_rbf_interpolation_matrix(
-    # TODO: naming
-    thing_center_lat,  # fa.CellField[ta.wpfloat], TODO: any of CellField, EdgeField, VertexField
-    thing_center_lon,  # fa.CellField[ta.wpfloat],
-    thing_center_x,  # fa.CellField[ta.wpfloat],
-    thing_center_y,  # fa.CellField[ta.wpfloat],
-    thing_center_z,  # fa.CellField[ta.wpfloat],
+    element_center_lat,  # fa.CellField[ta.wpfloat], TODO: any of CellField, EdgeField, VertexField
+    element_center_lon,  # fa.CellField[ta.wpfloat],
+    element_center_x,  # fa.CellField[ta.wpfloat],
+    element_center_y,  # fa.CellField[ta.wpfloat],
+    element_center_z,  # fa.CellField[ta.wpfloat],
     edge_center_x,  # fa.EdgeField[ta.wpfloat],
     edge_center_y,  # fa.EdgeField[ta.wpfloat],
     edge_center_z,  # fa.EdgeField[ta.wpfloat],
@@ -254,18 +253,22 @@ def compute_rbf_interpolation_matrix(
     assert edge_center.shape == (*rbf_offset.shape, 3)
 
     # Compute distances for right hand side(s) of linear system
-    thing_center = np.stack(
-        (thing_center_x.asnumpy(), thing_center_y.asnumpy(), thing_center_z.asnumpy()),
+    element_center = np.stack(
+        (
+            element_center_x.asnumpy(),
+            element_center_y.asnumpy(),
+            element_center_z.asnumpy(),
+        ),
         axis=-1,
     )
-    assert thing_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = arc_length_2(thing_center[:, np.newaxis, :], edge_center)
+    assert element_center.shape == (rbf_offset.shape[0], 3)
+    vector_dist = arc_length_2(element_center[:, np.newaxis, :], edge_center)
     assert vector_dist.shape == rbf_offset.shape
     rbf_val = kernel(rbf_kernel, vector_dist, scale_factor)
     assert rbf_val.shape == rbf_offset.shape
 
     # Set up right hand side(s) of linear system
-    domain = thing_center_lat.domain
+    domain = element_center_lat.domain
     dim = domain[0].dim
     zonal_meridional_f = get_zonal_meridional_f(dim)
 
@@ -281,8 +284,8 @@ def compute_rbf_interpolation_matrix(
         z_nx_z = gtx.zeros(domain, dtype=ta.wpfloat)
 
         zonal_meridional_f(
-            thing_center_lat,
-            thing_center_lon,
+            element_center_lat,
+            element_center_lon,
             u[i],
             v[i],
             out=(z_nx_x, z_nx_y, z_nx_z),
