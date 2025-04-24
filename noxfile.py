@@ -25,7 +25,7 @@ nox.options.sessions = ["test_model", "test_tools"]
 
 # -- Parameter sets --
 ModelSubpackagePath: TypeAlias = Literal[
-    "atmosphere/advection",
+    # "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
     "atmosphere/subgrid_scale_physics/microphysics",

@@ -5,8 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from types import ModuleType
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import (
     GridType,
     abs,
@@ -44,51 +46,16 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 )
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
-    average_cell_kdim_level_up,
-    average_edge_kdim_level_up,
-    difference_k_level_up,
+    difference_level_plus1_on_cells,
     grad_fd_norm,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_z_mc(
-    z_ifc: fa.CellKField[wpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    """
-    Compute the geometric height of full levels from the geometric height of half levels (z_ifc).
-
-    This assumes that the input field z_ifc is defined on half levels (KHalfDim) and the
-    returned fields is defined on full levels (dims.KDim)
-
-    Args:
-        z_ifc: Field[Dims[dims.CellDim, dims.KDim], wpfloat] geometric height on half levels
-        z_mc: Field[Dims[dims.CellDim, dims.KDim], wpfloat] output, geometric height defined on full levels
-        horizontal_start:int32 start index of horizontal domain
-        horizontal_end:int32 end index of horizontal domain
-        vertical_start:int32 start index of vertical domain
-        vertical_end:int32 end index of vertical domain
-
-    """
-    average_cell_kdim_level_up(
-        z_ifc,
-        out=z_mc,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
 
 
 # TODO(@nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
@@ -97,7 +64,6 @@ def compute_z_mc(
 def _compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     ddqz_z_half = concat_where((dims.KDim > 0) & (dims.KDim < nlev), 0.0, 2.0 * (z_ifc - z_mc))
@@ -112,7 +78,6 @@ def _compute_ddqz_z_half(
 def compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
-    k: fa.KField[gtx.int32],
     ddqz_z_half: fa.CellKField[wpfloat],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -139,7 +104,6 @@ def compute_ddqz_z_half(
     _compute_ddqz_z_half(
         z_ifc,
         z_mc,
-        k,
         nlev,
         out=ddqz_z_half,
         domain={
@@ -153,7 +117,7 @@ def compute_ddqz_z_half(
 def _compute_ddqz_z_full_and_inverse(
     z_ifc: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    ddqz_z_full = difference_k_level_up(z_ifc)
+    ddqz_z_full = difference_level_plus1_on_cells(z_ifc)
     inverse_ddqz_z_full = 1.0 / ddqz_z_full
     return ddqz_z_full, inverse_ddqz_z_full
 
@@ -195,28 +159,30 @@ def compute_ddqz_z_full_and_inverse(
 
 
 @field_operator
-def _compute_scalfac_dd3d(
+def _compute_scaling_factor_for_3d_divdamp(
     vct_a: fa.KField[wpfloat],
     divdamp_trans_start: wpfloat,
     divdamp_trans_end: wpfloat,
     divdamp_type: gtx.int32,
 ) -> fa.KField[wpfloat]:
-    scalfac_dd3d = broadcast(1.0, (dims.KDim,))
+    scaling_factor_for_3d_divdamp = broadcast(1.0, (dims.KDim,))
     if divdamp_type == 32:
         zf = 0.5 * (vct_a + vct_a(Koff[1]))  # depends on nshift_total, assumed to be always 0
-        scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
-        scalfac_dd3d = where(
+        scaling_factor_for_3d_divdamp = where(
+            zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
+        )
+        scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_start,
             (divdamp_trans_end - zf) / (divdamp_trans_end - divdamp_trans_start),
-            scalfac_dd3d,
+            scaling_factor_for_3d_divdamp,
         )
-    return scalfac_dd3d
+    return scaling_factor_for_3d_divdamp
 
 
 @program
-def compute_scalfac_dd3d(
+def compute_scaling_factor_for_3d_divdamp(
     vct_a: fa.KField[wpfloat],
-    scalfac_dd3d: fa.KField[wpfloat],
+    scaling_factor_for_3d_divdamp: fa.KField[wpfloat],
     divdamp_trans_start: wpfloat,
     divdamp_trans_end: wpfloat,
     divdamp_type: gtx.int32,
@@ -224,25 +190,25 @@ def compute_scalfac_dd3d(
     vertical_end: gtx.int32,
 ):
     """
-    Compute scaling factor for 3D divergence damping terms.
+    Compute scaling factor for 3D divergence damping terms (declared as scalfac_dd3d in ICON).
 
     See mo_vertical_grid.f90
 
     Args:
         vct_a: Field[Dims[dims.KDim], float],
-        scalfac_dd3d: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
+        scaling_factor_for_3d_divdamp: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
         divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_type: type of divergence damping (2D or 3D divergence)
         vertical_start: vertical start index
         vertical_end: vertical end index
     """
-    _compute_scalfac_dd3d(
+    _compute_scaling_factor_for_3d_divdamp(
         vct_a,
         divdamp_trans_start,
         divdamp_trans_end,
         divdamp_type,
-        out=scalfac_dd3d,
+        out=scaling_factor_for_3d_divdamp,
         domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
@@ -430,25 +396,6 @@ def compute_ddxt_z_half_e(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_ddxn_z_full(
-    ddxnt_z_half_e: fa.EdgeKField[wpfloat],
-    ddxn_z_full: fa.EdgeKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    average_edge_kdim_level_up(
-        ddxnt_z_half_e,
-        out=ddxn_z_full,
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 @field_operator
 def _compute_vwind_expl_wgt(vwind_impl_wgt: fa.CellField[wpfloat]) -> fa.CellField[wpfloat]:
     return 1.0 - vwind_impl_wgt
@@ -539,14 +486,13 @@ def compute_maxslp_maxhgtd(
 def _compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
-    cell: fa.CellField[gtx.int32],
     exner_expol: wpfloat,
     lateral_boundary_level_2: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     z_maxslp, z_maxhgtd = _compute_maxslp_maxhgtd(ddxn_z_full, dual_edge_length)
 
-    exner_exfac = where(
-        cell >= lateral_boundary_level_2,
+    exner_exfac = concat_where(
+        dims.CellDim >= lateral_boundary_level_2,
         exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2),
         exner_expol,
     )
@@ -562,7 +508,6 @@ def _compute_exner_exfac(
 def compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
-    cell: fa.CellField[gtx.int32],
     exner_exfac: fa.CellKField[wpfloat],
     exner_expol: wpfloat,
     lateral_boundary_level_2: gtx.int32,
@@ -590,7 +535,6 @@ def compute_exner_exfac(
     _compute_exner_exfac(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
-        cell=cell,
         exner_expol=exner_expol,
         lateral_boundary_level_2=lateral_boundary_level_2,
         out=exner_exfac,
@@ -774,6 +718,18 @@ def compute_flat_idx(
     )
 
 
+def compute_max_index(
+    flat_idx: data_alloc.NDArray, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
+    """
+    Reduces a 2d array to a 1d array by taking the maximum value along axis 1.
+
+    Usage example in ICON: to compute the max index of flat levels along a horizontal dimension.
+    """
+    max_idx = array_ns.amax(flat_idx, axis=1)
+    return max_idx
+
+
 @field_operator
 def _compute_downward_extrapolation_distance(
     z_ifc: fa.CellField[wpfloat],
@@ -822,17 +778,13 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(z_ifc_sliced)
-    extrapolation_distance = where(
-        horizontal_start_distance <= e_lev < horizontal_end_distance,
+    extrapolation_distance = concat_where(
+        (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
         downward_distance,
         0.0,
     )
-    pg_edgeidx = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask, e_lev, 0
-    )
-    pg_vertidx = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask, k_lev, 0
-    )
+    flatness_condition = (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask
+    pg_edgeidx, pg_vertidx = where(flatness_condition, (e_lev, k_lev), (0, 0))
     pg_edge_mask = (pg_edgeidx > 0) & (pg_vertidx > 0)
 
     pg_exdist_dsl = where(
@@ -983,7 +935,7 @@ def compute_mask_bdy_halo_c(
 
 
 @field_operator
-def _compute_hmask_dd3d(
+def _compute_horizontal_mask_for_3d_divdamp(
     e_refin_ctrl: fa.EdgeField[gtx.int32],
     grf_nudge_start_e: gtx.int32,
     grf_nudgezone_width: gtx.int32,
@@ -991,49 +943,49 @@ def _compute_hmask_dd3d(
     e_refin_ctrl_wp = astype(e_refin_ctrl, wpfloat)
     grf_nudge_start_e_wp = astype(grf_nudge_start_e, wpfloat)
     grf_nudgezone_width_wp = astype(grf_nudgezone_width, wpfloat)
-    hmask_dd3d = where(
+    horizontal_mask_for_3d_divdamp = where(
         (e_refin_ctrl > (grf_nudge_start_e + grf_nudgezone_width - 1)),
         1.0
         / (grf_nudgezone_width_wp - 1.0)
         * (e_refin_ctrl_wp - (grf_nudge_start_e_wp + grf_nudgezone_width_wp - 1.0)),
         0.0,
     )
-    hmask_dd3d = where(
+    horizontal_mask_for_3d_divdamp = where(
         (e_refin_ctrl <= 0)
         | (e_refin_ctrl_wp >= (grf_nudge_start_e_wp + 2.0 * (grf_nudgezone_width_wp - 1.0))),
         1.0,
-        hmask_dd3d,
+        horizontal_mask_for_3d_divdamp,
     )
-    return hmask_dd3d
+    return horizontal_mask_for_3d_divdamp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_hmask_dd3d(
+def compute_horizontal_mask_for_3d_divdamp(
     e_refin_ctrl: fa.EdgeField[gtx.int32],
-    hmask_dd3d: fa.EdgeField[wpfloat],
+    horizontal_mask_for_3d_divdamp: fa.EdgeField[wpfloat],
     grf_nudge_start_e: gtx.int32,
     grf_nudgezone_width: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
     """
-    Compute hmask_dd3d.
+    Compute horizontal_mask_for_3d_divdamp (declared as hmask_dd3d in ICON).
 
     See mo_vertical_grid.f90. Horizontal mask field for 3D divergence damping term.
 
     Args:
         e_refin_ctrl: Edge field of refin_ctrl
-        hmask_dd3d: output
+        horizontal_mask_for_3d_divdamp: output
         grf_nudge_start_e: mo_impl_constants_grf constant
         grf_nudgezone_width: mo_impl_constants_grf constant
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
     """
-    _compute_hmask_dd3d(
+    _compute_horizontal_mask_for_3d_divdamp(
         e_refin_ctrl=e_refin_ctrl,
         grf_nudge_start_e=grf_nudge_start_e,
         grf_nudgezone_width=grf_nudgezone_width,
-        out=hmask_dd3d,
+        out=horizontal_mask_for_3d_divdamp,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
