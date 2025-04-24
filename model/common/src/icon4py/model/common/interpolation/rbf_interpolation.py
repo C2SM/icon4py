@@ -13,7 +13,11 @@ from types import MappingProxyType
 import numpy as np
 import scipy.linalg as sla
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.math.helpers import (
     cartesian_coordinates_from_zonal_and_meridional_components_on_cells,
@@ -224,9 +228,9 @@ def compute_rbf_interpolation_matrix(
     scale_factor: float,
     # TODO: Find another interface to handle edge field (only one set of
     # coefficients needed, different input for u and v)
-    u = None,
-    v = None,
-) # -> tuple[fa.CellField, fa.CellField]:
+    u=None,
+    v=None,
+):  # -> tuple[fa.CellField, fa.CellField]:
     # compute neighbor list and create "cartesian coordinate" vectors (x,y,z) in last dimension
     # 1) get the rbf offset (neighbor list) - currently: input
     # Pad edge normals and centers with a dummy zero for easier vectorized
@@ -405,4 +409,108 @@ def compute_rbf_interpolation_matrix(
     return (
         gtx.as_field([dim, dim2], rbf_vec_coeff_1),
         gtx.as_field([dim, dim2], rbf_vec_coeff_2),
+    )
+
+
+def compute_rbf_interpolation_matrix_cell(
+    cell_center_lat: fa.CellField[ta.wpfloat],
+    cell_center_lon: fa.CellField[ta.wpfloat],
+    cell_center_x: fa.CellField[ta.wpfloat],
+    cell_center_y: fa.CellField[ta.wpfloat],
+    cell_center_z: fa.CellField[ta.wpfloat],
+    edge_center_x: fa.EdgeField[ta.wpfloat],
+    edge_center_y: fa.EdgeField[ta.wpfloat],
+    edge_center_z: fa.EdgeField[ta.wpfloat],
+    edge_normal_x: fa.EdgeField[ta.wpfloat],
+    edge_normal_y: fa.EdgeField[ta.wpfloat],
+    edge_normal_z: fa.EdgeField[ta.wpfloat],
+    rbf_offset: fa.CellField[int],
+    rbf_kernel: InterpolationKernel,
+    scale_factor: ta.wpfloat,
+) -> tuple[fa.CellField, fa.CellField]:
+    return compute_rbf_interpolation_matrix(
+        cell_center_lat,
+        cell_center_lon,
+        cell_center_x,
+        cell_center_y,
+        cell_center_z,
+        edge_center_x,
+        edge_center_y,
+        edge_center_z,
+        edge_normal_x,
+        edge_normal_y,
+        edge_normal_z,
+        rbf_offset,
+        rbf_kernel,
+        scale_factor,
+    )
+
+
+def compute_rbf_interpolation_matrix_edge(
+    edge_center_lat: fa.EdgeField[ta.wpfloat],
+    edge_center_lon: fa.EdgeField[ta.wpfloat],
+    edge_center_x: fa.EdgeField[ta.wpfloat],
+    edge_center_y: fa.EdgeField[ta.wpfloat],
+    edge_center_z: fa.EdgeField[ta.wpfloat],
+    edge_normal_x: fa.EdgeField[ta.wpfloat],
+    edge_normal_y: fa.EdgeField[ta.wpfloat],
+    edge_normal_z: fa.EdgeField[ta.wpfloat],
+    edge_dual_normal_u: fa.EdgeField[ta.wpfloat],
+    edge_dual_normal_v: fa.EdgeField[ta.wpfloat],
+    rbf_offset: fa.EdgeField[int],
+    rbf_kernel: InterpolationKernel,
+    scale_factor: float,
+) -> tuple[fa.EdgeField, fa.EdgeField]:
+    # TODO: computing too much here
+    return compute_rbf_interpolation_matrix(
+        edge_center_lat,
+        edge_center_lon,
+        edge_center_x,
+        edge_center_y,
+        edge_center_z,
+        edge_center_x,
+        edge_center_y,
+        edge_center_z,
+        edge_normal_x,
+        edge_normal_y,
+        edge_normal_z,
+        rbf_offset,
+        rbf_kernel,
+        scale_factor,
+        u=edge_dual_normal_u,
+        v=edge_dual_normal_v,
+    )[0]
+
+
+def compute_rbf_interpolation_matrix_vertex(
+    vertex_center_lat: fa.VertexField[ta.wpfloat],
+    vertex_center_lon: fa.VertexField[ta.wpfloat],
+    vertex_center_x: fa.VertexField[ta.wpfloat],
+    vertex_center_y: fa.VertexField[ta.wpfloat],
+    vertex_center_z: fa.VertexField[ta.wpfloat],
+    edge_center_x: fa.EdgeField[ta.wpfloat],
+    edge_center_y: fa.EdgeField[ta.wpfloat],
+    edge_center_z: fa.EdgeField[ta.wpfloat],
+    edge_normal_x: fa.EdgeField[ta.wpfloat],
+    edge_normal_y: fa.EdgeField[ta.wpfloat],
+    edge_normal_z: fa.EdgeField[ta.wpfloat],
+    rbf_offset: fa.EdgeField[int],
+    rbf_kernel: InterpolationKernel,
+    scale_factor: float,
+) -> tuple[fa.VertexField, fa.VertexField]:
+    return compute_rbf_interpolation_matrix(
+        vertex_center_lat,
+        vertex_center_lon,
+        vertex_center_x,
+        vertex_center_y,
+        vertex_center_z,
+        edge_center_x,
+        edge_center_y,
+        edge_center_z,
+        edge_normal_x,
+        edge_normal_y,
+        edge_normal_z,
+        rbf_offset,
+        rbf_kernel,
+        scale_factor,
     )

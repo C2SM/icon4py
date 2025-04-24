@@ -117,7 +117,7 @@ def test_rbf_interpolation_matrix_cell(
     edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
     # edge_normal_z_from_savepoint = grid_savepoint.primal_cart_normal_z()
 
-    rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix(
+    rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix_cell(
         cell_center_lat,
         cell_center_lon,
         cell_center_x,
@@ -135,8 +135,12 @@ def test_rbf_interpolation_matrix_cell(
     )
 
     # TODO: Why does memory usage blow up if I don't have the explicit asnumpy here?
-    assert test_helpers.dallclose(rbf_vec_c1.asnumpy(), rbf_vec_coeff_c1_ref.asnumpy(), atol=1e-8)
-    assert test_helpers.dallclose(rbf_vec_c2.asnumpy(), rbf_vec_coeff_c2_ref.asnumpy(), atol=1e-8)
+    assert test_helpers.dallclose(
+        rbf_vec_c1.asnumpy(), rbf_vec_coeff_c1_ref.asnumpy(), atol=1e-8
+    )
+    assert test_helpers.dallclose(
+        rbf_vec_c2.asnumpy(), rbf_vec_coeff_c2_ref.asnumpy(), atol=1e-8
+    )
 
 
 @pytest.mark.datatest
@@ -175,7 +179,7 @@ def test_rbf_interpolation_matrix_vertex(
     edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
     edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
 
-    rbf_vec_v1, rbf_vec_v2 = rbf.compute_rbf_interpolation_matrix(
+    rbf_vec_v1, rbf_vec_v2 = rbf.compute_rbf_interpolation_matrix_vertex(
         vertex_lat,
         vertex_lon,
         vertex_x,
@@ -192,8 +196,12 @@ def test_rbf_interpolation_matrix_vertex(
         0.5,  # TODO
     )
 
-    assert test_helpers.dallclose(rbf_vec_v1.asnumpy(), rbf_vec_coeff_v1_ref.asnumpy(), atol=1e-9)
-    assert test_helpers.dallclose(rbf_vec_v2.asnumpy(), rbf_vec_coeff_v2_ref.asnumpy(), atol=1e-9)
+    assert test_helpers.dallclose(
+        rbf_vec_v1.asnumpy(), rbf_vec_coeff_v1_ref.asnumpy(), atol=1e-9
+    )
+    assert test_helpers.dallclose(
+        rbf_vec_v2.asnumpy(), rbf_vec_coeff_v2_ref.asnumpy(), atol=1e-9
+    )
 
 
 @pytest.mark.datatest
@@ -227,24 +235,23 @@ def test_rbf_interpolation_matrix_edge(
     dual_normal_v1 = grid_savepoint.dual_normal_v1()
     dual_normal_v2 = grid_savepoint.dual_normal_v2()
 
-    rbf_vec_e1, rbf_vec_e2 = rbf.compute_rbf_interpolation_matrix(
+    rbf_vec_e = rbf.compute_rbf_interpolation_matrix_edge(
         edge_center_lat,
         edge_center_lon,
-        edge_center_x,
-        edge_center_y,
-        edge_center_z,
         edge_center_x,
         edge_center_y,
         edge_center_z,
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
+        dual_normal_v1,
+        dual_normal_v2,
         offset_table_from_savepoint,  # TODO: neighbors are not in the same order, use savepoint for now
         rbf.InterpolationKernel.INVERSE_MULTI_QUADRATIC,  # TODO: Read from grid? gaussian default for vertices
         0.5,  # TODO
-        u=dual_normal_v1,
-        v=dual_normal_v2,
     )
 
     # TODO: 1e-4 tolerance is too low... what's wrong?
-    assert test_helpers.dallclose(rbf_vec_e1.asnumpy(), rbf_vec_coeff_e_ref.asnumpy(), atol=1e-4)
+    assert test_helpers.dallclose(
+        rbf_vec_e.asnumpy(), rbf_vec_coeff_e_ref.asnumpy(), atol=1e-4
+    )
