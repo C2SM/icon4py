@@ -91,17 +91,15 @@ def _compute_k_start_end(
     threshold = array_ns.tile(max_nbhgt, (nlev, 1)).T
     owned_cell_above_threshold = array_ns.logical_and(cell_mask, z_mc >= threshold)
     last_true_indices = nlev - 1 - array_ns.argmax(owned_cell_above_threshold[:, ::-1], axis=1)
-    # is a zero else value correct?
     kend = array_ns.where(
         array_ns.any(owned_cell_above_threshold, axis=1), last_true_indices + 1, 0
     )
-
     kstart = np.argmax(condition1, axis=1)
     # reset the values where start > end to be an empty range(start, end)
     kstart = array_ns.where(kstart > kend, nlev, kstart)
-    cell_index_cell_mask = array_ns.where(kend > kstart, True, False)
+    cell_index_mask = array_ns.where(kend > kstart, True, False)
 
-    return kstart, kend, cell_index_cell_mask
+    return kstart, kend, cell_index_mask
 
 
 def compute_diffusion_metrics(
