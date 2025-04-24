@@ -196,9 +196,9 @@ def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
             assert False  # TODO: error?
 
 
-def get_zonal_meridional_f(domain: gtx.Domain):
+def get_zonal_meridional_f(dim: gtx.Dimension):
     # TODO: Must be a nicer way...
-    match domain[0].dim:
+    match dim:
         case gtx.Dimension("Cell"):
             return cartesian_coordinates_from_zonal_and_meridional_components_on_cells
         case gtx.Dimension("Edge"):
@@ -224,63 +224,103 @@ def compute_rbf_interpolation_matrix(
     edge_normal_x,  # fa.EdgeField[ta.wpfloat],
     edge_normal_y,  # fa.EdgeField[ta.wpfloat],
     edge_normal_z,  # fa.EdgeField[ta.wpfloat],
+    u,
+    v,
     rbf_offset,  # field_alloc.NDArray, [num_dim, RBFDimension(dim)]
     rbf_kernel: InterpolationKernel,
     scale_factor: float,
-    # TODO: Find another interface to handle edge field (only one set of
-    # coefficients needed, different input for u and v)
-    u=None,
-    v=None,
-):  # -> tuple[fa.CellField, fa.CellField]:
-    # compute neighbor list and create "cartesian coordinate" vectors (x,y,z) in last dimension
-    # 1) get the rbf offset (neighbor list) - currently: input
+):
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
     # another point on the sphere), but these don't hurt the computation.
     # TODO: Can nans be signaling? default is warn:
     # https://numpy.org/doc/stable/user/misc.html#how-numpy-handles-numerical-exceptions
-    edge_normal_x = np.pad(
-        edge_normal_x.asnumpy(), (0, 1), mode="constant", constant_values=0.0
-    )
-    edge_normal_y = np.pad(
-        edge_normal_y.asnumpy(), (0, 1), mode="constant", constant_values=0.0
-    )
-    edge_normal_z = np.pad(
-        edge_normal_z.asnumpy(), (0, 1), mode="constant", constant_values=0.0
-    )
-    x_normal = edge_normal_x[rbf_offset]
-    y_normal = edge_normal_y[rbf_offset]
-    z_normal = edge_normal_z[rbf_offset]
-    edge_normal = np.stack((x_normal, y_normal, z_normal), axis=-1)
-    assert edge_normal.shape == (*rbf_offset.shape, 3)
-    edge_center_x = np.pad(
-        edge_center_x.asnumpy(), (0, 1), mode="constant", constant_values=0.0
-    )
-    edge_center_y = np.pad(
-        edge_center_y.asnumpy(), (0, 1), mode="constant", constant_values=0.0
-    )
-    edge_center_z = np.pad(
-        edge_center_z.asnumpy(), (0, 1), mode="constant", constant_values=0.0
-    )
-    x_center = edge_center_x[rbf_offset]
-    y_center = edge_center_y[rbf_offset]
-    z_center = edge_center_z[rbf_offset]
-    edge_centers = np.stack((x_center, y_center, z_center), axis=-1)
-    assert edge_centers.shape == (*rbf_offset.shape, 3)
+    pad = lambda f: np.pad(f, (0, 1), mode="constant", constant_values=0.0)
+    index_offset = lambda f: f[rbf_offset]
 
+    edge_normal = np.stack(
+        (
+            index_offset(pad(edge_normal_x.asnumpy())),
+            index_offset(pad(edge_normal_y.asnumpy())),
+            index_offset(pad(edge_normal_z.asnumpy())),
+        ),
+        axis=-1,
+    )
+    assert edge_normal.shape == (*rbf_offset.shape, 3)
+
+    edge_center = np.stack(
+        (
+            index_offset(pad(edge_center_x.asnumpy())),
+            index_offset(pad(edge_center_y.asnumpy())),
+            index_offset(pad(edge_center_z.asnumpy())),
+        ),
+        axis=-1,
+    )
+    assert edge_center.shape == (*rbf_offset.shape, 3)
+
+    # Compute distances for right hand side(s) of linear system
+    thing_center = np.stack(
+        (thing_center_x.asnumpy(), thing_center_y.asnumpy(), thing_center_z.asnumpy()),
+        axis=-1,
+    )
+    assert thing_center.shape == (rbf_offset.shape[0], 3)
+    vector_dist = arc_length_2(thing_center[:, np.newaxis, :], edge_center)
+    assert vector_dist.shape == rbf_offset.shape
+    rbf_val = kernel(rbf_kernel, vector_dist, scale_factor)
+    assert rbf_val.shape == rbf_offset.shape
+
+    # Set up right hand side(s) of linear system
+    domain = thing_center_lat.domain
+    dim = domain[0].dim
+    zonal_meridional_f = get_zonal_meridional_f(dim)
+
+    z_nx = []
+    nxnx = []
+    rhs = []
+
+    assert len(u) == len(v)
+    assert 1 <= len(u) <= 2
+    for i in range(len(u)):
+        z_nx_x = gtx.zeros(domain, dtype=ta.wpfloat)
+        z_nx_y = gtx.zeros(domain, dtype=ta.wpfloat)
+        z_nx_z = gtx.zeros(domain, dtype=ta.wpfloat)
+
+        zonal_meridional_f(
+            thing_center_lat,
+            thing_center_lon,
+            u[i],
+            v[i],
+            out=(z_nx_x, z_nx_y, z_nx_z),
+            offset_provider={},
+        )
+        z_nx.append(
+            np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1)
+        )
+        assert z_nx[i].shape == (rbf_offset.shape[0], 3)
+
+        nxnx.append(
+            np.matmul(z_nx[i][:, np.newaxis], edge_normal.transpose(0, 2, 1)).squeeze()
+        )
+        rhs.append(rbf_val * nxnx[i])
+        assert rhs[i].shape == rbf_offset.shape
+
+    # Compute dot product of normal vectors for RBF interpolation matrix
     z_nxprod = dot_product(edge_normal, edge_normal)
     assert z_nxprod.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
         rbf_offset.shape[1],
     )
-    z_dist = arc_length_pairwise(edge_centers)
+
+    # Distance between edge midpoints for RBF interpolation matrix
+    z_dist = arc_length_pairwise(edge_center)
     assert z_dist.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
         rbf_offset.shape[1],
     )
 
+    # Set up RBF interpolation matrix
     z_rbfmat = z_nxprod * kernel(rbf_kernel, z_dist, scale_factor)
     assert z_rbfmat.shape == (
         rbf_offset.shape[0],
@@ -288,129 +328,27 @@ def compute_rbf_interpolation_matrix(
         rbf_offset.shape[1],
     )
 
-    # 3) z_nx2, z_nx1
-    ones = np.ones(thing_center_lat.shape, dtype=float)
-    zeros = np.zeros(thing_center_lat.shape, dtype=float)
-
-    # TODO: This is dumb. For the edge field we only compute one array of
-    # coefficients, with given u and v components. Right now this computes z_nx1
-    # and z_nx2 identically for that case.
-    assert (u is None and v is None) or (u is not None and v is not None)
-
-    domain = gtx.domain(thing_center_lat.domain)
-    dtype = thing_center_lat.dtype
-
-    zeros_field = gtx.zeros(domain, dtype=dtype)
-    ones_field = gtx.ones(domain, dtype=dtype)
-
-    z_nx_x = gtx.zeros(domain, dtype=dtype)
-    z_nx_y = gtx.zeros(domain, dtype=dtype)
-    z_nx_z = gtx.zeros(domain, dtype=dtype)
-
-    zonal_meridional_f = get_zonal_meridional_f(thing_center_lat.domain)
-    if u is None:
-        zonal_meridional_f(
-            thing_center_lat,
-            thing_center_lon,
-            ones_field,
-            zeros_field,
-            out=(z_nx_x, z_nx_y, z_nx_z),
-            offset_provider={},
-        )
-        z_nx1 = np.stack(
-            (z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1
-        )
-
-        zonal_meridional_f(
-            thing_center_lat,
-            thing_center_lon,
-            zeros_field,
-            ones_field,
-            out=(z_nx_x, z_nx_y, z_nx_z),
-            offset_provider={},
-        )
-        z_nx2 = np.stack(
-            (z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1
-        )
-    else:
-        zonal_meridional_f(
-            thing_center_lat,
-            thing_center_lon,
-            u,
-            v,
-            out=(z_nx_x, z_nx_y, z_nx_z),
-            offset_provider={},
-        )
-        z_nx1 = np.stack(
-            (z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1
-        )
-        z_nx2 = z_nx1
-
-    assert z_nx1.shape == (rbf_offset.shape[0], 3)
-    assert z_nx2.shape == (rbf_offset.shape[0], 3)
-    z_nx3 = edge_normal
-    assert z_nx3.shape == (*rbf_offset.shape, 3)
-
-    # 4 right hand side
-    thing_centers = np.stack(
-        (thing_center_x.asnumpy(), thing_center_y.asnumpy(), thing_center_z.asnumpy()),
-        axis=-1,
-    )
-    assert thing_centers.shape == (rbf_offset.shape[0], 3)
-    vector_dist = arc_length_2(thing_centers[:, np.newaxis, :], edge_centers)
-    assert vector_dist.shape == rbf_offset.shape
-    rbf_val = kernel(rbf_kernel, vector_dist, scale_factor)
-    assert rbf_val.shape == rbf_offset.shape
-    # projection
-    # TODO: dot_product is not the same as the matmul below?
-    # more memory? more compute? wrong result?
-    # nx1nx3 = dot_product(z_nx1, z_nx3)
-    # nx2nx3 = dot_product(z_nx2, z_nx3)
-    nx1nx3 = np.matmul(z_nx1[:, np.newaxis], z_nx3.transpose(0, 2, 1)).squeeze()
-    nx2nx3 = np.matmul(z_nx2[:, np.newaxis], z_nx3.transpose(0, 2, 1)).squeeze()
-    assert nx1nx3.shape == rbf_offset.shape
-    assert nx2nx3.shape == rbf_offset.shape
-    rhs1 = rbf_val * nx1nx3
-    rhs2 = rbf_val * nx2nx3
-    assert rhs1.shape == rbf_offset.shape
-    assert rhs2.shape == rbf_offset.shape
-
-    # 2, 5) solve cholesky system
-    rbf_vec_coeff_1 = np.zeros(rbf_offset.shape, dtype=float)
-    rbf_vec_coeff_2 = np.zeros(rbf_offset.shape, dtype=float)
-
+    # Solve linear system for coefficients
     # TODO: vectorize this?
+    rbf_vec_coeff = [
+        np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))
+    ]
     for i in range(z_rbfmat.shape[0]):
-        # Require filling in potential nans on the diagonal (from invalid neighbors)
-        # np.fill_diagonal(z_rbfmat[i, :], 1.0)
-        # Alternative: only do cholesky decomposition on valid neighbors
-        # (invalid always at the end?)
         invalid_neighbors = np.where(rbf_offset[i, :] < 0)[0]
         num_neighbors = rbf_offset.shape[1] - invalid_neighbors.size
         rbfmat = z_rbfmat[i, :num_neighbors, :num_neighbors]
-        # z_diag = sla.cho_factor(np.nan_to_num(z_rbfmat[i, :]))
         z_diag = sla.cho_factor(rbfmat)
-        # rbf_vec_coeff_1[i, :] = sla.cho_solve(z_diag, np.nan_to_num(rhs1[i, :]))
-        # rbf_vec_coeff_2[i, :] = sla.cho_solve(z_diag, np.nan_to_num(rhs2[i, :]))
-        rbf_vec_coeff_1[i, :num_neighbors] = sla.cho_solve(
-            z_diag, np.nan_to_num(rhs1[i, :num_neighbors])
-        )
-        rbf_vec_coeff_2[i, :num_neighbors] = sla.cho_solve(
-            z_diag, np.nan_to_num(rhs2[i, :num_neighbors])
-        )
-    assert nx1nx3.shape == rbf_vec_coeff_1.shape
-    assert nx2nx3.shape == rbf_vec_coeff_2.shape
+        for j in range(len(u)):
+            rbf_vec_coeff[j][i, :num_neighbors] = sla.cho_solve(
+                z_diag, np.nan_to_num(rhs[j][i, :num_neighbors])
+            )
 
     # Normalize coefficients
-    rbf_vec_coeff_1 /= np.sum(nx1nx3 * rbf_vec_coeff_1, axis=1)[:, np.newaxis]
-    rbf_vec_coeff_2 /= np.sum(nx2nx3 * rbf_vec_coeff_2, axis=1)[:, np.newaxis]
+    for j in range(len(u)):
+        rbf_vec_coeff[j] /= np.sum(nxnx[j] * rbf_vec_coeff[j], axis=1)[:, np.newaxis]
 
-    dim = domain[0].dim
     dim2 = gtx.Dimension("What")  # TODO
-    return (
-        gtx.as_field([dim, dim2], rbf_vec_coeff_1),
-        gtx.as_field([dim, dim2], rbf_vec_coeff_2),
-    )
+    return tuple(gtx.as_field([dim, dim2], c) for c in rbf_vec_coeff)
 
 
 def compute_rbf_interpolation_matrix_cell(
@@ -429,7 +367,10 @@ def compute_rbf_interpolation_matrix_cell(
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
 ) -> tuple[fa.CellField, fa.CellField]:
-    return compute_rbf_interpolation_matrix(
+    zeros = gtx.zeros(cell_center_lat.domain, dtype=ta.wpfloat)
+    ones = gtx.ones(cell_center_lat.domain, dtype=ta.wpfloat)
+
+    coeffs = compute_rbf_interpolation_matrix(
         cell_center_lat,
         cell_center_lon,
         cell_center_x,
@@ -441,10 +382,14 @@ def compute_rbf_interpolation_matrix_cell(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
+        [ones, zeros],
+        [zeros, ones],
         rbf_offset,
         rbf_kernel,
         scale_factor,
     )
+    assert len(coeffs) == 2
+    return coeffs
 
 
 def compute_rbf_interpolation_matrix_edge(
@@ -461,9 +406,9 @@ def compute_rbf_interpolation_matrix_edge(
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: float,
-) -> tuple[fa.EdgeField, fa.EdgeField]:
+):
     # TODO: computing too much here
-    return compute_rbf_interpolation_matrix(
+    coeffs = compute_rbf_interpolation_matrix(
         edge_center_lat,
         edge_center_lon,
         edge_center_x,
@@ -475,12 +420,14 @@ def compute_rbf_interpolation_matrix_edge(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
+        [edge_dual_normal_u],
+        [edge_dual_normal_v],
         rbf_offset,
         rbf_kernel,
         scale_factor,
-        u=edge_dual_normal_u,
-        v=edge_dual_normal_v,
-    )[0]
+    )
+    assert len(coeffs) == 1
+    return coeffs[0]
 
 
 def compute_rbf_interpolation_matrix_vertex(
@@ -499,7 +446,10 @@ def compute_rbf_interpolation_matrix_vertex(
     rbf_kernel: InterpolationKernel,
     scale_factor: float,
 ) -> tuple[fa.VertexField, fa.VertexField]:
-    return compute_rbf_interpolation_matrix(
+    zeros = gtx.zeros(vertex_center_lat.domain, dtype=ta.wpfloat)
+    ones = gtx.ones(vertex_center_lat.domain, dtype=ta.wpfloat)
+
+    coeffs = compute_rbf_interpolation_matrix(
         vertex_center_lat,
         vertex_center_lon,
         vertex_center_x,
@@ -511,7 +461,11 @@ def compute_rbf_interpolation_matrix_vertex(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
+        [ones, zeros],
+        [zeros, ones],
         rbf_offset,
         rbf_kernel,
         scale_factor,
     )
+    assert len(coeffs) == 2
+    return coeffs
