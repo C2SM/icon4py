@@ -10,7 +10,6 @@
 import logging
 import dataclasses
 from typing import Final, Optional
-import numpy as np
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
