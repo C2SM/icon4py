@@ -696,7 +696,6 @@ class SolveNonhydro:
         """
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
-        self.cell_field = data_alloc.index_field(self._grid, dims.CellDim, backend=self._backend)
         self.z_raylfac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
             self._grid, dims.KDim, backend=self._backend
@@ -953,8 +952,6 @@ class SolveNonhydro:
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
             d2dexdz2_fac2_mc=self._metric_state_nonhydro.d2dexdz2_fac2_mc,
-            horz_idx=self.cell_field,
-            vert_idx=self.k_field,
             limited_area=self._grid.limited_area,
             igradp_method=self._config.igradp_method,
             n_lev=self._grid.num_levels,

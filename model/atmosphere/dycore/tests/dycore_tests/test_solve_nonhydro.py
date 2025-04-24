@@ -1091,10 +1091,6 @@ def test_compute_perturbed_quantities_and_interpolation(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    vert_idx = data_alloc.index_field(
-        dim=dims.KDim, grid=icon_grid, backend=backend, extend={dims.KDim: 1}
-    )
-    horz_idx = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
 
     current_rho = sp_init.rho_now()
     current_theta_v = sp_init.theta_v_now()
@@ -1201,8 +1197,6 @@ def test_compute_perturbed_quantities_and_interpolation(
         inv_ddqz_z_full=inv_ddqz_z_full,
         d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
         d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-        horz_idx=horz_idx,
-        vert_idx=vert_idx,
         limited_area=limited_area,
         igradp_method=igradp_method,
         n_lev=n_lev,

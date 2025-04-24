@@ -83,11 +83,10 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         "pressure_buoyancy_acceleration_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
+    MARKERS = (pytest.mark.infinite_concat_where,)
 
-    # flake8: noqa: C901
-    @classmethod
+    @staticmethod
     def reference(
-        cls,
         connectivities: dict[gtx.Dimension, np.ndarray],
         current_rho: np.ndarray,
         reference_rho_at_cells_on_model_levels: np.ndarray,
@@ -116,8 +115,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         inv_ddqz_z_full: np.ndarray,
         d2dexdz2_fac1_mc: np.ndarray,
         d2dexdz2_fac2_mc: np.ndarray,
-        horz_idx: np.ndarray,
-        vert_idx: np.ndarray,
         limited_area: bool,
         igradp_method: gtx.int32,
         n_lev: gtx.int32,
@@ -131,9 +128,10 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         end_cell_halo_level_2: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        horz_idx = horz_idx[:, np.newaxis]
+        vert_idx = np.arange(kwargs["vertical_end"])
+        cell = np.arange(kwargs["horizontal_end"])
+        horz_idx = cell[:, np.newaxis]
 
-        # if istep == 1:
         if limited_area:
             (
                 perturbed_rho_at_cells_on_model_levels,
@@ -382,9 +380,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         current_rho = data_alloc.random_field(grid, CellDim, KDim)
         current_theta_v = data_alloc.random_field(grid, CellDim, KDim)
 
-        vert_idx = data_alloc.index_field(grid, KDim, extend={KDim: 1})
-        horz_idx = data_alloc.index_field(grid, CellDim)
-
         igradp_method = 3
         limited_area = True
 
@@ -430,8 +425,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             inv_ddqz_z_full=inv_ddqz_z_full,
             d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
             d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-            horz_idx=horz_idx,
-            vert_idx=vert_idx,
             limited_area=limited_area,
             igradp_method=igradp_method,
             n_lev=n_lev,
