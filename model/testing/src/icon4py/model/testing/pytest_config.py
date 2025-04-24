@@ -96,7 +96,6 @@ def pytest_addoption(parser):
         pass
 
     try:
-        # TODO (samkellerhals): set embedded to default as soon as all tests run in embedded mode
         parser.addoption(
             "--backend",
             action="store",

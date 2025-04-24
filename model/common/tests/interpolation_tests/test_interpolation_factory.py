@@ -55,6 +55,7 @@ def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, d
         interpolation_source.get("foo", factory.RetrievalType.METADATA)
         assert "unknown field" in error.value
 
+
 @pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
@@ -91,6 +92,7 @@ def _get_interpolation_factory(
         interpolation_factories[registry_key] = factory
     return factory
 
+
 @pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
@@ -107,6 +109,7 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
     field = factory.get(attrs.GEOFAC_DIV)
     assert field.shape == (grid.num_cells, C2E_SIZE)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+
 
 @pytest.mark.duplicate("integration")
 ## FIXME: does not validate
@@ -138,6 +141,7 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
             val[i, s_val[i, :]], ref[i, s_ref[i, :]], rtol=rtol
         ), f"assertion failed for row {i}"
 
+
 @pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
@@ -158,6 +162,7 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
         field_ref.asnumpy()[horizontal_start:, :], field.asnumpy()[horizontal_start:, :], rtol=rtol
     )
 
+
 @pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
@@ -174,6 +179,7 @@ def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend,
     field = factory.get(attrs.GEOFAC_N2S)
     assert field.shape == (grid.num_cells, 4)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+
 
 @pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
@@ -206,6 +212,7 @@ def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend)
         rtol=1e-7,
         atol=1e-6,
     )
+
 
 @pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
@@ -250,6 +257,7 @@ def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol
     # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
     assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=5e-2)
 
+
 @pytest.mark.duplicate("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
@@ -266,6 +274,7 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
     field = factory.get(attrs.E_BLN_C_S)
     assert field.shape == (grid.num_cells, C2E_SIZE)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+
 
 @pytest.mark.duplicate("integration")
 @pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
@@ -285,6 +294,7 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
     field_2 = factory.get(attrs.POS_ON_TPLANE_E_Y)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), rtol=rtol)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-8)
+
 
 @pytest.mark.duplicate("integration")
 @pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
