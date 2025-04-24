@@ -228,6 +228,14 @@ icon4py.model.atmosphere.dycore.stencils.compute\_dwdz\_for\_divergence\_damping
    :undoc-members:
    :show-inheritance:
 
+icon4py.model.atmosphere.dycore.stencils.compute\_edge\_diagnostics\_for\_dycore\_and\_update\_vn module
+--------------------------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 icon4py.model.atmosphere.dycore.stencils.compute\_edge\_diagnostics\_for\_velocity\_advection module
 ----------------------------------------------------------------------------------------------------
 
