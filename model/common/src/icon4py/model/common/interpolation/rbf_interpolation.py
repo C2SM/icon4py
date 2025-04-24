@@ -8,8 +8,10 @@
 
 import dataclasses
 import enum
+import math
 from types import MappingProxyType
 
+import gt4py.next as gtx
 import numpy as np
 import scipy.linalg as sla
 
@@ -25,8 +27,6 @@ from icon4py.model.common.math.helpers import (
     cartesian_coordinates_from_zonal_and_meridional_components_on_vertices,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-import gt4py.next as gtx
 
 
 class RBFDimension(enum.Enum):
@@ -92,11 +92,7 @@ def compute_rbf_scale(mean_characteristic_length: ta.wpfloat, dim: RBFDimension)
         c3 = 0.325
 
     resol = mean_characteristic_length / 1000.0
-    scale = (
-        0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2)
-        if resol < threshold
-        else 0.5
-    )
+    scale = 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
     return scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale
 
 
@@ -109,9 +105,7 @@ def construct_rbf_matrix_offsets_tables_for_cells(
     offset = c2e[c2e2c]
     assert len(offset.shape) == 3
     # flatten this offset to construct a (num_cells, RBFDimension.CELL) shape offset matrix
-    flattened_offset = offset.reshape(
-        (offset.shape[0], offset.shape[1] * offset.shape[2])
-    )
+    flattened_offset = offset.reshape((offset.shape[0], offset.shape[1] * offset.shape[2]))
     assert flattened_offset.shape == (
         grid.num_cells,
         RBF_STENCIL_SIZE[RBFDimension.CELL],
@@ -150,7 +144,7 @@ def dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
 # TODO: Combine?
 def arc_length_pairwise(v: np.ndarray) -> np.ndarray:
     # For pairs of points p1 and p2 compute:
-    # arccos(dot(p1, p2) / (norm(p1) * norm(p2)))
+    # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
     arc_lengths = dot_product(v, v)  # np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
     # Use the dot product of the diagonals to get the norm of each point
@@ -175,7 +169,7 @@ def arc_length_pairwise(v: np.ndarray) -> np.ndarray:
 # TODO: this is used only in one place, it's probably not as generic as it looks
 def arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     # For pairs of points p1 and p2 compute:
-    # arccos(dot(p1, p2) / (norm(p1) * norm(p2)))
+    # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
     arc_lengths = dot_product(v1, v2)
     v1_norm = np.linalg.norm(v1, axis=-1)
@@ -225,9 +219,7 @@ def get_zonal_meridional_f(dim: gtx.Dimension):
         case gtx.Dimension("Edge"):
             return cartesian_coordinates_from_zonal_and_meridional_components_on_edges
         case gtx.Dimension("Vertex"):
-            return (
-                cartesian_coordinates_from_zonal_and_meridional_components_on_vertices
-            )
+            return cartesian_coordinates_from_zonal_and_meridional_components_on_vertices
         case _:
             raise ValueError(f"Unsupported dimension: {dim}")
 
@@ -255,8 +247,11 @@ def compute_rbf_interpolation_matrix(
     # another point on the sphere), but these don't hurt the computation.
     # TODO: Can nans be signaling? default is warn:
     # https://numpy.org/doc/stable/user/misc.html#how-numpy-handles-numerical-exceptions
-    pad = lambda f: np.pad(f, (0, 1), mode="constant", constant_values=0.0)
-    index_offset = lambda f: f[rbf_offset]
+    def pad(f):
+        return np.pad(f, (0, 1), mode="constant", constant_values=0.0)
+
+    def index_offset(f):
+        return f[rbf_offset]
 
     edge_normal = np.stack(
         (
@@ -317,14 +312,10 @@ def compute_rbf_interpolation_matrix(
             out=(z_nx_x, z_nx_y, z_nx_z),
             offset_provider={},
         )
-        z_nx.append(
-            np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1)
-        )
+        z_nx.append(np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1))
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
 
-        nxnx.append(
-            np.matmul(z_nx[i][:, np.newaxis], edge_normal.transpose(0, 2, 1)).squeeze()
-        )
+        nxnx.append(np.matmul(z_nx[i][:, np.newaxis], edge_normal.transpose(0, 2, 1)).squeeze())
         rhs.append(rbf_val * nxnx[i])
         assert rhs[i].shape == rbf_offset.shape
 
@@ -354,9 +345,7 @@ def compute_rbf_interpolation_matrix(
 
     # Solve linear system for coefficients
     # TODO: vectorize this?
-    rbf_vec_coeff = [
-        np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))
-    ]
+    rbf_vec_coeff = [np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))]
     for i in range(z_rbfmat.shape[0]):
         invalid_neighbors = np.where(rbf_offset[i, :] < 0)[0]
         num_neighbors = rbf_offset.shape[1] - invalid_neighbors.size

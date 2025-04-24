@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import math
+
 import numpy as np
 import pytest
 
@@ -21,9 +22,7 @@ from icon4py.model.testing import (
 )
 
 
-@pytest.mark.parametrize(
-    "grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT)
-)
+@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
 def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
     grid = grid_manager.grid
@@ -42,9 +41,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file):
         assert (offset_table[i][6:] == c2e[c2e2c[i][2]]).all()
 
 
-@pytest.mark.parametrize(
-    "grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT)
-)
+@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
 def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
     grid = grid_manager.grid
@@ -58,9 +55,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file):
     assert (offset_table == e2c2e).all()
 
 
-@pytest.mark.parametrize(
-    "grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT)
-)
+@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
 def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
     grid = grid_manager.grid
@@ -100,11 +95,8 @@ def test_rbf_interpolation_matrix_cell(
         geometry.get(geometry_attrs.EDGE_CENTER_Z),
         # TODO: normals not dallclose? check
         geometry.get(geometry_attrs.EDGE_NORMAL_X),
-        # grid_savepoint.primal_cart_normal_x(),
         geometry.get(geometry_attrs.EDGE_NORMAL_Y),
-        # grid_savepoint.primal_cart_normal_y(),
         geometry.get(geometry_attrs.EDGE_NORMAL_Z),
-        # grid_savepoint.primal_cart_normal_z(),
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
@@ -197,7 +189,6 @@ def test_rbf_interpolation_matrix_edge(
     grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
-    grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 
     rbf_vec_e = rbf.compute_rbf_interpolation_matrix_edge(
@@ -212,7 +203,6 @@ def test_rbf_interpolation_matrix_edge(
         geometry.get(geometry_attrs.EDGE_DUAL_U),
         geometry.get(geometry_attrs.EDGE_DUAL_V),
         # TODO: neighbors are not in the same order, use savepoint for now
-        # rbf.construct_rbf_matrix_offsets_tables_for_edges(grid),
         grid_savepoint.e2c2e(),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
