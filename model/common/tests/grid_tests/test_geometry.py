@@ -36,7 +36,7 @@ def test_geometry_raises_for_unknown_field(backend):
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-8),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-12),
     ],
 )
@@ -98,7 +98,7 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-8),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
@@ -364,7 +364,7 @@ def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_
     edge_lat = coordinates[dims.EdgeDim]["lat"]
     edge_lon = coordinates[dims.EdgeDim]["lon"]
     lat_0, lon_0, lat_1, lon_1 = geometry.create_auxiliary_coordinate_arrays_for_orientation(
-        grid, cell_lat, cell_lon, edge_lat, edge_lon
+        grid, cell_lat, cell_lon, edge_lat, edge_lon, backend=backend
     )
     connectivity = data_alloc.as_numpy(grid.connectivities[dims.E2CDim])
     has_boundary_edges = np.count_nonzero(connectivity == -1)

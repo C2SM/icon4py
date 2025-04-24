@@ -28,6 +28,5 @@ __all__ = [
     # Functions
     "chainable",
     # Modules
-    "data_allocation",
     "serialbox",
 ]

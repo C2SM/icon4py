@@ -121,6 +121,15 @@ wheels = [
 ]
 
 [[package]]
+name = "atpublic"
+version = "5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/af/d5113daf3947044e43d74305cbd31502915c784e158c0c098db03ceeff17/atpublic-5.1.tar.gz", hash = "sha256:abc1f4b3dbdd841cc3539e4b5e4f3ad41d658359de704e30cb36da4d4e9d3022", size = 14670 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/35/c1/6408177d6078e159fd3a2a53206e8d1d51ba30ef75ad016b19dada6952b4/atpublic-5.1-py3-none-any.whl", hash = "sha256:135783dbd887fbddb6ef032d104da70c124f2b44b9e2d79df07b9da5334825e3", size = 5209 },
+]
+
+[[package]]
 name = "attrs"
 version = "24.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -905,8 +914,8 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "1.0.1"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.0"
+source = { git = "https://github.com/spcl/dace?branch=main#9c67b4c6fe02a3248fcc25c6686715988e9db015" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -920,7 +929,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sympy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/67/fb1be2673868ee1f08e9c7bacc0b9b77d2bd5ff17ab47896f20006a2a1a5/dace-1.0.1.tar.gz", hash = "sha256:6f7a5defb082ed4f1a81f857d4268ed2bb606f6d9ea9c28d2831d1151e3a80f7", size = 5801727 }
 
 [[package]]
 name = "dask"
@@ -1258,6 +1266,19 @@ wheels = [
 ]
 
 [[package]]
+name = "flufl-lock"
+version = "8.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "atpublic" },
+    { name = "psutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a9/fa/885c58f9716063e2ac099f773d0420f20bb834b19538066a2e0d5b848ba4/flufl_lock-8.1.0.tar.gz", hash = "sha256:d88302005692a63d98b60080158faf089be5ecae6969f706409da8276fdce7cb", size = 32884 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/36/e6b26dc9ace9f4fa30f46b3f69182b6f25c07746e0b71caf3cc3c4d78ed2/flufl_lock-8.1.0-py3-none-any.whl", hash = "sha256:a01b2153d1b0cc170a26b1413037debbe94af6a1cd23164b3b2b229f766b164f", size = 11143 },
+]
+
+[[package]]
 name = "fonttools"
 version = "4.55.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1386,16 +1407,16 @@ wheels = [
 
 [[package]]
 name = "gridtools-cpp"
-version = "2.3.8"
+version = "2.3.9"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b8/b8/352120417da7a3e16cc822e95668e1843d0cd9ee7f0269b9a098893471cc/gridtools_cpp-2.3.8-py3-none-any.whl", hash = "sha256:d9cb8aadc5dca7e864677072de15596feb883844eee2158ab108d04f2f17f355", size = 420716 },
+    { url = "https://files.pythonhosted.org/packages/b6/8f/08ae062f2b7714c2753faeeead091fc5aa6344ec919ff63d242b95990573/gridtools_cpp-2.3.9-py3-none-any.whl", hash = "sha256:e4deefd804670e101083df9eb27d6b454e3d39ae903b4f7b043846a181452286", size = 1044245 },
 ]
 
 [[package]]
 name = "gt4py"
-version = "1.0.4"
-source = { git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324#352e7f89120312b39b39303c52ccd0acc85b5cb2" }
+version = "1.0.4.post425+e0d65e4e"
+source = { git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417#e0d65e4e70c95aaa51160540dfa5422da1a3a229" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1408,7 +1429,7 @@ dependencies = [
     { name = "devtools" },
     { name = "diskcache" },
     { name = "factory-boy" },
-    { name = "filelock" },
+    { name = "flufl-lock" },
     { name = "frozendict" },
     { name = "gridtools-cpp" },
     { name = "jinja2" },
@@ -1423,6 +1444,7 @@ dependencies = [
     { name = "tabulate" },
     { name = "toolz" },
     { name = "typing-extensions" },
+    { name = "versioningit" },
     { name = "xxhash" },
 ]
 
@@ -1433,7 +1455,7 @@ cuda11 = [
 cuda12 = [
     { name = "cupy-cuda12x" },
 ]
-dace = [
+dace-next = [
     { name = "dace" },
 ]
 
@@ -1725,7 +1747,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1742,7 +1764,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1759,7 +1781,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1776,7 +1798,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1799,7 +1821,7 @@ all = [
     { name = "dace" },
     { name = "datashader" },
     { name = "ghex" },
-    { name = "gt4py", extra = ["dace"] },
+    { name = "gt4py", extra = ["dace-next"] },
     { name = "holoviews" },
     { name = "mpi4py" },
     { name = "netcdf4" },
@@ -1818,7 +1840,7 @@ cuda12 = [
 ]
 dace = [
     { name = "dace" },
-    { name = "gt4py", extra = ["dace"] },
+    { name = "gt4py", extra = ["dace-next"] },
 ]
 distributed = [
     { name = "ghex" },
@@ -1845,10 +1867,10 @@ requires-dist = [
     { name = "dace", marker = "extra == 'dace'", specifier = ">=1.0" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
-    { name = "gt4py", extras = ["dace"], marker = "extra == 'dace'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
+    { name = "gt4py", extras = ["dace-next"], marker = "extra == 'dace'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["dace", "distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1882,7 +1904,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1907,7 +1929,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1949,9 +1971,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250324" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250417" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
@@ -4403,6 +4425,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/0b/80/e6277088ab809a7d331c4660c85ddb1bbf43b8e2688b3ccdda74fa1b6b58/uxarray-2024.3.0.tar.gz", hash = "sha256:72ffa45069fe86c6998cdd516cdf07860cfe6995f04b433b2f232e929ba43db7", size = 14460765 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/11/21/ec0483829665bbc47c6f1e15f735d4c3a9f2a51b378ff0a4d8bb792781c8/uxarray-2024.3.0-py3-none-any.whl", hash = "sha256:cace98b8cb6f72343efeac1fa765be152d9a5d1fab3911b565a1302034702172", size = 105205 },
+]
+
+[[package]]
+name = "versioningit"
+version = "3.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5c/9b/941647e9e3616b5da7bbc4601ed9920f44a886704100fa8151406c07c149/versioningit-3.1.2.tar.gz", hash = "sha256:4db83ed99f56b07d83940bee3445ca46ca120d13b6b304cdb5fb44e5aa4edec0", size = 213047 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7f/56/50784a34941e6a77cb068289c851d35c8b9af6a4d266fdb85d4d4828fe21/versioningit-3.1.2-py3-none-any.whl", hash = "sha256:33c0905aeac7877b562171387c2c98af87b391aa9195f095455f21ddc47d4636", size = 37950 },
 ]
 
 [[package]]

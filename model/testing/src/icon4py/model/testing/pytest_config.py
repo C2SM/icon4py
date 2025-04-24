@@ -93,7 +93,6 @@ def pytest_addoption(parser):
         pass
 
     try:
-        # TODO (samkellerhals): set embedded to default as soon as all tests run in embedded mode
         parser.addoption(
             "--backend",
             action="store",
@@ -147,7 +146,7 @@ def _get_grid(
             ).grid
             return grid_instance
         case _:
-            return simple_grid.SimpleGrid()
+            return simple_grid.SimpleGrid(selected_backend)
 
 
 def pytest_runtest_setup(item):
@@ -156,7 +155,7 @@ def pytest_runtest_setup(item):
         grid = item.funcargs["grid"]
     else:
         # use the default grid
-        grid = simple_grid.SimpleGrid()
+        grid = simple_grid.SimpleGrid(backend)
     apply_markers(
         item.own_markers,
         grid,

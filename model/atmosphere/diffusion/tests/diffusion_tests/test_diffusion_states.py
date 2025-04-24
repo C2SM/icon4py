@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_states
 @pytest.mark.datatest
 def test_verify_geofac_n2s_field_manipulation(interpolation_savepoint, icon_grid, backend):
     geofac_n2s = interpolation_savepoint.geofac_n2s().asnumpy()
-    interpolation_state = interpolation_state = diffusion_states.DiffusionInterpolationState(
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=data_alloc.flatten_first_two_dims(
             dims.CEDim,
             field=interpolation_savepoint.e_bln_c_s(),
