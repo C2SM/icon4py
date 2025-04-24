@@ -208,25 +208,25 @@ def get_zonal_meridional_f(domain: gtx.Domain):
 
 def compute_rbf_interpolation_matrix(
     # TODO: naming
-    thing_center_lat: data_alloc.NDArray,  # fa.CellField[ta.wpfloat], TODO: any of CellField, EdgeField, VertexField
-    thing_center_lon: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    thing_center_x: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    thing_center_y: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    thing_center_z: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
-    edge_center_x: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
-    edge_center_y: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
-    edge_center_z: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
-    edge_normal_x: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
-    edge_normal_y: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
-    edge_normal_z: data_alloc.NDArray,  # fa.EdgeField[ta.wpfloat],
-    rbf_offset: data_alloc.NDArray,  # field_alloc.NDArray, [num_dim, RBFDimension(dim)]
+    thing_center_lat,  # fa.CellField[ta.wpfloat], TODO: any of CellField, EdgeField, VertexField
+    thing_center_lon,  # fa.CellField[ta.wpfloat],
+    thing_center_x,  # fa.CellField[ta.wpfloat],
+    thing_center_y,  # fa.CellField[ta.wpfloat],
+    thing_center_z,  # fa.CellField[ta.wpfloat],
+    edge_center_x,  # fa.EdgeField[ta.wpfloat],
+    edge_center_y,  # fa.EdgeField[ta.wpfloat],
+    edge_center_z,  # fa.EdgeField[ta.wpfloat],
+    edge_normal_x,  # fa.EdgeField[ta.wpfloat],
+    edge_normal_y,  # fa.EdgeField[ta.wpfloat],
+    edge_normal_z,  # fa.EdgeField[ta.wpfloat],
+    rbf_offset,  # field_alloc.NDArray, [num_dim, RBFDimension(dim)]
     rbf_kernel: InterpolationKernel,
     scale_factor: float,
     # TODO: Find another interface to handle edge field (only one set of
     # coefficients needed, different input for u and v)
-    u: data_alloc.NDArray = None,
-    v: data_alloc.NDArray = None,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    u = None,
+    v = None,
+) # -> tuple[fa.CellField, fa.CellField]:
     # compute neighbor list and create "cartesian coordinate" vectors (x,y,z) in last dimension
     # 1) get the rbf offset (neighbor list) - currently: input
     # Pad edge normals and centers with a dummy zero for easier vectorized
