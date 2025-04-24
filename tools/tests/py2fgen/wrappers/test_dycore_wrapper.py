@@ -44,13 +44,13 @@ def solve_nh_init(
     metrics_savepoint,
     ndyn_substeps,
 ):
-    itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = solve_nh.RhoThetaAdvectionType.MIURA
-    igradp_method = solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
+    igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
-    divdamp_order = solve_nh.DivergenceDampingOrder.COMBINED
+    divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
     iau_wgt_dyn = 1.0
     divdamp_type = 3
@@ -299,13 +299,13 @@ def test_dycore_wrapper_granule_inputs(
     # --- Granule input parameters for dycore init
 
     # non hydrostatic config parameters
-    itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = solve_nh.RhoThetaAdvectionType.MIURA
-    igradp_method = solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
+    igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
-    divdamp_order = solve_nh.DivergenceDampingOrder.COMBINED
+    divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
     iau_wgt_dyn = 1.0
     divdamp_type = 3

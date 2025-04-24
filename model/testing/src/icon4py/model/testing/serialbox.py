@@ -1822,7 +1822,7 @@ class IconSerialDataProvider:
         return IconVelocityInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
-      
+
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionCellDiagnosticsInitSavepoint:
@@ -1883,7 +1883,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep: int
     ) -> NonHydroInitEdgeDiagnosticsUpdateVnSavepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-14to28-init_1to13-exit"]  # TODO
+            self.serializer.savepoint["solve-nonhydro-14to28-init_1to13-exit"]
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]

@@ -7,9 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+from typing import Optional
+
+from gt4py.next import backend as gtx_backend
+
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
@@ -90,7 +94,7 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
         ndyn_substeps_var=ndyn,
-        divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coeff=0.075,
@@ -121,6 +125,8 @@ def create_vertical_params(
 
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
+    grid: icon_grid.IconGrid,
+    backend: Optional[gtx_backend.Backend],
     swap_vertical_wind_advective_tendency: bool = False,
 ):
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
@@ -144,9 +150,11 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        normal_wind_iau_increments=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
+        rho_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        normal_wind_iau_increments=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),
+        exner_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
         exner_dyn_incr=init_savepoint.exner_dyn_incr(),
     )
 
