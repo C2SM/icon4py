@@ -13,7 +13,6 @@ import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.math.helpers as math_helpers
-import icon4py.model.common.metrics.metric_fields
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -434,9 +433,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxt_z_full)
 
         compute_vwind_impl_wgt_np = factory.NumpyFieldsProvider(
-            func=functools.partial(
-                icon4py.model.common.metrics.metric_fields.compute_vwind_impl_wgt, array_ns=self._xp
-            ),
+            func=functools.partial(mf.compute_vwind_impl_wgt, array_ns=self._xp),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
             fields=(attrs.VWIND_IMPL_WGT,),

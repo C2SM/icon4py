@@ -12,25 +12,7 @@ import pytest
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
-from icon4py.model.common.metrics.metric_fields import (
-    compute_bdy_halo_c,
-    compute_coeff_dwdz,
-    compute_ddqz_z_full_and_inverse,
-    compute_ddqz_z_half,
-    compute_ddxn_z_half_e,
-    compute_ddxt_z_half_e,
-    compute_exner_exfac,
-    compute_flat_idx,
-    compute_horizontal_mask_for_3d_divdamp,
-    compute_mask_prog_halo_c,
-    compute_pressure_gradient_downward_extrapolation_mask_distance,
-    compute_rayleigh_w,
-    compute_scaling_factor_for_3d_divdamp,
-    compute_theta_exner_ref_mc,
-    compute_vwind_expl_wgt,
-    compute_vwind_impl_wgt,
-    compute_wgtfac_e,
-)
+from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers as testing_helpers
 
@@ -53,7 +35,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
 
-    compute_ddqz_z_half.with_backend(backend=backend)(
+    mf.compute_ddqz_z_half.with_backend(backend=backend)(
         z_ifc=z_ifc,
         z_mc=z_mc,
         nlev=icon_grid.num_levels,
@@ -76,7 +58,7 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
     ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     inv_ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
 
-    compute_ddqz_z_full_and_inverse.with_backend(backend)(
+    mf.compute_ddqz_z_full_and_inverse.with_backend(backend)(
         z_ifc=z_ifc,
         ddqz_z_full=ddqz_z_full,
         inv_ddqz_z_full=inv_ddqz_z_full,
@@ -101,7 +83,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
     divdamp_trans_end = 17500.0
     divdamp_type = 3
 
-    compute_scaling_factor_for_3d_divdamp.with_backend(backend=backend)(
+    mf.compute_scaling_factor_for_3d_divdamp.with_backend(backend=backend)(
         vct_a=grid_savepoint.vct_a(),
         scaling_factor_for_3d_divdamp=scaling_factor_for_3d_divdamp,
         divdamp_trans_start=divdamp_trans_start,
@@ -128,7 +110,7 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
     rayleigh_type = 2
     rayleigh_coeff = 0.1 if experiment == dt_utils.GLOBAL_EXPERIMENT else 5.0
     damping_height = 50000.0 if experiment == dt_utils.GLOBAL_EXPERIMENT else 12500.0
-    compute_rayleigh_w.with_backend(backend=backend)(
+    mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
         damping_height=damping_height,
@@ -160,7 +142,7 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
         allocator=backend,
     )
 
-    compute_coeff_dwdz.with_backend(backend=backend)(
+    mf.compute_coeff_dwdz.with_backend(backend=backend)(
         ddqz_z_full=ddqz_z_full,
         z_ifc=metrics_savepoint.z_ifc(),
         coeff1_dwdz=coeff1_dwdz_full,
@@ -183,7 +165,7 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
     vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
     vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
 
-    compute_vwind_expl_wgt.with_backend(backend)(
+    mf.compute_vwind_expl_wgt.with_backend(backend)(
         vwind_impl_wgt=vwind_impl_wgt,
         vwind_expl_wgt=vwind_expl_wgt_full,
         horizontal_start=0,
@@ -202,7 +184,7 @@ def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_save
     exner_expol = 0.333 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.3333333333333
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
-    compute_exner_exfac.with_backend(backend)(
+    mf.compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
         exner_exfac=exner_exfac,
@@ -240,7 +222,7 @@ def test_compute_vwind_impl_wgt(
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
 
-    compute_ddxn_z_half_e.with_backend(backend)(
+    mf.compute_ddxn_z_half_e.with_backend(backend)(
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
         ddxn_z_half_e=z_ddxn_z_half_e,
@@ -256,7 +238,7 @@ def test_compute_vwind_impl_wgt(
     )
     horizontal_end_edge = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
 
-    compute_ddxt_z_half_e.with_backend(backend)(
+    mf.compute_ddxt_z_half_e.with_backend(backend)(
         cell_in=z_ifc,
         c_int=interpolation_savepoint.c_intp(),
         inv_primal_edge_length=inv_primal_edge_length,
@@ -279,7 +261,7 @@ def test_compute_vwind_impl_wgt(
     dual_edge_length = grid_savepoint.dual_edge_length()
     vwind_offctr = 0.2 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.15
     xp = data_alloc.import_array_ns(backend)
-    vwind_impl_wgt = compute_vwind_impl_wgt(
+    vwind_impl_wgt = mf.compute_vwind_impl_wgt(
         c2e=icon_grid.connectivities[dims.C2EDim],
         vct_a=grid_savepoint.vct_a().ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
@@ -303,7 +285,7 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
         icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
     wgtfac_e_ref = metrics_savepoint.wgtfac_e()
-    compute_wgtfac_e.with_backend(backend)(
+    mf.compute_wgtfac_e.with_backend(backend)(
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         c_lin_e=interpolation_savepoint.c_lin_e(),
         wgtfac_e=wgtfac_e,
@@ -350,7 +332,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
 
-    compute_flat_idx.with_backend(backend)(
+    mf.compute_flat_idx.with_backend(backend)(
         z_mc=z_mc,
         c_lin_e=c_lin_e,
         z_ifc=z_ifc,
@@ -369,7 +351,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         (dims.EdgeDim,), xp.max(flat_idx.asnumpy(), axis=1), dtype=gtx.int32, allocator=backend
     )
 
-    compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
+    mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
         z_mc=z_mc,
         z_ifc_sliced=z_ifc_sliced,
         c_lin_e=c_lin_e,
@@ -405,7 +387,7 @@ def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, 
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
     horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
-    compute_mask_prog_halo_c.with_backend(backend)(
+    mf.compute_mask_prog_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
         mask_prog_halo_c=mask_prog_halo_c_full,
         horizontal_start=horizontal_start,
@@ -426,7 +408,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
     horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
 
-    compute_bdy_halo_c.with_backend(backend)(
+    mf.compute_bdy_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
         bdy_halo_c=bdy_halo_c_full,
         horizontal_start=horizontal_start,
@@ -446,7 +428,7 @@ def test_compute_horizontal_mask_for_3d_divdamp(
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
-    compute_horizontal_mask_for_3d_divdamp.with_backend(backend)(
+    mf.compute_horizontal_mask_for_3d_divdamp.with_backend(backend)(
         e_refin_ctrl=e_refin_ctrl,
         horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
         grf_nudge_start_e=gtx.int32(horizontal._GRF_NUDGEZONE_START_EDGES),
@@ -478,7 +460,7 @@ def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
     z_mc = metrics_savepoint.z_mc()
 
-    compute_theta_exner_ref_mc.with_backend(backend)(
+    mf.compute_theta_exner_ref_mc.with_backend(backend)(
         z_mc=z_mc,
         exner_ref_mc=exner_ref_mc_full,
         theta_ref_mc=theta_ref_mc_full,
