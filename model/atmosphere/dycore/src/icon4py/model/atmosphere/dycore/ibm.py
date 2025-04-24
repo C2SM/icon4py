@@ -70,6 +70,7 @@ class ImmersedBoundaryMethod:
         half_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
         full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
         full_edge_mask_np = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
+        full_vertex_mask_np = np.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
         neigh_full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
 
         #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
@@ -81,6 +82,10 @@ class ImmersedBoundaryMethod:
         for k in range(grid.num_levels):
             full_edge_mask_np[c2e[np.where(full_cell_mask_np[:,k])], k] = True
 
+        c2v = grid.connectivities[dims.C2VDim]
+        for k in range(grid.num_levels):
+            full_vertex_mask_np[c2v[np.where(full_cell_mask_np[:,k])], k] = True
+
         c2e2c = grid.connectivities[dims.C2E2CDim]
         for k in range(grid.num_levels):
             neigh_full_cell_mask_np[c2e2c[np.where(full_cell_mask_np[:,k])], k] = True
@@ -88,6 +93,7 @@ class ImmersedBoundaryMethod:
         self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
         self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
         self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
+        self.full_vertex_mask = gtx.as_field((VertexDim, KDim), full_vertex_mask_np)
         self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np)
 
     def _mask_test_cells(
@@ -269,6 +275,41 @@ class ImmersedBoundaryMethod:
             offset_provider={},
         )
 
+    def set_bcs_uv_vertices(
+        self,
+        u_vert: fa.VertexKField[float],
+        v_vert: fa.VertexKField[float],
+    ):
+        self.set_bcs_vertices(
+            mask=self.full_vertex_mask,
+            dir_value=0,
+            field=u_vert,
+            out=u_vert,
+            offset_provider={},
+        )
+        self.set_bcs_vertices(
+            mask=self.full_vertex_mask,
+            dir_value=0,
+            field=v_vert,
+            out=v_vert,
+            offset_provider={},
+        )
+
+    def set_bcs_khsmag(
+        self,
+        Kh_smag: fa.EdgeKField[float],
+    ):
+        # Set to zero Kh_smag as a 'hack' for setting to zero the gradient of
+        # theta_v on masked edges.
+        # Actually these edges have some gradient, but this is ignored for now.
+        self.set_bcs_edges(
+            mask=self.full_edge_mask,
+            dir_value=0,
+            field=Kh_smag,
+            out=Kh_smag,
+            offset_provider={},
+        )
+
 
     @gtx.field_operator
     def set_bcs_cells(
@@ -290,6 +331,18 @@ class ImmersedBoundaryMethod:
     ) -> fa.EdgeKField[float]:
         """
         Set boundary conditions for fields defined on edges.
+        """
+        field = where(mask, dir_value, field)
+        return field
+
+    @gtx.field_operator
+    def set_bcs_vertices(
+        mask: fa.VertexKField[bool],
+        dir_value: float,
+        field: fa.VertexKField[float],
+    ) -> fa.VertexKField[float]:
+        """
+        Set boundary conditions for fields defined on vertices.
         """
         field = where(mask, dir_value, field)
         return field

@@ -675,6 +675,9 @@ class Diffusion:
             wait=True,
         )
         log.debug("communication rbf extrapolation of vn - end")
+        #---> IBM
+        self._ibm.set_bcs_uv_vertices(self.u_vert, self.v_vert)
+        #<--- IBM
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
         self.calculate_nabla2_and_smag_coefficients_for_vn.with_connectivities(
@@ -702,6 +705,9 @@ class Diffusion:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
+        #---> IBM
+        self._ibm.set_bcs_khsmag(self.kh_smag_e)
+        #<--- IBM
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
         if (
             self.config.shear_type
