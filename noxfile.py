@@ -38,8 +38,6 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
 ]
 
 ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
-
-
 MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
         nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
