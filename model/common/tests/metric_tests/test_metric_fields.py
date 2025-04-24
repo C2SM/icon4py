@@ -28,8 +28,8 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_scalfac_dd3d,
     compute_theta_exner_ref_mc,
     compute_vwind_expl_wgt,
-    compute_wgtfac_e,
     compute_vwind_impl_wgt,
+    compute_wgtfac_e,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers as testing_helpers
@@ -173,13 +173,7 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.REGIONAL_EXPERIMENT,
-        # dt_utils.GLOBAL_EXPERIMENT
-    ],
-)
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
     vwind_expl_wgt_full = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
     vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
