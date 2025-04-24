@@ -124,10 +124,14 @@ def test_rbf_interpolation_matrix_cell(
     )
     # TODO: Why does memory usage blow up if I don't have the explicit asnumpy here?
     assert test_helpers.dallclose(
-        rbf_vec_c1.asnumpy(), rbf_vec_coeff_c1_ref.asnumpy(), atol=1e-8
+        rbf_vec_c1.asnumpy(),
+        rbf_vec_coeff_c1_ref.asnumpy(),
+        atol=1e-8,
     )
     assert test_helpers.dallclose(
-        rbf_vec_c2.asnumpy(), rbf_vec_coeff_c2_ref.asnumpy(), atol=1e-8
+        rbf_vec_c2.asnumpy(),
+        rbf_vec_coeff_c2_ref.asnumpy(),
+        atol=1e-8,
     )
 
 
@@ -173,10 +177,14 @@ def test_rbf_interpolation_matrix_vertex(
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
     )
     assert test_helpers.dallclose(
-        rbf_vec_v1.asnumpy(), rbf_vec_coeff_v1_ref.asnumpy(), atol=1e-9
+        rbf_vec_v1.asnumpy(),
+        rbf_vec_coeff_v1_ref.asnumpy(),
+        atol=1e-9,
     )
     assert test_helpers.dallclose(
-        rbf_vec_v2.asnumpy(), rbf_vec_coeff_v2_ref.asnumpy(), atol=1e-9
+        rbf_vec_v2.asnumpy(),
+        rbf_vec_coeff_v2_ref.asnumpy(),
+        atol=1e-9,
     )
 
 
@@ -216,7 +224,8 @@ def test_rbf_interpolation_matrix_edge(
         icon_grid.num_edges,
         RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
     )
-    # TODO: 1e-4 tolerance is too low... what's wrong?
     assert test_helpers.dallclose(
-        rbf_vec_e.asnumpy(), rbf_vec_coeff_e_ref.asnumpy(), atol=1e-4
+        rbf_vec_e.asnumpy(),
+        rbf_vec_coeff_e_ref.asnumpy(),
+        atol=1e-12,
     )

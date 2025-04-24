@@ -181,7 +181,7 @@ def multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
     Returns:
 
     """
-    val = distance * scale
+    val = distance / scale
     return 1.0 / np.sqrt(1.0 + val * val)
 
 
