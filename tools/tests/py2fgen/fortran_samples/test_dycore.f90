@@ -289,6 +289,7 @@ program solve_nh_simulation
     real(c_double), dimension(:, :), allocatable :: grf_tend_vn
     real(c_double), dimension(:, :), allocatable :: vn_ie
     real(c_double), dimension(:, :), allocatable :: vt
+    real(c_double), dimension(:, :), allocatable :: vn_incr
     real(c_double), dimension(:, :), allocatable :: mass_flx_me
     real(c_double), dimension(:, :), allocatable :: mass_flx_ic
     real(c_double), dimension(:, :), allocatable :: vn_traj
@@ -337,7 +338,7 @@ program solve_nh_simulation
    !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
    !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
 
-   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc vn_ie, vt, vn_incr, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
    !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
    !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
    !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp, &
@@ -417,6 +418,7 @@ program solve_nh_simulation
    allocate(grf_tend_vn(num_edges, num_levels))
    allocate(vn_ie(num_edges, num_levels + 1))
    allocate(vt(num_edges, num_levels))
+   allocate(vn_incr(num_edges, num_levels))
    allocate(mass_flx_me(num_edges, num_levels))
    allocate(mass_flx_ic(num_cells, num_levels))
    allocate(vn_traj(num_edges, num_levels))
@@ -592,6 +594,7 @@ program solve_nh_simulation
    call fill_random_2d(grf_tend_vn, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(vn_ie, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(vt, 0.0_c_double, 1.0_c_double)
+   call fill_random_2d(vn_incr, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(mass_flx_me, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(mass_flx_ic, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(vn_traj, 0.0_c_double, 1.0_c_double)
@@ -647,7 +650,7 @@ program solve_nh_simulation
    !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
    !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
 
-   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc vn_ie, vt, vn_incr, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
    !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
    !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
    !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp, &
@@ -789,7 +792,7 @@ program solve_nh_simulation
                     ddt_w_adv_ntl1, ddt_w_adv_ntl2, theta_v_ic, rho_ic, &
                     exner_pr, exner_dyn_incr, ddt_exner_phy, grf_tend_rho, &
                     grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, &
-                    grf_tend_vn, vn_ie, vt, mass_flx_me, mass_flx_ic, &
+                    grf_tend_vn, vn_ie, vt, vn_incr, mass_flx_me, mass_flx_ic, &
                     vn_traj, dtime, lprep_adv, clean_mflx, recompute, linit, &
                     divdamp_fac_o2, ndyn_substeps, idyn_timestep, nnow, nnew, rc)
 
@@ -816,7 +819,7 @@ program solve_nh_simulation
    !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
    !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
 
-   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc vn_ie, vt, vn_incr, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
    !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
    !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
    !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp, &
@@ -843,7 +846,7 @@ program solve_nh_simulation
   !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
   !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
 
-  !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+  !$acc vn_ie, vt, vn_incr, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp, &

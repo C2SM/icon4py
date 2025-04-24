@@ -23,7 +23,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
-@pytest.mark.cpu_only
+@pytest.mark.cpu_only  # TODO (@halungge: fixed with PR https://github.com/C2SM/icon4py/pull/715)
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
@@ -46,6 +46,7 @@ def test_compute_diffusion_metrics(
 
     c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
     c_bln_avg = interpolation_savepoint.c_bln_avg()
+    z_mc = metrics_savepoint.z_mc()
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125.0
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
@@ -67,8 +68,6 @@ def test_compute_diffusion_metrics(
         vertical_end=nlev,
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
-
-    z_mc = metrics_savepoint.z_mc()
 
     compute_weighted_cell_neighbor_sum.with_backend(backend)(
         maxslp=maxslp,
