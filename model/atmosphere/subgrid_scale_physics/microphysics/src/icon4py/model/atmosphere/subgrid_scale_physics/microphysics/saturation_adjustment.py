@@ -29,7 +29,6 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_pressure as pressure,
     diagnose_surface_pressure as surface_pressure,
 )
-from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -972,7 +971,7 @@ def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
     """
     qsum = where(
         k_field < kstart_moist,
-        broadcast(0.0, (CellDim, KDim)),  # TODO: use dims module import when ready in gt4px
+        broadcast(0.0, (dims.CellDim, dims.KDim)),
         qc + qc_tendency * dtime + qi + qr + qs + qg,
     )
 

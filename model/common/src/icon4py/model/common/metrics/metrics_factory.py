@@ -210,15 +210,15 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(ddqz_full_on_edges)
 
-        compute_scalfac_dd3d = factory.ProgramFieldProvider(
-            func=mf.compute_scalfac_dd3d.with_backend(self._backend),
+        compute_scaling_factor_for_3d_divdamp = factory.ProgramFieldProvider(
+            func=mf.compute_scaling_factor_for_3d_divdamp.with_backend(self._backend),
             domain={
                 dims.KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 )
             },
-            fields={"scalfac_dd3d": attrs.SCALFAC_DD3D},
+            fields={"scaling_factor_for_3d_divdamp": attrs.SCALING_FACTOR_FOR_3D_DIVDAMP},
             deps={"vct_a": "vct_a"},
             params={
                 "divdamp_trans_start": self._config["divdamp_trans_start"],
@@ -226,7 +226,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "divdamp_type": self._config["divdamp_type"],
             },
         )
-        self.register_provider(compute_scalfac_dd3d)
+        self.register_provider(compute_scaling_factor_for_3d_divdamp)
 
         compute_rayleigh_w = factory.ProgramFieldProvider(
             func=mf.compute_rayleigh_w.with_backend(self._backend),
@@ -615,8 +615,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_mask_bdy_halo_c)
 
-        compute_hmask_dd3d = factory.ProgramFieldProvider(
-            func=mf.compute_hmask_dd3d.with_backend(self._backend),
+        compute_horizontal_mask_for_3d_divdamp = factory.ProgramFieldProvider(
+            func=mf.compute_horizontal_mask_for_3d_divdamp.with_backend(self._backend),
             deps={
                 "e_refin_ctrl": "e_refin_ctrl",
             },
@@ -626,13 +626,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LOCAL),
                 )
             },
-            fields={attrs.HMASK_DD3D: attrs.HMASK_DD3D},
+            fields={attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP: attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP},
             params={
                 "grf_nudge_start_e": gtx.int32(h_grid._GRF_NUDGEZONE_START_EDGES),
                 "grf_nudgezone_width": gtx.int32(h_grid._GRF_NUDGEZONE_WIDTH),
             },
         )
-        self.register_provider(compute_hmask_dd3d)
+        self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
         compute_zdiff_gradp_dsl_np = factory.NumpyFieldsProvider(
             func=functools.partial(
