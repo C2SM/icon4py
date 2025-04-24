@@ -13,6 +13,7 @@ import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.math.helpers as math_helpers
+import icon4py.model.common.metrics.metric_fields
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -31,7 +32,6 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
-    compute_vwind_impl_wgt,
     compute_wgtfac_c,
     compute_wgtfacq,
     compute_zdiff_gradp_dsl,
@@ -435,7 +435,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_vwind_impl_wgt_np = factory.NumpyFieldsProvider(
             func=functools.partial(
-                compute_vwind_impl_wgt.compute_vwind_impl_wgt, array_ns=self._xp
+                icon4py.model.common.metrics.metric_fields.compute_vwind_impl_wgt, array_ns=self._xp
             ),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},

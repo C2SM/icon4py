@@ -12,9 +12,6 @@ import pytest
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
-from icon4py.model.common.metrics.compute_vwind_impl_wgt import (
-    compute_vwind_impl_wgt,
-)
 from icon4py.model.common.metrics.metric_fields import (
     compute_bdy_halo_c,
     compute_coeff_dwdz,
@@ -32,6 +29,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_theta_exner_ref_mc,
     compute_vwind_expl_wgt,
     compute_wgtfac_e,
+    compute_vwind_impl_wgt,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers as testing_helpers
