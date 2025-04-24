@@ -86,6 +86,7 @@ def test_rbf_interpolation_matrix_cell(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
+    rbf_dim = rbf.RBFDimension.CELL
 
     rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix_cell(
         geometry.get(geometry_attrs.CELL_LAT),
@@ -104,13 +105,15 @@ def test_rbf_interpolation_matrix_cell(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z),
         # grid_savepoint.primal_cart_normal_z(),
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
-        rbf.InterpolationKernel.GAUSSIAN,
+        rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         0.5,  # TODO: correct for r02b04 grid, smaller for smaller grids
     )
 
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
     rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2()
 
+    assert rbf_vec_c1.shape == rbf_vec_coeff_c1_ref.shape
+    assert rbf_vec_c2.shape == rbf_vec_coeff_c2_ref.shape
     assert rbf_vec_coeff_c1_ref.shape == (
         icon_grid.num_cells,
         RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
@@ -137,6 +140,7 @@ def test_rbf_interpolation_matrix_vertex(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
+    rbf_dim = rbf.RBFDimension.VERTEX
 
     rbf_vec_v1, rbf_vec_v2 = rbf.compute_rbf_interpolation_matrix_vertex(
         geometry.get(geometry_attrs.VERTEX_LAT),
@@ -151,13 +155,15 @@ def test_rbf_interpolation_matrix_vertex(
         geometry.get(geometry_attrs.EDGE_NORMAL_Y),
         geometry.get(geometry_attrs.EDGE_NORMAL_Z),
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
-        rbf.InterpolationKernel.GAUSSIAN,  # TODO: Read from grid? gaussian default for vertices
+        rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         0.5,  # TODO
     )
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
     rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2()
 
+    assert rbf_vec_v1.shape == rbf_vec_coeff_v1_ref.shape
+    assert rbf_vec_v2.shape == rbf_vec_coeff_v2_ref.shape
     assert rbf_vec_coeff_v1_ref.shape == (
         icon_grid.num_vertices,
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
@@ -183,6 +189,7 @@ def test_rbf_interpolation_matrix_edge(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
+    rbf_dim = rbf.RBFDimension.EDGE
 
     rbf_vec_e = rbf.compute_rbf_interpolation_matrix_edge(
         geometry.get(geometry_attrs.EDGE_LAT),
@@ -198,12 +205,13 @@ def test_rbf_interpolation_matrix_edge(
         # TODO: neighbors are not in the same order, use savepoint for now
         # rbf.construct_rbf_matrix_offsets_tables_for_edges(grid),
         grid_savepoint.e2c2e(),
-        rbf.InterpolationKernel.INVERSE_MULTI_QUADRATIC,  # TODO: Read from grid? gaussian default for vertices
+        rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         0.5,  # TODO
     )
 
     rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
 
+    assert rbf_vec_e.shape == rbf_vec_coeff_e_ref.shape
     assert rbf_vec_coeff_e_ref.shape == (
         icon_grid.num_edges,
         RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
