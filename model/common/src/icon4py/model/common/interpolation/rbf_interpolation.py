@@ -46,9 +46,10 @@ RBF_STENCIL_SIZE: dict[RBFDimension, int] = {
 
 class InterpolationKernel(enum.Enum):
     GAUSSIAN = (1,)  # TODO: why tuple?
-    INVERSE_MULTI_QUADRATIC = 3
+    INVERSE_MULTIQUADRATIC = 3
 
 
+# TODO: Use these as default?
 @dataclasses.dataclass(frozen=True)
 class InterpolationConfig:
     # for nested setup this value is a vector of size num_domains
@@ -66,7 +67,7 @@ class InterpolationConfig:
     rbf_kernel: dict[RBFDimension, InterpolationKernel] = MappingProxyType(
         {
             RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
-            RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTI_QUADRATIC,
+            RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
             RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
             RBFDimension.GRADIENT: InterpolationKernel.GAUSSIAN,
         }
@@ -171,7 +172,7 @@ def gaussian(lengths: np.ndarray, scale: float) -> np.ndarray:
     return np.exp(-1.0 * val * val)
 
 
-def multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
+def inverse_multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
     """
 
     Args:
@@ -189,8 +190,8 @@ def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
     match kernel:
         case InterpolationKernel.GAUSSIAN:
             return gaussian(lengths, scale)
-        case InterpolationKernel.INVERSE_MULTI_QUADRATIC:
-            return multiquadratic(lengths, scale)
+        case InterpolationKernel.INVERSE_MULTIQUADRATIC:
+            return inverse_multiquadratic(lengths, scale)
         case _:
             assert False  # TODO: error?
 
