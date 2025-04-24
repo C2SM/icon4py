@@ -86,8 +86,8 @@ def test_rbf_interpolation_matrix_cell(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
-    rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
-    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2().asnumpy()
+    rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
+    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2()
     assert rbf_vec_coeff_c1_ref.shape == (
         icon_grid.num_cells,
         RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
@@ -111,11 +111,11 @@ def test_rbf_interpolation_matrix_cell(
     edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
     # TODO: normals not dallclose? check
     edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X)
-    # edge_normal_x_from_savepoint = grid_savepoint.primal_cart_normal_x().asnumpy()
+    # edge_normal_x_from_savepoint = grid_savepoint.primal_cart_normal_x()
     edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
-    # edge_normal_y_from_savepoint = grid_savepoint.primal_cart_normal_y().asnumpy()
+    # edge_normal_y_from_savepoint = grid_savepoint.primal_cart_normal_y()
     edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
-    # edge_normal_z_from_savepoint = grid_savepoint.primal_cart_normal_z().asnumpy()
+    # edge_normal_z_from_savepoint = grid_savepoint.primal_cart_normal_z()
 
     rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix(
         cell_center_lat,
@@ -134,8 +134,9 @@ def test_rbf_interpolation_matrix_cell(
         0.5,  # TODO: correct for r02b04 grid, smaller for smaller grids
     )
 
-    assert test_helpers.dallclose(rbf_vec_c1, rbf_vec_coeff_c1_ref, atol=1e-8)
-    assert test_helpers.dallclose(rbf_vec_c2, rbf_vec_coeff_c2_ref, atol=1e-8)
+    # TODO: Why does memory usage blow up if I don't have the explicit asnumpy here?
+    assert test_helpers.dallclose(rbf_vec_c1.asnumpy(), rbf_vec_coeff_c1_ref.asnumpy(), atol=1e-8)
+    assert test_helpers.dallclose(rbf_vec_c2.asnumpy(), rbf_vec_coeff_c2_ref.asnumpy(), atol=1e-8)
 
 
 @pytest.mark.datatest
@@ -147,8 +148,8 @@ def test_rbf_interpolation_matrix_vertex(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
-    rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1().asnumpy()
-    rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2().asnumpy()
+    rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
+    rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2()
     assert rbf_vec_coeff_v1_ref.shape == (
         icon_grid.num_vertices,
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
@@ -191,8 +192,8 @@ def test_rbf_interpolation_matrix_vertex(
         0.5,  # TODO
     )
 
-    assert test_helpers.dallclose(rbf_vec_v1, rbf_vec_coeff_v1_ref, atol=1e-9)
-    assert test_helpers.dallclose(rbf_vec_v2, rbf_vec_coeff_v2_ref, atol=1e-9)
+    assert test_helpers.dallclose(rbf_vec_v1.asnumpy(), rbf_vec_coeff_v1_ref.asnumpy(), atol=1e-9)
+    assert test_helpers.dallclose(rbf_vec_v2.asnumpy(), rbf_vec_coeff_v2_ref.asnumpy(), atol=1e-9)
 
 
 @pytest.mark.datatest
@@ -204,7 +205,7 @@ def test_rbf_interpolation_matrix_edge(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
-    rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e().asnumpy()
+    rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
     assert rbf_vec_coeff_e_ref.shape == (
         icon_grid.num_edges,
         RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
@@ -246,4 +247,4 @@ def test_rbf_interpolation_matrix_edge(
     )
 
     # TODO: 1e-4 tolerance is too low... what's wrong?
-    assert test_helpers.dallclose(rbf_vec_e1, rbf_vec_coeff_e_ref, atol=1e-4)
+    assert test_helpers.dallclose(rbf_vec_e1.asnumpy(), rbf_vec_coeff_e_ref.asnumpy(), atol=1e-4)

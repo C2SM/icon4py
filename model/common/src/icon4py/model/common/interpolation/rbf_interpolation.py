@@ -234,9 +234,15 @@ def compute_rbf_interpolation_matrix(
     # another point on the sphere), but these don't hurt the computation.
     # TODO: Can nans be signaling? default is warn:
     # https://numpy.org/doc/stable/user/misc.html#how-numpy-handles-numerical-exceptions
-    edge_normal_x = np.pad(edge_normal_x.asnumpy(), (0, 1), mode="constant", constant_values=0.0)
-    edge_normal_y = np.pad(edge_normal_y.asnumpy(), (0, 1), mode="constant", constant_values=0.0)
-    edge_normal_z = np.pad(edge_normal_z.asnumpy(), (0, 1), mode="constant", constant_values=0.0)
+    edge_normal_x = np.pad(
+        edge_normal_x.asnumpy(), (0, 1), mode="constant", constant_values=0.0
+    )
+    edge_normal_y = np.pad(
+        edge_normal_y.asnumpy(), (0, 1), mode="constant", constant_values=0.0
+    )
+    edge_normal_z = np.pad(
+        edge_normal_z.asnumpy(), (0, 1), mode="constant", constant_values=0.0
+    )
     x_normal = edge_normal_x[rbf_offset]
     y_normal = edge_normal_y[rbf_offset]
     z_normal = edge_normal_z[rbf_offset]
@@ -394,4 +400,9 @@ def compute_rbf_interpolation_matrix(
     rbf_vec_coeff_1 /= np.sum(nx1nx3 * rbf_vec_coeff_1, axis=1)[:, np.newaxis]
     rbf_vec_coeff_2 /= np.sum(nx2nx3 * rbf_vec_coeff_2, axis=1)[:, np.newaxis]
 
-    return rbf_vec_coeff_1, rbf_vec_coeff_2
+    dim = domain[0].dim
+    dim2 = gtx.Dimension("What")  # TODO
+    return (
+        gtx.as_field([dim, dim2], rbf_vec_coeff_1),
+        gtx.as_field([dim, dim2], rbf_vec_coeff_2),
+    )
