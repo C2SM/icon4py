@@ -138,7 +138,7 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
     """Run tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
 
-    pytest_args = _model_selection_to_pytest_args(selection)
+    pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
         session.run(
             *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
@@ -169,7 +169,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("tools"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', '2')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
+            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
             *session.posargs
         )
 
@@ -203,7 +203,7 @@ def _install_session_venv(
             env=env
         )
 
-def _model_selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
+def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
     pytest_args = []
 
     match selection:
@@ -217,6 +217,3 @@ def _model_selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
             raise AssertionError(f"Invalid selection: {selection}")
 
     return pytest_args
-
-
-
