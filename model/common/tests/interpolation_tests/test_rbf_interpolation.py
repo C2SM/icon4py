@@ -86,8 +86,31 @@ def test_rbf_interpolation_matrix_cell(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
+
+    rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix_cell(
+        geometry.get(geometry_attrs.CELL_LAT),
+        geometry.get(geometry_attrs.CELL_LON),
+        geometry.get(geometry_attrs.CELL_CENTER_X),
+        geometry.get(geometry_attrs.CELL_CENTER_Y),
+        geometry.get(geometry_attrs.CELL_CENTER_Z),
+        geometry.get(geometry_attrs.EDGE_CENTER_X),
+        geometry.get(geometry_attrs.EDGE_CENTER_Y),
+        geometry.get(geometry_attrs.EDGE_CENTER_Z),
+        # TODO: normals not dallclose? check
+        geometry.get(geometry_attrs.EDGE_NORMAL_X),
+        # grid_savepoint.primal_cart_normal_x(),
+        geometry.get(geometry_attrs.EDGE_NORMAL_Y),
+        # grid_savepoint.primal_cart_normal_y(),
+        geometry.get(geometry_attrs.EDGE_NORMAL_Z),
+        # grid_savepoint.primal_cart_normal_z(),
+        rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
+        rbf.InterpolationKernel.GAUSSIAN,
+        0.5,  # TODO: correct for r02b04 grid, smaller for smaller grids
+    )
+
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
     rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2()
+
     assert rbf_vec_coeff_c1_ref.shape == (
         icon_grid.num_cells,
         RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
@@ -96,44 +119,6 @@ def test_rbf_interpolation_matrix_cell(
         icon_grid.num_cells,
         RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
     )
-
-    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
-
-    # cell center
-    cell_center_lat = geometry.get(geometry_attrs.CELL_LAT)
-    cell_center_lon = geometry.get(geometry_attrs.CELL_LON)
-    cell_center_x = geometry.get(geometry_attrs.CELL_CENTER_X)
-    cell_center_y = geometry.get(geometry_attrs.CELL_CENTER_Y)
-    cell_center_z = geometry.get(geometry_attrs.CELL_CENTER_Z)
-
-    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
-    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
-    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
-    # TODO: normals not dallclose? check
-    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X)
-    # edge_normal_x_from_savepoint = grid_savepoint.primal_cart_normal_x()
-    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
-    # edge_normal_y_from_savepoint = grid_savepoint.primal_cart_normal_y()
-    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
-    # edge_normal_z_from_savepoint = grid_savepoint.primal_cart_normal_z()
-
-    rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix_cell(
-        cell_center_lat,
-        cell_center_lon,
-        cell_center_x,
-        cell_center_y,
-        cell_center_z,
-        edge_center_x,
-        edge_center_y,
-        edge_center_z,
-        edge_normal_x,
-        edge_normal_y,
-        edge_normal_z,
-        offset_table,
-        rbf.InterpolationKernel.GAUSSIAN,
-        0.5,  # TODO: correct for r02b04 grid, smaller for smaller grids
-    )
-
     # TODO: Why does memory usage blow up if I don't have the explicit asnumpy here?
     assert test_helpers.dallclose(
         rbf_vec_c1.asnumpy(), rbf_vec_coeff_c1_ref.asnumpy(), atol=1e-8
@@ -152,8 +137,27 @@ def test_rbf_interpolation_matrix_vertex(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
+
+    rbf_vec_v1, rbf_vec_v2 = rbf.compute_rbf_interpolation_matrix_vertex(
+        geometry.get(geometry_attrs.VERTEX_LAT),
+        geometry.get(geometry_attrs.VERTEX_LON),
+        geometry.get(geometry_attrs.VERTEX_CENTER_X),
+        geometry.get(geometry_attrs.VERTEX_CENTER_Y),
+        geometry.get(geometry_attrs.VERTEX_CENTER_Z),
+        geometry.get(geometry_attrs.EDGE_CENTER_X),
+        geometry.get(geometry_attrs.EDGE_CENTER_Y),
+        geometry.get(geometry_attrs.EDGE_CENTER_Z),
+        geometry.get(geometry_attrs.EDGE_NORMAL_X),
+        geometry.get(geometry_attrs.EDGE_NORMAL_Y),
+        geometry.get(geometry_attrs.EDGE_NORMAL_Z),
+        rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
+        rbf.InterpolationKernel.GAUSSIAN,  # TODO: Read from grid? gaussian default for vertices
+        0.5,  # TODO
+    )
+
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
     rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2()
+
     assert rbf_vec_coeff_v1_ref.shape == (
         icon_grid.num_vertices,
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
@@ -162,40 +166,6 @@ def test_rbf_interpolation_matrix_vertex(
         icon_grid.num_vertices,
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
     )
-
-    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
-
-    # vertex center
-    vertex_lat = geometry.get(geometry_attrs.VERTEX_LAT)
-    vertex_lon = geometry.get(geometry_attrs.VERTEX_LON)
-    vertex_x = geometry.get(geometry_attrs.VERTEX_CENTER_X)
-    vertex_y = geometry.get(geometry_attrs.VERTEX_CENTER_Y)
-    vertex_z = geometry.get(geometry_attrs.VERTEX_CENTER_Z)
-
-    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
-    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
-    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
-    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X)
-    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
-    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
-
-    rbf_vec_v1, rbf_vec_v2 = rbf.compute_rbf_interpolation_matrix_vertex(
-        vertex_lat,
-        vertex_lon,
-        vertex_x,
-        vertex_y,
-        vertex_z,
-        edge_center_x,
-        edge_center_y,
-        edge_center_z,
-        edge_normal_x,
-        edge_normal_y,
-        edge_normal_z,
-        offset_table,
-        rbf.InterpolationKernel.GAUSSIAN,  # TODO: Read from grid? gaussian default for vertices
-        0.5,  # TODO
-    )
-
     assert test_helpers.dallclose(
         rbf_vec_v1.asnumpy(), rbf_vec_coeff_v1_ref.asnumpy(), atol=1e-9
     )
@@ -213,44 +183,31 @@ def test_rbf_interpolation_matrix_edge(
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
-    rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
-    assert rbf_vec_coeff_e_ref.shape == (
-        icon_grid.num_edges,
-        RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
-    )
-
-    offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
-    offset_table_from_savepoint = grid_savepoint.e2c2e()
-    # TODO: Neighbors are not in the same order
-    # assert (offset_table_from_savepoint == offset_table).all()
-
-    edge_center_x = geometry.get(geometry_attrs.EDGE_CENTER_X)
-    edge_center_y = geometry.get(geometry_attrs.EDGE_CENTER_Y)
-    edge_center_z = geometry.get(geometry_attrs.EDGE_CENTER_Z)
-    edge_center_lat = grid_savepoint.edge_center_lat()
-    edge_center_lon = grid_savepoint.edge_center_lon()
-    edge_normal_x = geometry.get(geometry_attrs.EDGE_NORMAL_X)
-    edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
-    edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
-    dual_normal_v1 = grid_savepoint.dual_normal_v1()
-    dual_normal_v2 = grid_savepoint.dual_normal_v2()
 
     rbf_vec_e = rbf.compute_rbf_interpolation_matrix_edge(
-        edge_center_lat,
-        edge_center_lon,
-        edge_center_x,
-        edge_center_y,
-        edge_center_z,
-        edge_normal_x,
-        edge_normal_y,
-        edge_normal_z,
-        dual_normal_v1,
-        dual_normal_v2,
-        offset_table_from_savepoint,  # TODO: neighbors are not in the same order, use savepoint for now
+        geometry.get(geometry_attrs.EDGE_LAT),
+        geometry.get(geometry_attrs.EDGE_LON),
+        geometry.get(geometry_attrs.EDGE_CENTER_X),
+        geometry.get(geometry_attrs.EDGE_CENTER_Y),
+        geometry.get(geometry_attrs.EDGE_CENTER_Z),
+        geometry.get(geometry_attrs.EDGE_NORMAL_X),
+        geometry.get(geometry_attrs.EDGE_NORMAL_Y),
+        geometry.get(geometry_attrs.EDGE_NORMAL_Z),
+        geometry.get(geometry_attrs.EDGE_DUAL_U),
+        geometry.get(geometry_attrs.EDGE_DUAL_V),
+        # TODO: neighbors are not in the same order, use savepoint for now
+        # rbf.construct_rbf_matrix_offsets_tables_for_edges(grid),
+        grid_savepoint.e2c2e(),
         rbf.InterpolationKernel.INVERSE_MULTI_QUADRATIC,  # TODO: Read from grid? gaussian default for vertices
         0.5,  # TODO
     )
 
+    rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
+
+    assert rbf_vec_coeff_e_ref.shape == (
+        icon_grid.num_edges,
+        RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
+    )
     # TODO: 1e-4 tolerance is too low... what's wrong?
     assert test_helpers.dallclose(
         rbf_vec_e.asnumpy(), rbf_vec_coeff_e_ref.asnumpy(), atol=1e-4
