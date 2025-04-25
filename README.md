@@ -33,8 +33,6 @@ ICON4Py uses the [`uv`](https://docs.astral.sh/uv/) project manager for developm
 $ curl -LsSf https://astral.sh/uv/install.sh | sh 
 ```
 
-Finally, make sure **_boost >= 1.85.0_** is installed in your system, which is required by `gt4py` to compile generated C++ code. 
-
 ### ICON4Py Development Environment
 
 Once `uv` is installed in your system, it is enough to clone this repository and let `uv` handling the installation of the development environment. 
