@@ -23,16 +23,21 @@ jobs:
               run: |
                 sudo apt-get update
                 sudo apt-get install libboost-all-dev
+                sudo apt-get install gfortran build-essential
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: ${{ matrix.python-version }}
             - name: install uv
               uses: astral-sh/setup-uv@v5
               with:
-                  python-version: ${{ matrix.python-version }}
+                  version: "0.6.16"
                   enable-cache: true
                   cache-dependency-glob: "uv.lock"
 
             - name: install venv with nox
               run: |
-                uv sync --locked --dev
+                uv sync
             - name: run nox session
               run: |
                 source .venv/bin/activate
