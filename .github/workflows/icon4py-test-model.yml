@@ -1,0 +1,49 @@
+name: ICON4Py Unit Tests
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+        types: [opened, reopened, synchronize]
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: ["3.10", "3.11"]
+                backend: ["embedded", "gtfn_cpu"] # TODO add dace-cpu
+                component: ["diffusion", "dycore", "microphysics", "common", "driver"] # TODO add advection
+                #grid: ["simple_grid"] #, "icon_grid", "icon_grid_global"] #TODO  provide the grid files for icon_grid and icon_grid_global
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Install system dependencies
+              run: |
+                sudo apt-get update
+                sudo apt-get install libboost-all-dev
+
+            - name: install uv
+              uses: astral-sh/setup-uv@v5
+              with:
+                  version: "0.6.16"
+                  enable-cache: true
+                  cache-dependency-glob: "uv.lock"
+                  python-version: ${{ matrix.python-version }}
+
+            - name: run nox session - model
+              shell: bash
+              env:
+                NUM_PROCESSES: auto
+              run: |
+                uv run nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
+
+            - name: run nox session - stencil tests
+              shell: bash
+              env:
+                  NUM_PROCESSES: auto
+              run: |
+                uv run nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=simple_grid
