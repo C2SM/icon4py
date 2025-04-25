@@ -38,5 +38,5 @@ jobs:
             - name: run nox session
               run: |
                 source .venv/bin/activate
-                nox -s "test_tools-${{matrix.python-version}}(unittests)" --
+                nox -s "test_tools-${{matrix.python-version}}(unittest)" --
 
