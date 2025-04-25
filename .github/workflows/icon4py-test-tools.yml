@@ -9,14 +9,11 @@ on:
             - main
         types: [opened, reopened, synchronize]
 jobs:
-    unit-test-tools:
+    build:
         runs-on: ubuntu-latest
         strategy:
             matrix:
                 python-version: ["3.10", "3.11"]
-                component: ["diffusion", "dycore", "microphysics", "common", "driver"] # TODO add advection
-                backend: ["embedded", "gtfn_cpu"] # TODO add dace-cpu
-                grid: ["simple_grid"] #, "icon_grid", "icon_grid_global"] #TODO  provide the grid files for icon_grid and icon_grid_global
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -24,7 +21,6 @@ jobs:
               run: |
                 sudo apt-get update
                 sudo apt-get install libboost-all-dev
-                sudo apt-get install gfortran build-essential
             # we need to install python with setup-python action and cannot rely on the setup-uv:
             # we need to link to the python library in the CFFI test in tools and  LD_LIBRARY_PATH
             # is not set correctly in the setup-uv action
@@ -38,20 +34,9 @@ jobs:
                   version: "0.6.16"
                   enable-cache: true
                   cache-dependency-glob: "uv.lock"
-
-            - name: install venv with nox
-              run: |
-                uv sync
             - name: run nox session - tools
+              env:
+                NUM_PROCESSES: auto
+              shell: bash
               run: |
-                source .venv/bin/activate
-                nox -s "test_tools-${{matrix.python-version}}(unittest)" --
-
-            - name: run nox session - model
-              run: |
-                source .venv/bin/activate
-                nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
-            - name: run nox session - stencil tests
-              run: |
-                source .venv/bin/activate
-                nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=${{ matrix.grid }}
+                uv run nox -s "test_tools-${{matrix.python-version}}(unittest)" --
