@@ -115,7 +115,7 @@ def run_verify_and_benchmark(
         benchmark_fixture: pytest-benchmark fixture.
 
     Note:
-        - test_func and verification_func should be provided with binded arguments, i.e. with functools.partial.
+        - test_func and verification_func should be provided with bound arguments, i.e. with functools.partial.
     """
     test_func()
     verification_func()

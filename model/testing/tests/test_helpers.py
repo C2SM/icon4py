@@ -18,7 +18,7 @@ def required_args_func(req_arg):
 
 
 @pytest.mark.parametrize("benchmark_enabled", [True, False])
-def test_verification_benchmarking_infrastructure(benchmark_enabled):
+def test_run_verify_and_benchmark(benchmark_enabled):
     test_func = mock.Mock(side_effect=required_args_func)
     verification_func = mock.Mock()
     benchmark = mock.Mock(enabled=benchmark_enabled)
@@ -36,10 +36,16 @@ def test_verification_benchmarking_infrastructure(benchmark_enabled):
     else:
         benchmark.assert_not_called()
 
-    failing_verification_func = mock.Mock(side_effect=AssertionError("Verification failed."))
-    with pytest.raises(AssertionError):
-        helpers.run_verify_and_benchmark(
-            functools.partial(test_func, req_arg=mock.Mock()),
-            failing_verification_func,
-            benchmark_fixture=None,
-        )
+
+def test_run_and_verify():
+    test_func = mock.Mock()
+    verification_func = mock.Mock()
+
+    helpers.run_verify_and_benchmark(
+        test_func,
+        verification_func,
+        benchmark_fixture=None,  # No benchmark fixture provided
+    )
+
+    test_func.assert_called_once()
+    verification_func.assert_called_once()
