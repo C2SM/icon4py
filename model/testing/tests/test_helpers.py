@@ -5,61 +5,37 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 from unittest import mock
 
-import numpy as np
 import pytest
-from numpy.typing import NDArray
 
 from icon4py.model.testing import helpers
 
 
-BASE_DTYPE = np.int64
-
-
-def incr_func(
-    field: NDArray[BASE_DTYPE],
-    increment: int,
-):
-    field += increment
-
-
-def verify_field(
-    field: NDArray[BASE_DTYPE],
-    increment: int,
-    base_value: int,
-):
-    np.testing.assert_allclose(field, base_value + increment)
-
-
-def test_verification_benchmarking_infrastructure():
-    base_value = 1
-    field = np.array((base_value * np.ones((), dtype=BASE_DTYPE)))
-
-    increment = 6
-
-    benchmark = mock.Mock(enabled=False)
+@pytest.mark.parametrize("benchmark_enabled", [True, False])
+def test_verification_benchmarking_infrastructure(benchmark_enabled):
+    test_func = mock.Mock()
+    verification_func = mock.Mock()
+    benchmark = mock.Mock(enabled=benchmark_enabled)
 
     helpers.run_verify_and_benchmark(
-        functools.partial(incr_func, field=field, increment=increment),
-        functools.partial(verify_field, field=field, increment=increment, base_value=base_value),
+        test_func,
+        verification_func,
         benchmark_fixture=benchmark,
     )
 
-    benchmark.assert_not_called()
-
-    current_base_value = field[()]
-    assert (
-        current_base_value != base_value
-    ), "Base values should not be equal. Otherwise, the test did not go through incr_func/ verify_field functions."
+    test_func.assert_called_once()
+    verification_func.assert_called_once()
+    if benchmark_enabled:
+        benchmark.assert_called_once()
+    else:
+        benchmark.assert_not_called()
 
     # Expect AssertionError
+    failing_verification_func = mock.Mock(side_effect=AssertionError("Verification failed"))
     with pytest.raises(AssertionError):
         helpers.run_verify_and_benchmark(
-            functools.partial(incr_func, field=field, increment=increment),
-            functools.partial(
-                verify_field, field=field, increment=increment, base_value=base_value
-            ),  # base_value should be current_base_value
+            test_func,
+            failing_verification_func,
             benchmark_fixture=None,
         )
