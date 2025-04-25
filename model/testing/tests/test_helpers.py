@@ -31,8 +31,7 @@ def test_verification_benchmarking_infrastructure(benchmark_enabled):
     else:
         benchmark.assert_not_called()
 
-    # Expect AssertionError
-    failing_verification_func = mock.Mock(side_effect=AssertionError("Verification failed"))
+    failing_verification_func = mock.Mock(side_effect=AssertionError("Verification failed."))
     with pytest.raises(AssertionError):
         helpers.run_verify_and_benchmark(
             test_func,
