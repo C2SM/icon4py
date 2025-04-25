@@ -36,7 +36,8 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
     Fixture which is a prerequisite of all the other fixtures in this file.
     """
     try:
-        if "datatest" not in request.config.getoption("-k"):
+        # we don't want to run this ever if we are not running datatests
+        if "not datatest" in request.config.getoption("-k"):
             return
     except ValueError:
         pass
