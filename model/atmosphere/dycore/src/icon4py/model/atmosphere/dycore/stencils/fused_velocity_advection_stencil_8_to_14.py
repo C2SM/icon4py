@@ -17,9 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contr
 from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
     _copy_cell_kdim_field_to_vp,
 )
-from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
-    _correct_contravariant_vertical_velocity,
-)
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     _init_cell_kdim_field_with_zero_vp,
 )
@@ -99,7 +96,7 @@ def _fused_velocity_advection_stencil_8_to_14(
 
     z_w_con_c = concat_where(
         (nflatlev + 1 < dims.KDim) & (dims.KDim < nlev),
-        _correct_contravariant_vertical_velocity(z_w_con_c, w_concorr_c),
+        z_w_con_c - w_concorr_c,
         z_w_con_c,
     )
     cfl_clipping, vcfl, z_w_con_c = concat_where(

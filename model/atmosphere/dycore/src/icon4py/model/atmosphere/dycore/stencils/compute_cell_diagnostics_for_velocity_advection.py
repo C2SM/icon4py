@@ -9,9 +9,6 @@ import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import astype, broadcast
 
-from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
-    _correct_contravariant_vertical_velocity,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
@@ -66,21 +63,12 @@ def _compute_contravariant_corrected_w(
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
     contravariant_corrected_w_at_cells_on_half_levels = concat_where(
-        dims.KDim < nflatlev + 1,
-        astype(w, vpfloat),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-    )
-
-    contravariant_corrected_w_at_cells_on_half_levels = concat_where(
         (nflatlev + 1 <= dims.KDim) & (dims.KDim < nlev),
-        _correct_contravariant_vertical_velocity(
-            astype(w, vpfloat),
-            contravariant_correction_at_cells_on_half_levels,
-        ),
-        contravariant_corrected_w_at_cells_on_half_levels,
+        astype(w, vpfloat) - contravariant_correction_at_cells_on_half_levels,
+        astype(w, vpfloat),
     )
 
-    return contravariant_corrected_w_at_cells_on_half_levels
+    return concat_where(dims.KDim == nlev, 0.0, contravariant_corrected_w_at_cells_on_half_levels)
 
 
 @gtx.program
