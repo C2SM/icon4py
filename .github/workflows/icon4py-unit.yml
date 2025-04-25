@@ -1,32 +1,42 @@
 name: ICON4Py Unit Tests
 on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
     pull_request:
         branches:
             - main
         types: [opened, reopened, synchronize]
 jobs:
     unit-test-tools:
-    runs-on: ubuntu-latest
-    strategy:
-        matrix:
-            python-version: ["3.10", "3.11"]
-
-    steps:
-        - name: checkout code
-          uses: actions/checkout@v4
-        - name: Install system dependencies
-          run: |
-            sudo apt-get update
-            sudo apt-get install libboost-all-dev
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-        - name: Set up Python
-          uses: actions/setup-python@v4
-          with:
-            python-version: ${{ matrix.python-version }}
-            cache: 'pip'
-            cache-dependency-path: |
-              **/pyproject.toml
-              uv.lock
-        - name: run nox session
-          run: nox -s "test_tools-${{matrix.python-version}}(unittests)" --
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: ["3.10", "3.11"]
+                #component: ["diffusion", "dycore", "microphysics", "common", "driver"] # TODO add advection
+                #backend: ["embedded", "gtfn_cpu", "dace-cpu"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Install system dependencies
+              run: |
+                sudo apt-get update
+                sudo apt-get install libboost-all-dev
+                curl -LsSf https://astral.sh/uv/install.sh | sh
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                    python-version: ${{matrix.python-version}}
+                    cache: 'pip'
+                    cache-dependency-path: |
+                        **/pyproject.toml
+                        uv.lock
+            - name: install venv with nox
+              run: |
+                uv sync
+            - name: run nox session
+              run: |
+                source .venv/bin/activate
+                nox -s "test_tools-${{matrix.python-version}}(unittests)" --
 
