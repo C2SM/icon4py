@@ -22,7 +22,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.stencils import (
-    compute_edge_diagnostics_for_dycore_and_update_vn,
+    compute_edge_diagnostics_for_dycore_and_update_vn, add_vertical_wind_derivative_to_divergence_damping,
+    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels, compute_graddiv2_of_vn,
+    apply_2nd_order_divergence_damping, apply_weighted_2nd_and_4th_order_divergence_damping,
+    apply_4th_order_divergence_damping, compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
