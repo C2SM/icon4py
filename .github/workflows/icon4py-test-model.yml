@@ -9,7 +9,7 @@ on:
             - main
         types: [opened, reopened, synchronize]
 jobs:
-    build:
+    test-model:
         runs-on: ubuntu-latest
         strategy:
             matrix:
