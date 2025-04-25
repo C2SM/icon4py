@@ -912,7 +912,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     ddt_w_adv_ref = savepoint_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
 
-    end_index_of_damping_layer = grid_savepoint.nrdmax()[0]
+    end_index_of_damping_layer = grid_savepoint.nrdmax()
 
 
     dtime = 5.0
@@ -1039,7 +1039,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
     d_time = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    end_index_of_damping_layer = grid_savepoint.nrdmax()[0]
+    end_index_of_damping_layer = grid_savepoint.nrdmax()
 
 
     ddt_vn_apc_ref = savepoint_compute_advection_in_horizontal_momentum_equation_exit.ddt_vn_apc()
