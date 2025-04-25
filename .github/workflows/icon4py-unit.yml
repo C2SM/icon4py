@@ -23,18 +23,16 @@ jobs:
               run: |
                 sudo apt-get update
                 sudo apt-get install libboost-all-dev
-                curl -LsSf https://astral.sh/uv/install.sh | sh
-            - name: Set up Python
-              uses: actions/setup-python@v4
+            - name: install uv
+              uses: astral-sh/setup-uv@v5
               with:
-                    python-version: ${{matrix.python-version}}
-                    cache: 'pip'
-                    cache-dependency-path: |
-                        **/pyproject.toml
-                        uv.lock
+                  python-version: ${{ matrix.python-version }}
+                  enable-cache: true
+                  cache-dependency-glob: "uv.lock"
+
             - name: install venv with nox
               run: |
-                uv sync
+                uv sync --locked --dev
             - name: run nox session
               run: |
                 source .venv/bin/activate
