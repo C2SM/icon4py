@@ -92,6 +92,9 @@ module dycore
                                     vt, &
                                     vt_size_0, &
                                     vt_size_1, &
+                                    vn_incr, &
+                                    vn_incr_size_0, &
+                                    vn_incr_size_1, &
                                     mass_flx_me, &
                                     mass_flx_me_size_0, &
                                     mass_flx_me_size_1, &
@@ -281,6 +284,12 @@ module dycore
          integer(c_int), value :: vt_size_0
 
          integer(c_int), value :: vt_size_1
+
+         type(c_ptr), value, target :: vn_incr
+
+         integer(c_int), value :: vn_incr_size_0
+
+         integer(c_int), value :: vn_incr_size_1
 
          type(c_ptr), value, target :: mass_flx_me
 
@@ -896,6 +905,7 @@ contains
                            grf_tend_vn, &
                            vn_ie, &
                            vt, &
+                           vn_incr, &
                            mass_flx_me, &
                            mass_flx_ic, &
                            vol_flx_ic, &
@@ -964,6 +974,8 @@ contains
       real(c_double), dimension(:, :), target :: vn_ie
 
       real(c_double), dimension(:, :), target :: vt
+
+      real(c_double), dimension(:, :), target :: vn_incr
 
       real(c_double), dimension(:, :), target :: mass_flx_me
 
@@ -1099,6 +1111,10 @@ contains
 
       integer(c_int) :: vt_size_1
 
+      integer(c_int) :: vn_incr_size_0
+
+      integer(c_int) :: vn_incr_size_1
+
       integer(c_int) :: mass_flx_me_size_0
 
       integer(c_int) :: mass_flx_me_size_1
@@ -1146,6 +1162,7 @@ contains
       !$acc host_data use_device(grf_tend_vn)
       !$acc host_data use_device(vn_ie)
       !$acc host_data use_device(vt)
+      !$acc host_data use_device(vn_incr)
       !$acc host_data use_device(mass_flx_me)
       !$acc host_data use_device(mass_flx_ic)
       !$acc host_data use_device(vol_flx_ic)
@@ -1240,6 +1257,9 @@ contains
 
       vt_size_0 = SIZE(vt, 1)
       vt_size_1 = SIZE(vt, 2)
+
+      vn_incr_size_0 = SIZE(vn_incr, 1)
+      vn_incr_size_1 = SIZE(vn_incr, 2)
 
       mass_flx_me_size_0 = SIZE(mass_flx_me, 1)
       mass_flx_me_size_1 = SIZE(mass_flx_me, 2)
@@ -1337,6 +1357,9 @@ contains
                                 vt=c_loc(vt), &
                                 vt_size_0=vt_size_0, &
                                 vt_size_1=vt_size_1, &
+                                vn_incr=c_loc(vn_incr), &
+                                vn_incr_size_0=vn_incr_size_0, &
+                                vn_incr_size_1=vn_incr_size_1, &
                                 mass_flx_me=c_loc(mass_flx_me), &
                                 mass_flx_me_size_0=mass_flx_me_size_0, &
                                 mass_flx_me_size_1=mass_flx_me_size_1, &
@@ -1356,6 +1379,7 @@ contains
                                 ndyn_substeps=ndyn_substeps, &
                                 idyn_timestep=idyn_timestep, &
                                 on_gpu=on_gpu)
+      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

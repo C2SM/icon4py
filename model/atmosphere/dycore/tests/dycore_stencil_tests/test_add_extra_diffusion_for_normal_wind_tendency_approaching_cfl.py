@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_win
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils.data_allocation import random_field, random_mask
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -104,17 +104,19 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        levelmask = random_mask(grid, dims.KDim, extend={dims.KDim: 1})
-        c_lin_e = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
-        z_w_con_c_full = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        ddqz_z_full_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        area_edge = random_field(grid, dims.EdgeDim)
-        tangent_orientation = random_field(grid, dims.EdgeDim)
-        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
-        zeta = random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
-        geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim)
-        ddt_vn_apc = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        levelmask = data_alloc.random_mask(grid, dims.KDim, extend={dims.KDim: 1})
+        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        z_w_con_c_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddqz_z_full_e = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, low=0.0
+        )
+        area_edge = data_alloc.random_field(grid, dims.EdgeDim)
+        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
+        zeta = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddt_vn_apc = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         cfl_w_limit = ta.vpfloat("4.0")
         scalfac_exdiff = 6.0
         dtime = 2.0
