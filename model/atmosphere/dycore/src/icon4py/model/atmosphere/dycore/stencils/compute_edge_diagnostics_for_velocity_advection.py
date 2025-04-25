@@ -185,8 +185,8 @@ def compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_co
         - w: vertical wind at cell centers
         - rbf_vec_coeff_e: interpolation field (RBF vector coefficient on edges)
         - wgtfac_e: metrics field
-        - ddxn_z_full: metrics field (derivative in the x-direction)
-        - ddxt_z_full: metrics field (derivative in the tangential direction)
+        - ddxn_z_full: metrics field (derivative of topography in the normal direction)
+        - ddxt_z_full: metrics field (derivative of topography in the tangential direction)
         - wgtfacq_e: metrics field (weights for interpolation)
         - c_intp: interpolation field
         - inv_dual_edge_length: inverse dual edge length
