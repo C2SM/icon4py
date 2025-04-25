@@ -28,6 +28,7 @@ from . import utils
 from .test_grid_init import grid_init  # noqa: F401
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -287,6 +288,7 @@ def test_diffusion_wrapper_granule_inputs(
         assert captured_kwargs["dtime"] == expected_dtime
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
