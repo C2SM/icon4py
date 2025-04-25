@@ -37,7 +37,7 @@ def test_run_verify_and_benchmark(benchmark_enabled):
         benchmark.assert_not_called()
 
 
-def test_run_and_verify():
+def test_run_verify_and_benchmark_no_fixture():
     test_func = mock.Mock()
     verification_func = mock.Mock()
 
