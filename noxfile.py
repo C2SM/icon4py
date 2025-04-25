@@ -153,12 +153,13 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
 #     )
 
 
+
 # Tools test sessions
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("datatest", [
-    nox.param(False, id="datatest", tags=["datatest"]),
-    nox.param(True, id="unittest",)
+    nox.param(True, id="datatest", tags=["datatest"]),
+    nox.param(False, id="unittest",)
 ])
 def test_tools(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran integration tools."""
@@ -166,7 +167,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("tools"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
+            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
             *session.posargs
         )
 
@@ -202,15 +203,15 @@ def _install_session_venv(
 
 def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
     pytest_args = []
-    
+
     match selection:
         case "datatest":
-            pytest_args.extend(["-k", "not stencil_test", "--datatest"])
+            pytest_args.extend(["--datatest-only"])
         case "stencils":
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
-            pytest_args.extend(["-k", "not stencil_tests"])
+            pytest_args.extend(["--datatest-skip", "-k", "not stencil_tests"])
         case _:
             raise AssertionError(f"Invalid selection: {selection}")
-        
+
     return pytest_args
