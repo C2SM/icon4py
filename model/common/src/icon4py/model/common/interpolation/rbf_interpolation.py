@@ -132,7 +132,7 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     return offset
 
 
-def dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+def _dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     # alias: np.transpose(v2, axes=(0, 2, 1)) for 3d array
     v2_tilde = np.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
@@ -142,11 +142,11 @@ def dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
 # NOTE: this one computes the pairwise arc lengths between elements in v, the
 # next version computes pairwise arc lengths between two different arrays
 # TODO: Combine?
-def arc_length_pairwise(v: np.ndarray) -> np.ndarray:
+def _arc_length_pairwise(v: np.ndarray) -> np.ndarray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
-    arc_lengths = dot_product(v, v)  # np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
+    arc_lengths = _dot_product(v, v)  # np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
     # Use the dot product of the diagonals to get the norm of each point
     norms = np.sqrt(np.diagonal(arc_lengths, axis1=1, axis2=2))
     # Divide the dot products by the broadcasted norms
@@ -167,11 +167,11 @@ def arc_length_pairwise(v: np.ndarray) -> np.ndarray:
 # TODO: this is pretty much the same as above, except we don't get the squares
 # of the norms directly from the first matmul
 # TODO: this is used only in one place, it's probably not as generic as it looks
-def arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+def _arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
-    arc_lengths = dot_product(v1, v2)
+    arc_lengths = _dot_product(v1, v2)
     v1_norm = np.linalg.norm(v1, axis=-1)
     v2_norm = np.linalg.norm(v2, axis=-1)
     # Divide the dot products by the broadcasted norms
@@ -183,12 +183,12 @@ def arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     return np.squeeze(np.arccos(arc_lengths), axis=1)
 
 
-def gaussian(lengths: np.ndarray, scale: float) -> np.ndarray:
+def _gaussian(lengths: np.ndarray, scale: float) -> np.ndarray:
     val = lengths / scale
     return np.exp(-1.0 * val * val)
 
 
-def inverse_multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
+def _inverse_multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
     """
 
     Args:
@@ -202,17 +202,17 @@ def inverse_multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
     return 1.0 / np.sqrt(1.0 + val * val)
 
 
-def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
+def _kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
     match kernel:
         case InterpolationKernel.GAUSSIAN:
-            return gaussian(lengths, scale)
+            return _gaussian(lengths, scale)
         case InterpolationKernel.INVERSE_MULTIQUADRATIC:
-            return inverse_multiquadratic(lengths, scale)
+            return _inverse_multiquadratic(lengths, scale)
         case _:
             raise ValueError(f"Unsupported kernel: {kernel}")
 
 
-def get_zonal_meridional_f(dim: gtx.Dimension):
+def _get_zonal_meridional_f(dim: gtx.Dimension):
     match dim:
         case gtx.Dimension("Cell"):
             return cartesian_coordinates_from_zonal_and_meridional_components_on_cells
@@ -224,10 +224,10 @@ def get_zonal_meridional_f(dim: gtx.Dimension):
             raise ValueError(f"Unsupported dimension: {dim}")
 
 
-def compute_rbf_interpolation_matrix(
-    element_center_lat,  # fa.CellField[ta.wpfloat], TODO: any of CellField, EdgeField, VertexField
-    element_center_lon,  # fa.CellField[ta.wpfloat],
-    element_center_x,  # fa.CellField[ta.wpfloat],
+def _compute_rbf_interpolation_matrix(
+    element_center_lat,
+    element_center_lon,
+    element_center_x,
     element_center_y,  # fa.CellField[ta.wpfloat],
     element_center_z,  # fa.CellField[ta.wpfloat],
     edge_center_x,  # fa.EdgeField[ta.wpfloat],
@@ -283,15 +283,15 @@ def compute_rbf_interpolation_matrix(
         axis=-1,
     )
     assert element_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = arc_length_2(element_center[:, np.newaxis, :], edge_center)
+    vector_dist = _arc_length_2(element_center[:, np.newaxis, :], edge_center)
     assert vector_dist.shape == rbf_offset.shape
-    rbf_val = kernel(rbf_kernel, vector_dist, scale_factor)
+    rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor)
     assert rbf_val.shape == rbf_offset.shape
 
     # Set up right hand side(s) of linear system
     domain = element_center_lat.domain
     dim = domain[0].dim
-    zonal_meridional_f = get_zonal_meridional_f(dim)
+    zonal_meridional_f = _get_zonal_meridional_f(dim)
 
     z_nx = []
     nxnx = []
@@ -320,7 +320,7 @@ def compute_rbf_interpolation_matrix(
         assert rhs[i].shape == rbf_offset.shape
 
     # Compute dot product of normal vectors for RBF interpolation matrix
-    z_nxprod = dot_product(edge_normal, edge_normal)
+    z_nxprod = _dot_product(edge_normal, edge_normal)
     assert z_nxprod.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -328,7 +328,7 @@ def compute_rbf_interpolation_matrix(
     )
 
     # Distance between edge midpoints for RBF interpolation matrix
-    z_dist = arc_length_pairwise(edge_center)
+    z_dist = _arc_length_pairwise(edge_center)
     assert z_dist.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -336,7 +336,7 @@ def compute_rbf_interpolation_matrix(
     )
 
     # Set up RBF interpolation matrix
-    z_rbfmat = z_nxprod * kernel(rbf_kernel, z_dist, scale_factor)
+    z_rbfmat = z_nxprod * _kernel(rbf_kernel, z_dist, scale_factor)
     assert z_rbfmat.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -383,7 +383,7 @@ def compute_rbf_interpolation_matrix_cell(
     zeros = gtx.zeros(cell_center_lat.domain, dtype=ta.wpfloat)
     ones = gtx.ones(cell_center_lat.domain, dtype=ta.wpfloat)
 
-    coeffs = compute_rbf_interpolation_matrix(
+    coeffs = _compute_rbf_interpolation_matrix(
         cell_center_lat,
         cell_center_lon,
         cell_center_x,
@@ -421,7 +421,7 @@ def compute_rbf_interpolation_matrix_edge(
     scale_factor: float,
 ):
     # TODO: computing too much here
-    coeffs = compute_rbf_interpolation_matrix(
+    coeffs = _compute_rbf_interpolation_matrix(
         edge_center_lat,
         edge_center_lon,
         edge_center_x,
@@ -462,7 +462,7 @@ def compute_rbf_interpolation_matrix_vertex(
     zeros = gtx.zeros(vertex_center_lat.domain, dtype=ta.wpfloat)
     ones = gtx.ones(vertex_center_lat.domain, dtype=ta.wpfloat)
 
-    coeffs = compute_rbf_interpolation_matrix(
+    coeffs = _compute_rbf_interpolation_matrix(
         vertex_center_lat,
         vertex_center_lon,
         vertex_center_x,
