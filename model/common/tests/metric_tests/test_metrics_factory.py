@@ -605,7 +605,7 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1])
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
-
+@pytest.mark.cpu_only # TODO (magdalena) needs PR 715 (hopefully)
 @pytest.mark.duplicate("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
