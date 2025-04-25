@@ -198,7 +198,6 @@ def _surface_computations(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.wpfloat],
-    horz_idx: fa.CellField[gtx.int32],
     igradp_method: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     end_cell_halo: gtx.int32,
