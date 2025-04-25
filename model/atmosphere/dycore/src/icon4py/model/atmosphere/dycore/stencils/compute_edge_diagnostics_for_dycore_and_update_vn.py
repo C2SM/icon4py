@@ -148,10 +148,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
         concat_where(
             (start_edge_halo_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo_level_2),
-            (
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-            ),
+            (0.0, 0.0),
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
         )
         if iadv_rhotheta <= rhotheta_avd_type.MIURA
@@ -161,10 +158,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
         concat_where(
             (start_edge_lateral_boundary <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
-            (
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-            ),
+            (0.0, 0.0),
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
         )
         if limited_area & (iadv_rhotheta <= rhotheta_avd_type.MIURA)
@@ -361,7 +355,7 @@ def _apply_divergence_damping_and_update_vn(
             _compute_graddiv2_of_vn(
                 geofac_grdiv=geofac_grdiv, z_graddiv_vn=horizontal_gradient_of_total_divergence
             ),
-            broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            0.0,
         )
         if (divdamp_order == divergence_damp_order.COMBINED)
         | (divdamp_order == divergence_damp_order.FOURTH_ORDER)

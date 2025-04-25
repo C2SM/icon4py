@@ -20,9 +20,6 @@ from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import 
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
-    _init_cell_kdim_field_with_zero_vp,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
@@ -94,7 +91,7 @@ def _fused_velocity_advection_stencil_8_to_14(
     z_w_con_c = concat_where(
         dims.KDim < nlevp1,
         _copy_cell_kdim_field_to_vp(w),
-        _init_cell_kdim_field_with_zero_vp(),
+        0.0,
     )
 
     z_w_con_c = concat_where(

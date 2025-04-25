@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import astype, broadcast
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
@@ -41,7 +41,7 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
     contravariant_correction_at_cells_model_levels = concat_where(
         dims.KDim >= nflatlev,
         _interpolate_to_cell_center(contravariant_correction_at_edges_on_model_levels, e_bln_c_s),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        0.0,
     )
 
     contravariant_correction_at_cells_on_half_levels = concat_where(
@@ -66,7 +66,7 @@ def _compute_contravariant_corrected_w(
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
     contravariant_corrected_w_at_cells_on_half_levels = concat_where(
-        dims.KDim < nlev, astype(w, vpfloat), broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
+        dims.KDim < nlev, astype(w, vpfloat), 0.0
     )
 
     contravariant_corrected_w_at_cells_on_half_levels = concat_where(

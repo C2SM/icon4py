@@ -310,9 +310,7 @@ def _predictor_stencils_11_lower_upper(
     k_field: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
-    z_theta_v_pr_ic = concat_where(
-        dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic
-    )
+    z_theta_v_pr_ic = concat_where(dims.KDim == 0, 0.0, z_theta_v_pr_ic)
 
     (z_theta_v_pr_ic, theta_v_ic) = concat_where(
         dims.KDim == nlev,
@@ -636,7 +634,7 @@ def _stencils_42_44_45(
         ),
         (z_beta, z_alpha),
     )
-    z_q = concat_where(dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_q = concat_where(dims.KDim == 0, 0.0, z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -778,7 +776,7 @@ def _stencils_43_44_45(
         ),
         (z_beta, z_alpha),
     )
-    z_q = concat_where(dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_q = concat_where(dims.KDim == 0, 0.0, z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
