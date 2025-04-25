@@ -454,7 +454,7 @@ class Diffusion:
 
         diffusion_utils._init_nabla2_factor_in_upper_damping_zone.with_backend(self._backend)(
             physical_heights=self._vertical_grid.interface_physical_height,
-            nrdmax=self._vertical_grid.end_index_of_damping_layer,
+            end_index_of_damping_layer=self._vertical_grid.end_index_of_damping_layer,
             nshift=0,
             heights_nrd_shift=self._vertical_grid.interface_physical_height.ndarray[
                 self._vertical_grid.end_index_of_damping_layer + 1
