@@ -180,8 +180,8 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_i
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
 
     metadata to select a unique savepoint:
-    - step_date_init: <iso_string> of the simulation timestep
-    - istep_init: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_init(
@@ -194,7 +194,7 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
     data_provider, step_date_init, istep_init, substep_init
 ):  # F811
     """
-    Load data from ICON savepoint at start of velocity_advection module for cell diagnostics.
+    Load data from ICON savepoint at start of velocity_advection module for cell diagnostics computations.
 
     metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
@@ -202,7 +202,7 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-        istep=istep_init, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -219,7 +219,7 @@ def savepoint_compute_advection_in_vertical_momentum_equation_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_init(
-        istep=istep_init, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -236,7 +236,7 @@ def savepoint_compute_advection_in_horizontal_momentum_equation_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
-        istep=istep_init, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -256,16 +256,19 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_i
 
 
 @pytest.fixture
-def savepoint_nonhydro_15_28_init(data_provider, istep_init, step_date_init, substep_init):
+def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
+    data_provider, istep_init, step_date_init, substep_init
+):
     """
-    Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
+    Load data from ICON savepoint before edge diagnostics computations and update of new vn
+    (formally known as stencils 15 to 28) in mo_solve_nonhydro.f90 of solve_nonhydro module.
 
      metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
     - substep: dynamical substep
     """
-    return data_provider.from_savepoint_nonhydro_15_28_init(
+    return data_provider.from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
         istep=istep_init, date=step_date_init, substep=substep_init
     )
 
@@ -302,10 +305,10 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 @pytest.fixture
 def savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-    data_provider, step_date_exit, istep_init, substep_init
+    data_provider, step_date_exit, istep_exit, substep_exit
 ):  # F811
     """
-    Load data from ICON savepoint at exist of velocity_advection module for edge diagnostics.
+    Load data from ICON savepoint at exist of velocity_advection module for edge diagnostics computations.
 
     metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
@@ -313,16 +316,16 @@ def savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-        istep=istep_init, date=step_date_exit, substep_init=substep_init
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
 @pytest.fixture
 def savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-    data_provider, step_date_exit, istep_init, substep_init
+    data_provider, step_date_exit, istep_exit, substep_exit
 ):  # F811
     """
-    Load data from ICON savepoint at exist of velocity_advection module for cell diagnostics.
+    Load data from ICON savepoint at exit of velocity_advection module for cell diagnostics computations.
 
     metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
@@ -330,16 +333,16 @@ def savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-        istep=istep_init, date=step_date_exit, substep_init=substep_init
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
 @pytest.fixture
 def savepoint_compute_advection_in_vertical_momentum_equation_exit(
-    data_provider, step_date_exit, istep_init, substep_init
+    data_provider, step_date_exit, istep_exit, substep_exit
 ):  # F811
     """
-    Load data from ICON savepoint at exist of velocity_advection module for vertical momentum equation.
+    Load data from ICON savepoint at exit of velocity_advection module for vertical momentum equation.
 
     metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
@@ -347,16 +350,16 @@ def savepoint_compute_advection_in_vertical_momentum_equation_exit(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
-        istep=istep_init, date=step_date_exit, substep_init=substep_init
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
 @pytest.fixture
 def savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-    data_provider, step_date_exit, istep_init, substep_init
+    data_provider, step_date_exit, istep_exit, substep_exit
 ):  # F811
     """
-    Load data from ICON savepoint at exist of velocity_advection module for horizontal momentum equation.
+    Load data from ICON savepoint at exit of velocity_advection module for horizontal momentum equation.
 
     metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
@@ -364,7 +367,7 @@ def savepoint_compute_advection_in_horizontal_momentum_equation_exit(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-        istep=istep_init, date=step_date_exit, substep_init=substep_init
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
@@ -385,18 +388,20 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 
 @pytest.fixture
-def savepoint_nonhydro_15_28_exit(data_provider, istep_init, step_date_exit, substep_exit):
+def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
+    data_provider, istep_exit, step_date_exit, substep_exit
+):
     """
-    Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
-    subroutine nh_solve in mo_solve_nonhydro.f90.
+    Load data from ICON savepoint at the end of edge diagnostics computations and update of new vn
+    (formally known as stencils 15 to 28) in mo_solve_nonhydro.f90.
 
     metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
     - substep: dynamical substep
     """
-    return data_provider.from_savepoint_nonhydro_15_28_exit(
-        istep=istep_init, date=step_date_exit, substep=substep_exit
+    return data_provider.from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 

@@ -22,7 +22,7 @@ DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels
 DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
 DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
 INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
-SCALFAC_DD3D: Final[str] = "scaling_factor_for_3d_divergence_damping"
+SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divdamp"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
 COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
 COEFF2_DWDZ: Final[str] = "coeff2_dwdz"
@@ -45,7 +45,7 @@ PG_EDGEIDX_DSL: Final[str] = "edge_mask_for_pressure_gradient_extrapolation"
 PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 BDY_HALO_C: Final[str] = "bdy_halo_c"
-HMASK_DD3D: Final[str] = "hmask_dd3d"
+HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
 ZDIFF_GRADP: Final[str] = "zdiff_gradp"
 COEFF_GRADEKIN: Final[str] = "coeff_gradekin"
 WGTFACQ_C: Final[str] = "weighting_factor_for_quadratic_interpolation_to_cell_surface"
@@ -110,9 +110,9 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="inv_ddqz_z_full",
         dtype=ta.wpfloat,
     ),
-    SCALFAC_DD3D: dict(
-        standard_name=SCALFAC_DD3D,
-        long_name="Scaling factor for 3D divergence damping terms",
+    SCALING_FACTOR_FOR_3D_DIVDAMP: dict(
+        standard_name=SCALING_FACTOR_FOR_3D_DIVDAMP,
+        long_name="Scaling factor for 3D divergence damping",
         units="",
         dims=(dims.KDim,),
         icon_var_name="scalfac_dd3d",
@@ -294,9 +294,9 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="bdy_halo_c",
         dtype=bool,
     ),
-    HMASK_DD3D: dict(
-        standard_name=HMASK_DD3D,
-        long_name="hmask_dd3d",
+    HORIZONTAL_MASK_FOR_3D_DIVDAMP: dict(
+        standard_name=HORIZONTAL_MASK_FOR_3D_DIVDAMP,
+        long_name="horizontal mask for 3D divergence damping",
         units="",
         dims=(dims.EdgeDim,),
         icon_var_name="hmask_dd3d",

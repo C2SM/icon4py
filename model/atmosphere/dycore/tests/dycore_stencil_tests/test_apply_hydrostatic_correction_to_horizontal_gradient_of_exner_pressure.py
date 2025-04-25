@@ -28,7 +28,7 @@ def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(
     z_hydro_corr: np.ndarray,
     z_gradh_exner: np.ndarray,
 ) -> np.ndarray:
-    z_hydro_corr = np.expand_dims(z_hydro_corr, axis=-1)
+    z_hydro_corr = np.repeat(np.expand_dims(z_hydro_corr, axis=-1), z_gradh_exner.shape[1], axis=1)
     z_gradh_exner = np.where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
     return z_gradh_exner
 
