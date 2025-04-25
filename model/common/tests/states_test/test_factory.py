@@ -75,7 +75,7 @@ class SimpleFieldSource(factory.FieldSource):
     def backend(self):
         return self._backend
 
-
+# TODO: this reads lat lon from the grid_savpoint, which could be read from the grid file/geometry, to make it non datatests
 @pytest.fixture(scope="function")
 def cell_coordinate_source(grid_savepoint, backend):
     on_gpu = data_alloc.is_cupy_device(backend)
@@ -103,7 +103,7 @@ def cell_coordinate_source(grid_savepoint, backend):
     yield coordinate_source
     coordinate_source.reset()
 
-
+@pytest.mark.datatest
 @pytest.fixture(scope="function")
 def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
     on_gpu = data_alloc.is_cupy_device(backend)
@@ -157,7 +157,7 @@ def test_program_provider(height_coordinate_source):
     assert isinstance(x, gtx.Field)
     assert dims.CellDim in x.domain.dims
 
-
+@pytest.mark.datatest
 def test_field_source_raise_error_on_register(cell_coordinate_source):
     program = math_helpers.average_two_vertical_levels_downwards_on_cells
     domain = {
@@ -173,7 +173,7 @@ def test_field_source_raise_error_on_register(cell_coordinate_source):
         cell_coordinate_source.register_provider(provider)
         assert "not provided by source " in err.value
 
-
+@pytest.mark.datatest
 def test_composite_field_source_contains_all_metadata(
     cell_coordinate_source, height_coordinate_source
 ):
@@ -197,7 +197,7 @@ def test_composite_field_source_contains_all_metadata(
     assert height_coordinate_source.metadata.items() <= composite.metadata.items()
     assert cell_coordinate_source.metadata.items() <= composite.metadata.items()
 
-
+@pytest.mark.datatest
 def test_composite_field_source_get_all_fields(cell_coordinate_source, height_coordinate_source):
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
@@ -231,7 +231,7 @@ def test_composite_field_source_get_all_fields(cell_coordinate_source, height_co
     assert dims.KDim in lat.domain.dims
     assert len(lat.domain.dims) == 2
 
-
+@pytest.mark.datatest
 def test_composite_field_source_raises_upon_get_unknown_field(
     cell_coordinate_source, height_coordinate_source
 ):
