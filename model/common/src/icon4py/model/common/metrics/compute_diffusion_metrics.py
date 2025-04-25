@@ -138,8 +138,10 @@ def compute_diffusion_metrics(
 
     # go back to loop for now... fix _compute_nbidx, _compute_z_vintcoeff later
     for jc in range(cell_nudging, n_cells):
-        if k_end[jc] > k_start[jc]:
-            k_range = range(k_start[jc], k_end[jc])
+        kend = k_end[jc].item()
+        kstart = k_start[jc].item()
+        if kend > kstart:
+            k_range = range(kstart, kend)
             nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)
             z_vintcoeff[jc, :, :] = _compute_z_vintcoeff(
                 k_range, z_mc, z_mc_off, z_vintcoeff, jc, nlev
