@@ -96,7 +96,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     nlev: int,
-    nrdmax: int,
+    end_index_of_damping_layer: int,
 ) -> np.ndarray:
     k = np.arange(nlev)
 
@@ -120,7 +120,7 @@ def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
         vertical_wind_advective_tendency,
     )
 
-    condition2 = (np.maximum(3, nrdmax - 2) - 1 <= k) & (k < nlev - 3)
+    condition2 = (np.maximum(3, end_index_of_damping_layer - 2) - 1 <= k) & (k < nlev - 3)
 
     vertical_wind_advective_tendency = np.where(
         condition2,
@@ -173,7 +173,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
         nlev: int,
-        nrdmax: int,
+        end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
         # We need to store the initial return field, because we only compute on a subdomain.
@@ -208,7 +208,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
                     cfl_clipping,
                     owner_mask,
                     nlev,
-                    nrdmax,
+                    end_index_of_damping_layer,
                 )
             )
 
@@ -263,7 +263,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         dtime = 2.0
 
         nlev = grid.num_levels
-        nrdmax = 5
+        end_index_of_damping_layer = 5
         skip_compute_predictor_vertical_advection = False
 
         cell_domain = h_grid.domain(dims.CellDim)
@@ -291,7 +291,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
             cfl_clipping=cfl_clipping,
             owner_mask=owner_mask,
             nlev=nlev,
-            nrdmax=nrdmax,
+            end_index_of_damping_layer=end_index_of_damping_layer,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=vertical_start,
