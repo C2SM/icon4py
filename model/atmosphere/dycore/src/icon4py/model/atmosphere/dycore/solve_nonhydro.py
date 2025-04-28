@@ -488,29 +488,31 @@ class SolveNonhydro:
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
             self._backend
         ).compile(
-            cpd=constants.CPD,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
-            is_iau_active=self._config.is_iau_active,
-            limited_area=self._grid.limited_area,
-            iadv_rhotheta=self._config.iadv_rhotheta,
-            igradp_method=self._config.igradp_method,
-            nflatlev=self._vertical_params.nflatlev,
-            nflat_gradp=self._vertical_params.nflat_gradp,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self._grid.num_levels),
+            cpd=[constants.CPD],
+            iau_wgt_dyn=[self._config.iau_wgt_dyn],
+            is_iau_active=[self._config.is_iau_active],
+            limited_area=[self._grid.limited_area],
+            iadv_rhotheta=[self._config.iadv_rhotheta],
+            igradp_method=[self._config.igradp_method],
+            nflatlev=[self._vertical_params.nflatlev],
+            nflat_gradp=[self._vertical_params.nflat_gradp],
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider_type=self._grid.offset_providers,
         )
         self._apply_divergence_damping_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn.with_backend(
             self._backend
         ).compile(
-            cpd=constants.CPD,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
-            is_iau_active=self._config.is_iau_active,
-            limited_area=self._grid.limited_area,
-            divdamp_order=self._config.divdamp_order,
-            starting_vertical_index_for_3d_divdamp=self._params.starting_vertical_index_for_3d_divdamp,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self._grid.num_levels),
+            cpd=[constants.CPD],
+            iau_wgt_dyn=[self._config.iau_wgt_dyn],
+            is_iau_active=[self._config.is_iau_active],
+            limited_area=[self._grid.limited_area],
+            divdamp_order=[self._config.divdamp_order],
+            starting_vertical_index_for_3d_divdamp=[
+                self._params.starting_vertical_index_for_3d_divdamp
+            ],
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider_type=self._grid.offset_providers,
         )
         self._compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
