@@ -20,7 +20,7 @@ Fortran granule interfaces:
 import cProfile
 import dataclasses
 import pstats
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 import gt4py.next as gtx
 import numpy as np
