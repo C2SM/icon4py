@@ -507,8 +507,8 @@ class Diffusion:
                 self._vertical_grid.end_index_of_damping_layer + 1
             ].item(),
             heights_1=self._vertical_grid.interface_physical_height.ndarray[1].item(),
-            vertical_start=1,
-            vertical_end=self._vertical_grid.end_index_of_damping_layer + 1,
+            vertical_start=gtx.int32(1),
+            vertical_end=gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1),
             offset_provider={},
         )
 
