@@ -1408,10 +1408,10 @@ wheels = [
 
 [[package]]
 name = "gridtools-cpp"
-version = "2.3.8"
+version = "2.3.9"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b8/b8/352120417da7a3e16cc822e95668e1843d0cd9ee7f0269b9a098893471cc/gridtools_cpp-2.3.8-py3-none-any.whl", hash = "sha256:d9cb8aadc5dca7e864677072de15596feb883844eee2158ab108d04f2f17f355", size = 420716 },
+    { url = "https://files.pythonhosted.org/packages/b6/8f/08ae062f2b7714c2753faeeead091fc5aa6344ec919ff63d242b95990573/gridtools_cpp-2.3.9-py3-none-any.whl", hash = "sha256:e4deefd804670e101083df9eb27d6b454e3d39ae903b4f7b043846a181452286", size = 1044245 },
 ]
 
 [[package]]
@@ -1445,6 +1445,7 @@ dependencies = [
     { name = "tabulate" },
     { name = "toolz" },
     { name = "typing-extensions" },
+    { name = "versioningit" },
     { name = "xxhash" },
 ]
 
@@ -1455,7 +1456,7 @@ cuda11 = [
 cuda12 = [
     { name = "cupy-cuda12x" },
 ]
-dace = [
+dace-next = [
     { name = "dace" },
 ]
 
@@ -1821,7 +1822,7 @@ all = [
     { name = "dace" },
     { name = "datashader" },
     { name = "ghex" },
-    { name = "gt4py", extra = ["dace"] },
+    { name = "gt4py", extra = ["dace-next"] },
     { name = "holoviews" },
     { name = "mpi4py" },
     { name = "netcdf4" },
@@ -1840,7 +1841,7 @@ cuda12 = [
 ]
 dace = [
     { name = "dace" },
-    { name = "gt4py", extra = ["dace"] },
+    { name = "gt4py", extra = ["dace-next"] },
 ]
 distributed = [
     { name = "ghex" },
@@ -4425,6 +4426,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/0b/80/e6277088ab809a7d331c4660c85ddb1bbf43b8e2688b3ccdda74fa1b6b58/uxarray-2024.3.0.tar.gz", hash = "sha256:72ffa45069fe86c6998cdd516cdf07860cfe6995f04b433b2f232e929ba43db7", size = 14460765 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/11/21/ec0483829665bbc47c6f1e15f735d4c3a9f2a51b378ff0a4d8bb792781c8/uxarray-2024.3.0-py3-none-any.whl", hash = "sha256:cace98b8cb6f72343efeac1fa765be152d9a5d1fab3911b565a1302034702172", size = 105205 },
+]
+
+[[package]]
+name = "versioningit"
+version = "3.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5c/9b/941647e9e3616b5da7bbc4601ed9920f44a886704100fa8151406c07c149/versioningit-3.1.2.tar.gz", hash = "sha256:4db83ed99f56b07d83940bee3445ca46ca120d13b6b304cdb5fb44e5aa4edec0", size = 213047 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7f/56/50784a34941e6a77cb068289c851d35c8b9af6a4d266fdb85d4d4828fe21/versioningit-3.1.2-py3-none-any.whl", hash = "sha256:33c0905aeac7877b562171387c2c98af87b391aa9195f095455f21ddc47d4636", size = 37950 },
 ]
 
 [[package]]
