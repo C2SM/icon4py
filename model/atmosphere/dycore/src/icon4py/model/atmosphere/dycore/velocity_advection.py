@@ -106,7 +106,7 @@ class VelocityAdvection:
             self._backend
         ).compile(
             nlev=[gtx.int32(self.grid.num_levels)],
-            nrdmax=[self.vertical_params.nrdmax],
+            end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
             vertical_start=[0],
             vertical_end=[gtx.int32(self.grid.num_levels)],
             offset_provider_type=self.grid.offset_providers,
@@ -116,7 +116,7 @@ class VelocityAdvection:
             self._backend
         ).compile(
             nlev=[self.grid.num_levels],
-            nrdmax=[self.vertical_params.nrdmax],
+            end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self.grid.num_levels)],
             offset_provider_type=self.grid.offset_providers,
