@@ -384,6 +384,11 @@ class Diffusion:
         self._edge_params = edge_params
         self._cell_params = cell_params
 
+        import cupy as cp
+        #assert (m := cp.amin(self._grid.offset_providers["E2C"].ndarray)) >= 0, m
+        #assert (m := cp.amin(self._grid.offset_providers["E2C2E"].ndarray)) >= 0, m
+
+
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange
         )  # wait on a communication handle
