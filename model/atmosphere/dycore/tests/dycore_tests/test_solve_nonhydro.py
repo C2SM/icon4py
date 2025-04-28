@@ -1481,8 +1481,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         icon_grid, dims.EdgeDim, dims.KDim, backend=backend
     )
     temporal_extrapolation_of_perturbed_exner = sp_stencil_init.z_exner_ex_pr()
-    ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(0)
-    d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(0)
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(
         1
     )
     theta_v = sp_stencil_init.theta_v()
@@ -1559,8 +1559,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-        ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
