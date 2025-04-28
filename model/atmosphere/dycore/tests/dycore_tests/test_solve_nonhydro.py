@@ -1488,7 +1488,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     theta_v = sp_stencil_init.theta_v()
     theta_v_at_cells_on_half_levels = sp_stencil_init.theta_v_ic()
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
-    normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
+    normal_wind_tendency_due_to_slow_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increments = sp_stencil_init.vn_incr()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
@@ -1563,7 +1563,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
-        normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+        normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
         normal_wind_iau_increments=normal_wind_iau_increments,
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -1679,7 +1679,7 @@ def test_apply_divergence_damping_and_update_vn(
     dwdz_at_cells_on_model_levels = sp_stencil_init.z_dwdz_dd()
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
     corrector_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(1)
-    normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
+    normal_wind_tendency_due_to_slow_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increments = sp_stencil_init.vn_incr()
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = sp_nh_init.bdy_divdamp()
     fourth_order_divdamp_scaling_coeff = sp_nh_init.scal_divdamp()
@@ -1709,7 +1709,7 @@ def test_apply_divergence_damping_and_update_vn(
         dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
-        normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+        normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
         normal_wind_iau_increments=normal_wind_iau_increments,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,
