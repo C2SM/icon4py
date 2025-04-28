@@ -1128,7 +1128,7 @@ def test_compute_perturbed_quantities_and_interpolation(
 
     limited_area = icon_grid.limited_area
     params_config = solve_nh.NonHydrostaticConfig()
-    igradp_method = params_config.igradp_method.value
+    igradp_method = params_config.igradp_method
     n_lev = icon_grid.num_levels
     nflatlev = vertical_params.nflatlev
     nflat_gradp = vertical_params.nflat_gradp
@@ -1475,8 +1475,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     next_vn = sp_nh_init.vn_new()
     tangential_wind = sp_stencil_init.vt()
     horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
-    perturbed_rho = sp_stencil_init.z_rth_pr(0)
-    perturbed_theta_v = sp_stencil_init.z_rth_pr(1)
+    perturbed_rho_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(0)
+    perturbed_theta_v_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(1)
     hydrostatic_correction = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, backend=backend
     )
@@ -1556,8 +1556,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         tangential_wind=tangential_wind,
         reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
         reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
-        perturbed_rho=perturbed_rho,
-        perturbed_theta_v=perturbed_theta_v,
+        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
