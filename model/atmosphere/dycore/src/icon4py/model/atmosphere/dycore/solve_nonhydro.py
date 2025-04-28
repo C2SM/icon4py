@@ -13,7 +13,6 @@ from typing import Final, Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
-from gt4py.next.embedded.context import offset_provider
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -22,10 +21,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.stencils import (
-    compute_edge_diagnostics_for_dycore_and_update_vn, add_vertical_wind_derivative_to_divergence_damping,
-    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels, compute_graddiv2_of_vn,
-    apply_2nd_order_divergence_damping, apply_weighted_2nd_and_4th_order_divergence_damping,
-    apply_4th_order_divergence_damping, compute_rho_virtual_potential_temperatures_and_pressure_gradient,
+    compute_edge_diagnostics_for_dycore_and_update_vn,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
@@ -75,12 +71,6 @@ from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import 
 )
 from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
-    mo_math_gradients_grad_green_gauss_cell_dsl,
-)
-from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
-    init_two_cell_kdim_fields_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_wp import (
     init_two_cell_kdim_fields_with_zero_wp,
@@ -491,29 +481,7 @@ class SolveNonhydro:
             compute_dwdz_for_divergence_damping.with_backend(self._backend)
         )
         self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(self._backend)
-        self._add_vertical_wind_derivative_to_divergence_damping = (
-            add_vertical_wind_derivative_to_divergence_damping.with_backend(self._backend)
-        )
-        self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels = (
-            add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(
-                self._backend
-            )
-        )
-        self._compute_graddiv2_of_vn = compute_graddiv2_of_vn.with_backend(self._backend)
-        self._apply_2nd_order_divergence_damping = apply_2nd_order_divergence_damping.with_backend(
-            self._backend
-        )
-        self._apply_weighted_2nd_and_4th_order_divergence_damping = (
-            apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(self._backend)
-        )
-        self._apply_4th_order_divergence_damping = apply_4th_order_divergence_damping.with_backend(
-            self._backend
-        )
-        self._compute_rho_virtual_potential_temperatures_and_pressure_gradient = (
-            compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(
-                self._backend
-            )
-        )
+
         self._compute_avg_vn = compute_avg_vn.with_backend(self._backend)
         self._accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(self._backend)
         self._update_mass_volume_flux = update_mass_volume_flux.with_backend(self._backend)
@@ -530,14 +498,6 @@ class SolveNonhydro:
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration.with_backend(
             self._backend
-        )
-        self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures = nhsolve_stencils.compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures.with_backend(
-            self._backend
-        )
-        self._compute_horizontal_advection_of_rho_and_theta = (
-            nhsolve_stencils.compute_horizontal_advection_of_rho_and_theta.with_backend(
-                self._backend
-            )
         )
         self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
             self._backend

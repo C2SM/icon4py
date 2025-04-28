@@ -96,7 +96,6 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-
     (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
         concat_where(
             (start_cell_lateral_boundary <= dims.CellDim < end_cell_end),
@@ -227,6 +226,7 @@ def _surface_computations(
         temporal_extrapolation_of_perturbed_exner,
         exner_at_cells_on_half_levels,
     )
+
 
 @field_operator
 def _compute_first_and_second_vertical_derivative_of_exner(

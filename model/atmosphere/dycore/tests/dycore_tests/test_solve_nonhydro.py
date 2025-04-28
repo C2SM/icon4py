@@ -18,8 +18,9 @@ from icon4py.model.atmosphere.dycore import (
     solve_nonhydro as solve_nh,
 )
 from icon4py.model.atmosphere.dycore.stencils import (
+    compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
-    compute_hydrostatic_correction_term, compute_cell_diagnostics_for_dycore,
+    compute_hydrostatic_correction_term,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid

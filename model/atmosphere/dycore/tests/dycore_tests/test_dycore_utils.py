@@ -110,7 +110,9 @@ def test_calculate_divdamp_fields(backend):
     )
 
     reduced_fourth_order_divdamp_coeff_at_nest_boundary_ref = (
-        calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(nudge_max_coeff, scaled_ref)
+        calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
+            nudge_max_coeff, scaled_ref
+        )
     )
 
     dycore_utils._calculate_divdamp_fields.with_backend(backend)(
