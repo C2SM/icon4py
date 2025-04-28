@@ -88,7 +88,34 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_ter
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """Formerly known as fused_velocity_advection_stencil_8_to_13_predictor."""
+    """
+    Formerly known as fused_velocity_advection_stencil_8_to_13_predictor.
+
+    This interpolates horizontal kinetic energy from edges to cells on models levels
+    and compute the contravariant correction term on half levels.
+    It also computes the vertical velocity with the contravariant correction term.
+
+    Args:
+        - horizontal_kinetic_energy_at_cells_on_model_levels: horizontal kinetic energy computed at cell centers of model levels
+        - contravariant_correction_at_cells_on_half_levels: contravariant metric correction at cells on half levels
+        - contravariant_corrected_w_at_cells_on_half_levels: contravariant-corrected vertical velocity at cells on half levels
+        - w: vertical wind at cell centers
+        - horizontal_kinetic_energy_at_edges_on_model_levels: horizontal kinetic energy computed at edge of model levels
+        - contravariant_correction_at_edges_on_model_levels: contravariant metric correction at edge of model levels
+        - e_bln_c_s: interpolation field (edge-to-cell interpolation weights factors)
+        - wgtfac_c: metrics field
+        - nflatlev: number of flat levels
+        - nlev: total number of vertical levels
+        - horizontal_start: start index in the horizontal direction
+        - horizontal_end: end index in the horizontal direction
+        - vertical_start: start index in the vertical direction
+        - vertical_end: end index in the vertical direction
+
+    Returns:
+        - horizontal_kinetic_energy_at_cells_on_model_levels
+        - contravariant_correction_at_cells_on_half_levels
+        - contravariant_corrected_w_at_cells_on_half_levels
+    """
 
     _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_correction(
         horizontal_kinetic_energy_at_edges_on_model_levels,
@@ -135,7 +162,31 @@ def interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_cor
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """Formerly known as fused_velocity_advection_stencil_8_to_13_corrector."""
+    """
+    Formerly known as fused_velocity_advection_stencil_8_to_13_corrector.
+
+    This interpolates horizontal kinetic energy from edges to cells on model levels
+    The contravariant correction term has been computed at the end of predictor in solve nonhydro
+    It also computes the contravariant-corrected vertical velocity at cell centers on half levels
+
+    Args:
+        - horizontal_kinetic_energy_at_cells_on_model_levels: horizontal kinetic energy computed at cell centers of model levels
+        - contravariant_corrected_w_at_cells_on_half_levels: contravariant-corrected vertical velocity at cells on half levels
+        - w: vertical wind at cell centers
+        - horizontal_kinetic_energy_at_edges_on_model_levels: horizontal kinetic energy computed at edge of model levels
+        - contravariant_correction_at_cells_on_half_levels: contravariant metric correction at cells on half levels
+        - e_bln_c_s: interpolation field (edge-to-cell interpolation weights factors)
+        - nflatlev: number of flat levels
+        - nlev: total number of vertical levels
+        - horizontal_start: start index in the horizontal direction
+        - horizontal_end: end index in the horizontal direction
+        - vertical_start: start index in the vertical direction
+        - vertical_end: end index in the vertical direction
+
+    Returns:
+        - horizontal_kinetic_energy_at_cells_on_model_levels
+        - contravariant_corrected_w_at_cells_on_half_levels
+    """
 
     _interpolate_to_cell_center(
         horizontal_kinetic_energy_at_edges_on_model_levels,
