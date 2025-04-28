@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Dict
 
 import gt4py.next as gtx
+from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
@@ -132,7 +133,24 @@ class BaseGrid(ABC):
         for key, value in self.offset_provider_mapping.items():
             try:
                 method, *args = value
-                offset_providers[key] = method(*args) if args else method()
+                offset_provider = method(*args) if args else method()
+                if gtx_common.is_neighbor_connectivity(offset_provider):
+                    offset_provider_type = offset_provider.__gt_type__()
+                    if True: #not offset_provider_type.has_skip_values:
+                        print(f"Checking {key} for `-1`.", flush=True)
+                        xp = offset_provider.array_ns
+                        max_values = xp.expand_dims(offset_provider.ndarray.max(axis=1), axis=1)
+                        print(f"Min of max_values {xp.amin(max_values).item()}")
+                        if xp.amin(offset_provider.ndarray).item() == -1:
+                            print("Found `-1`s. Removing.", flush=True)
+                        offset_provider.ndarray[:] = xp.where(offset_provider.ndarray == -1, max_values, offset_provider.ndarray)
+                        offset_provider.ndarray[:] = xp.where(offset_provider.ndarray == -1, 0, offset_provider.ndarray)
+                        if (themin := xp.amin(offset_provider.ndarray).item()) >= 0:
+                            print("Found no `-1`s after removing.", flush=True)
+                        else:
+                            print(f"Still found values < 0: {themin}", flush=True)
+
+                offset_providers[key] = offset_provider
             except MissingConnectivity:
                 warnings.warn(f"{key} connectivity is missing from grid.", stacklevel=2)
 

@@ -217,7 +217,10 @@ def {{ func.name }}_wrapper(
             logger.info("Python execution of {{ func.name }} completed.")
 
     except Exception as e:
-        logger.exception(f"A Python error occurred: {e}")
+        if __debug__:
+            logger.exception(f"A Python error occurred: {e}")
+        else:
+            print(f"A Python error occurred: {e}", flush=True)
         return 1
 
     return 0
