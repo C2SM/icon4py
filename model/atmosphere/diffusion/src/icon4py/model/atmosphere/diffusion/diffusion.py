@@ -385,9 +385,8 @@ class Diffusion:
         self._cell_params = cell_params
 
         import cupy as cp
-        #assert (m := cp.amin(self._grid.offset_providers["E2C"].ndarray)) >= 0, m
-        #assert (m := cp.amin(self._grid.offset_providers["E2C2E"].ndarray)) >= 0, m
-
+        # assert (m := cp.amin(self._grid.offset_providers["E2C"].ndarray)) >= 0, m
+        # assert (m := cp.amin(self._grid.offset_providers["E2C2E"].ndarray)) >= 0, m
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange
@@ -499,16 +498,17 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
 
-        diffusion_utils._init_nabla2_factor_in_upper_damping_zone.with_backend(self._backend)(
+        diffusion_utils.init_nabla2_factor_in_upper_damping_zone.with_backend(self._backend)(
             physical_heights=self._vertical_grid.interface_physical_height,
+            diff_multfac_n2w=self.diff_multfac_n2w,
             end_index_of_damping_layer=self._vertical_grid.end_index_of_damping_layer,
             nshift=0,
             heights_nrd_shift=self._vertical_grid.interface_physical_height.ndarray[
                 self._vertical_grid.end_index_of_damping_layer + 1
             ].item(),
             heights_1=self._vertical_grid.interface_physical_height.ndarray[1].item(),
-            domain={dims.KDim: (1, self._vertical_grid.end_index_of_damping_layer + 1)},
-            out=self.diff_multfac_n2w,
+            vertical_start=1,
+            vertical_end=self._vertical_grid.end_index_of_damping_layer + 1,
             offset_provider={},
         )
 
