@@ -488,12 +488,12 @@ class SolveNonhydro:
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
             self._backend
         ).compile(
-            cpd=[constants.CPD],
-            iau_wgt_dyn=[self._config.iau_wgt_dyn],
-            is_iau_active=[self._config.is_iau_active],
-            limited_area=[self._grid.limited_area],
-            iadv_rhotheta=[self._config.iadv_rhotheta],
-            igradp_method=[self._config.igradp_method],
+            #cpd=[constants.CPD],
+            #iau_wgt_dyn=[self._config.iau_wgt_dyn],
+            #is_iau_active=[self._config.is_iau_active],
+            #limited_area=[self._grid.limited_area],
+            #iadv_rhotheta=[self._config.iadv_rhotheta],
+            #igradp_method=[self._config.igradp_method],
             nflatlev=[self._vertical_params.nflatlev],
             nflat_gradp=[self._vertical_params.nflat_gradp],
             vertical_start=[gtx.int32(0)],
@@ -626,10 +626,10 @@ class SolveNonhydro:
         ).compile(offset_provider_type={})
 
         if self._config.divdamp_type == 32:
-            xp = data_alloc.import_array_ns(self.backend)
-            self.starting_vertical_index_for_3d_divdamp = xp.min(
-                xp.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.ndarray > 0.0)
-            )
+            xp = data_alloc.import_array_ns(self._backend)
+            tmp = xp.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.ndarray > 0.0)
+            print(tmp, flush=True)
+            self.starting_vertical_index_for_3d_divdamp = xp.min(tmp)
 
         self._allocate_local_fields()
         self._determine_local_domains()
