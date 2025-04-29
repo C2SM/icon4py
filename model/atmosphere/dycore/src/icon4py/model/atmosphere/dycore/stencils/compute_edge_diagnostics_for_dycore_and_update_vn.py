@@ -514,13 +514,13 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     """
     Formerly known as fused_solve_nonhydro_stencil_15_to_28_predictor.
 
-    This program computes the air densitiy and virtual potential temperature at edges on model levels.
+    This program computes the air density and virtual potential temperature at edges on model levels.
     It also computes horizontal pressure gradient and updates normal wind by adding all the tendency terms
     in the Navier-Stokes equation. If data assimilation is considered, an increment is added to
     normal wind.
 
     Args:
-        - rho_at_edges_on_model_levels: air density at cells on model levels [kg m-3]
+        - rho_at_edges_on_model_levels: air density on edges on model levels [kg m-3]
         - theta_v_at_edges_on_model_levels: virtual potential temperature at edges on model levels [K]
         - horizontal_pressure_gradient: horizontal pressure gradient at edges on model levels [Pa m-1]
         - next_vn: normal wind to be updated [m s-1]

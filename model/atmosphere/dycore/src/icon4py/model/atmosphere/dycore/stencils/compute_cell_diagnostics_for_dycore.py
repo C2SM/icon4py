@@ -325,6 +325,60 @@ def compute_perturbed_quantities_and_interpolation(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """
+        Formerly known as fused_solve_nonhydro_stencil_1_to_13_predictor.
+
+        This program calculates the first and second vertical derivatives of the exner function, and also computes the perturbed
+        air density and vitural potential temperature on half and model levels.
+
+        Args:
+            - temporal_extrapolation_of_perturbed_exner: temporal extrapolation of perturbed exner function (actual exner function minus reference exner function)
+            - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: vertical gradient of temporal extrapolation of perturbed exner function [m-1]
+            - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: second vertical gradient of temporal extrapolation of perturbed exner function [m-2]
+            - perturbed_exner_at_cells_on_model_levels: perturbed exner function at model levels
+            - exner_at_cells_on_half_levels: exner function at cells on half levels
+            - perturbed_rho_at_cells_on_model_levels: perturbed air density (actual density minus reference density) on model levels [kg m-3]
+            - perturbed_theta_v_at_cells_on_model_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) on model levels [K]
+            - rho_at_cells_on_half_levels: air density at cells on half levels [kg m-3]
+            - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) at cells on half levels [kg m-3]
+            - theta_v_at_cells_on_half_levels: virtual potential temperature at cells on half levels [K]
+            - current_rho: virtual potential temperature at current substep [K]
+            - reference_rho_at_cells_on_model_levels: reference air density at cells on model levels [kg m-3]
+            - current_theta_v: vertical potential temperature at current substep [K]
+            - reference_theta_at_cells_on_model_levels: reference virtual potential temperature at cells on model levels [K]
+            - reference_theta_at_cells_on_half_levels: reference virtual potential temperature at cells on half levels [K]
+            - wgtfacq_c: metrics field (weights for interpolation)
+            - wgtfac_c: metrics field
+            - vwind_expl_wgt: external weight field for wind extrapolation
+            - ddz_of_reference_exner_at_cells_on_half_levels: vertical gradient of reference exner function at cells on half levels [m-1]
+            - ddqz_z_half: vertical spacing pn half levels (distance between the height of cell centers at k at k-1)  [m]
+            - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration at cells on half levels [m s-2]
+            - time_extrapolation_parameter_for_exner: time extrapolation parameter for exner function
+            - current_exner: exner function at current substep
+            - reference_exner_at_cells_on_model_levels: reference exner function at cells on model levels
+            - inv_ddqz_z_full: inverse vertical spacing on full levels (distance between the height of interface at k+1/2 and k-1/2)
+            - d2dexdz2_fac1_mc: precomputed factor for second vertical derivatives of exner function for model cell centers
+            - d2dexdz2_fac2_mc: precomputed factor for seconf vertical derivatives of exner function for model cell centers
+            - limited_area: option indicating the grid is limited area or not
+            - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
+            - n_lev: number of vertical levels
+            - nflatlev: starting vertical index of flat levels
+            - nflat_gradp: starting vertical index when neighboring cell centers lie within the thicknees of the layer
+            - start_cell_lateral_boundary: start index of the first lateral boundary level zone for cells
+            - start_cell_lateral_boundary_level_3: start index of the 3rd lateral boundary level zone for cells
+            - start_cell_halo_level_2: start index of the 2nd halo level zone for cells
+            - end_cell_end: end index of the last lateral boundary level zone for cells
+            - end_cell_halo: end index of the last halo level zone for cells
+            - end_cell_halo_level_2: end index of the second halo level zone for cells
+            - horizontal_start: start index of the horizontal domain
+            - horizontal_end: end index of the horizontal domain
+            - vertical_start: start index of the vertical domain
+            - vertical_end: end index of the vertical domain
+
+        Returns:
+            - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level: vertical gradient of temporal extrapolation of perturbed exner function [m-1]
+            - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: second vertical gradient of temporal extrapolation of perturbed exner function [m-2]
+    """
     _extrapolate_temporally_exner_pressure(
         exner_exfac=time_extrapolation_parameter_for_exner,
         exner=current_exner,
@@ -574,6 +628,43 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """
+        Formerly known as fused_solve_nonhydro_stencil_1_to_13_corrector.
+
+        This program calculates the air density, virtual potential temperature and perturberd virtual potential temperature on half levels,
+        and also computes the pressure buoyancy acceleration.
+
+        Args:
+            - rho_at_cells_on_half_levels: air density at cells on half levels [kg m-3]
+            - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) at cells on half levels [kg m-3]
+            - theta_v_at_cells_on_half_levels: virtual potential temperature at cells on half levels [K]
+            - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration at cells on half levels [m s-2]
+            - w: vertical wind at cell centers [m s-1]
+            - contravariant_correction_at_cells_on_half_levels: contravariant metric correction at cells on half levels
+            - current_rho: air density at current substep [K]
+            - next_rho: air density at next substep [K]
+            - current_theta_v: virtual potential temperature at current substep [K]
+            - next_theta_v: virtual potential temperature at next substep [K]
+            - perturbed_exner_at_cells_on_model_levels: perturbed exner function at model levels
+            - reference_theta_at_cells_on_model_levels: reference virtual potential temperature at cells on model levels [K]
+            - ddz_of_reference_exner_at_cells_on_half_levels: vertical gradient of reference exner function at cells on half levels [m-1]
+            - ddqz_z_half: vertical spacing on half levels (distance between the height of cell centers at k at k-1)  [m]
+            - wgtfac_c: metrics field
+            - vwind_expl_wgt: external weight field for wind extrapolation
+            - dtime: time step
+            - wgt_nnow_rth: interpolation coefficient of virtual potential temperature at predictor step
+            - wgt_nnew_rth: interpolation coefficient of virtual potential temperature at corrector step
+            - horizontal_start: start index of the horizontal domain
+            - horizontal_end: end index of the horizontal domain
+            - vertical_start: start index of the vertical domain
+            - vertical_end: end index of the vertical domain
+
+        Returns:
+            - rho_at_cells_on_half_levels: air density at cells on half levels [kg m-3]
+            - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) at cells on half levels [kg m-3]
+            - theta_v_at_cells_on_half_levels: virtual potential temperature at cells on half levels [K]
+            - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration at cells on half levels [m s-2]
+    """
     _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
         w,
         contravariant_correction_at_cells_on_half_levels,
