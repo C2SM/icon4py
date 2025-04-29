@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import geometry_attributes as geometry_attrs
+from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.interpolation.rbf_interpolation import RBF_STENCIL_SIZE
 from icon4py.model.testing import (
@@ -183,10 +183,20 @@ def test_rbf_interpolation_matrix_vertex(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment", [(dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)]
+    "grid_file, experiment, atol",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-8),
+    ],
 )
 def test_rbf_interpolation_matrix_edge(
-    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment
+    grid_file,
+    grid_savepoint,
+    interpolation_savepoint,
+    icon_grid,
+    backend,
+    experiment,
+    atol,
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     rbf_dim = rbf.RBFDimension.EDGE
@@ -210,13 +220,18 @@ def test_rbf_interpolation_matrix_edge(
 
     rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
 
+    # TODO: Do interpolation itself only on subset?
+    start_index = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+
     assert rbf_vec_e.shape == rbf_vec_coeff_e_ref.shape
     assert rbf_vec_coeff_e_ref.shape == (
         icon_grid.num_edges,
         RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
     )
     assert test_helpers.dallclose(
-        rbf_vec_e.asnumpy(),
-        rbf_vec_coeff_e_ref.asnumpy(),
-        atol=1e-12,
+        rbf_vec_e.asnumpy()[start_index:],
+        rbf_vec_coeff_e_ref.asnumpy()[start_index:],
+        atol=atol,
     )
