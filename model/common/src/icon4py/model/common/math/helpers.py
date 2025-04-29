@@ -144,7 +144,7 @@ def geographical_to_cartesian_on_edges(
     return x, y, z
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def geographical_to_cartesian_on_vertex(
     lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat]
 ) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
