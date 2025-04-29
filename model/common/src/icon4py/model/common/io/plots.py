@@ -28,6 +28,9 @@ pil_logger.setLevel(logging.INFO)
 # flake8: noqa
 log = logging.getLogger(__name__)
 
+DO_PLOTS = True
+
+
 @gtx.field_operator
 def _interpolate_from_half_to_full_levels(
     half_field: fa.CellKField[ta.wpfloat],
@@ -61,6 +64,10 @@ class Plot:
             n_levels_to_plot: int = 2,
             backend: gtx.backend.Backend = gtx.gtfn_cpu,
         ):
+
+        self.DO_PLOTS = DO_PLOTS
+        if not self.DO_PLOTS:
+            return
 
         data_provider = sb.IconSerialDataProvider(
             backend=backend,
@@ -280,6 +287,8 @@ class Plot:
         plt.draw()
 
     def pickle_data(self, state, label: str = "") -> None:
+        if not self.DO_PLOTS:
+            return
         file_name = f"{self.PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}.pkl"
         with open(file_name, "wb") as f:
             pickle.dump(state, f)
@@ -330,7 +339,7 @@ class Plot:
         return w_full_gtx.asnumpy()
 
     def _make_axes(self, num_axes: int = -1, fig_num: int = 1) -> tuple[mpl.figure.Figure, list[mpl.axes.Axes], list[mpl.axes.Axes]]:
-        fig = plt.figure(fig_num, figsize=(14,min(13,4*num_axes))); plt.clf()
+        fig = plt.figure(fig_num); plt.clf()
         axs = fig.subplots(nrows=min(self.NUM_AXES_PER_COLUMN, num_axes), ncols=max(1,int(np.ceil(num_axes/self.NUM_AXES_PER_COLUMN))), sharex=True, sharey=True)
         if num_axes > 1:
             axs = axs.flatten()
@@ -339,7 +348,7 @@ class Plot:
         caxs = [make_axes_locatable(ax).append_axes('right', size='3%', pad=0.02) for ax in axs]
         return fig, axs, caxs
 
-    def plot_levels(self, data, num_levels: int = -1, label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
+    def plot_levels(self, data, num_levels: int = -1, label: str = "", fig_num: int = 1, qscale=40) -> mpl.axes.Axes:
         """
         Plot data defined on a triangulation on horizontal levels.
         """
@@ -401,22 +410,22 @@ class Plot:
             cbar.set_ticks(np.linspace(cbar.vmin, cbar.vmax, 5))
             axs[i].triplot(self.tri, color='k', linewidth=0.25)
             if "vvec_cell" in file_name:
-                axs[i].quiver(self.tri.cell_x, self.tri.cell_y, u[:, -1-i], v[:, -1-i])
+                axs[i].quiver(self.tri.cell_x, self.tri.cell_y, u[:, -1-i], v[:, -1-i], scale=qscale)
             elif "vvec_edge" in file_name:
                 u = vn[:, -1-i]*self.primal_normal[0] + vt[:, -1-i]*self.primal_tangent[0]
                 v = vn[:, -1-i]*self.primal_normal[1] + vt[:, -1-i]*self.primal_tangent[1]
-                axs[i].quiver(self.tri.edge_x, self.tri.edge_y, u, v)
+                axs[i].quiver(self.tri.edge_x, self.tri.edge_y, u, v, scale=qscale)
             axs[i].set_aspect('equal')
             axs[i].set_title(f"Level {-i}")
 
         fig.subplots_adjust(wspace=0.12, hspace=0.1)
         plt.draw()
 
+        plt.show(block=False)
         if file_name != '':
             fig.savefig(f"{file_name}.png", bbox_inches='tight')
             log.debug(f"Saved {file_name}")
         else:
-            plt.show(block=False)
             plt.pause(1)
 
         self.plot_counter += 1
@@ -452,7 +461,7 @@ class Plot:
 
         cmin = data.min()
         cmax = data.max()
-        if cmin < 0 and cmax > 0 and np.abs(cmax + cmin) < cmax/3:
+        if cmin < 0 and cmax > 0: # and np.abs(cmax + cmin) < cmax/3:
             cmap = "seismic"
             norm = lambda cmin, cmax: colors.TwoSlopeNorm(vmin=min(-1e-9, cmin), vcenter=0, vmax=max(1e-9,cmax))
         else:
@@ -516,11 +525,11 @@ class Plot:
         fig.subplots_adjust(wspace=0.12, hspace=0.1)
         plt.draw()
 
+        plt.show(block=False)
         if file_name != '':
             fig.savefig(f"{file_name}.png", bbox_inches='tight')
             log.debug(f"Saved {file_name}")
         else:
-            plt.show(block=False)
             plt.pause(1)
 
         self.plot_counter += 1

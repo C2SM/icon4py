@@ -706,9 +706,6 @@ class Diffusion:
             offset_provider=self._grid.offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-        #---> IBM
-        self._ibm.set_bcs_khsmag(self.kh_smag_e)
-        #<--- IBM
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND

@@ -4,7 +4,7 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.testing import serialbox as sb
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.grid import (
     vertical as v_grid,
@@ -24,6 +24,7 @@ Immersed boundary method module
 
 log = logging.getLogger(__name__)
 
+DO_IBM = True
 
 class ImmersedBoundaryMethod:
     """
@@ -40,7 +41,11 @@ class ImmersedBoundaryMethod:
         """
         Initialize the immersed boundary method.
         """
+        self.DO_IBM = DO_IBM
         self.DEBUG_LEVEL = 2
+
+        if not self.DO_IBM:
+            return
 
         self._make_masks(
             grid=grid,
@@ -155,6 +160,8 @@ class ImmersedBoundaryMethod:
         self,
         vn: fa.EdgeKField[float],
     ):
+        if not self.DO_IBM:
+            return
         self.set_bcs_edges(
             mask=self.full_edge_mask,
             dir_value=self._dirichlet_value_vn,
@@ -167,6 +174,8 @@ class ImmersedBoundaryMethod:
         self,
         w: fa.CellKField[float],
     ):
+        if not self.DO_IBM:
+            return
         self.set_bcs_cells(
             mask=self.half_cell_mask,
             dir_value=self._dirichlet_value_w,
@@ -179,6 +188,8 @@ class ImmersedBoundaryMethod:
         self,
         rho: fa.CellKField[float],
     ):
+        if not self.DO_IBM:
+            return
         self.set_bcs_cells(
             mask=self.full_cell_mask,
             dir_value=self._dirichlet_value_rho,
@@ -191,6 +202,8 @@ class ImmersedBoundaryMethod:
         self,
         exner: fa.CellKField[float],
     ):
+        if not self.DO_IBM:
+            return
         self.set_bcs_cells(
             mask=self.full_cell_mask,
             dir_value=self._dirichlet_value_exner,
@@ -203,6 +216,8 @@ class ImmersedBoundaryMethod:
         self,
         theta_v: fa.CellKField[float],
     ):
+        if not self.DO_IBM:
+            return
         self.set_bcs_cells(
             mask=self.full_cell_mask,
             dir_value=self._dirichlet_value_theta_v,
@@ -216,6 +231,8 @@ class ImmersedBoundaryMethod:
         theta_v_ic: fa.CellKField[float],
         z_w_expl: fa.CellKField[float],
     ):
+        if not self.DO_IBM:
+            return
         # Set $theta_v_{k+1/2} = 0$ as a 'hack' for setting $\gamma_{k+1/2} = 0$
         # in the tridiagonal solver. This results in:
         #  $a_{k+1/2} = 0$
@@ -245,6 +262,8 @@ class ImmersedBoundaryMethod:
         self,
         flux: fa.EdgeKField[float],
     ):
+        if not self.DO_IBM:
+            return
         # Set the flux to zero at the boundaries.
         self.set_bcs_edges(
             mask=self.full_edge_mask,
@@ -259,6 +278,8 @@ class ImmersedBoundaryMethod:
         grad_x: fa.CellKField[float],
         grad_y: fa.CellKField[float],
     ):
+        if not self.DO_IBM:
+            return
         # Zero the gradients in masked cells and their neighbors.
         self.set_bcs_cells(
             mask=self.neigh_full_cell_mask,
@@ -280,6 +301,8 @@ class ImmersedBoundaryMethod:
         u_vert: fa.VertexKField[float],
         v_vert: fa.VertexKField[float],
     ):
+        if not self.DO_IBM:
+            return
         self.set_bcs_vertices(
             mask=self.full_vertex_mask,
             dir_value=0,
@@ -299,6 +322,8 @@ class ImmersedBoundaryMethod:
         self,
         Kh_smag: fa.EdgeKField[float],
     ):
+        if not self.DO_IBM:
+            return
         # Set to zero Kh_smag as a 'hack' for setting to zero the gradient of
         # theta_v on masked edges.
         # Actually these edges have some gradient, but this is ignored for now.

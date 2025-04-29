@@ -174,6 +174,8 @@ class TimeLoop:
                 do_prep_adv,
             )
             timer.capture()
+            if time_step % 10 == 0:
+                self.solve_nonhydro._plot.pickle_data(prognostic_states.current, "end_of_timestep")
 
             self._is_first_step_in_simulation = False
 
@@ -205,11 +207,13 @@ class TimeLoop:
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
+            self.diffusion._plot.pickle_data(prognostic_states.next, "diffusion_before")
             self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.next,
                 self.dtime_in_seconds,
             )
+            self.diffusion._plot.pickle_data(prognostic_states.next, "diffusion_after")
 
         prognostic_states.swap()
 

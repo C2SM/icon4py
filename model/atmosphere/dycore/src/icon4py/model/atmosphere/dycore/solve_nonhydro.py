@@ -873,20 +873,13 @@ class SolveNonhydro:
 
         #---> IBM
         if at_initial_timestep and at_first_substep:
-            if self._ibm.DEBUG_LEVEL >= 3:
-                self._plot.pickle_data(prognostic_states.current, "prognostic_state_initial")
+            self._plot.pickle_data(prognostic_states.current, "initial_condition")
             log.info(" ***IBM fixing initial conditions")
             self._ibm.set_dirichlet_value_vn(prognostic_states.current.vn)
             self._ibm.set_dirichlet_value_w(prognostic_states.current.w)
             self._ibm.set_dirichlet_value_rho(prognostic_states.current.rho)
             self._ibm.set_dirichlet_value_exner(prognostic_states.current.exner)
             self._ibm.set_dirichlet_value_theta_v(prognostic_states.current.theta_v)
-            # # plots
-            # self._plot.plot_levels(prognostic_states.current.vn,      label=f"IC_vvec_edge")
-            # self._plot.plot_levels(prognostic_states.current.w,       label=f"IC_w")
-            # self._plot.plot_levels(prognostic_states.current.rho,     label=f"IC_rho")
-            # self._plot.plot_levels(prognostic_states.current.exner,   label=f"IC_exner")
-            # self._plot.plot_levels(prognostic_states.current.theta_v, label=f"IC_theta_v")
         #<--- IBM
 
         self.run_predictor_step(
@@ -985,18 +978,6 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider={},
         )
-
-        #---> IBM
-        if at_last_substep:
-            # # plots
-            # self._plot.plot_levels(prognostic_states.next.vn,      label=f"end_of_timestep_vvec_edge")
-            # self._plot.plot_levels(prognostic_states.next.w,       label=f"end_of_timestep_w")
-            # self._plot.plot_levels(prognostic_states.next.rho,     label=f"end_of_timestep_rho")
-            # self._plot.plot_levels(prognostic_states.next.exner,   label=f"end_of_timestep_exner")
-            # self._plot.plot_levels(prognostic_states.next.theta_v, label=f"end_of_timestep_theta_v")
-            # save state
-            self._plot.pickle_data(prognostic_states.next, "end_of_timestep")
-        #<--- IBM
 
     # flake8: noqa: C901
     def run_predictor_step(
