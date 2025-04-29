@@ -404,8 +404,7 @@ def compute_zonal_and_meridional_components_on_edges(
     )
 
 
-# TODO: Use in rbf interpolation?
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     lat: fa.EdgeField[ta.wpfloat],
     lon: fa.EdgeField[ta.wpfloat],
@@ -437,7 +436,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     return x / norm, y / norm, z / norm
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
@@ -459,7 +458,7 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     )
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     lat: fa.CellField[ta.wpfloat],
     lon: fa.CellField[ta.wpfloat],
@@ -491,7 +490,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     return x / norm, y / norm, z / norm
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
@@ -513,7 +512,7 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     )
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def cartesian_coordinates_from_zonal_and_meridional_components_on_vertices(
     lat: fa.VertexField[ta.wpfloat],
     lon: fa.VertexField[ta.wpfloat],
@@ -545,7 +544,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_vertices(
     return x / norm, y / norm, z / norm
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_vertices(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
