@@ -291,6 +291,16 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         else w
     )
 
+    exner_dyn_incr = (
+        concat_where(
+            (kstart_moist <= KDim) & (KDim < n_lev),
+            astype(exner, vpfloat),
+            exner_dyn_incr,
+        )
+        if at_first_substep
+        else exner_dyn_incr
+    )
+
     rho, exner, theta_v = concat_where(
         (jk_start <= KDim) & (KDim < n_lev),
         _compute_results_for_thermodynamic_variables(
@@ -327,15 +337,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         else z_dwdz_dd
     )
 
-    exner_dyn_incr = (
-        concat_where(
-            (kstart_moist <= KDim) & (KDim < n_lev),
-            astype(exner, vpfloat),
-            exner_dyn_incr,
-        )
-        if at_first_substep
-        else exner_dyn_incr
-    )
     return (
         z_w_expl,
         z_contr_w_fl_l,

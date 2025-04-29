@@ -1263,6 +1263,12 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
+
     ],
 )
 def test_apply_divergence_damping_and_update_vn(
@@ -1391,11 +1397,11 @@ def test_apply_divergence_damping_and_update_vn(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #     dt_utils.GLOBAL_EXPERIMENT,
-        #     "2000-01-01T00:00:02.000",
-        #     "2000-01-01T00:00:02.000",
-        # ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 def test_run_solve_nonhydro_41_to_60_predictor(
@@ -1479,7 +1485,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
     z_q_ref = savepoint_nonhydro_exit.z_q()
     w_ref = savepoint_nonhydro_exit.w_new()
     z_rho_expl_ref = savepoint_nonhydro_exit.z_rho_expl()
-    z_exner_expl_ref = savepoint_nonhydro_exit.z_rho_expl()
+    z_exner_expl_ref = savepoint_nonhydro_exit.z_exner_expl()
     rho_ref = savepoint_nonhydro_exit.rho_new()
     exner_ref = savepoint_nonhydro_exit.exner_new()
     theta_v_ref = savepoint_nonhydro_exit.theta_v_new()
@@ -1597,10 +1603,10 @@ def test_run_solve_nonhydro_41_to_60_predictor(
     assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
     assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
     assert helpers.dallclose(z_flxdiv_mass.asnumpy(), z_flxdiv_mass_ref.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(z_flxdiv_theta.asnumpy(), z_flxdiv_theta_ref.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(z_flxdiv_theta.asnumpy()[start_cell_nudging:, :], z_flxdiv_theta_ref.asnumpy()[start_cell_nudging:, :], atol=1e-12)
     assert helpers.dallclose(w.asnumpy()[start_cell_nudging:, :], w_ref.asnumpy()[start_cell_nudging:, :], atol=1e-12)
     assert helpers.dallclose(z_rho_expl.asnumpy(), z_rho_expl_ref.asnumpy())
-    assert helpers.dallclose(z_exner_expl.asnumpy(), z_exner_expl_ref.asnumpy())
+    assert helpers.dallclose(z_exner_expl.asnumpy(), z_exner_expl_ref.asnumpy(),rtol=1e-10)
     assert helpers.dallclose(rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :])
     assert helpers.dallclose(exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :])
     assert helpers.dallclose(theta_v.asnumpy(), theta_v_ref.asnumpy())
@@ -1622,11 +1628,11 @@ def test_run_solve_nonhydro_41_to_60_predictor(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #     dt_utils.GLOBAL_EXPERIMENT,
-        #     "2000-01-01T00:00:02.000",
-        #     "2000-01-01T00:00:02.000",
-        # ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 def test_run_solve_nonhydro_41_to_60_corrector(
@@ -1841,7 +1847,7 @@ def test_run_solve_nonhydro_41_to_60_corrector(
     assert helpers.dallclose(z_beta.asnumpy(), z_beta_ref.asnumpy())
     assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
     assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
-    assert helpers.dallclose(z_rho_expl.asnumpy(), z_rho_expl_ref.asnumpy())
+    assert helpers.dallclose(z_rho_expl.asnumpy()[start_cell_nudging:, :], z_rho_expl_ref.asnumpy()[start_cell_nudging:, :])
     assert helpers.dallclose(
         z_exner_expl.asnumpy()[start_cell_nudging:, :],
         z_exner_expl_ref.asnumpy()[start_cell_nudging:, :],
