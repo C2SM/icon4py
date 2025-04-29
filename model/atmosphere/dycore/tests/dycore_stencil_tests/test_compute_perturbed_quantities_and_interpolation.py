@@ -25,6 +25,10 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
+from icon4py.model.atmosphere.dycore.dycore_states import (
+    HorizontalPressureDiscretizationType,
+)
+
 from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycore import (
     compute_perturbed_quantities_and_interpolation,
 )
@@ -67,6 +71,7 @@ from .test_set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary_numpy,
 )
 
+horzpres_discr_type = HorizontalPressureDiscretizationType()
 
 class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
     PROGRAM = compute_perturbed_quantities_and_interpolation
@@ -173,8 +178,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             np.zeros_like(temporal_extrapolation_of_perturbed_exner),
             temporal_extrapolation_of_perturbed_exner,
         )
-
-        if igradp_method == 3:
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
             exner_at_cells_on_half_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
@@ -286,8 +290,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             ),
             (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels),
         )
-
-        if igradp_method == 3:
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
@@ -380,7 +383,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         current_rho = data_alloc.random_field(grid, CellDim, KDim)
         current_theta_v = data_alloc.random_field(grid, CellDim, KDim)
 
-        igradp_method = 3
+        igradp_method = horzpres_discr_type.TAYLOR_HYDRO
         limited_area = True
 
         cell_domain = h_grid.domain(CellDim)
