@@ -20,7 +20,7 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def update_mass_volume_flux_numpy(
-    connectivities,
+    connectivities: dict[gtx.Dimension, np.ndarray],
     z_contr_w_fl_l: np.ndarray,
     rho_ic: np.ndarray,
     vwind_impl_wgt: np.ndarray,
@@ -29,7 +29,7 @@ def update_mass_volume_flux_numpy(
     vol_flx_ic: np.ndarray,
     r_nsubsteps: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
     z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
     mass_flx_ic = mass_flx_ic + z_a
     vol_flx_ic = vol_flx_ic + z_a / rho_ic
@@ -55,7 +55,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         r_nsubsteps: float,
         **kwargs: Any,
     ) -> dict:
-        (mass_flx_ic, mass_flx_ic) = update_mass_volume_flux_numpy(
+        (mass_flx_ic, vol_flx_ic) = update_mass_volume_flux_numpy(
             connectivities,
             z_contr_w_fl_l=z_contr_w_fl_l,
             rho_ic=rho_ic,

@@ -29,7 +29,7 @@ def apply_4th_order_divergence_damping_numpy(
 ) -> np.ndarray:
     scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
     vn = vn + (scal_divdamp * z_graddiv2_vn)
-    return dict(vn=vn)
+    return vn
 
 
 class TestApply4thOrderDivergenceDamping(StencilTest):
