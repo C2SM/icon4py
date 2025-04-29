@@ -1496,9 +1496,41 @@ def test_run_solve_nonhydro_41_to_60_predictor(
     start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
     end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
-    fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60_predictor.with_backend(
+    offset_provider = {
+        "C2E": icon_grid.get_offset_provider("C2E"),
+        "C2CE": icon_grid.get_offset_provider("C2CE"),
+        "Koff": dims.KDim,
+    }
+    print("compiling")
+
+    compiled = fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60_predictor.with_backend(
         backend
-    )(
+    ).compile(
+        cvd_o_rd=[constants.CVD_O_RD],
+        iau_wgt_dyn=[iau_wgt_dyn],
+        dtime=[savepoint_nonhydro_init.get_metadata("dtime").get("dtime")],
+        rd=[constants.RD],
+        cvd=[constants.CVD],
+        cpd=[constants.CPD],
+        rayleigh_klemp=[constants.RayleighType.KLEMP.value],
+        l_vert_nested=[l_vert_nested],
+        is_iau_active=[is_iau_active],
+        rayleigh_type=[config.rayleigh_type.value],
+        divdamp_type=[divdamp_type],
+        at_first_substep=[at_first_substep],
+        index_of_damping_layer=[grid_savepoint.nrdmax()],
+        n_lev=[icon_grid.num_levels],
+        jk_start=[jk_start],
+        kstart_dd3d=[nonhydro_params.starting_vertical_index_for_3d_divdamp],
+        kstart_moist=[vertical_params.kstart_moist],
+        start_cell_nudging=[start_cell_nudging],
+        end_cell_local=[end_cell_local],
+        vertical_start=[0],
+        vertical_end=[icon_grid.num_levels + 1],
+        offset_provider_type=offset_provider
+    )
+    print("done (or async)")
+    compiled(
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
@@ -1545,22 +1577,18 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         l_vert_nested=l_vert_nested,
         is_iau_active=is_iau_active,
         rayleigh_type=config.rayleigh_type.value,
-        divdamp_type=divdamp_type.value,
+        divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         index_of_damping_layer=grid_savepoint.nrdmax(),
         n_lev=icon_grid.num_levels,
         jk_start=jk_start,
-        kstart_dd3d=nonhydro_params.kstart_dd3d,
+        kstart_dd3d=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         kstart_moist=vertical_params.kstart_moist,
         start_cell_nudging=start_cell_nudging,
         end_cell_local=end_cell_local,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
-        offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "C2CE": icon_grid.get_offset_provider("C2CE"),
-            "Koff": dims.KDim,
-        },
+        offset_provider=offset_provider
     )
 
     assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy())
