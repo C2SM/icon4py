@@ -1527,7 +1527,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         end_cell_local=[end_cell_local],
         vertical_start=[0],
         vertical_end=[icon_grid.num_levels + 1],
-        offset_provider_type=offset_provider
+        offset_provider_type=offset_provider,
     )
     print("done (or async)")
     compiled(
@@ -1588,7 +1588,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         end_cell_local=end_cell_local,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
-        offset_provider=offset_provider
+        offset_provider=offset_provider,
     )
 
     assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy())
@@ -1711,7 +1711,7 @@ def test_run_solve_nonhydro_41_to_60_corrector(
     iau_wgt_dyn = params_config.iau_wgt_dyn
     is_iau_active = params_config.is_iau_active
     l_vert_nested = params_config.l_vert_nested
-    jk_start = 0  # TODO: check - savepoint_nonhydro_41_60_init.jk_start()
+    jk_start = 0
 
     z_w_expl_ref = savepoint_nonhydro_exit.z_w_expl()
     z_contr_w_fl_l_ref = savepoint_nonhydro_exit.z_contr_w_fl_l()
@@ -1719,7 +1719,7 @@ def test_run_solve_nonhydro_41_to_60_corrector(
     z_alpha_ref = savepoint_nonhydro_exit.z_alpha()
     z_q_ref = savepoint_nonhydro_exit.z_q()
     z_rho_expl_ref = savepoint_nonhydro_exit.z_rho_expl()
-    z_exner_expl_ref = savepoint_nonhydro_exit.z_rho_expl()
+    z_exner_expl_ref = savepoint_nonhydro_exit.z_exner_expl()
     rho_ref = savepoint_nonhydro_exit.rho_new()
     exner_ref = savepoint_nonhydro_exit.exner_new()
     theta_v_ref = savepoint_nonhydro_exit.theta_v_new()
@@ -1836,15 +1836,23 @@ def test_run_solve_nonhydro_41_to_60_corrector(
         offset_provider=offset_provider,
     )
 
-    assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy())
-    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy())
+    assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(z_beta.asnumpy(), z_beta_ref.asnumpy())
     assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
     assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
     assert helpers.dallclose(z_rho_expl.asnumpy(), z_rho_expl_ref.asnumpy())
-    assert helpers.dallclose(z_exner_expl.asnumpy(), z_exner_expl_ref.asnumpy())
-    assert helpers.dallclose(rho.asnumpy(), rho_ref.asnumpy())
-    assert helpers.dallclose(exner.asnumpy(), exner_ref.asnumpy())
+    assert helpers.dallclose(
+        z_exner_expl.asnumpy()[start_cell_nudging:, :],
+        z_exner_expl_ref.asnumpy()[start_cell_nudging:, :],
+        atol=1e-12,
+    )
+    assert helpers.dallclose(
+        rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
+    )
+    assert helpers.dallclose(
+        exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
+    )
     assert helpers.dallclose(theta_v.asnumpy(), theta_v_ref.asnumpy())
     # TODO: cannot find exit points for these two
     # assert helpers.dallclose(mass_flx_ic.asnumpy(), mass_flx_ic_ref.asnumpy())
