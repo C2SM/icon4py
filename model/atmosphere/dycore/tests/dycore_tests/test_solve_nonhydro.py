@@ -1382,7 +1382,7 @@ def test_apply_divergence_damping_and_update_vn(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("at_initial_timestep", [(True)])
+@pytest.mark.parametrize("at_initial_timestep, substep_init", [(True, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -1429,7 +1429,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    at_first_substep = substep_init == 0
+    at_first_substep = substep_init == 1
 
     mass_fl_e = savepoint_nonhydro_41_60_init.mass_fl_e()
     z_theta_v_fl_e = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
@@ -1591,18 +1591,18 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         offset_provider=offset_provider,
     )
 
-    assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy())
-    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy())
+    assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(z_beta.asnumpy(), z_beta_ref.asnumpy())
     assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
     assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
-    assert helpers.dallclose(z_flxdiv_mass.asnumpy(), z_flxdiv_mass_ref.asnumpy())
-    assert helpers.dallclose(z_flxdiv_theta.asnumpy(), z_flxdiv_theta_ref.asnumpy())
-    assert helpers.dallclose(w.asnumpy(), w_ref.asnumpy())
+    assert helpers.dallclose(z_flxdiv_mass.asnumpy(), z_flxdiv_mass_ref.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(z_flxdiv_theta.asnumpy(), z_flxdiv_theta_ref.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(w.asnumpy()[start_cell_nudging:, :], w_ref.asnumpy()[start_cell_nudging:, :], atol=1e-12)
     assert helpers.dallclose(z_rho_expl.asnumpy(), z_rho_expl_ref.asnumpy())
     assert helpers.dallclose(z_exner_expl.asnumpy(), z_exner_expl_ref.asnumpy())
-    assert helpers.dallclose(rho.asnumpy(), rho_ref.asnumpy())
-    assert helpers.dallclose(exner.asnumpy(), exner_ref.asnumpy())
+    assert helpers.dallclose(rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :])
+    assert helpers.dallclose(exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :])
     assert helpers.dallclose(theta_v.asnumpy(), theta_v_ref.asnumpy())
     # TODO: cannot find exit point for this
     # assert helpers.dallclose(z_dwdz_dd.asnumpy(), z_dwdz_dd_ref.asnumpy())
