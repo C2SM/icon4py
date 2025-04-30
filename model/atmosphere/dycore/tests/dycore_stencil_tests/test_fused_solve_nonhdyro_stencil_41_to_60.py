@@ -313,7 +313,7 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
             w[:, :n_lev],
         )
 
-        w_1 = w[:, :1]
+        w_1 = w[:, 0]
         if rayleigh_type == rayleigh_klemp:
             w[:, :n_lev] = np.where(
                 (start_cell_nudging <= horz_idx)
@@ -814,7 +814,7 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
             w[:, :n_lev],
         )
 
-        w_1 = w[:, :1]
+        w_1 = w[:, 0]
         if rayleigh_type == rayleigh_klemp:
             w[:, :n_lev] = np.where(
                 (start_cell_nudging <= horz_idx)
