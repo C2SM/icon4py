@@ -444,14 +444,6 @@ icon4py.model.atmosphere.dycore.stencils.copy\_cell\_kdim\_field\_to\_vp module
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.correct\_contravariant\_vertical\_velocity module
-------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.extrapolate\_at\_top module
 --------------------------------------------------------------------
 
@@ -472,14 +464,6 @@ icon4py.model.atmosphere.dycore.stencils.fused\_solve\_nonhydro\_stencil\_39\_40
 ---------------------------------------------------------------------------------------
 
 .. automodule:: icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-icon4py.model.atmosphere.dycore.stencils.fused\_velocity\_advection\_stencil\_8\_to\_14 module
-----------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_14
    :members:
    :undoc-members:
    :show-inheritance:
