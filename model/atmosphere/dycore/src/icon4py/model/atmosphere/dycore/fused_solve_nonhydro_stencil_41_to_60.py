@@ -31,7 +31,8 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
     _add_analysis_increments_from_data_assimilation,
 )
 from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import (
-    _apply_rayleigh_damping_mechanism_w_1_broadcasted, _apply_rayleigh_damping_mechanism,
+    _apply_rayleigh_damping_mechanism,
+    _apply_rayleigh_damping_mechanism_w_1_broadcasted,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
     _compute_divergence_of_fluxes_of_rho_and_theta,
@@ -574,6 +575,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector_p1(
         z_exner_expl,
     )
 
+
 @gtx.field_operator
 def _fused_solve_nonhydro_stencil_41_to_60_corrector_p2(
     w_1: fa.CellField[wpfloat],
@@ -611,7 +613,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector_p2(
     kstart_moist: int32,
     at_first_substep: bool,
     at_last_substep: bool,
-    ) -> tuple[
+) -> tuple[
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
@@ -1083,6 +1085,7 @@ def fused_solve_nonhydro_stencil_41_to_60_corrector_p1(
         },
     )
 
+
 @gtx.program
 def fused_solve_nonhydro_stencil_41_to_60_corrector_p2(
     w_1: fa.CellField[wpfloat],
@@ -1125,7 +1128,6 @@ def fused_solve_nonhydro_stencil_41_to_60_corrector_p2(
     vertical_start: int32,
     vertical_end: int32,
 ):
-
     _fused_solve_nonhydro_stencil_41_to_60_corrector_p2(
         w_1=w_1,
         z_contr_w_fl_l=z_contr_w_fl_l,
