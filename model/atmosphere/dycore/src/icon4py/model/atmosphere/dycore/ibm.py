@@ -1,20 +1,18 @@
 import logging
 
 import gt4py.next as gtx
+from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.testing import serialbox as sb
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.grid import (
-    vertical as v_grid,
     icon as icon_grid,
 )
-import icon4py.model.common.grid.states as grid_states
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.states import prognostic_state
 
-import numpy as np
 import xarray as xr
 
 """
@@ -26,6 +24,7 @@ log = logging.getLogger(__name__)
 
 DO_IBM = True
 
+
 class ImmersedBoundaryMethod:
     """
     Main class for the immersed boundary method.
@@ -36,7 +35,7 @@ class ImmersedBoundaryMethod:
         grid: icon_grid.IconGrid,
         savepoint_path: str,
         grid_file_path: str,
-        backend: gtx.backend.Backend = gtx.gtfn_cpu,
+        backend: gtx_backend.Backend = gtx.gtfn_cpu,
     ):
         """
         Initialize the immersed boundary method.
@@ -67,33 +66,35 @@ class ImmersedBoundaryMethod:
         grid: icon_grid.IconGrid,
         savepoint_path: str,
         grid_file_path: str,
-        backend: gtx.backend.Backend = gtx.gtfn_cpu,
+        backend: gtx_backend.Backend = gtx.gtfn_cpu,
     ) -> None:
         """
         Create masks for the immersed boundary method.
         """
-        half_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
-        full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
-        full_edge_mask_np = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
-        full_vertex_mask_np = np.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
-        neigh_full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
+        xp = data_alloc.import_array_ns(backend)
+
+        half_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
+        full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
+        full_edge_mask_np = xp.zeros((grid.num_edges, grid.num_levels), dtype=bool)
+        full_vertex_mask_np = xp.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
+        neigh_full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
 
         #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-        half_cell_mask_np = self._mask_gaussian_hill(grid, grid_file_path, savepoint_path, backend, half_cell_mask_np)
+        half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
         full_cell_mask_np = half_cell_mask_np[:, :-1]
 
         c2e = grid.connectivities[dims.C2EDim]
         for k in range(grid.num_levels):
-            full_edge_mask_np[c2e[np.where(full_cell_mask_np[:,k])], k] = True
+            full_edge_mask_np[c2e[xp.where(full_cell_mask_np[:,k])], k] = True
 
         c2v = grid.connectivities[dims.C2VDim]
         for k in range(grid.num_levels):
-            full_vertex_mask_np[c2v[np.where(full_cell_mask_np[:,k])], k] = True
+            full_vertex_mask_np[c2v[xp.where(full_cell_mask_np[:,k])], k] = True
 
         c2e2c = grid.connectivities[dims.C2E2CDim]
         for k in range(grid.num_levels):
-            neigh_full_cell_mask_np[c2e2c[np.where(full_cell_mask_np[:,k])], k] = True
+            neigh_full_cell_mask_np[c2e2c[xp.where(full_cell_mask_np[:,k])], k] = True
 
         self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
         self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
@@ -103,8 +104,8 @@ class ImmersedBoundaryMethod:
 
     def _mask_test_cells(
         self,
-        half_cell_mask_np: np.ndarray
-    ) -> np.ndarray:
+        half_cell_mask_np: data_alloc.NDArray
+    ) -> data_alloc.NDArray:
         """
         Create a test mask.
         """
@@ -113,15 +114,16 @@ class ImmersedBoundaryMethod:
 
     def _mask_gaussian_hill(
         self,
-        grid: icon_grid.IconGrid,
         grid_file_path: str,
         savepoint_path: str,
-        backend: gtx.backend.Backend,
-        half_cell_mask_np: np.ndarray,
-    ) -> np.ndarray:
+        backend: gtx_backend.Backend,
+        half_cell_mask_np: data_alloc.NDArray,
+    ) -> data_alloc.NDArray:
         """
         Create a Gaussian hill mask.
         """
+        xp = data_alloc.import_array_ns(backend)
+
         hill_x = 500.
         hill_y = 500.
         hill_height = 100.
@@ -134,12 +136,12 @@ class ImmersedBoundaryMethod:
             path=savepoint_path,
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
-        half_level_heights = metrics_savepoint.z_ifc().asnumpy()
+        half_level_heights = metrics_savepoint.z_ifc().ndarray
 
         compute_distance_from_hill = lambda x, y: ((x - hill_x)**2 + (y - hill_y)**2)**0.5
-        compute_hill_elevation = lambda x, y: hill_height * np.exp(-(compute_distance_from_hill(x, y) / hill_width)**2)
-        cell_x = grid_file.cell_circumcenter_cartesian_x.values
-        cell_y = grid_file.cell_circumcenter_cartesian_y.values
+        compute_hill_elevation = lambda x, y: hill_height * xp.exp(-(compute_distance_from_hill(x, y) / hill_width)**2)
+        cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
+        cell_y = xp.asarray(grid_file.cell_circumcenter_cartesian_y.values)
         buildings = []
         buildings = [
             #[390, 400, 0, 1000,  40],
@@ -147,7 +149,7 @@ class ImmersedBoundaryMethod:
             #[350, 400, 0, 1000, 75],
         ]
         for k in range(half_cell_mask_np.shape[1]):
-            half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
+            half_cell_mask_np[:, k] = xp.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
             for building in buildings:
                 xmin, xmax, ymin, ymax, top = building
                 half_cell_mask_np[

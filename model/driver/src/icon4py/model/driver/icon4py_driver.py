@@ -15,7 +15,6 @@ from typing import Callable, NamedTuple
 import click
 import numpy as np
 from devtools import Timer
-import numpy as np
 
 from icon4py.model.common.io import plots
 from icon4py.model.atmosphere.dycore import ibm
