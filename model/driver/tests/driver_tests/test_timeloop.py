@@ -305,11 +305,11 @@ def test_run_timeloop_single_step(
         tangential_wind=sp_v.vt(),
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
+        rho_incr=sp.rho_incr(),  # sp.rho_incr(),
         normal_wind_iau_increments=data_alloc.zero_field(
             icon_grid, dims.EdgeDim, dims.KDim, backend=backend
         ),  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
+        exner_incr=sp.exner_incr(),  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
