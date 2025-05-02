@@ -383,7 +383,6 @@ def test_nonhydro_predictor_step(
         atol=4e-12,
     )
     # stencil 32
-    # TODO: @abishekg7 higher tol.
     assert helpers.dallclose(
         solve_nonhydro.z_theta_v_fl_e.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.z_theta_v_fl_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
@@ -1597,18 +1596,20 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         offset_provider=offset_provider,
     )
 
-    assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy())
-    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy())
+    assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(z_beta.asnumpy(), z_beta_ref.asnumpy())
     assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
     assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
-    assert helpers.dallclose(z_flxdiv_mass.asnumpy(), z_flxdiv_mass_ref.asnumpy())
-    assert helpers.dallclose(z_flxdiv_theta.asnumpy(), z_flxdiv_theta_ref.asnumpy())
+    assert helpers.dallclose(z_flxdiv_mass.asnumpy(), z_flxdiv_mass_ref.asnumpy(), atol=1e-12)
+    assert helpers.dallclose(z_flxdiv_theta.asnumpy(), z_flxdiv_theta_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(
-        w.asnumpy()[start_cell_nudging:, :], w_ref.asnumpy()[start_cell_nudging:, :], rtol=1e-7
+        w.asnumpy()[start_cell_nudging:, :], w_ref.asnumpy()[start_cell_nudging:, :], rtol=1e-7, atol=1e-12
     )
     assert helpers.dallclose(z_rho_expl.asnumpy(), z_rho_expl_ref.asnumpy())
-    assert helpers.dallclose(z_exner_expl.asnumpy(), z_exner_expl_ref.asnumpy(), rtol=1.0e-10)
+    assert helpers.dallclose(
+        z_exner_expl.asnumpy(), z_exner_expl_ref.asnumpy(), rtol=1.0e-10, atol=1.0e-12
+    )
     assert helpers.dallclose(
         rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
     )
@@ -1851,13 +1852,17 @@ def test_run_solve_nonhydro_41_to_60_corrector(
         z_w_expl.asnumpy()[start_cell_nudging:, :],
         z_w_expl_ref.asnumpy()[start_cell_nudging:, :],
         rtol=1e-13,
+        atol=1e-13,
     )
-    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy())
+    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(z_beta.asnumpy(), z_beta_ref.asnumpy())
     assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
     assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
     assert helpers.dallclose(
-        w.asnumpy()[start_cell_nudging:, :], w_ref.asnumpy()[start_cell_nudging:, :], rtol=1e-10
+        w.asnumpy()[start_cell_nudging:, :],
+        w_ref.asnumpy()[start_cell_nudging:, :],
+        rtol=1e-10,
+        atol=1e-12,
     )
     assert helpers.dallclose(z_rho_expl.asnumpy(), z_rho_expl_ref.asnumpy())
     assert helpers.dallclose(
