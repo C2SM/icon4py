@@ -1604,7 +1604,10 @@ def test_run_solve_nonhydro_41_to_60_predictor(
     assert helpers.dallclose(z_flxdiv_mass.asnumpy(), z_flxdiv_mass_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(z_flxdiv_theta.asnumpy(), z_flxdiv_theta_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(
-        w.asnumpy()[start_cell_nudging:, :], w_ref.asnumpy()[start_cell_nudging:, :], rtol=1e-7, atol=1e-12
+        w.asnumpy()[start_cell_nudging:, :],
+        w_ref.asnumpy()[start_cell_nudging:, :],
+        rtol=1e-7,
+        atol=1e-12,
     )
     assert helpers.dallclose(z_rho_expl.asnumpy(), z_rho_expl_ref.asnumpy())
     assert helpers.dallclose(

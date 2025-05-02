@@ -188,7 +188,7 @@ def test_run_timeloop_single_step(
     sp = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(nonhydro_config)
     sp_v = savepoint_velocity_init
-    do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
+    do_prep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 
     linit = sp.get_metadata("linit").get("linit")
 
@@ -305,11 +305,15 @@ def test_run_timeloop_single_step(
         tangential_wind=sp_v.vt(),
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
-        rho_incr=sp.rho_incr(),  # sp.rho_incr(),
+        rho_incr=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, backend=backend
+        ),  # sp.rho_incr(),
         normal_wind_iau_increments=data_alloc.zero_field(
             icon_grid, dims.EdgeDim, dims.KDim, backend=backend
         ),  # sp.vn_incr(),
-        exner_incr=sp.exner_incr(),  # sp.exner_incr(),
+        exner_incr=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, backend=backend
+        ),  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
