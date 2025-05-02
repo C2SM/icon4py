@@ -26,6 +26,7 @@ def apply_rayleigh_damping_mechanism_numpy(
     connectivities, z_raylfac: np.ndarray, w_1: np.ndarray, w: np.ndarray
 ) -> np.ndarray:
     z_raylfac = np.expand_dims(z_raylfac, axis=0)
+    w_1 = np.expand_dims(w_1, axis=-1)
     w = z_raylfac * w + (1.0 - z_raylfac) * w_1
     return w
 

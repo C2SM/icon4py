@@ -172,7 +172,7 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
         start_cell_nudging: int,
         end_cell_local: int,
         **kwargs,
-    ) -> tuple[np.ndarray, ...]:
+    ) -> dict:
         horz_idx = np.asarray(np.arange(exner_dyn_incr.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dyn_incr.shape[1])
@@ -313,7 +313,7 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
             w[:, :n_lev],
         )
 
-        w_1 = w[:, :1]
+        w_1 = w[:, 0]
         if rayleigh_type == rayleigh_klemp:
             w[:, :n_lev] = np.where(
                 (start_cell_nudging <= horz_idx)
@@ -375,22 +375,22 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
                 z_dwdz_dd,
             )
 
-        return (
-            z_w_expl,
-            z_contr_w_fl_l,
-            z_beta,
-            z_alpha,
-            z_q,
-            z_flxdiv_mass,
-            z_flxdiv_theta,
-            w,
-            z_rho_expl,
-            z_exner_expl,
-            rho,
-            exner,
-            theta_v,
-            z_dwdz_dd,
-            exner_dyn_incr,
+        return dict(
+            z_w_expl=z_w_expl,
+            z_contr_w_fl_l=z_contr_w_fl_l,
+            z_beta=z_beta,
+            z_alpha=z_alpha,
+            z_q=z_q,
+            z_flxdiv_mass=z_flxdiv_mass,
+            z_flxdiv_theta=z_flxdiv_theta,
+            w=w,
+            z_rho_expl=z_rho_expl,
+            z_exner_expl=z_exner_expl,
+            rho=rho,
+            exner=exner,
+            theta_v=theta_v,
+            z_dwdz_dd=z_dwdz_dd,
+            exner_dyn_incr=exner_dyn_incr,
         )
 
     @pytest.fixture
@@ -443,7 +443,6 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
         kstart_dd3d = 0
         kstart_moist = 1
         dtime = 0.9
-        veladv_offctr = 0.25
         iau_wgt_dyn = 1.0
 
         cell_domain = h_grid.domain(dims.CellDim)
@@ -601,7 +600,7 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
         start_cell_nudging: int,
         end_cell_local: int,
         **kwargs,
-    ) -> tuple[np.ndarray, ...]:
+    ) -> dict:
         horz_idx = np.asarray(np.arange(exner_dyn_incr.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dyn_incr.shape[1])
@@ -815,7 +814,7 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
             w[:, :n_lev],
         )
 
-        w_1 = w[:, :1]
+        w_1 = w[:, 0]
         if rayleigh_type == rayleigh_klemp:
             w[:, :n_lev] = np.where(
                 (start_cell_nudging <= horz_idx)
@@ -893,23 +892,23 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
             else exner_dyn_incr
         )
 
-        return (
-            z_flxdiv_mass,
-            z_flxdiv_theta,
-            z_w_expl,
-            z_contr_w_fl_l,
-            z_beta,
-            z_alpha,
-            z_q,
-            w,
-            z_rho_expl,
-            z_exner_expl,
-            rho,
-            exner,
-            theta_v,
-            mass_flx_ic,
-            vol_flx_ic,
-            exner_dyn_incr,
+        return dict(
+            z_flxdiv_mass=z_flxdiv_mass,
+            z_flxdiv_theta=z_flxdiv_theta,
+            z_w_expl=z_w_expl,
+            z_contr_w_fl_l=z_contr_w_fl_l,
+            z_beta=z_beta,
+            z_alpha=z_alpha,
+            z_q=z_q,
+            w=w,
+            z_rho_expl=z_rho_expl,
+            z_exner_expl=z_exner_expl,
+            rho=rho,
+            exner=exner,
+            theta_v=theta_v,
+            mass_flx_ic=mass_flx_ic,
+            vol_flx_ic=vol_flx_ic,
+            exner_dyn_incr=exner_dyn_incr,
         )
 
     @pytest.fixture
