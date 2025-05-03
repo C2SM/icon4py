@@ -9,6 +9,8 @@
 
 from typing import Optional
 
+import numpy as np
+import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
@@ -150,11 +152,11 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        rho_incr=gtx.as_field((dims.CellDim, dims.KDim), data=np.asarray([]), allocator=backend),
         normal_wind_iau_increments=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),
-        exner_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        exner_incr=gtx.as_field((dims.CellDim, dims.KDim), data=np.asarray([]), allocator=backend),
         exner_dyn_incr=init_savepoint.exner_dyn_incr(),
     )
 

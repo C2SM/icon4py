@@ -7,7 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-
+import gt4py.next as gtx
+import numpy as np
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
@@ -305,15 +306,11 @@ def test_run_timeloop_single_step(
         tangential_wind=sp_v.vt(),
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
-        rho_incr=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
-        ),  # sp.rho_incr(),
+        rho_incr=gtx.as_field((dims.CellDim, dims.KDim), data=np.asarray([]), allocator=backend),  # sp.rho_incr(),
         normal_wind_iau_increments=data_alloc.zero_field(
             icon_grid, dims.EdgeDim, dims.KDim, backend=backend
         ),  # sp.vn_incr(),
-        exner_incr=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
-        ),  # sp.exner_incr(),
+        exner_incr=gtx.as_field((dims.CellDim, dims.KDim), data=np.asarray([]), allocator=backend),  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
