@@ -428,32 +428,11 @@ def test_nonhydro_predictor_step(
         atol=1e-15,
     )
 
-    # stencil 41
-    assert helpers.dallclose(
-        solve_nonhydro.z_flxdiv_mass.asnumpy(),
-        sp_exit.z_flxdiv_mass().asnumpy(),
-        atol=5e-13,  # TODO (magdalena) was 5e-15 for local experiment only
-    )
-
-    # TODO: @abishekg7 higher tol.
-    assert helpers.dallclose(
-        solve_nonhydro.z_flxdiv_theta.asnumpy(),
-        sp_exit.z_flxdiv_theta().asnumpy(),
-        atol=5e-12,
-    )
-
     # stencils 43, 46, 47
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_contr_w_fl_l.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
-    )
-
-    # stencil 43
-    assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_w_expl.asnumpy()[cell_start_nudging:, 1:nlev],
-        sp_exit.z_w_expl().asnumpy()[cell_start_nudging:, 1:nlev],
-        atol=1e-14,
     )
 
     # stencil 44, 45
@@ -469,14 +448,6 @@ def test_nonhydro_predictor_step(
         atol=2e-15,
     )
 
-    # stencil 45_b, 52
-    assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_q.asnumpy()[
-            cell_start_nudging:, : icon_grid.num_levels
-        ],
-        sp_exit.z_q().asnumpy()[cell_start_nudging:, : icon_grid.num_levels],
-        atol=2e-15,
-    )
     # stencil 48, 49
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_rho_expl.asnumpy()[cell_start_nudging:, :],
@@ -705,7 +676,7 @@ def test_nonhydro_corrector_step(
     )
     # stencil 60 only relevant for last substep
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
+        diagnostic_state_nh.exner_dynaminal_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -841,7 +812,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
+        diagnostic_state_nh.exner_dynaminal_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -1010,7 +981,7 @@ def test_run_solve_nonhydro_multi_step(
         atol=5e-13,
     )
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
+        diagnostic_state_nh.exner_dynaminal_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -1112,7 +1083,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     theta_v_at_cells_on_half_levels = sp_stencil_init.theta_v_ic()
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
     normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
-    normal_wind_iau_increments = sp_stencil_init.vn_incr()
+    normal_wind_iau_increment = sp_stencil_init.vn_incr()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -1187,7 +1158,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
-        normal_wind_iau_increments=normal_wind_iau_increments,
+        normal_wind_iau_increment=normal_wind_iau_increment,
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         pos_on_tplane_e_x=interpolation_savepoint.pos_on_tplane_e_x(),
@@ -1308,7 +1279,7 @@ def test_apply_divergence_damping_and_update_vn(
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
     corrector_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(1)
     normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
-    normal_wind_iau_increments = sp_stencil_init.vn_incr()
+    normal_wind_iau_increment = sp_stencil_init.vn_incr()
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = sp_nh_init.bdy_divdamp()
     fourth_order_divdamp_scaling_coeff = sp_nh_init.scal_divdamp()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
@@ -1338,7 +1309,7 @@ def test_apply_divergence_damping_and_update_vn(
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
-        normal_wind_iau_increments=normal_wind_iau_increments,
+        normal_wind_iau_increment=normal_wind_iau_increment,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,
         reduced_fourth_order_divdamp_coeff_at_nest_boundary=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
@@ -1402,7 +1373,7 @@ def test_apply_divergence_damping_and_update_vn(
         ),
     ],
 )
-def test_run_solve_nonhydro_41_to_60_predictor(
+def test_vertically_implicit_solver_at_predictor_step(
     step_date_init,
     step_date_exit,
     experiment,
@@ -1440,35 +1411,31 @@ def test_run_solve_nonhydro_41_to_60_predictor(
 
     mass_fl_e = savepoint_nonhydro_41_60_init.mass_fl_e()
     z_theta_v_fl_e = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
-    z_flxdiv_mass = savepoint_nonhydro_41_60_init.z_flxdiv_mass()
-    z_flxdiv_theta = savepoint_nonhydro_41_60_init.z_flxdiv_theta()
-    z_w_expl = savepoint_nonhydro_41_60_init.z_w_expl()
-    ddt_w_adv_ntl1 = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(0)
+    predictor_vertical_wind_advective_tendency = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(0)
     z_th_ddz_exner_c = savepoint_nonhydro_41_60_init.z_th_ddz_exner_c()
     z_contr_w_fl_l = savepoint_nonhydro_41_60_init.z_contr_w_fl_l()
     rho_ic = savepoint_nonhydro_41_60_init.rho_ic()
-    w_concorr_c = savepoint_nonhydro_41_60_init.w_concorr_c()
-    exner_nnow = savepoint_nonhydro_41_60_init.exner_nnow()
-    rho_nnow = savepoint_nonhydro_41_60_init.rho_nnow()
-    theta_v_nnow = savepoint_nonhydro_41_60_init.theta_v_nnow()
-    w_nnow = savepoint_nonhydro_41_60_init.w()
+    contravariant_correction_at_cells_on_half_levels = savepoint_nonhydro_41_60_init.w_concorr_c()
+    current_exner = savepoint_nonhydro_41_60_init.exner_nnow()
+    current_rho = savepoint_nonhydro_41_60_init.rho_nnow()
+    current_theta_v = savepoint_nonhydro_41_60_init.theta_v_nnow()
+    current_w = savepoint_nonhydro_41_60_init.w()
     z_alpha = savepoint_nonhydro_41_60_init.z_alpha()
     z_beta = savepoint_nonhydro_41_60_init.z_beta()
-    theta_v_ic = savepoint_nonhydro_41_60_init.theta_v_ic()
-    z_q = savepoint_nonhydro_41_60_init.z_q()
-    w = savepoint_nonhydro_41_60_init.w()
+    theta_v_at_cells_on_half_levels = savepoint_nonhydro_41_60_init.theta_v_ic()
+    next_w = savepoint_nonhydro_41_60_init.w()
     z_rho_expl = savepoint_nonhydro_41_60_init.z_rho_expl()
     z_exner_expl = savepoint_nonhydro_41_60_init.z_exner_expl()
     exner_pr = savepoint_nonhydro_41_60_init.exner_pr()
     ddt_exner_phy = savepoint_nonhydro_41_60_init.ddt_exner_phy()
-    rho_incr = savepoint_nonhydro_41_60_init.rho_incr()
-    exner_incr = savepoint_nonhydro_41_60_init.exner_incr()
+    rho_iau_increment = savepoint_nonhydro_41_60_init.rho_incr()
+    exner_iau_increment = savepoint_nonhydro_41_60_init.exner_incr()
     z_raylfac = savepoint_nonhydro_41_60_init.z_raylfac()
-    rho = savepoint_nonhydro_41_60_init.rho()
-    exner = savepoint_nonhydro_41_60_init.exner()
-    theta_v = savepoint_nonhydro_41_60_init.theta_v()
-    z_dwdz_dd = savepoint_nonhydro_41_60_init.z_dwdz_dd()
-    exner_dyn_incr = savepoint_nonhydro_41_60_init.exner_dyn_incr()
+    next_rho = savepoint_nonhydro_41_60_init.rho()
+    next_exner = savepoint_nonhydro_41_60_init.exner()
+    next_theta_v = savepoint_nonhydro_41_60_init.theta_v()
+    dwdz_at_cells_on_model_levels = savepoint_nonhydro_41_60_init.z_dwdz_dd()
+    exner_dynaminal_increment = savepoint_nonhydro_41_60_init.exner_dyn_incr()
 
     iau_wgt_dyn = config.iau_wgt_dyn
     is_iau_active = config.is_iau_active
@@ -1476,13 +1443,9 @@ def test_run_solve_nonhydro_41_to_60_predictor(
     l_vert_nested = config.l_vert_nested
     jk_start = 0  # TODO: check - savepoint_nonhydro_41_60_init.jk_start()
 
-    z_flxdiv_mass_ref = savepoint_nonhydro_exit.z_flxdiv_mass()
-    z_flxdiv_theta_ref = savepoint_nonhydro_exit.z_flxdiv_theta()
-    z_w_expl_ref = savepoint_nonhydro_exit.z_w_expl()
     z_contr_w_fl_l_ref = savepoint_nonhydro_exit.z_contr_w_fl_l()
     z_beta_ref = savepoint_nonhydro_exit.z_beta()
     z_alpha_ref = savepoint_nonhydro_exit.z_alpha()
-    z_q_ref = savepoint_nonhydro_exit.z_q()
     w_ref = savepoint_nonhydro_exit.w_new()
     z_rho_expl_ref = savepoint_nonhydro_exit.z_rho_expl()
     z_exner_expl_ref = savepoint_nonhydro_exit.z_exner_expl()
@@ -1506,7 +1469,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
     }
     print("compiling")
 
-    compiled = fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60_predictor.with_backend(
+    compiled = fused_solve_nonhydro_stencil_41_to_60.vertically_implicit_solver_at_predictor_step.with_backend(
         backend
     ).compile(
         cvd_o_rd=[constants.CVD_O_RD],
@@ -1535,40 +1498,36 @@ def test_run_solve_nonhydro_41_to_60_predictor(
     print("done (or async)")
     print(constants.RayleighType.KLEMP, divdamp_type)
     compiled(
-        z_flxdiv_mass=z_flxdiv_mass,
-        z_flxdiv_theta=z_flxdiv_theta,
-        z_w_expl=z_w_expl,
         z_contr_w_fl_l=z_contr_w_fl_l,
         z_beta=z_beta,
         z_alpha=z_alpha,
-        z_q=z_q,
-        w=w,
+        next_w=next_w,
         z_rho_expl=z_rho_expl,
         z_exner_expl=z_exner_expl,
-        rho=rho,
-        exner=exner,
-        theta_v=theta_v,
-        z_dwdz_dd=z_dwdz_dd,
-        exner_dyn_incr=exner_dyn_incr,
+        next_rho=next_rho,
+        next_exner=next_exner,
+        next_theta_v=next_theta_v,
+        dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
+        exner_dynaminal_increment=exner_dynaminal_increment,
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
-        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+        predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         z_th_ddz_exner_c=z_th_ddz_exner_c,
         rho_ic=rho_ic,
-        w_concorr_c=w_concorr_c,
+        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
-        exner_nnow=exner_nnow,
-        rho_nnow=rho_nnow,
-        theta_v_nnow=theta_v_nnow,
-        w_nnow=w_nnow,
+        current_exner=current_exner,
+        current_rho=current_rho,
+        current_theta_v=current_theta_v,
+        current_w=current_w,
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
-        theta_v_ic=theta_v_ic,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         exner_pr=exner_pr,
         ddt_exner_phy=ddt_exner_phy,
-        rho_incr=rho_incr,
-        exner_incr=exner_incr,
+        rho_iau_increment=rho_iau_increment,
+        exner_iau_increment=exner_iau_increment,
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         z_raylfac=z_raylfac,
         exner_ref_mc=metrics_savepoint.exner_ref_mc(),
@@ -1596,15 +1555,11 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         offset_provider=offset_provider,
     )
 
-    assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(z_beta.asnumpy(), z_beta_ref.asnumpy())
     assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
-    assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
-    assert helpers.dallclose(z_flxdiv_mass.asnumpy(), z_flxdiv_mass_ref.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(z_flxdiv_theta.asnumpy(), z_flxdiv_theta_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(
-        w.asnumpy()[start_cell_nudging:, :],
+        next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
         rtol=1e-7,
         atol=1e-12,
@@ -1614,15 +1569,15 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         z_exner_expl.asnumpy(), z_exner_expl_ref.asnumpy(), rtol=1.0e-10, atol=1.0e-12
     )
     assert helpers.dallclose(
-        rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
+        next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert helpers.dallclose(
-        exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
+        next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
-    assert helpers.dallclose(theta_v.asnumpy(), theta_v_ref.asnumpy())
+    assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
     # TODO: cannot find exit point for this
-    # assert helpers.dallclose(z_dwdz_dd.asnumpy(), z_dwdz_dd_ref.asnumpy())
-    assert helpers.dallclose(exner_dyn_incr.asnumpy(), exner_dyn_incr_ref.asnumpy())
+    # TODO: assert helpers.dallclose(dwdz_at_cells_on_model_levels.asnumpy(), z_dwdz_dd_ref.asnumpy())
+    assert helpers.dallclose(exner_dynaminal_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
 
 
 @pytest.mark.embedded_remap_error
@@ -1645,7 +1600,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         ),
     ],
 )
-def test_run_solve_nonhydro_41_to_60_corrector(
+def test_vertically_implicit_solver_at_corrector_step(
     step_date_init,
     step_date_exit,
     experiment,
@@ -1685,37 +1640,33 @@ def test_run_solve_nonhydro_41_to_60_corrector(
 
     mass_fl_e = savepoint_nonhydro_41_60_init.mass_fl_e()
     z_theta_v_fl_e = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
-    z_flxdiv_mass = savepoint_nonhydro_41_60_init.z_flxdiv_mass()
-    z_flxdiv_theta = savepoint_nonhydro_41_60_init.z_flxdiv_theta()
-    z_w_expl = savepoint_nonhydro_41_60_init.z_w_expl()
-    ddt_w_adv_ntl1 = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(0)
-    ddt_w_adv_ntl2 = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(1)
+    predictor_vertical_wind_advective_tendency = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(0)
+    corrector_vertical_wind_advective_tendency = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(1)
     z_th_ddz_exner_c = savepoint_nonhydro_41_60_init.z_th_ddz_exner_c()
     z_contr_w_fl_l = savepoint_nonhydro_41_60_init.z_contr_w_fl_l()
     rho_ic = savepoint_nonhydro_41_60_init.rho_ic()
-    w_concorr_c = savepoint_nonhydro_41_60_init.w_concorr_c()
-    exner_nnow = savepoint_nonhydro_41_60_init.exner_nnow()
-    rho_nnow = savepoint_nonhydro_41_60_init.rho_nnow()
-    theta_v_nnow = savepoint_nonhydro_41_60_init.theta_v_nnow()
-    w_nnow = savepoint_nonhydro_41_60_init.w()
+    contravariant_correction_at_cells_on_half_levels = savepoint_nonhydro_41_60_init.w_concorr_c()
+    current_exner = savepoint_nonhydro_41_60_init.exner_nnow()
+    current_rho = savepoint_nonhydro_41_60_init.rho_nnow()
+    current_theta_v = savepoint_nonhydro_41_60_init.theta_v_nnow()
+    current_w = savepoint_nonhydro_41_60_init.w()
     z_alpha = savepoint_nonhydro_41_60_init.z_alpha()
     z_beta = savepoint_nonhydro_41_60_init.z_beta()
-    theta_v_ic = savepoint_nonhydro_41_60_init.theta_v_ic()
-    z_q = savepoint_nonhydro_41_60_init.z_q()
-    w = savepoint_nonhydro_41_60_init.w()
+    theta_v_at_cells_on_half_levels = savepoint_nonhydro_41_60_init.theta_v_ic()
+    next_w = savepoint_nonhydro_41_60_init.w()
     z_rho_expl = savepoint_nonhydro_41_60_init.z_rho_expl()
     z_exner_expl = savepoint_nonhydro_41_60_init.z_exner_expl()
     exner_pr = savepoint_nonhydro_41_60_init.exner_pr()
     ddt_exner_phy = savepoint_nonhydro_41_60_init.ddt_exner_phy()
-    rho_incr = savepoint_nonhydro_41_60_init.rho_incr()
-    exner_incr = savepoint_nonhydro_41_60_init.exner_incr()
+    rho_iau_increment = savepoint_nonhydro_41_60_init.rho_incr()
+    exner_iau_increment = savepoint_nonhydro_41_60_init.exner_incr()
     z_raylfac = savepoint_nonhydro_41_60_init.z_raylfac()
-    rho = savepoint_nonhydro_41_60_init.rho()
-    exner = savepoint_nonhydro_41_60_init.exner()
-    theta_v = savepoint_nonhydro_41_60_init.theta_v()
+    next_rho = savepoint_nonhydro_41_60_init.rho()
+    next_exner = savepoint_nonhydro_41_60_init.exner()
+    next_theta_v = savepoint_nonhydro_41_60_init.theta_v()
     mass_flx_ic = savepoint_nonhydro_41_60_init.mass_flx_ic()
     vol_flx_ic = savepoint_nonhydro_41_60_init.vol_flx_ic()
-    exner_dyn_incr = savepoint_nonhydro_41_60_init.exner_dyn_incr()
+    exner_dynaminal_increment = savepoint_nonhydro_41_60_init.exner_dyn_incr()
     wgt_nnow_vel = nonhydro_params.wgt_nnow_vel
     wgt_nnew_vel = nonhydro_params.wgt_nnew_vel
     itime_scheme = config.itime_scheme
@@ -1727,11 +1678,9 @@ def test_run_solve_nonhydro_41_to_60_corrector(
     l_vert_nested = config.l_vert_nested
     jk_start = 0
 
-    z_w_expl_ref = savepoint_nonhydro_exit.z_w_expl()
     z_contr_w_fl_l_ref = savepoint_nonhydro_exit.z_contr_w_fl_l()
     z_beta_ref = savepoint_nonhydro_exit.z_beta()
     z_alpha_ref = savepoint_nonhydro_exit.z_alpha()
-    z_q_ref = savepoint_nonhydro_exit.z_q()
     w_ref = savepoint_nonhydro_exit.w_new()
     z_rho_expl_ref = savepoint_nonhydro_exit.z_rho_expl()
     z_exner_expl_ref = savepoint_nonhydro_exit.z_exner_expl()
@@ -1755,7 +1704,7 @@ def test_run_solve_nonhydro_41_to_60_corrector(
     }
 
     print("compiling")
-    compiled = fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60_corrector.with_backend(
+    compiled = fused_solve_nonhydro_stencil_41_to_60.vertically_implicit_solver_at_corrector_step.with_backend(
         backend
     ).compile(
         itime_scheme=[itime_scheme],
@@ -1783,42 +1732,38 @@ def test_run_solve_nonhydro_41_to_60_corrector(
     )
     print("done (or async)")
     compiled(
-        z_flxdiv_mass=z_flxdiv_mass,
-        z_flxdiv_theta=z_flxdiv_theta,
-        z_w_expl=z_w_expl,
         z_contr_w_fl_l=z_contr_w_fl_l,
         z_beta=z_beta,
         z_alpha=z_alpha,
-        z_q=z_q,
-        w=w,
+        next_w=next_w,
         z_rho_expl=z_rho_expl,
         z_exner_expl=z_exner_expl,
-        rho=rho,
-        exner=exner,
-        theta_v=theta_v,
+        next_rho=next_rho,
+        next_exner=next_exner,
+        next_theta_v=next_theta_v,
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=vol_flx_ic,
-        exner_dyn_incr=exner_dyn_incr,
+        exner_dynaminal_increment=exner_dynaminal_increment,
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
-        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-        ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+        predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
+        corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
         z_th_ddz_exner_c=z_th_ddz_exner_c,
         rho_ic=rho_ic,
-        w_concorr_c=w_concorr_c,
+        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
-        exner_nnow=exner_nnow,
-        rho_nnow=rho_nnow,
-        theta_v_nnow=theta_v_nnow,
-        w_nnow=w_nnow,
+        current_exner=current_exner,
+        current_rho=current_rho,
+        current_theta_v=current_theta_v,
+        current_w=current_w,
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
-        theta_v_ic=theta_v_ic,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         exner_pr=exner_pr,
         ddt_exner_phy=ddt_exner_phy,
-        rho_incr=rho_incr,
-        exner_incr=exner_incr,
+        rho_iau_increment=rho_iau_increment,
+        exner_iau_increment=exner_iau_increment,
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         z_raylfac=z_raylfac,
         exner_ref_mc=metrics_savepoint.exner_ref_mc(),
@@ -1851,18 +1796,11 @@ def test_run_solve_nonhydro_41_to_60_corrector(
         offset_provider=offset_provider,
     )
 
-    assert helpers.dallclose(
-        z_w_expl.asnumpy()[start_cell_nudging:, :],
-        z_w_expl_ref.asnumpy()[start_cell_nudging:, :],
-        rtol=1e-13,
-        atol=1e-13,
-    )
     assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy(), atol=1e-12)
     assert helpers.dallclose(z_beta.asnumpy(), z_beta_ref.asnumpy())
     assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
-    assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
     assert helpers.dallclose(
-        w.asnumpy()[start_cell_nudging:, :],
+        next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
         rtol=1e-10,
         atol=1e-12,
@@ -1874,13 +1812,13 @@ def test_run_solve_nonhydro_41_to_60_corrector(
         rtol=1e-9,
     )
     assert helpers.dallclose(
-        rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
+        next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert helpers.dallclose(
-        exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
+        next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
-    assert helpers.dallclose(theta_v.asnumpy(), theta_v_ref.asnumpy())
+    assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
     # TODO: cannot find exit points for these two
-    # assert helpers.dallclose(mass_flx_ic.asnumpy(), mass_flx_ic_ref.asnumpy())
-    # assert helpers.dallclose(vol_flx_ic.asnumpy(), vol_flx_ic_ref.asnumpy())
-    assert helpers.dallclose(exner_dyn_incr.asnumpy(), exner_dyn_incr_ref.asnumpy())
+    # TODO: assert helpers.dallclose(mass_flx_ic.asnumpy(), mass_flx_ic_ref.asnumpy())
+    # TODO: assert helpers.dallclose(vol_flx_ic.asnumpy(), vol_flx_ic_ref.asnumpy())
+    assert helpers.dallclose(exner_dynaminal_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())

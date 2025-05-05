@@ -40,7 +40,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         predictor_normal_wind_advective_tendency: np.ndarray,
         corrector_normal_wind_advective_tendency: np.ndarray,
         normal_wind_tendency_due_to_physics_process: np.ndarray,
-        normal_wind_iau_increments: np.ndarray,
+        normal_wind_iau_increment: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
         horizontal_pressure_gradient: np.ndarray,
         reduced_fourth_order_divdamp_coeff_at_nest_boundary: np.ndarray,
@@ -172,7 +172,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         if is_iau_active:
             next_vn = np.where(
                 (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
-                next_vn + (iau_wgt_dyn * normal_wind_iau_increments),
+                next_vn + (iau_wgt_dyn * normal_wind_iau_increment),
                 next_vn,
             )
 
@@ -197,7 +197,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         horizontal_gradient_of_normal_wind_divergence = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        normal_wind_iau_increments = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         next_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_pressure_gradient = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -237,7 +237,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
             corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
             normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
-            normal_wind_iau_increments=normal_wind_iau_increments,
+            normal_wind_iau_increment=normal_wind_iau_increment,
             theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=horizontal_pressure_gradient,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary=reduced_fourth_order_divdamp_coeff_at_nest_boundary,

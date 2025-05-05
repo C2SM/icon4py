@@ -126,10 +126,10 @@ def test_run_solve_nonhydro_single_step(
         tangential_wind=sp_v.vt(),
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        normal_wind_iau_increments=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=sp.exner_dyn_incr(),
+        rho_iau_increment=None,  # sp.rho_incr(),
+        normal_wind_iau_increment=None,  # sp.vn_incr(),
+        exner_iau_increment=None,  # sp.exner_incr(),
+        exner_dynaminal_increment=sp.exner_dyn_incr(),
     )
     second_order_divdamp_factor = sp.divdamp_fac_o2()
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)

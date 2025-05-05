@@ -155,7 +155,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         hydrostatic_correction_on_lowest_level: np.ndarray,
         predictor_normal_wind_advective_tendency: np.ndarray,
         normal_wind_tendency_due_to_physics_process: np.ndarray,
-        normal_wind_iau_increments: np.ndarray,
+        normal_wind_iau_increment: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
         pos_on_tplane_e_x: np.ndarray,
@@ -409,7 +409,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         if is_iau_active:
             next_vn = np.where(
                 (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
-                next_vn + (iau_wgt_dyn * normal_wind_iau_increments),
+                next_vn + (iau_wgt_dyn * normal_wind_iau_increment),
                 next_vn,
             )
 
@@ -462,7 +462,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         normal_wind_tendency_due_to_physics_process = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        normal_wind_iau_increments = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         next_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_pressure_gradient = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -523,7 +523,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
             predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
             normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
-            normal_wind_iau_increments=normal_wind_iau_increments,
+            normal_wind_iau_increment=normal_wind_iau_increment,
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
             pos_on_tplane_e_x=pos_on_tplane_e_x,

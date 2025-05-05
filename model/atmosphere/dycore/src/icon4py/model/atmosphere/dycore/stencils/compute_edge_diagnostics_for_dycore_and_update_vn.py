@@ -85,7 +85,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
-    normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
+    normal_wind_iau_increment: fa.EdgeKField[ta.vpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     pos_on_tplane_e_x: gtx.Field[[dims.ECDim], ta.wpfloat],
@@ -286,7 +286,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         concat_where(
             (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _add_analysis_increments_to_vn(
-                vn_incr=normal_wind_iau_increments, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
+                vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
             ),
             next_vn,
         )
@@ -311,7 +311,7 @@ def _apply_divergence_damping_and_update_vn(
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     corrector_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
-    normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
+    normal_wind_iau_increment: fa.EdgeKField[ta.vpfloat],
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[ta.wpfloat],
     fourth_order_divdamp_scaling_coeff: fa.KField[ta.wpfloat],
     second_order_divdamp_scaling_coeff: ta.wpfloat,
@@ -444,7 +444,7 @@ def _apply_divergence_damping_and_update_vn(
         concat_where(
             (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _add_analysis_increments_to_vn(
-                vn_incr=normal_wind_iau_increments, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
+                vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
             ),
             next_vn,
         )
@@ -473,7 +473,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
-    normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
+    normal_wind_iau_increment: fa.EdgeKField[ta.vpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     pos_on_tplane_e_x: gtx.Field[[dims.ECDim], ta.wpfloat],
@@ -536,7 +536,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         - hydrostatic_correction_on_lowest_level: hydrostatic correction for steep slope (see https://doi.org/10.1175/MWR-D-12-00049.1) [m-1]
         - predictor_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at predictor step [m s-2]
         - normal_wind_tendency_due_to_physics_process: normal wind tendeny due to slow physics [m s-2]
-        - normal_wind_iau_increments: iau increment to normal wind (data assimilation) [m s-1]
+        - normal_wind_iau_increment: iau increment to normal wind (data assimilation) [m s-1]
         - geofac_grg_x: interpolation coefficient for computation of x-derivative of a cell-based variable at cell center using Green-Gauss theorem [m-1]
         - geofac_grg_y: interpolation coefficient for computation of y-derivative of a cell-based variable at cell center using Green-Gauss theorem [m-1]
         - pos_on_tplane_e_x: x-position of the edge on the tangential plane centered at cell center [m]
@@ -589,7 +589,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
-        normal_wind_iau_increments=normal_wind_iau_increments,
+        normal_wind_iau_increment=normal_wind_iau_increment,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
         pos_on_tplane_e_x=pos_on_tplane_e_x,
@@ -644,7 +644,7 @@ def apply_divergence_damping_and_update_vn(
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     corrector_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
-    normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
+    normal_wind_iau_increment: fa.EdgeKField[ta.vpfloat],
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[ta.wpfloat],
     fourth_order_divdamp_scaling_coeff: fa.KField[ta.wpfloat],
     second_order_divdamp_scaling_coeff: ta.wpfloat,
@@ -691,7 +691,7 @@ def apply_divergence_damping_and_update_vn(
         - predictor_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at predictor step [m s-2]
         - corrector_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at corrector step [m s-2]
         - normal_wind_tendency_due_to_physics_process: normal wind tendeny due to slow physics [m s-2]
-        - normal_wind_iau_increments: iau increment to normal wind (data assimilation) [m s-1]
+        - normal_wind_iau_increment: iau increment to normal wind (data assimilation) [m s-1]
         - reduced_fourth_order_divdamp_coeff_at_nest_boundary: fourth order divergence damping coefficient at nest boundary [m2 s2]
         - fourth_order_divdamp_scaling_coeff: fourth order divergence damping coefficient [m2 s2]
         - second_order_divdamp_scaling_coeff: second order divergence damping coefficient [m s]
@@ -730,7 +730,7 @@ def apply_divergence_damping_and_update_vn(
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
-        normal_wind_iau_increments=normal_wind_iau_increments,
+        normal_wind_iau_increment=normal_wind_iau_increment,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,
         reduced_fourth_order_divdamp_coeff_at_nest_boundary=reduced_fourth_order_divdamp_coeff_at_nest_boundary,

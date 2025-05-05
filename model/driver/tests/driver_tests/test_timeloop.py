@@ -126,7 +126,6 @@ def test_run_timeloop_single_step(
     savepoint_velocity_init,
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_41_60_init,
     vn_only,
     backend,
 ):
@@ -306,12 +305,16 @@ def test_run_timeloop_single_step(
         tangential_wind=sp_v.vt(),
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
-        rho_incr=savepoint_nonhydro_41_60_init.rho_incr(),  # sp.rho_incr(),
-        normal_wind_iau_increments=data_alloc.zero_field(
+        rho_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, backend=backend
+        ),  # sp.rho_incr(),
+        normal_wind_iau_increment=data_alloc.zero_field(
             icon_grid, dims.EdgeDim, dims.KDim, backend=backend
         ),  # sp.vn_incr(),
-        exner_incr=savepoint_nonhydro_41_60_init.exner_incr(),  # sp.exner_incr(),
-        exner_dyn_incr=sp.exner_dyn_incr(),
+        exner_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, backend=backend
+        ),  # sp.exner_incr(),
+        exner_dynaminal_increment=sp.exner_dyn_incr(),
     )
 
     timeloop = icon4py_driver.TimeLoop(icon4pyrun_config, diffusion_granule, solve_nonhydro_granule)

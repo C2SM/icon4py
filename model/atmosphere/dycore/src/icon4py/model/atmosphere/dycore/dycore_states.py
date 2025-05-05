@@ -126,13 +126,22 @@ class DiagnosticStateNonHydro:
     """
 
     # Analysis increments
-    rho_incr: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
-    normal_wind_iau_increments: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    rho_iau_increment: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
+    """
+    Declared as rho_incr in ICON.
+    """
+    normal_wind_iau_increment: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
     """
     Declared as vn_incr in ICON.
     """
-    exner_incr: Optional[fa.EdgeKField[float]]  # exner increment [- ]
-    exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
+    exner_iau_increment: Optional[fa.EdgeKField[float]]  # exner increment [- ]
+    """
+    Declared as exner_incr in ICON.
+    """
+    exner_dynaminal_increment: fa.CellKField[float]  # exner pressure dynamics increment
+    """
+    Declared as exner_dyn_incr in ICON.
+    """
 
 
 @dataclasses.dataclass

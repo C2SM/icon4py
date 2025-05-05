@@ -317,6 +317,8 @@ def solve_nh_run(
     vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -359,10 +361,10 @@ def solve_nh_run(
         tangential_wind=vt,
         vn_on_half_levels=vn_ie,
         contravariant_correction_at_cells_on_half_levels=w_concorr_c,
-        rho_incr=None,
-        normal_wind_iau_increments=vn_incr,
-        exner_incr=None,
-        exner_dyn_incr=exner_dyn_incr,
+        rho_iau_increment=rho_incr,
+        normal_wind_iau_increment=vn_incr,
+        exner_iau_increment=exner_incr,
+        exner_dynaminal_increment=exner_dyn_incr,
     )
 
     prognostic_state_nnow = PrognosticState(

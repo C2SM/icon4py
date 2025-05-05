@@ -146,11 +146,7 @@ class IntermediateFields:
         float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     z_beta: fa.CellKField[float]
-    z_w_expl: fa.EdgeKField[
-        float
-    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     z_exner_expl: fa.CellKField[float]
-    z_q: fa.CellKField[float]
     z_contr_w_fl_l: fa.EdgeKField[
         float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
@@ -194,13 +190,7 @@ class IntermediateFields:
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
             z_beta=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            z_w_expl=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-            ),
             z_exner_expl=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            z_q=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-            ),
             z_contr_w_fl_l=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
@@ -471,10 +461,10 @@ class SolveNonhydro:
             compute_avg_vn_and_graddiv_vn_and_vt.with_backend(self._backend)
         )
         self._compute_mass_flux = compute_mass_flux.with_backend(self._backend)
-        self._fused_solve_nonhydro_stencil_41_to_60_predictor = fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60_predictor.with_backend(
+        self._vertically_implicit_solver_at_predictor_step = fused_solve_nonhydro_stencil_41_to_60.vertically_implicit_solver_at_predictor_step.with_backend(
             self._backend
         )
-        self._fused_solve_nonhydro_stencil_41_to_60_corrector = fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60_corrector.with_backend(
+        self._vertically_implicit_solver_at_corrector_step = fused_solve_nonhydro_stencil_41_to_60.vertically_implicit_solver_at_corrector_step.with_backend(
             self._backend
         )
         self._compute_divergence_of_fluxes_of_rho_and_theta = (
@@ -636,12 +626,6 @@ class SolveNonhydro:
         )
         self.z_theta_v_fl_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
-        )
-        self.z_flxdiv_mass = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
-        self.z_flxdiv_theta = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         self.z_rho_v = data_alloc.zero_field(
             self._grid, dims.VertexDim, dims.KDim, backend=self._backend
@@ -1081,7 +1065,7 @@ class SolveNonhydro:
             hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             normal_wind_tendency_due_to_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_physics_process,
-            normal_wind_iau_increments=diagnostic_state_nh.normal_wind_iau_increments,
+            normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             geofac_grg_x=self._interpolation_state.geofac_grg_x,
             geofac_grg_y=self._interpolation_state.geofac_grg_y,
             pos_on_tplane_e_x=self._interpolation_state.pos_on_tplane_e_1,
@@ -1217,41 +1201,37 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        self._fused_solve_nonhydro_stencil_41_to_60_predictor(
-            z_flxdiv_mass=self.z_flxdiv_mass,
-            z_flxdiv_theta=self.z_flxdiv_theta,
-            z_w_expl=z_fields.z_w_expl,
+        self._vertically_implicit_solver_at_predictor_step(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             z_beta=z_fields.z_beta,
             z_alpha=z_fields.z_alpha,
-            z_q=z_fields.z_q,
-            w=prognostic_states.next.w,
+            next_w=prognostic_states.next.w,
             z_rho_expl=z_fields.z_rho_expl,
             z_exner_expl=z_fields.z_exner_expl,
-            rho=prognostic_states.next.rho,
-            exner=prognostic_states.next.exner,
-            theta_v=prognostic_states.next.theta_v,
-            z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
-            exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
+            next_rho=prognostic_states.next.rho,
+            next_exner=prognostic_states.next.exner,
+            next_theta_v=prognostic_states.next.theta_v,
+            dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
+            exner_dynaminal_increment=diagnostic_state_nh.exner_dynaminal_increment,
             geofac_div=self._interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
-            ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
+            predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             rho_ic=diagnostic_state_nh.rho_ic,
-            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
-            exner_nnow=prognostic_states.current.exner,
-            rho_nnow=prognostic_states.current.rho,
-            theta_v_nnow=prognostic_states.current.theta_v,
-            w_nnow=prognostic_states.current.w,
+            current_exner=prognostic_states.current.exner,
+            current_rho=prognostic_states.current.rho,
+            current_theta_v=prognostic_states.current.theta_v,
+            current_w=prognostic_states.current.w,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
-            theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             exner_pr=diagnostic_state_nh.exner_pr,
             ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-            rho_incr=diagnostic_state_nh.rho_incr,
-            exner_incr=diagnostic_state_nh.exner_incr,
+            rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
+            exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             z_raylfac=self.z_raylfac,
             exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
@@ -1416,7 +1396,7 @@ class SolveNonhydro:
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             corrector_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.corrector,
             normal_wind_tendency_due_to_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_physics_process,
-            normal_wind_iau_increments=diagnostic_state_nh.normal_wind_iau_increments,
+            normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
@@ -1505,43 +1485,39 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        self._fused_solve_nonhydro_stencil_41_to_60_corrector(
-            z_flxdiv_mass=self.z_flxdiv_mass,
-            z_flxdiv_theta=self.z_flxdiv_theta,
-            z_w_expl=z_fields.z_w_expl,
+        self._vertically_implicit_solver_at_corrector_step(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             z_beta=z_fields.z_beta,
             z_alpha=z_fields.z_alpha,
-            z_q=z_fields.z_q,
-            w=prognostic_states.next.w,
+            next_w=prognostic_states.next.w,
             z_rho_expl=z_fields.z_rho_expl,
             z_exner_expl=z_fields.z_exner_expl,
-            rho=prognostic_states.next.rho,
-            exner=prognostic_states.next.exner,
-            theta_v=prognostic_states.next.theta_v,
+            next_rho=prognostic_states.next.rho,
+            next_exner=prognostic_states.next.exner,
+            next_theta_v=prognostic_states.next.theta_v,
             mass_flx_ic=prep_adv.mass_flx_ic,
             vol_flx_ic=prep_adv.vol_flx_ic,
-            exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
+            exner_dynaminal_increment=diagnostic_state_nh.exner_dynaminal_increment,
             geofac_div=self._interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
-            ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
-            ddt_w_adv_ntl2=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
+            predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
+            corrector_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             rho_ic=diagnostic_state_nh.rho_ic,
-            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
-            exner_nnow=prognostic_states.current.exner,
-            rho_nnow=prognostic_states.current.rho,
-            theta_v_nnow=prognostic_states.current.theta_v,
-            w_nnow=prognostic_states.current.w,
+            current_exner=prognostic_states.current.exner,
+            current_rho=prognostic_states.current.rho,
+            current_theta_v=prognostic_states.current.theta_v,
+            current_w=prognostic_states.current.w,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
-            theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             exner_pr=diagnostic_state_nh.exner_pr,
             ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-            rho_incr=diagnostic_state_nh.rho_incr,
-            exner_incr=diagnostic_state_nh.exner_incr,
+            rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
+            exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             z_raylfac=self.z_raylfac,
             exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,

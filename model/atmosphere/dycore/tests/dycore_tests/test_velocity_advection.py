@@ -172,10 +172,10 @@ def test_velocity_predictor_step(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,
-        normal_wind_iau_increments=None,
-        exner_incr=None,
-        exner_dyn_incr=None,
+        rho_iau_increment=None,
+        normal_wind_iau_increment=None,
+        exner_iau_increment=None,
+        exner_dynaminal_increment=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
@@ -347,10 +347,10 @@ def test_velocity_corrector_step(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,
-        normal_wind_iau_increments=None,
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=None,
+        rho_iau_increment=None,
+        normal_wind_iau_increment=None,
+        exner_iau_increment=None,  # sp.exner_incr(),
+        exner_dynaminal_increment=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),

@@ -451,6 +451,10 @@ def test_dycore_wrapper_granule_inputs(
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr_field = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)
+    rho_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)
+    exner_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
@@ -568,9 +572,9 @@ def test_dycore_wrapper_granule_inputs(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,  # sp.rho_incr(),
-        normal_wind_iau_increments=vn_incr_field,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
+        rho_incr=rho_incr_field,  # sp.rho_incr(),
+        normal_wind_iau_increment=vn_incr_field,  # sp.vn_incr(),
+        exner_incr=exner_incr_field,  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
     prognostic_state_nnow = prognostics.PrognosticState(
@@ -790,6 +794,8 @@ def test_dycore_wrapper_granule_inputs(
             vn_ie=vn_ie,
             vt=vt,
             vn_incr=vn_incr,
+            rho_incr=rho_incr,
+            exner_incr=exner_incr,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,
@@ -918,6 +924,12 @@ def test_granule_solve_nonhydro_single_step_regional(
     vn_incr = test_utils.array_to_array_info(
         data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
     )
+    rho_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+    )
+    exner_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+    )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
@@ -970,6 +982,8 @@ def test_granule_solve_nonhydro_single_step_regional(
         vn_ie=vn_ie,
         vt=vt,
         vn_incr=vn_incr,
+        rho_incr=rho_incr,
+        exner_incr=exner_incr,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
         vn_traj=vn_traj,
@@ -1088,6 +1102,12 @@ def test_granule_solve_nonhydro_multi_step_regional(
     vn_incr = test_utils.array_to_array_info(
         data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
     )
+    rho_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+    )
+    exner_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+    )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
@@ -1144,6 +1164,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
             vn_ie=vn_ie,
             vt=vt,
             vn_incr=vn_incr,
+            rho_incr=rho_incr,
+            exner_incr=exner_incr,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vn_traj=vn_traj,
