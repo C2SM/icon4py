@@ -238,11 +238,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p1(
 
 @gtx.field_operator
 def _fused_solve_nonhydro_stencil_41_to_60_predictor_p2(
-    z_w_expl: fa.CellKField[ta.wpfloat],
-    z_contr_w_fl_l: fa.CellKField[ta.wpfloat],
     z_beta: fa.CellKField[ta.vpfloat],
     z_alpha: fa.CellKField[ta.vpfloat],
-    z_q: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     exner: fa.CellKField[ta.wpfloat],
@@ -258,8 +255,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p2(
     vwind_impl_wgt: fa.CellField[ta.wpfloat],
     z_raylfac: fa.KField[ta.wpfloat],
     exner_ref_mc: fa.CellKField[ta.vpfloat],
-    z_flxdiv_mass: fa.CellKField[ta.wpfloat],
-    z_flxdiv_theta: fa.CellKField[ta.wpfloat],
     z_rho_expl: fa.CellKField[ta.wpfloat],
     z_exner_expl: fa.CellKField[ta.wpfloat],
     cvd_o_rd: ta.wpfloat,
@@ -275,12 +270,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p2(
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -352,13 +342,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor_p2(
     )
 
     return (
-        z_flxdiv_mass,
-        z_flxdiv_theta,
-        z_w_expl,
-        z_contr_w_fl_l,
         z_beta,
         z_alpha,
-        z_q,
         w,
         z_rho_expl,
         z_exner_expl,
@@ -797,11 +782,8 @@ def fused_solve_nonhydro_stencil_41_to_60_predictor(
         },
     )
     _fused_solve_nonhydro_stencil_41_to_60_predictor_p2(
-        z_w_expl=z_w_expl,
-        z_contr_w_fl_l=z_contr_w_fl_l,
         z_beta=z_beta,
         z_alpha=z_alpha,
-        z_q=z_q,
         w=w,
         rho=rho,
         exner=exner,
@@ -817,8 +799,6 @@ def fused_solve_nonhydro_stencil_41_to_60_predictor(
         vwind_impl_wgt=vwind_impl_wgt,
         z_raylfac=z_raylfac,
         exner_ref_mc=exner_ref_mc,
-        z_flxdiv_mass=z_flxdiv_mass,
-        z_flxdiv_theta=z_flxdiv_theta,
         z_rho_expl=z_rho_expl,
         z_exner_expl=z_exner_expl,
         cvd_o_rd=cvd_o_rd,
@@ -832,13 +812,8 @@ def fused_solve_nonhydro_stencil_41_to_60_predictor(
         kstart_dd3d=kstart_dd3d,
         kstart_moist=kstart_moist,
         out=(
-            z_flxdiv_mass,
-            z_flxdiv_theta,
-            z_w_expl,
-            z_contr_w_fl_l,
             z_beta,
             z_alpha,
-            z_q,
             w,
             z_rho_expl,
             z_exner_expl,
