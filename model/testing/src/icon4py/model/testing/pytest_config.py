@@ -78,20 +78,40 @@ def pytest_configure(config):
     if config.getoption("--backend"):
         backend_option = config.getoption("--backend")
         _check_backend_validity(backend_option)
+    if config.getoption("--datatest-only"):
+        k_option = config.getoption("-k")
+        if not k_option:
+            config.option.keyword = "datatest"
+        else:
+            new_option = f"({k_option}) and datatest"
+            config.option.keyword = new_option
+    if config.getoption("--datatest-skip"):
+        k_option = config.getoption("-k")
+        if not k_option:
+            config.option.keyword = "not datatest"
+        else:
+            new_option = f"({k_option}) and not datatest"
+            config.option.keyword = new_option
 
 
 def pytest_addoption(parser):
     """Add custom commandline options for pytest."""
     try:
-        parser.addoption(
-            "--datatest",
+        datatest = parser.getgroup("datatest", "Options for data testing")
+        datatest.addoption(
+            "--datatest-skip",
             action="store_true",
-            help="Run tests that use serialized data, can be slow since data might be downloaded from online storage.",
             default=False,
+            help="Skip all data tests",
+        )
+        datatest.addoption(
+            "--datatest-only",
+            action="store_true",
+            default=False,
+            help="Run only data tests",
         )
     except ValueError:
         pass
-
     try:
         parser.addoption(
             "--backend",
@@ -160,7 +180,6 @@ def pytest_runtest_setup(item):
         item.own_markers,
         grid,
         backend,
-        is_datatest=item.config.getoption("--datatest"),
     )
 
 

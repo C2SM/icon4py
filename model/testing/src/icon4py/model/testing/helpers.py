@@ -69,7 +69,6 @@ def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
     grid: base.BaseGrid,
     backend: gtx_backend.Backend | None,
-    is_datatest: bool = False,
 ):
     for marker in markers:
         match marker.name:
@@ -90,8 +89,6 @@ def apply_markers(
                     pytest.skip(
                         "Stencil does not support domain containing skip values. Consider shrinking domain."
                     )
-            case "datatest" if not is_datatest:
-                pytest.skip("need '--datatest' option to run")
 
 
 @dataclass(frozen=True)

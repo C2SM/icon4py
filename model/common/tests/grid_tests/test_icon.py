@@ -165,7 +165,8 @@ def test_grid_size(icon_grid):
     assert 20896 == icon_grid.size[dims.CellDim]
     assert 31558 == icon_grid.size[dims.EdgeDim]
 
-
+# TODO fix no gridfiles on github runners
+@pytest.mark.xfail(reason="provide gridfiles on github runners")
 @pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
 def test_has_skip_values(grid_file):
     grid = from_file(grid_file)
