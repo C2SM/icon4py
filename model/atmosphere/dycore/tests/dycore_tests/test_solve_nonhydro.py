@@ -1530,7 +1530,7 @@ def test_run_solve_nonhydro_41_to_60_predictor(
         end_cell_local=[end_cell_local],
         vertical_start=[0],
         vertical_end=[icon_grid.num_levels + 1],
-        offset_provider_type=offset_provider,
+        offset_provider=offset_provider,
     )
     print("done (or async)")
     print(constants.RayleighType.KLEMP, divdamp_type)
@@ -1779,7 +1779,7 @@ def test_run_solve_nonhydro_41_to_60_corrector(
         kstart_moist=[kstart_moist],
         vertical_start=[0],
         vertical_end=[icon_grid.num_levels + 1],
-        offset_provider_type=offset_provider,
+        offset_provider=offset_provider,
     )
     print("done (or async)")
     compiled(

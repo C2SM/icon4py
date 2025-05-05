@@ -152,11 +152,15 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_incr=gtx.as_field((dims.CellDim, dims.KDim), data=np.asarray([]), allocator=backend),
+        rho_incr=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, backend=backend
+        ),
         normal_wind_iau_increments=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),
-        exner_incr=gtx.as_field((dims.CellDim, dims.KDim), data=np.asarray([]), allocator=backend),
+        exner_incr=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, backend=backend
+        ),
         exner_dyn_incr=init_savepoint.exner_dyn_incr(),
     )
 
