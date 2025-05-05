@@ -66,8 +66,6 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     w_prep = z_w_expl - z_gamma_wp * (z_exner_expl(Koff[-1]) - z_exner_expl)
     w_prev = w(Koff[-1])
     z_q_prev = z_q(Koff[-1])
-    # z_q_res, w_res, _ = _w(w_prev, z_q_prev, z_a, z_b, z_c, w_prep)
-    # return z_q_res, w_res
     return w_prev, z_q_prev, z_a, z_b, z_c, w_prep
 
 

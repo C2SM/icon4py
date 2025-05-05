@@ -9,8 +9,8 @@
 
 from typing import Optional
 
-import numpy as np
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh

@@ -7,8 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-import gt4py.next as gtx
-import numpy as np
+
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
