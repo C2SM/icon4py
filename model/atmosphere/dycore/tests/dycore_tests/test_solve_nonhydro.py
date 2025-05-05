@@ -1127,9 +1127,9 @@ def test_compute_perturbed_quantities_and_interpolation(
     )
 
     limited_area = icon_grid.limited_area
-    params_config = solve_nh.NonHydrostaticConfig()
-    igradp_method = params_config.igradp_method
-    n_lev = icon_grid.num_levels
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    igradp_method = config.igradp_method
+
     nflatlev = vertical_params.nflatlev
     nflat_gradp = vertical_params.nflat_gradp
 
@@ -1200,7 +1200,6 @@ def test_compute_perturbed_quantities_and_interpolation(
         d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
         limited_area=limited_area,
         igradp_method=igradp_method,
-        n_lev=n_lev,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
         start_cell_lateral_boundary=start_cell_lateral_boundary,

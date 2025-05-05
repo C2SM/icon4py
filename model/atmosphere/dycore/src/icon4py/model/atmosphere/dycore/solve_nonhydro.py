@@ -613,18 +613,6 @@ class SolveNonhydro:
         """
         Declared as z_dexner_dz_c_2 in ICON.
         """
-        self.z_grad_rth_1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
-        self.z_grad_rth_2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
-        self.z_grad_rth_3 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
-        self.z_grad_rth_4 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
         self.z_vn_avg = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
@@ -674,9 +662,6 @@ class SolveNonhydro:
         """
         self.fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
             self._grid, dims.KDim, backend=self._backend
-        )
-        self.z_graddiv2_vn = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
         """
         Declared as scal_divdamp in ICON.
@@ -917,7 +902,6 @@ class SolveNonhydro:
             d2dexdz2_fac2_mc=self._metric_state_nonhydro.d2dexdz2_fac2_mc,
             limited_area=self._grid.limited_area,
             igradp_method=self._config.igradp_method,
-            n_lev=self._grid.num_levels,
             nflatlev=self._vertical_params.nflatlev,
             nflat_gradp=self._vertical_params.nflat_gradp,
             start_cell_lateral_boundary=self._start_cell_lateral_boundary,
@@ -932,23 +916,6 @@ class SolveNonhydro:
             vertical_end=gtx.int32(self._grid.num_levels + 1),
             offset_provider=self._grid.offset_providers,
         )
-
-        if (
-            self._config.igradp_method
-            == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-        ):
-            self._compute_approx_of_2nd_vertical_derivative_of_exner(
-                z_theta_v_pr_ic=self.perturbed_theta_v_at_cells_on_half_levels,
-                d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
-                d2dexdz2_fac2_mc=self._metric_state_nonhydro.d2dexdz2_fac2_mc,
-                z_rth_pr_2=self.perturbed_theta_v_at_cells_on_model_levels,
-                z_dexner_dz_c_2=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-                horizontal_start=self._start_cell_lateral_boundary_level_3,
-                horizontal_end=self._end_cell_halo,
-                vertical_start=self._vertical_params.nflat_gradp,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
-            )
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if self._config.iadv_rhotheta == dycore_states.RhoThetaAdvectionType.SIMPLE:

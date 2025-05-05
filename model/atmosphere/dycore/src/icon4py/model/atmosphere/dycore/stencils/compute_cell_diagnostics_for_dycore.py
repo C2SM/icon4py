@@ -66,20 +66,20 @@ def _compute_perturbed_quantities_and_interpolation(
     reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
     reference_theta_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     wgtfac_c: fa.CellKField[ta.wpfloat],
     vwind_expl_wgt: fa.CellField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     ddqz_z_half: fa.CellKField[ta.wpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.wpfloat],
-    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.wpfloat],
-    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.wpfloat],
+    exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     limited_area: bool,
     igradp_method: gtx.int32,
@@ -91,17 +91,17 @@ def _compute_perturbed_quantities_and_interpolation(
     end_cell_halo: gtx.int32,
     end_cell_halo_level_2: gtx.int32,
 ) -> tuple[
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
 ]:
     (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
         concat_where(
@@ -202,14 +202,14 @@ def _compute_perturbed_quantities_and_interpolation(
 @field_operator
 def _surface_computations(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
-    exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.wpfloat],
+    exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     end_cell_halo: gtx.int32,
 ) -> tuple[
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
 ]:
     temporal_extrapolation_of_perturbed_exner = concat_where(
         (start_cell_lateral_boundary_level_3 <= dims.CellDim < end_cell_halo),
@@ -318,7 +318,6 @@ def compute_perturbed_quantities_and_interpolation(
     d2dexdz2_fac2_mc: fa.CellKField[ta.vpfloat],
     limited_area: bool,
     igradp_method: gtx.int32,
-    n_lev: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_cell_lateral_boundary: gtx.int32,
@@ -368,7 +367,6 @@ def compute_perturbed_quantities_and_interpolation(
             - d2dexdz2_fac2_mc: precomputed factor for seconf vertical derivatives of exner function for model cell centers
             - limited_area: option indicating the grid is limited area or not
             - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
-            - n_lev: number of vertical levels
             - nflatlev: starting vertical index of flat levels
             - nflat_gradp: starting vertical index when neighboring cell centers lie within the thicknees of the layer
             - start_cell_lateral_boundary: start index of the first lateral boundary level zone for cells
@@ -411,7 +409,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (n_lev, n_lev + 1),
+            dims.KDim: (vertical_end-1, vertical_end),
         },
     )
 
@@ -470,7 +468,7 @@ def compute_perturbed_quantities_and_interpolation(
         out=(perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (n_lev, n_lev + 1),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
 
@@ -480,7 +478,7 @@ def compute_perturbed_quantities_and_interpolation(
         out=exner_at_cells_on_half_levels,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (n_lev, n_lev + 1),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
 
