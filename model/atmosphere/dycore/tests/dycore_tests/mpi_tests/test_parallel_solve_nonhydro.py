@@ -114,7 +114,7 @@ def test_run_solve_nonhydro_single_step(
         grf_tend_rho=sp.grf_tend_rho(),
         grf_tend_thv=sp.grf_tend_thv(),
         grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
+        mass_flux_at_edges_on_model_levels=sp.mass_fl_e(),
         normal_wind_tendency_due_to_physics_process=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
@@ -212,7 +212,7 @@ def test_run_solve_nonhydro_single_step(
 
     assert helpers.dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        diagnostic_state_nh.mass_fl_e.asnumpy(),
+        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 

@@ -163,7 +163,7 @@ def test_velocity_predictor_step(
         grf_tend_rho=None,
         grf_tend_thv=None,
         grf_tend_w=None,
-        mass_fl_e=None,
+        mass_flux_at_edges_on_model_levels=None,
         normal_wind_tendency_due_to_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
@@ -338,7 +338,7 @@ def test_velocity_corrector_step(
         grf_tend_rho=None,
         grf_tend_thv=None,
         grf_tend_w=None,
-        mass_fl_e=None,
+        mass_flux_at_edges_on_model_levels=None,
         normal_wind_tendency_due_to_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(

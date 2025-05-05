@@ -624,9 +624,12 @@ class SolveNonhydro:
         self.z_vn_avg = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.z_theta_v_fl_e = data_alloc.zero_field(
+        self.theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
+        """
+        Declared as z_theta_v_fl_e in ICON.
+        """
         self.z_rho_v = data_alloc.zero_field(
             self._grid, dims.VertexDim, dims.KDim, backend=self._backend
         )
@@ -1142,8 +1145,8 @@ class SolveNonhydro:
             z_vn_avg=self.z_vn_avg,
             ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
             z_theta_v_e=z_fields.theta_v_at_edges_on_model_levels,
-            mass_fl_e=diagnostic_state_nh.mass_fl_e,
-            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            mass_fl_e=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+            z_theta_v_fl_e=self.theta_v_flux_at_edges_on_model_levels,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
@@ -1214,8 +1217,8 @@ class SolveNonhydro:
             dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
             exner_dynamical_increment=diagnostic_state_nh.exner_dynamical_increment,
             geofac_div=self._interpolation_state.geofac_div,
-            mass_fl_e=diagnostic_state_nh.mass_fl_e,
-            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -1252,8 +1255,8 @@ class SolveNonhydro:
             jk_start=self.jk_start,
             kstart_dd3d=self._params.starting_vertical_index_for_3d_divdamp,
             kstart_moist=self._vertical_params.kstart_moist,
-            start_cell_nudging=self._start_cell_nudging,
-            end_cell_local=self._end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels + 1),
             offset_provider=self._grid.offset_providers,
@@ -1449,8 +1452,8 @@ class SolveNonhydro:
             z_vn_avg=self.z_vn_avg,
             ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
             z_theta_v_e=z_fields.theta_v_at_edges_on_model_levels,
-            mass_fl_e=diagnostic_state_nh.mass_fl_e,
-            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            mass_fl_e=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+            z_theta_v_fl_e=self.theta_v_flux_at_edges_on_model_levels,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
@@ -1474,7 +1477,7 @@ class SolveNonhydro:
             log.debug(f"corrector: start stencil 34")
             self._accumulate_prep_adv_fields(
                 z_vn_avg=self.z_vn_avg,
-                mass_fl_e=diagnostic_state_nh.mass_fl_e,
+                mass_fl_e=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
                 vn_traj=prep_adv.vn_traj,
                 mass_flx_me=prep_adv.mass_flx_me,
                 r_nsubsteps=r_nsubsteps,
@@ -1499,8 +1502,8 @@ class SolveNonhydro:
             vol_flx_ic=prep_adv.vol_flx_ic,
             exner_dynamical_increment=diagnostic_state_nh.exner_dynamical_increment,
             geofac_div=self._interpolation_state.geofac_div,
-            mass_fl_e=diagnostic_state_nh.mass_fl_e,
-            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
             corrector_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
@@ -1543,8 +1546,8 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
             l_vert_nested=self.l_vert_nested,
-            start_cell_nudging=self._start_cell_nudging,
-            end_cell_local=self._end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels + 1),
             offset_provider=self._grid.offset_providers,

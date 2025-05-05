@@ -64,11 +64,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=0.0)
-def _w_1_scan(state: ta.wpfloat, w_1: ta.wpfloat) -> ta.wpfloat:
-    return w_1 + state
-
-
 @gtx.field_operator
 def _set_surface_boundary_condtion_for_computation_of_w(
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
@@ -88,8 +83,8 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     z_alpha: fa.CellKField[ta.vpfloat],
     next_w: fa.CellKField[ta.wpfloat],
     geofac_div: fa.CellEdgeField[ta.wpfloat],
-    mass_fl_e: fa.EdgeKField[ta.wpfloat],
-    z_theta_v_fl_e: fa.EdgeKField[ta.wpfloat],
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
+    theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
     rho_ic: fa.CellKField[ta.wpfloat],
@@ -125,8 +120,8 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
 ]:
     divergence_of_mass, divergence_of_theta_v = _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div=geofac_div,
-        mass_fl_e=mass_fl_e,
-        z_theta_v_fl_e=z_theta_v_fl_e,
+        mass_fl_e=mass_flux_at_edges_on_model_levels,
+        z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
     z_w_expl = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
@@ -355,8 +350,8 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     z_alpha: fa.CellKField[ta.vpfloat],
     next_w: fa.CellKField[ta.wpfloat],
     geofac_div: fa.CellEdgeField[ta.wpfloat],
-    mass_fl_e: fa.EdgeKField[ta.wpfloat],
-    z_theta_v_fl_e: fa.EdgeKField[ta.wpfloat],
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
+    theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
@@ -397,8 +392,8 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     # verified for e-9
     divergence_of_mass, divergence_of_theta_v = _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div=geofac_div,
-        mass_fl_e=mass_fl_e,
-        z_theta_v_fl_e=z_theta_v_fl_e,
+        mass_fl_e=mass_flux_at_edges_on_model_levels,
+        z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
     z_w_expl = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
@@ -679,8 +674,8 @@ def vertically_implicit_solver_at_predictor_step(
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     exner_dynamical_increment: fa.CellKField[ta.vpfloat],
     geofac_div: fa.CellEdgeField[ta.wpfloat],
-    mass_fl_e: fa.EdgeKField[ta.wpfloat],
-    z_theta_v_fl_e: fa.EdgeKField[ta.wpfloat],
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
+    theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
     rho_ic: fa.CellKField[ta.wpfloat],
@@ -717,8 +712,8 @@ def vertically_implicit_solver_at_predictor_step(
     jk_start: int32,
     kstart_dd3d: int32,
     kstart_moist: int32,
-    start_cell_nudging: int32,
-    end_cell_local: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
@@ -730,7 +725,7 @@ def vertically_implicit_solver_at_predictor_step(
             z_contr_w_fl_l,
         ),
         domain={
-            dims.CellDim: (start_cell_nudging, end_cell_local),
+            dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
@@ -741,8 +736,8 @@ def vertically_implicit_solver_at_predictor_step(
         z_alpha=z_alpha,
         next_w=next_w,
         geofac_div=geofac_div,
-        mass_fl_e=mass_fl_e,
-        z_theta_v_fl_e=z_theta_v_fl_e,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         z_th_ddz_exner_c=z_th_ddz_exner_c,
         rho_ic=rho_ic,
@@ -777,7 +772,7 @@ def vertically_implicit_solver_at_predictor_step(
             z_exner_expl,
         ),
         domain={
-            dims.CellDim: (start_cell_nudging, end_cell_local),
+            dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
@@ -824,7 +819,7 @@ def vertically_implicit_solver_at_predictor_step(
             exner_dynamical_increment,
         ),
         domain={
-            dims.CellDim: (start_cell_nudging, end_cell_local),
+            dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
@@ -845,8 +840,8 @@ def vertically_implicit_solver_at_corrector_step(
     vol_flx_ic: fa.CellKField[ta.wpfloat],
     exner_dynamical_increment: fa.CellKField[ta.wpfloat],
     geofac_div: fa.CellEdgeField[ta.wpfloat],
-    mass_fl_e: fa.EdgeKField[ta.wpfloat],
-    z_theta_v_fl_e: fa.EdgeKField[ta.wpfloat],
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
+    theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
@@ -889,8 +884,8 @@ def vertically_implicit_solver_at_corrector_step(
     n_lev: int32,
     jk_start: int32,
     kstart_moist: int32,
-    start_cell_nudging: int32,
-    end_cell_local: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
@@ -902,7 +897,7 @@ def vertically_implicit_solver_at_corrector_step(
             z_contr_w_fl_l,
         ),
         domain={
-            dims.CellDim: (start_cell_nudging, end_cell_local),
+            dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
@@ -912,8 +907,8 @@ def vertically_implicit_solver_at_corrector_step(
         z_alpha=z_alpha,
         next_w=next_w,
         geofac_div=geofac_div,
-        mass_fl_e=mass_fl_e,
-        z_theta_v_fl_e=z_theta_v_fl_e,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
         z_th_ddz_exner_c=z_th_ddz_exner_c,
@@ -952,7 +947,7 @@ def vertically_implicit_solver_at_corrector_step(
             z_exner_expl,
         ),
         domain={
-            dims.CellDim: (start_cell_nudging, end_cell_local),
+            dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
@@ -1001,7 +996,7 @@ def vertically_implicit_solver_at_corrector_step(
             exner_dynamical_increment,
         ),
         domain={
-            dims.CellDim: (start_cell_nudging, end_cell_local),
+            dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )

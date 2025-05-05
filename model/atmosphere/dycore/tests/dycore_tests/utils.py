@@ -138,7 +138,7 @@ def construct_diagnostics(
         grf_tend_rho=init_savepoint.grf_tend_rho(),
         grf_tend_thv=init_savepoint.grf_tend_thv(),
         grf_tend_w=init_savepoint.grf_tend_w(),
-        mass_fl_e=init_savepoint.mass_fl_e(),
+        mass_flux_at_edges_on_model_levels=init_savepoint.mass_fl_e(),
         normal_wind_tendency_due_to_physics_process=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(

@@ -79,15 +79,19 @@ from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
 def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
     connectivities,
     geofac_div: np.ndarray,
-    mass_fl_e: np.ndarray,
-    z_theta_v_fl_e: np.ndarray,
+    mass_flux_at_edges_on_model_levels: np.ndarray,
+    theta_v_flux_at_edges_on_model_levels: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     c2e = connectivities[dims.C2EDim]
     c2ce = helpers.as_1d_connectivity(c2e)
     geofac_div = np.expand_dims(geofac_div, axis=-1)
 
-    divergence_of_mass_wp = np.sum(geofac_div[c2ce] * mass_fl_e[c2e], axis=1)
-    divergence_of_theta_v_wp = np.sum(geofac_div[c2ce] * z_theta_v_fl_e[c2e], axis=1)
+    divergence_of_mass_wp = np.sum(
+        geofac_div[c2ce] * mass_flux_at_edges_on_model_levels[c2e], axis=1
+    )
+    divergence_of_theta_v_wp = np.sum(
+        geofac_div[c2ce] * theta_v_flux_at_edges_on_model_levels[c2e], axis=1
+    )
     return (divergence_of_mass_wp, divergence_of_theta_v_wp)
 
 
@@ -110,9 +114,20 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities,
+        z_contr_w_fl_l: np.ndarray,
+        z_beta: np.ndarray,
+        z_alpha: np.ndarray,
+        next_w: np.ndarray,
+        z_rho_expl: np.ndarray,
+        z_exner_expl: np.ndarray,
+        next_rho: np.ndarray,
+        next_exner: np.ndarray,
+        next_theta_v: np.ndarray,
+        dwdz_at_cells_on_model_levels: np.ndarray,
+        exner_dynamical_increment: np.ndarray,
         geofac_div: np.ndarray,
-        mass_fl_e: np.ndarray,
-        z_theta_v_fl_e: np.ndarray,
+        mass_flux_at_edges_on_model_levels: np.ndarray,
+        theta_v_flux_at_edges_on_model_levels: np.ndarray,
         predictor_vertical_wind_advective_tendency: np.ndarray,
         z_th_ddz_exner_c: np.ndarray,
         rho_ic: np.ndarray,
@@ -132,17 +147,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         ddqz_z_half: np.ndarray,
         z_raylfac: np.ndarray,
         exner_ref_mc: np.ndarray,
-        z_contr_w_fl_l: np.ndarray,
-        z_beta: np.ndarray,
-        z_alpha: np.ndarray,
-        next_w: np.ndarray,
-        z_rho_expl: np.ndarray,
-        z_exner_expl: np.ndarray,
-        next_rho: np.ndarray,
-        next_exner: np.ndarray,
-        next_theta_v: np.ndarray,
-        dwdz_at_cells_on_model_levels: np.ndarray,
-        exner_dynamical_increment: np.ndarray,
         cvd_o_rd: float,
         iau_wgt_dyn: float,
         dtime: float,
@@ -160,24 +164,25 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         jk_start: int,
         kstart_dd3d: int,
         kstart_moist: int,
-        start_cell_nudging: int,
-        end_cell_local: int,
+        horizontal_start: int,
+        horizontal_end: int,
         **kwargs,
     ) -> dict:
         horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dynamical_increment.shape[1])
+        vert_nlevp1_idx = np.arange(z_contr_w_fl_l.shape[1])
 
         divergence_of_mass = np.zeros_like(current_rho)
         divergence_of_theta_v = np.zeros_like(current_theta_v)
         # verified for e-9
         divergence_of_mass, divergence_of_theta_v = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_divergence_of_fluxes_of_rho_and_theta_numpy(
                 connectivities=connectivities,
                 geofac_div=geofac_div,
-                mass_fl_e=mass_fl_e,
-                z_theta_v_fl_e=z_theta_v_fl_e,
+                mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+                theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             ),
             (divergence_of_mass, divergence_of_theta_v),
         )
@@ -186,10 +191,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         z_q = np.zeros_like(z_contr_w_fl_l)
 
         (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
-            (start_cell_nudging <= horz_idx)
-            & (horz_idx < end_cell_local)
-            & (vert_idx >= int32(1))
-            & (vert_idx < n_lev),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(1)),
             compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
@@ -204,10 +206,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
         )
         (z_beta, z_alpha[:, :n_lev]) = np.where(
-            (start_cell_nudging <= horz_idx)
-            & (horz_idx < end_cell_local)
-            & (vert_idx >= int32(0))
-            & (vert_idx < n_lev),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(0)),
             compute_solver_coefficients_matrix_numpy(
                 connectivities=connectivities,
                 exner_nnow=current_exner,
@@ -223,45 +222,46 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             ),
             (z_beta, z_alpha[:, :n_lev]),
         )
-        z_alpha[:, :n_lev] = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx == n_lev),
+        z_alpha = np.where(
+            (horizontal_start <= horz_idx)
+            & (horz_idx < horizontal_end)
+            & (vert_nlevp1_idx == n_lev),
             0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha[:, :n_lev]),
-            z_alpha[:, :n_lev],
+            z_alpha,
         )
-        z_q = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx == int32(0)),
+        z_q[:, :n_lev] = np.where(
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == int32(0)),
             0.0,
-            z_q,
+            z_q[:, :n_lev],
         )
 
         if not l_vert_nested:
-            next_w[start_cell_nudging:end_cell_local, :n_lev] = 0.0
-            z_contr_w_fl_l[start_cell_nudging:end_cell_local, :n_lev] = 0.0
+            next_w[horizontal_start:horizontal_end, 0] = 0.0
+            z_contr_w_fl_l[horizontal_start:horizontal_end, 0] = 0.0
 
-        (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx == n_lev),
+        (next_w, z_contr_w_fl_l) = np.where(
+            (horizontal_start <= horz_idx)
+            & (horz_idx < horizontal_end)
+            & (vert_nlevp1_idx == n_lev),
             set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
                 connectivities=connectivities,
-                w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
-                z_contr_w_fl_l=z_contr_w_fl_l[:, :n_lev],
+                w_concorr_c=contravariant_correction_at_cells_on_half_levels,
+                z_contr_w_fl_l=z_contr_w_fl_l,
             ),
-            (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
+            (next_w, z_contr_w_fl_l),
         )
         # 48 and 49 are identical except for bounds
         (z_rho_expl, z_exner_expl) = np.where(
-            (start_cell_nudging <= horz_idx)
-            & (horz_idx < end_cell_local)
-            & (vert_idx >= int32(0))
-            & (vert_idx < n_lev),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(0)),
             compute_explicit_part_for_rho_and_exner_numpy(
                 connectivities=connectivities,
                 rho_nnow=current_rho,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-                divergence_of_mass=divergence_of_mass,
+                z_flxdiv_mass=divergence_of_mass,
                 z_contr_w_fl_l=z_contr_w_fl_l,
                 exner_pr=exner_pr,
                 z_beta=z_beta,
-                divergence_of_theta_v=divergence_of_theta_v,
+                z_flxdiv_theta=divergence_of_theta_v,
                 theta_v_ic=theta_v_at_cells_on_half_levels,
                 ddt_exner_phy=ddt_exner_phy,
                 dtime=dtime,
@@ -271,7 +271,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
 
         if is_iau_active:
             (z_rho_expl, z_exner_expl) = np.where(
-                (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
                 add_analysis_increments_from_data_assimilation_numpy(
                     connectivities=connectivities,
                     z_rho_expl=z_rho_expl,
@@ -282,8 +282,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 ),
                 (z_rho_expl, z_exner_expl),
             )
-        z_q, next_w[:, :n_lev] = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
+        z_q[:, :n_lev], next_w[:, :n_lev] = np.where(
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
                 vwind_impl_wgt=vwind_impl_wgt,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
@@ -292,19 +292,19 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 z_beta=z_beta,
                 z_w_expl=z_w_expl,
                 z_exner_expl=z_exner_expl,
-                z_q_ref=z_q,
+                z_q_ref=z_q[:, :n_lev],
                 w_ref=next_w[:, :n_lev],
                 dtime=dtime,
                 cpd=cpd,
             ),
-            (z_q, next_w[:, :n_lev]),
+            (z_q[:, :n_lev], next_w[:, :n_lev]),
         )
 
         next_w[:, :n_lev] = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,
-                z_q=z_q,
+                z_q=z_q[:, :n_lev],
                 w=next_w[:, :n_lev],
             ),
             next_w[:, :n_lev],
@@ -313,8 +313,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         w_1 = next_w[:, 0]
         if rayleigh_type == rayleigh_klemp:
             next_w[:, :n_lev] = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= 1)
                 & (vert_idx < (index_of_damping_layer + 1)),
                 apply_rayleigh_damping_mechanism_numpy(
@@ -328,15 +328,15 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
 
         if at_first_substep:
             exner_dynamical_increment = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= kstart_moist),
                 next_exner.astype(ta.vpfloat),
                 exner_dynamical_increment,
             )
 
         next_rho, next_exner, next_theta_v = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= jk_start),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= jk_start),
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
                 z_rho_expl=z_rho_expl,
@@ -360,8 +360,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         # compute dw/dz for divergence damping term
         if divdamp_type >= 3:
             dwdz_at_cells_on_model_levels = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= kstart_dd3d),
                 compute_dwdz_for_divergence_damping_numpy(
                     connectivities=connectivities,
@@ -389,10 +389,10 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CEDim)
-        mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        divergence_of_mass = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        divergence_of_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
@@ -409,6 +409,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_alpha = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim)
@@ -447,29 +448,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         return dict(
-            geofac_div=geofac_div,
-            mass_fl_e=mass_fl_e,
-            z_theta_v_fl_e=z_theta_v_fl_e,
-            predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            rho_ic=rho_ic,
-            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-            vwind_expl_wgt=vwind_expl_wgt,
-            current_exner=current_exner,
-            current_rho=current_rho,
-            current_theta_v=current_theta_v,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            exner_pr=exner_pr,
-            ddt_exner_phy=ddt_exner_phy,
-            rho_iau_increment=rho_iau_increment,
-            exner_iau_increment=exner_iau_increment,
-            ddqz_z_half=ddqz_z_half,
-            z_raylfac=z_raylfac,
-            exner_ref_mc=exner_ref_mc,
-            divergence_of_mass=divergence_of_mass,
-            divergence_of_theta_v=divergence_of_theta_v,
             z_contr_w_fl_l=z_contr_w_fl_l,
             z_beta=z_beta,
             z_alpha=z_alpha,
@@ -481,6 +459,28 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             next_theta_v=next_theta_v,
             dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
             exner_dynamical_increment=exner_dynamical_increment,
+            geofac_div=geofac_div,
+            mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
+            predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            rho_ic=rho_ic,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+            vwind_expl_wgt=vwind_expl_wgt,
+            current_exner=current_exner,
+            current_rho=current_rho,
+            current_theta_v=current_theta_v,
+            current_w=current_w,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            vwind_impl_wgt=vwind_impl_wgt,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+            exner_pr=exner_pr,
+            ddt_exner_phy=ddt_exner_phy,
+            rho_iau_increment=rho_iau_increment,
+            exner_iau_increment=exner_iau_increment,
+            ddqz_z_half=ddqz_z_half,
+            z_raylfac=z_raylfac,
+            exner_ref_mc=exner_ref_mc,
             cvd_o_rd=constants.CVD_O_RD,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
@@ -498,8 +498,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             jk_start=jk_start,
             kstart_dd3d=kstart_dd3d,
             kstart_moist=kstart_moist,
-            start_cell_nudging=start_cell_nudging,
-            end_cell_local=end_cell_local,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
             vertical_start=0,
             vertical_end=grid.num_levels + 1,
         )
@@ -525,29 +525,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities,
-        geofac_div: np.ndarray,
-        mass_fl_e: np.ndarray,
-        z_theta_v_fl_e: np.ndarray,
-        current_w: np.ndarray,
-        predictor_vertical_wind_advective_tendency: np.ndarray,
-        corrector_vertical_wind_advective_tendency: np.ndarray,
-        z_th_ddz_exner_c: np.ndarray,
-        rho_ic: np.ndarray,
-        contravariant_correction_at_cells_on_half_levels: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
-        current_exner: np.ndarray,
-        current_rho: np.ndarray,
-        current_theta_v: np.ndarray,
-        inv_ddqz_z_full: np.ndarray,
-        vwind_impl_wgt: np.ndarray,
-        theta_v_at_cells_on_half_levels: np.ndarray,
-        exner_pr: np.ndarray,
-        ddt_exner_phy: np.ndarray,
-        rho_iau_increment: np.ndarray,
-        exner_iau_increment: np.ndarray,
-        ddqz_z_half: np.ndarray,
-        z_raylfac: np.ndarray,
-        exner_ref_mc: np.ndarray,
         z_contr_w_fl_l: np.ndarray,
         z_beta: np.ndarray,
         z_alpha: np.ndarray,
@@ -560,6 +537,29 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         mass_flx_ic: np.ndarray,
         vol_flx_ic: np.ndarray,
         exner_dynamical_increment: np.ndarray,
+        geofac_div: np.ndarray,
+        mass_flux_at_edges_on_model_levels: np.ndarray,
+        theta_v_flux_at_edges_on_model_levels: np.ndarray,
+        predictor_vertical_wind_advective_tendency: np.ndarray,
+        corrector_vertical_wind_advective_tendency: np.ndarray,
+        z_th_ddz_exner_c: np.ndarray,
+        rho_ic: np.ndarray,
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
+        vwind_expl_wgt: np.ndarray,
+        current_exner: np.ndarray,
+        current_rho: np.ndarray,
+        current_theta_v: np.ndarray,
+        current_w: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        vwind_impl_wgt: np.ndarray,
+        theta_v_at_cells_on_half_levels: np.ndarray,
+        exner_pr: np.ndarray,
+        ddt_exner_phy: np.ndarray,
+        rho_iau_increment: np.ndarray,
+        exner_iau_increment: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        z_raylfac: np.ndarray,
+        exner_ref_mc: np.ndarray,
         wgt_nnow_vel: float,
         wgt_nnew_vel: float,
         itime_scheme: int,
@@ -582,8 +582,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         n_lev: int,
         jk_start: int,
         kstart_moist: int,
-        start_cell_nudging: int,
-        end_cell_local: int,
+        horizontal_start: int,
+        horizontal_end: int,
         **kwargs,
     ) -> dict:
         horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
@@ -594,12 +594,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         divergence_of_theta_v = np.zeros_like(current_theta_v)
         # verified for e-9
         divergence_of_mass, divergence_of_theta_v = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_divergence_of_fluxes_of_rho_and_theta_numpy(
                 connectivities=connectivities,
                 geofac_div=geofac_div,
-                mass_fl_e=mass_fl_e,
-                z_theta_v_fl_e=z_theta_v_fl_e,
+                mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+                theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             ),
             (divergence_of_mass, divergence_of_theta_v),
         )
@@ -609,8 +609,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
 
         if itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= int32(1))
                 & (vert_idx < n_lev),
                 compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
@@ -631,8 +631,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             )
 
             (z_beta, z_alpha[:, :n_lev]) = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= int32(0))
                 & (vert_idx < n_lev),
                 compute_solver_coefficients_matrix_numpy(
@@ -651,23 +651,21 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 (z_beta, z_alpha[:, :n_lev]),
             )
             z_alpha[:, :n_lev] = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
-                & (vert_idx == n_lev),
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == n_lev),
                 0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha[:, :n_lev]),
                 z_alpha[:, :n_lev],
             )
 
-            z_q = np.where(
-                (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx == 0),
+            z_q[:, :n_lev] = np.where(
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == 0),
                 0.0,
-                z_q,
+                z_q[:, :n_lev],
             )
 
         else:
             (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= int32(1))
                 & (vert_idx < n_lev),
                 compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
@@ -684,8 +682,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
             )
             (z_beta, z_alpha) = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= int32(0))
                 & (vert_idx < n_lev),
                 compute_solver_coefficients_matrix_numpy(
@@ -704,26 +702,24 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 (z_beta, z_alpha),
             )
             z_alpha = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
-                & (vert_idx == n_lev),
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == n_lev),
                 0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha),
                 z_alpha,
             )
-            z_q = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+            z_q[:, :n_lev] = np.where(
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx == int32(0)),
                 0.0,
-                z_q,
+                z_q[:, :n_lev],
             )
 
         if not l_vert_nested:
-            next_w[start_cell_nudging:end_cell_local, :n_lev] = 0.0
-            z_contr_w_fl_l[start_cell_nudging:end_cell_local, :n_lev] = 0.0
+            next_w[horizontal_start:horizontal_end, 0] = 0.0
+            z_contr_w_fl_l[horizontal_start:horizontal_end, 0] = 0.0
             # w[:, :n_lev], z_contr_w_fl_l[:, :n_lev] = np.where(
-            #     (start_cell_nudging <= horz_idx)
-            #     & (horz_idx < end_cell_local)
+            #     (horizontal_start <= horz_idx)
+            #     & (horz_idx < horizontal_end)
             #     & (vert_idx == 0),
             #     (0., 0.),
             #     # _init_two_cell_kdim_fields_with_zero_wp_numpy(
@@ -735,7 +731,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             # )
 
         (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx == n_lev),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == n_lev),
             set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
                 connectivities,
                 contravariant_correction_at_cells_on_half_levels[:, :n_lev],
@@ -745,19 +741,19 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         )
         # 48 and 49 are identical except for bounds
         (z_rho_expl, z_exner_expl) = np.where(
-            (start_cell_nudging <= horz_idx)
-            & (horz_idx < end_cell_local)
+            (horizontal_start <= horz_idx)
+            & (horz_idx < horizontal_end)
             & (vert_idx >= int32(0))
             & (vert_idx < n_lev),
             compute_explicit_part_for_rho_and_exner_numpy(
                 connectivities=connectivities,
                 rho_nnow=current_rho,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-                divergence_of_mass=divergence_of_mass,
+                z_flxdiv_mass=divergence_of_mass,
                 z_contr_w_fl_l=z_contr_w_fl_l,
                 exner_pr=exner_pr,
                 z_beta=z_beta,
-                divergence_of_theta_v=divergence_of_theta_v,
+                z_flxdiv_theta=divergence_of_theta_v,
                 theta_v_ic=theta_v_at_cells_on_half_levels,
                 ddt_exner_phy=ddt_exner_phy,
                 dtime=dtime,
@@ -767,7 +763,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
 
         if is_iau_active:
             (z_rho_expl, z_exner_expl) = np.where(
-                (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
                 add_analysis_increments_from_data_assimilation_numpy(
                     connectivities=connectivities,
                     z_rho_expl=z_rho_expl,
@@ -779,8 +775,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 (z_rho_expl, z_exner_expl),
             )
 
-        z_q, next_w[:, :n_lev] = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
+        z_q[:, :n_lev], next_w[:, :n_lev] = np.where(
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
                 vwind_impl_wgt=vwind_impl_wgt,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
@@ -789,19 +785,19 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 z_beta=z_beta,
                 z_w_expl=z_w_expl,
                 z_exner_expl=z_exner_expl,
-                z_q_ref=z_q,
+                z_q_ref=z_q[:, :n_lev],
                 w_ref=next_w[:, :n_lev],
                 dtime=dtime,
                 cpd=cpd,
             ),
-            (z_q, next_w[:, :n_lev]),
+            (z_q[:, :n_lev], next_w[:, :n_lev]),
         )
 
         next_w[:, :n_lev] = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,
-                z_q=z_q,
+                z_q=z_q[:, :n_lev],
                 w=next_w[:, :n_lev],
             ),
             next_w[:, :n_lev],
@@ -810,8 +806,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         w_1 = next_w[:, 0]
         if rayleigh_type == rayleigh_klemp:
             next_w[:, :n_lev] = np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= 1)
                 & (vert_idx < (index_of_damping_layer + 1)),
                 apply_rayleigh_damping_mechanism_numpy(
@@ -824,7 +820,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             )
 
         next_rho, next_exner, next_theta_v = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= jk_start),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= jk_start),
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
                 z_rho_expl=z_rho_expl,
@@ -851,7 +847,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 vol_flx_ic = np.zeros_like(next_exner)
 
         (mass_flx_ic, vol_flx_ic) = np.where(
-            (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             update_mass_volume_flux_numpy(
                 connectivities=connectivities,
                 z_contr_w_fl_l=z_contr_w_fl_l[:, :n_lev],
@@ -867,8 +863,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
 
         exner_dynamical_increment = (
             np.where(
-                (start_cell_nudging <= horz_idx)
-                & (horz_idx < end_cell_local)
+                (horizontal_start <= horz_idx)
+                & (horz_idx < horizontal_end)
                 & (vert_idx >= kstart_moist)
                 & (vert_idx < n_lev),
                 update_dynamical_exner_time_increment_numpy(
@@ -903,8 +899,10 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CEDim)
-        mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
         current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
@@ -971,29 +969,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         return dict(
-            geofac_div=geofac_div,
-            mass_fl_e=mass_fl_e,
-            z_theta_v_fl_e=z_theta_v_fl_e,
-            current_w=current_w,
-            predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-            corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            rho_ic=rho_ic,
-            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-            vwind_expl_wgt=vwind_expl_wgt,
-            current_exner=current_exner,
-            current_rho=current_rho,
-            current_theta_v=current_theta_v,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            exner_pr=exner_pr,
-            ddt_exner_phy=ddt_exner_phy,
-            rho_iau_increment=rho_iau_increment,
-            exner_iau_increment=exner_iau_increment,
-            ddqz_z_half=ddqz_z_half,
-            z_raylfac=z_raylfac,
-            exner_ref_mc=exner_ref_mc,
             z_contr_w_fl_l=z_contr_w_fl_l,
             z_beta=z_beta,
             z_alpha=z_alpha,
@@ -1006,6 +981,29 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,
             exner_dynamical_increment=exner_dynamical_increment,
+            geofac_div=geofac_div,
+            mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
+            predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
+            corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            rho_ic=rho_ic,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+            vwind_expl_wgt=vwind_expl_wgt,
+            current_exner=current_exner,
+            current_rho=current_rho,
+            current_theta_v=current_theta_v,
+            current_w=current_w,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            vwind_impl_wgt=vwind_impl_wgt,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+            exner_pr=exner_pr,
+            ddt_exner_phy=ddt_exner_phy,
+            rho_iau_increment=rho_iau_increment,
+            exner_iau_increment=exner_iau_increment,
+            ddqz_z_half=ddqz_z_half,
+            z_raylfac=z_raylfac,
+            exner_ref_mc=exner_ref_mc,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
             itime_scheme=itime_scheme,
@@ -1028,8 +1026,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             n_lev=grid.num_levels,
             jk_start=jk_start,
             kstart_moist=kstart_moist,
-            start_cell_nudging=start_cell_nudging,
-            end_cell_local=end_cell_local,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
             vertical_start=0,
             vertical_end=grid.num_levels + 1,
         )

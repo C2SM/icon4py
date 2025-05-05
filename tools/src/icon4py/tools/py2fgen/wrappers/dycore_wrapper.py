@@ -349,7 +349,7 @@ def solve_nh_run(
         grf_tend_rho=grf_tend_rho,
         grf_tend_thv=grf_tend_thv,
         grf_tend_w=grf_tend_w,
-        mass_fl_e=mass_fl_e,
+        mass_flux_at_edges_on_model_levels=mass_fl_e,
         normal_wind_tendency_due_to_physics_process=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(

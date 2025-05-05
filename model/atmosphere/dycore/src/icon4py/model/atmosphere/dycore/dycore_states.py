@@ -109,7 +109,10 @@ class DiagnosticStateNonHydro:
     grf_tend_rho: fa.CellKField[float]
     grf_tend_thv: fa.CellKField[float]
     grf_tend_w: fa.CellKField[float]
-    mass_fl_e: fa.EdgeKField[float]
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as mass_fl_e in ICON.
+    """
     normal_wind_tendency_due_to_physics_process: fa.EdgeKField[float]
     """
     Declared as ddt_vn_phy in ICON.

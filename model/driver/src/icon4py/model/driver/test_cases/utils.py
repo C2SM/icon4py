@@ -268,7 +268,9 @@ def initialize_solve_nonhydro_diagnostic_state(
         grf_tend_w=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        mass_fl_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),
         normal_wind_tendency_due_to_physics_process=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),

@@ -378,13 +378,15 @@ def test_nonhydro_predictor_step(
 
     # stencil 32
     assert helpers.dallclose(
-        diagnostic_state_nh.mass_fl_e.asnumpy(),
+        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         sp_exit.mass_fl_e().asnumpy(),
         atol=4e-12,
     )
     # stencil 32
     assert helpers.dallclose(
-        solve_nonhydro.z_theta_v_fl_e.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        solve_nonhydro.theta_v_flux_at_edges_on_model_levels.asnumpy()[
+            edge_start_lateral_boundary_level_5:, :
+        ],
         sp_exit.z_theta_v_fl_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=1e-9,
     )
@@ -655,7 +657,7 @@ def test_nonhydro_corrector_step(
 
     # stencil 32
     assert helpers.dallclose(
-        diagnostic_state_nh.mass_fl_e.asnumpy(),
+        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
     )
@@ -935,7 +937,7 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert helpers.dallclose(
-        diagnostic_state_nh.mass_fl_e.asnumpy()[edge_start_lb_plus4:, :],
+        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy()[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-7,
     )
@@ -1407,8 +1409,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     at_first_substep = substep_init == 1
 
-    mass_fl_e = savepoint_nonhydro_41_60_init.mass_fl_e()
-    z_theta_v_fl_e = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
+    mass_flux_at_edges_on_model_levels = savepoint_nonhydro_41_60_init.mass_fl_e()
+    theta_v_flux_at_edges_on_model_levels = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
     predictor_vertical_wind_advective_tendency = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(0)
     z_th_ddz_exner_c = savepoint_nonhydro_41_60_init.z_th_ddz_exner_c()
     z_contr_w_fl_l = savepoint_nonhydro_41_60_init.z_contr_w_fl_l()
@@ -1488,8 +1490,8 @@ def test_vertically_implicit_solver_at_predictor_step(
             jk_start=[jk_start],
             kstart_dd3d=[nonhydro_params.starting_vertical_index_for_3d_divdamp],
             kstart_moist=[vertical_params.kstart_moist],
-            start_cell_nudging=[start_cell_nudging],
-            end_cell_local=[end_cell_local],
+            horizontal_start=[start_cell_nudging],
+            horizontal_end=[end_cell_local],
             vertical_start=[0],
             vertical_end=[icon_grid.num_levels + 1],
             offset_provider=offset_provider,
@@ -1510,8 +1512,8 @@ def test_vertically_implicit_solver_at_predictor_step(
         dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
         exner_dynamical_increment=exner_dynamical_increment,
         geofac_div=geofac_div,
-        mass_fl_e=mass_fl_e,
-        z_theta_v_fl_e=z_theta_v_fl_e,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         z_th_ddz_exner_c=z_th_ddz_exner_c,
         rho_ic=rho_ic,
@@ -1548,8 +1550,8 @@ def test_vertically_implicit_solver_at_predictor_step(
         jk_start=jk_start,
         kstart_dd3d=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         kstart_moist=vertical_params.kstart_moist,
-        start_cell_nudging=start_cell_nudging,
-        end_cell_local=end_cell_local,
+        horizontal_start=start_cell_nudging,
+        horizontal_end=end_cell_local,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider=offset_provider,
@@ -1638,8 +1640,8 @@ def test_vertically_implicit_solver_at_corrector_step(
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
-    mass_fl_e = savepoint_nonhydro_41_60_init.mass_fl_e()
-    z_theta_v_fl_e = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
+    mass_flux_at_edges_on_model_levels = savepoint_nonhydro_41_60_init.mass_fl_e()
+    theta_v_flux_at_edges_on_model_levels = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
     predictor_vertical_wind_advective_tendency = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(0)
     corrector_vertical_wind_advective_tendency = savepoint_nonhydro_41_60_init.ddt_w_adv_pc(1)
     z_th_ddz_exner_c = savepoint_nonhydro_41_60_init.z_th_ddz_exner_c()
@@ -1727,6 +1729,8 @@ def test_vertically_implicit_solver_at_corrector_step(
             n_lev=[icon_grid.num_levels],
             jk_start=[jk_start],
             kstart_moist=[kstart_moist],
+            horizontal_start=[start_cell_nudging],
+            horizontal_end=[end_cell_local],
             vertical_start=[0],
             vertical_end=[icon_grid.num_levels + 1],
             offset_provider=offset_provider,
@@ -1747,8 +1751,8 @@ def test_vertically_implicit_solver_at_corrector_step(
         vol_flx_ic=vol_flx_ic,
         exner_dynamical_increment=exner_dynamical_increment,
         geofac_div=geofac_div,
-        mass_fl_e=mass_fl_e,
-        z_theta_v_fl_e=z_theta_v_fl_e,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
         z_th_ddz_exner_c=z_th_ddz_exner_c,
@@ -1791,8 +1795,8 @@ def test_vertically_implicit_solver_at_corrector_step(
         n_lev=icon_grid.num_levels,
         jk_start=jk_start,
         kstart_moist=kstart_moist,
-        start_cell_nudging=start_cell_nudging,
-        end_cell_local=end_cell_local,
+        horizontal_start=start_cell_nudging,
+        horizontal_end=end_cell_local,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider=offset_provider,
