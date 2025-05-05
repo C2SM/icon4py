@@ -31,7 +31,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
     _add_analysis_increments_from_data_assimilation,
 )
 from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import (
-    _apply_rayleigh_damping_mechanism_w_1_broadcasted,
+    _apply_rayleigh_damping_mechanism,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
     _compute_divergence_of_fluxes_of_rho_and_theta,
@@ -82,20 +82,13 @@ def _set_surface_boundary_condtion_for_computation_of_w(
 
 
 @gtx.field_operator
-def _fused_solve_nonhydro_stencil_41_to_60_predictor(
+def _fused_solve_nonhydro_stencil_41_to_60_predictor_p1(
     z_w_expl: fa.CellKField[ta.wpfloat],
     z_contr_w_fl_l: fa.CellKField[ta.wpfloat],
     z_beta: fa.CellKField[ta.vpfloat],
     z_alpha: fa.CellKField[ta.vpfloat],
     z_q: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
-    z_rho_expl: fa.CellKField[ta.wpfloat],
-    z_exner_expl: fa.CellKField[ta.wpfloat],
-    rho: fa.CellKField[ta.wpfloat],
-    exner: fa.CellKField[ta.wpfloat],
-    theta_v: fa.CellKField[ta.wpfloat],
-    z_dwdz_dd: fa.CellKField[ta.vpfloat],
-    exner_dyn_incr: fa.CellKField[ta.vpfloat],
     geofac_div: fa.CellEdgeField[ta.wpfloat],
     mass_fl_e: fa.EdgeKField[ta.wpfloat],
     z_theta_v_fl_e: fa.EdgeKField[ta.wpfloat],
@@ -116,25 +109,14 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     rho_incr: fa.CellKField[ta.vpfloat],
     exner_incr: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
-    z_raylfac: fa.KField[ta.wpfloat],
-    exner_ref_mc: fa.CellKField[ta.vpfloat],
-    cvd_o_rd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
     rd: ta.wpfloat,
     cvd: ta.wpfloat,
     cpd: ta.wpfloat,
-    rayleigh_klemp: int32,
     l_vert_nested: bool,
     is_iau_active: bool,
-    rayleigh_type: int32,
-    divdamp_type: int32,
-    at_first_substep: bool,
-    index_of_damping_layer: int32,
     n_lev: int32,
-    jk_start: int32,
-    kstart_dd3d: int32,
-    kstart_moist: int32,
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
@@ -145,11 +127,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
     z_flxdiv_mass, z_flxdiv_theta = _compute_divergence_of_fluxes_of_rho_and_theta(
@@ -195,8 +172,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         if (not l_vert_nested)
         else (w, z_contr_w_fl_l)
     )
-    # Because we do not support nesting, it is safe to assume w_1 is a zero field
-    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
 
     (z_rho_expl, z_exner_expl) = _compute_explicit_part_for_rho_and_exner(
         rho_nnow=rho_nnow,
@@ -247,10 +222,79 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         w,
     )
 
+    return (
+        z_flxdiv_mass,
+        z_flxdiv_theta,
+        z_w_expl,
+        z_contr_w_fl_l,
+        z_beta,
+        z_alpha,
+        z_q,
+        w,
+        z_rho_expl,
+        z_exner_expl,
+    )
+
+
+@gtx.field_operator
+def _fused_solve_nonhydro_stencil_41_to_60_predictor_p2(
+    z_w_expl: fa.CellKField[ta.wpfloat],
+    z_contr_w_fl_l: fa.CellKField[ta.wpfloat],
+    z_beta: fa.CellKField[ta.vpfloat],
+    z_alpha: fa.CellKField[ta.vpfloat],
+    z_q: fa.CellKField[ta.vpfloat],
+    w: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    exner: fa.CellKField[ta.wpfloat],
+    theta_v: fa.CellKField[ta.wpfloat],
+    z_dwdz_dd: fa.CellKField[ta.vpfloat],
+    exner_dyn_incr: fa.CellKField[ta.vpfloat],
+    rho_ic: fa.CellKField[ta.wpfloat],
+    w_concorr_c: fa.CellKField[ta.vpfloat],
+    exner_nnow: fa.CellKField[ta.wpfloat],
+    rho_nnow: fa.CellKField[ta.wpfloat],
+    theta_v_nnow: fa.CellKField[ta.wpfloat],
+    inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
+    vwind_impl_wgt: fa.CellField[ta.wpfloat],
+    z_raylfac: fa.KField[ta.wpfloat],
+    exner_ref_mc: fa.CellKField[ta.vpfloat],
+    z_flxdiv_mass: fa.CellKField[ta.wpfloat],
+    z_flxdiv_theta: fa.CellKField[ta.wpfloat],
+    z_rho_expl: fa.CellKField[ta.wpfloat],
+    z_exner_expl: fa.CellKField[ta.wpfloat],
+    cvd_o_rd: ta.wpfloat,
+    dtime: ta.wpfloat,
+    rayleigh_klemp: int32,
+    rayleigh_type: int32,
+    divdamp_type: int32,
+    at_first_substep: bool,
+    index_of_damping_layer: int32,
+    jk_start: int32,
+    kstart_dd3d: int32,
+    kstart_moist: int32,
+) -> tuple[
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
+]:
+    # Because we do not support nesting, it is safe to assume w_1 is a zero field
+    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
     w = (
         concat_where(
             (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
-            _apply_rayleigh_damping_mechanism_w_1_broadcasted(
+            _apply_rayleigh_damping_mechanism(
                 z_raylfac=z_raylfac,
                 w_1=w_1,
                 w=w,
@@ -478,7 +522,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         else (w, z_contr_w_fl_l)
     )
     # Because we do not support nesting, it is safe to assume w_1 is a zero field
-    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
+    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
 
     (z_rho_expl, z_exner_expl) = _compute_explicit_part_for_rho_and_exner(
         rho_nnow=rho_nnow,
@@ -535,7 +579,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     w = (
         concat_where(
             (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
-            _apply_rayleigh_damping_mechanism_w_1_broadcasted(
+            _apply_rayleigh_damping_mechanism(
                 z_raylfac=z_raylfac,
                 w_1=w_1,
                 w=w,
@@ -699,20 +743,14 @@ def fused_solve_nonhydro_stencil_41_to_60_predictor(
             dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
-    _fused_solve_nonhydro_stencil_41_to_60_predictor(
+
+    _fused_solve_nonhydro_stencil_41_to_60_predictor_p1(
         z_w_expl=z_w_expl,
         z_contr_w_fl_l=z_contr_w_fl_l,
         z_beta=z_beta,
         z_alpha=z_alpha,
         z_q=z_q,
         w=w,
-        z_rho_expl=z_rho_expl,
-        z_exner_expl=z_exner_expl,
-        rho=rho,
-        exner=exner,
-        theta_v=theta_v,
-        z_dwdz_dd=z_dwdz_dd,
-        exner_dyn_incr=exner_dyn_incr,
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
@@ -733,22 +771,63 @@ def fused_solve_nonhydro_stencil_41_to_60_predictor(
         rho_incr=rho_incr,
         exner_incr=exner_incr,
         ddqz_z_half=ddqz_z_half,
-        z_raylfac=z_raylfac,
-        exner_ref_mc=exner_ref_mc,
-        cvd_o_rd=cvd_o_rd,
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
         rd=rd,
         cvd=cvd,
         cpd=cpd,
-        rayleigh_klemp=rayleigh_klemp,
         l_vert_nested=l_vert_nested,
         is_iau_active=is_iau_active,
+        n_lev=n_lev,
+        out=(
+            z_flxdiv_mass,
+            z_flxdiv_theta,
+            z_w_expl,
+            z_contr_w_fl_l,
+            z_beta,
+            z_alpha,
+            z_q,
+            w,
+            z_rho_expl,
+            z_exner_expl,
+        ),
+        domain={
+            dims.CellDim: (start_cell_nudging, end_cell_local),
+            dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+    _fused_solve_nonhydro_stencil_41_to_60_predictor_p2(
+        z_w_expl=z_w_expl,
+        z_contr_w_fl_l=z_contr_w_fl_l,
+        z_beta=z_beta,
+        z_alpha=z_alpha,
+        z_q=z_q,
+        w=w,
+        rho=rho,
+        exner=exner,
+        theta_v=theta_v,
+        z_dwdz_dd=z_dwdz_dd,
+        exner_dyn_incr=exner_dyn_incr,
+        rho_ic=rho_ic,
+        w_concorr_c=w_concorr_c,
+        exner_nnow=exner_nnow,
+        rho_nnow=rho_nnow,
+        theta_v_nnow=theta_v_nnow,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        vwind_impl_wgt=vwind_impl_wgt,
+        z_raylfac=z_raylfac,
+        exner_ref_mc=exner_ref_mc,
+        z_flxdiv_mass=z_flxdiv_mass,
+        z_flxdiv_theta=z_flxdiv_theta,
+        z_rho_expl=z_rho_expl,
+        z_exner_expl=z_exner_expl,
+        cvd_o_rd=cvd_o_rd,
+        dtime=dtime,
+        rayleigh_klemp=rayleigh_klemp,
         rayleigh_type=rayleigh_type,
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         index_of_damping_layer=index_of_damping_layer,
-        n_lev=n_lev,
         jk_start=jk_start,
         kstart_dd3d=kstart_dd3d,
         kstart_moist=kstart_moist,
