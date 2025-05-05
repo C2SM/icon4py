@@ -314,7 +314,7 @@ def test_run_timeloop_single_step(
         exner_iau_increment=data_alloc.zero_field(
             icon_grid, dims.CellDim, dims.KDim, backend=backend
         ),  # sp.exner_incr(),
-        exner_dynaminal_increment=sp.exner_dyn_incr(),
+        exner_dynamical_increment=sp.exner_dyn_incr(),
     )
 
     timeloop = icon4py_driver.TimeLoop(icon4pyrun_config, diffusion_granule, solve_nonhydro_granule)

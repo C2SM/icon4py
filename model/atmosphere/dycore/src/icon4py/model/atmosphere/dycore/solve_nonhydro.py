@@ -46,7 +46,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import compute_avg_
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
-from icon4py.model.atmosphere.dycore import fused_solve_nonhydro_stencil_41_to_60
+from icon4py.model.atmosphere.dycore.stencils import vertically_implicit_dycore_solver
 from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
@@ -461,10 +461,10 @@ class SolveNonhydro:
             compute_avg_vn_and_graddiv_vn_and_vt.with_backend(self._backend)
         )
         self._compute_mass_flux = compute_mass_flux.with_backend(self._backend)
-        self._vertically_implicit_solver_at_predictor_step = fused_solve_nonhydro_stencil_41_to_60.vertically_implicit_solver_at_predictor_step.with_backend(
+        self._vertically_implicit_solver_at_predictor_step = vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step.with_backend(
             self._backend
         )
-        self._vertically_implicit_solver_at_corrector_step = fused_solve_nonhydro_stencil_41_to_60.vertically_implicit_solver_at_corrector_step.with_backend(
+        self._vertically_implicit_solver_at_corrector_step = vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step.with_backend(
             self._backend
         )
         self._compute_divergence_of_fluxes_of_rho_and_theta = (
@@ -1212,7 +1212,7 @@ class SolveNonhydro:
             next_exner=prognostic_states.next.exner,
             next_theta_v=prognostic_states.next.theta_v,
             dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
-            exner_dynaminal_increment=diagnostic_state_nh.exner_dynaminal_increment,
+            exner_dynamical_increment=diagnostic_state_nh.exner_dynamical_increment,
             geofac_div=self._interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
@@ -1497,7 +1497,7 @@ class SolveNonhydro:
             next_theta_v=prognostic_states.next.theta_v,
             mass_flx_ic=prep_adv.mass_flx_ic,
             vol_flx_ic=prep_adv.vol_flx_ic,
-            exner_dynaminal_increment=diagnostic_state_nh.exner_dynaminal_increment,
+            exner_dynamical_increment=diagnostic_state_nh.exner_dynamical_increment,
             geofac_div=self._interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,

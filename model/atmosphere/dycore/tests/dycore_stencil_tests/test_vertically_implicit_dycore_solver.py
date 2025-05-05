@@ -25,9 +25,9 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.dycore_states import TimeSteppingScheme
-from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_41_to_60 import (
-    fused_solve_nonhydro_stencil_41_to_60_corrector,
-    fused_solve_nonhydro_stencil_41_to_60_predictor,
+from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
+    vertically_implicit_solver_at_corrector_step,
+    vertically_implicit_solver_at_predictor_step,
 )
 from icon4py.model.common import (
     constants,
@@ -86,72 +86,63 @@ def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
     c2ce = helpers.as_1d_connectivity(c2e)
     geofac_div = np.expand_dims(geofac_div, axis=-1)
 
-    z_flxdiv_mass_wp = np.sum(geofac_div[c2ce] * mass_fl_e[c2e], axis=1)
-    z_flxdiv_theta_wp = np.sum(geofac_div[c2ce] * z_theta_v_fl_e[c2e], axis=1)
-    return (z_flxdiv_mass_wp, z_flxdiv_theta_wp)
+    divergence_of_mass_wp = np.sum(geofac_div[c2ce] * mass_fl_e[c2e], axis=1)
+    divergence_of_theta_v_wp = np.sum(geofac_div[c2ce] * z_theta_v_fl_e[c2e], axis=1)
+    return (divergence_of_mass_wp, divergence_of_theta_v_wp)
 
 
-class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
-    PROGRAM = fused_solve_nonhydro_stencil_41_to_60_predictor
+class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
+    PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
-        "z_w_expl",
         "z_contr_w_fl_l",
         "z_beta",
         "z_alpha",
-        "z_q",
-        "z_flxdiv_mass",
-        "z_flxdiv_theta",
-        "w",
+        "next_w",
         "z_rho_expl",
         "z_exner_expl",
-        "rho",
-        "exner",
-        "theta_v",
-        "z_dwdz_dd",
-        "exner_dyn_incr",
+        "next_rho",
+        "next_exner",
+        "next_theta_v",
+        "dwdz_at_cells_on_model_levels",
+        "exner_dynamical_increment",
     )
 
-    # flake8: noqa: C901
-    @classmethod
+    @staticmethod
     def reference(
-        cls,
         connectivities,
         geofac_div: np.ndarray,
         mass_fl_e: np.ndarray,
         z_theta_v_fl_e: np.ndarray,
-        ddt_w_adv_ntl1: np.ndarray,
+        predictor_vertical_wind_advective_tendency: np.ndarray,
         z_th_ddz_exner_c: np.ndarray,
         rho_ic: np.ndarray,
-        w_concorr_c: np.ndarray,
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
         vwind_expl_wgt: np.ndarray,
-        exner_nnow: np.ndarray,
-        rho_nnow: np.ndarray,
-        theta_v_nnow: np.ndarray,
+        current_exner: np.ndarray,
+        current_rho: np.ndarray,
+        current_theta_v: np.ndarray,
+        current_w: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         vwind_impl_wgt: np.ndarray,
-        theta_v_ic: np.ndarray,
+        theta_v_at_cells_on_half_levels: np.ndarray,
         exner_pr: np.ndarray,
         ddt_exner_phy: np.ndarray,
-        rho_incr: np.ndarray,
-        exner_incr: np.ndarray,
+        rho_iau_increment: np.ndarray,
+        exner_iau_increment: np.ndarray,
         ddqz_z_half: np.ndarray,
         z_raylfac: np.ndarray,
         exner_ref_mc: np.ndarray,
-        z_flxdiv_mass: np.ndarray,
-        z_flxdiv_theta: np.ndarray,
-        z_w_expl: np.ndarray,
         z_contr_w_fl_l: np.ndarray,
         z_beta: np.ndarray,
         z_alpha: np.ndarray,
-        z_q: np.ndarray,
-        w: np.ndarray,
+        next_w: np.ndarray,
         z_rho_expl: np.ndarray,
         z_exner_expl: np.ndarray,
-        rho: np.ndarray,
-        exner: np.ndarray,
-        theta_v: np.ndarray,
-        z_dwdz_dd: np.ndarray,
-        exner_dyn_incr: np.ndarray,
+        next_rho: np.ndarray,
+        next_exner: np.ndarray,
+        next_theta_v: np.ndarray,
+        dwdz_at_cells_on_model_levels: np.ndarray,
+        exner_dynamical_increment: np.ndarray,
         cvd_o_rd: float,
         iau_wgt_dyn: float,
         dtime: float,
@@ -173,11 +164,14 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
         end_cell_local: int,
         **kwargs,
     ) -> dict:
-        horz_idx = np.asarray(np.arange(exner_dyn_incr.shape[0]))
+        horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
-        vert_idx = np.arange(exner_dyn_incr.shape[1])
+        vert_idx = np.arange(exner_dynamical_increment.shape[1])
+
+        divergence_of_mass = np.zeros_like(current_rho)
+        divergence_of_theta_v = np.zeros_like(current_theta_v)
         # verified for e-9
-        z_flxdiv_mass, z_flxdiv_theta = np.where(
+        divergence_of_mass, divergence_of_theta_v = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
             compute_divergence_of_fluxes_of_rho_and_theta_numpy(
                 connectivities=connectivities,
@@ -185,8 +179,11 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
                 mass_fl_e=mass_fl_e,
                 z_theta_v_fl_e=z_theta_v_fl_e,
             ),
-            (z_flxdiv_mass, z_flxdiv_theta),
+            (divergence_of_mass, divergence_of_theta_v),
         )
+
+        z_w_expl = np.zeros_like(z_contr_w_fl_l)
+        z_q = np.zeros_like(z_contr_w_fl_l)
 
         (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
             (start_cell_nudging <= horz_idx)
@@ -195,11 +192,11 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
             & (vert_idx < n_lev),
             compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
                 connectivities=connectivities,
-                w_nnow=w[:, :n_lev],
-                ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+                w_nnow=current_w[:, :n_lev],
+                ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency,
                 z_th_ddz_exner_c=z_th_ddz_exner_c,
                 rho_ic=rho_ic[:, :n_lev],
-                w_concorr_c=w_concorr_c[:, :n_lev],
+                w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 vwind_expl_wgt=vwind_expl_wgt,
                 dtime=dtime,
                 cpd=cpd,
@@ -213,12 +210,12 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
             & (vert_idx < n_lev),
             compute_solver_coefficients_matrix_numpy(
                 connectivities=connectivities,
-                exner_nnow=exner_nnow,
-                rho_nnow=rho_nnow,
-                theta_v_nnow=theta_v_nnow,
+                exner_nnow=current_exner,
+                rho_nnow=current_rho,
+                theta_v_nnow=current_theta_v,
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 vwind_impl_wgt=vwind_impl_wgt,
-                theta_v_ic=theta_v_ic[:, :n_lev],
+                theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 rho_ic=rho_ic[:, :n_lev],
                 dtime=dtime,
                 rd=rd,
@@ -238,17 +235,17 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
         )
 
         if not l_vert_nested:
-            w[start_cell_nudging:end_cell_local, :n_lev] = 0.0
+            next_w[start_cell_nudging:end_cell_local, :n_lev] = 0.0
             z_contr_w_fl_l[start_cell_nudging:end_cell_local, :n_lev] = 0.0
 
-        (w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
+        (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx == n_lev),
             set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
                 connectivities=connectivities,
-                w_concorr_c=w_concorr_c[:, :n_lev],
+                w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 z_contr_w_fl_l=z_contr_w_fl_l[:, :n_lev],
             ),
-            (w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
+            (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
         )
         # 48 and 49 are identical except for bounds
         (z_rho_expl, z_exner_expl) = np.where(
@@ -258,14 +255,14 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
             & (vert_idx < n_lev),
             compute_explicit_part_for_rho_and_exner_numpy(
                 connectivities=connectivities,
-                rho_nnow=rho_nnow,
+                rho_nnow=current_rho,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-                z_flxdiv_mass=z_flxdiv_mass,
+                divergence_of_mass=divergence_of_mass,
                 z_contr_w_fl_l=z_contr_w_fl_l,
                 exner_pr=exner_pr,
                 z_beta=z_beta,
-                z_flxdiv_theta=z_flxdiv_theta,
-                theta_v_ic=theta_v_ic,
+                divergence_of_theta_v=divergence_of_theta_v,
+                theta_v_ic=theta_v_at_cells_on_half_levels,
                 ddt_exner_phy=ddt_exner_phy,
                 dtime=dtime,
             ),
@@ -279,43 +276,43 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
                     connectivities=connectivities,
                     z_rho_expl=z_rho_expl,
                     z_exner_expl=z_exner_expl,
-                    rho_incr=rho_incr,
-                    exner_incr=exner_incr,
+                    rho_incr=rho_iau_increment,
+                    exner_incr=exner_iau_increment,
                     iau_wgt_dyn=iau_wgt_dyn,
                 ),
                 (z_rho_expl, z_exner_expl),
             )
-        z_q, w[:, :n_lev] = np.where(
+        z_q, next_w[:, :n_lev] = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
                 vwind_impl_wgt=vwind_impl_wgt,
-                theta_v_ic=theta_v_ic[:, :n_lev],
+                theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 ddqz_z_half=ddqz_z_half,
                 z_alpha=z_alpha,
                 z_beta=z_beta,
                 z_w_expl=z_w_expl,
                 z_exner_expl=z_exner_expl,
                 z_q_ref=z_q,
-                w_ref=w[:, :n_lev],
+                w_ref=next_w[:, :n_lev],
                 dtime=dtime,
                 cpd=cpd,
             ),
-            (z_q, w[:, :n_lev]),
+            (z_q, next_w[:, :n_lev]),
         )
 
-        w[:, :n_lev] = np.where(
+        next_w[:, :n_lev] = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,
                 z_q=z_q,
-                w=w[:, :n_lev],
+                w=next_w[:, :n_lev],
             ),
-            w[:, :n_lev],
+            next_w[:, :n_lev],
         )
 
-        w_1 = w[:, 0]
+        w_1 = next_w[:, 0]
         if rayleigh_type == rayleigh_klemp:
-            w[:, :n_lev] = np.where(
+            next_w[:, :n_lev] = np.where(
                 (start_cell_nudging <= horz_idx)
                 & (horz_idx < end_cell_local)
                 & (vert_idx >= 1)
@@ -324,21 +321,21 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
                     connectivities=connectivities,
                     z_raylfac=z_raylfac,
                     w_1=w_1,
-                    w=w[:, :n_lev],
+                    w=next_w[:, :n_lev],
                 ),
-                w[:, :n_lev],
+                next_w[:, :n_lev],
             )
 
         if at_first_substep:
-            exner_dyn_incr = np.where(
+            exner_dynamical_increment = np.where(
                 (start_cell_nudging <= horz_idx)
                 & (horz_idx < end_cell_local)
                 & (vert_idx >= kstart_moist),
-                exner.astype(ta.vpfloat),
-                exner_dyn_incr,
+                next_exner.astype(ta.vpfloat),
+                exner_dynamical_increment,
             )
 
-        rho, exner, theta_v = np.where(
+        next_rho, next_exner, next_theta_v = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= jk_start),
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
@@ -346,51 +343,47 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
                 vwind_impl_wgt=vwind_impl_wgt,
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 rho_ic=rho_ic,
-                w=w,
+                w=next_w,
                 z_exner_expl=z_exner_expl,
                 exner_ref_mc=exner_ref_mc,
                 z_alpha=z_alpha,
                 z_beta=z_beta,
-                rho_now=rho,
-                theta_v_now=theta_v,
-                exner_now=exner,
+                rho_now=current_rho,
+                theta_v_now=current_theta_v,
+                exner_now=current_exner,
                 dtime=dtime,
                 cvd_o_rd=cvd_o_rd,
             ),
-            (rho, exner, theta_v),
+            (next_rho, next_exner, next_theta_v),
         )
 
         # compute dw/dz for divergence damping term
         if divdamp_type >= 3:
-            z_dwdz_dd = np.where(
+            dwdz_at_cells_on_model_levels = np.where(
                 (start_cell_nudging <= horz_idx)
                 & (horz_idx < end_cell_local)
                 & (vert_idx >= kstart_dd3d),
                 compute_dwdz_for_divergence_damping_numpy(
                     connectivities=connectivities,
                     inv_ddqz_z_full=inv_ddqz_z_full,
-                    w=w,
-                    w_concorr_c=w_concorr_c,
+                    w=next_w,
+                    w_concorr_c=contravariant_correction_at_cells_on_half_levels,
                 ),
-                z_dwdz_dd,
+                dwdz_at_cells_on_model_levels,
             )
 
         return dict(
-            z_w_expl=z_w_expl,
             z_contr_w_fl_l=z_contr_w_fl_l,
             z_beta=z_beta,
             z_alpha=z_alpha,
-            z_q=z_q,
-            z_flxdiv_mass=z_flxdiv_mass,
-            z_flxdiv_theta=z_flxdiv_theta,
-            w=w,
+            next_w=next_w,
             z_rho_expl=z_rho_expl,
             z_exner_expl=z_exner_expl,
-            rho=rho,
-            exner=exner,
-            theta_v=theta_v,
-            z_dwdz_dd=z_dwdz_dd,
-            exner_dyn_incr=exner_dyn_incr,
+            next_rho=next_rho,
+            next_exner=next_exner,
+            next_theta_v=next_theta_v,
+            dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
+            exner_dynamical_increment=exner_dynamical_increment,
         )
 
     @pytest.fixture
@@ -398,41 +391,45 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
         geofac_div = data_alloc.random_field(grid, dims.CEDim)
         mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_flxdiv_mass = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_flxdiv_theta = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_w_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        ddt_w_adv_ntl1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        divergence_of_mass = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        divergence_of_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        predictor_vertical_wind_advective_tendency = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
         z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_contr_w_fl_l = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
         vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim)
         z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rho_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        theta_v_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_alpha = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim)
-        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        z_q = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        theta_v_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        next_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddt_exner_phy = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rho_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_raylfac = data_alloc.random_field(grid, dims.KDim)
         exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_dwdz_dd = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_dyn_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        dwdz_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         l_vert_nested = False
         is_iau_active = False
         at_first_substep = True
@@ -453,39 +450,37 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
             geofac_div=geofac_div,
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
-            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+            predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             z_th_ddz_exner_c=z_th_ddz_exner_c,
             rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             vwind_expl_wgt=vwind_expl_wgt,
-            exner_nnow=exner_nnow,
-            rho_nnow=rho_nnow,
-            theta_v_nnow=theta_v_nnow,
+            current_exner=current_exner,
+            current_rho=current_rho,
+            current_theta_v=current_theta_v,
             inv_ddqz_z_full=inv_ddqz_z_full,
             vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_ic=theta_v_ic,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             exner_pr=exner_pr,
             ddt_exner_phy=ddt_exner_phy,
-            rho_incr=rho_incr,
-            exner_incr=exner_incr,
+            rho_iau_increment=rho_iau_increment,
+            exner_iau_increment=exner_iau_increment,
             ddqz_z_half=ddqz_z_half,
             z_raylfac=z_raylfac,
             exner_ref_mc=exner_ref_mc,
-            z_flxdiv_mass=z_flxdiv_mass,
-            z_flxdiv_theta=z_flxdiv_theta,
-            z_w_expl=z_w_expl,
+            divergence_of_mass=divergence_of_mass,
+            divergence_of_theta_v=divergence_of_theta_v,
             z_contr_w_fl_l=z_contr_w_fl_l,
             z_beta=z_beta,
             z_alpha=z_alpha,
-            z_q=z_q,
-            w=w,
+            next_w=next_w,
             z_rho_expl=z_rho_expl,
             z_exner_expl=z_exner_expl,
-            rho=rho,
-            exner=exner,
-            theta_v=theta_v,
-            z_dwdz_dd=z_dwdz_dd,
-            exner_dyn_incr=exner_dyn_incr,
+            next_rho=next_rho,
+            next_exner=next_exner,
+            next_theta_v=next_theta_v,
+            dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
+            exner_dynamical_increment=exner_dynamical_increment,
             cvd_o_rd=constants.CVD_O_RD,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
@@ -510,71 +505,61 @@ class TestFusedMoSolveNonHydroStencil41To60_predictor(helpers.StencilTest):
         )
 
 
-class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
-    PROGRAM = fused_solve_nonhydro_stencil_41_to_60_corrector
+class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
+    PROGRAM = vertically_implicit_solver_at_corrector_step
     OUTPUTS = (
-        "z_flxdiv_mass",
-        "z_flxdiv_theta",
-        "z_w_expl",
         "z_contr_w_fl_l",
         "z_beta",
         "z_alpha",
-        "z_q",
-        "w",
+        "next_w",
         "z_rho_expl",
         "z_exner_expl",
-        "rho",
-        "exner",
-        "theta_v",
+        "next_rho",
+        "next_exner",
+        "next_theta_v",
         "mass_flx_ic",
         "vol_flx_ic",
-        "exner_dyn_incr",
+        "exner_dynamical_increment",
     )
 
-    # flake8: noqa: C901
-    @classmethod
+    @staticmethod
     def reference(
-        cls,
         connectivities,
         geofac_div: np.ndarray,
         mass_fl_e: np.ndarray,
         z_theta_v_fl_e: np.ndarray,
-        w_nnow: np.ndarray,
-        ddt_w_adv_ntl1: np.ndarray,
-        ddt_w_adv_ntl2: np.ndarray,
+        current_w: np.ndarray,
+        predictor_vertical_wind_advective_tendency: np.ndarray,
+        corrector_vertical_wind_advective_tendency: np.ndarray,
         z_th_ddz_exner_c: np.ndarray,
         rho_ic: np.ndarray,
-        w_concorr_c: np.ndarray,
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
         vwind_expl_wgt: np.ndarray,
-        exner_nnow: np.ndarray,
-        rho_nnow: np.ndarray,
-        theta_v_nnow: np.ndarray,
+        current_exner: np.ndarray,
+        current_rho: np.ndarray,
+        current_theta_v: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         vwind_impl_wgt: np.ndarray,
-        theta_v_ic: np.ndarray,
+        theta_v_at_cells_on_half_levels: np.ndarray,
         exner_pr: np.ndarray,
         ddt_exner_phy: np.ndarray,
-        rho_incr: np.ndarray,
-        exner_incr: np.ndarray,
+        rho_iau_increment: np.ndarray,
+        exner_iau_increment: np.ndarray,
         ddqz_z_half: np.ndarray,
         z_raylfac: np.ndarray,
         exner_ref_mc: np.ndarray,
-        z_flxdiv_mass: np.ndarray,
-        z_flxdiv_theta: np.ndarray,
-        z_w_expl: np.ndarray,
         z_contr_w_fl_l: np.ndarray,
         z_beta: np.ndarray,
         z_alpha: np.ndarray,
-        z_q: np.ndarray,
-        w: np.ndarray,
+        next_w: np.ndarray,
         z_rho_expl: np.ndarray,
         z_exner_expl: np.ndarray,
-        rho: np.ndarray,
-        exner: np.ndarray,
-        theta_v: np.ndarray,
+        next_rho: np.ndarray,
+        next_exner: np.ndarray,
+        next_theta_v: np.ndarray,
         mass_flx_ic: np.ndarray,
         vol_flx_ic: np.ndarray,
-        exner_dyn_incr: np.ndarray,
+        exner_dynamical_increment: np.ndarray,
         wgt_nnow_vel: float,
         wgt_nnew_vel: float,
         itime_scheme: int,
@@ -601,11 +586,14 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
         end_cell_local: int,
         **kwargs,
     ) -> dict:
-        horz_idx = np.asarray(np.arange(exner_dyn_incr.shape[0]))
+        horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
-        vert_idx = np.arange(exner_dyn_incr.shape[1])
+        vert_idx = np.arange(exner_dynamical_increment.shape[1])
+
+        divergence_of_mass = np.zeros_like(current_rho)
+        divergence_of_theta_v = np.zeros_like(current_theta_v)
         # verified for e-9
-        z_flxdiv_mass, z_flxdiv_theta = np.where(
+        divergence_of_mass, divergence_of_theta_v = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
             compute_divergence_of_fluxes_of_rho_and_theta_numpy(
                 connectivities=connectivities,
@@ -613,8 +601,11 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                 mass_fl_e=mass_fl_e,
                 z_theta_v_fl_e=z_theta_v_fl_e,
             ),
-            (z_flxdiv_mass, z_flxdiv_theta),
+            (divergence_of_mass, divergence_of_theta_v),
         )
+
+        z_w_expl = np.zeros_like(z_contr_w_fl_l)
+        z_q = np.zeros_like(z_contr_w_fl_l)
 
         if itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
@@ -624,12 +615,12 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                 & (vert_idx < n_lev),
                 compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
                     connectivities=connectivities,
-                    w_nnow=w_nnow,
-                    ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-                    ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+                    w_nnow=current_w,
+                    ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency,
+                    ddt_w_adv_ntl2=corrector_vertical_wind_advective_tendency,
                     z_th_ddz_exner_c=z_th_ddz_exner_c,
                     rho_ic=rho_ic[:, :n_lev],
-                    w_concorr_c=w_concorr_c[:, :n_lev],
+                    w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                     vwind_expl_wgt=vwind_expl_wgt,
                     dtime=dtime,
                     wgt_nnow_vel=wgt_nnow_vel,
@@ -646,12 +637,12 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                 & (vert_idx < n_lev),
                 compute_solver_coefficients_matrix_numpy(
                     connectivities=connectivities,
-                    exner_nnow=exner_nnow,
-                    rho_nnow=rho_nnow,
-                    theta_v_nnow=theta_v_nnow,
+                    exner_nnow=current_exner,
+                    rho_nnow=current_rho,
+                    theta_v_nnow=current_theta_v,
                     inv_ddqz_z_full=inv_ddqz_z_full,
                     vwind_impl_wgt=vwind_impl_wgt,
-                    theta_v_ic=theta_v_ic[:, :n_lev],
+                    theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                     rho_ic=rho_ic[:, :n_lev],
                     dtime=dtime,
                     rd=rd,
@@ -681,11 +672,11 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                 & (vert_idx < n_lev),
                 compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
                     connectivities=connectivities,
-                    w_nnow=w[:, :n_lev],
-                    ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+                    w_nnow=current_w[:, :n_lev],
+                    ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency,
                     z_th_ddz_exner_c=z_th_ddz_exner_c,
                     rho_ic=rho_ic[:, :n_lev],
-                    w_concorr_c=w_concorr_c[:, :n_lev],
+                    w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                     vwind_expl_wgt=vwind_expl_wgt,
                     dtime=dtime,
                     cpd=cpd,
@@ -699,12 +690,12 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                 & (vert_idx < n_lev),
                 compute_solver_coefficients_matrix_numpy(
                     connectivities=connectivities,
-                    exner_nnow=exner_nnow,
-                    rho_nnow=rho_nnow,
-                    theta_v_nnow=theta_v_nnow,
+                    exner_nnow=current_exner,
+                    rho_nnow=current_rho,
+                    theta_v_nnow=current_theta_v,
                     inv_ddqz_z_full=inv_ddqz_z_full,
                     vwind_impl_wgt=vwind_impl_wgt,
-                    theta_v_ic=theta_v_ic,
+                    theta_v_ic=theta_v_at_cells_on_half_levels,
                     rho_ic=rho_ic,
                     dtime=dtime,
                     rd=rd,
@@ -728,7 +719,7 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
             )
 
         if not l_vert_nested:
-            w[start_cell_nudging:end_cell_local, :n_lev] = 0.0
+            next_w[start_cell_nudging:end_cell_local, :n_lev] = 0.0
             z_contr_w_fl_l[start_cell_nudging:end_cell_local, :n_lev] = 0.0
             # w[:, :n_lev], z_contr_w_fl_l[:, :n_lev] = np.where(
             #     (start_cell_nudging <= horz_idx)
@@ -743,12 +734,14 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
             #     (w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
             # )
 
-        (w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
+        (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx == n_lev),
             set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-                connectivities, w_concorr_c[:, :n_lev], z_contr_w_fl_l[:, :n_lev]
+                connectivities,
+                contravariant_correction_at_cells_on_half_levels[:, :n_lev],
+                z_contr_w_fl_l[:, :n_lev],
             ),
-            (w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
+            (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
         )
         # 48 and 49 are identical except for bounds
         (z_rho_expl, z_exner_expl) = np.where(
@@ -758,14 +751,14 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
             & (vert_idx < n_lev),
             compute_explicit_part_for_rho_and_exner_numpy(
                 connectivities=connectivities,
-                rho_nnow=rho_nnow,
+                rho_nnow=current_rho,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-                z_flxdiv_mass=z_flxdiv_mass,
+                divergence_of_mass=divergence_of_mass,
                 z_contr_w_fl_l=z_contr_w_fl_l,
                 exner_pr=exner_pr,
                 z_beta=z_beta,
-                z_flxdiv_theta=z_flxdiv_theta,
-                theta_v_ic=theta_v_ic,
+                divergence_of_theta_v=divergence_of_theta_v,
+                theta_v_ic=theta_v_at_cells_on_half_levels,
                 ddt_exner_phy=ddt_exner_phy,
                 dtime=dtime,
             ),
@@ -779,44 +772,44 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                     connectivities=connectivities,
                     z_rho_expl=z_rho_expl,
                     z_exner_expl=z_exner_expl,
-                    rho_incr=rho_incr,
-                    exner_incr=exner_incr,
+                    rho_incr=rho_iau_increment,
+                    exner_incr=exner_iau_increment,
                     iau_wgt_dyn=iau_wgt_dyn,
                 ),
                 (z_rho_expl, z_exner_expl),
             )
 
-        z_q, w[:, :n_lev] = np.where(
+        z_q, next_w[:, :n_lev] = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
                 vwind_impl_wgt=vwind_impl_wgt,
-                theta_v_ic=theta_v_ic[:, :n_lev],
+                theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 ddqz_z_half=ddqz_z_half,
                 z_alpha=z_alpha,
                 z_beta=z_beta,
                 z_w_expl=z_w_expl,
                 z_exner_expl=z_exner_expl,
                 z_q_ref=z_q,
-                w_ref=w[:, :n_lev],
+                w_ref=next_w[:, :n_lev],
                 dtime=dtime,
                 cpd=cpd,
             ),
-            (z_q, w[:, :n_lev]),
+            (z_q, next_w[:, :n_lev]),
         )
 
-        w[:, :n_lev] = np.where(
+        next_w[:, :n_lev] = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= 1),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,
                 z_q=z_q,
-                w=w[:, :n_lev],
+                w=next_w[:, :n_lev],
             ),
-            w[:, :n_lev],
+            next_w[:, :n_lev],
         )
 
-        w_1 = w[:, 0]
+        w_1 = next_w[:, 0]
         if rayleigh_type == rayleigh_klemp:
-            w[:, :n_lev] = np.where(
+            next_w[:, :n_lev] = np.where(
                 (start_cell_nudging <= horz_idx)
                 & (horz_idx < end_cell_local)
                 & (vert_idx >= 1)
@@ -825,12 +818,12 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                     connectivities=connectivities,
                     z_raylfac=z_raylfac,
                     w_1=w_1,
-                    w=w[:, :n_lev],
+                    w=next_w[:, :n_lev],
                 ),
-                w[:, :n_lev],
+                next_w[:, :n_lev],
             )
 
-        rho, exner, theta_v = np.where(
+        next_rho, next_exner, next_theta_v = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local) & (vert_idx >= jk_start),
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
@@ -838,24 +831,24 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                 vwind_impl_wgt=vwind_impl_wgt,
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 rho_ic=rho_ic,
-                w=w,
+                w=next_w,
                 z_exner_expl=z_exner_expl,
                 exner_ref_mc=exner_ref_mc,
                 z_alpha=z_alpha,
                 z_beta=z_beta,
-                rho_now=rho,
-                theta_v_now=theta_v,
-                exner_now=exner,
+                rho_now=current_rho,
+                theta_v_now=current_theta_v,
+                exner_now=current_exner,
                 dtime=dtime,
                 cvd_o_rd=cvd_o_rd,
             ),
-            (rho, exner, theta_v),
+            (next_rho, next_exner, next_theta_v),
         )
 
         if lprep_adv:
             if at_first_substep:
-                mass_flx_ic = np.zeros_like(exner)
-                vol_flx_ic = np.zeros_like(exner)
+                mass_flx_ic = np.zeros_like(next_exner)
+                vol_flx_ic = np.zeros_like(next_exner)
 
         (mass_flx_ic, vol_flx_ic) = np.where(
             (start_cell_nudging <= horz_idx) & (horz_idx < end_cell_local),
@@ -864,7 +857,7 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                 z_contr_w_fl_l=z_contr_w_fl_l[:, :n_lev],
                 rho_ic=rho_ic[:, :n_lev],
                 vwind_impl_wgt=vwind_impl_wgt,
-                w=w[:, :n_lev],
+                w=next_w[:, :n_lev],
                 mass_flx_ic=mass_flx_ic,
                 vol_flx_ic=vol_flx_ic,
                 r_nsubsteps=r_nsubsteps,
@@ -872,7 +865,7 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
             (mass_flx_ic, vol_flx_ic),
         )
 
-        exner_dyn_incr = (
+        exner_dynamical_increment = (
             np.where(
                 (start_cell_nudging <= horz_idx)
                 & (horz_idx < end_cell_local)
@@ -880,35 +873,31 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
                 & (vert_idx < n_lev),
                 update_dynamical_exner_time_increment_numpy(
                     connectivities=connectivities,
-                    exner=exner,
+                    exner=next_exner,
                     ddt_exner_phy=ddt_exner_phy,
-                    exner_dyn_incr=exner_dyn_incr,
+                    exner_dyn_incr=exner_dynamical_increment,
                     ndyn_substeps_var=ndyn_substeps_var,
                     dtime=dtime,
                 ),
-                exner_dyn_incr,
+                exner_dynamical_increment,
             )
             if at_last_substep
-            else exner_dyn_incr
+            else exner_dynamical_increment
         )
 
         return dict(
-            z_flxdiv_mass=z_flxdiv_mass,
-            z_flxdiv_theta=z_flxdiv_theta,
-            z_w_expl=z_w_expl,
             z_contr_w_fl_l=z_contr_w_fl_l,
             z_beta=z_beta,
             z_alpha=z_alpha,
-            z_q=z_q,
-            w=w,
+            next_w=next_w,
             z_rho_expl=z_rho_expl,
             z_exner_expl=z_exner_expl,
-            rho=rho,
-            exner=exner,
-            theta_v=theta_v,
+            next_rho=next_rho,
+            next_exner=next_exner,
+            next_theta_v=next_theta_v,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,
-            exner_dyn_incr=exner_dyn_incr,
+            exner_dynamical_increment=exner_dynamical_increment,
         )
 
     @pytest.fixture
@@ -916,42 +905,46 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
         geofac_div = data_alloc.random_field(grid, dims.CEDim)
         mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_flxdiv_mass = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_flxdiv_theta = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_w_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        w_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        ddt_w_adv_ntl1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        ddt_w_adv_ntl2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        predictor_vertical_wind_advective_tendency = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
+        corrector_vertical_wind_advective_tendency = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
         z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_contr_w_fl_l = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
         vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim)
         z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rho_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        theta_v_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_alpha = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim)
-        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        z_q = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        theta_v_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        next_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddt_exner_phy = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rho_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_raylfac = data_alloc.random_field(grid, dims.KDim)
         exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_dyn_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         mass_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         vol_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         lprep_adv = True
@@ -981,42 +974,38 @@ class TestFusedMoSolveNonHydroStencil41To60_corrector(helpers.StencilTest):
             geofac_div=geofac_div,
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
-            w_nnow=w_nnow,
-            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-            ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+            current_w=current_w,
+            predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
+            corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
             z_th_ddz_exner_c=z_th_ddz_exner_c,
             rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             vwind_expl_wgt=vwind_expl_wgt,
-            exner_nnow=exner_nnow,
-            rho_nnow=rho_nnow,
-            theta_v_nnow=theta_v_nnow,
+            current_exner=current_exner,
+            current_rho=current_rho,
+            current_theta_v=current_theta_v,
             inv_ddqz_z_full=inv_ddqz_z_full,
             vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_ic=theta_v_ic,
+            theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             exner_pr=exner_pr,
             ddt_exner_phy=ddt_exner_phy,
-            rho_incr=rho_incr,
-            exner_incr=exner_incr,
+            rho_iau_increment=rho_iau_increment,
+            exner_iau_increment=exner_iau_increment,
             ddqz_z_half=ddqz_z_half,
             z_raylfac=z_raylfac,
             exner_ref_mc=exner_ref_mc,
-            z_flxdiv_mass=z_flxdiv_mass,
-            z_flxdiv_theta=z_flxdiv_theta,
-            z_w_expl=z_w_expl,
             z_contr_w_fl_l=z_contr_w_fl_l,
             z_beta=z_beta,
             z_alpha=z_alpha,
-            z_q=z_q,
-            w=w,
+            next_w=next_w,
             z_rho_expl=z_rho_expl,
             z_exner_expl=z_exner_expl,
-            rho=rho,
-            exner=exner,
-            theta_v=theta_v,
+            next_rho=next_rho,
+            next_exner=next_exner,
+            next_theta_v=next_theta_v,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,
-            exner_dyn_incr=exner_dyn_incr,
+            exner_dynamical_increment=exner_dynamical_increment,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
             itime_scheme=itime_scheme,

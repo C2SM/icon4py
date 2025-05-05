@@ -364,7 +364,7 @@ def solve_nh_run(
         rho_iau_increment=rho_incr,
         normal_wind_iau_increment=vn_incr,
         exner_iau_increment=exner_incr,
-        exner_dynaminal_increment=exner_dyn_incr,
+        exner_dynamical_increment=exner_dyn_incr,
     )
 
     prognostic_state_nnow = PrognosticState(

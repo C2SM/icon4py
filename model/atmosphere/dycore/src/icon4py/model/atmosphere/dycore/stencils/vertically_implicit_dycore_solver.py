@@ -238,7 +238,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     next_exner: fa.CellKField[ta.wpfloat],
     next_theta_v: fa.CellKField[ta.wpfloat],
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    exner_dynaminal_increment: fa.CellKField[ta.vpfloat],
+    exner_dynamical_increment: fa.CellKField[ta.vpfloat],
     rho_ic: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
@@ -324,14 +324,14 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
         else dwdz_at_cells_on_model_levels
     )
 
-    exner_dynaminal_increment = (
+    exner_dynamical_increment = (
         concat_where(
             kstart_moist <= dims.KDim,
             astype(current_exner, vpfloat),
-            exner_dynaminal_increment,
+            exner_dynamical_increment,
         )
         if at_first_substep
-        else exner_dynaminal_increment
+        else exner_dynamical_increment
     )
 
     return (
@@ -344,7 +344,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
         next_exner,
         next_theta_v,
         dwdz_at_cells_on_model_levels,
-        exner_dynaminal_increment,
+        exner_dynamical_increment,
     )
 
 
@@ -545,7 +545,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     next_theta_v: fa.CellKField[ta.wpfloat],
     mass_flx_ic: fa.CellKField[ta.wpfloat],
     vol_flx_ic: fa.CellKField[ta.wpfloat],
-    exner_dynaminal_increment: fa.CellKField[ta.wpfloat],
+    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
     rho_ic: fa.CellKField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
@@ -638,20 +638,20 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
         (mass_flx_ic, vol_flx_ic),
     )
 
-    exner_dynaminal_increment = (
+    exner_dynamical_increment = (
         concat_where(
             dims.KDim >= kstart_moist,
             _update_dynamical_exner_time_increment(
                 exner=next_exner,
                 ddt_exner_phy=ddt_exner_phy,
-                exner_dyn_incr=exner_dynaminal_increment,
+                exner_dyn_incr=exner_dynamical_increment,
                 ndyn_substeps_var=ndyn_substeps_var,
                 dtime=dtime,
             ),
-            exner_dynaminal_increment,
+            exner_dynamical_increment,
         )
         if at_last_substep
-        else exner_dynaminal_increment
+        else exner_dynamical_increment
     )
 
     return (
@@ -661,7 +661,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
         next_theta_v,
         mass_flx_ic,
         vol_flx_ic,
-        exner_dynaminal_increment,
+        exner_dynamical_increment,
     )
 
 
@@ -677,7 +677,7 @@ def vertically_implicit_solver_at_predictor_step(
     next_exner: fa.CellKField[ta.wpfloat],
     next_theta_v: fa.CellKField[ta.wpfloat],
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    exner_dynaminal_increment: fa.CellKField[ta.vpfloat],
+    exner_dynamical_increment: fa.CellKField[ta.vpfloat],
     geofac_div: fa.CellEdgeField[ta.wpfloat],
     mass_fl_e: fa.EdgeKField[ta.wpfloat],
     z_theta_v_fl_e: fa.EdgeKField[ta.wpfloat],
@@ -789,7 +789,7 @@ def vertically_implicit_solver_at_predictor_step(
         next_exner=next_exner,
         next_theta_v=next_theta_v,
         dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
-        exner_dynaminal_increment=exner_dynaminal_increment,
+        exner_dynamical_increment=exner_dynamical_increment,
         rho_ic=rho_ic,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         current_exner=current_exner,
@@ -821,7 +821,7 @@ def vertically_implicit_solver_at_predictor_step(
             next_exner,
             next_theta_v,
             dwdz_at_cells_on_model_levels,
-            exner_dynaminal_increment,
+            exner_dynamical_increment,
         ),
         domain={
             dims.CellDim: (start_cell_nudging, end_cell_local),
@@ -843,7 +843,7 @@ def vertically_implicit_solver_at_corrector_step(
     next_theta_v: fa.CellKField[ta.wpfloat],
     mass_flx_ic: fa.CellKField[ta.wpfloat],
     vol_flx_ic: fa.CellKField[ta.wpfloat],
-    exner_dynaminal_increment: fa.CellKField[ta.wpfloat],
+    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
     geofac_div: fa.CellEdgeField[ta.wpfloat],
     mass_fl_e: fa.EdgeKField[ta.wpfloat],
     z_theta_v_fl_e: fa.EdgeKField[ta.wpfloat],
@@ -967,7 +967,7 @@ def vertically_implicit_solver_at_corrector_step(
         next_theta_v=next_theta_v,
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=vol_flx_ic,
-        exner_dynaminal_increment=exner_dynaminal_increment,
+        exner_dynamical_increment=exner_dynamical_increment,
         rho_ic=rho_ic,
         current_exner=current_exner,
         current_rho=current_rho,
@@ -998,7 +998,7 @@ def vertically_implicit_solver_at_corrector_step(
             next_theta_v,
             mass_flx_ic,
             vol_flx_ic,
-            exner_dynaminal_increment,
+            exner_dynamical_increment,
         ),
         domain={
             dims.CellDim: (start_cell_nudging, end_cell_local),

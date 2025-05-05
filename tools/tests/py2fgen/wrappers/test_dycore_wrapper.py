@@ -572,10 +572,10 @@ def test_dycore_wrapper_granule_inputs(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)
         ),
-        rho_incr=rho_incr_field,  # sp.rho_incr(),
+        rho_iau_increment=rho_incr_field,  # sp.rho_incr(),
         normal_wind_iau_increment=vn_incr_field,  # sp.vn_incr(),
-        exner_incr=exner_incr_field,  # sp.exner_incr(),
-        exner_dyn_incr=sp.exner_dyn_incr(),
+        exner_iau_increment=exner_incr_field,  # sp.exner_incr(),
+        exner_dynamical_increment=sp.exner_dyn_incr(),
     )
     prognostic_state_nnow = prognostics.PrognosticState(
         w=sp.w_now(),

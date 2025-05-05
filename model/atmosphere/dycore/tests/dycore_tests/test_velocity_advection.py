@@ -175,7 +175,7 @@ def test_velocity_predictor_step(
         rho_iau_increment=None,
         normal_wind_iau_increment=None,
         exner_iau_increment=None,
-        exner_dynaminal_increment=None,
+        exner_dynamical_increment=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
@@ -350,7 +350,7 @@ def test_velocity_corrector_step(
         rho_iau_increment=None,
         normal_wind_iau_increment=None,
         exner_iau_increment=None,  # sp.exner_incr(),
-        exner_dynaminal_increment=None,
+        exner_dynamical_increment=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),

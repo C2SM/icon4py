@@ -155,7 +155,7 @@ def construct_diagnostics(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),
         exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-        exner_dynaminal_increment=init_savepoint.exner_dyn_incr(),
+        exner_dynamical_increment=init_savepoint.exner_dyn_incr(),
     )
 
 

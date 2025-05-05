@@ -138,7 +138,7 @@ class DiagnosticStateNonHydro:
     """
     Declared as exner_incr in ICON.
     """
-    exner_dynaminal_increment: fa.CellKField[float]  # exner pressure dynamics increment
+    exner_dynamical_increment: fa.CellKField[float]  # exner pressure dynamics increment
     """
     Declared as exner_dyn_incr in ICON.
     """

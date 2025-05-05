@@ -15,12 +15,12 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
     dycore_utils,
-    fused_solve_nonhydro_stencil_41_to_60,
     solve_nonhydro as solve_nh,
 )
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_edge_diagnostics_for_dycore_and_update_vn,
     compute_hydrostatic_correction_term,
+    vertically_implicit_dycore_solver,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -542,9 +542,7 @@ def test_nonhydro_corrector_step(
         horizontal_pressure_gradient=init_savepoint.z_gradh_exner(),
         z_alpha=init_savepoint.z_alpha(),
         z_beta=init_savepoint.z_beta(),
-        z_w_expl=init_savepoint.z_w_expl(),
         z_exner_expl=init_savepoint.z_exner_expl(),
-        z_q=init_savepoint.z_q(),
         z_contr_w_fl_l=init_savepoint.z_contr_w_fl_l(),
         rho_at_edges_on_model_levels=init_savepoint.z_rho_e(),
         theta_v_at_edges_on_model_levels=init_savepoint.z_theta_v_e(),
@@ -676,7 +674,7 @@ def test_nonhydro_corrector_step(
     )
     # stencil 60 only relevant for last substep
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_dynaminal_increment.asnumpy(),
+        diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -812,7 +810,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_dynaminal_increment.asnumpy(),
+        diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -981,7 +979,7 @@ def test_run_solve_nonhydro_multi_step(
         atol=5e-13,
     )
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_dynaminal_increment.asnumpy(),
+        diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -1435,7 +1433,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     next_exner = savepoint_nonhydro_41_60_init.exner()
     next_theta_v = savepoint_nonhydro_41_60_init.theta_v()
     dwdz_at_cells_on_model_levels = savepoint_nonhydro_41_60_init.z_dwdz_dd()
-    exner_dynaminal_increment = savepoint_nonhydro_41_60_init.exner_dyn_incr()
+    exner_dynamical_increment = savepoint_nonhydro_41_60_init.exner_dyn_incr()
 
     iau_wgt_dyn = config.iau_wgt_dyn
     is_iau_active = config.is_iau_active
@@ -1469,31 +1467,33 @@ def test_vertically_implicit_solver_at_predictor_step(
     }
     print("compiling")
 
-    compiled = fused_solve_nonhydro_stencil_41_to_60.vertically_implicit_solver_at_predictor_step.with_backend(
-        backend
-    ).compile(
-        cvd_o_rd=[constants.CVD_O_RD],
-        iau_wgt_dyn=[iau_wgt_dyn],
-        dtime=[savepoint_nonhydro_init.get_metadata("dtime").get("dtime")],
-        rd=[constants.RD],
-        cvd=[constants.CVD],
-        cpd=[constants.CPD],
-        rayleigh_klemp=[constants.RayleighType.KLEMP.value],
-        l_vert_nested=[l_vert_nested],
-        is_iau_active=[is_iau_active],
-        rayleigh_type=[config.rayleigh_type.value],
-        divdamp_type=[divdamp_type],
-        at_first_substep=[at_first_substep],
-        index_of_damping_layer=[grid_savepoint.nrdmax()],
-        n_lev=[icon_grid.num_levels],
-        jk_start=[jk_start],
-        kstart_dd3d=[nonhydro_params.starting_vertical_index_for_3d_divdamp],
-        kstart_moist=[vertical_params.kstart_moist],
-        start_cell_nudging=[start_cell_nudging],
-        end_cell_local=[end_cell_local],
-        vertical_start=[0],
-        vertical_end=[icon_grid.num_levels + 1],
-        offset_provider=offset_provider,
+    compiled = (
+        vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step.with_backend(
+            backend
+        ).compile(
+            cvd_o_rd=[constants.CVD_O_RD],
+            iau_wgt_dyn=[iau_wgt_dyn],
+            dtime=[savepoint_nonhydro_init.get_metadata("dtime").get("dtime")],
+            rd=[constants.RD],
+            cvd=[constants.CVD],
+            cpd=[constants.CPD],
+            rayleigh_klemp=[constants.RayleighType.KLEMP.value],
+            l_vert_nested=[l_vert_nested],
+            is_iau_active=[is_iau_active],
+            rayleigh_type=[config.rayleigh_type.value],
+            divdamp_type=[divdamp_type],
+            at_first_substep=[at_first_substep],
+            index_of_damping_layer=[grid_savepoint.nrdmax()],
+            n_lev=[icon_grid.num_levels],
+            jk_start=[jk_start],
+            kstart_dd3d=[nonhydro_params.starting_vertical_index_for_3d_divdamp],
+            kstart_moist=[vertical_params.kstart_moist],
+            start_cell_nudging=[start_cell_nudging],
+            end_cell_local=[end_cell_local],
+            vertical_start=[0],
+            vertical_end=[icon_grid.num_levels + 1],
+            offset_provider=offset_provider,
+        )
     )
     print("done (or async)")
     print(constants.RayleighType.KLEMP, divdamp_type)
@@ -1508,7 +1508,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         next_exner=next_exner,
         next_theta_v=next_theta_v,
         dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
-        exner_dynaminal_increment=exner_dynaminal_increment,
+        exner_dynamical_increment=exner_dynamical_increment,
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
@@ -1577,7 +1577,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
     # TODO: cannot find exit point for this
     # TODO: assert helpers.dallclose(dwdz_at_cells_on_model_levels.asnumpy(), z_dwdz_dd_ref.asnumpy())
-    assert helpers.dallclose(exner_dynaminal_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
+    assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
 
 
 @pytest.mark.embedded_remap_error
@@ -1666,7 +1666,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     next_theta_v = savepoint_nonhydro_41_60_init.theta_v()
     mass_flx_ic = savepoint_nonhydro_41_60_init.mass_flx_ic()
     vol_flx_ic = savepoint_nonhydro_41_60_init.vol_flx_ic()
-    exner_dynaminal_increment = savepoint_nonhydro_41_60_init.exner_dyn_incr()
+    exner_dynamical_increment = savepoint_nonhydro_41_60_init.exner_dyn_incr()
     wgt_nnow_vel = nonhydro_params.wgt_nnow_vel
     wgt_nnew_vel = nonhydro_params.wgt_nnew_vel
     itime_scheme = config.itime_scheme
@@ -1704,31 +1704,33 @@ def test_vertically_implicit_solver_at_corrector_step(
     }
 
     print("compiling")
-    compiled = fused_solve_nonhydro_stencil_41_to_60.vertically_implicit_solver_at_corrector_step.with_backend(
-        backend
-    ).compile(
-        itime_scheme=[itime_scheme],
-        lprep_adv=[savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")],
-        r_nsubsteps=[r_nsubsteps],
-        ndyn_substeps_var=[float(config.ndyn_substeps_var)],
-        cvd_o_rd=[constants.CVD_O_RD],
-        iau_wgt_dyn=[iau_wgt_dyn],
-        rd=[constants.RD],
-        cvd=[constants.CVD],
-        cpd=[constants.CPD],
-        rayleigh_klemp=[constants.RayleighType.KLEMP.value],
-        l_vert_nested=[l_vert_nested],
-        is_iau_active=[is_iau_active],
-        rayleigh_type=[config.rayleigh_type.value],
-        at_first_substep=[at_first_substep],
-        at_last_substep=[at_last_substep],
-        index_of_damping_layer=[grid_savepoint.nrdmax()],
-        n_lev=[icon_grid.num_levels],
-        jk_start=[jk_start],
-        kstart_moist=[kstart_moist],
-        vertical_start=[0],
-        vertical_end=[icon_grid.num_levels + 1],
-        offset_provider=offset_provider,
+    compiled = (
+        vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step.with_backend(
+            backend
+        ).compile(
+            itime_scheme=[itime_scheme],
+            lprep_adv=[savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")],
+            r_nsubsteps=[r_nsubsteps],
+            ndyn_substeps_var=[float(config.ndyn_substeps_var)],
+            cvd_o_rd=[constants.CVD_O_RD],
+            iau_wgt_dyn=[iau_wgt_dyn],
+            rd=[constants.RD],
+            cvd=[constants.CVD],
+            cpd=[constants.CPD],
+            rayleigh_klemp=[constants.RayleighType.KLEMP.value],
+            l_vert_nested=[l_vert_nested],
+            is_iau_active=[is_iau_active],
+            rayleigh_type=[config.rayleigh_type.value],
+            at_first_substep=[at_first_substep],
+            at_last_substep=[at_last_substep],
+            index_of_damping_layer=[grid_savepoint.nrdmax()],
+            n_lev=[icon_grid.num_levels],
+            jk_start=[jk_start],
+            kstart_moist=[kstart_moist],
+            vertical_start=[0],
+            vertical_end=[icon_grid.num_levels + 1],
+            offset_provider=offset_provider,
+        )
     )
     print("done (or async)")
     compiled(
@@ -1743,7 +1745,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         next_theta_v=next_theta_v,
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=vol_flx_ic,
-        exner_dynaminal_increment=exner_dynaminal_increment,
+        exner_dynamical_increment=exner_dynamical_increment,
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
@@ -1821,4 +1823,4 @@ def test_vertically_implicit_solver_at_corrector_step(
     # TODO: cannot find exit points for these two
     # TODO: assert helpers.dallclose(mass_flx_ic.asnumpy(), mass_flx_ic_ref.asnumpy())
     # TODO: assert helpers.dallclose(vol_flx_ic.asnumpy(), vol_flx_ic_ref.asnumpy())
-    assert helpers.dallclose(exner_dynaminal_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
+    assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
