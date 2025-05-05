@@ -119,7 +119,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         d2dexdz2_fac2_mc: np.ndarray,
         limited_area: bool,
         igradp_method: gtx.int32,
-        n_lev: gtx.int32,
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
         start_cell_lateral_boundary: gtx.int32,
@@ -133,25 +132,26 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         vert_idx = np.arange(kwargs["vertical_end"])
         cell = np.arange(kwargs["horizontal_end"])
         horz_idx = cell[:, np.newaxis]
+        vertical_end = kwargs["vertical_end"]
 
         if limited_area:
             (
                 perturbed_rho_at_cells_on_model_levels,
-                perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+                perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
             ) = np.where(
                 (start_cell_lateral_boundary <= horz_idx) & (horz_idx < end_cell_end),
                 (
                     np.zeros_like(perturbed_rho_at_cells_on_model_levels),
-                    np.zeros_like(perturbed_theta_v_at_cells_on_model_levels[:, :n_lev]),
+                    np.zeros_like(perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1]),
                 ),
                 (
                     perturbed_rho_at_cells_on_model_levels,
-                    perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+                    perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
                 ),
             )
 
         (
-            temporal_extrapolation_of_perturbed_exner[:, :n_lev],
+            temporal_extrapolation_of_perturbed_exner[:, :vertical_end-1],
             perturbed_exner_at_cells_on_model_levels,
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx) & (horz_idx < end_cell_halo),
@@ -163,7 +163,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
                 exner_exfac=time_extrapolation_parameter_for_exner,
             ),
             (
-                temporal_extrapolation_of_perturbed_exner[:, :n_lev],
+                temporal_extrapolation_of_perturbed_exner[:, :vertical_end-1],
                 perturbed_exner_at_cells_on_model_levels,
             ),
         )
@@ -171,7 +171,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         temporal_extrapolation_of_perturbed_exner = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx == n_lev),
+            & (vert_idx == vertical_end-1),
             np.zeros_like(temporal_extrapolation_of_perturbed_exner),
             temporal_extrapolation_of_perturbed_exner,
         )
@@ -179,7 +179,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             exner_at_cells_on_half_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
-                & (vert_idx == n_lev),
+                & (vert_idx == vertical_end-1),
                 interpolate_to_surface_numpy(
                     interpolant=temporal_extrapolation_of_perturbed_exner,
                     wgtfacq_c=wgtfacq_c,
@@ -191,7 +191,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
                 & (max(1, nflatlev) <= vert_idx)
-                & (vert_idx < n_lev),
+                & (vert_idx < vertical_end-1),
                 interpolate_cell_field_to_half_levels_vp_numpy(
                     wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
                 ),
@@ -201,7 +201,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
-                & (nflatlev <= vert_idx[:n_lev]),
+                & (nflatlev <= vert_idx[:vertical_end-1]),
                 compute_first_vertical_derivative_numpy(
                     z_exner_ic=exner_at_cells_on_half_levels, inv_ddqz_z_full=inv_ddqz_z_full
                 ),
@@ -210,11 +210,11 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
 
         (
             perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+            perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[:n_lev] == int32(0)),
+            & (vert_idx[:vertical_end-1] == int32(0)),
             compute_perturbation_of_rho_and_theta_numpy(
                 rho=current_rho,
                 rho_ref_mc=reference_rho_at_cells_on_model_levels,
@@ -223,20 +223,20 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             ),
             (
                 perturbed_rho_at_cells_on_model_levels,
-                perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+                perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
             ),
         )
 
         (
             rho_at_cells_on_half_levels,
             perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+            perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[:n_lev] >= int32(1)),
+            & (vert_idx[:vertical_end-1] >= int32(1)),
             compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
-                wgtfac_c=wgtfac_c[:, :n_lev],
+                wgtfac_c=wgtfac_c[:, :vertical_end-1],
                 rho=current_rho,
                 rho_ref_mc=reference_rho_at_cells_on_model_levels,
                 theta_v=current_theta_v,
@@ -245,22 +245,22 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             (
                 rho_at_cells_on_half_levels,
                 perturbed_rho_at_cells_on_model_levels,
-                perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+                perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
             ),
         )
 
         (
-            perturbed_theta_v_at_cells_on_half_levels[:, :n_lev],
-            theta_v_at_cells_on_half_levels[:, :n_lev],
+            perturbed_theta_v_at_cells_on_half_levels[:, :vertical_end-1],
+            theta_v_at_cells_on_half_levels[:, :vertical_end-1],
             pressure_buoyancy_acceleration_at_cells_on_half_levels,
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[:n_lev] >= int32(1)),
+            & (vert_idx[:vertical_end-1] >= int32(1)),
             compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
                 connectivities=connectivities,
-                wgtfac_c=wgtfac_c[:, :n_lev],
-                z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+                wgtfac_c=wgtfac_c[:, :vertical_end-1],
+                z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
                 theta_v=current_theta_v,
                 vwind_expl_wgt=vwind_expl_wgt,
                 exner_pr=perturbed_exner_at_cells_on_model_levels,
@@ -268,14 +268,14 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
                 ddqz_z_half=ddqz_z_half,
             ),
             (
-                perturbed_theta_v_at_cells_on_half_levels[:, :n_lev],
-                theta_v_at_cells_on_half_levels[:, :n_lev],
+                perturbed_theta_v_at_cells_on_half_levels[:, :vertical_end-1],
+                theta_v_at_cells_on_half_levels[:, :vertical_end-1],
                 pressure_buoyancy_acceleration_at_cells_on_half_levels,
             ),
         )
 
         (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels) = np.where(
-            (vert_idx == n_lev)
+            (vert_idx == vertical_end-1)
             & (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo),
             set_theta_v_prime_ic_at_lower_boundary_numpy(
@@ -291,19 +291,19 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
-                & (nflat_gradp <= vert_idx[:n_lev]),
+                & (nflat_gradp <= vert_idx[:vertical_end-1]),
                 compute_approx_of_2nd_vertical_derivative_of_exner_numpy(
                     z_theta_v_pr_ic=perturbed_theta_v_at_cells_on_half_levels,
                     d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
                     d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-                    z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+                    z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
                 ),
                 d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             )
 
         (
             perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+            perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
         ) = np.where(
             (start_cell_halo_level_2 <= horz_idx) & (horz_idx < end_cell_halo_level_2),
             compute_perturbation_of_rho_and_theta_numpy(
@@ -314,7 +314,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             ),
             (
                 perturbed_rho_at_cells_on_model_levels,
-                perturbed_theta_v_at_cells_on_model_levels[:, :n_lev],
+                perturbed_theta_v_at_cells_on_model_levels[:, :vertical_end-1],
             ),
         )
 
@@ -384,7 +384,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         limited_area = True
 
         cell_domain = h_grid.domain(dims.CellDim)
-        n_lev = grid.num_levels
+        #n_lev = grid.num_levels
         start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
         start_cell_lateral_boundary_level_3 = grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
@@ -427,7 +427,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
             limited_area=limited_area,
             igradp_method=igradp_method,
-            n_lev=n_lev,
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
             start_cell_lateral_boundary=start_cell_lateral_boundary,
@@ -439,5 +438,5 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             horizontal_start=0,
             horizontal_end=grid.num_cells,
             vertical_start=0,
-            vertical_end=n_lev + 1,
+            vertical_end=grid.num_levels + 1,
         )
