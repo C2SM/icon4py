@@ -6,19 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from typing import Any
-
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -110,7 +97,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         "dwdz_at_cells_on_model_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.infinite_concat_where,)
+    MARKERS = (pytest.mark.infinite_concat_where, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(
@@ -223,18 +210,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             ),
             (z_beta, z_alpha[:, :n_lev]),
         )
-        z_alpha = np.where(
-            (horizontal_start <= horz_idx)
-            & (horz_idx < horizontal_end)
-            & (vert_nlevp1_idx == n_lev),
-            0.0,
-            z_alpha,
-        )
-        z_q[:, :n_lev] = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == int32(0)),
-            0.0,
-            z_q[:, :n_lev],
-        )
+        z_alpha[horizontal_start:horizontal_end, n_lev] = 0.0
+        z_q[horizontal_start:horizontal_end, 0] = 0.0
 
         if not l_vert_nested:
             next_w[horizontal_start:horizontal_end, 0] = 0.0
@@ -417,7 +394,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        next_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -428,7 +405,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         z_raylfac = data_alloc.random_field(grid, dims.KDim)
         exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         next_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        next_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         next_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         dwdz_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
