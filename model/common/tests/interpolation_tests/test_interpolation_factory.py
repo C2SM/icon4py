@@ -240,7 +240,6 @@ def test_get_mass_conserving_cell_average_weight(
 ## TODO (@halungge) rtol is from parametrization is overwritten in assert - function is most probably wrong
 #  TODO (@halungge) global grid is not tested
 @pytest.mark.level("integration")
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -277,7 +276,6 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
 
 
 @pytest.mark.level("integration")
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -297,7 +295,6 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
 
 
 @pytest.mark.level("integration")
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
