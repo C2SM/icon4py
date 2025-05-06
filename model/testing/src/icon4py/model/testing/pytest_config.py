@@ -71,7 +71,7 @@ def pytest_configure(config):
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
     )
     config.addinivalue_line(
-        "markers", "duplicate(level): functionality under tests is tested twice"
+        "markers", "level(name): functionality under tests is tested twice"
     )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
@@ -167,7 +167,7 @@ def pytest_collection_modifyitems(config, items):
     if test_level == "any":
         return
     for item in items:
-        marker = item.get_closest_marker("duplicate")
+        marker = item.get_closest_marker("level")
         if marker is not None and test_level not in marker.args:
             item.add_marker(
                 pytest.mark.skip(
