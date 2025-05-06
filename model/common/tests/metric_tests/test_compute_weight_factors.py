@@ -36,7 +36,7 @@ def test_compute_wgtfac_c(icon_grid, metrics_savepoint, backend):  # fixture
     assert helpers.dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
 
 
-@pytest.mark.duplicate("unit")
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_grid, backend):
     wgtfacq_e_dsl_ref = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels + 1)

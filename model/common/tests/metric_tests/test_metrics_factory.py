@@ -126,7 +126,7 @@ def _get_metrics_factory(
     return factory
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -148,7 +148,7 @@ def test_factory_z_mc(grid_savepoint, metrics_savepoint, grid_file, experiment, 
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -196,7 +196,7 @@ def test_factory_ddqz_full_e(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -218,7 +218,7 @@ def test_factory_ddqz_z_half(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -242,7 +242,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -264,7 +264,7 @@ def test_factory_rayleigh_w(grid_savepoint, metrics_savepoint, grid_file, experi
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -289,7 +289,7 @@ def test_factory_coeffs_dwdz(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -314,7 +314,7 @@ def test_factory_ref_mc(grid_savepoint, metrics_savepoint, grid_file, experiment
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -362,7 +362,7 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -388,7 +388,7 @@ def test_factory_ddxt_z_full(
     assert test_helpers.dallclose(field.asnumpy(), field_ref, rtol=1.0e-5, atol=1.0e-8)
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -413,7 +413,7 @@ def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -438,7 +438,7 @@ def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.infinite_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -461,7 +461,7 @@ def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1.0e-5)
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -515,7 +515,7 @@ def test_factory_mask_bdy_prog_halo_c(
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -539,7 +539,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -562,7 +562,7 @@ def test_factory_zdiff_gradp(grid_savepoint, metrics_savepoint, grid_file, exper
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-5)
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -584,7 +584,7 @@ def test_factory_coeff_gradekin(grid_savepoint, metrics_savepoint, grid_file, ex
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -607,7 +607,7 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
 
 
 @pytest.mark.cpu_only  # TODO (magdalena) needs PR 715 (hopefully)
-@pytest.mark.duplicate("integration")
+@pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",

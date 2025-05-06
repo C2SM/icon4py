@@ -180,7 +180,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     assert helpers.dallclose(theta_ref_me.asnumpy(), theta_ref_me_ref.asnumpy())
 
 
-@pytest.mark.duplicate("unit")
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
