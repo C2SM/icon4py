@@ -611,8 +611,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
-                & (vert_idx >= int32(1))
-                & (vert_idx < n_lev),
+                & (vert_idx >= int32(1)),
                 compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
                     connectivities=connectivities,
                     w_nnow=current_w,
@@ -633,8 +632,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             (z_beta, z_alpha[:, :n_lev]) = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
-                & (vert_idx >= int32(0))
-                & (vert_idx < n_lev),
+                & (vert_idx >= int32(0)),
                 compute_solver_coefficients_matrix_numpy(
                     connectivities=connectivities,
                     exner_nnow=current_exner,
@@ -650,17 +648,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 ),
                 (z_beta, z_alpha[:, :n_lev]),
             )
-            z_alpha[:, :n_lev] = np.where(
-                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == n_lev),
-                0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha[:, :n_lev]),
-                z_alpha[:, :n_lev],
-            )
-
-            z_q[:, :n_lev] = np.where(
-                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == 0),
-                0.0,
-                z_q[:, :n_lev],
-            )
+            z_alpha[horizontal_start:horizontal_end, n_lev] = 0.0
+            z_q[horizontal_start:horizontal_end, 0] = 0.0
 
         else:
             (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
@@ -702,14 +691,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 (z_beta, z_alpha),
             )
             z_alpha[horizontal_start:horizontal_end, n_lev] = 0.0
-
-            z_q[:, :n_lev] = np.where(
-                (horizontal_start <= horz_idx)
-                & (horz_idx < horizontal_end)
-                & (vert_idx == int32(0)),
-                0.0,
-                z_q[:, :n_lev],
-            )
+            z_q[horizontal_start:horizontal_end, 0] = 0.0
 
         if not l_vert_nested:
             next_w[horizontal_start:horizontal_end, 0] = 0.0
