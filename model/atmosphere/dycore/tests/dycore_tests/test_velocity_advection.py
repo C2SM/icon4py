@@ -914,7 +914,6 @@ def test_compute_advection_in_vertical_momentum_equation(
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-
     dtime = 5.0
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
@@ -1040,7 +1039,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
 
     d_time = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     end_index_of_damping_layer = grid_savepoint.nrdmax()
-
 
     ddt_vn_apc_ref = savepoint_compute_advection_in_horizontal_momentum_equation_exit.ddt_vn_apc()
 
