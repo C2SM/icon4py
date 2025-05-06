@@ -103,7 +103,6 @@ def cell_coordinate_source(grid_savepoint, backend):
     yield coordinate_source
     coordinate_source.reset()
 
-@pytest.mark.datatest
 @pytest.fixture(scope="function")
 def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
     on_gpu = data_alloc.is_cupy_device(backend)
