@@ -29,9 +29,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_fro
 from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
     _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import (
-    _compute_first_vertical_derivative,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rho_and_theta import (
     _compute_horizontal_advection_of_rho_and_theta,
 )
@@ -57,7 +54,6 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp 
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     _init_cell_kdim_field_with_zero_wp,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
@@ -69,9 +65,6 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
-    _interpolate_cell_field_to_half_levels_vp,
-)
 
 
 # TODO: abishekg7 move this to tests
@@ -95,52 +88,6 @@ def init_test_fields(
     _init_cell_kdim_field_with_zero_wp(
         out=z_dwdz_dd,
         domain={dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},
-    )
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def predictor_stencils_4_5_6(
-    wgtfacq_c_dsl: fa.CellKField[float],
-    z_exner_ex_pr: fa.CellKField[float],
-    z_exner_ic: fa.CellKField[float],
-    wgtfac_c: fa.CellKField[float],
-    inv_ddqz_z_full: fa.CellKField[float],
-    z_dexner_dz_c_1: fa.CellKField[float],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    # TODO:
-    #  - The value of z_exner_ic at the model top level is not updated
-    #    and assumed to be zero. It should be treated in the same way as
-    #    the ground level.
-    _interpolate_to_surface(
-        wgtfacq_c_dsl,
-        z_exner_ex_pr,
-        out=z_exner_ic,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end - 1, vertical_end),
-        },
-    )
-    _interpolate_cell_field_to_half_levels_vp(
-        wgtfac_c,
-        z_exner_ex_pr,
-        out=z_exner_ic,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
-        },
-    )
-    _compute_first_vertical_derivative(
-        z_exner_ic,
-        inv_ddqz_z_full,
-        out=z_dexner_dz_c_1,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
-        },
     )
 
 

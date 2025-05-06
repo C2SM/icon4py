@@ -1480,9 +1480,11 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         icon_grid, dims.EdgeDim, dims.KDim, backend=backend
     )
     temporal_extrapolation_of_perturbed_exner = sp_stencil_init.z_exner_ex_pr()
-    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(0)
-    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(
-        1
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+        sp_stencil_init.z_dexner_dz_c(0)
+    )
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+        sp_stencil_init.z_dexner_dz_c(1)
     )
     theta_v = sp_stencil_init.theta_v()
     theta_v_at_cells_on_half_levels = sp_stencil_init.theta_v_ic()

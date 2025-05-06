@@ -82,7 +82,6 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             ddqz_z_full_e,
         )
 
-
         condition = (np.maximum(3, end_index_of_damping_layer - 2) - 1 <= k) & (k < nlev - 4)
 
         normal_wind_advective_tendency_extra_diffu = (

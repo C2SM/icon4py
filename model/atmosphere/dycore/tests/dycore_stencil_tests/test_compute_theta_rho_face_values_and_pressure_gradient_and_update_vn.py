@@ -194,11 +194,12 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
     ) -> dict:
         vert_idx = np.arange(vertical_end)
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
+        default_shape = perturbed_rho_at_cells_on_model_levels.shape
 
-        ddx_perturbed_rho = np.zeros(perturbed_rho_at_cells_on_model_levels.shape)
-        ddy_perturbed_rho = np.zeros(perturbed_rho_at_cells_on_model_levels.shape)
-        ddx_perturbed_theta_v = np.zeros(perturbed_rho_at_cells_on_model_levels.shape)
-        ddy_perturbed_theta_v = np.zeros(perturbed_rho_at_cells_on_model_levels.shape)
+        ddx_perturbed_rho = np.zeros(default_shape)
+        ddy_perturbed_rho = np.zeros(default_shape)
+        ddx_perturbed_theta_v = np.zeros(default_shape)
+        ddy_perturbed_theta_v = np.zeros(default_shape)
 
         if iadv_rhotheta == rhotheta_avd_type.MIURA:
             # Compute Green-Gauss gradients for rho and theta
@@ -206,24 +207,36 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
 
             geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
             ddx_perturbed_rho = np.sum(
-                np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * perturbed_rho_at_cells_on_model_levels[c2e2cO], 0),
+                np.where(
+                    (c2e2cO != -1)[:, :, np.newaxis],
+                    geofac_grg_x * perturbed_rho_at_cells_on_model_levels[c2e2cO],
+                    0,
+                ),
                 axis=1,
             )
             ddx_perturbed_theta_v = np.sum(
                 np.where(
-                    (c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * perturbed_theta_v_at_cells_on_model_levels[c2e2cO], 0
+                    (c2e2cO != -1)[:, :, np.newaxis],
+                    geofac_grg_x * perturbed_theta_v_at_cells_on_model_levels[c2e2cO],
+                    0,
                 ),
                 axis=1,
             )
 
             geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
             ddy_perturbed_rho = np.sum(
-                np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * perturbed_rho_at_cells_on_model_levels[c2e2cO], 0),
+                np.where(
+                    (c2e2cO != -1)[:, :, np.newaxis],
+                    geofac_grg_y * perturbed_rho_at_cells_on_model_levels[c2e2cO],
+                    0,
+                ),
                 axis=1,
             )
             ddy_perturbed_theta_v = np.sum(
                 np.where(
-                    (c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * perturbed_theta_v_at_cells_on_model_levels[c2e2cO], 0
+                    (c2e2cO != -1)[:, :, np.newaxis],
+                    geofac_grg_y * perturbed_theta_v_at_cells_on_model_levels[c2e2cO],
+                    0,
                 ),
                 axis=1,
             )
@@ -320,7 +333,9 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
                 return temporal_extrapolation_of_perturbed_exner_at_kidx[:, i, :] + zdiff_gradp[
                     :, i, :
                 ] * (
-                    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx[:, i, :]
+                    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx[
+                        :, i, :
+                    ]
                     + zdiff_gradp[:, i, :]
                     * d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx[
                         :, i, :
@@ -438,8 +453,12 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         reference_theta_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
+        perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
         ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         temporal_extrapolation_of_perturbed_exner = data_alloc.random_field(
@@ -448,8 +467,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+            data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         )
         hydrostatic_correction_on_lowest_level = data_alloc.random_field(grid, dims.EdgeDim)
         zdiff_gradp = data_alloc.random_field(grid, dims.ECDim, dims.KDim)
