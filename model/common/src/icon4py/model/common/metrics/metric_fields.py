@@ -545,98 +545,6 @@ def compute_exner_exfac(
     )
 
 
-@field_operator
-def _compute_vwind_impl_wgt_1(
-    z_ddxn_z_half_e: fa.EdgeField[wpfloat],
-    z_ddxt_z_half_e: fa.EdgeField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
-    vwind_offctr: wpfloat,
-) -> fa.CellField[wpfloat]:
-    z_ddx_1 = maximum(abs(z_ddxn_z_half_e(C2E[0])), abs(z_ddxt_z_half_e(C2E[0])))
-    z_ddx_2 = maximum(abs(z_ddxn_z_half_e(C2E[1])), abs(z_ddxt_z_half_e(C2E[1])))
-    z_ddx_3 = maximum(abs(z_ddxn_z_half_e(C2E[2])), abs(z_ddxt_z_half_e(C2E[2])))
-    z_ddx_1_2 = maximum(z_ddx_1, z_ddx_2)
-    z_maxslope = maximum(z_ddx_1_2, z_ddx_3)
-
-    z_diff_1_2 = maximum(
-        abs(z_ddxn_z_half_e(C2E[0]) * dual_edge_length(C2E[0])),
-        abs(z_ddxn_z_half_e(C2E[1]) * dual_edge_length(C2E[1])),
-    )
-    z_diff = maximum(z_diff_1_2, abs(z_ddxn_z_half_e(C2E[2]) * dual_edge_length(C2E[2])))
-    z_offctr_1 = maximum(vwind_offctr, 0.425 * z_maxslope ** (0.75))
-    z_offctr = maximum(z_offctr_1, minimum(0.25, 0.00025 * (z_diff - 250.0)))
-    z_offctr = minimum(maximum(vwind_offctr, 0.75), z_offctr)
-    vwind_impl_wgt = 0.5 + z_offctr
-    return vwind_impl_wgt
-
-
-@field_operator
-def _compute_vwind_impl_wgt_2(
-    vct_a: fa.KField[wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    z_diff_2 = (z_ifc - z_ifc(Koff[-1])) / (vct_a - vct_a(Koff[-1]))
-    vwind_impl_wgt_k = where(
-        z_diff_2 < 0.6, maximum(vwind_impl_wgt, 1.2 - z_diff_2), vwind_impl_wgt
-    )
-    return vwind_impl_wgt_k
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_vwind_impl_wgt_partial(
-    z_ddxn_z_half_e: fa.EdgeField[wpfloat],
-    z_ddxt_z_half_e: fa.EdgeField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
-    vct_a: fa.KField[wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
-    vwind_impl_wgt_k: fa.CellKField[wpfloat],
-    vwind_offctr: wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    """
-    Compute vwind_impl_wgt.
-
-    See mo_vertical_grid.f90
-
-    Args:
-        z_ddxn_z_half_e: intermediate storage for field
-        z_ddxt_z_half_e: intermediate storage for field
-        dual_edge_length: dual_edge_length
-        vct_a: Field[Dims[dims.KDim], float]
-        z_ifc: geometric height on half levels
-        vwind_impl_wgt: (output) offcentering in vertical mass flux
-        vwind_offctr: off-centering in vertical wind solver
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-    _compute_vwind_impl_wgt_1(
-        z_ddxn_z_half_e=z_ddxn_z_half_e,
-        z_ddxt_z_half_e=z_ddxt_z_half_e,
-        dual_edge_length=dual_edge_length,
-        vwind_offctr=vwind_offctr,
-        out=vwind_impl_wgt,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-    _compute_vwind_impl_wgt_2(
-        vct_a=vct_a,
-        z_ifc=z_ifc,
-        vwind_impl_wgt=vwind_impl_wgt,
-        out=vwind_impl_wgt_k,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 @program
 def compute_wgtfac_e(
     wgtfac_c: fa.CellKField[wpfloat],
@@ -1169,3 +1077,42 @@ def compute_theta_exner_ref_mc(
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
+
+def compute_vwind_impl_wgt(
+    c2e: data_alloc.NDArray,
+    vct_a: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    z_ddxn_z_half_e: data_alloc.NDArray,
+    z_ddxt_z_half_e: data_alloc.NDArray,
+    dual_edge_length: data_alloc.NDArray,
+    vwind_offctr: float,
+    nlev: int,
+    horizontal_start_cell: int,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    factor = max(vwind_offctr, 0.75)
+
+    zn_off = array_ns.abs(z_ddxn_z_half_e[:, nlev][c2e])
+    zt_off = array_ns.abs(z_ddxt_z_half_e[:, nlev][c2e])
+    stacked = array_ns.concatenate((zn_off, zt_off), axis=1)
+    maxslope = 0.425 * array_ns.amax(stacked, axis=1) ** (0.75)
+    diff = array_ns.minimum(
+        0.25, 0.00025 * (np.amax(np.abs(zn_off * dual_edge_length[c2e]), axis=1) - 250.0)
+    )
+    offctr = array_ns.minimum(
+        factor, array_ns.maximum(vwind_offctr, array_ns.maximum(maxslope, diff))
+    )
+    vwind_impl_wgt = 0.5 + offctr
+
+    k_start = max(0, nlev - 9)
+
+    zdiff2 = (z_ifc[:, 0:nlev] - z_ifc[:, 1 : nlev + 1]) / (vct_a[0:nlev] - vct_a[1 : nlev + 1])
+
+    for jk in range(k_start, nlev):
+        zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
+        index_for_k = np.where(zdiff2_sliced < 0.6)[0]
+        max_value_k = np.maximum(1.2 - zdiff2_sliced, vwind_impl_wgt[horizontal_start_cell:])
+        vwind_impl_wgt[index_for_k + horizontal_start_cell] = max_value_k[index_for_k]
+
+    return vwind_impl_wgt

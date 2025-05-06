@@ -32,7 +32,6 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
-    compute_vwind_impl_wgt,
     compute_zdiff_gradp_dsl,
     metric_fields as mf,
     metrics_attributes as attrs,
@@ -433,9 +432,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxt_z_full)
 
         compute_vwind_impl_wgt_np = factory.NumpyFieldsProvider(
-            func=functools.partial(
-                compute_vwind_impl_wgt.compute_vwind_impl_wgt, array_ns=self._xp
-            ),
+            func=functools.partial(mf.compute_vwind_impl_wgt, array_ns=self._xp),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
             fields=(attrs.VWIND_IMPL_WGT,),
@@ -452,7 +449,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start_cell": self._grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
-                "n_cells": self._grid.num_cells,
             },
         )
         self.register_provider(compute_vwind_impl_wgt_np)
