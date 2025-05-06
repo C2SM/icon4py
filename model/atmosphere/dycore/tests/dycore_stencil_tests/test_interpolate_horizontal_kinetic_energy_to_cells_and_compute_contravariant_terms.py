@@ -20,9 +20,6 @@ from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
-from .test_correct_contravariant_vertical_velocity import (
-    correct_contravariant_vertical_velocity_numpy,
-)
 from .test_init_cell_kdim_field_with_zero_vp import init_cell_kdim_field_with_zero_vp_numpy
 from .test_interpolate_cell_field_to_half_levels_vp import (
     interpolate_cell_field_to_half_levels_vp_numpy,
@@ -106,10 +103,8 @@ class TestInterpolateHorizontalKineticWnergyToCellsAndComputeContravariantTerms(
 
         contravariant_corrected_w_at_cells_on_half_levels[:, :-1] = np.where(
             (nflatlev + 1 <= k_nlev) & (k_nlev < nlev),
-            correct_contravariant_vertical_velocity_numpy(
-                contravariant_corrected_w_at_cells_on_half_levels[:, :-1],
-                contravariant_correction_at_cells_on_half_levels,
-            ),
+            contravariant_corrected_w_at_cells_on_half_levels[:, :-1]
+            - contravariant_correction_at_cells_on_half_levels,
             contravariant_corrected_w_at_cells_on_half_levels[:, :-1],
         )
         horizontal_kinetic_energy_at_cells_on_model_levels_cp[
