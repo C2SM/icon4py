@@ -57,7 +57,8 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         0.0,
     )
     difcoef = where(
-        (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
+        (levelmask | levelmask(Koff[1]))
+        & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
         scalfac_exdiff
         * minimum(
             wpfloat("0.85") - cfl_w_limit_wp * dtime,
@@ -66,14 +67,18 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         0.0,
     )
     ddt_vn_apc_wp = where(
-        (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
-        ddt_vn_apc_wp + difcoef * area_edge * (
+        (levelmask | levelmask(Koff[1]))
+        & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
+        ddt_vn_apc_wp
+        + difcoef
+        * area_edge
+        * (
             neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
             + tangent_orientation
             * inv_primal_edge_length
             * astype(zeta(E2V[1]) - zeta(E2V[0]), wpfloat)
         ),
-        ddt_vn_apc_wp
+        ddt_vn_apc_wp,
     )
     return astype(ddt_vn_apc_wp, vpfloat)
 
