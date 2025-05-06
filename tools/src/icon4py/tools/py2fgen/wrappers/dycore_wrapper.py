@@ -337,8 +337,8 @@ def solve_nh_run(
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
-        mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=vol_flx_ic,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=mass_flx_ic,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(

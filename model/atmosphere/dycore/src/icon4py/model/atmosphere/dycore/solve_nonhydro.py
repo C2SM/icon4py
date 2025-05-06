@@ -111,14 +111,26 @@ class IntermediateFields:
     """
     Declared as z_gradh_exner in ICON.
     """
-    z_alpha: fa.EdgeKField[
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.EdgeKField[
         float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_beta: fa.CellKField[float]
-    z_exner_expl: fa.CellKField[float]
-    z_contr_w_fl_l: fa.EdgeKField[
+    """
+    Declared as z_alpha in ICON.
+    """
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as z_beta in ICON.
+    """
+    exner_explicit_term: fa.CellKField[float]
+    """
+    Declared as z_exner_expl in ICON.
+    """
+    vertical_mass_flux_at_cells_on_half_levels: fa.EdgeKField[
         float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    """
+    Declared as z_contr_w_fl_l in ICON.
+    """
     rho_at_edges_on_model_levels: fa.EdgeKField[float]
     """
     Declared as z_rho_e in ICON.
@@ -139,7 +151,10 @@ class IntermediateFields:
     """
     Declared as z_graddiv_vn in ICON.
     """
-    z_rho_expl: fa.CellKField[float]
+    rho_explicit_term: fa.CellKField[float]
+    """
+    Declared as z_rho_expl in ICON.
+    """
     dwdz_at_cells_on_model_levels: fa.CellKField[float]
     """
     Declared as z_dwdz_dd in ICON.
@@ -155,12 +170,12 @@ class IntermediateFields:
             horizontal_pressure_gradient=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            z_alpha=data_alloc.zero_field(
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
-            z_beta=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            z_exner_expl=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            z_contr_w_fl_l=data_alloc.zero_field(
+            tridiagonal_beta_coeff_at_cells_on_model_levels=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+            exner_explicit_term=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+            vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
             rho_at_edges_on_model_levels=data_alloc.zero_field(
@@ -172,7 +187,7 @@ class IntermediateFields:
             horizontal_gradient_of_normal_wind_divergence=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            z_rho_expl=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+            rho_explicit_term=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
             dwdz_at_cells_on_model_levels=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, backend=backend
             ),
@@ -1140,12 +1155,12 @@ class SolveNonhydro:
         )
 
         self._vertically_implicit_solver_at_predictor_step(
-            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            z_beta=z_fields.z_beta,
-            z_alpha=z_fields.z_alpha,
+            vertical_mass_flux_at_cells_on_half_levels=z_fields.vertical_mass_flux_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels=z_fields.tridiagonal_beta_coeff_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=z_fields.tridiagonal_alpha_coeff_at_cells_on_half_levels,
             next_w=prognostic_states.next.w,
-            z_rho_expl=z_fields.z_rho_expl,
-            z_exner_expl=z_fields.z_exner_expl,
+            rho_explicit_term=z_fields.rho_explicit_term,
+            exner_explicit_term=z_fields.exner_explicit_term,
             next_rho=prognostic_states.next.rho,
             next_exner=prognostic_states.next.exner,
             next_theta_v=prognostic_states.next.theta_v,
@@ -1186,7 +1201,6 @@ class SolveNonhydro:
             divdamp_type=self._config.divdamp_type,
             at_first_substep=at_first_substep,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            n_lev=self._grid.num_levels,
             jk_start=self.jk_start,
             kstart_dd3d=self._params.starting_vertical_index_for_3d_divdamp,
             kstart_moist=self._vertical_params.kstart_moist,
@@ -1424,17 +1438,17 @@ class SolveNonhydro:
             )
 
         self._vertically_implicit_solver_at_corrector_step(
-            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            z_beta=z_fields.z_beta,
-            z_alpha=z_fields.z_alpha,
+            vertical_mass_flux_at_cells_on_half_levels=z_fields.vertical_mass_flux_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels=z_fields.tridiagonal_beta_coeff_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=z_fields.tridiagonal_alpha_coeff_at_cells_on_half_levels,
             next_w=prognostic_states.next.w,
-            z_rho_expl=z_fields.z_rho_expl,
-            z_exner_expl=z_fields.z_exner_expl,
+            rho_explicit_term=z_fields.rho_explicit_term,
+            exner_explicit_term=z_fields.exner_explicit_term,
             next_rho=prognostic_states.next.rho,
             next_exner=prognostic_states.next.exner,
             next_theta_v=prognostic_states.next.theta_v,
-            mass_flx_ic=prep_adv.mass_flx_ic,
-            vol_flx_ic=prep_adv.vol_flx_ic,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=prep_adv.dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             exner_dynamical_increment=diagnostic_state_nh.exner_dynamical_increment,
             geofac_div=self._interpolation_state.geofac_div,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
@@ -1461,7 +1475,6 @@ class SolveNonhydro:
             exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
             wgt_nnow_vel=self._params.wgt_nnow_vel,
             wgt_nnew_vel=self._params.wgt_nnew_vel,
-            itime_scheme=self._config.itime_scheme,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(self._config.ndyn_substeps_var),
@@ -1475,7 +1488,6 @@ class SolveNonhydro:
             is_iau_active=self._config.is_iau_active,
             rayleigh_type=self._config.rayleigh_type,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            n_lev=self._grid.num_levels,
             jk_start=self.jk_start,
             kstart_moist=self._vertical_params.kstart_moist,
             at_first_substep=at_first_substep,
@@ -1490,9 +1502,9 @@ class SolveNonhydro:
 
         if lprep_adv:
             if at_first_substep:
-                log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
+                log.debug(f"corrector set prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero")
                 self._init_cell_kdim_field_with_zero_wp(
-                    field_with_zero_wp=prep_adv.mass_flx_ic,
+                    field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                     horizontal_start=self._start_cell_lateral_boundary,
                     horizontal_end=self._end_cell_lateral_boundary_level_4,
                     vertical_start=0,
@@ -1507,7 +1519,7 @@ class SolveNonhydro:
                 w_now=prognostic_states.current.w,
                 w_new=prognostic_states.next.w,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-                mass_flx_ic=prep_adv.mass_flx_ic,
+                mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 r_nsubsteps=r_nsubsteps,
                 horizontal_start=self._start_cell_lateral_boundary,
                 horizontal_end=self._end_cell_lateral_boundary_level_4,

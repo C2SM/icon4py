@@ -250,5 +250,11 @@ class PrepAdvection:
 
     vn_traj: fa.EdgeKField[float]
     mass_flx_me: fa.EdgeKField[float]
-    mass_flx_ic: fa.CellKField[float]
-    vol_flx_ic: fa.CellKField[float]
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as mass_flx_ic in ICON.
+    """
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as vol_flx_ic in ICON.
+    """

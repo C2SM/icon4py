@@ -209,8 +209,8 @@ def model_initialization_serialbox(
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
-        mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=solve_nonhydro_init_savepoint.mass_flx_ic(),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
             grid,
             dims.CellDim,
             dims.KDim,
