@@ -107,19 +107,23 @@ class DiagnosticStateNonHydro:
     """
     Declared as exner_pr in ICON.
     """
+
     rho_at_cells_on_half_levels: fa.CellKField[float]
     """
     Declared as rho_ic in ICON.
     """
+
     ddt_exner_phy: fa.CellKField[float]
     grf_tend_rho: fa.CellKField[float]
     grf_tend_thv: fa.CellKField[float]
     grf_tend_w: fa.CellKField[float]
     mass_fl_e: fa.EdgeKField[float]
+
     normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[float]
     """
     Declared as ddt_vn_phy in ICON.
     """
+
     grf_tend_vn: fa.EdgeKField[float]
     normal_wind_advective_tendency: common_utils.PredictorCorrectorPair[fa.EdgeKField[float]]
     """
@@ -137,6 +141,7 @@ class DiagnosticStateNonHydro:
     """
     Declared as vn_incr in ICON.
     """
+
     exner_incr: Optional[fa.EdgeKField[float]]  # exner increment [- ]
     exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
 

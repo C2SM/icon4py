@@ -1339,7 +1339,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
 
     rho_ic_ref = sp_ref.rho_ic()
-    z_theta_v_pr_ic_ref = sp_ref.z_theta_v_pr_ic()
+    z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_th_ddz_exner_c_ref = sp_exit.z_th_ddz_exner_c()
 
