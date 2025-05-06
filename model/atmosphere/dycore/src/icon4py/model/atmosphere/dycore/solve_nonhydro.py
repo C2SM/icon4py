@@ -26,18 +26,11 @@ from icon4py.model.atmosphere.dycore.stencils import (
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
-
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
-)
-from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
-    add_analysis_increments_from_data_assimilation,
-)
-from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import (
-    apply_rayleigh_damping_mechanism,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner,
@@ -47,9 +40,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
 from icon4py.model.atmosphere.dycore.stencils import vertically_implicit_dycore_solver
-from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
-    compute_divergence_of_fluxes_of_rho_and_theta,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
 )
@@ -60,9 +50,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_m
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_variables import (
-    compute_results_for_thermodynamic_variables,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
@@ -72,36 +59,18 @@ from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import (
 from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
 )
-from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
-    copy_cell_kdim_field_to_vp,
-)
 from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     init_two_cell_kdim_fields_with_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_wp import (
-    init_two_cell_kdim_fields_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
     init_two_edge_kdim_fields_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_back_substitution import (
-    solve_tridiagonal_matrix_for_w_back_substitution,
-)
-from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
-    solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
     dycore_utils,
-)
-from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increment import (
-    update_dynamical_exner_time_increment,
-)
-from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
-    update_mass_volume_flux,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
@@ -467,31 +436,9 @@ class SolveNonhydro:
         self._vertically_implicit_solver_at_corrector_step = vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step.with_backend(
             self._backend
         )
-        self._compute_divergence_of_fluxes_of_rho_and_theta = (
-            compute_divergence_of_fluxes_of_rho_and_theta.with_backend(self._backend)
-        )
-        self._init_two_cell_kdim_fields_with_zero_wp = (
-            init_two_cell_kdim_fields_with_zero_wp.with_backend(self._backend)
-        )
-        self._add_analysis_increments_from_data_assimilation = (
-            add_analysis_increments_from_data_assimilation.with_backend(self._backend)
-        )
-        self._solve_tridiagonal_matrix_for_w_forward_sweep = (
-            solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(self._backend)
-        )
-        self._solve_tridiagonal_matrix_for_w_back_substitution = (
-            solve_tridiagonal_matrix_for_w_back_substitution.with_backend(self._backend)
-        )
-        self._apply_rayleigh_damping_mechanism = apply_rayleigh_damping_mechanism.with_backend(
-            self._backend
-        )
-        self._compute_results_for_thermodynamic_variables = (
-            compute_results_for_thermodynamic_variables.with_backend(self._backend)
-        )
         self._compute_dwdz_for_divergence_damping = (
             compute_dwdz_for_divergence_damping.with_backend(self._backend)
         )
-        self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(self._backend)
         self._compute_rho_virtual_potential_temperatures_and_pressure_gradient = (
             compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(
                 self._backend
@@ -499,10 +446,6 @@ class SolveNonhydro:
         )
         self._compute_avg_vn = compute_avg_vn.with_backend(self._backend)
         self._accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(self._backend)
-        self._update_mass_volume_flux = update_mass_volume_flux.with_backend(self._backend)
-        self._update_dynamical_exner_time_increment = (
-            update_dynamical_exner_time_increment.with_backend(self._backend)
-        )
         self._init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
             self._backend
         )
@@ -527,18 +470,11 @@ class SolveNonhydro:
             self._backend
         )
         self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend)
-        self._stencils_43_44_45_45b = nhsolve_stencils.stencils_43_44_45_45b.with_backend(
-            self._backend
-        )
-        self._stencils_47_48_49 = nhsolve_stencils.stencils_47_48_49.with_backend(self._backend)
         self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend)
         self._en_smag_fac_for_zero_nshift = smagorinsky.en_smag_fac_for_zero_nshift.with_backend(
             self._backend
         )
         self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(self._backend)
-        self._stencils_42_44_45_45b = nhsolve_stencils.stencils_42_44_45_45b.with_backend(
-            self._backend
-        )
         if self._config.divdamp_type == 32:
             xp = data_alloc.import_array_ns(self.backend)
             self.starting_vertical_index_for_3d_divdamp = xp.min(
@@ -695,7 +631,6 @@ class SolveNonhydro:
         self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
-        self._end_cell_nudging = self._grid.end_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
         self._end_cell_halo_level_2 = self._grid.end_index(cell_halo_level_2)
