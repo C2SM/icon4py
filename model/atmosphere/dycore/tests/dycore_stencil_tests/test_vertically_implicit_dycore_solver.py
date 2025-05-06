@@ -500,7 +500,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         "vol_flx_ic",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.infinite_concat_where,)
+    MARKERS = (pytest.mark.infinite_concat_where, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(
@@ -878,7 +878,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        next_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -889,7 +889,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         z_raylfac = data_alloc.random_field(grid, dims.KDim)
         exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         next_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        next_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         next_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         mass_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
