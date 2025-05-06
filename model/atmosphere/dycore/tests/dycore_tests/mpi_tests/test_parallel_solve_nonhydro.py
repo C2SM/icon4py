@@ -103,6 +103,32 @@ def test_run_solve_nonhydro_single_step(
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
 
+    diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
+        exner_pr=sp.exner_pr(),
+        rho_ic=sp.rho_ic(),
+        ddt_exner_phy=sp.ddt_exner_phy(),
+        grf_tend_rho=sp.grf_tend_rho(),
+        grf_tend_thv=sp.grf_tend_thv(),
+        grf_tend_w=sp.grf_tend_w(),
+        mass_fl_e=sp.mass_fl_e(),
+        normal_wind_tendency_due_to_physics_process=sp.ddt_vn_phy(),
+        grf_tend_vn=sp.grf_tend_vn(),
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+        ),
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+        ),
+        tangential_wind=sp_v.vt(),
+        vn_on_half_levels=sp_v.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
+        rho_incr=None,  # sp.rho_incr(),
+        normal_wind_iau_increments=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=sp.exner_dyn_incr(),
+    )
+    second_order_divdamp_factor = sp.divdamp_fac_o2()
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
@@ -133,7 +159,7 @@ def test_run_solve_nonhydro_single_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
         prep_adv=prep_adv,
-        divdamp_fac_o2=initial_divdamp_fac,
+        second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
@@ -176,7 +202,7 @@ def test_run_solve_nonhydro_single_step(
 
     assert helpers.dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
-        diagnostic_state_nh.theta_v_ic.asnumpy(),
+        diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
     )
 
     assert helpers.dallclose(

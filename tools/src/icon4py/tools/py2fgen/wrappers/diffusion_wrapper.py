@@ -20,7 +20,7 @@ Fortran granule interfaces:
 import cProfile
 import dataclasses
 import pstats
-from typing import Optional
+from typing import Callable, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -44,7 +44,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
 
 logger = setup_logger(__name__)
@@ -54,6 +54,7 @@ logger = setup_logger(__name__)
 class DiffusionGranule:
     diffusion: Diffusion
     backend: gtx_backend.Backend
+    dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
@@ -72,6 +73,7 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
+@icon4py_export.export
 def diffusion_init(
     vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
@@ -222,9 +224,11 @@ def diffusion_init(
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
         backend=actual_backend,
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(actual_backend),
     )
 
 
+@icon4py_export.export
 def diffusion_run(
     w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],
@@ -252,21 +256,13 @@ def diffusion_run(
     )
 
     if hdef_ic is None:
-        hdef_ic = wrapper_common.cached_dummy_field(
-            "hdef_ic", domain=w.domain, dtype=w.dtype, allocator=granule.backend
-        )
+        hdef_ic = granule.dummy_field_factory("hdef_ic", domain=w.domain, dtype=w.dtype)
     if div_ic is None:
-        div_ic = wrapper_common.cached_dummy_field(
-            "div_ic", domain=w.domain, dtype=w.dtype, allocator=granule.backend
-        )
+        div_ic = granule.dummy_field_factory("div_ic", domain=w.domain, dtype=w.dtype)
     if dwdx is None:
-        dwdx = wrapper_common.cached_dummy_field(
-            "dwdx", domain=w.domain, dtype=w.dtype, allocator=granule.backend
-        )
+        dwdx = granule.dummy_field_factory("dwdx", domain=w.domain, dtype=w.dtype)
     if dwdy is None:
-        dwdy = wrapper_common.cached_dummy_field(
-            "dwdy", domain=w.domain, dtype=w.dtype, allocator=granule.backend
-        )
+        dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
     diagnostic_state = DiffusionDiagnosticState(
         hdef_ic=hdef_ic,
         div_ic=div_ic,

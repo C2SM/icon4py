@@ -854,22 +854,22 @@ def compute_cells_aw_verts(
     Compute cells_aw_verts.
 
     Args:
-        dual_area: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
-        edge_vert_length: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat]
+        dual_area: ndarray, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
+        edge_vert_length: \\  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat]
         edge_cell_length: //
-        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], bool]
-        v2e: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
-        e2v: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
-        v2c: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2CDim], gtx.int32]
-        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        horizontal_start:
+        owner_mask: ndarray, representing a gtx.Field[gtx.Dims[VertexDim], bool]
+        v2e: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
+        e2v: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
+        v2c: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, V2CDim], gtx.int32]
+        e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        horizontal_start: int32, representing the start index of the horizontal dimension
+        array_ns: array namespace to be used, defaults to numpy
 
     Returns:
-        aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
+        aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
     cells_aw_verts = array_ns.zeros(v2e.shape)
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
-        cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
             # INVALID_INDEX
             if v2e[jv, je] == gm.GridFile.INVALID_INDEX or (

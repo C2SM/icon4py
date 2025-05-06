@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -12,14 +14,15 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
     interpolate_vt_to_interface_edges,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
 def interpolate_vt_to_interface_edges_numpy(
-    wgtfac_e: np.ndarray, vt: np.ndarray, **kwargs
+    wgtfac_e: np.ndarray, vt: np.ndarray, **kwargs: Any
 ) -> np.ndarray:
     vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
     z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
@@ -33,7 +36,7 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfac_e: np.ndarray,
         vt: np.ndarray,
         z_vt_ie: np.ndarray,
@@ -48,11 +51,11 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
         return dict(z_vt_ie=z_vt_ie)
 
     @pytest.fixture
-    def input_data(self, grid):
-        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
-        z_vt_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_vt_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

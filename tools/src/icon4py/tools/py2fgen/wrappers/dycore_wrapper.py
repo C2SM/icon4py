@@ -33,7 +33,7 @@ from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
 
 logger = setup_logger(__name__)
@@ -61,6 +61,7 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
+@icon4py_export.export
 def solve_nh_init(
     vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
@@ -175,14 +176,14 @@ def solve_nh_init(
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
-        divdamp_fac=divdamp_fac,
-        divdamp_fac2=divdamp_fac2,
-        divdamp_fac3=divdamp_fac3,
-        divdamp_fac4=divdamp_fac4,
-        divdamp_z=divdamp_z,
-        divdamp_z2=divdamp_z2,
-        divdamp_z3=divdamp_z3,
-        divdamp_z4=divdamp_z4,
+        fourth_order_divdamp_factor=divdamp_fac,
+        fourth_order_divdamp_factor2=divdamp_fac2,
+        fourth_order_divdamp_factor3=divdamp_fac3,
+        fourth_order_divdamp_factor4=divdamp_fac4,
+        fourth_order_divdamp_z=divdamp_z,
+        fourth_order_divdamp_z2=divdamp_z2,
+        fourth_order_divdamp_z3=divdamp_z3,
+        fourth_order_divdamp_z4=divdamp_z4,
     )
     nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
 
@@ -226,8 +227,8 @@ def solve_nh_init(
         theta_ref_ic=theta_ref_ic,
         d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
         d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-        rho_ref_me=rho_ref_me,
-        theta_ref_me=theta_ref_me,
+        reference_rho_at_edges_on_model_levels=rho_ref_me,
+        reference_theta_at_edges_on_model_levels=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=zdiff_gradp),
         vertoffset_gradp=data_alloc.flatten_first_two_dims(
@@ -240,8 +241,8 @@ def solve_nh_init(
         wgtfac_e=wgtfac_e,
         wgtfacq_e=wgtfacq_e,
         vwind_impl_wgt=vwind_impl_wgt,
-        hmask_dd3d=hmask_dd3d,
-        scalfac_dd3d=scalfac_dd3d,
+        horizontal_mask_for_3d_divdamp=hmask_dd3d,
+        scaling_factor_for_3d_divdamp=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
         coeff_gradekin=data_alloc.flatten_first_two_dims(dims.ECDim, field=coeff_gradekin),
@@ -285,6 +286,7 @@ def solve_nh_init(
     )
 
 
+@icon4py_export.export
 def solve_nh_run(
     rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     rho_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -314,6 +316,7 @@ def solve_nh_run(
     grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -337,7 +340,7 @@ def solve_nh_run(
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=theta_v_ic,
+        theta_v_at_cells_on_half_levels=theta_v_ic,
         exner_pr=exner_pr,
         rho_ic=rho_ic,
         ddt_exner_phy=ddt_exner_phy,
@@ -345,7 +348,7 @@ def solve_nh_run(
         grf_tend_thv=grf_tend_thv,
         grf_tend_w=grf_tend_w,
         mass_fl_e=mass_fl_e,
-        ddt_vn_phy=ddt_vn_phy,
+        normal_wind_tendency_due_to_physics_process=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             ddt_vn_apc_ntl1, ddt_vn_apc_ntl2
@@ -356,9 +359,9 @@ def solve_nh_run(
         tangential_wind=vt,
         vn_on_half_levels=vn_ie,
         contravariant_correction_at_cells_on_half_levels=w_concorr_c,
-        rho_incr=None,  # sp.rho_incr,
-        vn_incr=None,  # sp.vn_incr,
-        exner_incr=None,  # sp.exner_incr,
+        rho_incr=None,
+        normal_wind_iau_increments=vn_incr,
+        exner_incr=None,
         exner_dyn_incr=exner_dyn_incr,
     )
 
@@ -385,7 +388,7 @@ def solve_nh_run(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
         prep_adv=prep_adv,
-        divdamp_fac_o2=divdamp_fac_o2,
+        second_order_divdamp_factor=divdamp_fac_o2,
         dtime=dtime,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,

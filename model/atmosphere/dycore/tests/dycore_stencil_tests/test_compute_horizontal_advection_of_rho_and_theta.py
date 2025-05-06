@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -14,6 +16,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rh
     compute_horizontal_advection_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers
 
 
@@ -27,7 +31,7 @@ def compute_btraj_numpy(
     primal_normal_cell_2: np.ndarray,
     dual_normal_cell_2: np.ndarray,
     p_dthalf: float,
-    **kwargs,
+    **kwargs: Any,
 ) -> tuple[np.ndarray, ...]:
     lvn_pos = np.where(p_vn > 0.0, True, False)
     pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
@@ -72,7 +76,7 @@ def sten_16_numpy(
     z_grad_rth_4: np.ndarray,
     z_rth_pr_1: np.ndarray,
     z_rth_pr_2: np.ndarray,
-    **kwargs,
+    **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray]:
     e2c = connectivities[dims.E2CDim]
     z_rth_pr_1_e2c = z_rth_pr_1[e2c]
@@ -134,7 +138,7 @@ class TestComputeBtraj(helpers.StencilTest):
         z_grad_rth_4: np.ndarray,
         z_rth_pr_1: np.ndarray,
         z_rth_pr_2: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         e2c = connectivities[dims.E2CDim]
         pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
@@ -174,7 +178,7 @@ class TestComputeBtraj(helpers.StencilTest):
         return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)

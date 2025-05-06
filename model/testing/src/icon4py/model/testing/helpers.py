@@ -6,10 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import functools
 import hashlib
 import typing
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Callable, ClassVar, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -21,12 +22,6 @@ from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-try:
-    import pytest_benchmark
-except ModuleNotFoundError:
-    pytest_benchmark = None
 
 
 @pytest.fixture(scope="session")
@@ -53,10 +48,6 @@ def is_roundtrip(backend: gtx_backend.Backend | None) -> bool:
     return backend.name == "roundtrip" if backend else False
 
 
-def extract_backend_name(backend: gtx_backend.Backend | None) -> str:
-    return "embedded" if backend is None else backend.name
-
-
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
@@ -78,7 +69,6 @@ def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
     grid: base.BaseGrid,
     backend: gtx_backend.Backend | None,
-    is_datatest: bool = False,
 ):
     for marker in markers:
         match marker.name:
@@ -89,18 +79,16 @@ def apply_markers(
             case "embedded_remap_error" if is_embedded(backend):
                 # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")
+            case "infinite_concat_where" if is_embedded(backend):
+                pytest.xfail("Embedded backend does not support infinite concat_where.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
-            case "requires_concat_where" if is_embedded(backend):
-                pytest.xfail("Stencil requires concat_where.")
             case "skip_value_error":
                 if grid.config.limited_area or grid.has_skip_values():
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
                     pytest.skip(
                         "Stencil does not support domain containing skip values. Consider shrinking domain."
                     )
-            case "datatest" if not is_datatest:
-                pytest.skip("need '--datatest' option to run")
 
 
 @dataclass(frozen=True)
@@ -110,28 +98,34 @@ class Output:
     gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
 
 
-def _test_validation(
+def run_verify_and_benchmark(
+    test_func: Callable[[], None],
+    verification_func: Callable[[], None],
+    benchmark_fixture: Optional[pytest.FixtureRequest],
+) -> None:
+    """
+    Function to perform verification and benchmarking of test_func (along with normally executing it).
+
+    Args:
+        test_func: Function to be ran, verified and benchmarked.
+        verification_func: Function to be used for verification of test_func.
+        benchmark_fixture: pytest-benchmark fixture.
+
+    Note:
+        - test_func and verification_func should be provided with bound arguments, i.e. with functools.partial.
+    """
+    test_func()
+    verification_func()
+
+    if benchmark_fixture is not None and benchmark_fixture.enabled:
+        benchmark_fixture(test_func)
+
+
+def _verify_stencil_test(
     self,
-    grid: base.BaseGrid,
-    backend: gtx_backend.Backend,
-    connectivities_as_numpy: dict,
-    input_data: dict,
-):
-    if self.MARKERS is not None:
-        apply_markers(self.MARKERS, grid, backend)
-
-    connectivities = connectivities_as_numpy
-    reference_outputs = self.reference(
-        connectivities,
-        **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
-    )
-
-    input_data = allocate_data(backend, input_data)
-
-    self.PROGRAM.with_backend(backend)(
-        **input_data,
-        offset_provider=grid.offset_providers,
-    )
+    input_data: dict[str, gtx.Field],
+    reference_outputs: dict[str, np.ndarray],
+) -> None:
     for out in self.OUTPUTS:
         name, refslice, gtslice = (
             (out.name, out.refslice, out.gtslice)
@@ -143,32 +137,43 @@ def _test_validation(
             input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
-            err_msg=f"Validation failed for '{name}'",
+            err_msg=f"Verification failed for '{name}'",
         )
 
 
-if pytest_benchmark:
+def _test_and_benchmark(
+    self,
+    grid: base.BaseGrid,
+    backend: gtx_backend.Backend,
+    connectivities_as_numpy: dict[str, np.ndarray],
+    input_data: dict[str, gtx.Field],
+    benchmark: pytest.FixtureRequest,
+) -> None:
+    if self.MARKERS is not None:
+        apply_markers(self.MARKERS, grid, backend)
 
-    def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
-        if self.MARKERS is not None:
-            apply_markers(self.MARKERS, grid, backend)
+    connectivities = connectivities_as_numpy
+    reference_outputs = self.reference(
+        connectivities,
+        **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
+    )
 
-        if pytestconfig.getoption(
-            "--benchmark-disable"
-        ):  # skipping as otherwise program calls are duplicated in tests.
-            pytest.skip("Test skipped due to 'benchmark-disable' option.")
-        else:
-            input_data = allocate_data(backend, input_data)
-            benchmark(
-                self.PROGRAM.with_backend(backend),
-                **input_data,
-                offset_provider=grid.offset_providers,
-            )
+    input_data = allocate_data(backend, input_data)
 
-else:
-
-    def _test_execution_benchmark(self, pytestconfig):
-        pytest.skip("Test skipped as `pytest-benchmark` is not installed.")
+    run_verify_and_benchmark(
+        functools.partial(
+            self.PROGRAM.with_backend(backend),
+            **input_data,
+            offset_provider=grid.offset_providers,
+        ),
+        functools.partial(
+            _verify_stencil_test,
+            self=self,
+            input_data=input_data,
+            reference_outputs=reference_outputs,
+        ),
+        benchmark,
+    )
 
 
 class StencilTest:
@@ -199,11 +204,10 @@ class StencilTest:
         # reflect the name of the test we do this dynamically here instead of using regular
         # inheritance.
         super().__init_subclass__(**kwargs)
-        setattr(cls, f"test_{cls.__name__}", _test_validation)
-        setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
+        setattr(cls, f"test_{cls.__name__}", _test_and_benchmark)
 
 
-def reshape(arr: np.ndarray, shape: tuple[int, ...]):
+def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
     return np.reshape(arr, shape)
 
 

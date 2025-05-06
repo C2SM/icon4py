@@ -8,7 +8,7 @@
 import functools
 import logging
 import uuid
-from typing import Literal, Optional, TypeAlias
+from typing import Final, Literal, Optional, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -29,6 +29,17 @@ log = logging.getLogger(__name__)
 TimeIndex: TypeAlias = Literal[0, 1]
 FourIndex: TypeAlias = Literal[0, 1, 2, 3]
 TwoIndex: TypeAlias = Literal[0, 1]
+
+#: ICON default indices for the tracers, see mo_advection_utils.f90
+QV: Final[int] = 0
+QC: Final[int] = 1
+QI: Final[int] = 2
+QR: Final[int] = 3
+QS: Final[int] = 4
+QG: Final[int] = 5
+
+
+TracerIndex: TypeAlias = Literal[QV, QC, QI, QR, QS, QG]
 
 
 class IconSavepoint:
@@ -122,7 +133,7 @@ class IconSavepoint:
         return self._read(name, offset=0, dtype=bool)
 
     def _read(self, name: str, offset=0, dtype=int):
-        return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
+        return np.squeeze(self.serializer.read(name, self.savepoint) - offset).astype(dtype)
 
 
 class IconGridSavepoint(IconSavepoint):
@@ -310,10 +321,10 @@ class IconGridSavepoint(IconSavepoint):
         return self._read_int32_shift1("e_start_index")
 
     def nflatlev(self):
-        return self._read_int32_shift1("nflatlev")[0]
+        return self._read_int32_shift1("nflatlev").item()
 
     def nflat_gradp(self):
-        return self._read_int32_shift1("nflat_gradp")[0]
+        return self._read_int32_shift1("nflat_gradp").item()
 
     def edge_end_index(self):
         # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
@@ -340,7 +351,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_connectivity_array(self, name: str, target_dim: gtx.Dimension, reverse: bool = False):
         if reverse:
-            connectivity = np.transpose(np.squeeze(self._read_int32(name, offset=1)))[
+            connectivity = np.transpose(self._read_int32(name, offset=1))[
                 : self.sizes[target_dim], :
             ]
         else:
@@ -387,15 +398,13 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("c2v", dims.CellDim)
 
     def nrdmax(self):
-        return self._read_int32_shift1("nrdmax")
+        return gtx.int32(self._read_int32_shift1("nrdmax").item())
 
     def refin_ctrl(self, dim: gtx.Dimension):
         field_name = "refin_ctl"
         return gtx.as_field(
             (dim,),
-            np.squeeze(
-                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
-            ),
+            self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)],
             allocator=self.backend,
         )
 
@@ -419,7 +428,7 @@ class IconGridSavepoint(IconSavepoint):
     def owner_mask(self, dim: gtx.Dimension):
         field_name = "owner_mask"
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
-        return np.squeeze(mask)
+        return mask
 
     def global_index(self, dim: gtx.Dimension):
         field_name = "glb_index"
@@ -1119,6 +1128,65 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
 
 
+class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
+    def vn(self):
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+
+    def vt(self):
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
+
+    def z_rth_pr(self, ind: TwoIndex):
+        return self._get_field_component("z_rth_pr", ind, (dims.CellDim, dims.KDim))
+
+    def z_exner_ex_pr(self):
+        return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)
+
+    def z_dexner_dz_c(self, ntnd: TimeIndex):
+        return self._get_field_component("z_dexner_dz_c", ntnd, (dims.CellDim, dims.KDim))
+
+    def theta_v(self):
+        return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def theta_v_ic(self):
+        return self._get_field("theta_v_ic", dims.CellDim, dims.KDim)
+
+    def z_dwdz_dd(self):
+        return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
+
+    def ddt_vn_apc_ntl(self, ntnd):
+        return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
+
+    def ddt_vn_phy(self):
+        return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim)
+
+    def vn_incr(self):  # TODO should be vn_incr
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+
+    def bdy_divdamp(self):
+        return self._get_field("bdy_divdamp", dims.KDim)
+
+    def z_hydro_corr(self):
+        return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv2_vn(self):
+        return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
+
+    def scal_divdamp(self):
+        return self._get_field("scal_divdamp", dims.KDim)
+
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_gradh_exner(self):
+        return self._get_field("z_gradh_exner", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
+
 class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ex_pr(self):
         return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)  # KHalfDim
@@ -1244,6 +1312,26 @@ class IconNonHydroExitSavepoint(IconSavepoint):
         return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
 
 
+class NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_gradh_exner(self):
+        return self._get_field("z_gradd_exner", dims.EdgeDim, dims.KDim)
+
+    def vn(self):
+        return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv2_vn(self):
+        return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
+
+
 # TODO (magdalena) rename?
 class IconNonHydroFinalSavepoint(IconSavepoint):
     def theta_v_new(self):
@@ -1295,35 +1383,6 @@ class IconVelocityInitSavepoint(IconSavepoint):
 
     def w_concorr_c(self):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
-
-
-class VelocityInitEdgeDiagnosticsSavepoint(IconSavepoint):
-    def lvn_only(self) -> bool:
-        return bool(self.serializer.read("vn_only", self.savepoint)[0])
-
-    def vn(self):
-        return self._get_field("vn", dims.EdgeDim, dims.KDim)
-
-    def vn_ie(self):
-        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
-
-    def vt(self):
-        return self._get_field("vt", dims.EdgeDim, dims.KDim)
-
-    def w(self):
-        return self._get_field("w", dims.CellDim, dims.KDim)
-
-    def z_kin_hor_e(self):
-        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
-
-    def z_v_grad_w(self):
-        return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
-
-    def z_vt_ie(self):
-        return self._get_field("z_vt_ie", dims.EdgeDim, dims.KDim)
-
-    def z_w_concorr_me(self):
-        return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
 
 
 class VelocityAdvectionCellDiagnosticsInitSavepoint(IconSavepoint):
@@ -1519,29 +1578,6 @@ class IconJabwExitSavepoint(IconSavepoint):
         return self._get_field("surface_pressure", dims.CellDim)
 
 
-class IconJabwDiagnosticSavepoint(IconSavepoint):
-    def pressure(self):
-        return self._get_field("output_diag_pressure", dims.CellDim, dims.KDim)
-
-    def temperature(self):
-        return self._get_field("output_diag_temperature", dims.CellDim, dims.KDim)
-
-    def exner_pr(self):
-        return self._get_field("output_diag_exner_pr", dims.CellDim, dims.KDim)
-
-    def pressure_ifc(self):
-        return self._get_field("output_diag_pressure_ifc", dims.CellDim, dims.KDim)
-
-    def pressure_sfc(self):
-        return self._get_field("output_diag_pressure_sfc", dims.CellDim)
-
-    def zonal_wind(self):
-        return self._get_field("output_diag_u", dims.CellDim, dims.KDim)
-
-    def meridional_wind(self):
-        return self._get_field("output_diag_v", dims.CellDim, dims.KDim)
-
-
 class IconDiagnosticsInitSavepoint(IconSavepoint):
     def pressure(self):
         return self._get_field("pressure", dims.CellDim, dims.KDim)
@@ -1575,8 +1611,114 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def rho_now(self):
         return self._get_field("rho_now", dims.CellDim, dims.KDim)
 
+    def vn_now(self):
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+
     def theta_v_now(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+
+class IconGraupelSavepoint(IconSavepoint):
+    def temperature(self):
+        return self._get_field("temperature", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("pressure", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def ddt_tend_t(self):
+        return self._get_field("ddt_tend_t", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qv(self):
+        return self._get_field("ddt_tend_qv", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qc(self):
+        return self._get_field("ddt_tend_qc", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qi(self):
+        return self._get_field("ddt_tend_qi", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qr(self):
+        return self._get_field("ddt_tend_qr", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qs(self):
+        return self._get_field("ddt_tend_qs", dims.CellDim, dims.KDim)
+
+    def rain_flux(self):
+        return self._get_field("rain_gsp_rate", dims.CellDim)
+
+    def snow_flux(self):
+        return self._get_field("snow_gsp_rate", dims.CellDim)
+
+    def graupel_flux(self):
+        return self._get_field("graupel_gsp_rate", dims.CellDim)
+
+    def ice_flux(self):
+        return self._get_field("ice_gsp_rate", dims.CellDim)
+
+    def qv(self):
+        return self.tracer(QV)
+
+    def qc(self):
+        return self.tracer(QC)
+
+    def qi(self):
+        return self.tracer(QI)
+
+    def qr(self):
+        return self.tracer(QR)
+
+    def qs(self):
+        return self.tracer(QS)
+
+    def qg(self):
+        return self.tracer(QG)
+
+    def qnc(self):
+        return self._get_field("qnc", dims.CellDim, dims.KDim)
+
+    def dtime(self):
+        return self.serializer.read("dtime", self.savepoint)[0]
+
+
+class IconSatadExitSavepoint(IconSavepoint):
+    def temperature(self):
+        return self._get_field("temperature", dims.CellDim, dims.KDim)
+
+    def tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def qv(self):
+        return self.tracer(QV)
+
+    def qc(self):
+        return self.tracer(QC)
+
+    def qi(self):
+        return self.tracer(QI)
+
+    def qr(self):
+        return self.tracer(QR)
+
+    def qs(self):
+        return self.tracer(QS)
+
+    def qg(self):
+        return self.tracer(QG)
+
+    def exner(self):
+        return self._get_field("exner", dims.CellDim, dims.KDim)
+
+    def virtual_temperature(self):
+        return self._get_field("virtual_temperature", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("pressure", dims.CellDim, dims.KDim)
 
     def pressure_ifc(self):
         return self._get_field("pressure_ifc", dims.CellDim, dims.KDim)
@@ -1584,352 +1726,10 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def pressure_sfc(self):
         return self._get_field("pressure_sfc", dims.CellDim)
 
-    def virtual_temperature(self):
-        return self._get_field("virtual_temperature", dims.CellDim, dims.KDim)
 
-    def zonal_wind(self):
-        return self._get_field("u", dims.CellDim, dims.KDim)
-
-    def meridional_wind(self):
-        return self._get_field("v", dims.CellDim, dims.KDim)
-
-
-class IconGraupelEntrySavepoint(IconSavepoint):
-    def temperature(self):
-        return self._get_field("ser_in_graupel_temperature", dims.CellDim, dims.KDim)
-
-    def pres(self):
-        return self._get_field("ser_in_graupel_pres", dims.CellDim, dims.KDim)
-
+class IconSatadInitSavepoint(IconSatadExitSavepoint):
     def rho(self):
-        return self._get_field("ser_in_graupel_rho", dims.CellDim, dims.KDim)
-
-    def qv(self):
-        return self._get_field("ser_in_graupel_qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("ser_in_graupel_qc", dims.CellDim, dims.KDim)
-
-    def qi(self):
-        return self._get_field("ser_in_graupel_qi", dims.CellDim, dims.KDim)
-
-    def qr(self):
-        return self._get_field("ser_in_graupel_qr", dims.CellDim, dims.KDim)
-
-    def qs(self):
-        return self._get_field("ser_in_graupel_qs", dims.CellDim, dims.KDim)
-
-    def qg(self):
-        return self._get_field("ser_in_graupel_qg", dims.CellDim, dims.KDim)
-
-    def qnc(self):
-        return self._get_field("ser_in_graupel_qnc", dims.CellDim, dims.KDim)
-
-    def dt_microphysics(self):
-        return self.serializer.read("ser_in_graupel_dt", self.savepoint)[0]
-
-    def qc0(self):
-        return self.serializer.read("ser_in_graupel_qc0", self.savepoint)[0]
-
-    def qi0(self):
-        return self.serializer.read("ser_in_graupel_qi0", self.savepoint)[0]
-
-    def kstart_moist(self):
-        return self.serializer.read("ser_in_graupel_kstart_moist", self.savepoint)[0]
-
-    def l_cv(self):
-        return self.serializer.read("ser_in_graupel_l_cv", self.savepoint)[0]
-
-    def ithermo_water(self):
-        return self.serializer.read("ser_in_graupel_ithermo_water", self.savepoint)[0]
-
-    def ldiag_ttend(self):
-        return self.serializer.read("ser_in_graupel_ldiag_ttend", self.savepoint)[0]
-
-    def ldiag_qtend(self):
-        return self.serializer.read("ser_in_graupel_ldiag_qtend", self.savepoint)[0]
-
-    def istart_idx(self):
-        return self.serializer.read("ser_in_graupel_istart", self.savepoint)[0]
-
-    def iend_idx(self):
-        return self.serializer.read("ser_in_graupel_iend", self.savepoint)[0]
-
-
-class IconGraupelExitSavepoint(IconSavepoint):
-    def temperature(self):
-        return self._get_field("ser_out_graupel_temperature", dims.CellDim, dims.KDim)
-
-    def pres(self):
-        return self._get_field("ser_out_graupel_pres", dims.CellDim, dims.KDim)
-
-    def rho(self):
-        return self._get_field("ser_out_graupel_rho", dims.CellDim, dims.KDim)
-
-    def qv(self):
-        return self._get_field("ser_out_graupel_qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("ser_out_graupel_qc", dims.CellDim, dims.KDim)
-
-    def qi(self):
-        return self._get_field("ser_out_graupel_qi", dims.CellDim, dims.KDim)
-
-    def qr(self):
-        return self._get_field("ser_out_graupel_qr", dims.CellDim, dims.KDim)
-
-    def qs(self):
-        return self._get_field("ser_out_graupel_qs", dims.CellDim, dims.KDim)
-
-    def qg(self):
-        return self._get_field("ser_out_graupel_qg", dims.CellDim, dims.KDim)
-
-    def ddt_tend_t(self):
-        return self._get_field("ser_out_graupel_ddt_tend_t", dims.CellDim, dims.KDim)
-
-    def ddt_tend_qv(self):
-        return self._get_field("ser_out_graupel_ddt_tend_qv", dims.CellDim, dims.KDim)
-
-    def ddt_tend_qc(self):
-        return self._get_field("ser_out_graupel_ddt_tend_qc", dims.CellDim, dims.KDim)
-
-    def ddt_tend_qi(self):
-        return self._get_field("ser_out_graupel_ddt_tend_qi", dims.CellDim, dims.KDim)
-
-    def ddt_tend_qr(self):
-        return self._get_field("ser_out_graupel_ddt_tend_qr", dims.CellDim, dims.KDim)
-
-    def ddt_tend_qs(self):
-        return self._get_field("ser_out_graupel_ddt_tend_qs", dims.CellDim, dims.KDim)
-
-    def rain_flux(self):
-        return self._get_field("ser_out_graupel_prr_gsp", dims.CellDim)
-
-    def snow_flux(self):
-        return self._get_field("ser_out_graupel_prs_gsp", dims.CellDim)
-
-    def graupel_flux(self):
-        return self._get_field("ser_out_graupel_pri_gsp", dims.CellDim)
-
-    def ice_flux(self):
-        return self._get_field("ser_out_graupel_prg_gsp", dims.CellDim)
-
-
-class IconGscpSatadEntrySavepoint(IconSavepoint):
-    def temperature(self):
-        return self._get_field("ser_in_satad_temperature", dims.CellDim, dims.KDim)
-
-    def qv(self):
-        return self._get_field("ser_in_satad_qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("ser_in_satad_qc", dims.CellDim, dims.KDim)
-
-    def rho(self):
-        return self._get_field("ser_in_satad_rho", dims.CellDim, dims.KDim)
-
-    def kstart_moist(self):
-        return self.serializer.read("ser_in_satad_kstart_moist", self.savepoint)[0]
-
-    def istart_idx(self):
-        return self.serializer.read("ser_in_satad_istart", self.savepoint)[0]
-
-    def iend_idx(self):
-        return self.serializer.read("ser_in_satad_iend", self.savepoint)[0]
-
-    def tolerance(self):
-        return self.serializer.read("ser_in_satad_tol", self.savepoint)[0]
-
-    def maxiter(self):
-        return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
-
-
-# TODO (@halungge) those are for microphysics - fix Weisman Klemp experiment
-class IconGscpSatadExitSavepoint(IconSavepoint):
-    def temperature(self):
-        return self._get_field("ser_out_satad_temperature", dims.CellDim, dims.KDim)
-
-    def qv(self):
-        return self._get_field("ser_out_satad_qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("ser_out_satad_qc", dims.CellDim, dims.KDim)
-
-
-class IconInterfaceSatadEntrySavepoint(IconSavepoint):
-    def temperature(self):
-        return self._get_field("ser_in_satad_temperature", dims.CellDim, dims.KDim)
-
-    def qv(self):
-        return self._get_field("ser_in_satad_qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("ser_in_satad_qc", dims.CellDim, dims.KDim)
-
-    def rho(self):
-        return self._get_field("ser_in_satad_rho", dims.CellDim, dims.KDim)
-
-    def kstart_moist(self):
-        return self.serializer.read("ser_in_satad_kstart_moist", self.savepoint)[0]
-
-    def istart_idx(self):
-        return self.serializer.read("ser_in_satad_istart", self.savepoint)[0]
-
-    def iend_idx(self):
-        return self.serializer.read("ser_in_satad_iend", self.savepoint)[0]
-
-    def tolerance(self):
-        return self.serializer.read("ser_in_satad_tol", self.savepoint)[0]
-
-    def maxiter(self):
-        return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
-
-
-class IconInterfaceSatadExitSavepoint(IconSavepoint):
-    def temperature(self):
-        return self._get_field("ser_out_satad_temperature", dims.CellDim, dims.KDim)
-
-    def qv(self):
-        return self._get_field("ser_out_satad_qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("ser_out_satad_qc", dims.CellDim, dims.KDim)
-
-    def qi(self):
-        return self._get_field("ser_out_satad_qi", dims.CellDim, dims.KDim)
-
-    def qr(self):
-        return self._get_field("ser_out_satad_qr", dims.CellDim, dims.KDim)
-
-    def qs(self):
-        return self._get_field("ser_out_satad_qs", dims.CellDim, dims.KDim)
-
-    def qg(self):
-        return self._get_field("ser_out_satad_qg", dims.CellDim, dims.KDim)
-
-    def virtual_temperature(self):
-        return self._get_field("ser_out_satad_tempv", dims.CellDim, dims.KDim)
-
-    def exner(self):
-        return self._get_field("ser_out_satad_exner", dims.CellDim, dims.KDim)
-
-    def pressure(self):
-        return self._get_field("ser_out_satad_pres", dims.CellDim, dims.KDim)
-
-    def pressure_ifc(self):
-        return self._get_field("ser_out_satad_pres_ifc", dims.CellDim, dims.KDim)
-
-    def pressure_sfc(self):
-        return self._get_field("ser_out_satad_pres_sfc", dims.CellDim)
-
-
-class IconInterfaceDiagSatadExitSavepoint(IconSavepoint):
-    def virtual_temperature(self):
-        return self._get_field("ser_out_satad_diag_tempv", dims.CellDim, dims.KDim)
-
-    def exner(self):
-        return self._get_field("ser_out_satad_diag_exner", dims.CellDim, dims.KDim)
-
-    def pressure(self):
-        return self._get_field("ser_out_satad_diag_pres", dims.CellDim, dims.KDim)
-
-    def pressure_ifc(self):
-        return self._get_field("ser_out_satad_diag_pres_ifc", dims.CellDim, dims.KDim)
-
-    def qsum(self):
-        return self._get_field("ser_out_satad_diag_qsum", dims.CellDim, dims.KDim)
-
-
-class IconGraupelInitSavepoint(IconSavepoint):
-    def iautocon(self):
-        return self.serializer.read("ser_init_graupel_iautocon", self.savepoint)[0]
-
-    def isnow_n0temp(self):
-        return self.serializer.read("ser_init_graupel_isnow_n0temp", self.savepoint)[0]
-
-    def ceff_min(self):
-        return self.serializer.read("ser_init_graupel_zceff_min", self.savepoint)[0]
-
-    def v0snow(self):
-        return self.serializer.read("ser_init_graupel_v0snow", self.savepoint)[0]
-
-    def vz0i(self):
-        return self.serializer.read("ser_init_graupel_zvz0i", self.savepoint)[0]
-
-    def icesedi_exp(self):
-        return self.serializer.read("ser_init_graupel_icesedi_exp", self.savepoint)[0]
-
-    def mu_rain(self):
-        return self.serializer.read("ser_init_graupel_mu_rain", self.savepoint)[0]
-
-    def rain_n0_factor(self):
-        return self.serializer.read("ser_init_graupel_rain_n0_factor", self.savepoint)[0]
-
-    def qmin(self):
-        return self.serializer.read("ser_init_graupel_zqmin", self.savepoint)[0]
-
-    def eps(self):
-        return self.serializer.read("ser_init_graupel_zeps", self.savepoint)[0]
-
-    def ams(self):
-        return self.serializer.read("ser_init_graupel_zams", self.savepoint)[0]
-
-    def ccsrim(self):
-        return self.serializer.read("ser_init_graupel_ccsrim", self.savepoint)[0]
-
-    def ccsagg(self):
-        return self.serializer.read("ser_init_graupel_ccsagg", self.savepoint)[0]
-
-    def ccsdep(self):
-        return self.serializer.read("ser_init_graupel_ccsdep", self.savepoint)[0]
-
-    def ccsvel(self):
-        return self.serializer.read("ser_init_graupel_ccsvel", self.savepoint)[0]
-
-    def ccsvxp(self):
-        return self.serializer.read("ser_init_graupel_ccsvxp", self.savepoint)[0]
-
-    def ccslam(self):
-        return self.serializer.read("ser_init_graupel_ccslam", self.savepoint)[0]
-
-    def ccslxp(self):
-        return self.serializer.read("ser_init_graupel_ccslxp", self.savepoint)[0]
-
-    def ccswxp(self):
-        return self.serializer.read("ser_init_graupel_ccswxp", self.savepoint)[0]
-
-    def ccsaxp(self):
-        return self.serializer.read("ser_init_graupel_ccsaxp", self.savepoint)[0]
-
-    def ccsdxp(self):
-        return self.serializer.read("ser_init_graupel_ccsdxp", self.savepoint)[0]
-
-    def ccshi1(self):
-        return self.serializer.read("ser_init_graupel_ccshi1", self.savepoint)[0]
-
-    def ccdvtp(self):
-        return self.serializer.read("ser_init_graupel_ccdvtp", self.savepoint)[0]
-
-    def ccidep(self):
-        return self.serializer.read("ser_init_graupel_ccidep", self.savepoint)[0]
-
-    def cevxp(self):
-        return self.serializer.read("ser_init_graupel_zcevxp", self.savepoint)[0]
-
-    def cev(self):
-        return self.serializer.read("ser_init_graupel_zcev", self.savepoint)[0]
-
-    def bevxp(self):
-        return self.serializer.read("ser_init_graupel_zbevxp", self.savepoint)[0]
-
-    def bev(self):
-        return self.serializer.read("ser_init_graupel_zbev", self.savepoint)[0]
-
-    def vzxp(self):
-        return self.serializer.read("ser_init_graupel_zvzxp", self.savepoint)[0]
-
-    def vz0r(self):
-        return self.serializer.read("ser_init_graupel_zvz0r", self.savepoint)[0]
+        return self._get_field("rho", dims.CellDim, dims.KDim)
 
 
 class IconSerialDataProvider:
@@ -2017,28 +1817,14 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_compute_edge_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep_init: int
-    ) -> VelocityInitEdgeDiagnosticsSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-1to7-init"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep_init]
-            .as_savepoint()
-        )
-        return VelocityInitEdgeDiagnosticsSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionCellDiagnosticsInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to14-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionCellDiagnosticsInitSavepoint(
@@ -2046,13 +1832,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionVerticalMomentumInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionVerticalMomentumInitSavepoint(
@@ -2060,13 +1846,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionHorizontalMomentumInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-init"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionHorizontalMomentumInitSavepoint(
@@ -2084,6 +1870,20 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
+        self, istep: int, date: str, substep: int
+    ) -> NonHydroInitEdgeDiagnosticsUpdateVnSavepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-14to28-init_1to13-exit"]
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
@@ -2130,13 +1930,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionEdgeDiagnosticsExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-1to7-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionEdgeDiagnosticsExitSavepoint(
@@ -2144,13 +1944,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionCellDiagnosticsExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to13-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionCellDiagnosticsExitSavepoint(
@@ -2158,13 +1958,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionVerticalMomentumExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionVerticalMomentumExitSavepoint(
@@ -2172,13 +1972,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-        self, istep: int, date: str, substep_init: int
+        self, istep: int, date: str, substep: int
     ) -> VelocityAdvectionHorizontalMomentumExitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-exit"]
             .istep[istep]
             .date[date]
-            .dyn_timestep[substep_init]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return VelocityAdvectionHorizontalMomentumExitSavepoint(
@@ -2196,6 +1996,20 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
+        self, istep: int, date: str, substep: int
+    ) -> NonHydroExitEdgeDiagnosticsUpdateVnSavepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-14to28-exit"]  # TODO
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
@@ -2219,104 +2033,45 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_prognostics_initial(self) -> IconPrognosticsInitSavepoint:
-        savepoint = self.serializer.savepoint["initial-prognostics"].id[1].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
+        )
         return IconPrognosticsInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_savepoint_diagnostics_initial(self) -> IconDiagnosticsInitSavepoint:
-        savepoint = self.serializer.savepoint["initial-diagnostics"].id[1].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["diagnostics"].id[1].location["initial-state"].as_savepoint()
+        )
         return IconDiagnosticsInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_weisman_klemp_graupel_init(self) -> IconGraupelInitSavepoint:
-        savepoint = self.serializer.savepoint["init-graupel"].serial_rank[0].as_savepoint()
-        return IconGraupelInitSavepoint(
+    def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelSavepoint:
+        savepoint = self.serializer.savepoint["microphysics-init"].date[date].as_savepoint()
+        return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelEntrySavepoint:
-        savepoint = (
-            self.serializer.savepoint["call-graupel-entrance"]
-            .serial_rank[0]
-            .date["2008-09-01T01:59:" + date + ".000"]
-            .as_savepoint()
-        )
-        return IconGraupelEntrySavepoint(
+    def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelSavepoint:
+        savepoint = self.serializer.savepoint["microphysics-exit"].date[date].as_savepoint()
+        return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelExitSavepoint:
+    def from_savepoint_satad_init(self, location: str, date: str) -> IconSatadInitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-graupel-exit"]
-            .serial_rank[0]
-            .date["2008-09-01T01:59:" + date + ".000"]
-            .as_savepoint()
+            self.serializer.savepoint["satad-init"].location[location].date[date].as_savepoint()
         )
-        return IconGraupelExitSavepoint(
+        return IconSatadInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_weisman_klemp_gscp_satad_entry(
-        self, date: str
-    ) -> IconGscpSatadEntrySavepoint:
+    def from_savepoint_satad_exit(self, location: str, date: str) -> IconSatadExitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-gscp-satad-entrance"]
-            .serial_rank[0]
-            .date["2008-09-01T01:59:" + date + ".000"]
-            .as_savepoint()
+            self.serializer.savepoint["satad-exit"].date[date].location[location].as_savepoint()
         )
-        return IconGscpSatadEntrySavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_weisman_klemp_gscp_satad_exit(self, date: str) -> IconGscpSatadExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["call-gscp-satad-exit"]
-            .serial_rank[0]
-            .date["2008-09-01T01:59:" + date + ".000"]
-            .as_savepoint()
-        )
-        return IconGscpSatadExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_weisman_klemp_interface_satad_entry(
-        self, date: str
-    ) -> IconInterfaceSatadEntrySavepoint:
-        savepoint = (
-            self.serializer.savepoint["call-interface-satad-entrance"]
-            .serial_rank[0]
-            .date["2008-09-01T01:59:" + date + ".000"]
-            .as_savepoint()
-        )
-        return IconInterfaceSatadEntrySavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_weisman_klemp_interface_satad_exit(
-        self, date: str
-    ) -> IconInterfaceSatadExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["call-interface-satad-exit"]
-            .serial_rank[0]
-            .date["2008-09-01T01:59:" + date + ".000"]
-            .as_savepoint()
-        )
-        return IconInterfaceSatadExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_weisman_klemp_interface_diag_after_satad_exit(
-        self, date: str
-    ) -> IconInterfaceDiagSatadExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["call-interface-satad-diag-exit"]
-            .serial_rank[0]
-            .date["2008-09-01T01:59:" + date + ".000"]
-            .as_savepoint()
-        )
-        return IconInterfaceDiagSatadExitSavepoint(
+        return IconSatadExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
