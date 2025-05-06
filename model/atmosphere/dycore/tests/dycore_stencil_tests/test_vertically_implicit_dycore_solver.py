@@ -110,6 +110,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         "dwdz_at_cells_on_model_levels",
         "exner_dynamical_increment",
     )
+    MARKERS = (pytest.mark.infinite_concat_where,)
 
     @staticmethod
     def reference(
@@ -521,6 +522,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         "vol_flx_ic",
         "exner_dynamical_increment",
     )
+    MARKERS = (pytest.mark.infinite_concat_where,)
 
     @staticmethod
     def reference(
