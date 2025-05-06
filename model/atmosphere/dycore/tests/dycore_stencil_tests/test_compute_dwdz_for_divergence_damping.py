@@ -23,7 +23,7 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_dwdz_for_divergence_damping_numpy(
-    connectivities,
+    connectivities: dict[gtx.Dimension, np.ndarray],
     inv_ddqz_z_full: np.ndarray,
     w: np.ndarray,
     w_concorr_c: np.ndarray,

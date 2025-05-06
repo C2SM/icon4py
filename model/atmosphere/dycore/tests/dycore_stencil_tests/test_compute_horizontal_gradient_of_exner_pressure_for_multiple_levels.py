@@ -66,7 +66,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
     sum_expr = at_neighbor(1) - at_neighbor(0)
 
     z_gradh_exner = inv_dual_edge_length * sum_expr
-    return dict(z_gradh_exner=z_gradh_exner)
+    return z_gradh_exner
 
 
 class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest):

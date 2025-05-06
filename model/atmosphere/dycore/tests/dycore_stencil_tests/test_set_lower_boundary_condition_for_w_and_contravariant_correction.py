@@ -23,7 +23,9 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-    connectivities, w_concorr_c: np.ndarray, z_contr_w_fl_l: np.ndarray
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    w_concorr_c: np.ndarray,
+    z_contr_w_fl_l: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     w_nnew = w_concorr_c
     z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)

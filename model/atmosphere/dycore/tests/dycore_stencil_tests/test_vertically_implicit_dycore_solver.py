@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
@@ -18,7 +19,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -77,7 +77,7 @@ from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
 
 
 def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-    connectivities,
+    connectivities: dict[gtx.Dimension, np.ndarray],
     geofac_div: np.ndarray,
     mass_flux_at_edges_on_model_levels: np.ndarray,
     theta_v_flux_at_edges_on_model_levels: np.ndarray,
@@ -113,7 +113,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         z_contr_w_fl_l: np.ndarray,
         z_beta: np.ndarray,
         z_alpha: np.ndarray,
@@ -166,7 +166,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         kstart_moist: int,
         horizontal_start: int,
         horizontal_end: int,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
@@ -226,7 +226,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             (horizontal_start <= horz_idx)
             & (horz_idx < horizontal_end)
             & (vert_nlevp1_idx == n_lev),
-            0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha[:, :n_lev]),
+            0.0,
             z_alpha,
         )
         z_q[:, :n_lev] = np.where(
@@ -524,7 +524,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         z_contr_w_fl_l: np.ndarray,
         z_beta: np.ndarray,
         z_alpha: np.ndarray,
@@ -584,7 +584,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         kstart_moist: int,
         horizontal_start: int,
         horizontal_end: int,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
@@ -696,26 +696,17 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         if not l_vert_nested:
             next_w[horizontal_start:horizontal_end, 0] = 0.0
             z_contr_w_fl_l[horizontal_start:horizontal_end, 0] = 0.0
-            # w[:, :n_lev], z_contr_w_fl_l[:, :n_lev] = np.where(
-            #     (horizontal_start <= horz_idx)
-            #     & (horz_idx < horizontal_end)
-            #     & (vert_idx == 0),
-            #     (0., 0.),
-            #     # _init_two_cell_kdim_fields_with_zero_wp_numpy(
-            #     #     connectivities=connectivities,
-            #     #     w_nnew=w[:, :n_lev],
-            #     #     z_contr_w_fl_l=z_contr_w_fl_l[:, :n_lev],
-            #     # ),
-            #     (w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
-            # )
 
-        (next_w[horizontal_start:horizontal_end, n_lev], z_contr_w_fl_l[horizontal_start:horizontal_end, n_lev]) = (
-            set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-            connectivities,
-            contravariant_correction_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev],
+        (
+            next_w[horizontal_start:horizontal_end, n_lev],
             z_contr_w_fl_l[horizontal_start:horizontal_end, n_lev],
-        ))
-
+        ) = set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
+            connectivities,
+            contravariant_correction_at_cells_on_half_levels[
+                horizontal_start:horizontal_end, n_lev
+            ],
+            z_contr_w_fl_l[horizontal_start:horizontal_end, n_lev],
+        )
 
         # 48 and 49 are identical except for bounds
         (z_rho_expl, z_exner_expl) = np.where(

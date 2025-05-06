@@ -22,7 +22,7 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_results_for_thermodynamic_variables_numpy(
-    connectivities,
+    connectivities: dict[gtx.Dimension, np.ndarray],
     z_rho_expl: np.ndarray,
     vwind_impl_wgt: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
@@ -37,7 +37,7 @@ def compute_results_for_thermodynamic_variables_numpy(
     exner_now: np.ndarray,
     dtime: float,
     cvd_o_rd: float,
-) -> tuple[np.ndarray]:
+) -> tuple[np.ndarray, ...]:
     rho_ic_offset_1 = rho_ic[:, 1:]
     w_offset_0 = w[:, :-1]
     w_offset_1 = w[:, 1:]
@@ -52,7 +52,7 @@ def compute_results_for_thermodynamic_variables_numpy(
         - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
     )
     theta_v_new = rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
-    return (rho_new, exner_new, theta_v_new)
+    return rho_new, exner_new, theta_v_new
 
 
 class TestComputeResultsForThermodynamicVariables(StencilTest):
@@ -74,8 +74,8 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         rho_now: np.ndarray,
         theta_v_now: np.ndarray,
         exner_now: np.ndarray,
-        dtime: ta.wpfloat,
-        cvd_o_rd: ta.wpfloat,
+        dtime: float,
+        cvd_o_rd: float,
         **kwargs: Any,
     ) -> dict:
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(

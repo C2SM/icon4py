@@ -22,7 +22,7 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
-    connectivities,
+    connectivities: dict[gtx.Dimension, np.ndarray],
     w_nnow: np.ndarray,
     ddt_w_adv_ntl1: np.ndarray,
     ddt_w_adv_ntl2: np.ndarray,
@@ -57,10 +57,10 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
         rho_ic: np.ndarray,
         w_concorr_c: np.ndarray,
         vwind_expl_wgt: np.ndarray,
-        dtime: ta.wpfloat,
-        wgt_nnow_vel: ta.wpfloat,
-        wgt_nnew_vel: ta.wpfloat,
-        cpd: ta.wpfloat,
+        dtime: float,
+        wgt_nnow_vel: float,
+        wgt_nnew_vel: float,
+        cpd: float,
         **kwargs: Any,
     ) -> dict:
         (
