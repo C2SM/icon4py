@@ -80,16 +80,13 @@ def pytest_configure(config):
         _check_backend_validity(backend_option)
 
     # Handle datatest options: --datatest-only  and --datatest-skip
-    if k_option := config.getoption("-k", []):
-        k_option = [f"({k_option})"]  # add parenthesis around original k_option just in case
-
+    if m_option := config.getoption("-m", []):
+        m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
     if config.getoption("--datatest-only"):
-        new_option = " and ".join(["datatest", *k_option])
-        config.option.keyword = new_option
+        config.option.markexpr = " and ".join(["datatest", *m_option])
 
     if config.getoption("--datatest-skip"):
-        new_option = " and ".join(["not datatest", *k_option])
-        config.option.keyword = new_option
+        config.option.markexpr = " and ".join(["not datatest", *m_option])
 
 
 def pytest_addoption(parser):
