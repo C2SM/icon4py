@@ -609,7 +609,6 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
-@pytest.mark.cpu_only  # TODO (@halungge: fixed with PR https://github.com/C2SM/icon4py/pull/715)
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
