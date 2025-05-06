@@ -331,7 +331,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
                 & (vert_idx >= kstart_moist),
-                next_exner.astype(ta.vpfloat),
+                current_exner.astype(ta.vpfloat),
                 exner_dynamical_increment,
             )
 
@@ -701,11 +701,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 ),
                 (z_beta, z_alpha),
             )
-            z_alpha = np.where(
-                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == n_lev),
-                0.0,  # _init_cell_kdim_field_with_zero_vp_numpy(connectivities=connectivities, z_alpha=z_alpha),
-                z_alpha,
-            )
+            z_alpha[horizontal_start:horizontal_end, n_lev] = 0.0
+
             z_q[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
@@ -730,15 +727,14 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             #     (w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
             # )
 
-        (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx == n_lev),
+        (next_w[horizontal_start:horizontal_end, n_lev], z_contr_w_fl_l[horizontal_start:horizontal_end, n_lev]) = (
             set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-                connectivities,
-                contravariant_correction_at_cells_on_half_levels[:, :n_lev],
-                z_contr_w_fl_l[:, :n_lev],
-            ),
-            (next_w[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
-        )
+            connectivities,
+            contravariant_correction_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev],
+            z_contr_w_fl_l[horizontal_start:horizontal_end, n_lev],
+        ))
+
+
         # 48 and 49 are identical except for bounds
         (z_rho_expl, z_exner_expl) = np.where(
             (horizontal_start <= horz_idx)
