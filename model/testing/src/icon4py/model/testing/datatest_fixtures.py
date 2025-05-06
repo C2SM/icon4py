@@ -406,22 +406,6 @@ def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
 
 
 @pytest.fixture
-def savepoint_nonhydro_41_60_exit(data_provider, istep_exit, step_date_exit, substep_exit):
-    """
-    Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
-    subroutine nh_solve in mo_solve_nonhydro.f90.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_nonhydro_41_60_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
 def savepoint_nonhydro_step_final(data_provider, step_date_exit, substep_exit):
     """
     Load data from ICON savepoint at final exit of subroutine nh_solve in mo_solve_nonhydro.f90.
