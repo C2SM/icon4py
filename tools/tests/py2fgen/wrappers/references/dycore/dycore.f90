@@ -95,6 +95,12 @@ module dycore
                                     vn_incr, &
                                     vn_incr_size_0, &
                                     vn_incr_size_1, &
+                                    rho_incr, &
+                                    rho_incr_size_0, &
+                                    rho_incr_size_1, &
+                                    exner_incr, &
+                                    exner_incr_size_0, &
+                                    exner_incr_size_1, &
                                     mass_flx_me, &
                                     mass_flx_me_size_0, &
                                     mass_flx_me_size_1, &
@@ -290,6 +296,18 @@ module dycore
          integer(c_int), value :: vn_incr_size_0
 
          integer(c_int), value :: vn_incr_size_1
+
+         type(c_ptr), value, target :: rho_incr
+
+         integer(c_int), value :: rho_incr_size_0
+
+         integer(c_int), value :: rho_incr_size_1
+
+         type(c_ptr), value, target :: exner_incr
+
+         integer(c_int), value :: exner_incr_size_0
+
+         integer(c_int), value :: exner_incr_size_1
 
          type(c_ptr), value, target :: mass_flx_me
 
@@ -906,6 +924,8 @@ contains
                            vn_ie, &
                            vt, &
                            vn_incr, &
+                           rho_incr, &
+                           exner_incr, &
                            mass_flx_me, &
                            mass_flx_ic, &
                            vol_flx_ic, &
@@ -976,6 +996,10 @@ contains
       real(c_double), dimension(:, :), target :: vt
 
       real(c_double), dimension(:, :), target :: vn_incr
+
+      real(c_double), dimension(:, :), target :: rho_incr
+
+      real(c_double), dimension(:, :), target :: exner_incr
 
       real(c_double), dimension(:, :), target :: mass_flx_me
 
@@ -1115,6 +1139,14 @@ contains
 
       integer(c_int) :: vn_incr_size_1
 
+      integer(c_int) :: rho_incr_size_0
+
+      integer(c_int) :: rho_incr_size_1
+
+      integer(c_int) :: exner_incr_size_0
+
+      integer(c_int) :: exner_incr_size_1
+
       integer(c_int) :: mass_flx_me_size_0
 
       integer(c_int) :: mass_flx_me_size_1
@@ -1163,6 +1195,8 @@ contains
       !$acc host_data use_device(vn_ie)
       !$acc host_data use_device(vt)
       !$acc host_data use_device(vn_incr)
+      !$acc host_data use_device(rho_incr)
+      !$acc host_data use_device(exner_incr)
       !$acc host_data use_device(mass_flx_me)
       !$acc host_data use_device(mass_flx_ic)
       !$acc host_data use_device(vol_flx_ic)
@@ -1260,6 +1294,12 @@ contains
 
       vn_incr_size_0 = SIZE(vn_incr, 1)
       vn_incr_size_1 = SIZE(vn_incr, 2)
+
+      rho_incr_size_0 = SIZE(rho_incr, 1)
+      rho_incr_size_1 = SIZE(rho_incr, 2)
+
+      exner_incr_size_0 = SIZE(exner_incr, 1)
+      exner_incr_size_1 = SIZE(exner_incr, 2)
 
       mass_flx_me_size_0 = SIZE(mass_flx_me, 1)
       mass_flx_me_size_1 = SIZE(mass_flx_me, 2)
@@ -1360,6 +1400,12 @@ contains
                                 vn_incr=c_loc(vn_incr), &
                                 vn_incr_size_0=vn_incr_size_0, &
                                 vn_incr_size_1=vn_incr_size_1, &
+                                rho_incr=c_loc(rho_incr), &
+                                rho_incr_size_0=rho_incr_size_0, &
+                                rho_incr_size_1=rho_incr_size_1, &
+                                exner_incr=c_loc(exner_incr), &
+                                exner_incr_size_0=exner_incr_size_0, &
+                                exner_incr_size_1=exner_incr_size_1, &
                                 mass_flx_me=c_loc(mass_flx_me), &
                                 mass_flx_me_size_0=mass_flx_me_size_0, &
                                 mass_flx_me_size_1=mass_flx_me_size_1, &
@@ -1379,6 +1425,8 @@ contains
                                 ndyn_substeps=ndyn_substeps, &
                                 idyn_timestep=idyn_timestep, &
                                 on_gpu=on_gpu)
+      !$acc end host_data
+      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
