@@ -204,7 +204,7 @@ def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
 
     match selection:
         case "datatest":
-            pytest_args.extend(["-k", "not stencil_test", "--datatest", "--level=integration"])
+            pytest_args.extend(["-k", "not stencil_test", "--datatest"])
         case "stencils":
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
