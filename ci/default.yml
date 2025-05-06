@@ -38,7 +38,7 @@ test_tools_unittests_aarch64:
 
 .test_model_datatests:
   stage: test
-  script:
+  script:g
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=unit
   parallel:
     matrix:
