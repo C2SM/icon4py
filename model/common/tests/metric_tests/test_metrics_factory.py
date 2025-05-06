@@ -541,6 +541,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
+@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU due to vwind_impl_wgt computation)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -606,7 +607,6 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
-@pytest.mark.cpu_only  # TODO (magdalena) needs PR 715 (hopefully)
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
