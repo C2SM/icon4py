@@ -39,7 +39,7 @@ test_tools_unittests_aarch64:
 .test_model_datatests:
   stage: test
   script:
-    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=unit
+    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
     # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
@@ -47,6 +47,7 @@ test_tools_unittests_aarch64:
     #  missing updates for 'concat_where'.
     - COMPONENT: [diffusion, dycore, microphysics, common, driver]
       BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+      LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
