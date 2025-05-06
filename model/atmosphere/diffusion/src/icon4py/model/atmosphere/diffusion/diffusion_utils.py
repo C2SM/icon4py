@@ -150,13 +150,13 @@ def init_diffusion_local_fields_for_regular_timestep(
 @gtx.field_operator
 def _init_nabla2_factor_in_upper_damping_zone(
     physical_heights: fa.KField[float],
-    nrdmax: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
     nshift: gtx.int32,
     heights_nrd_shift: float,
     heights_1: float,
 ) -> fa.KField[float]:
     height_sliced = concat_where(
-        ((1 + nshift) <= dims.KDim) & (dims.KDim < (nshift + nrdmax + 1)), physical_heights, 0.0
+        ((1 + nshift) <= dims.KDim) & (dims.KDim < (nshift + end_index_of_damping_layer + 1)), physical_heights, 0.0
     )
     diff_multfac_n2w = (
         1.0 / 12.0 * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4
@@ -168,7 +168,7 @@ def _init_nabla2_factor_in_upper_damping_zone(
 def init_nabla2_factor_in_upper_damping_zone(
     physical_heights: fa.KField[float],
     diff_multfac_n2w: fa.KField[float],
-    nrdmax: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
     nshift: gtx.int32,
     heights_nrd_shift: float,
     heights_1: float,
@@ -183,16 +183,16 @@ def init_nabla2_factor_in_upper_damping_zone(
     Args
         physcial_heights: vector of physical heights [m] of the height levels
         k_field: field of k levels
-        nrdmax: index of the level where rayleigh damping starts
+        end_index_of_damping_layer: index of the level where rayleigh damping starts
         nshift: 0
-        heights_nrd_shift: physcial_heights at nrdmax + nshift + 1,
+        heights_nrd_shift: physcial_heights at end_index_of_damping_layer + nshift + 1,
         heights_1: physcial_heights at 1st level,
         vertical_start: vertical lower bound,
         vertical_end: vertical upper bound,
     """
     _init_nabla2_factor_in_upper_damping_zone(
         physical_heights=physical_heights,
-        nrdmax=nrdmax,
+        end_index_of_damping_layer=end_index_of_damping_layer,
         nshift=nshift,
         heights_nrd_shift=heights_nrd_shift,
         heights_1=heights_1,
