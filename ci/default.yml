@@ -39,7 +39,7 @@ test_tools_unittests_aarch64:
 .test_model_datatests:
   stage: test
   script:
-    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=integration
+    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=unit
   parallel:
     matrix:
     # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
