@@ -5,12 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 
 import pytest
 
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+from icon4py.model.testing import helpers
 
 from .utils import (
     construct_config,
@@ -39,10 +42,11 @@ from .utils import (
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
+    "date, run_benchmark, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
         (
             "2021-06-20T12:00:10.000",
+            False,
             False,
             1,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
@@ -52,6 +56,7 @@ from .utils import (
         ),
         (
             "2021-06-20T12:00:20.000",
+            False,
             True,
             1,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
@@ -61,6 +66,7 @@ from .utils import (
         ),
         (
             "2021-06-20T12:00:10.000",
+            True,
             False,
             4,
             advection.HorizontalAdvectionType.NO_ADVECTION,
@@ -70,6 +76,7 @@ from .utils import (
         ),
         (
             "2021-06-20T12:00:20.000",
+            False,
             True,
             4,
             advection.HorizontalAdvectionType.NO_ADVECTION,
@@ -88,12 +95,15 @@ def test_advection_run_single_step(
     advection_exit_savepoint,
     data_provider,
     backend,
+    run_benchmark,
     even_timestep,
     ntracer,
     horizontal_advection_type,
     horizontal_advection_limiter,
     vertical_advection_type,
     vertical_advection_limiter,
+    benchmark,
+    benchmark_only,
 ):
     # TODO (Chia Rui): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
     if (
@@ -103,6 +113,12 @@ def test_advection_run_single_step(
         pytest.xfail(
             "This test is skipped until the cause of nonzero horizontal advection if revealed."
         )
+    if not run_benchmark:
+        benchmark = None
+
+        if benchmark_only:
+            pytest.skip("Disabled by --benchmark-only.")
+
     config = construct_config(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
@@ -137,24 +153,28 @@ def test_advection_run_single_step(
 
     log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
 
-    advection_granule.run(
-        diagnostic_state=diagnostic_state,
-        prep_adv=prep_adv,
-        p_tracer_now=p_tracer_now,
-        p_tracer_new=p_tracer_new,
-        dtime=dtime,
-    )
-
     diagnostic_state_ref = construct_diagnostic_exit_state(
         icon_grid, advection_exit_savepoint, ntracer, backend=backend
     )
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
-    verify_advection_fields(
-        grid=icon_grid,
-        diagnostic_state=diagnostic_state,
-        diagnostic_state_ref=diagnostic_state_ref,
-        p_tracer_new=p_tracer_new,
-        p_tracer_new_ref=p_tracer_new_ref,
-        even_timestep=even_timestep,
+    helpers.run_verify_and_benchmark(
+        functools.partial(
+            advection_granule.run,
+            diagnostic_state=diagnostic_state,
+            prep_adv=prep_adv,
+            p_tracer_now=p_tracer_now,
+            p_tracer_new=p_tracer_new,
+            dtime=dtime,
+        ),
+        functools.partial(
+            verify_advection_fields,
+            grid=icon_grid,
+            diagnostic_state=diagnostic_state,
+            diagnostic_state_ref=diagnostic_state_ref,
+            p_tracer_new=p_tracer_new,
+            p_tracer_new_ref=p_tracer_new_ref,
+            even_timestep=even_timestep,
+        ),
+        benchmark,
     )

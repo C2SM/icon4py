@@ -65,6 +65,14 @@ def grid(request, backend):
     grid = _get_grid(grid_option, backend)
     return grid
 
+@pytest.fixture(scope="session")
+def benchmark_only(request):
+    try:
+        benchmark_only = request.config.getoption("--benchmark-only")
+    except ValueError:
+        benchmark_only = False
+    return benchmark_only
+
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
