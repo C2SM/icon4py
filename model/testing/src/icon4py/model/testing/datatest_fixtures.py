@@ -272,7 +272,9 @@ def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
 
 
 @pytest.fixture
-def savepoint_nonhydro_41_60_init(data_provider, istep_init, step_date_init, substep_init):
+def savepoint_vertically_implicit_dycore_solver_init(
+    data_provider, istep_init, step_date_init, substep_init
+):
     """
     Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
 
@@ -281,7 +283,7 @@ def savepoint_nonhydro_41_60_init(data_provider, istep_init, step_date_init, sub
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - substep: dynamical substep
     """
-    return data_provider.from_savepoint_nonhydro_41_60_init(
+    return data_provider.from_savepoint_vertically_implicit_dycore_solver_init(
         istep=istep_init, date=step_date_init, substep=substep_init
     )
 

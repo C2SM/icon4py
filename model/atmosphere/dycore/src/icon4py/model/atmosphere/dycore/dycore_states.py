@@ -272,4 +272,7 @@ class _DycoreConstants(FrozenNamespace[int]):
     cvd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_VOLUME
     cpd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_PRESSURE
     rd_o_cpd: ta.wpfloat = phy_const.RD_O_CPD
+    rd_o_cvd: ta.wpfloat = phy_const.RD / phy_const.CVD
     cvd_o_rd: ta.wpfloat = phy_const.CVD_O_RD
+    rd_o_p0ref: ta.wpfloat = phy_const.RD / phy_const.P0REF
+    grav_o_cpd: ta.wpfloat = phy_const.GRAV / phy_const.CPD

@@ -46,14 +46,14 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
-    option_groups,
+    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 dycore_consts: Final = dycore_states._DycoreConstants()
-rayleigh_types: Final = option_groups.RayleighType()
+rayleigh_damping_options: Final = model_options.RayleighType()
 
 
 @gtx.field_operator
@@ -172,7 +172,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
-    l_vert_nested: bool,
     is_iau_active: bool,
     n_lev: gtx.int32,
 ) -> tuple[
@@ -228,17 +227,13 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         dtime,
     )
 
-    (next_w, vertical_mass_flux_at_cells_on_half_levels) = (
-        concat_where(
-            dims.KDim == 0,
-            (
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            ),
-            (next_w, vertical_mass_flux_at_cells_on_half_levels),
-        )
-        if (not l_vert_nested)
-        else (next_w, vertical_mass_flux_at_cells_on_half_levels)
+    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
+        dims.KDim == 0,
+        (
+            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        ),
+        (next_w, vertical_mass_flux_at_cells_on_half_levels),
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -358,7 +353,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
             ),
             next_w,
         )
-        if rayleigh_type == rayleigh_types.KLEMP
+        if rayleigh_type == rayleigh_damping_options.KLEMP
         else next_w
     )
 
@@ -448,7 +443,6 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
     is_iau_active: bool,
-    l_vert_nested: bool,
     n_lev: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
@@ -506,17 +500,13 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         dtime,
     )
 
-    (next_w, vertical_mass_flux_at_cells_on_half_levels) = (
-        concat_where(
-            dims.KDim == 0,
-            (
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            ),
-            (next_w, vertical_mass_flux_at_cells_on_half_levels),
-        )
-        if (not l_vert_nested)
-        else (next_w, vertical_mass_flux_at_cells_on_half_levels)
+    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
+        dims.KDim == 0,
+        (
+            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        ),
+        (next_w, vertical_mass_flux_at_cells_on_half_levels),
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -642,7 +632,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
             ),
             next_w,
         )
-        if rayleigh_type == rayleigh_types.KLEMP
+        if rayleigh_type == rayleigh_damping_options.KLEMP
         else next_w
     )
 
@@ -773,7 +763,6 @@ def vertically_implicit_solver_at_predictor_step(
     exner_ref_mc: fa.CellKField[ta.vpfloat],
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
-    l_vert_nested: bool,
     is_iau_active: bool,
     rayleigh_type: gtx.int32,
     divdamp_type: gtx.int32,
@@ -825,7 +814,6 @@ def vertically_implicit_solver_at_predictor_step(
         ddqz_z_half=ddqz_z_half,
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
-        l_vert_nested=l_vert_nested,
         is_iau_active=is_iau_active,
         n_lev=vertical_end - 1,
         out=(
@@ -928,7 +916,6 @@ def vertically_implicit_solver_at_corrector_step(
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
-    l_vert_nested: bool,
     is_iau_active: bool,
     rayleigh_type: gtx.int32,
     at_first_substep: bool,
@@ -982,7 +969,6 @@ def vertically_implicit_solver_at_corrector_step(
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
         is_iau_active=is_iau_active,
-        l_vert_nested=l_vert_nested,
         n_lev=vertical_end - 1,
         out=(
             vertical_mass_flux_at_cells_on_half_levels,

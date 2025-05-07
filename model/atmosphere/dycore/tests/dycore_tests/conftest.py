@@ -44,7 +44,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     savepoint_compute_advection_in_vertical_momentum_equation_exit,
     savepoint_compute_advection_in_horizontal_momentum_equation_init,
     savepoint_compute_advection_in_horizontal_momentum_equation_exit,
-    savepoint_nonhydro_41_60_init,
+    savepoint_vertically_implicit_dycore_solver_init,
     step_date_exit,
     step_date_init,
     stretch_factor,

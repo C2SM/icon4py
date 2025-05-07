@@ -14,6 +14,7 @@ from typing import Final, Optional
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
+from icon4py.model.atmosphere.dycore import dycore_states
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
@@ -80,7 +81,7 @@ from icon4py.model.atmosphere.dycore.velocity_advection import (
     VelocityAdvection,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common import dimension as dims, option_groups
+from icon4py.model.common import dimension as dims, model_options
 from icon4py.model.common.grid import (
     base as grid_def,
     horizontal as h_grid,
@@ -94,6 +95,8 @@ from icon4py.model.common import field_type_aliases as fa
 
 # flake8: noqa
 log = logging.getLogger(__name__)
+
+dycore_consts: Final = dycore_states._DycoreConstants()
 
 
 @dataclasses.dataclass
@@ -219,7 +222,7 @@ class NonHydrostaticConfig:
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         ndyn_substeps_var: float = 5.0,
-        rayleigh_type: option_groups.RayleighType = option_groups.RayleighType.KLEMP,
+        rayleigh_type: model_options.RayleighType = model_options.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,
@@ -361,11 +364,6 @@ class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
 
     def __init__(self, config: NonHydrostaticConfig):
-        self.rd_o_cvd: Final[float] = constants.RD / constants.CVD
-        self.cvd_o_rd: Final[float] = constants.CVD / constants.RD
-        self.rd_o_p0ref: Final[float] = constants.RD / constants.P0REF
-        self.grav_o_cpd: Final[float] = constants.GRAV / constants.CPD
-
         #:  start level for 3D divergence damping terms
         #: this is only different from 0 if divdamp_type == 32: calculation done in mo_vertical_grid.f90
         self.starting_vertical_index_for_3d_divdamp: Final[int] = 0
@@ -752,8 +750,8 @@ class SolveNonhydro:
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
-                rd_o_cvd=self._params.rd_o_cvd,
-                rd_o_p0ref=self._params.rd_o_p0ref,
+                rd_o_cvd=dycore_consts.rd_o_cvd,
+                rd_o_p0ref=dycore_consts.rd_o_p0ref,
                 horizontal_start=self._start_cell_local,
                 horizontal_end=self._end_cell_end,
                 vertical_start=0,
@@ -765,8 +763,8 @@ class SolveNonhydro:
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
-                rd_o_cvd=self._params.rd_o_cvd,
-                rd_o_p0ref=self._params.rd_o_p0ref,
+                rd_o_cvd=dycore_consts.rd_o_cvd,
+                rd_o_p0ref=dycore_consts.rd_o_p0ref,
                 horizontal_start=self._start_cell_lateral_boundary,
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=0,
@@ -782,7 +780,7 @@ class SolveNonhydro:
             exner_now=prognostic_states.current.exner,
             rho_new=prognostic_states.next.rho,
             theta_v_new=prognostic_states.next.theta_v,
-            cvd_o_rd=self._params.cvd_o_rd,
+            cvd_o_rd=dycore_consts.cvd_o_rd,
             horizontal_start=self._start_cell_halo,
             horizontal_end=self._end_cell_end,
             vertical_start=0,
@@ -992,7 +990,7 @@ class SolveNonhydro:
                 inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
                 z_hydro_corr=self.hydrostatic_correction,
-                grav_o_cpd=self._params.grav_o_cpd,
+                grav_o_cpd=dycore_consts.grav_o_cpd,
                 horizontal_start=self._start_edge_nudging_level_2,
                 horizontal_end=self._end_edge_local,
                 vertical_start=self._grid.num_levels - 1,
@@ -1193,7 +1191,6 @@ class SolveNonhydro:
             exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
-            l_vert_nested=self.l_vert_nested,
             is_iau_active=self._config.is_iau_active,
             rayleigh_type=self._config.rayleigh_type,
             divdamp_type=self._config.divdamp_type,
@@ -1484,7 +1481,6 @@ class SolveNonhydro:
             kstart_moist=self._vertical_params.kstart_moist,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
-            l_vert_nested=self.l_vert_nested,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),

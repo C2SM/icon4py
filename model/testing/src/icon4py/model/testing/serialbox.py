@@ -1187,7 +1187,7 @@ class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
         return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
 
 
-class IconNonHydroInit_41_60_Savepoint(IconSavepoint):
+class NonHydroInitVerticallyImplicitSolverSavepoint(IconSavepoint):
     def mass_fl_e(self):
         return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
 
@@ -1985,9 +1985,9 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_nonhydro_41_60_init(
+    def from_savepoint_vertically_implicit_dycore_solver_init(
         self, istep: int, date: str, substep: int
-    ) -> IconNonHydroInit_41_60_Savepoint:
+    ) -> NonHydroInitVerticallyImplicitSolverSavepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-41to60-init"]
             .istep[istep]
@@ -1995,7 +1995,7 @@ class IconSerialDataProvider:
             .dyn_timestep[substep]
             .as_savepoint()
         )
-        return IconNonHydroInit_41_60_Savepoint(
+        return NonHydroInitVerticallyImplicitSolverSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
