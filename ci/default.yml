@@ -53,7 +53,7 @@ test_tools_unittests_aarch64:
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
 
-.test_model_unittests:
+.test_model_basic:
   stage: test
   script:
     - nox -s "test_model-3.10(basic, $COMPONENT)" -- --backend=$BACKEND
@@ -65,4 +65,4 @@ test_model_datatests_aarch64:
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_unittests_aarch64:
-  extends: [.test_model_unittests, .test_template_aarch64]
+  extends: [.test_model_basic, .test_template_aarch64]
