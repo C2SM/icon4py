@@ -84,13 +84,11 @@ build_distributed_cpu:
   stage: test
   extends: [.test_template_distributed, .build_distributed_template]
   before_script:
-    - cd /icon4py
-    - ls -la $(pwd)
+    - echo $(pwd)
+    - echo "using MPI_PREFIX ${MPI_PREFIX}"
     - ls ${UV_PROJECT_ENVIRONMENT}/lib/python*/site-packages
-    - echo "using MPICC ${MPICC}"
-    - echo "using CC ${CC}"
   script:
-    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate && ${MPI_PREFIX}  pytest -svv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
+    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate && ${MPI_PREFIX}  pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [ atmosphere/diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
