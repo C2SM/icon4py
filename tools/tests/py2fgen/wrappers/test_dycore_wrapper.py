@@ -14,7 +14,7 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import constants, dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, option_groups, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -48,7 +48,7 @@ def solve_nh_init(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
-    rayleigh_type = constants.RayleighType.KLEMP
+    rayleigh_type = option_groups.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
@@ -302,7 +302,7 @@ def test_dycore_wrapper_granule_inputs(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
-    rayleigh_type = constants.RayleighType.KLEMP
+    rayleigh_type = option_groups.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False

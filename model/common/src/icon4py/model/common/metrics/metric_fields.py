@@ -29,7 +29,7 @@ from gt4py.next import (
 )
 from gt4py.next.ffront.experimental import concat_where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, option_groups
 from icon4py.model.common.dimension import (
     C2E,
     C2E2C,
@@ -218,8 +218,6 @@ def _compute_rayleigh_w(
     vct_a: fa.KField[wpfloat],
     damping_height: wpfloat,
     rayleigh_type: gtx.int32,
-    rayleigh_classic: gtx.int32,
-    rayleigh_klemp: gtx.int32,
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
@@ -227,13 +225,13 @@ def _compute_rayleigh_w(
     rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
-    if rayleigh_type == rayleigh_classic:
+    if rayleigh_type == option_groups.RayleighType.CLASSIC:
         rayleigh_w = (
             rayleigh_coeff
             * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
         )
 
-    elif rayleigh_type == rayleigh_klemp:
+    elif rayleigh_type == option_groups.RayleighType.KLEMP:
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )
@@ -246,8 +244,6 @@ def compute_rayleigh_w(
     vct_a: fa.KField[wpfloat],
     damping_height: wpfloat,
     rayleigh_type: gtx.int32,
-    rayleigh_classic: gtx.int32,
-    rayleigh_klemp: gtx.int32,
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
@@ -276,8 +272,6 @@ def compute_rayleigh_w(
         vct_a,
         damping_height,
         rayleigh_type,
-        rayleigh_classic,
-        rayleigh_klemp,
         rayleigh_coeff,
         vct_a_1,
         pi_const,

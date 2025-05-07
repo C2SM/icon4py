@@ -115,8 +115,6 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
         vct_a=grid_savepoint.vct_a(),
         damping_height=damping_height,
         rayleigh_type=rayleigh_type,
-        rayleigh_classic=constants.RayleighType.CLASSIC,
-        rayleigh_klemp=constants.RayleighType.KLEMP,
         rayleigh_coeff=rayleigh_coeff,
         vct_a_1=vct_a_1,
         pi_const=math.pi,

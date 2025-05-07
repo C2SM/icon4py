@@ -16,8 +16,10 @@ import gt4py.next as gtx
 from gt4py.eve.utils import FrozenNamespace
 
 from icon4py.model.common import (
+    constants as phy_const,
     dimension as dims,
     field_type_aliases as fa,
+    type_alias as ta,
     utils as common_utils,
 )
 
@@ -258,3 +260,16 @@ class PrepAdvection:
     """
     Declared as vol_flx_ic in ICON.
     """
+
+
+class _DycoreConstants(FrozenNamespace[int]):
+    """
+    Constants used in dycore.
+    """
+
+    rd: ta.wpfloat = phy_const.GAS_CONSTANT_DRY_AIR
+    rv: ta.wpfloat = phy_const.GAS_CONSTANT_WATER_VAPOR
+    cvd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_VOLUME
+    cpd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_PRESSURE
+    rd_o_cpd: ta.wpfloat = phy_const.RD_O_CPD
+    cvd_o_rd: ta.wpfloat = phy_const.CVD_O_RD

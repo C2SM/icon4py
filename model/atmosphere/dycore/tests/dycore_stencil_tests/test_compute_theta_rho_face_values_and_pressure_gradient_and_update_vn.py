@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.dycore.dycore_states import (
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -172,7 +172,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         pg_exdist: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         dtime: ta.wpfloat,
-        cpd: ta.wpfloat,
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
@@ -401,7 +400,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             * (
                 predictor_normal_wind_advective_tendency
                 + normal_wind_tendency_due_to_physics_process
-                - cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
+                - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
             ),
             next_vn,
         )
@@ -485,7 +484,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         ikoffset = data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset_np)
 
         dtime = 0.9
-        cpd = 1004.64
         iau_wgt_dyn = 1.0
         is_iau_active = True
         limited_area = True
@@ -540,7 +538,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             pg_exdist=pg_exdist,
             inv_dual_edge_length=inv_dual_edge_length,
             dtime=dtime,
-            cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
             limited_area=limited_area,

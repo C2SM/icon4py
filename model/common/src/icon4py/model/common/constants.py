@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import enum
 import sys
 from typing import Final
 
@@ -79,10 +78,3 @@ DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 
 #: average earth radius in [m]
 EARTH_RADIUS: Final[wpfloat] = 6.371229e6
-
-
-class RayleighType(enum.IntEnum):
-    #: classical Rayleigh damping, which makes use of a reference state.
-    CLASSIC = 1
-    #: Klemp (2008) type Rayleigh damping
-    KLEMP = 2

@@ -80,7 +80,7 @@ from icon4py.model.atmosphere.dycore.velocity_advection import (
     VelocityAdvection,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, option_groups
 from icon4py.model.common.grid import (
     base as grid_def,
     horizontal as h_grid,
@@ -173,8 +173,12 @@ class IntermediateFields:
             tridiagonal_alpha_coeff_at_cells_on_half_levels=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
-            tridiagonal_beta_coeff_at_cells_on_model_levels=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            exner_explicit_term=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+            tridiagonal_beta_coeff_at_cells_on_model_levels=data_alloc.zero_field(
+                grid, dims.CellDim, dims.KDim, backend=backend
+            ),
+            exner_explicit_term=data_alloc.zero_field(
+                grid, dims.CellDim, dims.KDim, backend=backend
+            ),
             vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
@@ -215,7 +219,7 @@ class NonHydrostaticConfig:
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         ndyn_substeps_var: float = 5.0,
-        rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
+        rayleigh_type: option_groups.RayleighType = option_groups.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,
@@ -1035,7 +1039,6 @@ class SolveNonhydro:
             pg_exdist=self._metric_state_nonhydro.pg_exdist,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
             dtime=dtime,
-            cpd=constants.CPD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
             limited_area=self._grid.limited_area,
@@ -1188,16 +1191,11 @@ class SolveNonhydro:
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             z_raylfac=self.z_raylfac,
             exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
-            cvd_o_rd=constants.CVD_O_RD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
-            rd=constants.RD,
-            cvd=constants.CVD,
-            cpd=constants.CPD,
-            rayleigh_klemp=constants.RayleighType.KLEMP.value,
             l_vert_nested=self.l_vert_nested,
             is_iau_active=self._config.is_iau_active,
-            rayleigh_type=constants.RayleighType.KLEMP,
+            rayleigh_type=self._config.rayleigh_type,
             divdamp_type=self._config.divdamp_type,
             at_first_substep=at_first_substep,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
@@ -1364,7 +1362,6 @@ class SolveNonhydro:
             wgt_nnow_vel=self._params.wgt_nnow_vel,
             wgt_nnew_vel=self._params.wgt_nnew_vel,
             dtime=dtime,
-            cpd=constants.CPD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
             limited_area=self._grid.limited_area,
@@ -1478,13 +1475,8 @@ class SolveNonhydro:
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(self._config.ndyn_substeps_var),
-            cvd_o_rd=constants.CVD_O_RD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
-            rd=constants.RD,
-            cvd=constants.CVD,
-            cpd=constants.CPD,
-            rayleigh_klemp=constants.RayleighType.KLEMP,
             is_iau_active=self._config.is_iau_active,
             rayleigh_type=self._config.rayleigh_type,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
@@ -1502,7 +1494,9 @@ class SolveNonhydro:
 
         if lprep_adv:
             if at_first_substep:
-                log.debug(f"corrector set prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero")
+                log.debug(
+                    f"corrector set prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+                )
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                     horizontal_start=self._start_cell_lateral_boundary,

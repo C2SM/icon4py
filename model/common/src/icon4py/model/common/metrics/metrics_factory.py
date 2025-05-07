@@ -240,8 +240,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "damping_height": self._config["damping_height"],
                 "rayleigh_type": self._config["rayleigh_type"],
-                "rayleigh_classic": constants.RayleighType.CLASSIC,
-                "rayleigh_klemp": constants.RayleighType.KLEMP,
                 "rayleigh_coeff": self._config["rayleigh_coeff"],
                 "vct_a_1": self._config["vct_a_1"],
                 "pi_const": math.pi,

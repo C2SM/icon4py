@@ -13,11 +13,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import broadcast
 
-from icon4py.model.atmosphere.dycore.dycore_states import (
-    DivergenceDampingOrder,
-    HorizontalPressureDiscretizationType,
-    RhoThetaAdvectionType,
-)
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
 )
@@ -62,9 +58,10 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-rhotheta_avd_type: Final = RhoThetaAdvectionType()
-horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
-divergence_damp_order: Final = DivergenceDampingOrder()
+rhotheta_avd_type: Final = dycore_states.RhoThetaAdvectionType()
+horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType()
+divergence_damp_order: Final = dycore_states.DivergenceDampingOrder()
+dycore_consts: Final = dycore_states._DycoreConstants()
 
 
 @gtx.field_operator
@@ -102,7 +99,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
-    cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
     limited_area: bool,
@@ -277,7 +273,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             z_theta_v_e=theta_v_at_edges_on_model_levels,
             z_gradh_exner=horizontal_pressure_gradient,
             dtime=dtime,
-            cpd=cpd,
+            cpd=dycore_consts.cpd,
         ),
         next_vn,
     )
@@ -327,7 +323,6 @@ def _apply_divergence_damping_and_update_vn(
     wgt_nnow_vel: ta.wpfloat,
     wgt_nnew_vel: ta.wpfloat,
     dtime: ta.wpfloat,
-    cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
     limited_area: bool,
@@ -380,7 +375,7 @@ def _apply_divergence_damping_and_update_vn(
             dtime=dtime,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
-            cpd=cpd,
+            cpd=dycore_consts.cpd,
         ),
         next_vn,
     )
@@ -490,7 +485,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
-    cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
     limited_area: bool,
@@ -553,7 +547,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         - pg_exdist: vertical distance between current cell height and neighboring cell height for hydrostatic correction [m]
         - inv_dual_edge_length: inverse dual edge length [m]
         - dtime: time step [s]
-        - cpd: specific heat at constant pressure [J/K/kg]
         - iau_wgt_dyn: a scaling factor for iau increment
         - is_iau_active: option for iau increment analysis
         - limited_area: option indicating the grid is limited area or not
@@ -606,7 +599,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         dtime=dtime,
-        cpd=cpd,
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=limited_area,
@@ -660,7 +652,6 @@ def apply_divergence_damping_and_update_vn(
     wgt_nnow_vel: ta.wpfloat,
     wgt_nnew_vel: ta.wpfloat,
     dtime: ta.wpfloat,
-    cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
     limited_area: bool,
@@ -707,7 +698,6 @@ def apply_divergence_damping_and_update_vn(
         - wgt_nnow_vel: interpolation coefficient of normal_wind_advective_tendency at predictor step
         - wgt_nnew_vel: interpolation coefficient of normal_wind_advective_tendency at corrector step
         - dtime: time step [s]
-        - cpd: specific heat at constant pressure [J/K/kg]
         - iau_wgt_dyn: a scaling factor for iau increment
         - is_iau_active: option for iau increment analysis
         - itime_scheme: ICON itime scheme (see ICON tutorial)
@@ -746,7 +736,6 @@ def apply_divergence_damping_and_update_vn(
         wgt_nnow_vel=wgt_nnow_vel,
         wgt_nnew_vel=wgt_nnew_vel,
         dtime=dtime,
-        cpd=cpd,
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=limited_area,

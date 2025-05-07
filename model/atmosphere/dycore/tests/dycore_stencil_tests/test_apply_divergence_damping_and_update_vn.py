@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     apply_divergence_damping_and_update_vn,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -56,7 +56,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         wgt_nnow_vel: ta.wpfloat,
         wgt_nnew_vel: ta.wpfloat,
         dtime: ta.wpfloat,
-        cpd: ta.wpfloat,
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
@@ -106,7 +105,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 wgt_nnow_vel * predictor_normal_wind_advective_tendency
                 + wgt_nnew_vel * corrector_normal_wind_advective_tendency
                 + normal_wind_tendency_due_to_physics_process
-                - cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
+                - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
             ),
             next_vn,
         )
@@ -211,7 +210,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         dtime = 0.9
         wgt_nnew_vel = 0.75
         wgt_nnow_vel = 0.25
-        cpd = 1004.64
         iau_wgt_dyn = 1.0
         is_iau_active = True
         fourth_order_divdamp_factor = 0.004
@@ -253,7 +251,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
             dtime=dtime,
-            cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
             limited_area=limited_area,

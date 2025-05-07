@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.dycore_states import TimeSteppingScheme
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_corrector_step,
     vertically_implicit_solver_at_predictor_step,
@@ -20,6 +19,7 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
 from icon4py.model.common import (
     constants,
     dimension as dims,
+    option_groups,
     type_alias as ta,
 )
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -98,7 +98,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         "dwdz_at_cells_on_model_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.infinite_concat_where, pytest.mark.skip_value_error)
+    MARKERS = (pytest.mark.infinite_concat_where,)
 
     @staticmethod
     def reference(
@@ -136,35 +136,28 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         ddqz_z_half: np.ndarray,
         z_raylfac: np.ndarray,
         exner_ref_mc: np.ndarray,
-        cvd_o_rd: float,
         iau_wgt_dyn: float,
         dtime: float,
-        rd: float,
-        cvd: float,
-        cpd: float,
-        rayleigh_klemp: int,
         l_vert_nested: bool,
         is_iau_active: bool,
         rayleigh_type: int,
         divdamp_type: int,
         at_first_substep: bool,
         index_of_damping_layer: int,
-        n_lev: int,
         jk_start: int,
         kstart_dd3d: int,
         kstart_moist: int,
-        horizontal_start: int,
-        horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
+        horizontal_start = kwargs["horizontal_start"]
+        horizontal_end = kwargs["horizontal_end"]
+        n_lev = kwargs["vertical_end"] - 1
         horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dynamical_increment.shape[1])
-        vert_nlevp1_idx = np.arange(vertical_mass_flux_at_cells_on_half_levels.shape[1])
 
         divergence_of_mass = np.zeros_like(current_rho)
         divergence_of_theta_v = np.zeros_like(current_theta_v)
-        # verified for e-9
         divergence_of_mass, divergence_of_theta_v = np.where(
             (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_divergence_of_fluxes_of_rho_and_theta_numpy(
@@ -176,26 +169,29 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             (divergence_of_mass, divergence_of_theta_v),
         )
 
-        w_explicit_term = np.zeros_like(vertical_mass_flux_at_cells_on_half_levels)
-        tridiagonal_intermediate_result = np.zeros_like(vertical_mass_flux_at_cells_on_half_levels)
+        w_explicit_term = np.zeros_like(current_rho)
+        tridiagonal_intermediate_result = np.zeros_like(current_rho)
 
-        (w_explicit_term[:, :n_lev], vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
+        (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
             (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(1)),
             compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
-                ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency,
+                ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
                 z_th_ddz_exner_c=z_th_ddz_exner_c,
                 rho_ic=rho_ic[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 vwind_expl_wgt=vwind_expl_wgt,
                 dtime=dtime,
-                cpd=cpd,
+                cpd=constants.CPD,
             ),
-            (w_explicit_term[:, :n_lev], vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]),
+            (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]),
         )
-        (tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev]) = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(0)),
+        (
+            tridiagonal_beta_coeff_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev],
+        ) = np.where(
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_solver_coefficients_matrix_numpy(
                 connectivities=connectivities,
                 exner_nnow=current_exner,
@@ -206,32 +202,38 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 rho_ic=rho_ic[:, :n_lev],
                 dtime=dtime,
-                rd=rd,
-                cvd=cvd,
+                rd=constants.RD,
+                cvd=constants.CVD,
             ),
-            (tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev]),
+            (
+                tridiagonal_beta_coeff_at_cells_on_model_levels,
+                tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev],
+            ),
         )
-        tridiagonal_alpha_coeff_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev] = 0.0
+        tridiagonal_alpha_coeff_at_cells_on_half_levels[
+            horizontal_start:horizontal_end, n_lev
+        ] = 0.0
         tridiagonal_intermediate_result[horizontal_start:horizontal_end, 0] = 0.0
 
         if not l_vert_nested:
             next_w[horizontal_start:horizontal_end, 0] = 0.0
             vertical_mass_flux_at_cells_on_half_levels[horizontal_start:horizontal_end, 0] = 0.0
 
-        (next_w, vertical_mass_flux_at_cells_on_half_levels) = np.where(
-            (horizontal_start <= horz_idx)
-            & (horz_idx < horizontal_end)
-            & (vert_nlevp1_idx == n_lev),
-            set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
-                connectivities=connectivities,
-                w_concorr_c=contravariant_correction_at_cells_on_half_levels,
-                z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
-            ),
-            (next_w, vertical_mass_flux_at_cells_on_half_levels),
+        (
+            next_w[horizontal_start:horizontal_end, n_lev],
+            vertical_mass_flux_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev],
+        ) = set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
+            connectivities,
+            w_concorr_c=contravariant_correction_at_cells_on_half_levels[
+                horizontal_start:horizontal_end, n_lev
+            ],
+            z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels[
+                horizontal_start:horizontal_end, n_lev
+            ],
         )
         # 48 and 49 are identical except for bounds
         (rho_explicit_term, exner_explicit_term) = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(0)),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_explicit_part_for_rho_and_exner_numpy(
                 connectivities=connectivities,
                 rho_nnow=current_rho,
@@ -261,8 +263,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 ),
                 (rho_explicit_term, exner_explicit_term),
             )
-        tridiagonal_intermediate_result[:, :n_lev], next_w[:, :n_lev] = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
+        (tridiagonal_intermediate_result, next_w[:, :n_lev]) = np.where(
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
                 vwind_impl_wgt=vwind_impl_wgt,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
@@ -271,16 +273,16 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
                 z_w_expl=w_explicit_term,
                 z_exner_expl=exner_explicit_term,
-                z_q=tridiagonal_intermediate_result[:, :n_lev],
+                z_q_ref=tridiagonal_intermediate_result,
                 w_ref=next_w[:, :n_lev],
                 dtime=dtime,
-                cpd=cpd,
+                cpd=constants.CPD,
             ),
-            (tridiagonal_intermediate_result[:, :n_lev], next_w[:, :n_lev]),
+            (tridiagonal_intermediate_result, next_w[:, :n_lev]),
         )
 
         next_w[:, :n_lev] = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,
                 z_q=tridiagonal_intermediate_result[:, :n_lev],
@@ -290,7 +292,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == rayleigh_klemp:
+        if rayleigh_type == option_groups.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
@@ -331,7 +333,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 theta_v_now=current_theta_v,
                 exner_now=current_exner,
                 dtime=dtime,
-                cvd_o_rd=cvd_o_rd,
+                cvd_o_rd=constants.CVD_O_RD,
             ),
             (next_rho, next_exner, next_theta_v),
         )
@@ -373,7 +375,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             grid, dims.EdgeDim, dims.KDim
         )
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(
@@ -384,20 +386,15 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim)
-        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim)
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        next_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        rho_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddt_exner_phy = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -405,11 +402,22 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_raylfac = data_alloc.random_field(grid, dims.KDim)
         exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        next_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim
+        )
+        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        rho_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        exner_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        next_rho = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         next_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        next_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        dwdz_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        dwdz_at_cells_on_model_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        exner_dynamical_increment = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+
         l_vert_nested = False
         is_iau_active = False
         at_first_substep = True
@@ -460,20 +468,14 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             ddqz_z_half=ddqz_z_half,
             z_raylfac=z_raylfac,
             exner_ref_mc=exner_ref_mc,
-            cvd_o_rd=constants.CVD_O_RD,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
-            rd=constants.RD,
-            cvd=constants.CVD,
-            cpd=constants.CPD,
-            rayleigh_klemp=constants.RayleighType.KLEMP.value,
             l_vert_nested=l_vert_nested,
             is_iau_active=is_iau_active,
             rayleigh_type=rayleigh_type,
             divdamp_type=divdamp_type,
             at_first_substep=at_first_substep,
             index_of_damping_layer=index_of_damping_layer,
-            n_lev=grid.num_levels,
             jk_start=jk_start,
             kstart_dd3d=kstart_dd3d,
             kstart_moist=kstart_moist,
@@ -500,7 +502,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.infinite_concat_where, pytest.mark.skip_value_error)
+    MARKERS = (pytest.mark.infinite_concat_where,)
 
     @staticmethod
     def reference(
@@ -542,37 +544,30 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         exner_ref_mc: np.ndarray,
         wgt_nnow_vel: float,
         wgt_nnew_vel: float,
-        itime_scheme: int,
         lprep_adv: bool,
         r_nsubsteps: float,
         ndyn_substeps_var: float,
-        cvd_o_rd: float,
         iau_wgt_dyn: float,
         dtime: float,
-        rd: float,
-        cvd: float,
-        cpd: float,
-        rayleigh_klemp: int,
         l_vert_nested: bool,
         is_iau_active: bool,
         rayleigh_type: int,
         at_first_substep: bool,
         at_last_substep: bool,
         index_of_damping_layer: int,
-        n_lev: int,
         jk_start: int,
         kstart_moist: int,
-        horizontal_start: int,
-        horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
+        horizontal_start = kwargs["horizontal_start"]
+        horizontal_end = kwargs["horizontal_end"]
+        n_lev = kwargs["vertical_end"] - 1
         horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dynamical_increment.shape[1])
 
         divergence_of_mass = np.zeros_like(current_rho)
         divergence_of_theta_v = np.zeros_like(current_theta_v)
-        # verified for e-9
         divergence_of_mass, divergence_of_theta_v = np.where(
             (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_divergence_of_fluxes_of_rho_and_theta_numpy(
@@ -584,94 +579,55 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             (divergence_of_mass, divergence_of_theta_v),
         )
 
-        w_explicit_term = np.zeros_like(vertical_mass_flux_at_cells_on_half_levels)
-        tridiagonal_intermediate_result = np.zeros_like(vertical_mass_flux_at_cells_on_half_levels)
+        w_explicit_term = np.zeros_like(current_rho)
+        tridiagonal_intermediate_result = np.zeros_like(current_rho)
 
-        if itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            (w_explicit_term[:, :n_lev], vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
-                (horizontal_start <= horz_idx)
-                & (horz_idx < horizontal_end)
-                & (vert_idx >= int32(1)),
-                compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
-                    connectivities=connectivities,
-                    w_nnow=current_w,
-                    ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency,
-                    ddt_w_adv_ntl2=corrector_vertical_wind_advective_tendency,
-                    z_th_ddz_exner_c=z_th_ddz_exner_c,
-                    rho_ic=rho_ic[:, :n_lev],
-                    w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
-                    vwind_expl_wgt=vwind_expl_wgt,
-                    dtime=dtime,
-                    wgt_nnow_vel=wgt_nnow_vel,
-                    wgt_nnew_vel=wgt_nnew_vel,
-                    cpd=cpd,
-                ),
-                (w_explicit_term[:, :n_lev], vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]),
-            )
+        (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(1)),
+            compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
+                connectivities=connectivities,
+                w_nnow=current_w[:, :n_lev],
+                ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
+                ddt_w_adv_ntl2=corrector_vertical_wind_advective_tendency[:, :n_lev],
+                z_th_ddz_exner_c=z_th_ddz_exner_c,
+                rho_ic=rho_ic[:, :n_lev],
+                w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
+                vwind_expl_wgt=vwind_expl_wgt,
+                dtime=dtime,
+                wgt_nnow_vel=wgt_nnow_vel,
+                wgt_nnew_vel=wgt_nnew_vel,
+                cpd=constants.CPD,
+            ),
+            (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]),
+        )
 
-            (tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev]) = np.where(
-                (horizontal_start <= horz_idx)
-                & (horz_idx < horizontal_end)
-                & (vert_idx >= int32(0)),
-                compute_solver_coefficients_matrix_numpy(
-                    connectivities=connectivities,
-                    exner_nnow=current_exner,
-                    rho_nnow=current_rho,
-                    theta_v_nnow=current_theta_v,
-                    inv_ddqz_z_full=inv_ddqz_z_full,
-                    vwind_impl_wgt=vwind_impl_wgt,
-                    theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
-                    rho_ic=rho_ic[:, :n_lev],
-                    dtime=dtime,
-                    rd=rd,
-                    cvd=cvd,
-                ),
-                (tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev]),
-            )
-            tridiagonal_alpha_coeff_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev] = 0.0
-            tridiagonal_intermediate_result[horizontal_start:horizontal_end, 0] = 0.0
-
-        else:
-            (w_explicit_term[:, :n_lev], vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
-                (horizontal_start <= horz_idx)
-                & (horz_idx < horizontal_end)
-                & (vert_idx >= int32(1))
-                & (vert_idx < n_lev),
-                compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
-                    connectivities=connectivities,
-                    w_nnow=current_w[:, :n_lev],
-                    ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency,
-                    z_th_ddz_exner_c=z_th_ddz_exner_c,
-                    rho_ic=rho_ic[:, :n_lev],
-                    w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
-                    vwind_expl_wgt=vwind_expl_wgt,
-                    dtime=dtime,
-                    cpd=cpd,
-                ),
-                (w_explicit_term[:, :n_lev], vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]),
-            )
-            (tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels) = np.where(
-                (horizontal_start <= horz_idx)
-                & (horz_idx < horizontal_end)
-                & (vert_idx >= int32(0))
-                & (vert_idx < n_lev),
-                compute_solver_coefficients_matrix_numpy(
-                    connectivities=connectivities,
-                    exner_nnow=current_exner,
-                    rho_nnow=current_rho,
-                    theta_v_nnow=current_theta_v,
-                    inv_ddqz_z_full=inv_ddqz_z_full,
-                    vwind_impl_wgt=vwind_impl_wgt,
-                    theta_v_ic=theta_v_at_cells_on_half_levels,
-                    rho_ic=rho_ic,
-                    dtime=dtime,
-                    rd=rd,
-                    cvd=cvd,
-                ),
-                (tridiagonal_beta_coeff_at_cells_on_model_levels, tridiagonal_alpha_coeff_at_cells_on_half_levels),
-            )
-            tridiagonal_alpha_coeff_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev] = 0.0
-            tridiagonal_intermediate_result[horizontal_start:horizontal_end, 0] = 0.0
+        (
+            tridiagonal_beta_coeff_at_cells_on_model_levels,
+            tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev],
+        ) = np.where(
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
+            compute_solver_coefficients_matrix_numpy(
+                connectivities=connectivities,
+                exner_nnow=current_exner,
+                rho_nnow=current_rho,
+                theta_v_nnow=current_theta_v,
+                inv_ddqz_z_full=inv_ddqz_z_full,
+                vwind_impl_wgt=vwind_impl_wgt,
+                theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
+                rho_ic=rho_ic[:, :n_lev],
+                dtime=dtime,
+                rd=constants.RD,
+                cvd=constants.CVD,
+            ),
+            (
+                tridiagonal_beta_coeff_at_cells_on_model_levels,
+                tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev],
+            ),
+        )
+        tridiagonal_alpha_coeff_at_cells_on_half_levels[
+            horizontal_start:horizontal_end, n_lev
+        ] = 0.0
+        tridiagonal_intermediate_result[horizontal_start:horizontal_end, 0] = 0.0
 
         if not l_vert_nested:
             next_w[horizontal_start:horizontal_end, 0] = 0.0
@@ -682,18 +638,17 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             vertical_mass_flux_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev],
         ) = set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
             connectivities,
-            contravariant_correction_at_cells_on_half_levels[
+            w_concorr_c=contravariant_correction_at_cells_on_half_levels[
                 horizontal_start:horizontal_end, n_lev
             ],
-            vertical_mass_flux_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev],
+            z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels[
+                horizontal_start:horizontal_end, n_lev
+            ],
         )
 
         # 48 and 49 are identical except for bounds
         (rho_explicit_term, exner_explicit_term) = np.where(
-            (horizontal_start <= horz_idx)
-            & (horz_idx < horizontal_end)
-            & (vert_idx >= int32(0))
-            & (vert_idx < n_lev),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_explicit_part_for_rho_and_exner_numpy(
                 connectivities=connectivities,
                 rho_nnow=current_rho,
@@ -724,8 +679,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 (rho_explicit_term, exner_explicit_term),
             )
 
-        tridiagonal_intermediate_result[:, :n_lev], next_w[:, :n_lev] = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
+        tridiagonal_intermediate_result, next_w[:, :n_lev] = np.where(
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
                 vwind_impl_wgt=vwind_impl_wgt,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
@@ -734,16 +689,16 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
                 z_w_expl=w_explicit_term,
                 z_exner_expl=exner_explicit_term,
-                tridiagonal_intermediate_result_ref=tridiagonal_intermediate_result[:, :n_lev],
+                z_q_ref=tridiagonal_intermediate_result,
                 w_ref=next_w[:, :n_lev],
                 dtime=dtime,
-                cpd=cpd,
+                cpd=constants.CPD,
             ),
-            (tridiagonal_intermediate_result[:, :n_lev], next_w[:, :n_lev]),
+            (tridiagonal_intermediate_result, next_w[:, :n_lev]),
         )
 
         next_w[:, :n_lev] = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,
                 z_q=tridiagonal_intermediate_result[:, :n_lev],
@@ -753,7 +708,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == rayleigh_klemp:
+        if rayleigh_type == option_groups.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
@@ -785,30 +740,42 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 theta_v_now=current_theta_v,
                 exner_now=current_exner,
                 dtime=dtime,
-                cvd_o_rd=cvd_o_rd,
+                cvd_o_rd=constants.CVD_O_RD,
             ),
             (next_rho, next_exner, next_theta_v),
         )
 
         if lprep_adv:
             if at_first_substep:
-                dynamical_vertical_mass_flux_at_cells_on_half_levels = np.zeros_like(next_exner)
-                dynamical_vertical_volumetric_flux_at_cells_on_half_levels = np.zeros_like(next_exner)
+                dynamical_vertical_mass_flux_at_cells_on_half_levels = np.zeros_like(
+                    vertical_mass_flux_at_cells_on_half_levels
+                )
+                dynamical_vertical_volumetric_flux_at_cells_on_half_levels = np.zeros_like(
+                    vertical_mass_flux_at_cells_on_half_levels
+                )
 
-        (dynamical_vertical_mass_flux_at_cells_on_half_levels, dynamical_vertical_volumetric_flux_at_cells_on_half_levels) = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
-            update_mass_volume_flux_numpy(
-                connectivities=connectivities,
-                z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
-                rho_ic=rho_ic[:, :n_lev],
-                vwind_impl_wgt=vwind_impl_wgt,
-                w=next_w[:, :n_lev],
-                mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
-                r_nsubsteps=r_nsubsteps,
-            ),
-            (dynamical_vertical_mass_flux_at_cells_on_half_levels, dynamical_vertical_volumetric_flux_at_cells_on_half_levels),
-        )
+            (
+                dynamical_vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
+                dynamical_vertical_volumetric_flux_at_cells_on_half_levels[:, :n_lev],
+            ) = np.where(
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= 1),
+                update_mass_volume_flux_numpy(
+                    connectivities=connectivities,
+                    z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
+                    rho_ic=rho_ic[:, :n_lev],
+                    vwind_impl_wgt=vwind_impl_wgt,
+                    w=next_w[:, :n_lev],
+                    mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
+                    vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels[
+                        :, :n_lev
+                    ],
+                    r_nsubsteps=r_nsubsteps,
+                ),
+                (
+                    dynamical_vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
+                    dynamical_vertical_volumetric_flux_at_cells_on_half_levels[:, :n_lev],
+                ),
+            )
 
         exner_dynamical_increment = (
             np.where(
@@ -840,8 +807,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             next_rho=next_rho,
             next_exner=next_exner,
             next_theta_v=next_theta_v,
-            mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
-            vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             exner_dynamical_increment=exner_dynamical_increment,
         )
 
@@ -854,33 +821,25 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         )
         current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        corrector_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
+        corrector_vertical_wind_advective_tendency = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim)
-        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim)
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        next_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        rho_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_explicit_term = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddt_exner_phy = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -888,15 +847,33 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_raylfac = data_alloc.random_field(grid, dims.KDim)
         exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        next_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+
+        vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim
+        )
+        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        rho_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        exner_explicit_term = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+
+        next_rho = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         next_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        next_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        exner_dynamical_increment = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+
         lprep_adv = True
         r_nsubsteps = 0.5
-        rayleigh_klemp = 2
         l_vert_nested = False
         is_iau_active = False
         at_first_substep = True
@@ -910,7 +887,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         wgt_nnow_vel = 0.5 - veladv_offctr
         wgt_nnew_vel = 0.5 + veladv_offctr
         iau_wgt_dyn = 1.0
-        itime_scheme = 4
         ndyn_substeps_var = 0.5
 
         cell_domain = h_grid.domain(dims.CellDim)
@@ -955,24 +931,17 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             exner_ref_mc=exner_ref_mc,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
-            itime_scheme=itime_scheme,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=ndyn_substeps_var,
-            cvd_o_rd=constants.CVD_O_RD,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
-            rd=constants.RD,
-            cvd=constants.CVD,
-            cpd=constants.CPD,
-            rayleigh_klemp=rayleigh_klemp,
             l_vert_nested=l_vert_nested,
             is_iau_active=is_iau_active,
             rayleigh_type=rayleigh_type,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
             index_of_damping_layer=index_of_damping_layer,
-            n_lev=grid.num_levels,
             jk_start=jk_start,
             kstart_moist=kstart_moist,
             horizontal_start=start_cell_nudging,
