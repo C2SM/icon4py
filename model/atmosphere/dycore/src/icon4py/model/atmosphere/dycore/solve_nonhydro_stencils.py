@@ -146,59 +146,6 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
 
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
 
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_horizontal_advection_of_rho_and_theta(
-    p_vn: fa.EdgeKField[float],
-    p_vt: fa.EdgeKField[float],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], float],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], float],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], float],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], float],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], float],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], float],
-    p_dthalf: float,
-    rho_ref_me: fa.EdgeKField[float],
-    theta_ref_me: fa.EdgeKField[float],
-    z_grad_rth_1: fa.CellKField[float],
-    z_grad_rth_2: fa.CellKField[float],
-    z_grad_rth_3: fa.CellKField[float],
-    z_grad_rth_4: fa.CellKField[float],
-    z_rth_pr_1: fa.CellKField[float],
-    z_rth_pr_2: fa.CellKField[float],
-    z_rho_e: fa.EdgeKField[float],
-    z_theta_v_e: fa.EdgeKField[float],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_horizontal_advection_of_rho_and_theta(
-        p_vn,
-        p_vt,
-        pos_on_tplane_e_1,
-        pos_on_tplane_e_2,
-        primal_normal_cell_1,
-        dual_normal_cell_1,
-        primal_normal_cell_2,
-        dual_normal_cell_2,
-        p_dthalf,
-        rho_ref_me,
-        theta_ref_me,
-        z_grad_rth_1,
-        z_grad_rth_2,
-        z_grad_rth_3,
-        z_grad_rth_4,
-        z_rth_pr_1,
-        z_rth_pr_2,
-        out=(z_rho_e, z_theta_v_e),
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 @gtx.field_operator
 def _predictor_stencils_35_36(
     vn: fa.EdgeKField[float],

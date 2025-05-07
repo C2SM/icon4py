@@ -28,7 +28,7 @@ def extrapolate_temporally_exner_pressure_numpy(
     exner_ref_mc: np.ndarray,
     exner_pr: np.ndarray,
     exner_exfac: np.ndarray,
-) -> tuple[np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
     exner_pr = exner - exner_ref_mc
     return (z_exner_ex_pr, exner_pr)
