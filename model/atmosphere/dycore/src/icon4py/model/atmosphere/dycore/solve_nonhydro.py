@@ -96,8 +96,6 @@ from icon4py.model.common import field_type_aliases as fa
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-dycore_consts: Final = dycore_states._DycoreConstants()
-
 
 @dataclasses.dataclass
 class IntermediateFields:
@@ -750,8 +748,8 @@ class SolveNonhydro:
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
-                rd_o_cvd=dycore_consts.rd_o_cvd,
-                rd_o_p0ref=dycore_consts.rd_o_p0ref,
+                rd_o_cvd=dycore_states._DycoreConstants.rd_o_cvd,
+                rd_o_p0ref=dycore_states._DycoreConstants.rd_o_p0ref,
                 horizontal_start=self._start_cell_local,
                 horizontal_end=self._end_cell_end,
                 vertical_start=0,
@@ -763,8 +761,8 @@ class SolveNonhydro:
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
-                rd_o_cvd=dycore_consts.rd_o_cvd,
-                rd_o_p0ref=dycore_consts.rd_o_p0ref,
+                rd_o_cvd=dycore_states._DycoreConstants.rd_o_cvd,
+                rd_o_p0ref=dycore_states._DycoreConstants.rd_o_p0ref,
                 horizontal_start=self._start_cell_lateral_boundary,
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=0,
@@ -780,7 +778,7 @@ class SolveNonhydro:
             exner_now=prognostic_states.current.exner,
             rho_new=prognostic_states.next.rho,
             theta_v_new=prognostic_states.next.theta_v,
-            cvd_o_rd=dycore_consts.cvd_o_rd,
+            cvd_o_rd=dycore_states._DycoreConstants.cvd_o_rd,
             horizontal_start=self._start_cell_halo,
             horizontal_end=self._end_cell_end,
             vertical_start=0,
@@ -990,7 +988,7 @@ class SolveNonhydro:
                 inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
                 z_hydro_corr=self.hydrostatic_correction,
-                grav_o_cpd=dycore_consts.grav_o_cpd,
+                grav_o_cpd=dycore_states._DycoreConstants.grav_o_cpd,
                 horizontal_start=self._start_edge_nudging_level_2,
                 horizontal_end=self._end_edge_local,
                 vertical_start=self._grid.num_levels - 1,

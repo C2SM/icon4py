@@ -1099,7 +1099,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
     primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
         dims.ECDim, field=grid_savepoint.primal_normal_cell_x()
     )
@@ -1134,7 +1133,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
             inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
             z_hydro_corr=hydrostatic_correction,
-            grav_o_cpd=nonhydro_params.grav_o_cpd,
+            grav_o_cpd=dycore_states._DycoreConstants.grav_o_cpd,
             horizontal_start=start_edge_nudging_level_2,
             horizontal_end=end_edge_local,
             vertical_start=icon_grid.num_levels - 1,
