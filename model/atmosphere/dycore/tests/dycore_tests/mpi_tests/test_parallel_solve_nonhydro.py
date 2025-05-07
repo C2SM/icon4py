@@ -19,7 +19,7 @@ from icon4py.model.testing import helpers, parallel_helpers
 from .. import utils
 
 
-@pytest.mark.embedded_rempar_error
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, substep_init,istep_exit, substep_exit, at_initial_timestep",
@@ -78,9 +78,9 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+
     config = utils.construct_solve_nh_config(experiment, ndyn=ndyn_substeps)
-    sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -90,52 +90,25 @@ def test_run_solve_nonhydro_single_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-
     dtime = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
-    initial_divdamp_fac = sp.divdamp_fac_o2()
-    lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=sp.vn_traj(),
-        mass_flx_me=sp.mass_flx_me(),
-        mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
-    )
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(savepoint_nonhydro_init, icon_grid, backend)
 
-    diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        normal_wind_tendency_due_to_physics_process=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
-        ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
-        ),
-        tangential_wind=sp_v.vt(),
-        vn_on_half_levels=sp_v.vn_ie(),
-        contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        normal_wind_iau_increments=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=sp.exner_dyn_incr(),
-    )
-    second_order_divdamp_factor = sp.divdamp_fac_o2()
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
+    prep_adv = dycore_states.PrepAdvection(
+        vn_traj=savepoint_nonhydro_init.vn_traj(),
+        mass_flx_me=savepoint_nonhydro_init.mass_flx_me(),
+        mass_flx_ic=savepoint_nonhydro_init.mass_flx_ic(),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
+    )
+
+    second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()
 
     solve_nonhydro = nh.SolveNonhydro(
         grid=icon_grid,
@@ -150,7 +123,7 @@ def test_run_solve_nonhydro_single_step(
         backend=backend,
         exchange=exchange,
     )
-    prognostic_states = utils.create_prognostic_states(sp)
+    prognostic_states = utils.create_prognostic_states(savepoint_nonhydro_init)
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  entering : solve_nonhydro.time_step"
     )
@@ -168,13 +141,13 @@ def test_run_solve_nonhydro_single_step(
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: dycore step run ")
 
-    expected_theta_v = sp_step_exit.theta_v_new().asnumpy()
+    expected_theta_v = savepoint_nonhydro_step_final.theta_v_new().asnumpy()
     calculated_theta_v = prognostic_states.next.theta_v.asnumpy()
     assert helpers.dallclose(
         expected_theta_v,
         calculated_theta_v,
     )
-    expected_exner = sp_step_exit.exner_new().asnumpy()
+    expected_exner = savepoint_nonhydro_step_final.exner_new().asnumpy()
     calculated_exner = prognostic_states.next.exner.asnumpy()
     assert helpers.dallclose(
         expected_exner,
