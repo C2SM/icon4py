@@ -6,10 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from datetime import datetime, timedelta
-
-import pytest
-
 
 # Make sure custom icon4py pytest hooks are loaded
 try:
