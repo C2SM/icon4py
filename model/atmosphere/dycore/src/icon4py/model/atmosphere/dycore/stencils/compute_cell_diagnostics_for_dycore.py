@@ -34,6 +34,8 @@ from icon4py.model.atmosphere.dycore.dycore_states import (
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
 )
+from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import \
+    _compute_first_vertical_derivative
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
@@ -256,8 +258,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
         concat_where(
             (nflatlev <= dims.KDim),
-            (exner_at_cells_on_half_levels - exner_at_cells_on_half_levels(Koff[1]))
-            * inv_ddqz_z_full,
+            _compute_first_vertical_derivative(exner_at_cells_on_half_levels, inv_ddqz_z_full),
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
         if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
