@@ -29,9 +29,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_fro
 from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
     _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rho_and_theta import (
-    _compute_horizontal_advection_of_rho_and_theta,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
@@ -145,6 +142,7 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     )
 
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
+
 
 @gtx.field_operator
 def _predictor_stencils_35_36(
