@@ -69,7 +69,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         exner_pr: np.ndarray,
         d_exner_dz_ref_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
-        **kwargs,
+        **kwargs:Any,
     ) -> dict:
         (
             z_theta_v_pr_ic,
