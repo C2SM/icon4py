@@ -90,11 +90,12 @@ build_distributed_cpu:
     - cd /icon4py
     - echo "new working directory $(pwd)"
     - echo "icon4py listing $(ls)"
-    - echo "using venv ${UV_PROJECT_ENVIRONMENT}"
+    - echo "using venv at ${UV_PROJECT_ENVIRONMENT}"
+    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
     - echo "using MPI_PREFIX ${MPI_PREFIX}"
   script:
-      - ${MPI_PREFIX} uv run --no-cache pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
+      - ${MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
       #- uv run pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
