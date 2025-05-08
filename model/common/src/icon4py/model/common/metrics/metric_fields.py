@@ -422,7 +422,7 @@ def compute_vertical_explicit_weight(
     """
 
     _compute_vertical_explicit_weight(
-        vwind_impl_wgt=vertical_implicit_weight,
+        vertical_implicit_weight=vertical_implicit_weight,
         out=vertical_explicit_weight,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
