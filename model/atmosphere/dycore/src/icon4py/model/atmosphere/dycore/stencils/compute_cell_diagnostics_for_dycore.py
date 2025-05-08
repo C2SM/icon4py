@@ -367,7 +367,7 @@ def compute_perturbed_quantities_and_interpolation(
         - reference_exner_at_cells_on_model_levels: reference exner function at cells on model levels
         - inv_ddqz_z_full: inverse vertical spacing on full levels (distance between the height of interface at k+1/2 and k-1/2)
         - d2dexdz2_fac1_mc: precomputed factor for second vertical derivatives of exner function for model cell centers
-        - d2dexdz2_fac2_mc: precomputed factor for seconf vertical derivatives of exner function for model cell centers
+        - d2dexdz2_fac2_mc: precomputed factor for second vertical derivatives of exner function for model cell centers
         - limited_area: option indicating the grid is limited area or not
         - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
         - nflatlev: starting vertical index of flat levels
@@ -384,8 +384,17 @@ def compute_perturbed_quantities_and_interpolation(
         - vertical_end: end index of the vertical domain
 
     Returns:
-        - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level: vertical gradient of temporal extrapolation of perturbed exner function [m-1]
-        - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: second vertical gradient of temporal extrapolation of perturbed exner function [m-2]
+        - temporal_extrapolation_of_perturbed_exner
+        - perturbed_exner_at_cells_on_model_levels
+        - exner_at_cells_on_half_levels
+        - perturbed_rho_at_cells_on_model_levels
+        - perturbed_theta_v_at_cells_on_model_levels
+        - rho_at_cells_on_half_levels
+        - perturbed_theta_v_at_cells_on_half_levels
+        - theta_v_at_cells_on_half_levels
+        - pressure_buoyancy_acceleration_at_cells_on_half_levels
+        - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
+        - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
     _extrapolate_temporally_exner_pressure(
         exner_exfac=time_extrapolation_parameter_for_exner,
@@ -668,10 +677,10 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
         - vertical_end: end index of the vertical domain
 
     Returns:
-        - rho_at_cells_on_half_levels: air density at cells on half levels [kg m-3]
-        - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) at cells on half levels [kg m-3]
-        - theta_v_at_cells_on_half_levels: virtual potential temperature at cells on half levels [K]
-        - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration at cells on half levels [m s-2]
+        - rho_at_cells_on_half_levels
+        - perturbed_theta_v_at_cells_on_half_levels
+        - theta_v_at_cells_on_half_levels
+        - pressure_buoyancy_acceleration_at_cells_on_half_levels
     """
     _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
         w,
