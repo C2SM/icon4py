@@ -85,16 +85,17 @@ build_distributed_cpu:
   extends: [.test_template_distributed]
   before_script:
     - pwd
-    - echo ${UV_PROJECT_ENVIRONMENT}
+    - echo "working directory listing $(ls)"
+    - echo "using venv ${UV_PROJECT_ENVIRONMENT}"
     - cd /icon4py
     - pwd
+    - echo "icon4py listing $(ls)"
     - . ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
     - echo "using MPI_PREFIX ${MPI_PREFIX}"
   script:
-      - echo "running with $(python --version)"
-      - pwd
-      #  - ${MPI_PREFIX} uv run pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
+      #- ${MPI_PREFIX} uv run pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
+      - uv run pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [ atmosphere/diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
