@@ -94,7 +94,7 @@ build_distributed_cpu:
     - echo "running with $(python --version)"
     - echo "using MPI_PREFIX ${MPI_PREFIX}"
   script:
-      - ${MPI_PREFIX} uv run pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
+      - ${MPI_PREFIX} uv run --no-cache pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
       #- uv run pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
