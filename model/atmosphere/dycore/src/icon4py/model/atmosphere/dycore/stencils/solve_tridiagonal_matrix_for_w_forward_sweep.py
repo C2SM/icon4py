@@ -47,41 +47,6 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     w: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
-) -> tuple[
-    fa.CellKField[vpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
-]:
-    """Formerly known as _mo_solve_nonhydro_stencil_52."""
-    ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
-
-    z_gamma_vp = astype(dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half_wp, vpfloat)
-    z_a = (vpfloat("0.0") - z_gamma_vp) * z_beta(Koff[-1]) * z_alpha(Koff[-1])
-    z_c = (vpfloat("0.0") - z_gamma_vp) * z_beta * z_alpha(Koff[1])
-    z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (z_beta(Koff[-1]) + z_beta)
-    z_gamma_wp = astype(z_gamma_vp, wpfloat)
-    w_prep = z_w_expl - z_gamma_wp * (z_exner_expl(Koff[-1]) - z_exner_expl)
-    w_prev = w(Koff[-1])
-    z_q_prev = z_q(Koff[-1])
-    return w_prev, z_q_prev, z_a, z_b, z_c, w_prep
-
-
-@field_operator
-def _solve_tridiagonal_matrix_for_w_forward_sweep_2(
-    vwind_impl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
-    z_beta: fa.CellKField[vpfloat],
-    z_w_expl: fa.CellKField[wpfloat],
-    z_exner_expl: fa.CellKField[wpfloat],
-    z_q: fa.CellKField[vpfloat],
-    w: fa.CellKField[wpfloat],
-    dtime: wpfloat,
-    cpd: wpfloat,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_52."""
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
@@ -116,7 +81,7 @@ def solve_tridiagonal_matrix_for_w_forward_sweep(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _solve_tridiagonal_matrix_for_w_forward_sweep_2(
+    _solve_tridiagonal_matrix_for_w_forward_sweep(
         vwind_impl_wgt,
         theta_v_ic,
         ddqz_z_half,

@@ -1004,10 +1004,10 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)
 
-    assert params.wgt_nnew_vel == savepoint_nonhydro_init.wgt_nnew_vel()
-    assert params.wgt_nnow_vel == savepoint_nonhydro_init.wgt_nnow_vel()
-    assert params.wgt_nnew_rth == savepoint_nonhydro_init.wgt_nnew_rth()
-    assert params.wgt_nnow_rth == savepoint_nonhydro_init.wgt_nnow_rth()
+    assert params.advection_implicit_weight == savepoint_nonhydro_init.wgt_nnew_vel()
+    assert params.advection_explicit_weight == savepoint_nonhydro_init.wgt_nnow_vel()
+    assert params.rhotheta_implicit_weight == savepoint_nonhydro_init.wgt_nnew_rth()
+    assert params.rhotheta_explicit_weight == savepoint_nonhydro_init.wgt_nnow_rth()
 
 
 @pytest.mark.embedded_remap_error
@@ -1332,8 +1332,8 @@ def test_apply_divergence_damping_and_update_vn(
         geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
         fourth_order_divdamp_factor=config.fourth_order_divdamp_factor,
         second_order_divdamp_factor=savepoint_nonhydro_init.divdamp_fac_o2(),
-        wgt_nnow_vel=savepoint_nonhydro_init.wgt_nnow_vel(),
-        wgt_nnew_vel=savepoint_nonhydro_init.wgt_nnew_vel(),
+        advection_explicit_weight=savepoint_nonhydro_init.wgt_nnow_vel(),
+        advection_implicit_weight=savepoint_nonhydro_init.wgt_nnew_vel(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
@@ -1441,7 +1441,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     ddt_exner_phy = sp_stencil_init.ddt_exner_phy()
     rho_iau_increment = sp_stencil_init.rho_incr()
     exner_iau_increment = sp_stencil_init.exner_incr()
-    z_raylfac = sp_stencil_init.z_raylfac()
+    rayleigh_damping_factor = sp_stencil_init.z_raylfac()
     next_rho = sp_stencil_init.rho()
     next_exner = sp_stencil_init.exner()
     next_theta_v = sp_stencil_init.theta_v()
@@ -1499,20 +1499,20 @@ def test_vertically_implicit_solver_at_predictor_step(
         z_th_ddz_exner_c=z_th_ddz_exner_c,
         rho_ic=rho_ic,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-        vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
+        vertical_explicit_weight=metrics_savepoint.vwind_expl_wgt(),
         current_exner=current_exner,
         current_rho=current_rho,
         current_theta_v=current_theta_v,
         current_w=current_w,
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-        vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
+        vertical_implicit_weight=metrics_savepoint.vwind_impl_wgt(),
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         exner_pr=exner_pr,
         ddt_exner_phy=ddt_exner_phy,
         rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-        z_raylfac=z_raylfac,
+        rayleigh_damping_factor=rayleigh_damping_factor,
         exner_ref_mc=metrics_savepoint.exner_ref_mc(),
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
@@ -1646,15 +1646,15 @@ def test_vertically_implicit_solver_at_corrector_step(
     ddt_exner_phy = sp_stencil_init.ddt_exner_phy()
     rho_iau_increment = sp_stencil_init.rho_incr()
     exner_iau_increment = sp_stencil_init.exner_incr()
-    z_raylfac = sp_stencil_init.z_raylfac()
+    rayleigh_damping_factor = sp_stencil_init.z_raylfac()
     next_rho = sp_stencil_init.rho()
     next_exner = sp_stencil_init.exner()
     next_theta_v = sp_stencil_init.theta_v()
     dynamical_vertical_mass_flux_at_cells_on_half_levels = sp_stencil_init.mass_flx_ic()
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels = sp_stencil_init.vol_flx_ic()
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
-    wgt_nnow_vel = nonhydro_params.wgt_nnow_vel
-    wgt_nnew_vel = nonhydro_params.wgt_nnew_vel
+    advection_explicit_weight = nonhydro_params.advection_explicit_weight
+    advection_implicit_weight = nonhydro_params.advection_implicit_weight
     r_nsubsteps = 1.0 / config.ndyn_substeps_var
     kstart_moist = vertical_params.kstart_moist
 
@@ -1710,23 +1710,23 @@ def test_vertically_implicit_solver_at_corrector_step(
         z_th_ddz_exner_c=z_th_ddz_exner_c,
         rho_ic=rho_ic,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-        vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
+        vertical_explicit_weight=metrics_savepoint.vwind_expl_wgt(),
         current_exner=current_exner,
         current_rho=current_rho,
         current_theta_v=current_theta_v,
         current_w=current_w,
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-        vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
+        vertical_implicit_weight=metrics_savepoint.vwind_impl_wgt(),
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         exner_pr=exner_pr,
         ddt_exner_phy=ddt_exner_phy,
         rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-        z_raylfac=z_raylfac,
+        rayleigh_damping_factor=rayleigh_damping_factor,
         exner_ref_mc=metrics_savepoint.exner_ref_mc(),
-        wgt_nnow_vel=wgt_nnow_vel,
-        wgt_nnew_vel=wgt_nnew_vel,
+        advection_explicit_weight=advection_explicit_weight,
+        advection_implicit_weight=advection_implicit_weight,
         lprep_adv=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=float(config.ndyn_substeps_var),

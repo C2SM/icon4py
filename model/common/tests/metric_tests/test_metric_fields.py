@@ -164,20 +164,22 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
-    vwind_expl_wgt_full = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
-    vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
-    vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
+def test_compute_vertical_explicit_weight(icon_grid, metrics_savepoint, backend):
+    vertical_explicit_weight_full = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
+    vertical_explicit_weight_ref = metrics_savepoint.vwind_expl_wgt()
+    vertical_implicit_weight = metrics_savepoint.vwind_impl_wgt()
 
-    mf.compute_vwind_expl_wgt.with_backend(backend)(
-        vwind_impl_wgt=vwind_impl_wgt,
-        vwind_expl_wgt=vwind_expl_wgt_full,
+    mf.compute_vertical_explicit_weight.with_backend(backend)(
+        vertical_implicit_weight=vertical_implicit_weight,
+        vertical_explicit_weight=vertical_explicit_weight_full,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    assert testing_helpers.dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
+    assert testing_helpers.dallclose(
+        vertical_explicit_weight_full.asnumpy(), vertical_explicit_weight_ref.asnumpy()
+    )
 
 
 @pytest.mark.level("unit")

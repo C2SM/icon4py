@@ -320,8 +320,8 @@ def _apply_divergence_damping_and_update_vn(
     geofac_grdiv: gtx.Field[[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     fourth_order_divdamp_factor: ta.wpfloat,
     second_order_divdamp_factor: ta.wpfloat,
-    wgt_nnow_vel: ta.wpfloat,
-    wgt_nnew_vel: ta.wpfloat,
+    advection_explicit_weight: ta.wpfloat,
+    advection_implicit_weight: ta.wpfloat,
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
@@ -373,8 +373,8 @@ def _apply_divergence_damping_and_update_vn(
             z_theta_v_e=theta_v_at_edges_on_model_levels,
             z_gradh_exner=horizontal_pressure_gradient,
             dtime=dtime,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
+            wgt_nnow_vel=advection_explicit_weight,
+            wgt_nnew_vel=advection_implicit_weight,
             cpd=dycore_consts.cpd,
         ),
         next_vn,
@@ -649,8 +649,8 @@ def apply_divergence_damping_and_update_vn(
     geofac_grdiv: gtx.Field[[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     fourth_order_divdamp_factor: ta.wpfloat,
     second_order_divdamp_factor: ta.wpfloat,
-    wgt_nnow_vel: ta.wpfloat,
-    wgt_nnew_vel: ta.wpfloat,
+    advection_explicit_weight: ta.wpfloat,
+    advection_implicit_weight: ta.wpfloat,
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
@@ -695,8 +695,8 @@ def apply_divergence_damping_and_update_vn(
         - geofac_grdiv: metric coefficient for computation of horizontal gradient of divergence
         - fourth_order_divdamp_factor: scaling factor for fourth order divergence damping
         - second_order_divdamp_factor: scaling factor for second order divergence damping
-        - wgt_nnow_vel: interpolation coefficient of normal_wind_advective_tendency at predictor step
-        - wgt_nnew_vel: interpolation coefficient of normal_wind_advective_tendency at corrector step
+        - advection_explicit_weight: explicitness weight of normal_wind_advective_tendency
+        - advection_implicit_weight: implicitness weight of normal_wind_advective_tendency
         - dtime: time step [s]
         - iau_wgt_dyn: a scaling factor for iau increment
         - is_iau_active: option for iau increment analysis
@@ -733,8 +733,8 @@ def apply_divergence_damping_and_update_vn(
         geofac_grdiv=geofac_grdiv,
         fourth_order_divdamp_factor=fourth_order_divdamp_factor,
         second_order_divdamp_factor=second_order_divdamp_factor,
-        wgt_nnow_vel=wgt_nnow_vel,
-        wgt_nnew_vel=wgt_nnew_vel,
+        advection_explicit_weight=advection_explicit_weight,
+        advection_implicit_weight=advection_implicit_weight,
         dtime=dtime,
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,

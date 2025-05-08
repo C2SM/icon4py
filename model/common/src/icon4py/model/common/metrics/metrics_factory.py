@@ -429,11 +429,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxt_z_full)
 
-        compute_vwind_impl_wgt_np = factory.NumpyFieldsProvider(
-            func=functools.partial(mf.compute_vwind_impl_wgt, array_ns=self._xp),
+        compute_vertical_implicit_weight_np = factory.NumpyFieldsProvider(
+            func=functools.partial(mf.compute_vertical_implicit_weight, array_ns=self._xp),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
-            fields=(attrs.VWIND_IMPL_WGT,),
+            fields=(attrs.VERTICAL_IMPLICIT_WEIGHT,),
             deps={
                 "vct_a": "vct_a",
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
@@ -449,12 +449,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
         )
-        self.register_provider(compute_vwind_impl_wgt_np)
+        self.register_provider(compute_vertical_implicit_weight_np)
 
-        compute_vwind_expl_wgt = factory.ProgramFieldProvider(
-            func=mf.compute_vwind_expl_wgt.with_backend(self._backend),
+        compute_vertical_explicit_weight = factory.ProgramFieldProvider(
+            func=mf.compute_vertical_explicit_weight.with_backend(self._backend),
             deps={
-                attrs.VWIND_IMPL_WGT: attrs.VWIND_IMPL_WGT,
+                attrs.VERTICAL_IMPLICIT_WEIGHT: attrs.VERTICAL_IMPLICIT_WEIGHT,
             },
             domain={
                 dims.CellDim: (
@@ -462,9 +462,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.END),
                 ),
             },
-            fields={"vwind_expl_wgt": attrs.VWIND_EXPL_WGT},
+            fields={"vertical_explicit_weight": attrs.VERTICAL_EXPLICIT_WEIGHT},
         )
-        self.register_provider(compute_vwind_expl_wgt)
+        self.register_provider(compute_vertical_explicit_weight)
 
         compute_exner_exfac = factory.ProgramFieldProvider(
             func=mf.compute_exner_exfac.with_backend(self._backend),

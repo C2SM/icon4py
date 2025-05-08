@@ -228,8 +228,17 @@ class MetricStateNonHydro:
     pg_edgeidx_dsl: fa.EdgeKField[bool]
     pg_exdist: fa.EdgeKField[float]
 
-    vwind_expl_wgt: fa.CellField[float]
-    vwind_impl_wgt: fa.CellField[float]
+    vertical_explicit_weight: fa.CellField[float]
+    """
+    Declared as vwind_expl_wgt in ICON. The explicitness parameter in the vertically implicit dycore solver.
+    vertical_explicit_weight = 1 - vertical_implicit_weight
+    """
+    vertical_implicit_weight: fa.CellField[float]
+    """
+    Declared as vwind_impl_wgt in ICON. The implicitness parameter in the vertically implicit dycore solver.
+    It is denoted as eta below eq. 3.20 in ICON tutorial 2023. However, it is only vwind_offctr that can be 
+    set via namelist. The actual computation of vertical_implicit_weight is not shown in the tutorial.
+    """
 
     horizontal_mask_for_3d_divdamp: fa.EdgeField[float]
     """
@@ -262,17 +271,17 @@ class PrepAdvection:
     """
 
 
-class _DycoreConstants(FrozenNamespace[int]):
+class _DycoreConstants(FrozenNamespace[ta.wpfloat]):
     """
     Constants used in dycore.
     """
 
-    rd: ta.wpfloat = phy_const.GAS_CONSTANT_DRY_AIR
-    rv: ta.wpfloat = phy_const.GAS_CONSTANT_WATER_VAPOR
-    cvd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_VOLUME
-    cpd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_PRESSURE
-    rd_o_cpd: ta.wpfloat = phy_const.RD_O_CPD
-    rd_o_cvd: ta.wpfloat = phy_const.RD / phy_const.CVD
-    cvd_o_rd: ta.wpfloat = phy_const.CVD_O_RD
-    rd_o_p0ref: ta.wpfloat = phy_const.RD / phy_const.P0REF
-    grav_o_cpd: ta.wpfloat = phy_const.GRAV / phy_const.CPD
+    rd = phy_const.GAS_CONSTANT_DRY_AIR
+    rv = phy_const.GAS_CONSTANT_WATER_VAPOR
+    cvd = phy_const.SPECIFIC_HEAT_CONSTANT_VOLUME
+    cpd = phy_const.SPECIFIC_HEAT_CONSTANT_PRESSURE
+    rd_o_cpd = phy_const.RD_O_CPD
+    rd_o_cvd = phy_const.RD / phy_const.CVD
+    cvd_o_rd = phy_const.CVD_O_RD
+    rd_o_p0ref = phy_const.RD / phy_const.P0REF
+    grav_o_cpd = phy_const.GRAV / phy_const.CPD

@@ -35,8 +35,8 @@ DDXT_Z_HALF_E: Final[str] = "ddxt_z_half_e"
 DDXN_Z_HALF_E: Final[str] = "ddxn_z_half_e"
 DDXN_Z_FULL: Final[str] = "ddxn_z_full"
 DDXT_Z_FULL: Final[str] = "ddxt_z_full"
-VWIND_IMPL_WGT: Final[str] = "vwind_impl_wgt"
-VWIND_EXPL_WGT: Final[str] = "vwind_expl_wgt"
+VERTICAL_IMPLICIT_WEIGHT: Final[str] = "implicitness_weight_for_vertical_dycore_solver"
+VERTICAL_EXPLICIT_WEIGHT: Final[str] = "explicitness_weight_for_vertical_dycore_solver"
 EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
@@ -214,17 +214,17 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddxt_z_full",
         dtype=ta.wpfloat,
     ),
-    VWIND_IMPL_WGT: dict(
-        standard_name=VWIND_IMPL_WGT,
-        long_name="vwind_impl_wgt",
+    VERTICAL_IMPLICIT_WEIGHT: dict(
+        standard_name=VERTICAL_IMPLICIT_WEIGHT,
+        long_name="vertical_implicit_weight",
         units="",
         dims=(dims.CellDim,),
         icon_var_name="vwind_impl_wgt",
         dtype=ta.wpfloat,
     ),
-    VWIND_EXPL_WGT: dict(
-        standard_name=VWIND_EXPL_WGT,
-        long_name="vwind_expl_wgt",
+    VERTICAL_EXPLICIT_WEIGHT: dict(
+        standard_name=VERTICAL_EXPLICIT_WEIGHT,
+        long_name="vertical_explicit_weight",
         units="",
         dims=(dims.CellDim,),
         icon_var_name="vwind_expl_wgt",

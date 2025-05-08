@@ -116,23 +116,23 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         z_th_ddz_exner_c: np.ndarray,
         rho_ic: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
+        vertical_explicit_weight: np.ndarray,
         current_exner: np.ndarray,
         current_rho: np.ndarray,
         current_theta_v: np.ndarray,
         current_w: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
-        vwind_impl_wgt: np.ndarray,
+        vertical_implicit_weight: np.ndarray,
         theta_v_at_cells_on_half_levels: np.ndarray,
         exner_pr: np.ndarray,
         ddt_exner_phy: np.ndarray,
         rho_iau_increment: np.ndarray,
         exner_iau_increment: np.ndarray,
         ddqz_z_half: np.ndarray,
-        z_raylfac: np.ndarray,
+        rayleigh_damping_factor: np.ndarray,
         exner_ref_mc: np.ndarray,
-        wgt_nnow_vel: float,
-        wgt_nnew_vel: float,
+        advection_explicit_weight: float,
+        advection_implicit_weight: float,
         lprep_adv: bool,
         r_nsubsteps: float,
         ndyn_substeps_var: float,
@@ -180,10 +180,10 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 z_th_ddz_exner_c=z_th_ddz_exner_c,
                 rho_ic=rho_ic[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
-                vwind_expl_wgt=vwind_expl_wgt,
+                vwind_expl_wgt=vertical_explicit_weight,
                 dtime=dtime,
-                wgt_nnow_vel=wgt_nnow_vel,
-                wgt_nnew_vel=wgt_nnew_vel,
+                advection_explicit_weight=advection_explicit_weight,
+                advection_implicit_weight=advection_implicit_weight,
                 cpd=constants.CPD,
             ),
             (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]),
@@ -200,7 +200,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 rho_nnow=current_rho,
                 theta_v_nnow=current_theta_v,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-                vwind_impl_wgt=vwind_impl_wgt,
+                vwind_impl_wgt=vertical_implicit_weight,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 rho_ic=rho_ic[:, :n_lev],
                 dtime=dtime,
@@ -269,7 +269,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         tridiagonal_intermediate_result, next_w[:, :n_lev] = np.where(
             (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-                vwind_impl_wgt=vwind_impl_wgt,
+                vwind_impl_wgt=vertical_implicit_weight,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 ddqz_z_half=ddqz_z_half,
                 z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
@@ -303,7 +303,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 & (vert_idx < (index_of_damping_layer + 1)),
                 apply_rayleigh_damping_mechanism_numpy(
                     connectivities=connectivities,
-                    z_raylfac=z_raylfac,
+                    z_raylfac=rayleigh_damping_factor,
                     w_1=w_1,
                     w=next_w[:, :n_lev],
                 ),
@@ -315,7 +315,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
                 z_rho_expl=rho_explicit_term,
-                vwind_impl_wgt=vwind_impl_wgt,
+                vwind_impl_wgt=vertical_implicit_weight,
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 rho_ic=rho_ic,
                 w=next_w,
@@ -350,7 +350,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                     connectivities=connectivities,
                     z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
                     rho_ic=rho_ic[:, :n_lev],
-                    vwind_impl_wgt=vwind_impl_wgt,
+                    vwind_impl_wgt=vertical_implicit_weight,
                     w=next_w[:, :n_lev],
                     mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels[:, :n_lev],
                     vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels[
@@ -420,12 +420,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim)
+        vertical_explicit_weight = data_alloc.random_field(grid, dims.CellDim)
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim)
+        vertical_implicit_weight = data_alloc.random_field(grid, dims.CellDim)
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
         )
@@ -434,7 +434,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        z_raylfac = data_alloc.random_field(grid, dims.KDim)
+        rayleigh_damping_factor = data_alloc.random_field(grid, dims.KDim)
         exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
 
         vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
@@ -471,8 +471,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         kstart_moist = 1
         dtime = 0.9
         veladv_offctr = 0.25
-        wgt_nnow_vel = 0.5 - veladv_offctr
-        wgt_nnew_vel = 0.5 + veladv_offctr
+        advection_explicit_weight = 0.5 - veladv_offctr
+        advection_implicit_weight = 0.5 + veladv_offctr
         iau_wgt_dyn = 1.0
         ndyn_substeps_var = 0.5
 
@@ -501,23 +501,23 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             z_th_ddz_exner_c=z_th_ddz_exner_c,
             rho_ic=rho_ic,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-            vwind_expl_wgt=vwind_expl_wgt,
+            vertical_explicit_weight=vertical_explicit_weight,
             current_exner=current_exner,
             current_rho=current_rho,
             current_theta_v=current_theta_v,
             current_w=current_w,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            vwind_impl_wgt=vwind_impl_wgt,
+            vertical_implicit_weight=vertical_implicit_weight,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             exner_pr=exner_pr,
             ddt_exner_phy=ddt_exner_phy,
             rho_iau_increment=rho_iau_increment,
             exner_iau_increment=exner_iau_increment,
             ddqz_z_half=ddqz_z_half,
-            z_raylfac=z_raylfac,
+            rayleigh_damping_factor=rayleigh_damping_factor,
             exner_ref_mc=exner_ref_mc,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
+            advection_explicit_weight=advection_explicit_weight,
+            advection_implicit_weight=advection_implicit_weight,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=ndyn_substeps_var,

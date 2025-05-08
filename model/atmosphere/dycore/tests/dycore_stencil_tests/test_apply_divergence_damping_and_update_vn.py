@@ -53,8 +53,8 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         geofac_grdiv: np.ndarray,
         fourth_order_divdamp_factor: ta.wpfloat,
         second_order_divdamp_factor: ta.wpfloat,
-        wgt_nnow_vel: ta.wpfloat,
-        wgt_nnew_vel: ta.wpfloat,
+        advection_explicit_weight: ta.wpfloat,
+        advection_implicit_weight: ta.wpfloat,
         dtime: ta.wpfloat,
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
@@ -102,8 +102,8 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             current_vn
             + dtime
             * (
-                wgt_nnow_vel * predictor_normal_wind_advective_tendency
-                + wgt_nnew_vel * corrector_normal_wind_advective_tendency
+                advection_explicit_weight * predictor_normal_wind_advective_tendency
+                + advection_implicit_weight * corrector_normal_wind_advective_tendency
                 + normal_wind_tendency_due_to_physics_process
                 - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
             ),
@@ -208,8 +208,8 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim)
 
         dtime = 0.9
-        wgt_nnew_vel = 0.75
-        wgt_nnow_vel = 0.25
+        advection_implicit_weight = 0.75
+        advection_explicit_weight = 0.25
         iau_wgt_dyn = 1.0
         is_iau_active = True
         fourth_order_divdamp_factor = 0.004
@@ -248,8 +248,8 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             geofac_grdiv=geofac_grdiv,
             fourth_order_divdamp_factor=fourth_order_divdamp_factor,
             second_order_divdamp_factor=second_order_divdamp_factor,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
+            advection_explicit_weight=advection_explicit_weight,
+            advection_implicit_weight=advection_implicit_weight,
             dtime=dtime,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,

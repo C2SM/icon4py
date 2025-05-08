@@ -395,33 +395,35 @@ def compute_ddxt_z_half_e(
 
 
 @field_operator
-def _compute_vwind_expl_wgt(vwind_impl_wgt: fa.CellField[wpfloat]) -> fa.CellField[wpfloat]:
-    return 1.0 - vwind_impl_wgt
+def _compute_vertical_explicit_weight(
+    vertical_implicit_weight: fa.CellField[wpfloat],
+) -> fa.CellField[wpfloat]:
+    return 1.0 - vertical_implicit_weight
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_vwind_expl_wgt(
-    vwind_impl_wgt: fa.CellField[wpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
+def compute_vertical_explicit_weight(
+    vertical_implicit_weight: fa.CellField[wpfloat],
+    vertical_explicit_weight: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
     """
-    Compute vwind_expl_wgt.
+    Compute vertical_explicit_weight.
 
     See mo_vertical_grid.f90
 
     Args:
-        vwind_impl_wgt: offcentering in vertical mass flux
-        vwind_expl_wgt: (output) 1 - of vwind_impl_wgt
+        vertical_implicit_weight: offcentering in vertical mass flux
+        vertical_explicit_weight: (output) 1 - vertical_implicit_weight
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
 
     """
 
-    _compute_vwind_expl_wgt(
-        vwind_impl_wgt=vwind_impl_wgt,
-        out=vwind_expl_wgt,
+    _compute_vertical_explicit_weight(
+        vwind_impl_wgt=vertical_implicit_weight,
+        out=vertical_explicit_weight,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
@@ -1077,7 +1079,7 @@ def compute_theta_exner_ref_mc(
     )
 
 
-def compute_vwind_impl_wgt(
+def compute_vertical_implicit_weight(
     c2e: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
@@ -1101,7 +1103,7 @@ def compute_vwind_impl_wgt(
     offctr = array_ns.minimum(
         factor, array_ns.maximum(vwind_offctr, array_ns.maximum(maxslope, diff))
     )
-    vwind_impl_wgt = 0.5 + offctr
+    vertical_implicit_weight = 0.5 + offctr
 
     k_start = max(0, nlev - 9)
 
@@ -1110,7 +1112,9 @@ def compute_vwind_impl_wgt(
     for jk in range(k_start, nlev):
         zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
         index_for_k = np.where(zdiff2_sliced < 0.6)[0]
-        max_value_k = np.maximum(1.2 - zdiff2_sliced, vwind_impl_wgt[horizontal_start_cell:])
-        vwind_impl_wgt[index_for_k + horizontal_start_cell] = max_value_k[index_for_k]
+        max_value_k = np.maximum(
+            1.2 - zdiff2_sliced, vertical_implicit_weight[horizontal_start_cell:]
+        )
+        vertical_implicit_weight[index_for_k + horizontal_start_cell] = max_value_k[index_for_k]
 
-    return vwind_impl_wgt
+    return vertical_implicit_weight

@@ -372,14 +372,26 @@ class NonHydrostaticParams:
         #: Weighting coefficients for velocity advection if tendency averaging is used
         #: The off-centering specified here turned out to be beneficial to numerical
         #: stability in extreme situations
-        self.wgt_nnow_vel: Final[float] = 0.5 - config.veladv_offctr
-        self.wgt_nnew_vel: Final[float] = 0.5 + config.veladv_offctr
+        self.advection_explicit_weight: Final[float] = 0.5 - config.veladv_offctr
+        """
+        Declared as wgt_nnow_vel in ICON.
+        """
+        self.advection_implicit_weight: Final[float] = 0.5 + config.veladv_offctr
+        """
+        Declared as wgt_nnew_vel in ICON.
+        """
 
         #: Weighting coefficients for rho and theta at interface levels in the corrector step
         #: This empirically determined weighting minimizes the vertical wind off-centering
         #: needed for numerical stability of vertical sound wave propagation
-        self.wgt_nnew_rth: Final[float] = 0.5 + config.rhotheta_offctr
-        self.wgt_nnow_rth: Final[float] = 1.0 - self.wgt_nnew_rth
+        self.rhotheta_implicit_weight: Final[float] = 0.5 + config.rhotheta_offctr
+        """
+        Declared as wgt_nnew_rth in ICON.
+        """
+        self.rhotheta_explicit_weight: Final[float] = 1.0 - self.rhotheta_implicit_weight
+        """
+        Declared as wgt_nnow_rth in ICON.
+        """
 
 
 class SolveNonhydro:
@@ -465,7 +477,9 @@ class SolveNonhydro:
             self._backend
         )
         self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
-        self._compute_z_raylfac = dycore_utils.compute_z_raylfac.with_backend(self._backend)
+        self._compute_rayleigh_damping_factor = (
+            dycore_utils.compute_rayleigh_damping_factor.with_backend(self._backend)
+        )
         self._predictor_stencils_2_3 = nhsolve_stencils.predictor_stencils_2_3.with_backend(
             self._backend
         )
@@ -603,7 +617,12 @@ class SolveNonhydro:
         """
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
-        self.z_raylfac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.rayleigh_damping_factor = data_alloc.zero_field(
+            self._grid, dims.KDim, backend=self._backend
+        )
+        """
+        Declared as z_raylfac in ICON.
+        """
         self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
             self._grid, dims.KDim, backend=self._backend
         )
@@ -823,10 +842,10 @@ class SolveNonhydro:
             )
 
         #  Precompute Rayleigh damping factor
-        self._compute_z_raylfac(
+        self._compute_rayleigh_damping_factor(
             rayleigh_w=self._metric_state_nonhydro.rayleigh_w,
             dtime=dtime,
-            z_raylfac=self.z_raylfac,
+            rayleigh_damping_factor=self.rayleigh_damping_factor,
             offset_provider={},
         )
 
@@ -886,7 +905,7 @@ class SolveNonhydro:
             z_rth_pr_1=self.perturbed_rho,
             z_rth_pr_2=self.perturbed_theta_v,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
-            vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
+            vwind_expl_wgt=self._metric_state_nonhydro.vertical_explicit_weight,
             exner_pr=diagnostic_state_nh.exner_pr,
             d_exner_dz_ref_ic=self._metric_state_nonhydro.d_exner_dz_ref_ic,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
@@ -1172,20 +1191,20 @@ class SolveNonhydro:
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             rho_ic=diagnostic_state_nh.rho_ic,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
+            vertical_explicit_weight=self._metric_state_nonhydro.vertical_explicit_weight,
             current_exner=prognostic_states.current.exner,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
             current_w=prognostic_states.current.w,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-            vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
+            vertical_implicit_weight=self._metric_state_nonhydro.vertical_implicit_weight,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             exner_pr=diagnostic_state_nh.exner_pr,
             ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
-            z_raylfac=self.z_raylfac,
+            rayleigh_damping_factor=self.rayleigh_damping_factor,
             exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
@@ -1298,10 +1317,10 @@ class SolveNonhydro:
             cell_areas=self._cell_params.area,
         )
 
-        self._compute_z_raylfac(
+        self._compute_rayleigh_damping_factor(
             self._metric_state_nonhydro.rayleigh_w,
             dtime,
-            self.z_raylfac,
+            self.rayleigh_damping_factor,
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
@@ -1315,7 +1334,7 @@ class SolveNonhydro:
             theta_var=prognostic_states.next.theta_v,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             theta_ref_mc=self._metric_state_nonhydro.theta_ref_mc,
-            vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
+            vwind_expl_wgt=self._metric_state_nonhydro.vertical_explicit_weight,
             exner_pr=diagnostic_state_nh.exner_pr,
             d_exner_dz_ref_ic=self._metric_state_nonhydro.d_exner_dz_ref_ic,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -1323,8 +1342,8 @@ class SolveNonhydro:
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             dtime=dtime,
-            wgt_nnow_rth=self._params.wgt_nnow_rth,
-            wgt_nnew_rth=self._params.wgt_nnew_rth,
+            wgt_nnow_rth=self._params.rhotheta_explicit_weight,
+            wgt_nnew_rth=self._params.rhotheta_implicit_weight,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_local,
             vertical_start=1,
@@ -1354,8 +1373,8 @@ class SolveNonhydro:
             geofac_grdiv=self._interpolation_state.geofac_grdiv,
             fourth_order_divdamp_factor=self._config.fourth_order_divdamp_factor,
             second_order_divdamp_factor=second_order_divdamp_factor,
-            wgt_nnow_vel=self._params.wgt_nnow_vel,
-            wgt_nnew_vel=self._params.wgt_nnew_vel,
+            advection_explicit_weight=self._params.advection_explicit_weight,
+            advection_implicit_weight=self._params.advection_implicit_weight,
             dtime=dtime,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
@@ -1450,23 +1469,23 @@ class SolveNonhydro:
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             rho_ic=diagnostic_state_nh.rho_ic,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
+            vertical_explicit_weight=self._metric_state_nonhydro.vertical_explicit_weight,
             current_exner=prognostic_states.current.exner,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
             current_w=prognostic_states.current.w,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-            vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
+            vertical_implicit_weight=self._metric_state_nonhydro.vertical_implicit_weight,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             exner_pr=diagnostic_state_nh.exner_pr,
             ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
-            z_raylfac=self.z_raylfac,
+            rayleigh_damping_factor=self.rayleigh_damping_factor,
             exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
-            wgt_nnow_vel=self._params.wgt_nnow_vel,
-            wgt_nnew_vel=self._params.wgt_nnew_vel,
+            advection_explicit_weight=self._params.advection_explicit_weight,
+            advection_implicit_weight=self._params.advection_implicit_weight,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(self._config.ndyn_substeps_var),
@@ -1502,8 +1521,8 @@ class SolveNonhydro:
             log.debug(f" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_ic,
-                vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,
-                vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
+                vwind_expl_wgt=self._metric_state_nonhydro.vertical_explicit_weight,
+                vwind_impl_wgt=self._metric_state_nonhydro.vertical_implicit_weight,
                 w_now=prognostic_states.current.w,
                 w_new=prognostic_states.next.w,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
