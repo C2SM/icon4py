@@ -454,7 +454,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_vertical_explicit_weight = factory.ProgramFieldProvider(
             func=mf.compute_vertical_explicit_weight.with_backend(self._backend),
             deps={
-                attrs.VERTICAL_IMPLICIT_WEIGHT: attrs.VERTICAL_IMPLICIT_WEIGHT,
+                "vertical_implicit_weight": attrs.VERTICAL_IMPLICIT_WEIGHT,
             },
             domain={
                 dims.CellDim: (
