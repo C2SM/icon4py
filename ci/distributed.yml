@@ -13,7 +13,7 @@ variables:
   PYVERSION: 3.10.9
 
 # Base image build step with SHA256 checksum for caching
-.build_baseimage:
+.build_distributed_baseimage:
   stage: baseimage
   before_script:
     # include build arguments in hash since we use a parameterized Docker file
@@ -29,8 +29,8 @@ variables:
     CSCS_REBUILD_POLICY: if-not-exists
 
 
-build_model_baseimage_aarch64:
-  extends: [.container-builder-cscs-gh200, .build_baseimage]
+build_distributed_baseimage_aarch64:
+  extends: [.container-builder-cscs-gh200, .build_distributed_baseimage]
   variables:
     DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "PYVERSION=$PYVERSION"]'
 
@@ -53,7 +53,7 @@ build_model_baseimage_aarch64:
 build_distributed_cpu:
     stage: image
     extends: [.container-builder-cscs-gh200, .build_distributed_cpu]
-    needs: [build_model_baseimage_aarch64] #[build_baseimage_aarch64]
+    needs: [build_distributed_baseimage_aarch64]
 
 .test_template_distributed:
   timeout: 8h
@@ -82,16 +82,17 @@ build_distributed_cpu:
 
 .test_distributed_aarch64:
   stage: test
-  extends: [.test_template_distributed, .build_distributed_template]
+  extends: [.test_template_distributed]
   before_script:
     - pwd
+    - echo ${UV_PROJECT_ENVIRONMENT}
     - cd /icon4py
     - pwd
     - . ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
     - echo "using MPI_PREFIX ${MPI_PREFIX}"
   script:
-    - ${MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
+    - ${MPI_PREFIX} uv run pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [ atmosphere/diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]

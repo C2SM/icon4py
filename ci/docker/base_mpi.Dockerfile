@@ -44,19 +44,6 @@ RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.ta
 
 ENV BOOST_ROOT /usr/local/
 
-# Install pyenv and Python version specified by PYVERSION
 ARG PYVERSION
-RUN curl https://pyenv.run | bash
-
-ENV PYENV_ROOT /root/.pyenv
-ENV PATH="/root/.pyenv/bin:${PATH}"
-
-RUN pyenv update && \
-    pyenv install ${PYVERSION} && \
-    echo 'eval "$(pyenv init -)"' >> /root/.bashrc && \
-    eval "$(pyenv init -)" && \
-    pyenv global ${PYVERSION}
-
-ENV PATH="/root/.pyenv/shims:${PATH}"
-
-RUN pip install --upgrade pip setuptools wheel uv nox clang-format
+# install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
