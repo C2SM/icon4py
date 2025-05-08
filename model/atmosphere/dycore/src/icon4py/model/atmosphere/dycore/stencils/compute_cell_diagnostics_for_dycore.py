@@ -47,15 +47,12 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zer
     _init_two_cell_kdim_fields_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
-from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boundary import (
-    _set_theta_v_prime_ic_at_lower_boundary,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
-from icon4py.model.common.math.derivative import _compute_first_vertical_derivative
+from icon4py.model.common.math.derivative import _compute_first_vertical_derivative_at_cells
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -257,7 +254,9 @@ def _compute_first_and_second_vertical_derivative_of_exner(
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
         concat_where(
             (nflatlev <= dims.KDim),
-            _compute_first_vertical_derivative(exner_at_cells_on_half_levels, inv_ddqz_z_full),
+            _compute_first_vertical_derivative_at_cells(
+                exner_at_cells_on_half_levels, inv_ddqz_z_full
+            ),
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
         if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
@@ -285,6 +284,31 @@ def _compute_first_and_second_vertical_derivative_of_exner(
     return (
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+    )
+
+
+@field_operator
+def _set_theta_v_and_exner_on_surface_level(
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat], fa.CellKField[vpfloat]]:
+    perturbed_theta_v_at_cells_on_half_levels = _interpolate_to_surface(
+        wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
+    )
+    theta_v_at_cells_on_half_levels = (
+        reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels
+    )
+
+    exner_at_cells_on_half_levels = _interpolate_to_surface(
+        wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
+    )
+
+    return (
+        perturbed_theta_v_at_cells_on_half_levels,
+        astype(theta_v_at_cells_on_half_levels, wpfloat),
+        exner_at_cells_on_half_levels,
     )
 
 
@@ -339,30 +363,30 @@ def compute_perturbed_quantities_and_interpolation(
     air density and vitural potential temperature on half and model levels.
 
     Args:
-        - temporal_extrapolation_of_perturbed_exner: temporal extrapolation of perturbed exner function (actual exner function minus reference exner function)
-        - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: vertical gradient of temporal extrapolation of perturbed exner function [m-1]
-        - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: second vertical gradient of temporal extrapolation of perturbed exner function [m-2]
-        - perturbed_exner_at_cells_on_model_levels: perturbed exner function at model levels
-        - exner_at_cells_on_half_levels: exner function at cells on half levels
-        - perturbed_rho_at_cells_on_model_levels: perturbed air density (actual density minus reference density) on model levels [kg m-3]
-        - perturbed_theta_v_at_cells_on_model_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) on model levels [K]
-        - rho_at_cells_on_half_levels: air density at cells on half levels [kg m-3]
-        - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) at cells on half levels [kg m-3]
-        - theta_v_at_cells_on_half_levels: virtual potential temperature at cells on half levels [K]
+        - temporal_extrapolation_of_perturbed_exner: temporal extrapolation of perturbed exner function (actual exner function minus reference exner function) at cells on model levels
+        - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: vertical gradient of temporal extrapolation of perturbed exner function at cells on model levels [m-1]
+        - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: second vertical gradient of temporal extrapolation of perturbed exner function at cells on model levels [m-2]
+        - perturbed_exner_at_cells_on_model_levels: perturbed exner function
+        - exner_at_cells_on_half_levels: exner function
+        - perturbed_rho_at_cells_on_model_levels: perturbed air density (actual density minus reference density) [kg m-3]
+        - perturbed_theta_v_at_cells_on_model_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) [K]
+        - rho_at_cells_on_half_levels: air density [kg m-3]
+        - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) [kg m-3]
+        - theta_v_at_cells_on_half_levels: virtual potential temperature [K]
         - current_rho: virtual potential temperature at current substep [K]
-        - reference_rho_at_cells_on_model_levels: reference air density at cells on model levels [kg m-3]
+        - reference_rho_at_cells_on_model_levels: reference air density [kg m-3]
         - current_theta_v: vertical potential temperature at current substep [K]
-        - reference_theta_at_cells_on_model_levels: reference virtual potential temperature at cells on model levels [K]
-        - reference_theta_at_cells_on_half_levels: reference virtual potential temperature at cells on half levels [K]
+        - reference_theta_at_cells_on_model_levels: reference virtual potential temperature [K]
+        - reference_theta_at_cells_on_half_levels: reference virtual potential temperature [K]
         - wgtfacq_c: metrics field (weights for interpolation)
         - wgtfac_c: metrics field
         - vwind_expl_wgt: external weight field for wind extrapolation
-        - ddz_of_reference_exner_at_cells_on_half_levels: vertical gradient of reference exner function at cells on half levels [m-1]
+        - ddz_of_reference_exner_at_cells_on_half_levels: vertical gradient of reference exner function [m-1]
         - ddqz_z_half: vertical spacing pn half levels (distance between the height of cell centers at k at k-1)  [m]
-        - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration at cells on half levels [m s-2]
+        - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration [m s-2]
         - time_extrapolation_parameter_for_exner: time extrapolation parameter for exner function
         - current_exner: exner function at current substep
-        - reference_exner_at_cells_on_model_levels: reference exner function at cells on model levels
+        - reference_exner_at_cells_on_model_levels: reference exner function
         - inv_ddqz_z_full: inverse vertical spacing on full levels (distance between the height of interface at k+1/2 and k-1/2)
         - d2dexdz2_fac1_mc: precomputed factor for second vertical derivatives of exner function for model cell centers
         - d2dexdz2_fac2_mc: precomputed factor for second vertical derivatives of exner function for model cell centers
@@ -471,21 +495,16 @@ def compute_perturbed_quantities_and_interpolation(
         },
     )
 
-    _set_theta_v_prime_ic_at_lower_boundary(
+    _set_theta_v_and_exner_on_surface_level(
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         wgtfacq_c=wgtfacq_c,
-        z_rth_pr=perturbed_theta_v_at_cells_on_model_levels,
-        theta_ref_ic=reference_theta_at_cells_on_half_levels,
-        out=(perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels),
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (vertical_end - 1, vertical_end),
-        },
-    )
-
-    _interpolate_to_surface(
-        wgtfacq_c=wgtfacq_c,
-        interpolant=temporal_extrapolation_of_perturbed_exner,
-        out=exner_at_cells_on_half_levels,
+        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+        reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
+        out=(
+            perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels,
+            exner_at_cells_on_half_levels,
+        ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (vertical_end - 1, vertical_end),
