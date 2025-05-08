@@ -84,10 +84,13 @@ build_distributed_cpu:
   stage: test
   extends: [.test_template_distributed, .build_distributed_template]
   before_script:
+    - pwd
+    - cd /icon4py
+    - pwd
+    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate
+    - echo "running with $(python --version)"
     - echo "using MPI_PREFIX ${MPI_PREFIX}"
   script:
-    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate
-    - python --version
     - ${MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
