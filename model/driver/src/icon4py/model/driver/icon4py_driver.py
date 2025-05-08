@@ -14,6 +14,7 @@ from typing import Callable, NamedTuple
 
 import click
 import numpy as np
+from cupy import cuda
 from devtools import Timer
 
 import icon4py.model.common.utils as common_utils
@@ -64,6 +65,13 @@ class TimeLoop:
         self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
+
+        self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
+        self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
+
+        self._timer_solve_nonhydro = Timer("nh_solve", dp=6)
+        self._timer_diffusion = Timer("diffusion", dp=6)
+        self.detailed_timers = True
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -143,16 +151,20 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        timer = Timer(self._full_name(self._integrate_one_time_step))
+        rest_timer = Timer(self._full_name(self._integrate_one_time_step), dp=6)
+        first_timer = Timer("first_time_step", dp=6)
         for time_step in range(self._n_time_steps):
+            timer = first_timer if time_step == 0 else rest_timer
+
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.debug(
-                f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
-            )
-            log.debug(
-                f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
-            )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
+            if __debug__:
+                log.debug(
+                    f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
+                )
+                log.debug(
+                    f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
+                )
+                # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
@@ -167,6 +179,9 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
+
+            cuda.runtime.deviceSynchronize()
+
             timer.capture()
 
             self._is_first_step_in_simulation = False
@@ -177,7 +192,12 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
-        timer.summary(True)
+        first_timer.summary(True)
+        rest_timer.summary(True)
+
+        if self.detailed_timers:
+            self._timer_solve_nonhydro.summary(True)
+            self._timer_diffusion.summary(True)
 
     def _integrate_one_time_step(
         self,
@@ -199,11 +219,16 @@ class TimeLoop:
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
+            if self.detailed_timers:
+                self._timer_diffusion.start()
             self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.next,
                 self.dtime_in_seconds,
             )
+            if self.detailed_timers:
+                cuda.runtime.deviceSynchronize()
+                self._timer_diffusion.capture()
 
         prognostic_states.swap()
 
@@ -270,6 +295,8 @@ class TimeLoop:
                 at_initial_timestep=self._is_first_step_in_simulation,
             )
 
+            if self.detailed_timers:
+                self._timer_solve_nonhydro.start()
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
@@ -281,6 +308,9 @@ class TimeLoop:
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
             )
+            if self.detailed_timers:
+                cuda.runtime.deviceSynchronize()
+                self._timer_solve_nonhydro.capture()
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
