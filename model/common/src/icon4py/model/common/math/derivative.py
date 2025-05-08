@@ -1,8 +1,14 @@
-import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from gt4py.next.ffront.decorator import field_operator
+
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat
 
