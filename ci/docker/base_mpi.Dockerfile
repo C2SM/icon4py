@@ -10,11 +10,11 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     tar \
     wget \
     curl \
+    libopenmpi-dev\
     ca-certificates \
     zlib1g-dev \
     libssl-dev \
     libbz2-dev \
-    libmpich-dev\
     libsqlite3-dev \
     libnuma-dev \
     llvm \
