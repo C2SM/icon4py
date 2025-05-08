@@ -87,8 +87,10 @@ build_distributed_cpu:
     - cd /icon4py
     - echo "using MPI_PREFIX ${MPI_PREFIX}"
     - ls ${UV_PROJECT_ENVIRONMENT}/lib/python*/site-packages
+    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate
+    - python --version
   script:
-    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate && ${MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
+    -  ${MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [ atmosphere/diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
