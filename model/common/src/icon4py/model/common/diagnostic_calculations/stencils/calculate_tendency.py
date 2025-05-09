@@ -31,8 +31,6 @@ def _calculate_virtual_temperature_tendency(
     qr: fa.CellKField[ta.wpfloat],
     qs: fa.CellKField[ta.wpfloat],
     qg: fa.CellKField[ta.wpfloat],
-    qv_tendency: fa.CellKField[ta.wpfloat],
-    qc_tendency: fa.CellKField[ta.wpfloat],
     temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
@@ -47,17 +45,15 @@ def _calculate_virtual_temperature_tendency(
         qr: specific rain water content [kg kg-1]
         qs: specific snow content [kg kg-1]
         qg: specific graupel content [kg kg-1]
-        qv_tendency: specific humidity tendency [kg kg-1 s-1]
-        qc_tendencyqc: specific cloud water content tendency [kg kg-1 s-1]
         temperature: air temperature [K]
         virtual_temperature: air virtual temperature [K]
     Returns:
         virtual temperature tendency [K s-1], exner tendency [s-1], new exner, new virtual temperature [K]
     """
-    qsum = qc + qi + qr + qs + qg + qc_tendency * dtime
+    qsum = qc + qi + qr + qs + qg
 
     new_virtual_temperature = temperature * (
-        wpfloat("1.0") + physics_constants.rv_o_rd_minus_1 * (qv + qv_tendency * dtime) - qsum
+        wpfloat("1.0") + physics_constants.rv_o_rd_minus_1 * qv - qsum
     )
 
     return (new_virtual_temperature - virtual_temperature) / dtime
@@ -72,8 +68,6 @@ def calculate_virtual_temperature_tendency(
     qr: fa.CellKField[ta.wpfloat],
     qs: fa.CellKField[ta.wpfloat],
     qg: fa.CellKField[ta.wpfloat],
-    qv_tendency: fa.CellKField[ta.wpfloat],
-    qc_tendency: fa.CellKField[ta.wpfloat],
     temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
@@ -90,8 +84,6 @@ def calculate_virtual_temperature_tendency(
         qr,
         qs,
         qg,
-        qv_tendency,
-        qc_tendency,
         temperature,
         virtual_temperature,
         out=virtual_temperature_tendency,

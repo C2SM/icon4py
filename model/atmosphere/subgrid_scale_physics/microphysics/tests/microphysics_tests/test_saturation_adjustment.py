@@ -128,11 +128,10 @@ def test_saturation_adjustement(
         qc_tendency=qc_tendency,
     )
 
-    updated_qv = tracer_state.qv.asnumpy() + saturation_adjustment.qv_tendency.asnumpy() * dtime
-    updated_qc = tracer_state.qc.asnumpy() + saturation_adjustment.qc_tendency.asnumpy() * dtime
+    updated_qv = tracer_state.qv.asnumpy() + qv_tendency.asnumpy() * dtime
+    updated_qc = tracer_state.qc.asnumpy() + qc_tendency.asnumpy() * dtime
     updated_temperature = (
-        diagnostic_state.temperature.asnumpy()
-        + saturation_adjustment.temperature_tendency.asnumpy() * dtime
+        diagnostic_state.temperature.asnumpy() + temperature_tendency.asnumpy() * dtime
     )
 
     if diagnose_values:
@@ -140,15 +139,16 @@ def test_saturation_adjustement(
         start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         end_cell_local = icon_grid.start_index(cell_domain(h_grid.Zone.END))
         calculate_tendency.calculate_virtual_temperature_tendency.with_backend(backend)(
-            qv=tracer_state.qv,
-            qc=tracer_state.qc,
+            dtime=dtime,
+            qv=gtx.as_field((dims.CellDim, dims.KDim), updated_qv, allocator=backend),
+            qc=gtx.as_field((dims.CellDim, dims.KDim), updated_qc, allocator=backend),
             qi=tracer_state.qi,
             qr=tracer_state.qr,
             qs=tracer_state.qs,
             qg=tracer_state.qg,
-            qv_tendency=qv_tendency,
-            qc_tendency=qc_tendency,
-            temperature=diagnostic_state.temperature,
+            temperature=gtx.as_field(
+                (dims.CellDim, dims.KDim), updated_temperature, allocator=backend
+            ),
             virtual_temperature=diagnostic_state.virtual_temperature,
             virtual_temperature_tendency=virtual_temperature_tendency,
             horizontal_start=start_cell_nudging,
@@ -158,7 +158,13 @@ def test_saturation_adjustement(
             offset_provider={},
         )
 
+        updated_virtual_temperature = (
+            diagnostic_state.virtual_temperature.asnumpy()
+            + virtual_temperature_tendency.asnumpy() * dtime
+        )
+
         calculate_tendency.calculate_exner_tendency.with_backend(backend)(
+            dtime=dtime,
             virtual_temperature=diagnostic_state.virtual_temperature,
             virtual_temperature_tendency=virtual_temperature_tendency,
             exner=prognostic_state.exner,
@@ -171,14 +177,10 @@ def test_saturation_adjustement(
         )
 
         updated_exner = prognostic_state.exner.asnumpy() + exner_tendency.asnumpy() * dtime
-        updated_virtual_temperature = (
-            diagnostic_state.virtual_temperature.asnumpy()
-            + virtual_temperature_tendency.asnumpy() * dtime
-        )
 
         diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
-            gtx.as_field(updated_exner, (dims.CellDim, dims.KDim), allocator=backend),
-            gtx.as_field(updated_virtual_temperature, (dims.CellDim, dims.KDim), allocator=backend),
+            gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
+            gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
             metric_state.ddqz_z_full,
             diagnostic_state.pressure_ifc,
             horizontal_start=start_cell_nudging,
@@ -190,7 +192,7 @@ def test_saturation_adjustement(
 
         diagnose_pressure.diagnose_pressure.with_backend(backend)(
             metric_state.ddqz_z_full,
-            gtx.as_field(updated_virtual_temperature, (dims.CellDim, dims.KDim), allocator=backend),
+            gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
             diagnostic_state.surface_pressure,
             diagnostic_state.pressure,
             diagnostic_state.pressure_ifc,

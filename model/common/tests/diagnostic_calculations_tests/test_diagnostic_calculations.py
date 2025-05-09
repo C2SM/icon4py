@@ -9,7 +9,7 @@
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common import constants as phy_const, dimension as dims
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_pressure,
     diagnose_surface_pressure,
@@ -67,7 +67,6 @@ def test_diagnose_temperature(
         exner=exner,
         virtual_temperature=virtual_temperature,
         temperature=temperature,
-        rv_o_rd_minus1=phy_const.RV_O_RD_MINUS_1,
         horizontal_start=0,
         horizontal_end=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END)),
         vertical_start=0,
@@ -173,9 +172,6 @@ def test_diagnose_surface_pressure(
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
         surface_pressure=surface_pressure,
-        cpd_o_rd=phy_const.CPD_O_RD,
-        p0ref=phy_const.P0REF,
-        grav_o_rd=phy_const.GRAV_O_RD,
         horizontal_start=0,
         horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=icon_grid.num_levels,
@@ -223,7 +219,6 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
         surface_pressure,
         pressure,
         pressure_ifc,
-        phy_const.GRAV_O_RD,
         horizontal_start=0,
         horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=0,
