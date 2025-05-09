@@ -11,7 +11,7 @@ from typing import Final
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import broadcast
+from gt4py.next.ffront.fbuiltins import broadcast, where
 
 from icon4py.model.atmosphere.dycore.dycore_states import (
     DivergenceDampingOrder,
@@ -101,7 +101,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
-    ibm_green_gauss_gradient_mask: gtx.Field[[dims.CellDim, dims.KDim], bool],
+    ibm_green_gauss_gradient_mask: fa.CellKField[bool],
     dtime: ta.wpfloat,
     cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -146,12 +146,12 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         )
     )
 
-    # --> IBM 
-    gtx.where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_rho)
-    gtx.where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_rho)
-    gtx.where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_theta_v)
-    gtx.where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_theta_v)
-    # <-- IBM 
+    # --> IBM
+    ddx_perturbed_rho = where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_rho)
+    ddy_perturbed_rho = where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_rho)
+    ddx_perturbed_theta_v = where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_theta_v)
+    ddy_perturbed_theta_v = where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_theta_v)
+    # <-- IBM
 
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
         concat_where(
@@ -497,7 +497,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
-    ibm_green_gauss_gradient_mask: gtx.Field[[dims.CellDim, dims.KDim], bool],
+    ibm_green_gauss_gradient_mask: fa.CellKField[bool],
     dtime: ta.wpfloat,
     cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
