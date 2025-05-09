@@ -57,7 +57,7 @@ from .test_interpolate_cell_field_to_half_levels_vp import (
 )
 from .test_interpolate_to_surface import (
     interpolate_to_surface_numpy,
-
+)
 from .test_set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary_numpy,
 )
@@ -65,7 +65,7 @@ from .test_set_theta_v_prime_ic_at_lower_boundary import (
 
 horzpres_discr_type = HorizontalPressureDiscretizationType()
 
-def  (
+def compute_first_vertical_derivative_numpy(
     cell_kdim_field: np.ndarray, inv_ddqz_z_full: np.ndarray
 ) -> np.ndarray:
     first_vertical_derivative = (cell_kdim_field[:, :-1] - cell_kdim_field[:, 1:]) * inv_ddqz_z_full
