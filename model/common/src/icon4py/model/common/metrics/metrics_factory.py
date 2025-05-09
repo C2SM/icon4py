@@ -13,6 +13,7 @@ import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.math.helpers as math_helpers
+import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -31,8 +32,6 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
-    compute_wgtfac_c,
-    compute_wgtfacq,
     compute_zdiff_gradp_dsl,
     metric_fields as mf,
     metrics_attributes as attrs,
@@ -496,7 +495,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_exner_exfac)
 
         wgtfac_c_provider = factory.ProgramFieldProvider(
-            func=compute_wgtfac_c.compute_wgtfac_c.with_backend(self._backend),
+            func=weight_factors.compute_wgtfac_c.with_backend(self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
             },
@@ -562,7 +561,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(max_flat_index_provider)
 
-        compute_pg_idx_exdist = factory.ProgramFieldProvider(
+        pressure_gradient_fields = factory.ProgramFieldProvider(
             func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
                 self._backend
             ),
@@ -591,7 +590,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL, "pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
         )
-        self.register_provider(compute_pg_idx_exdist)
+        self.register_provider(pressure_gradient_fields)
 
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
@@ -676,7 +675,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(coeff_gradekin)
 
         compute_wgtfacq_c = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_wgtfacq.compute_wgtfacq_c_dsl, array_ns=self._xp),
+            func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL},
@@ -686,7 +685,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_wgtfacq.compute_wgtfacq_e_dsl, array_ns=self._xp),
+            func=functools.partial(weight_factors.compute_wgtfacq_e_dsl, array_ns=self._xp),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "c_lin_e": interpolation_attributes.C_LIN_E,

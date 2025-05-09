@@ -748,6 +748,7 @@ def _compute_mask_prog_halo_c(
     return mask_prog_halo_c
 
 
+# TODO (@halungge) not registered in factory
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
@@ -782,6 +783,7 @@ def _compute_bdy_halo_c(
     return bdy_halo_c
 
 
+# TODO (@halungge) not registered in factory
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_bdy_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
@@ -1040,6 +1042,7 @@ def _compute_theta_exner_ref_mc(
     return exner_ref_mc, theta_ref_mc
 
 
+# TODO @halungge: duplicate program - see reference_atmosphere.py
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_theta_exner_ref_mc(
     z_mc: fa.CellKField[wpfloat],
