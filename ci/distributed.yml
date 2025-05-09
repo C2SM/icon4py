@@ -69,7 +69,7 @@ build_distributed_cpu:
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_003:$TEST_DATA_PATH"]'
     ICON4PY_MPI_TASKS: 4
-    ICON4PY_MPI_PREFIX: "mpirun --bind-to socket --host localhost:${ICON4PY_MPI_TASKS}"
+    ICON4PY_MPI_PREFIX: "mpirun --bind-to socket --host localhost:${ICON4PY_MPI_TASKS} -n ${ICON4PY_MPI_TASKS}"
     #ICON4PY_MPI_PREFIX: ""
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     #CUDAARCHS: "90"
@@ -82,7 +82,7 @@ build_distributed_cpu:
   before_script:
     - cd /icon4py
     - echo "icon4py workdir listing $(ls)"
-    - echo "using venv at ${UV_PROJECT_ENVIRONMENT}"
+    - echo "using virtual environment at ${UV_PROJECT_ENVIRONMENT}"
     - . ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
     - echo "using MPI_PREFIX ${ICON4PY_MPI_PREFIX}"
@@ -91,8 +91,8 @@ build_distributed_cpu:
       #- uv run pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
-      - COMPONENT: [ atmosphere/diffusion, common] # [advection, diffusion, dycore, microphysics, common, driver]
-        BACKEND: [ gtfn_cpu]
+      - COMPONENT: [ atmosphere/diffusion, atmosphere/dycore, atmosphere/advection, common, driver] # [microphysics]
+        BACKEND: [ gtfn_cpu, dace_cpu]
   rules:
     - when: on_success
 
