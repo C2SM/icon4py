@@ -1251,7 +1251,7 @@ class SolveNonhydro:
 
         #---> IBM
         self._ibm.set_bcs_w_matrix(
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             z_w_expl=z_fields.z_w_expl,
         )
         #<--- IBM
@@ -1720,7 +1720,7 @@ class SolveNonhydro:
 
         #---> IBM
         self._ibm.set_bcs_w_matrix(
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             z_w_expl=z_fields.z_w_expl,
         )
         #<--- IBM
