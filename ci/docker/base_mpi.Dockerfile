@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -36,4 +36,4 @@ ENV BOOST_ROOT /usr/local/
 
 ARG PYVERSION
 # install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.7.3 /uv /uvx /bin/
