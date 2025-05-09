@@ -24,7 +24,6 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.grid.grid_manager import GeometryName
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -156,7 +155,7 @@ def test_grid_manager_eval_v2e(caplog, grid_savepoint, experiment, grid_file, ba
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
-    v2e_table = data_alloc.as_numpy(grid.get_offset_provider("V2E").table)
+    v2e_table = grid.get_offset_provider("V2E").asnumpy()
     assert has_invalid_index(v2e_table)
     reset_invalid_index(seralized_v2e)
     assert np.allclose(v2e_table, seralized_v2e)
@@ -195,7 +194,7 @@ def test_grid_manager_eval_v2c(caplog, grid_savepoint, experiment, grid_file, ba
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_v2c = grid_savepoint.v2c()
-    v2c_table = data_alloc.as_numpy(grid.get_offset_provider("V2C").table)
+    v2c_table = grid.get_offset_provider("V2C").asnumpy()
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
     # hence in the grid file there are "missing values"
@@ -249,7 +248,7 @@ def test_grid_manager_eval_e2v(caplog, grid_savepoint, grid_file, experiment, ba
     grid = _run_grid_manager(grid_file, backend).grid
 
     serialized_e2v = grid_savepoint.e2v()
-    e2v_table = data_alloc.as_numpy(grid.get_offset_provider("E2V").table)
+    e2v_table = grid.get_offset_provider("E2V").asnumpy()
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)
@@ -301,7 +300,7 @@ def test_grid_manager_eval_e2c(caplog, grid_savepoint, grid_file, experiment, ba
 
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_e2c = grid_savepoint.e2c()
-    e2c_table = data_alloc.as_numpy(grid.get_offset_provider("E2C").table)
+    e2c_table = grid.get_offset_provider("E2C").asnumpy()
     assert_invalid_indices(serialized_e2c, grid_file)
     assert_invalid_indices(e2c_table, grid_file)
     assert np.allclose(e2c_table, serialized_e2c)
@@ -322,7 +321,7 @@ def test_grid_manager_eval_c2e(caplog, grid_savepoint, grid_file, experiment, ba
     grid = _run_grid_manager(grid_file, backend).grid
 
     serialized_c2e = grid_savepoint.c2e()
-    c2e_table = data_alloc.as_numpy(grid.get_offset_provider("C2E").table)
+    c2e_table = grid.get_offset_provider("C2E").asnumpy()
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
     # first place
     # hence there are no "missing values" in the grid file
@@ -345,7 +344,7 @@ def test_grid_manager_eval_c2e2c(caplog, grid_savepoint, grid_file, experiment, 
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
     assert np.allclose(
-        data_alloc.as_numpy(grid.get_offset_provider("C2E2C").table),
+        grid.get_offset_provider("C2E2C").asnumpy(),
         grid_savepoint.c2e2c(),
     )
 
@@ -364,8 +363,8 @@ def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment,
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
-        data_alloc.as_numpy(grid.get_offset_provider("C2E2CO").table),
-        serialized_grid.get_offset_provider("C2E2CO").table,
+        grid.get_offset_provider("C2E2CO").asnumpy(),
+        serialized_grid.get_offset_provider("C2E2CO").asnumpy(),
     )
 
 
@@ -383,12 +382,12 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
-    serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").table
-    serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").table
+    serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").asnumpy()
+    serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").asnumpy()
     assert_invalid_indices(serialized_e2c2e, grid_file)
 
-    e2c2e_table = data_alloc.as_numpy(grid.get_offset_provider("E2C2E").table)
-    e2c2eO_table = data_alloc.as_numpy(grid.get_offset_provider("E2C2EO").table)
+    e2c2e_table = grid.get_offset_provider("E2C2E").asnumpy()
+    e2c2eO_table = grid.get_offset_provider("E2C2EO").asnumpy()
 
     assert_invalid_indices(e2c2e_table, grid_file)
     # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(dims.EdgeDim) + 1 for
@@ -416,13 +415,13 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
     serialized_ref = grid_savepoint.e2c2v()
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(dims.EdgeDim) + 1) to end(dims.EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
-    table = data_alloc.as_numpy(grid.get_offset_provider("E2C2V").table)
+    table = grid.get_offset_provider("E2C2V").asnumpy()
     start_index = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     # e2c2e in ICON (quad_idx) has a different neighbor ordering than the e2c2e constructed in grid_manager.py
     assert_up_to_order(table, serialized_ref, start_index)
-    assert np.allclose(table[:, :2], grid.get_offset_provider("E2V").table)
+    assert np.allclose(table[:, :2], grid.get_offset_provider("E2V").asnumpy())
 
 
 @pytest.mark.datatest
@@ -437,7 +436,7 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
 def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file, backend):
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
-    c2v = data_alloc.as_numpy(grid.get_offset_provider("C2V").table)
+    c2v = grid.get_offset_provider("C2V").asnumpy()
     assert np.allclose(c2v, grid_savepoint.c2v())
 
 
@@ -509,10 +508,10 @@ def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
-        grid.get_offset_provider("C2E2C2E").table,
-        serialized_grid.get_offset_provider("C2E2C2E").table,
+        grid.get_offset_provider("C2E2C2E").asnumpy(),
+        serialized_grid.get_offset_provider("C2E2C2E").asnumpy(),
     )
-    assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)
+    assert grid.get_offset_provider("C2E2C2E").asnumpy().shape == (grid.num_cells, 9)
 
 
 @pytest.mark.datatest
@@ -530,6 +529,14 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
     serialized_grid = icon_grid
     grid = _run_grid_manager(grid_file, backend).grid
     for domain in utils.global_grid_domains(dim):
+        if (
+            dim == dims.EdgeDim
+            and domain.zone == h_grid.Zone.END
+            and experiment == dt_utils.GLOBAL_EXPERIMENT
+        ):
+            pytest.xfail(
+                "FIXME: start_index in serialized data changed to 0 with unknown consequences, see also icon-exclaim output"
+            )
         assert grid.start_index(domain) == serialized_grid.start_index(
             domain
         ), f"start index wrong for domain {domain}"

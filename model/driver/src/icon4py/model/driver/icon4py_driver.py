@@ -16,16 +16,14 @@ import click
 import numpy as np
 from devtools import Timer
 
-from icon4py.model.common.io import plots
-from icon4py.model.atmosphere.dycore import ibm
-
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
     diffusion_states,
 )
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.io import plots
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -114,11 +112,9 @@ class TimeLoop:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
-        # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
         log.info(
@@ -169,7 +165,7 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                initial_divdamp_fac_o2,
+                second_order_divdamp_factor,
                 do_prep_adv,
             )
             timer.capture()
@@ -192,16 +188,16 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
+        # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
             prep_adv,
-            initial_divdamp_fac_o2,
+            second_order_divdamp_factor,
             do_prep_adv,
         )
 
@@ -216,14 +212,53 @@ class TimeLoop:
 
         prognostic_states.swap()
 
-        # TODO (Chia Rui): add tracer advection here
+    # TODO (Chia Rui): add tracer advection here
+
+    def _update_time_levels_for_velocity_tendencies(
+        self,
+        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        at_first_substep: bool,
+        at_initial_timestep: bool,
+    ):
+        """
+        Set time levels of advective tendency fields for call to velocity_tendencies.
+
+        When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
+        `vertical_wind_advective_tendency.predictor` (advection term in vertical momentum equation in
+        predictor step) is not computed in the predictor step of each substep.
+        Instead, the advection term computed in the corrector step during the
+        previous substep is reused for efficiency (except, of course, in the
+        very first substep of the initial time step).
+        `normal_wind_advective_tendency.predictor` (advection term in horizontal momentum equation in
+        predictor step) is only computed in the predictor step of the first
+        substep and the advection term in the corrector step during the previous
+        substep is reused for `normal_wind_advective_tendency.predictor` from the second substep onwards.
+        Additionally, in this scheme the predictor and corrector outputs are kept
+        in separate elements of the pair (.predictor for the predictor step and
+        .corrector for the corrector step) and interpoolated at the end of the
+        corrector step to get the final output.
+
+        No other time stepping schemes are currently supported.
+
+        Args:
+            diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)
+            at_first_substep: Flag indicating if this is the first substep of the time step.
+            at_initial_timestep: Flag indicating if this is the first time step.
+
+        Returns:
+            The index of the pair element to be used for the corrector output.
+        """
+        if not (at_initial_timestep and at_first_substep):
+            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+        if not at_first_substep:
+            diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     def _do_dyn_substepping(
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
@@ -234,11 +269,17 @@ class TimeLoop:
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
 
+            self._update_time_levels_for_velocity_tendencies(
+                solve_nonhydro_diagnostic_state,
+                at_first_substep=self._is_first_substep(dyn_substep),
+                at_initial_timestep=self._is_first_step_in_simulation,
+            )
+
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv=prep_adv,
-                divdamp_fac_o2=initial_divdamp_fac_o2,
+                second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
@@ -276,10 +317,10 @@ class DriverParams(NamedTuple):
     Parameters for the driver run.
 
     Attributes:
-        divdamp_fac_o2: Second order divergence damping factor.
+        second_order_divdamp_factor: Second order divergence damping factor.
     """
 
-    divdamp_fac_o2: float
+    second_order_divdamp_factor: float
 
 
 def initialize(
@@ -429,7 +470,7 @@ def initialize(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prep_adv,
-        initial_divdamp_fac_o2,
+        second_order_divdamp_factor,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
@@ -459,7 +500,7 @@ def initialize(
             prognostics=prognostics_states,
             diagnostic=diagnostic_state,
         ),
-        DriverParams(divdamp_fac_o2=initial_divdamp_fac_o2),
+        DriverParams(second_order_divdamp_factor=second_order_divdamp_factor),
     )
 
 
@@ -582,7 +623,7 @@ def icon4py_driver(
         ds.solve_nonhydro_diagnostic,
         ds.prognostics,
         ds.prep_advection_prognostic,
-        dp.divdamp_fac_o2,
+        dp.second_order_divdamp_factor,
         do_prep_adv=False,
     )
 

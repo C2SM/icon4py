@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -12,9 +14,10 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -24,25 +27,25 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_rho_expl: np.array,
-        rho_incr: np.array,
-        z_exner_expl: np.array,
-        exner_incr: np.array,
-        iau_wgt_dyn,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_rho_expl: np.ndarray,
+        rho_incr: np.ndarray,
+        z_exner_expl: np.ndarray,
+        exner_incr: np.ndarray,
+        iau_wgt_dyn: ta.wpfloat,
+        **kwargs: Any,
     ) -> dict:
         z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
         z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture
-    def input_data(self, grid):
-        z_exner_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rho_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        iau_wgt_dyn = wpfloat("8.0")
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        iau_wgt_dyn = ta.wpfloat("8.0")
 
         return dict(
             z_rho_expl=z_rho_expl,

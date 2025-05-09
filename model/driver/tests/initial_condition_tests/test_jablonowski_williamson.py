@@ -52,34 +52,35 @@ def test_jabw_initial_condition(
     )
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
+    jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
     assert helpers.dallclose(
         prognostic_state_now.rho.asnumpy(),
-        data_provider.from_savepoint_jabw_final().rho().asnumpy(),
+        jabw_exit_savepoint.rho().asnumpy(),
     )
 
     assert helpers.dallclose(
         prognostic_state_now.exner.asnumpy(),
-        data_provider.from_savepoint_jabw_final().exner().asnumpy(),
+        jabw_exit_savepoint.exner().asnumpy(),
     )
 
     assert helpers.dallclose(
         prognostic_state_now.theta_v.asnumpy(),
-        data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
+        jabw_exit_savepoint.theta_v().asnumpy(),
     )
 
     assert helpers.dallclose(
         prognostic_state_now.vn.asnumpy(),
-        data_provider.from_savepoint_jabw_final().vn().asnumpy(),
+        jabw_exit_savepoint.vn().asnumpy(),
     )
 
     assert helpers.dallclose(
         diagnostic_state.pressure.asnumpy(),
-        data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
+        jabw_exit_savepoint.pressure().asnumpy(),
     )
 
     assert helpers.dallclose(
         diagnostic_state.temperature.asnumpy(),
-        data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
+        jabw_exit_savepoint.temperature().asnumpy(),
     )
 
     assert helpers.dallclose(
@@ -88,7 +89,7 @@ def test_jabw_initial_condition(
     )
 
     assert helpers.dallclose(
-        solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
-        data_provider.from_savepoint_jabw_diagnostic().exner_pr().asnumpy(),
+        solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.asnumpy(),
+        data_provider.from_savepoint_diagnostics_initial().exner_pr().asnumpy(),
         atol=1.0e-14,
     )

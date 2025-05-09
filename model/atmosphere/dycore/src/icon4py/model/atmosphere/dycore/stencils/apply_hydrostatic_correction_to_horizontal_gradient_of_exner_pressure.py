@@ -18,7 +18,7 @@ from icon4py.model.common.type_alias import vpfloat
 def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[vpfloat],
-    z_hydro_corr: gtx.Field[gtx.Dims[dims.EdgeDim], vpfloat],
+    z_hydro_corr: fa.EdgeField[vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_22."""
@@ -30,7 +30,7 @@ def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
 def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[vpfloat],
-    z_hydro_corr: gtx.Field[gtx.Dims[dims.EdgeDim], vpfloat],
+    z_hydro_corr: fa.EdgeField[vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

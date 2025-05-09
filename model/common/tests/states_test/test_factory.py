@@ -14,7 +14,6 @@ import pytest
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_grid
 from icon4py.model.common.math import helpers as math_helpers
-from icon4py.model.common.metrics import metric_fields as metrics
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -52,6 +51,10 @@ class SimpleFieldSource(factory.FieldSource):
         self._metadata = {}
         self._register_initial_fields()
 
+    @common_utils.chainable
+    def with_metadata(self, metadata):
+        self._metadata.update(metadata)
+
     @property
     def metadata(self):
         return self._metadata
@@ -75,13 +78,25 @@ class SimpleFieldSource(factory.FieldSource):
 
 @pytest.fixture(scope="function")
 def cell_coordinate_source(grid_savepoint, backend):
-    on_gpu = common_utils.data_allocation.is_cupy_device(backend)
+    on_gpu = data_alloc.is_cupy_device(backend)
     grid = grid_savepoint.construct_icon_grid(on_gpu)
     lat = grid_savepoint.lat(dims.CellDim)
     lon = grid_savepoint.lon(dims.CellDim)
     data = {
         "lat": (lat, {"standard_name": "lat", "units": ""}),
         "lon": (lon, {"standard_name": "lon", "units": ""}),
+        "x": (
+            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+            {"standard_name": "x", "units": ""},
+        ),
+        "y": (
+            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+            {"standard_name": "y", "units": ""},
+        ),
+        "z": (
+            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+            {"standard_name": "z", "units": ""},
+        ),
     }
 
     coordinate_source = SimpleFieldSource(data_=data, backend=backend, grid=grid)
@@ -91,7 +106,7 @@ def cell_coordinate_source(grid_savepoint, backend):
 
 @pytest.fixture(scope="function")
 def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
-    on_gpu = common_utils.data_allocation.is_cupy_device(backend)
+    on_gpu = data_alloc.is_cupy_device(backend)
     grid = grid_savepoint.construct_icon_grid(on_gpu)
     z_ifc = metrics_savepoint.z_ifc()
     vct_a = grid_savepoint.vct_a()
@@ -105,15 +120,15 @@ def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
     field_source.reset()
 
 
-@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_field_operator_provider(cell_coordinate_source):
     field_op = math_helpers.geographical_to_cartesian_on_cells.with_backend(None)
+
     domain = {dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))}
     deps = {"lat": "lat", "lon": "lon"}
     fields = {"x": "x", "y": "y", "z": "z"}
 
-    provider = factory.FieldOperatorProvider(field_op, domain, fields, deps)
+    provider = factory.EmbeddedFieldOperatorProvider(field_op, domain, fields, deps)
     provider("x", cell_coordinate_source, cell_coordinate_source.backend, cell_coordinate_source)
     x = provider.fields["x"]
     assert isinstance(x, gtx.Field)
@@ -122,15 +137,15 @@ def test_field_operator_provider(cell_coordinate_source):
 
 @pytest.mark.datatest
 def test_program_provider(height_coordinate_source):
-    program = metrics.compute_z_mc
+    program = math_helpers.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
     deps = {
-        "z_ifc": "height_coordinate",
+        "input_field": "height_coordinate",
     }
-    fields = {"z_mc": "output_f"}
+    fields = {"average": "output_f"}
     provider = factory.ProgramFieldProvider(program, domain, fields, deps)
     provider(
         "output_f",
@@ -144,15 +159,15 @@ def test_program_provider(height_coordinate_source):
 
 
 def test_field_source_raise_error_on_register(cell_coordinate_source):
-    program = metrics.compute_z_mc
+    program = math_helpers.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
     deps = {
-        "z_ifc": "height_coordinate",
+        "input_field": "height_coordinate",
     }
-    fields = {"z_mc": "output_f"}
+    fields = {"result": "output_f"}
     provider = factory.ProgramFieldProvider(func=program, domain=domain, fields=fields, deps=deps)
     with pytest.raises(ValueError) as err:
         cell_coordinate_source.register_provider(provider)

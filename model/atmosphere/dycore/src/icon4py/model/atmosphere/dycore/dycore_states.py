@@ -9,9 +9,11 @@
 from __future__ import annotations
 
 import dataclasses
+import enum
 from typing import Optional
 
 import gt4py.next as gtx
+from gt4py.eve.utils import FrozenNamespace
 
 from icon4py.model.common import (
     dimension as dims,
@@ -20,33 +22,126 @@ from icon4py.model.common import (
 )
 
 
+class TimeSteppingScheme(enum.IntEnum):
+    """Parameter called `itime_scheme` in ICON namelist."""
+
+    #: Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
+    MOST_EFFICIENT = 4
+    #: Contravariant vertical velocity is computed in both substeps (beneficial for numerical stability in very-high resolution setups with extremely steep slopes)
+    STABLE = 5
+    #:  As STABLE, but velocity tendencies are also computed in both substeps (no benefit, but more expensive)
+    EXPENSIVE = 6
+
+
+class DivergenceDampingType(enum.IntEnum):
+    #: divergence damping acting on 2D divergence
+    TWO_DIMENSIONAL = 2
+    #: divergence damping acting on 3D divergence
+    THREE_DIMENSIONAL = 3
+    #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
+    COMBINED = 32
+
+
+class DivergenceDampingOrder(FrozenNamespace[int]):
+    #: 2nd order divergence damping
+    SECOND_ORDER = 2
+    #: 4th order divergence damping
+    FOURTH_ORDER = 4
+    #: combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
+    COMBINED = 24
+
+
+class HorizontalPressureDiscretizationType(FrozenNamespace[int]):
+    """Parameter called igradp_method in ICON namelist."""
+
+    #: conventional discretization with metric correction term
+    CONVENTIONAL = 1
+    #: Taylor-expansion-based reconstruction of pressure
+    TAYLOR = 2
+    #: Similar discretization as igradp_method_taylor, but uses hydrostatic approximation for downward extrapolation over steep slopes
+    TAYLOR_HYDRO = 3
+    #: Cubic / quadratic polynomial interpolation for pressure reconstruction
+    POLYNOMIAL = 4
+    #: Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
+    POLYNOMIAL_HYDRO = 5
+
+
+class RhoThetaAdvectionType(FrozenNamespace[int]):
+    """Parameter called iadv_rhotheta in ICON namelist."""
+
+    #: simple 2nd order upwind-biased scheme
+    SIMPLE = 1
+    #: 2nd order Miura horizontal
+    MIURA = 2
+
+
 @dataclasses.dataclass
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
-    vt: fa.EdgeKField[float]
-    vn_ie: fa.EdgeKField[
+    tangential_wind: fa.EdgeKField[float]
+    """
+    Declared as vt in ICON. Tangential wind at edge.
+    """
+
+    vn_on_half_levels: fa.EdgeKField[
         float
     ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    w_concorr_c: fa.CellKField[
+    """
+    Declared as vn_ie in ICON. Normal wind at edge on k-half levels.
+    """
+
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[
         float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    theta_v_ic: fa.CellKField[float]
-    exner_pr: fa.CellKField[float]
-    rho_ic: fa.CellKField[float]
+    """
+    Declared as w_concorr_c in ICON. Contravariant correction at cell center on k-half levels. vn dz/dn + vt dz/dt, z is topography height
+    """
+
+    theta_v_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as theta_v_ic in ICON.
+    """
+
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as exner_pr in ICON.
+    """
+
+    rho_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as rho_ic in ICON.
+    """
+
     ddt_exner_phy: fa.CellKField[float]
     grf_tend_rho: fa.CellKField[float]
     grf_tend_thv: fa.CellKField[float]
     grf_tend_w: fa.CellKField[float]
     mass_fl_e: fa.EdgeKField[float]
-    ddt_vn_phy: fa.EdgeKField[float]
+
+    normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[float]
+    """
+    Declared as ddt_vn_phy in ICON.
+    """
+
     grf_tend_vn: fa.EdgeKField[float]
-    ddt_vn_apc_pc: common_utils.PredictorCorrectorPair[fa.EdgeKField[float]]
-    ddt_w_adv_pc: common_utils.PredictorCorrectorPair[fa.CellKField[float]]
+    normal_wind_advective_tendency: common_utils.PredictorCorrectorPair[fa.EdgeKField[float]]
+    """
+    Declared as ddt_vn_apc_pc in ICON. Advective tendency of normal wind (including coriolis force).
+    """
+
+    vertical_wind_advective_tendency: common_utils.PredictorCorrectorPair[fa.CellKField[float]]
+    """
+    Declared as ddt_w_adv_pc in ICON. Advective tendency of vertical wind.
+    """
 
     # Analysis increments
     rho_incr: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
-    vn_incr: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    normal_wind_iau_increments: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    """
+    Declared as vn_incr in ICON.
+    """
+
     exner_incr: Optional[fa.EdgeKField[float]]  # exner increment [- ]
     exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
 
@@ -102,15 +197,38 @@ class MetricStateNonHydro:
     wgtfac_e: fa.EdgeKField[float]
     wgtfacq_e: fa.EdgeKField[float]
 
-    exner_exfac: fa.CellKField[float]
-    exner_ref_mc: fa.CellKField[float]
-    rho_ref_mc: fa.CellKField[float]
-    theta_ref_mc: fa.CellKField[float]
-    rho_ref_me: fa.EdgeKField[float]
-    theta_ref_me: fa.EdgeKField[float]
-    theta_ref_ic: fa.CellKField[float]
-
-    d_exner_dz_ref_ic: fa.CellKField[float]
+    time_extrapolation_parameter_for_exner: fa.CellKField[float]
+    """
+    Declared as exner_exfac in ICON.
+    """
+    reference_exner_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as exner_ref_mc in ICON.
+    """
+    reference_rho_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as rho_ref_mc in ICON.
+    """
+    reference_theta_at_cells_on_model_levels: fa.CellKField[float]
+    """
+    Declared as theta_ref_mc in ICON.
+    """
+    reference_rho_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as rho_ref_me in ICON.
+    """
+    reference_theta_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as theta_ref_me in ICON.
+    """
+    reference_theta_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as theta_ref_ic in ICON.
+    """
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as d_exner_dz_ref_ic in ICON.
+    """
     ddqz_z_half: fa.CellKField[float]  # half dims.KDim ?
     d2dexdz2_fac1_mc: fa.CellKField[float]
     d2dexdz2_fac2_mc: fa.CellKField[float]
@@ -121,14 +239,21 @@ class MetricStateNonHydro:
 
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], float]
     zdiff_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], float]
-    ipeidx_dsl: fa.EdgeKField[bool]
+    pg_edgeidx_dsl: fa.EdgeKField[bool]
     pg_exdist: fa.EdgeKField[float]
 
     vwind_expl_wgt: fa.CellField[float]
     vwind_impl_wgt: fa.CellField[float]
 
-    hmask_dd3d: fa.EdgeField[float]
-    scalfac_dd3d: fa.KField[float]
+    horizontal_mask_for_3d_divdamp: fa.EdgeField[float]
+    """
+    Declared as hmask_dd3d in ICON. A horizontal mask where 3D divergence is computed for the divergence damping.
+    3D divergence is defined as divergence of horizontal wind plus vertical derivative of vertical wind (dw/dz).
+    """
+    scaling_factor_for_3d_divdamp: fa.KField[float]
+    """
+    Declared as scalfac_dd3d in ICON. A scaling factor in vertical dimension for 3D divergence damping.
+    """
 
     coeff1_dwdz: fa.CellKField[float]
     coeff2_dwdz: fa.CellKField[float]
