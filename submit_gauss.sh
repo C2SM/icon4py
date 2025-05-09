@@ -6,8 +6,8 @@
 #SBATCH --partition=debug
 #SBATCH --time=0:30:00
 #SBATCH --job-name=torus_test
-#SBATCH --output=logs/torus_log.o
-#SBATCH --error=logs/torus_log.o
+#SBATCH --output=logs/torus.log
+#SBATCH --error=logs/torus.log
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=4
 ## #SBATCH --ntasks-per-node=1
