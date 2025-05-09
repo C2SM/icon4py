@@ -40,9 +40,6 @@ from icon4py.model.testing import helpers
 from .test_compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner_numpy,
 )
-from .test_compute_first_vertical_derivative import (
-    compute_first_vertical_derivative_numpy,
-)
 from .test_compute_perturbation_of_rho_and_theta import (
     compute_perturbation_of_rho_and_theta_numpy,
 )
@@ -60,13 +57,19 @@ from .test_interpolate_cell_field_to_half_levels_vp import (
 )
 from .test_interpolate_to_surface import (
     interpolate_to_surface_numpy,
-)
+
 from .test_set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary_numpy,
 )
 
 
 horzpres_discr_type = HorizontalPressureDiscretizationType()
+
+def  (
+    cell_kdim_field: np.ndarray, inv_ddqz_z_full: np.ndarray
+) -> np.ndarray:
+    first_vertical_derivative = (cell_kdim_field[:, :-1] - cell_kdim_field[:, 1:]) * inv_ddqz_z_full
+    return first_vertical_derivative
 
 
 class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
@@ -204,7 +207,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
                 & (horz_idx < end_cell_halo)
                 & (nflatlev <= vert_idx[: vertical_end - 1]),
                 compute_first_vertical_derivative_numpy(
-                    z_exner_ic=exner_at_cells_on_half_levels, inv_ddqz_z_full=inv_ddqz_z_full
+                    cell_kdim_field=exner_at_cells_on_half_levels, inv_ddqz_z_full=inv_ddqz_z_full
                 ),
                 ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             )
