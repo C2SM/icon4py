@@ -18,18 +18,22 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_max_nbhgt,
     compute_maxslp_maxhgtd,
     compute_weighted_cell_neighbor_sum,
-    compute_z_mc,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
-@pytest.mark.cpu_only
+@pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
-    metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
+    metrics_savepoint,
+    experiment,
+    interpolation_savepoint,
+    icon_grid,
+    grid_savepoint,
+    backend,
 ):
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")
@@ -42,6 +46,7 @@ def test_compute_diffusion_metrics(
 
     c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
     c_bln_avg = interpolation_savepoint.c_bln_avg()
+    z_mc = metrics_savepoint.z_mc()
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125.0
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
@@ -62,19 +67,6 @@ def test_compute_diffusion_metrics(
         vertical_start=0,
         vertical_end=nlev,
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
-    )
-
-    z_mc = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-    )
-    compute_z_mc.with_backend(backend)(
-        metrics_savepoint.z_ifc(),
-        z_mc,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
     compute_weighted_cell_neighbor_sum.with_backend(backend)(

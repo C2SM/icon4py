@@ -89,7 +89,7 @@ def test_jabw_initial_condition(
     )
 
     assert helpers.dallclose(
-        solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
+        solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.asnumpy(),
         data_provider.from_savepoint_diagnostics_initial().exner_pr().asnumpy(),
         atol=1.0e-14,
     )

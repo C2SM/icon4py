@@ -25,7 +25,6 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     type_alias as ta,
 )
-from icon4py.model.common.dimension import CellDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -90,35 +89,11 @@ _SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dic
         units="kg m-3",
         icon_var_name="rho",
     ),
-    exner_function=dict(
-        standard_name="dimensionless_exner_function",
-        long_name="exner function",
-        icon_var_name="exner",
-        units="1",
-    ),
     temperature=dict(
         standard_name="air_temperature",
         long_name="air temperature",
         units="K",
         icon_var_name="temp",
-    ),
-    virtual_temperature=dict(
-        standard_name="air_virtual_temperature",
-        long_name="air virtual temperature",
-        units="K",
-        icon_var_name="tempv",
-    ),
-    pressure=dict(
-        standard_name="air_pressure",
-        long_name="air pressure",
-        units="Pa",
-        icon_var_name="pres",
-    ),
-    interface_pressure=dict(
-        standard_name="air_pressure_at_interface_level",
-        long_name="air pressure at model interface level",
-        units="Pa",
-        icon_var_name="pres_ifc",
     ),
     specific_humidity=dict(
         standard_name="specific_humidity",
@@ -132,59 +107,15 @@ _SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dic
         units="1",
         icon_var_name="qc",
     ),
-    specific_ice=dict(
-        standard_name="specific_ice_content",
-        long_name="ratio of cloud ice mass to total moist air parcel mass",
-        units="1",
-        icon_var_name="qi",
-    ),
-    specific_rain=dict(
-        standard_name="specific_rain_content",
-        long_name="ratio of rain mass to total moist air parcel mass",
-        units="1",
-        icon_var_name="qr",
-    ),
-    specific_snow=dict(
-        standard_name="specific_snow_content",
-        long_name="ratio of snow mass to total moist air parcel mass",
-        units="1",
-        icon_var_name="qs",
-    ),
-    specific_graupel=dict(
-        standard_name="specific_graupel_content",
-        long_name="ratio of graupel mass to total moist air parcel mass",
-        units="1",
-        icon_var_name="qg",
-    ),
 )
 
 
 #: CF attributes of saturation adjustment output variables
 _SATURATION_ADJUST_OUTPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
-    tend_exner_function_due_to_satad=dict(
-        standard_name="tendency_of_dimensionless_exner_function_due_to_saturation_adjustment",
-        long_name="tendency of exner function due to saturation adjustment",
-        units="K s-1",
-    ),
     tend_temperature_due_to_satad=dict(
         standard_name="tendency_of_air_temperature_due_to_saturation_adjustment",
         long_name="tendency of air temperature due to saturation adjustment",
         units="K s-1",
-    ),
-    tend_virtual_temperature_due_to_satad=dict(
-        standard_name="tendency_of_air_virtual_temperature_due_to_saturation_adjustment",
-        long_name="air virtual temperature",
-        units="K s-1",
-    ),
-    tend_pressure_due_to_satad=dict(
-        standard_name="tendency_of_air_pressure_due_to_saturation_adjustment",
-        long_name="tendency of air pressure due to saturation adjustment",
-        units="Pa s-1",
-    ),
-    tend_interface_pressure_due_to_satad=dict(
-        standard_name="tendency_of_air_pressure_at_interface_level_due_to_saturation_adjustment",
-        long_name="tendency of air pressure at model interface level due to saturation adjustment",
-        units="Pa s-1",
     ),
     tend_specific_humidity_due_to_satad=dict(
         standard_name="tendency_of_specific_humidity_due_to_saturation_adjustment",
@@ -269,7 +200,7 @@ class SaturationAdjustment:
         )
 
     def _determine_horizontal_domains(self):
-        cell_domain = h_grid.domain(CellDim)
+        cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
