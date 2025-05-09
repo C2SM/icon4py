@@ -22,9 +22,49 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
+    wgtfac_c: np.ndarray,
+    rho: np.ndarray,
+    rho_ref_mc: np.ndarray,
+    theta_v: np.ndarray,
+    theta_ref_mc: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    rho_offset_1 = np.roll(rho, shift=1, axis=1)
+    rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
+    rho_ic[:, 0] = 0
+    z_rth_pr_1 = rho - rho_ref_mc
+    z_rth_pr_1[:, 0] = 0
+    z_rth_pr_2 = theta_v - theta_ref_mc
+    z_rth_pr_2[:, 0] = 0
+    return rho_ic, z_rth_pr_1, z_rth_pr_2
+
+
 class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest):
     PROGRAM = compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers
     OUTPUTS = ("rho_ic", "z_rth_pr_1", "z_rth_pr_2")
+
+    @staticmethod
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_c: np.ndarray,
+        rho: np.ndarray,
+        rho_ref_mc: np.ndarray,
+        theta_v: np.ndarray,
+        theta_ref_mc: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        (
+            rho_ic,
+            z_rth_pr_1,
+            z_rth_pr_2,
+        ) = compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
+            wgtfac_c=wgtfac_c,
+            rho=rho,
+            rho_ref_mc=rho_ref_mc,
+            theta_v=theta_v,
+            theta_ref_mc=theta_ref_mc,
+        )
+        return dict(rho_ic=rho_ic, z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -51,23 +91,3 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
             vertical_start=1,
             vertical_end=gtx.int32(grid.num_levels),
         )
-
-    @staticmethod
-    def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
-        wgtfac_c: np.ndarray,
-        rho: np.ndarray,
-        rho_ref_mc: np.ndarray,
-        theta_v: np.ndarray,
-        theta_ref_mc: np.ndarray,
-        **kwargs: Any,
-    ) -> dict:
-        rho_offset_1 = np.roll(rho, shift=1, axis=1)
-        rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
-        rho_ic[:, 0] = 0
-        z_rth_pr_1 = rho - rho_ref_mc
-        z_rth_pr_1[:, 0] = 0
-        z_rth_pr_2 = theta_v - theta_ref_mc
-        z_rth_pr_2[:, 0] = 0
-
-        return dict(rho_ic=rho_ic, z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)

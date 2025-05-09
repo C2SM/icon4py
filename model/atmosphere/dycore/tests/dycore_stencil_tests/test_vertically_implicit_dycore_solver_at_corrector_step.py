@@ -125,7 +125,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         vertical_implicit_weight: np.ndarray,
         theta_v_at_cells_on_half_levels: np.ndarray,
         exner_pr: np.ndarray,
-        ddt_exner_phy: np.ndarray,
+        exner_tendency_due_to_slow_physics: np.ndarray,
         rho_iau_increment: np.ndarray,
         exner_iau_increment: np.ndarray,
         ddqz_z_half: np.ndarray,
@@ -246,7 +246,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
                 z_flxdiv_theta=divergence_of_theta_v,
                 theta_v_ic=theta_v_at_cells_on_half_levels,
-                ddt_exner_phy=ddt_exner_phy,
+                ddt_exner_phy=exner_tendency_due_to_slow_physics,
                 dtime=dtime,
             ),
             (rho_explicit_term, exner_explicit_term),
@@ -373,7 +373,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 update_dynamical_exner_time_increment_numpy(
                     connectivities=connectivities,
                     exner=next_exner,
-                    ddt_exner_phy=ddt_exner_phy,
+                    ddt_exner_phy=exner_tendency_due_to_slow_physics,
                     exner_dyn_incr=exner_dynamical_increment,
                     ndyn_substeps_var=ndyn_substeps_var,
                     dtime=dtime,
@@ -430,7 +430,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
         )
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        ddt_exner_phy = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        exner_tendency_due_to_slow_physics = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
@@ -510,7 +510,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             vertical_implicit_weight=vertical_implicit_weight,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             exner_pr=exner_pr,
-            ddt_exner_phy=ddt_exner_phy,
+            exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
             rho_iau_increment=rho_iau_increment,
             exner_iau_increment=exner_iau_increment,
             ddqz_z_half=ddqz_z_half,

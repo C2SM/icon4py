@@ -136,14 +136,14 @@ def model_initialization_serialbox(
     )
     solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_at_cells_on_half_levels=solve_nonhydro_init_savepoint.theta_v_ic(),
-        exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
-        rho_ic=solve_nonhydro_init_savepoint.rho_ic(),
-        ddt_exner_phy=solve_nonhydro_init_savepoint.ddt_exner_phy(),
+        perturbed_exner_at_cells_on_model_levels=solve_nonhydro_init_savepoint.exner_pr(),
+        rho_at_cells_on_half_levels=solve_nonhydro_init_savepoint.rho_ic(),
+        exner_tendency_due_to_slow_physics=solve_nonhydro_init_savepoint.ddt_exner_phy(),
         grf_tend_rho=solve_nonhydro_init_savepoint.grf_tend_rho(),
         grf_tend_thv=solve_nonhydro_init_savepoint.grf_tend_thv(),
         grf_tend_w=solve_nonhydro_init_savepoint.grf_tend_w(),
         mass_flux_at_edges_on_model_levels=solve_nonhydro_init_savepoint.mass_fl_e(),
-        normal_wind_tendency_due_to_physics_process=solve_nonhydro_init_savepoint.ddt_vn_phy(),
+        normal_wind_tendency_due_to_slow_physics_process=solve_nonhydro_init_savepoint.ddt_vn_phy(),
         grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             velocity_init_savepoint.ddt_vn_apc_pc(1),

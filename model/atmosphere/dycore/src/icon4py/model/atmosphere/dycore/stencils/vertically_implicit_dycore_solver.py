@@ -78,15 +78,23 @@ def _set_surface_boundary_condtion_for_computation_of_w(
 def _compute_w_explicit_term_with_predictor_advective_tendency(
     current_w: fa.CellKField[wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
     dtime: wpfloat,
 ) -> fa.CellKField[wpfloat]:
-    predictor_vertical_wind_advective_tendency_wp, z_th_ddz_exner_c_wp = astype(
-        (predictor_vertical_wind_advective_tendency, z_th_ddz_exner_c), wpfloat
+    (
+        predictor_vertical_wind_advective_tendency_wp,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels_wp,
+    ) = astype(
+        (
+            predictor_vertical_wind_advective_tendency,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        ),
+        wpfloat,
     )
 
     w_explicit_term_wp = current_w + dtime * (
-        predictor_vertical_wind_advective_tendency_wp - dycore_consts.cpd * z_th_ddz_exner_c_wp
+        predictor_vertical_wind_advective_tendency_wp
+        - dycore_consts.cpd * pressure_buoyancy_acceleration_at_cells_on_half_levels_wp
     )
     return w_explicit_term_wp
 
@@ -96,7 +104,7 @@ def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_ten
     current_w: fa.CellKField[wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     corrector_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
     dtime: wpfloat,
     advection_explicit_weight: wpfloat,
     advection_implicit_weight: wpfloat,
@@ -104,12 +112,12 @@ def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_ten
     (
         predictor_vertical_wind_advective_tendency_wp,
         corrector_vertical_wind_advective_tendency_wp,
-        z_th_ddz_exner_c_wp,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels_wp,
     ) = astype(
         (
             predictor_vertical_wind_advective_tendency,
             corrector_vertical_wind_advective_tendency,
-            z_th_ddz_exner_c,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels,
         ),
         wpfloat,
     )
@@ -117,7 +125,7 @@ def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_ten
     w_explicit_term_wp = current_w + dtime * (
         advection_explicit_weight * predictor_vertical_wind_advective_tendency_wp
         + advection_implicit_weight * corrector_vertical_wind_advective_tendency_wp
-        - dycore_consts.cpd * z_th_ddz_exner_c_wp
+        - dycore_consts.cpd * pressure_buoyancy_acceleration_at_cells_on_half_levels_wp
     )
     return w_explicit_term_wp
 
@@ -130,7 +138,7 @@ def _compute_solver_coefficients_matrix(
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     vertical_implicit_weight: fa.CellField[wpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
     dtime: wpfloat,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
@@ -142,7 +150,9 @@ def _compute_solver_coefficients_matrix(
         / (dycore_consts.cvd * current_rho * current_theta_v)
         * inv_ddqz_z_full_wp
     )
-    z_alpha_wp = vertical_implicit_weight * theta_v_at_cells_on_half_levels * rho_ic
+    z_alpha_wp = (
+        vertical_implicit_weight * theta_v_at_cells_on_half_levels * rho_at_cells_on_half_levels
+    )
     return astype((z_beta_wp, z_alpha_wp), vpfloat)
 
 
@@ -154,8 +164,8 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     vertical_explicit_weight: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
@@ -165,8 +175,8 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     vertical_implicit_weight: fa.CellField[ta.wpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    exner_pr: fa.CellKField[ta.wpfloat],
-    ddt_exner_phy: fa.CellKField[ta.vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
@@ -196,7 +206,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         _compute_w_explicit_term_with_predictor_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
             dtime=dtime,
         ),
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
@@ -205,7 +215,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
-        rho_ic
+        rho_at_cells_on_half_levels
         * (
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + vertical_explicit_weight * current_w
@@ -217,14 +227,14 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         tridiagonal_beta_coeff_at_cells_on_model_levels,
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
     ) = _compute_solver_coefficients_matrix(
-        current_exner,
-        current_rho,
-        current_theta_v,
-        inv_ddqz_z_full,
-        vertical_implicit_weight,
-        theta_v_at_cells_on_half_levels,
-        rho_ic,
-        dtime,
+        current_exner=current_exner,
+        current_rho=current_rho,
+        current_theta_v=current_theta_v,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        vertical_implicit_weight=vertical_implicit_weight,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+        dtime=dtime,
     )
 
     (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
@@ -241,11 +251,11 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         inv_ddqz_z_full=inv_ddqz_z_full,
         z_flxdiv_mass=divergence_of_mass,
         z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
-        exner_pr=exner_pr,
+        exner_pr=perturbed_exner_at_cells_on_model_levels,
         z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
         z_flxdiv_theta=divergence_of_theta_v,
         theta_v_ic=theta_v_at_cells_on_half_levels,
-        ddt_exner_phy=ddt_exner_phy,
+        ddt_exner_phy=exner_tendency_due_to_slow_physics,
         dtime=dtime,
     )
 
@@ -314,7 +324,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     next_theta_v: fa.CellKField[ta.wpfloat],
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     exner_dynamical_increment: fa.CellKField[ta.vpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
@@ -363,7 +373,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
             z_rho_expl=rho_explicit_term,
             vwind_impl_wgt=vertical_implicit_weight,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            rho_ic=rho_ic,
+            rho_ic=rho_at_cells_on_half_levels,
             w=next_w,
             z_exner_expl=exner_explicit_term,
             exner_ref_mc=exner_ref_mc,
@@ -422,8 +432,8 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     vertical_explicit_weight: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
@@ -433,8 +443,8 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     vertical_implicit_weight: fa.CellField[ta.wpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    exner_pr: fa.CellKField[ta.wpfloat],
-    ddt_exner_phy: fa.CellKField[ta.vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
@@ -467,7 +477,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
             dtime=dtime,
             advection_explicit_weight=advection_explicit_weight,
             advection_implicit_weight=advection_implicit_weight,
@@ -478,7 +488,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
-        rho_ic
+        rho_at_cells_on_half_levels
         * (
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + vertical_explicit_weight * current_w
@@ -490,14 +500,14 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         tridiagonal_beta_coeff_at_cells_on_model_levels,
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
     ) = _compute_solver_coefficients_matrix(
-        current_exner,
-        current_rho,
-        current_theta_v,
-        inv_ddqz_z_full,
-        vertical_implicit_weight,
-        theta_v_at_cells_on_half_levels,
-        rho_ic,
-        dtime,
+        current_exner=current_exner,
+        current_rho=current_rho,
+        current_theta_v=current_theta_v,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        vertical_implicit_weight=vertical_implicit_weight,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+        dtime=dtime,
     )
 
     (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
@@ -514,11 +524,11 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         inv_ddqz_z_full=inv_ddqz_z_full,
         z_flxdiv_mass=divergence_of_mass,
         z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
-        exner_pr=exner_pr,
+        exner_pr=perturbed_exner_at_cells_on_model_levels,
         z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
         z_flxdiv_theta=divergence_of_theta_v,
         theta_v_ic=theta_v_at_cells_on_half_levels,
-        ddt_exner_phy=ddt_exner_phy,
+        ddt_exner_phy=exner_tendency_due_to_slow_physics,
         dtime=dtime,
     )
 
@@ -590,13 +600,13 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_dynamical_increment: fa.CellKField[ta.wpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     vertical_implicit_weight: fa.CellField[ta.wpfloat],
-    ddt_exner_phy: fa.CellKField[ta.vpfloat],
+    exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rayleigh_damping_factor: fa.KField[ta.wpfloat],
     exner_ref_mc: fa.CellKField[ta.vpfloat],
     rho_explicit_term: fa.CellKField[ta.wpfloat],
@@ -642,7 +652,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
             z_rho_expl=rho_explicit_term,
             vwind_impl_wgt=vertical_implicit_weight,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            rho_ic=rho_ic,
+            rho_ic=rho_at_cells_on_half_levels,
             w=next_w,
             z_exner_expl=exner_explicit_term,
             exner_ref_mc=exner_ref_mc,
@@ -680,7 +690,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
             1 <= dims.KDim,
             _update_mass_volume_flux(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
-                rho_ic=rho_ic,
+                rho_ic=rho_at_cells_on_half_levels,
                 vwind_impl_wgt=vertical_implicit_weight,
                 w=next_w,
                 mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
@@ -704,7 +714,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
             dims.KDim >= kstart_moist,
             _update_dynamical_exner_time_increment(
                 exner=next_exner,
-                ddt_exner_phy=ddt_exner_phy,
+                ddt_exner_phy=exner_tendency_due_to_slow_physics,
                 exner_dyn_incr=exner_dynamical_increment,
                 ndyn_substeps_var=ndyn_substeps_var,
                 dtime=dtime,
@@ -743,8 +753,8 @@ def vertically_implicit_solver_at_predictor_step(
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     vertical_explicit_weight: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
@@ -754,8 +764,8 @@ def vertically_implicit_solver_at_predictor_step(
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     vertical_implicit_weight: fa.CellField[ta.wpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    exner_pr: fa.CellKField[ta.wpfloat],
-    ddt_exner_phy: fa.CellKField[ta.vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
@@ -796,8 +806,8 @@ def vertically_implicit_solver_at_predictor_step(
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-        z_th_ddz_exner_c=z_th_ddz_exner_c,
-        rho_ic=rho_ic,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         vertical_explicit_weight=vertical_explicit_weight,
         current_exner=current_exner,
@@ -807,8 +817,8 @@ def vertically_implicit_solver_at_predictor_step(
         inv_ddqz_z_full=inv_ddqz_z_full,
         vertical_implicit_weight=vertical_implicit_weight,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-        exner_pr=exner_pr,
-        ddt_exner_phy=ddt_exner_phy,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
         rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=ddqz_z_half,
@@ -838,7 +848,7 @@ def vertically_implicit_solver_at_predictor_step(
         next_theta_v=next_theta_v,
         dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
         exner_dynamical_increment=exner_dynamical_increment,
-        rho_ic=rho_ic,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         current_exner=current_exner,
         current_rho=current_rho,
@@ -891,8 +901,8 @@ def vertically_implicit_solver_at_corrector_step(
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[ta.vpfloat],
-    rho_ic: fa.CellKField[ta.wpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     vertical_explicit_weight: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
@@ -902,8 +912,8 @@ def vertically_implicit_solver_at_corrector_step(
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     vertical_implicit_weight: fa.CellField[ta.wpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    exner_pr: fa.CellKField[ta.wpfloat],
-    ddt_exner_phy: fa.CellKField[ta.vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
@@ -948,8 +958,8 @@ def vertically_implicit_solver_at_corrector_step(
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
-        z_th_ddz_exner_c=z_th_ddz_exner_c,
-        rho_ic=rho_ic,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         vertical_explicit_weight=vertical_explicit_weight,
         current_exner=current_exner,
@@ -959,8 +969,8 @@ def vertically_implicit_solver_at_corrector_step(
         inv_ddqz_z_full=inv_ddqz_z_full,
         vertical_implicit_weight=vertical_implicit_weight,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-        exner_pr=exner_pr,
-        ddt_exner_phy=ddt_exner_phy,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
         rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=ddqz_z_half,
@@ -995,13 +1005,13 @@ def vertically_implicit_solver_at_corrector_step(
         dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
         exner_dynamical_increment=exner_dynamical_increment,
-        rho_ic=rho_ic,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         current_exner=current_exner,
         current_rho=current_rho,
         current_theta_v=current_theta_v,
         inv_ddqz_z_full=inv_ddqz_z_full,
         vertical_implicit_weight=vertical_implicit_weight,
-        ddt_exner_phy=ddt_exner_phy,
+        exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
         rayleigh_damping_factor=rayleigh_damping_factor,
         exner_ref_mc=exner_ref_mc,
         rho_explicit_term=rho_explicit_term,
