@@ -90,8 +90,8 @@ build_distributed_cpu:
       #- uv run pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
-      - COMPONENT: [ atmosphere/diffusion, atmosphere/dycore, atmosphere/advection, common, driver] # [microphysics]
-        BACKEND: [ gtfn_cpu] # dace_cpu
+      - COMPONENT: [ atmosphere/diffusion, atmosphere/dycore, common] # [atmosphere/advection,microphysics,driver]
+        BACKEND: [ gtfn_cpu, dace_cpu]
   rules:
     - when: on_success
 
