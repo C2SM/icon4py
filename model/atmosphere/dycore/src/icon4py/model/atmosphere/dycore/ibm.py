@@ -23,6 +23,7 @@ Immersed boundary method module
 log = logging.getLogger(__name__)
 
 DO_IBM = True
+DEBUG_LEVEL = 2
 
 
 class ImmersedBoundaryMethod:
@@ -41,7 +42,7 @@ class ImmersedBoundaryMethod:
         Initialize the immersed boundary method.
         """
         self.DO_IBM = DO_IBM
-        self.DEBUG_LEVEL = 2
+        self.DEBUG_LEVEL = DEBUG_LEVEL
 
         if not self.DO_IBM:
             return

@@ -792,22 +792,6 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
         )
 
-        #---> IBM
-        # # check
-        # self._ibm.check_boundary_conditions(prognostic_states.next)
-        # # log messages
-        # vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
-        # field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
-        # field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
-        # log.info(f" ***after_predictor MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
-        # # plots
-        # self._plot.plot_levels(prognostic_states.next.vn,      label=f"after_predictor_vvec_edge")
-        # self._plot.plot_levels(prognostic_states.next.w,       label=f"after_predictor_w")
-        # self._plot.plot_levels(prognostic_states.next.rho,     label=f"after_predictor_rho")
-        # self._plot.plot_levels(prognostic_states.next.exner,   label=f"after_predictor_exner")
-        # self._plot.plot_levels(prognostic_states.next.theta_v, label=f"after_predictor_theta_v")
-        #<--- IBM
-
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -819,22 +803,6 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
-
-        #---> IBM
-        # # check
-        # self._ibm.check_boundary_conditions(prognostic_states.next)
-        # # log messages
-        # vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
-        # field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
-        # field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
-        # log.info(f" ***after_corrector MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
-        # # plots
-        # self._plot.plot_levels(prognostic_states.next.vn,      label=f"after_corrector_vvec_edge")
-        # self._plot.plot_levels(prognostic_states.next.w,       label=f"after_corrector_w")
-        # self._plot.plot_levels(prognostic_states.next.rho,     label=f"after_corrector_rho")
-        # self._plot.plot_levels(prognostic_states.next.exner,   label=f"after_corrector_exner")
-        # self._plot.plot_levels(prognostic_states.next.theta_v, label=f"after_corrector_theta_v")
-        #<--- IBM
 
         if self._grid.limited_area:
             self._compute_theta_and_exner(
@@ -1020,8 +988,10 @@ class SolveNonhydro:
                 self.hydrostatic_correction.ndarray[:, lowest_level],
                 allocator=self._backend.allocator,
             )
-        # # This ibm code should go inside the following stencil
         # #---> IBM
+        # # This should go inside the following stencil, but it cannot because
+        # class instances cannot be passed to field operators, so there
+        # currently is an ugly workaround implemented in the stencil.
         # self._ibm.set_bcs_green_gauss_gradient(self.z_grad_rth_1, self.z_grad_rth_2)
         # self._ibm.set_bcs_green_gauss_gradient(self.z_grad_rth_3, self.z_grad_rth_4)
         # #<--- IBM
@@ -1058,6 +1028,7 @@ class SolveNonhydro:
             ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
             pg_exdist=self._metric_state_nonhydro.pg_exdist,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
+            ibm_green_gauss_gradient_mask=self._ibm.neigh_full_cell_mask,
             dtime=dtime,
             cpd=constants.CPD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
