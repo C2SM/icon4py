@@ -10,26 +10,16 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     tar \
     wget \
     curl \
+    libnuma-dev \
     libopenmpi-dev\
     ca-certificates \
-    zlib1g-dev \
     libssl-dev \
-    libbz2-dev \
-    libsqlite3-dev \
-    libnuma-dev \
-    llvm \
-    libncurses5-dev \
-    libncursesw5-dev \
-    xz-utils \
-    tk-dev \
-    libffi-dev \
-    libhdf5-dev \
-    liblzma-dev \
-    python3-openssl \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
     libreadline-dev \
-    git \
-    jq \
-    htop && \
+    git && \
     rm -rf /var/lib/apt/lists/*
 
 
