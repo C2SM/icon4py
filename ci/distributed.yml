@@ -63,8 +63,7 @@ build_distributed_cpu:
   variables:
     SLURM_TIMELIMIT: '03:00:00'
     SLURM_JOB_NUM_NODES: 1
-    ICON4PY_MPI_TASKS: 1
-    USE_MPI: "YES"
+    ICON4PY_MPI_TASKS: 4
     SLURM_NTASKS: "${ICON4PY_MPI_TASKS}"
     TEST_DATA_PATH: "/icon4py/ci/testdata"
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
