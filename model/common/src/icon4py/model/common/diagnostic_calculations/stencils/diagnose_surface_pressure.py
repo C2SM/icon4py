@@ -5,13 +5,23 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Final
+
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import exp, log
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    constants as phy_const,
+    dimension as dims,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 from icon4py.model.common.dimension import Koff
+
+
+physics_constants: Final = phy_const._PhysicsConstants()
 
 
 @field_operator
@@ -19,13 +29,10 @@ def _diagnose_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
-    cpd_o_rd: ta.wpfloat,
-    p0ref: ta.wpfloat,
-    grav_o_rd: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    surface_pressure = p0ref * exp(
-        cpd_o_rd * log(exner(Koff[-3]))
-        + grav_o_rd
+    surface_pressure = physics_constants.p0ref * exp(
+        physics_constants.cpd_o_rd * log(exner(Koff[-3]))
+        + physics_constants.grav_o_rd
         * (
             ddqz_z_full(Koff[-1]) / virtual_temperature(Koff[-1])
             + ddqz_z_full(Koff[-2]) / virtual_temperature(Koff[-2])
@@ -41,9 +48,6 @@ def diagnose_surface_pressure(
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     surface_pressure: fa.CellKField[ta.wpfloat],
-    cpd_o_rd: ta.wpfloat,
-    p0ref: ta.wpfloat,
-    grav_o_rd: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -53,9 +57,6 @@ def diagnose_surface_pressure(
         exner,
         virtual_temperature,
         ddqz_z_full,
-        cpd_o_rd,
-        p0ref,
-        grav_o_rd,
         out=surface_pressure,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

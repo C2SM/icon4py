@@ -6,13 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     saturation_adjustment as satad,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.diagnostic_calculations.stencils import (
+    calculate_tendency,
+    diagnose_pressure,
+    diagnose_surface_pressure,
+)
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -46,7 +52,6 @@ def test_saturation_adjustement(
     grid_savepoint,
     metrics_savepoint,
     icon_grid,
-    lowest_layer_thickness,
     backend,
 ):
     satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
@@ -55,7 +60,6 @@ def test_saturation_adjustement(
     config = satad.SaturationAdjustmentConfig(
         tolerance=1e-3,
         max_iter=10,
-        diagnose_variables_from_new_temperature=diagnose_values,
     )
     dtime = 2.0
 
@@ -66,6 +70,15 @@ def test_saturation_adjustement(
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
+    temperature_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+    qv_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    qc_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    virtual_temperature_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+    exner_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
 
     metric_state = satad.MetricStateSaturationAdjustment(
         ddqz_z_full=metrics_savepoint.ddqz_z_full()
@@ -78,6 +91,7 @@ def test_saturation_adjustement(
         vertical_params=vertical_params,
         backend=backend,
     )
+
     tracer_state = tracers.TracerState(
         qv=satad_init.qv(),
         qc=satad_init.qc(),
@@ -102,16 +116,17 @@ def test_saturation_adjustement(
         v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
 
-    # WHEN
     # run saturation adjustment
     saturation_adjustment.run(
         dtime=dtime,
-        prognostic_state=prognostic_state,
-        diagnostic_state=diagnostic_state,
-        tracer_state=tracer_state,
+        rho=prognostic_state.rho,
+        temperature=diagnostic_state.temperature,
+        qv=tracer_state.qv,
+        qc=tracer_state.qc,
+        temperature_tendency=temperature_tendency,
+        qv_tendency=qv_tendency,
+        qc_tendency=qc_tendency,
     )
-
-    # apply tendencies
 
     updated_qv = tracer_state.qv.asnumpy() + saturation_adjustment.qv_tendency.asnumpy() * dtime
     updated_qc = tracer_state.qc.asnumpy() + saturation_adjustment.qc_tendency.asnumpy() * dtime
@@ -119,26 +134,75 @@ def test_saturation_adjustement(
         diagnostic_state.temperature.asnumpy()
         + saturation_adjustment.temperature_tendency.asnumpy() * dtime
     )
-    updated_exner = (
-        prognostic_state.exner.asnumpy() + saturation_adjustment.exner_tendency.asnumpy() * dtime
-    )
+
     if diagnose_values:
-        pressure = (
-            diagnostic_state.pressure.asnumpy()
-            + saturation_adjustment.pressure_tendency.asnumpy() * dtime
+        cell_domain = h_grid.domain(dims.CellDim)
+        start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        end_cell_local = icon_grid.start_index(cell_domain(h_grid.Zone.END))
+        calculate_tendency.calculate_virtual_temperature_tendency.with_backend(backend)(
+            qv=tracer_state.qv,
+            qc=tracer_state.qc,
+            qi=tracer_state.qi,
+            qr=tracer_state.qr,
+            qs=tracer_state.qs,
+            qg=tracer_state.qg,
+            qv_tendency=qv_tendency,
+            qc_tendency=qc_tendency,
+            temperature=diagnostic_state.temperature,
+            virtual_temperature=diagnostic_state.virtual_temperature,
+            virtual_temperature_tendency=virtual_temperature_tendency,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=vertical_params.kstart_moist,
+            vertical_end=icon_grid.num_levels,
+            offset_provider={},
         )
-        pressure_ifc = (
-            diagnostic_state.pressure_ifc.asnumpy()
-            + saturation_adjustment.pressure_ifc_tendency.asnumpy() * dtime
+
+        calculate_tendency.calculate_exner_tendency.with_backend(backend)(
+            virtual_temperature=diagnostic_state.virtual_temperature,
+            virtual_temperature_tendency=virtual_temperature_tendency,
+            exner=prognostic_state.exner,
+            exner_tendency=exner_tendency,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=vertical_params.kstart_moist,
+            vertical_end=icon_grid.num_levels,
+            offset_provider={},
         )
-        virtual_temperature = (
+
+        updated_exner = prognostic_state.exner.asnumpy() + exner_tendency.asnumpy() * dtime
+        updated_virtual_temperature = (
             diagnostic_state.virtual_temperature.asnumpy()
-            + saturation_adjustment.virtual_temperature_tendency.asnumpy() * dtime
+            + virtual_temperature_tendency.asnumpy() * dtime
+        )
+
+        diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
+            gtx.as_field(updated_exner, (dims.CellDim, dims.KDim), allocator=backend),
+            gtx.as_field(updated_virtual_temperature, (dims.CellDim, dims.KDim), allocator=backend),
+            metric_state.ddqz_z_full,
+            diagnostic_state.pressure_ifc,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=icon_grid.num_levels,
+            vertical_end=gtx.int32(icon_grid.num_levels + 1),
+            offset_provider={"Koff": dims.KDim},
+        )
+
+        diagnose_pressure.diagnose_pressure.with_backend(backend)(
+            metric_state.ddqz_z_full,
+            gtx.as_field(updated_virtual_temperature, (dims.CellDim, dims.KDim), allocator=backend),
+            diagnostic_state.surface_pressure,
+            diagnostic_state.pressure,
+            diagnostic_state.pressure_ifc,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=gtx.int32(0),
+            vertical_end=icon_grid.num_levels,
+            offset_provider={},
         )
     else:
-        pressure = diagnostic_state.pressure.asnumpy()
-        pressure_ifc = diagnostic_state.pressure_ifc.asnumpy()
-        virtual_temperature = diagnostic_state.virtual_temperature.asnumpy()
+        updated_exner = prognostic_state.exner.asnumpy()
+        updated_virtual_temperature = diagnostic_state.virtual_temperature.asnumpy()
 
     assert helpers.dallclose(
         updated_qv,
@@ -156,7 +220,7 @@ def test_saturation_adjustement(
         atol=1.0e-13,
     )
     assert helpers.dallclose(
-        virtual_temperature,
+        updated_virtual_temperature,
         satad_exit.virtual_temperature().asnumpy(),
         atol=1.0e-13,
     )
@@ -166,12 +230,12 @@ def test_saturation_adjustement(
         atol=1.0e-13,
     )
     assert helpers.dallclose(
-        pressure,
+        diagnostic_state.pressure.asnumpy(),
         satad_exit.pressure().asnumpy(),
         atol=1.0e-13,
     )
     assert helpers.dallclose(
-        pressure_ifc,
+        diagnostic_state.pressure_ifc.asnumpy(),
         satad_exit.pressure_ifc().asnumpy(),
         atol=1.0e-13,
     )
