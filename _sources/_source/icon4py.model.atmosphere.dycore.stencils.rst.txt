@@ -180,6 +180,14 @@ icon4py.model.atmosphere.dycore.stencils.compute\_avg\_vn\_and\_graddiv\_vn\_and
    :undoc-members:
    :show-inheritance:
 
+icon4py.model.atmosphere.dycore.stencils.compute\_cell\_diagnostics\_for\_dycore module
+---------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycore
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 icon4py.model.atmosphere.dycore.stencils.compute\_cell\_diagnostics\_for\_velocity\_advection module
 ----------------------------------------------------------------------------------------------------
 
