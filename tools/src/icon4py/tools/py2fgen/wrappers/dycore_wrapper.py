@@ -221,7 +221,7 @@ def solve_nh_init(
         inv_ddqz_z_full=inv_ddqz_z_full,
         reference_rho_at_cells_on_model_levels=rho_ref_mc,
         reference_theta_at_cells_on_model_levels=theta_ref_mc,
-        vwind_expl_wgt=vwind_expl_wgt,
+        vertical_explicit_weight=vwind_expl_wgt,
         ddz_of_reference_exner_at_cells_on_half_levels=d_exner_dz_ref_ic,
         ddqz_z_half=ddqz_z_half,
         reference_theta_at_cells_on_half_levels=theta_ref_ic,
@@ -240,7 +240,7 @@ def solve_nh_init(
         ddxt_z_full=ddxt_z_full,
         wgtfac_e=wgtfac_e,
         wgtfacq_e=wgtfacq_e,
-        vwind_impl_wgt=vwind_impl_wgt,
+        vertical_implicit_weight=vwind_impl_wgt,
         horizontal_mask_for_3d_divdamp=hmask_dd3d,
         scaling_factor_for_3d_divdamp=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
@@ -317,6 +317,8 @@ def solve_nh_run(
     vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -335,19 +337,19 @@ def solve_nh_run(
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
-        mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=vol_flx_ic,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=mass_flx_ic,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_at_cells_on_half_levels=theta_v_ic,
         perturbed_exner_at_cells_on_model_levels=exner_pr,
         rho_at_cells_on_half_levels=rho_ic,
-        ddt_exner_phy=ddt_exner_phy,
+        exner_tendency_due_to_slow_physics=ddt_exner_phy,
         grf_tend_rho=grf_tend_rho,
         grf_tend_thv=grf_tend_thv,
         grf_tend_w=grf_tend_w,
-        mass_fl_e=mass_fl_e,
+        mass_flux_at_edges_on_model_levels=mass_fl_e,
         normal_wind_tendency_due_to_slow_physics_process=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
@@ -359,10 +361,10 @@ def solve_nh_run(
         tangential_wind=vt,
         vn_on_half_levels=vn_ie,
         contravariant_correction_at_cells_on_half_levels=w_concorr_c,
-        rho_incr=None,
-        normal_wind_iau_increments=vn_incr,
-        exner_incr=None,
-        exner_dyn_incr=exner_dyn_incr,
+        rho_iau_increment=rho_incr,
+        normal_wind_iau_increment=vn_incr,
+        exner_iau_increment=exner_incr,
+        exner_dynamical_increment=exner_dyn_incr,
     )
 
     prognostic_state_nnow = PrognosticState(

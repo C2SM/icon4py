@@ -106,6 +106,12 @@ def solve_nh_run_wrapper(
     vn_incr,
     vn_incr_size_0,
     vn_incr_size_1,
+    rho_incr,
+    rho_incr_size_0,
+    rho_incr_size_1,
+    exner_incr,
+    exner_incr_size_0,
+    exner_incr_size_1,
     mass_flx_me,
     mass_flx_me_size_0,
     mass_flx_me_size_1,
@@ -426,6 +432,26 @@ def solve_nh_run_wrapper(
             False,
         )
 
+        rho_incr = (
+            rho_incr,
+            (
+                rho_incr_size_0,
+                rho_incr_size_1,
+            ),
+            on_gpu,
+            False,
+        )
+
+        exner_incr = (
+            exner_incr,
+            (
+                exner_incr_size_0,
+                exner_incr_size_1,
+            ),
+            on_gpu,
+            False,
+        )
+
         mass_flx_me = (
             mass_flx_me,
             (
@@ -512,6 +538,8 @@ def solve_nh_run_wrapper(
             vn_ie=vn_ie,
             vt=vt,
             vn_incr=vn_incr,
+            rho_incr=rho_incr,
+            exner_incr=exner_incr,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,
@@ -853,6 +881,28 @@ def solve_nh_run_wrapper(
                 msg = "vn_incr after computation: %s" % str(
                     _conversion.as_array(ffi, vn_incr, _definitions.FLOAT64)
                     if vn_incr is not None
+                    else "None"
+                )
+                logger.debug(msg)
+
+                msg = "shape of rho_incr after computation = %s" % str(
+                    rho_incr.shape if rho_incr is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "rho_incr after computation: %s" % str(
+                    _conversion.as_array(ffi, rho_incr, _definitions.FLOAT64)
+                    if rho_incr is not None
+                    else "None"
+                )
+                logger.debug(msg)
+
+                msg = "shape of exner_incr after computation = %s" % str(
+                    exner_incr.shape if exner_incr is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "exner_incr after computation: %s" % str(
+                    _conversion.as_array(ffi, exner_incr, _definitions.FLOAT64)
+                    if exner_incr is not None
                     else "None"
                 )
                 logger.debug(msg)

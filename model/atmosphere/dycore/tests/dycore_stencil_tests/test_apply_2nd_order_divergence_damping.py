@@ -23,6 +23,13 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def apply_2nd_order_divergence_damping_numpy(
+    z_graddiv_vn: np.ndarray, vn: np.ndarray, scal_divdamp_o2: wpfloat
+) -> np.ndarray:
+    vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
+    return vn
+
+
 class TestApply2ndOrderDivergenceDamping(StencilTest):
     PROGRAM = apply_2nd_order_divergence_damping
     OUTPUTS = ("vn",)
@@ -35,7 +42,7 @@ class TestApply2ndOrderDivergenceDamping(StencilTest):
         scal_divdamp_o2: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
+        vn = apply_2nd_order_divergence_damping_numpy(z_graddiv_vn, vn, scal_divdamp_o2)
         return dict(vn=vn)
 
     @pytest.fixture

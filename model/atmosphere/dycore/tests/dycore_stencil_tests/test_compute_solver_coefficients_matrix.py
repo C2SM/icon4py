@@ -21,6 +21,25 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_solver_coefficients_matrix_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    exner_nnow: np.ndarray,
+    rho_nnow: np.ndarray,
+    theta_v_nnow: np.ndarray,
+    inv_ddqz_z_full: np.ndarray,
+    vwind_impl_wgt: np.ndarray,
+    theta_v_ic: np.ndarray,
+    rho_ic: np.ndarray,
+    dtime: float,
+    rd: float,
+    cvd: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+    return (z_beta, z_alpha)
+
+
 class TestComputeSolverCoefficientsMatrix(StencilTest):
     PROGRAM = compute_solver_coefficients_matrix
     OUTPUTS = ("z_beta", "z_alpha")
@@ -35,15 +54,24 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         vwind_impl_wgt: np.ndarray,
         theta_v_ic: np.ndarray,
         rho_ic: np.ndarray,
-        dtime: ta.wpfloat,
-        rd: ta.wpfloat,
-        cvd: ta.wpfloat,
+        dtime: float,
+        rd: float,
+        cvd: float,
         **kwargs: Any,
     ) -> dict:
-        z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
-
-        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-        z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+        (z_beta, z_alpha) = compute_solver_coefficients_matrix_numpy(
+            connectivities,
+            exner_nnow=exner_nnow,
+            rho_nnow=rho_nnow,
+            theta_v_nnow=theta_v_nnow,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            vwind_impl_wgt=vwind_impl_wgt,
+            theta_v_ic=theta_v_ic,
+            rho_ic=rho_ic,
+            dtime=dtime,
+            rd=rd,
+            cvd=cvd,
+        )
         return dict(z_beta=z_beta, z_alpha=z_alpha)
 
     @pytest.fixture

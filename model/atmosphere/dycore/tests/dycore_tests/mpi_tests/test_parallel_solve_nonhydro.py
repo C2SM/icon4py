@@ -99,8 +99,10 @@ def test_run_solve_nonhydro_single_step(
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
-        mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, backend=backend
+        ),
     )
 
     recompute = sp_v.get_metadata("recompute").get("recompute")
@@ -108,14 +110,14 @@ def test_run_solve_nonhydro_single_step(
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
+        perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
+        rho_at_cells_on_half_levels=sp.rho_ic(),
+        exner_tendency_due_to_slow_physics=sp.ddt_exner_phy(),
         grf_tend_rho=sp.grf_tend_rho(),
         grf_tend_thv=sp.grf_tend_thv(),
         grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        normal_wind_tendency_due_to_physics_process=sp.ddt_vn_phy(),
+        mass_flux_at_edges_on_model_levels=sp.mass_fl_e(),
+        normal_wind_tendency_due_to_slow_physics_process=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
@@ -126,10 +128,10 @@ def test_run_solve_nonhydro_single_step(
         tangential_wind=sp_v.vt(),
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        normal_wind_iau_increments=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=sp.exner_dyn_incr(),
+        rho_iau_increment=None,  # sp.rho_incr(),
+        normal_wind_iau_increment=None,  # sp.vn_incr(),
+        exner_iau_increment=None,  # sp.exner_incr(),
+        exner_dynamical_increment=sp.exner_dyn_incr(),
     )
     second_order_divdamp_factor = sp.divdamp_fac_o2()
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
@@ -212,7 +214,7 @@ def test_run_solve_nonhydro_single_step(
 
     assert helpers.dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        diagnostic_state_nh.mass_fl_e.asnumpy(),
+        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 

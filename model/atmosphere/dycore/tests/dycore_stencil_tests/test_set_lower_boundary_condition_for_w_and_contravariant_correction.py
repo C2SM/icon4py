@@ -22,6 +22,16 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    w_concorr_c: np.ndarray,
+    z_contr_w_fl_l: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    w_nnew = w_concorr_c
+    z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
+    return (w_nnew, z_contr_w_fl_l)
+
+
 class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
     PROGRAM = set_lower_boundary_condition_for_w_and_contravariant_correction
     OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
@@ -33,8 +43,12 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
         z_contr_w_fl_l: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        w_nnew = w_concorr_c
-        z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
+        (
+            w_nnew,
+            z_contr_w_fl_l,
+        ) = set_lower_boundary_condition_for_w_and_contravariant_correction_numpy(
+            connectivities, w_concorr_c, z_contr_w_fl_l
+        )
         return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture

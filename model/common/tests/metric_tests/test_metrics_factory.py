@@ -400,7 +400,9 @@ def test_factory_ddxt_z_full(
     ],
 )
 @pytest.mark.datatest
-def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_vertical_implicit_weight(
+    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+):
     field_ref = metrics_savepoint.vwind_impl_wgt()
     factory = _get_metrics_factory(
         backend=backend,
@@ -409,7 +411,7 @@ def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
     )
-    field = factory.get(attrs.VWIND_IMPL_WGT)
+    field = factory.get(attrs.VERTICAL_IMPLICIT_WEIGHT)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
@@ -425,7 +427,9 @@ def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
     ],
 )
 @pytest.mark.datatest
-def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_vertical_explicit_weight(
+    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+):
     field_ref = metrics_savepoint.vwind_expl_wgt()
     factory = _get_metrics_factory(
         backend=backend,
@@ -434,7 +438,7 @@ def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
     )
-    field = factory.get(attrs.VWIND_EXPL_WGT)
+    field = factory.get(attrs.VERTICAL_EXPLICIT_WEIGHT)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 

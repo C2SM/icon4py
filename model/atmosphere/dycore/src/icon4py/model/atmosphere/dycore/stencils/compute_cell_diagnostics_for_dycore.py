@@ -77,8 +77,6 @@ def _compute_perturbed_quantities_and_interpolation(
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
-    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     limited_area: bool,
     igradp_method: gtx.int32,
@@ -98,8 +96,6 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
     (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
@@ -193,8 +189,6 @@ def _compute_perturbed_quantities_and_interpolation(
         perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
         pressure_buoyancy_acceleration_at_cells_on_half_levels,
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
     )
 
 
@@ -464,8 +458,6 @@ def compute_perturbed_quantities_and_interpolation(
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         limited_area=limited_area,
         igradp_method=igradp_method,
@@ -486,8 +478,6 @@ def compute_perturbed_quantities_and_interpolation(
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
             pressure_buoyancy_acceleration_at_cells_on_half_levels,
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

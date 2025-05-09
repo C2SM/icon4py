@@ -31,8 +31,8 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
     z_w_expl: np.ndarray,
     z_q_ref: np.ndarray,
     w_ref: np.ndarray,
-    dtime: ta.wpfloat,
-    cpd: ta.wpfloat,
+    dtime: float,
+    cpd: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     z_q = np.copy(z_q_ref)
     w = np.copy(w_ref)
@@ -73,8 +73,8 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         z_exner_expl: np.ndarray,
         z_q: np.ndarray,
         w: np.ndarray,
-        dtime: ta.wpfloat,
-        cpd: ta.wpfloat,
+        dtime: float,
+        cpd: float,
         **kwargs: Any,
     ) -> dict:
         z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(

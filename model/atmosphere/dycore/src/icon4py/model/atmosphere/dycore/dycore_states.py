@@ -16,8 +16,10 @@ import gt4py.next as gtx
 from gt4py.eve.utils import FrozenNamespace
 
 from icon4py.model.common import (
+    constants as phy_const,
     dimension as dims,
     field_type_aliases as fa,
+    type_alias as ta,
     utils as common_utils,
 )
 
@@ -113,12 +115,17 @@ class DiagnosticStateNonHydro:
     Declared as rho_ic in ICON.
     """
 
-    ddt_exner_phy: fa.CellKField[float]
+    exner_tendency_due_to_slow_physics: fa.CellKField[float]
+    """
+    Declared as ddt_exner_phy in ICON.
+    """
     grf_tend_rho: fa.CellKField[float]
     grf_tend_thv: fa.CellKField[float]
     grf_tend_w: fa.CellKField[float]
-    mass_fl_e: fa.EdgeKField[float]
-
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[float]
+    """
+    Declared as mass_fl_e in ICON.
+    """
     normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[float]
     """
     Declared as ddt_vn_phy in ICON.
@@ -136,14 +143,22 @@ class DiagnosticStateNonHydro:
     """
 
     # Analysis increments
-    rho_incr: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
-    normal_wind_iau_increments: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    rho_iau_increment: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
+    """
+    Declared as rho_incr in ICON.
+    """
+    normal_wind_iau_increment: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
     """
     Declared as vn_incr in ICON.
     """
-
-    exner_incr: Optional[fa.EdgeKField[float]]  # exner increment [- ]
-    exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
+    exner_iau_increment: Optional[fa.EdgeKField[float]]  # exner increment [- ]
+    """
+    Declared as exner_incr in ICON.
+    """
+    exner_dynamical_increment: fa.CellKField[float]  # exner pressure dynamics increment
+    """
+    Declared as exner_dyn_incr in ICON.
+    """
 
 
 @dataclasses.dataclass
@@ -242,8 +257,17 @@ class MetricStateNonHydro:
     pg_edgeidx_dsl: fa.EdgeKField[bool]
     pg_exdist: fa.EdgeKField[float]
 
-    vwind_expl_wgt: fa.CellField[float]
-    vwind_impl_wgt: fa.CellField[float]
+    vertical_explicit_weight: fa.CellField[float]
+    """
+    Declared as vwind_expl_wgt in ICON. The explicitness parameter in the vertically implicit dycore solver.
+    vertical_explicit_weight = 1 - vertical_implicit_weight
+    """
+    vertical_implicit_weight: fa.CellField[float]
+    """
+    Declared as vwind_impl_wgt in ICON. The implicitness parameter in the vertically implicit dycore solver.
+    It is denoted as eta below eq. 3.20 in ICON tutorial 2023. However, it is only vwind_offctr that can be 
+    set via namelist. The actual computation of vertical_implicit_weight is not shown in the tutorial.
+    """
 
     horizontal_mask_for_3d_divdamp: fa.EdgeField[float]
     """
@@ -266,5 +290,27 @@ class PrepAdvection:
 
     vn_traj: fa.EdgeKField[float]
     mass_flx_me: fa.EdgeKField[float]
-    mass_flx_ic: fa.CellKField[float]
-    vol_flx_ic: fa.CellKField[float]
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as mass_flx_ic in ICON.
+    """
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[float]
+    """
+    Declared as vol_flx_ic in ICON.
+    """
+
+
+class _DycoreConstants(FrozenNamespace[ta.wpfloat]):
+    """
+    Constants used in dycore.
+    """
+
+    rd = phy_const.GAS_CONSTANT_DRY_AIR
+    rv = phy_const.GAS_CONSTANT_WATER_VAPOR
+    cvd = phy_const.SPECIFIC_HEAT_CONSTANT_VOLUME
+    cpd = phy_const.SPECIFIC_HEAT_CONSTANT_PRESSURE
+    rd_o_cpd = phy_const.RD_O_CPD
+    rd_o_cvd = phy_const.RD / phy_const.CVD
+    cvd_o_rd = phy_const.CVD_O_RD
+    rd_o_p0ref = phy_const.RD / phy_const.P0REF
+    grav_o_cpd = phy_const.GRAV / phy_const.CPD

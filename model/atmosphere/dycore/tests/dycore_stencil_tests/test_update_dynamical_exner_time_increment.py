@@ -22,6 +22,18 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def update_dynamical_exner_time_increment_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    exner: np.ndarray,
+    ddt_exner_phy: np.ndarray,
+    exner_dyn_incr: np.ndarray,
+    ndyn_substeps_var: float,
+    dtime: float,
+) -> np.ndarray:
+    exner_dyn_incr = exner - (exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy)
+    return exner_dyn_incr
+
+
 class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     PROGRAM = update_dynamical_exner_time_increment
     OUTPUTS = ("exner_dyn_incr",)
@@ -36,7 +48,14 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         dtime: float,
         **kwargs: Any,
     ) -> dict:
-        exner_dyn_incr = exner - (exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy)
+        exner_dyn_incr = update_dynamical_exner_time_increment_numpy(
+            connectivities,
+            exner,
+            ddt_exner_phy,
+            exner_dyn_incr,
+            ndyn_substeps_var,
+            dtime,
+        )
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture
