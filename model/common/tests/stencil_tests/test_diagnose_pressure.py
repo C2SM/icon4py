@@ -70,7 +70,6 @@ class TestDiagnosePressure(helpers.StencilTest):
             surface_pressure=surface_pressure,
             pressure=pressure,
             pressure_ifc=pressure_ifc,
-            grav_o_rd=phy_const.GRAV_O_RD,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(0),

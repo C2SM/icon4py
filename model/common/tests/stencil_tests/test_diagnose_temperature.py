@@ -85,7 +85,6 @@ class TestDiagnoseTemperature(helpers.StencilTest):
             exner=exner,
             virtual_temperature=virtual_temperature,
             temperature=temperature,
-            rv_o_rd_minus1=phy_const.RV_O_RD_MINUS_1,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(0),
