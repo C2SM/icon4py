@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.dycore import (
     solve_nonhydro as solve_nh,
 )
 from icon4py.model.atmosphere.dycore.stencils import (
+    compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
     compute_hydrostatic_correction_term,
 )
@@ -243,7 +244,9 @@ def test_nonhydro_predictor_step(
 
     # stencils 2, 3
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_pr.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, :
+        ],
         sp_exit.exner_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
@@ -255,12 +258,14 @@ def test_nonhydro_predictor_step(
 
     # stencils 4,5
     assert helpers.dallclose(
-        solve_nonhydro.z_exner_ic.asnumpy()[cell_start_lateral_boundary_level_2:, nlev - 1],
+        solve_nonhydro.exner_at_cells_on_half_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, nlev - 1
+        ],
         sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_2:, nlev - 1],
     )
     nflatlev = vertical_params.nflatlev
     assert helpers.dallclose(
-        solve_nonhydro.z_exner_ic.asnumpy()[
+        solve_nonhydro.exner_at_cells_on_half_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, nflatlev : nlev - 1
         ],
         sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev : nlev - 1],
@@ -268,7 +273,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 6
     assert helpers.dallclose(
-        solve_nonhydro.ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
+        solve_nonhydro.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, nflatlev:
         ],
         sp_exit.z_dexner_dz_c(0).asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
@@ -277,18 +282,24 @@ def test_nonhydro_predictor_step(
 
     # stencils 7,8,9
     assert helpers.dallclose(
-        diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, :
+        ],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
-        solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
+        solve_nonhydro.pressure_buoyancy_acceleration_at_cells_on_half_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, 1:
+        ],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
         rtol=2.0e-12,
     )
 
     # stencils 7,8,9, 11
     assert helpers.dallclose(
-        solve_nonhydro.z_theta_v_pr_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        solve_nonhydro.perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, :
+        ],
         sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
@@ -299,18 +310,22 @@ def test_nonhydro_predictor_step(
     )
     # stencils 7,8,9, 13
     assert helpers.dallclose(
-        solve_nonhydro.perturbed_rho.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        solve_nonhydro.perturbed_rho_at_cells_on_model_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, :
+        ],
         sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
-        solve_nonhydro.perturbed_theta_v.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        solve_nonhydro.perturbed_theta_v_at_cells_on_model_levels.asnumpy()[
+            cell_start_lateral_boundary_level_2:, :
+        ],
         sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
 
     # stencils 12
     nflat_gradp = vertical_params.nflat_gradp
     assert helpers.dallclose(
-        solve_nonhydro.d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
+        solve_nonhydro.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, nflat_gradp:
         ],
         sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_2:, nflat_gradp:],
@@ -638,7 +653,7 @@ def test_nonhydro_corrector_step(
     )
     # stencil 10
     assert helpers.dallclose(
-        diagnostic_state_nh.rho_ic.asnumpy(),
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
     # stencil 10
@@ -956,7 +971,7 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert helpers.dallclose(
-        diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:, :],
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
@@ -1025,6 +1040,367 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     assert params.wgt_nnow_vel == savepoint_nonhydro_init.wgt_nnow_vel()
     assert params.wgt_nnew_rth == savepoint_nonhydro_init.wgt_nnew_rth()
     assert params.wgt_nnow_rth == savepoint_nonhydro_init.wgt_nnow_rth()
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize("at_initial_timestep", [(True)])
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
+    ],
+)
+def test_compute_perturbed_quantities_and_interpolation(
+    step_date_init,
+    step_date_exit,
+    experiment,
+    ndyn_substeps,
+    icon_grid,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    at_initial_timestep,
+    substep_init,
+    substep_exit,
+    savepoint_nonhydro_init,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
+    savepoint_nonhydro_exit,
+    backend,
+):
+    sp_init = savepoint_nonhydro_init
+    sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
+    sp_exit = savepoint_nonhydro_exit
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+
+    current_rho = sp_init.rho_now()
+    current_theta_v = sp_init.theta_v_now()
+    perturbed_exner_at_cells_on_model_levels = sp_init.exner_pr()
+    rho_at_cells_on_half_levels = sp_init.rho_ic()
+    current_exner = sp_init.exner_now()
+    theta_v_at_cells_on_half_levels = sp_init.theta_v_ic()
+
+    # local fields
+    perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+    perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+    perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+    )
+    pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+    exner_at_cells_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+    )
+    temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+    )
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+
+    limited_area = icon_grid.limited_area
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    igradp_method = config.igradp_method
+
+    nflatlev = vertical_params.nflatlev
+    nflat_gradp = vertical_params.nflat_gradp
+
+    cell_domain = h_grid.domain(dims.CellDim)
+    start_cell_lateral_boundary = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
+    start_cell_lateral_boundary_level_3 = icon_grid.start_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+    )
+    start_cell_halo_level_2 = icon_grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
+    end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
+    end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+    end_cell_halo_level_2 = icon_grid.end_index((cell_domain(h_grid.Zone.HALO_LEVEL_2)))
+
+    reference_rho_at_cells_on_model_levels = metrics_savepoint.rho_ref_mc()
+    reference_theta_at_cells_on_model_levels = metrics_savepoint.theta_ref_mc()
+    reference_theta_at_cells_on_half_levels = metrics_savepoint.theta_ref_ic()
+    d2dexdz2_fac1_mc = metrics_savepoint.d2dexdz2_fac1_mc()
+    d2dexdz2_fac2_mc = metrics_savepoint.d2dexdz2_fac2_mc()
+    wgtfacq_c = metrics_savepoint.wgtfacq_c_dsl()
+    wgtfac_c = metrics_savepoint.wgtfac_c()
+    vwind_expl_wgt = metrics_savepoint.vwind_expl_wgt()
+    ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
+    ddqz_z_half = metrics_savepoint.ddqz_z_half()
+    time_extrapolation_parameter_for_exner = metrics_savepoint.exner_exfac()
+    reference_exner_at_cells_on_model_levels = metrics_savepoint.exner_ref_mc()
+    inv_ddqz_z_full = metrics_savepoint.inv_ddqz_z_full()
+
+    z_rth_pr_1_ref = sp_ref.z_rth_pr(0)
+    z_rth_pr_2_ref = sp_ref.z_rth_pr(1)
+    z_exner_ex_pr_ref = sp_ref.z_exner_ex_pr()
+    exner_pr_ref = sp_exit.exner_pr()
+    rho_ic_ref = sp_exit.rho_ic()
+    z_exner_ic_ref = sp_exit.z_exner_ic()
+    z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
+    theta_v_ic_ref = sp_ref.theta_v_ic()
+    z_dexner_dz_c_1_ref = sp_ref.z_dexner_dz_c(0)
+    z_dexner_dz_c_2_ref = sp_ref.z_dexner_dz_c(1)
+
+    compute_cell_diagnostics_for_dycore.compute_perturbed_quantities_and_interpolation.with_backend(
+        backend
+    )(
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
+        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        current_rho=current_rho,
+        reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
+        current_theta_v=current_theta_v,
+        reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
+        reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
+        wgtfacq_c=wgtfacq_c,
+        wgtfac_c=wgtfac_c,
+        vwind_expl_wgt=vwind_expl_wgt,
+        ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
+        ddqz_z_half=ddqz_z_half,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
+        current_exner=current_exner,
+        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+        limited_area=limited_area,
+        igradp_method=igradp_method,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
+        start_cell_lateral_boundary=start_cell_lateral_boundary,
+        start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
+        start_cell_halo_level_2=start_cell_halo_level_2,
+        end_cell_end=end_cell_end,
+        end_cell_halo=end_cell_halo,
+        end_cell_halo_level_2=end_cell_halo_level_2,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels + 1,
+        offset_provider={
+            "Koff": dims.KDim,
+        },
+    )
+    lb = start_cell_lateral_boundary_level_3
+
+    assert helpers.dallclose(
+        perturbed_rho_at_cells_on_model_levels.asnumpy(), z_rth_pr_1_ref.asnumpy()
+    )
+    assert helpers.dallclose(
+        perturbed_theta_v_at_cells_on_model_levels.asnumpy(), z_rth_pr_2_ref.asnumpy()
+    )
+    assert helpers.dallclose(
+        temporal_extrapolation_of_perturbed_exner.asnumpy(), z_exner_ex_pr_ref.asnumpy()
+    )
+    assert helpers.dallclose(
+        perturbed_exner_at_cells_on_model_levels.asnumpy(), exner_pr_ref.asnumpy()
+    )
+    assert helpers.dallclose(rho_at_cells_on_half_levels.asnumpy(), rho_ic_ref.asnumpy())
+
+    assert helpers.dallclose(
+        exner_at_cells_on_half_levels.asnumpy()[:, nflatlev:],
+        z_exner_ic_ref.asnumpy()[:, nflatlev:],
+        rtol=1e-11,
+    )
+
+    assert helpers.dallclose(
+        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[lb:, :],
+        z_theta_v_pr_ic_ref.asnumpy()[lb:, :],
+    )
+    assert helpers.dallclose(
+        theta_v_at_cells_on_half_levels.asnumpy()[lb:, :], theta_v_ic_ref.asnumpy()[lb:, :]
+    )
+
+    assert helpers.dallclose(
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[lb:, nflatlev:],
+        z_dexner_dz_c_1_ref.asnumpy()[lb:, nflatlev:],
+        rtol=5e-9,
+    )
+    assert helpers.dallclose(
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
+            lb:, nflat_gradp:
+        ],
+        z_dexner_dz_c_2_ref.asnumpy()[lb:, nflat_gradp:],
+        rtol=5e-9,
+    )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize("at_initial_timestep, istep_init, istep_exit", [(True, 2, 2)])
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
+    ],
+)
+def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
+    step_date_init,
+    step_date_exit,
+    experiment,
+    ndyn_substeps,
+    icon_grid,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    at_initial_timestep,
+    istep_init,
+    substep_init,
+    substep_exit,
+    savepoint_nonhydro_init,
+    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
+    savepoint_nonhydro_exit,
+    backend,
+):
+    sp_init = savepoint_nonhydro_init
+    sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
+    sp_exit = savepoint_nonhydro_exit
+
+    dtime = sp_init.get_metadata("dtime").get("dtime")
+    current_rho = sp_init.rho_now()
+    next_rho = sp_init.rho_new()
+
+    w = sp_init.w_new()
+    contravariant_correction_at_cells_on_half_levels = sp_init.w_concorr_c()
+    current_theta_v = sp_init.theta_v_now()
+    next_theta_v = sp_init.theta_v_new()
+    perturbed_exner_at_cells_on_model_levels = sp_init.exner_pr()
+    rho_at_cells_on_half_levels = sp_init.rho_ic()
+    theta_v_at_cells_on_half_levels = sp_init.theta_v_ic()
+    wgt_nnow_rth = sp_init.wgt_nnow_rth()
+    wgt_nnew_rth = sp_init.wgt_nnew_rth()
+
+    perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+    )
+    pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+
+    cell_domain = h_grid.domain(dims.CellDim)
+    start_cell_lateral_boundary_level_3 = icon_grid.start_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+    )
+
+    end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+    wgtfac_c = metrics_savepoint.wgtfac_c()
+    reference_theta_at_cells_on_model_levels = metrics_savepoint.theta_ref_mc()
+    vwind_expl_wgt = metrics_savepoint.vwind_expl_wgt()
+    ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
+    ddqz_z_half = metrics_savepoint.ddqz_z_half()
+
+    rho_ic_ref = sp_ref.rho_ic()
+    z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
+    theta_v_ic_ref = sp_ref.theta_v_ic()
+    z_th_ddz_exner_c_ref = sp_exit.z_th_ddz_exner_c()
+
+    compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration.with_backend(
+        backend
+    )(
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        w=w,
+        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+        current_rho=current_rho,
+        next_rho=next_rho,
+        current_theta_v=current_theta_v,
+        next_theta_v=next_theta_v,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
+        ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
+        ddqz_z_half=ddqz_z_half,
+        wgtfac_c=wgtfac_c,
+        vwind_expl_wgt=vwind_expl_wgt,
+        dtime=dtime,
+        wgt_nnow_rth=wgt_nnow_rth,
+        wgt_nnew_rth=wgt_nnew_rth,
+        horizontal_start=start_cell_lateral_boundary_level_3,
+        horizontal_end=end_cell_local,
+        vertical_start=1,
+        vertical_end=icon_grid.num_levels,
+        offset_provider={
+            "Koff": dims.KDim,
+        },
+    )
+
+    assert helpers.dallclose(
+        rho_at_cells_on_half_levels.asnumpy()[:, :], rho_ic_ref.asnumpy()[:, :]
+    )
+
+    assert helpers.dallclose(
+        theta_v_at_cells_on_half_levels.asnumpy()[:, :], theta_v_ic_ref.asnumpy()[:, :]
+    )
+
+    assert helpers.dallclose(
+        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
+        ],
+        z_theta_v_pr_ic_ref.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
+        ],
+        rtol=4e-9,
+    )
+
+    assert helpers.dallclose(
+        pressure_buoyancy_acceleration_at_cells_on_half_levels.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
+        ],
+        z_th_ddz_exner_c_ref.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
+        ],
+        rtol=5e-10,
+    )
 
 
 @pytest.mark.embedded_remap_error
@@ -1098,20 +1474,22 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     next_vn = sp_nh_init.vn_new()
     tangential_wind = sp_stencil_init.vt()
     horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
-    perturbed_rho = sp_stencil_init.z_rth_pr(0)
-    perturbed_theta_v = sp_stencil_init.z_rth_pr(1)
+    perturbed_rho_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(0)
+    perturbed_theta_v_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(1)
     hydrostatic_correction = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, backend=backend
     )
     temporal_extrapolation_of_perturbed_exner = sp_stencil_init.z_exner_ex_pr()
-    ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(0)
-    d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels = sp_stencil_init.z_dexner_dz_c(
-        1
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+        sp_stencil_init.z_dexner_dz_c(0)
+    )
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
+        sp_stencil_init.z_dexner_dz_c(1)
     )
     theta_v = sp_stencil_init.theta_v()
     theta_v_at_cells_on_half_levels = sp_stencil_init.theta_v_ic()
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
-    normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
+    normal_wind_tendency_due_to_slow_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increments = sp_stencil_init.vn_incr()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
@@ -1179,14 +1557,14 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         tangential_wind=tangential_wind,
         reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
         reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
-        perturbed_rho=perturbed_rho,
-        perturbed_theta_v=perturbed_theta_v,
+        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-        ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
-        normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+        normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
         normal_wind_iau_increments=normal_wind_iau_increments,
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -1302,7 +1680,7 @@ def test_apply_divergence_damping_and_update_vn(
     dwdz_at_cells_on_model_levels = sp_stencil_init.z_dwdz_dd()
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
     corrector_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(1)
-    normal_wind_tendency_due_to_physics_process = sp_stencil_init.ddt_vn_phy()
+    normal_wind_tendency_due_to_slow_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increments = sp_stencil_init.vn_incr()
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = sp_nh_init.bdy_divdamp()
     fourth_order_divdamp_scaling_coeff = sp_nh_init.scal_divdamp()
@@ -1332,7 +1710,7 @@ def test_apply_divergence_damping_and_update_vn(
         dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
-        normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+        normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
         normal_wind_iau_increments=normal_wind_iau_increments,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,

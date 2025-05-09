@@ -1129,6 +1129,9 @@ class IconNonHydroInitSavepoint(IconSavepoint):
 
 
 class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
+    def rho_ic(self):
+        return self._get_field("rho_ic", dims.CellDim, dims.KDim)
+
     def vn(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 

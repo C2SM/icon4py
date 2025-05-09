@@ -77,14 +77,14 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     reference_rho_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     reference_theta_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    perturbed_rho: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v: fa.CellKField[ta.vpfloat],
+    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
-    ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
-    normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
+    normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
@@ -131,8 +131,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         ddy_perturbed_theta_v,
     ) = (
         _mo_math_gradients_grad_green_gauss_cell_dsl(
-            p_ccpr1=perturbed_rho,
-            p_ccpr2=perturbed_theta_v,
+            p_ccpr1=perturbed_rho_at_cells_on_model_levels,
+            p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
         )
@@ -190,8 +190,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
                 z_grad_rth_2=ddy_perturbed_rho,
                 z_grad_rth_3=ddx_perturbed_theta_v,
                 z_grad_rth_4=ddy_perturbed_theta_v,
-                z_rth_pr_1=perturbed_rho,
-                z_rth_pr_2=perturbed_theta_v,
+                z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
+                z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels,
             ),
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
         )
@@ -222,7 +222,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
                     z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
                     ddxn_z_full=ddxn_z_full,
                     c_lin_e=c_lin_e,
-                    z_dexner_dz_c_1=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                    z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
                 ),
                 horizontal_pressure_gradient,
             ),
@@ -242,8 +242,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
                     z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
                     zdiff_gradp=zdiff_gradp,
                     ikoffset=ikoffset,
-                    z_dexner_dz_c_1=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-                    z_dexner_dz_c_2=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                    z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                    z_dexner_dz_c_2=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
                 ),
                 horizontal_pressure_gradient,
             ),
@@ -273,7 +273,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         _add_temporal_tendencies_to_vn(
             vn_nnow=current_vn,
             ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
-            ddt_vn_phy=normal_wind_tendency_due_to_physics_process,
+            ddt_vn_phy=normal_wind_tendency_due_to_slow_physics_process,
             z_theta_v_e=theta_v_at_edges_on_model_levels,
             z_gradh_exner=horizontal_pressure_gradient,
             dtime=dtime,
@@ -310,7 +310,7 @@ def _apply_divergence_damping_and_update_vn(
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     corrector_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
-    normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
+    normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[ta.wpfloat],
     fourth_order_divdamp_scaling_coeff: fa.KField[ta.wpfloat],
@@ -374,7 +374,7 @@ def _apply_divergence_damping_and_update_vn(
             vn_nnow=current_vn,
             ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
             ddt_vn_apc_ntl2=corrector_normal_wind_advective_tendency,
-            ddt_vn_phy=normal_wind_tendency_due_to_physics_process,
+            ddt_vn_phy=normal_wind_tendency_due_to_slow_physics_process,
             z_theta_v_e=theta_v_at_edges_on_model_levels,
             z_gradh_exner=horizontal_pressure_gradient,
             dtime=dtime,
@@ -465,14 +465,14 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     reference_rho_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     reference_theta_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    perturbed_rho: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v: fa.CellKField[ta.vpfloat],
+    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
-    ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
-    normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
+    normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
@@ -514,13 +514,13 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     """
     Formerly known as fused_solve_nonhydro_stencil_15_to_28_predictor.
 
-    This program computes the air densitiy and virtual potential temperature at edges on model levels.
+    This program computes the air density and virtual potential temperature at edges on model levels.
     It also computes horizontal pressure gradient and updates normal wind by adding all the tendency terms
     in the Navier-Stokes equation. If data assimilation is considered, an increment is added to
     normal wind.
 
     Args:
-        - rho_at_edges_on_model_levels: air density at cells on model levels [kg m-3]
+        - rho_at_edges_on_model_levels: air density on edges on model levels [kg m-3]
         - theta_v_at_edges_on_model_levels: virtual potential temperature at edges on model levels [K]
         - horizontal_pressure_gradient: horizontal pressure gradient at edges on model levels [Pa m-1]
         - next_vn: normal wind to be updated [m s-1]
@@ -528,14 +528,14 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         - tangential_wind: tangential wind at edges on model levels [m s-1]
         - reference_rho_at_edges_on_model_levels: reference air density at cells on model levels [kg m-3]
         - reference_theta_at_edges_on_model_levels: reference virtual potential temperature at edges on model levels [K]
-        - perturbed_rho: perturbed air density (actual density minus reference density) at cells on model levels [kg m-3]
-        - perturbed_theta: reference virtual potential temperature (actual potential temperature minus reference potential temperature) at cells on model levels [K]
+        - perturbed_rho_at_cells_on_model_levels: perturbed air density (actual density minus reference density) at cells on model levels [kg m-3]
+        - perturbed_theta_v_at_cells_on_model_levels: reference virtual potential temperature (actual potential temperature minus reference potential temperature) at cells on model levels [K]
         - temporal_extrapolation_of_perturbed_exner: temporal extrapolation of perturbed exner function (actual exner function minus reference exner function)
-        - ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels: vertical gradient of temporal extrapolation of perturbed exner function [m-1]
-        - d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels: second vertical gradient of temporal extrapolation of perturbed exner function [m-2]
+        - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: vertical gradient of temporal extrapolation of perturbed exner function [m-1]
+        - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: second vertical gradient of temporal extrapolation of perturbed exner function [m-2]
         - hydrostatic_correction_on_lowest_level: hydrostatic correction for steep slope (see https://doi.org/10.1175/MWR-D-12-00049.1) [m-1]
         - predictor_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at predictor step [m s-2]
-        - normal_wind_tendency_due_to_physics_process: normal wind tendeny due to slow physics [m s-2]
+        - normal_wind_tendency_due_to_slow_physics_process: normal wind tendeny due to slow physics [m s-2]
         - normal_wind_iau_increments: iau increment to normal wind (data assimilation) [m s-1]
         - geofac_grg_x: interpolation coefficient for computation of x-derivative of a cell-based variable at cell center using Green-Gauss theorem [m-1]
         - geofac_grg_y: interpolation coefficient for computation of y-derivative of a cell-based variable at cell center using Green-Gauss theorem [m-1]
@@ -581,14 +581,14 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         tangential_wind=tangential_wind,
         reference_rho_at_edges_on_model_levels=reference_rho_at_edges_on_model_levels,
         reference_theta_at_edges_on_model_levels=reference_theta_at_edges_on_model_levels,
-        perturbed_rho=perturbed_rho,
-        perturbed_theta_v=perturbed_theta_v,
+        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-        ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
-        normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+        normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
         normal_wind_iau_increments=normal_wind_iau_increments,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
@@ -643,7 +643,7 @@ def apply_divergence_damping_and_update_vn(
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     corrector_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
-    normal_wind_tendency_due_to_physics_process: fa.EdgeKField[ta.vpfloat],
+    normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increments: fa.EdgeKField[ta.vpfloat],
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[ta.wpfloat],
     fourth_order_divdamp_scaling_coeff: fa.KField[ta.wpfloat],
@@ -690,7 +690,7 @@ def apply_divergence_damping_and_update_vn(
         - dwdz_at_cells_on_model_levels: vertical derivative of vertical wind [s-1]
         - predictor_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at predictor step [m s-2]
         - corrector_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at corrector step [m s-2]
-        - normal_wind_tendency_due_to_physics_process: normal wind tendeny due to slow physics [m s-2]
+        - normal_wind_tendency_due_to_slow_physics_process: normal wind tendeny due to slow physics [m s-2]
         - normal_wind_iau_increments: iau increment to normal wind (data assimilation) [m s-1]
         - reduced_fourth_order_divdamp_coeff_at_nest_boundary: fourth order divergence damping coefficient at nest boundary [m2 s2]
         - fourth_order_divdamp_scaling_coeff: fourth order divergence damping coefficient [m2 s2]
@@ -729,7 +729,7 @@ def apply_divergence_damping_and_update_vn(
         dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
-        normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+        normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
         normal_wind_iau_increments=normal_wind_iau_increments,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,

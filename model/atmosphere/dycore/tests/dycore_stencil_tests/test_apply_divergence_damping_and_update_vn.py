@@ -39,7 +39,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         dwdz_at_cells_on_model_levels: np.ndarray,
         predictor_normal_wind_advective_tendency: np.ndarray,
         corrector_normal_wind_advective_tendency: np.ndarray,
-        normal_wind_tendency_due_to_physics_process: np.ndarray,
+        normal_wind_tendency_due_to_slow_physics_process: np.ndarray,
         normal_wind_iau_increments: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
         horizontal_pressure_gradient: np.ndarray,
@@ -105,7 +105,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             * (
                 wgt_nnow_vel * predictor_normal_wind_advective_tendency
                 + wgt_nnew_vel * corrector_normal_wind_advective_tendency
-                + normal_wind_tendency_due_to_physics_process
+                + normal_wind_tendency_due_to_slow_physics_process
                 - cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
             ),
             next_vn,
@@ -191,7 +191,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         predictor_normal_wind_advective_tendency = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        normal_wind_tendency_due_to_physics_process = data_alloc.random_field(
+        normal_wind_tendency_due_to_slow_physics_process = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
         horizontal_gradient_of_normal_wind_divergence = data_alloc.random_field(
@@ -236,7 +236,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
             predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
             corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
-            normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
+            normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increments=normal_wind_iau_increments,
             theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=horizontal_pressure_gradient,

@@ -178,30 +178,30 @@ def zonalwind_2_normalwind_ndarray(
 @gtx.field_operator
 def _compute_perturbed_exner(
     exner: fa.CellKField[ta.wpfloat],
-    exner_ref: fa.CellKField[ta.vpfloat],
+    reference_exner: fa.CellKField[ta.vpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the perturbed exner function (exner_pr).
-        exner_pr = exner - exner_ref
+    Compute the perturbed exner function (exner_pr in ICON).
+        perturbed_exner = exner - reference_exner
     This stencil is copied from subroutine compute_exner_pert in mo_nh_init_utils in ICON. It should be called
-    during the initialization to initialize exner_pr of DiagnosticStateHydro if the model does not restart from
-    a restart file.
+    during the initialization to initialize perturbed_exner_at_cells_on_model_levels of DiagnosticStateHydro
+    if the model does not restart from a restart file.
 
     Args:
         exner: exner function
-        exner_ref: reference exner function
+        reference_exner: reference exner function
     Returns:
         Perturbed exner function
     """
-    exner_pr = exner - exner_ref
-    return exner_pr
+    perturbed_exner = exner - reference_exner
+    return perturbed_exner
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbed_exner(
     exner: fa.CellKField[ta.wpfloat],
-    exner_ref: fa.CellKField[ta.vpfloat],
-    exner_pr: fa.CellKField[ta.wpfloat],
+    reference_exner: fa.CellKField[ta.vpfloat],
+    perturbed_exner: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -209,8 +209,8 @@ def compute_perturbed_exner(
 ):
     _compute_perturbed_exner(
         exner,
-        exner_ref,
-        out=exner_pr,
+        reference_exner,
+        out=perturbed_exner,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -238,7 +238,7 @@ def initialize_diffusion_diagnostic_state(
 
 
 def initialize_solve_nonhydro_diagnostic_state(
-    exner_pr: fa.CellKField[ta.wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     grid: icon_grid.IconGrid,
     backend: Optional[gtx_backend.Backend],
 ) -> dycore_states.DiagnosticStateNonHydro:
@@ -258,8 +258,8 @@ def initialize_solve_nonhydro_diagnostic_state(
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        exner_pr=exner_pr,
-        rho_ic=data_alloc.zero_field(
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        rho_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         ddt_exner_phy=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
@@ -269,7 +269,7 @@ def initialize_solve_nonhydro_diagnostic_state(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         mass_fl_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
-        normal_wind_tendency_due_to_physics_process=data_alloc.zero_field(
+        normal_wind_tendency_due_to_slow_physics_process=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),
         grf_tend_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
