@@ -132,8 +132,9 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     return offset
 
 
-def _dot_product(v1: data_alloc.NDArray, v2: data_alloc.NDArray,
-                 array_ns: ModuleType = np) -> data_alloc.NDArray:
+def _dot_product(
+    v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
     # alias: array_ns.transpose(v2, axes=(0, 2, 1)) for 3d array
     v2_tilde = array_ns.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
@@ -143,8 +144,7 @@ def _dot_product(v1: data_alloc.NDArray, v2: data_alloc.NDArray,
 # NOTE: this one computes the pairwise arc lengths between elements in v, the
 # next version computes pairwise arc lengths between two different arrays
 # TODO: Combine?
-def _arc_length_pairwise(v: data_alloc.NDArray,
-                         array_ns: ModuleType = np) -> data_alloc.NDArray:
+def _arc_length_pairwise(v: data_alloc.NDArray, array_ns: ModuleType = np) -> data_alloc.NDArray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
@@ -169,7 +169,9 @@ def _arc_length_pairwise(v: data_alloc.NDArray,
 # TODO: this is pretty much the same as above, except we don't get the squares
 # of the norms directly from the first matmul
 # TODO: this is used only in one place, it's probably not as generic as it looks
-def _arc_length_2(v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np) -> data_alloc.NDArray:
+def _arc_length_2(
+    v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
@@ -185,14 +187,18 @@ def _arc_length_2(v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: Modu
     return array_ns.squeeze(array_ns.arccos(arc_lengths), axis=1)
 
 
-def _gaussian(lengths: data_alloc.NDArray, scale: ta.wpfloat, array_ns: ModuleType = np) -> data_alloc.NDArray:
+def _gaussian(
+    lengths: data_alloc.NDArray, scale: ta.wpfloat, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
     val = lengths / scale
     return array_ns.exp(-1.0 * val * val)
 
 
-def _inverse_multiquadratic(distance: data_alloc.NDArray, scale: ta.wpfloat,
+def _inverse_multiquadratic(
+    distance: data_alloc.NDArray,
+    scale: ta.wpfloat,
     array_ns: ModuleType = np,
-                            ) -> data_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
 
     Args:
@@ -206,7 +212,12 @@ def _inverse_multiquadratic(distance: data_alloc.NDArray, scale: ta.wpfloat,
     return 1.0 / array_ns.sqrt(1.0 + val * val)
 
 
-def _kernel(kernel: InterpolationKernel, lengths: data_alloc.NDArray, scale: ta.wpfloat, array_ns: ModuleType = np):
+def _kernel(
+    kernel: InterpolationKernel,
+    lengths: data_alloc.NDArray,
+    scale: ta.wpfloat,
+    array_ns: ModuleType = np,
+):
     match kernel:
         case InterpolationKernel.GAUSSIAN:
             return _gaussian(lengths, scale, array_ns=array_ns)
@@ -288,7 +299,9 @@ def _compute_rbf_interpolation_matrix(
         axis=-1,
     )
     assert element_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = _arc_length_2(element_center[:, array_ns.newaxis, :], edge_center, array_ns=array_ns)
+    vector_dist = _arc_length_2(
+        element_center[:, array_ns.newaxis, :], edge_center, array_ns=array_ns
+    )
     assert vector_dist.shape == rbf_offset.shape
     rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor, array_ns=array_ns)
     assert rbf_val.shape == rbf_offset.shape
@@ -320,7 +333,9 @@ def _compute_rbf_interpolation_matrix(
         z_nx.append(array_ns.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1))
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
 
-        nxnx.append(array_ns.matmul(z_nx[i][:, array_ns.newaxis], edge_normal.transpose(0, 2, 1)).squeeze())
+        nxnx.append(
+            array_ns.matmul(z_nx[i][:, array_ns.newaxis], edge_normal.transpose(0, 2, 1)).squeeze()
+        )
         rhs.append(rbf_val * nxnx[i])
         assert rhs[i].shape == rbf_offset.shape
 
