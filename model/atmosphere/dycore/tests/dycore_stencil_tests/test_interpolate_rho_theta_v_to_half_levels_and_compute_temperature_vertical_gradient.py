@@ -65,8 +65,8 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         wgtfac_c: np.ndarray,
         vertical_explicit_weight: np.ndarray,
         dtime: ta.wpfloat,
-        wgt_nnow_rth: ta.wpfloat,
-        wgt_nnew_rth: ta.wpfloat,
+        rhotheta_explicit_weight: ta.wpfloat,
+        rhotheta_implicit_weight: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
         vertical_explicit_weight = np.expand_dims(vertical_explicit_weight, axis=-1)
@@ -84,12 +84,20 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         back_trajectory_w_at_cells_on_half_levels = (
             -(w - contravariant_correction_at_cells_on_half_levels) * dtime * 0.5 / ddqz_z_half
         )
-        time_averaged_rho_kup = wgt_nnow_rth * koffset_current_rho + wgt_nnew_rth * koffset_next_rho
-        time_averaged_theta_v_kup = (
-            wgt_nnow_rth * koffset_current_theta_v + wgt_nnew_rth * koffset_next_theta_v
+        time_averaged_rho_kup = (
+            rhotheta_explicit_weight * koffset_current_rho
+            + rhotheta_implicit_weight * koffset_next_rho
         )
-        time_averaged_rho = wgt_nnow_rth * current_rho + wgt_nnew_rth * next_rho
-        time_averaged_theta_v = wgt_nnow_rth * current_theta_v + wgt_nnew_rth * next_theta_v
+        time_averaged_theta_v_kup = (
+            rhotheta_explicit_weight * koffset_current_theta_v
+            + rhotheta_implicit_weight * koffset_next_theta_v
+        )
+        time_averaged_rho = (
+            rhotheta_explicit_weight * current_rho + rhotheta_implicit_weight * next_rho
+        )
+        time_averaged_theta_v = (
+            rhotheta_explicit_weight * current_theta_v + rhotheta_implicit_weight * next_theta_v
+        )
         rho_at_cells_on_half_levels_full = (
             wgtfac_c * time_averaged_rho
             + (1 - wgtfac_c) * time_averaged_rho_kup
@@ -190,8 +198,8 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         )
 
         dtime = 0.9
-        wgt_nnow_rth = 0.25
-        wgt_nnew_rth = 0.75
+        rhotheta_explicit_weight = 0.25
+        rhotheta_implicit_weight = 0.75
 
         cell_domain = h_grid.domain(dims.CellDim)
         start_cell_lateral_boundary_level_3 = grid.start_index(
@@ -217,8 +225,8 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             wgtfac_c=wgtfac_c,
             vertical_explicit_weight=vertical_explicit_weight,
             dtime=dtime,
-            wgt_nnow_rth=wgt_nnow_rth,
-            wgt_nnew_rth=wgt_nnew_rth,
+            rhotheta_explicit_weight=rhotheta_explicit_weight,
+            rhotheta_implicit_weight=rhotheta_implicit_weight,
             horizontal_start=start_cell_lateral_boundary_level_3,
             horizontal_end=end_cell_local,
             vertical_start=1,

@@ -1133,7 +1133,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     d2dexdz2_fac2_mc = metrics_savepoint.d2dexdz2_fac2_mc()
     wgtfacq_c = metrics_savepoint.wgtfacq_c_dsl()
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    vwind_expl_wgt = metrics_savepoint.vwind_expl_wgt()
+    vertical_explicit_weight = metrics_savepoint.vwind_expl_wgt()
     ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
     time_extrapolation_parameter_for_exner = metrics_savepoint.exner_exfac()
@@ -1171,7 +1171,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
         wgtfacq_c=wgtfacq_c,
         wgtfac_c=wgtfac_c,
-        vwind_expl_wgt=vwind_expl_wgt,
+        vertical_explicit_weight=vertical_explicit_weight,
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
         pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
@@ -1298,8 +1298,8 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     perturbed_exner_at_cells_on_model_levels = sp_init.exner_pr()
     rho_at_cells_on_half_levels = sp_init.rho_ic()
     theta_v_at_cells_on_half_levels = sp_init.theta_v_ic()
-    wgt_nnow_rth = sp_init.wgt_nnow_rth()
-    wgt_nnew_rth = sp_init.wgt_nnew_rth()
+    rhotheta_explicit_weight = sp_init.wgt_nnow_rth()
+    rhotheta_implicit_weight = sp_init.wgt_nnew_rth()
 
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
@@ -1317,7 +1317,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
 
     wgtfac_c = metrics_savepoint.wgtfac_c()
     reference_theta_at_cells_on_model_levels = metrics_savepoint.theta_ref_mc()
-    vwind_expl_wgt = metrics_savepoint.vwind_expl_wgt()
+    vertical_explicit_weight = metrics_savepoint.vwind_expl_wgt()
     ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
 
@@ -1344,10 +1344,10 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
         wgtfac_c=wgtfac_c,
-        vwind_expl_wgt=vwind_expl_wgt,
+        vertical_explicit_weight=vertical_explicit_weight,
         dtime=dtime,
-        wgt_nnow_rth=wgt_nnow_rth,
-        wgt_nnew_rth=wgt_nnew_rth,
+        rhotheta_explicit_weight=rhotheta_explicit_weight,
+        rhotheta_implicit_weight=rhotheta_implicit_weight,
         horizontal_start=start_cell_lateral_boundary_level_3,
         horizontal_end=end_cell_local,
         vertical_start=1,
@@ -1891,7 +1891,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         rayleigh_damping_factor=rayleigh_damping_factor,
-        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
@@ -2102,7 +2102,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         rayleigh_damping_factor=rayleigh_damping_factor,
-        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         advection_explicit_weight=advection_explicit_weight,
         advection_implicit_weight=advection_implicit_weight,
         lprep_adv=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
