@@ -326,7 +326,7 @@ def test_cartesian_centers(backend, grid_file, experiment):
     assert y.ndarray.shape == (grid.num_edges,)
     assert z.ndarray.shape == (grid.num_edges,)
     # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype)
+    norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
     math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
     assert helpers.dallclose(norm.asnumpy(), 1.0)
 
