@@ -63,13 +63,13 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         ddz_of_reference_exner_at_cells_on_half_levels: np.ndarray,
         ddqz_z_half: np.ndarray,
         wgtfac_c: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
+        vertical_explicit_weight: np.ndarray,
         dtime: ta.wpfloat,
         wgt_nnow_rth: ta.wpfloat,
         wgt_nnew_rth: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+        vertical_explicit_weight = np.expand_dims(vertical_explicit_weight, axis=-1)
         koffset_current_rho = np.roll(current_rho, shift=1, axis=1)
         koffset_next_rho = np.roll(next_rho, shift=1, axis=1)
         koffset_current_theta_v = np.roll(current_theta_v, shift=1, axis=1)
@@ -113,7 +113,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             * (time_averaged_theta_v_kup - time_averaged_theta_v)
         )
         pressure_buoyancy_acceleration_at_cells_on_half_levels_full = (
-            vwind_expl_wgt
+            vertical_explicit_weight
             * theta_v_at_cells_on_half_levels_full
             * (
                 koffset_perturbed_exner_at_cells_on_model_levels
@@ -171,7 +171,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         reference_theta_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
-        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim)
+        vertical_explicit_weight = data_alloc.random_field(grid, dims.CellDim)
         perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )
@@ -215,7 +215,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
             wgtfac_c=wgtfac_c,
-            vwind_expl_wgt=vwind_expl_wgt,
+            vertical_explicit_weight=vertical_explicit_weight,
             dtime=dtime,
             wgt_nnow_rth=wgt_nnow_rth,
             wgt_nnew_rth=wgt_nnew_rth,

@@ -65,6 +65,7 @@ from .test_set_theta_v_prime_ic_at_lower_boundary import (
 
 horzpres_discr_type = HorizontalPressureDiscretizationType()
 
+
 def compute_first_vertical_derivative_numpy(
     cell_kdim_field: np.ndarray, inv_ddqz_z_full: np.ndarray
 ) -> np.ndarray:
@@ -102,7 +103,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         reference_theta_at_cells_on_half_levels: np.ndarray,
         wgtfacq_c: np.ndarray,
         wgtfac_c: np.ndarray,
-        vwind_expl_wgt: np.ndarray,
+        vertical_explicit_weight: np.ndarray,
         perturbed_exner_at_cells_on_model_levels: np.ndarray,
         ddz_of_reference_exner_at_cells_on_half_levels: np.ndarray,
         ddqz_z_half: np.ndarray,
@@ -266,7 +267,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
                 wgtfac_c=wgtfac_c[:, : vertical_end - 1],
                 z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels[:, : vertical_end - 1],
                 theta_v=current_theta_v,
-                vwind_expl_wgt=vwind_expl_wgt,
+                vwind_expl_wgt=vertical_explicit_weight,
                 exner_pr=perturbed_exner_at_cells_on_model_levels,
                 d_exner_dz_ref_ic=ddz_of_reference_exner_at_cells_on_half_levels,
                 ddqz_z_half=ddqz_z_half,
@@ -360,7 +361,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         d2dexdz2_fac1_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         d2dexdz2_fac2_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim)
+        vertical_explicit_weight = data_alloc.random_field(grid, dims.CellDim)
         perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )
@@ -402,7 +403,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         limited_area = True
 
         cell_domain = h_grid.domain(dims.CellDim)
-        # n_lev = grid.num_levels
         start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
         start_cell_lateral_boundary_level_3 = grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
@@ -433,7 +433,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
             wgtfacq_c=wgtfacq_c,
             wgtfac_c=wgtfac_c,
-            vwind_expl_wgt=vwind_expl_wgt,
+            vertical_explicit_weight=vertical_explicit_weight,
             ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
             pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,

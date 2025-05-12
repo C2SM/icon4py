@@ -54,14 +54,19 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 rhotheta_avd_type: Final = dycore_states.RhoThetaAdvectionType()
 horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType()
 divergence_damp_order: Final = dycore_states.DivergenceDampingOrder()
-dycore_consts: Final = dycore_states._DycoreConstants()
+dycore_consts: Final = constants._PhysicsConstants()
 
 
 @gtx.field_operator

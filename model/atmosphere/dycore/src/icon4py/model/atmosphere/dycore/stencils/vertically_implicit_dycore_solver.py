@@ -12,7 +12,6 @@ import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import astype, broadcast
 
-from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     _add_analysis_increments_from_data_assimilation,
 )
@@ -44,6 +43,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
     _update_mass_volume_flux,
 )
 from icon4py.model.common import (
+    constants,
     dimension as dims,
     field_type_aliases as fa,
     model_options,
@@ -52,7 +52,7 @@ from icon4py.model.common import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-dycore_consts: Final = dycore_states._DycoreConstants()
+dycore_consts: Final = constants._PhysicsConstants()
 rayleigh_damping_options: Final = model_options.RayleighType()
 
 
@@ -332,7 +332,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     vertical_implicit_weight: fa.CellField[ta.wpfloat],
     rayleigh_damping_factor: fa.KField[ta.wpfloat],
-    exner_ref_mc: fa.CellKField[ta.vpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     rho_explicit_term: fa.CellKField[ta.wpfloat],
     exner_explicit_term: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
@@ -376,7 +376,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
             rho_ic=rho_at_cells_on_half_levels,
             w=next_w,
             z_exner_expl=exner_explicit_term,
-            exner_ref_mc=exner_ref_mc,
+            exner_ref_mc=reference_exner_at_cells_on_model_levels,
             z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
             z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
             rho_now=current_rho,
@@ -608,7 +608,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     vertical_implicit_weight: fa.CellField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rayleigh_damping_factor: fa.KField[ta.wpfloat],
-    exner_ref_mc: fa.CellKField[ta.vpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     rho_explicit_term: fa.CellKField[ta.wpfloat],
     exner_explicit_term: fa.CellKField[ta.wpfloat],
     lprep_adv: bool,
@@ -655,7 +655,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
             rho_ic=rho_at_cells_on_half_levels,
             w=next_w,
             z_exner_expl=exner_explicit_term,
-            exner_ref_mc=exner_ref_mc,
+            exner_ref_mc=reference_exner_at_cells_on_model_levels,
             z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
             z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
             rho_now=current_rho,
@@ -770,7 +770,7 @@ def vertically_implicit_solver_at_predictor_step(
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     rayleigh_damping_factor: fa.KField[ta.wpfloat],
-    exner_ref_mc: fa.CellKField[ta.vpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
     is_iau_active: bool,
@@ -856,7 +856,7 @@ def vertically_implicit_solver_at_predictor_step(
         inv_ddqz_z_full=inv_ddqz_z_full,
         vertical_implicit_weight=vertical_implicit_weight,
         rayleigh_damping_factor=rayleigh_damping_factor,
-        exner_ref_mc=exner_ref_mc,
+        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         rho_explicit_term=rho_explicit_term,
         exner_explicit_term=exner_explicit_term,
         dtime=dtime,
@@ -918,7 +918,7 @@ def vertically_implicit_solver_at_corrector_step(
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     rayleigh_damping_factor: fa.KField[ta.wpfloat],
-    exner_ref_mc: fa.CellKField[ta.vpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     advection_explicit_weight: ta.wpfloat,
     advection_implicit_weight: ta.wpfloat,
     lprep_adv: bool,
@@ -1013,7 +1013,7 @@ def vertically_implicit_solver_at_corrector_step(
         vertical_implicit_weight=vertical_implicit_weight,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
         rayleigh_damping_factor=rayleigh_damping_factor,
-        exner_ref_mc=exner_ref_mc,
+        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         rho_explicit_term=rho_explicit_term,
         exner_explicit_term=exner_explicit_term,
         lprep_adv=lprep_adv,

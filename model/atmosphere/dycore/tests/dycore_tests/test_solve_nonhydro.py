@@ -1511,7 +1511,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
             inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
             z_hydro_corr=hydrostatic_correction,
-            grav_o_cpd=dycore_states._DycoreConstants.grav_o_cpd,
+            grav_o_cpd=constants.GRAV_O_CPD,
             horizontal_start=start_edge_nudging_level_2,
             horizontal_end=end_edge_local,
             vertical_start=icon_grid.num_levels - 1,
@@ -1801,9 +1801,9 @@ def test_vertically_implicit_solver_at_predictor_step(
     mass_flux_at_edges_on_model_levels = sp_stencil_init.mass_fl_e()
     theta_v_flux_at_edges_on_model_levels = sp_stencil_init.z_theta_v_fl_e()
     predictor_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(0)
-    z_th_ddz_exner_c = sp_stencil_init.z_th_ddz_exner_c()
+    pressure_buoyancy_acceleration_at_cells_on_half_levels = sp_stencil_init.z_th_ddz_exner_c()
     vertical_mass_flux_at_cells_on_half_levels = sp_stencil_init.z_contr_w_fl_l()
-    rho_ic = sp_stencil_init.rho_ic()
+    rho_at_cells_on_half_levels = sp_stencil_init.rho_ic()
     contravariant_correction_at_cells_on_half_levels = sp_stencil_init.w_concorr_c()
     current_exner = sp_stencil_init.exner_nnow()
     current_rho = sp_stencil_init.rho_nnow()
@@ -1815,7 +1815,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     next_w = sp_stencil_init.w()
     rho_explicit_term = sp_stencil_init.z_rho_expl()
     exner_explicit_term = sp_stencil_init.z_exner_expl()
-    exner_pr = sp_stencil_init.exner_pr()
+    perturbed_exner_at_cells_on_model_levels = sp_stencil_init.exner_pr()
     exner_tendency_due_to_slow_physics = sp_stencil_init.ddt_exner_phy()
     rho_iau_increment = sp_stencil_init.rho_incr()
     exner_iau_increment = sp_stencil_init.exner_incr()
@@ -1874,8 +1874,8 @@ def test_vertically_implicit_solver_at_predictor_step(
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-        z_th_ddz_exner_c=z_th_ddz_exner_c,
-        rho_ic=rho_ic,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         vertical_explicit_weight=metrics_savepoint.vwind_expl_wgt(),
         current_exner=current_exner,
@@ -1885,7 +1885,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         vertical_implicit_weight=metrics_savepoint.vwind_impl_wgt(),
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-        exner_pr=exner_pr,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
         rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
@@ -2006,9 +2006,9 @@ def test_vertically_implicit_solver_at_corrector_step(
     theta_v_flux_at_edges_on_model_levels = sp_stencil_init.z_theta_v_fl_e()
     predictor_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(0)
     corrector_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(1)
-    z_th_ddz_exner_c = sp_stencil_init.z_th_ddz_exner_c()
+    pressure_buoyancy_acceleration_at_cells_on_half_levels = sp_stencil_init.z_th_ddz_exner_c()
     vertical_mass_flux_at_cells_on_half_levels = sp_stencil_init.z_contr_w_fl_l()
-    rho_ic = sp_stencil_init.rho_ic()
+    rho_at_cells_on_half_levels = sp_stencil_init.rho_ic()
     contravariant_correction_at_cells_on_half_levels = sp_stencil_init.w_concorr_c()
     current_exner = sp_stencil_init.exner_nnow()
     current_rho = sp_stencil_init.rho_nnow()
@@ -2020,7 +2020,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     next_w = sp_stencil_init.w()
     rho_explicit_term = sp_stencil_init.z_rho_expl()
     exner_explicit_term = sp_stencil_init.z_exner_expl()
-    exner_pr = sp_stencil_init.exner_pr()
+    perturbed_exner_at_cells_on_model_levels = sp_stencil_init.exner_pr()
     exner_tendency_due_to_slow_physics = sp_stencil_init.ddt_exner_phy()
     rho_iau_increment = sp_stencil_init.rho_incr()
     exner_iau_increment = sp_stencil_init.exner_incr()
@@ -2085,8 +2085,8 @@ def test_vertically_implicit_solver_at_corrector_step(
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
-        z_th_ddz_exner_c=z_th_ddz_exner_c,
-        rho_ic=rho_ic,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         vertical_explicit_weight=metrics_savepoint.vwind_expl_wgt(),
         current_exner=current_exner,
@@ -2096,7 +2096,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         vertical_implicit_weight=metrics_savepoint.vwind_impl_wgt(),
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-        exner_pr=exner_pr,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
         rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,

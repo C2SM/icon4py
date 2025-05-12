@@ -112,8 +112,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         mass_flux_at_edges_on_model_levels: np.ndarray,
         theta_v_flux_at_edges_on_model_levels: np.ndarray,
         predictor_vertical_wind_advective_tendency: np.ndarray,
-        z_th_ddz_exner_c: np.ndarray,
-        rho_ic: np.ndarray,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
+        rho_at_cells_on_half_levels: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         vertical_explicit_weight: np.ndarray,
         current_exner: np.ndarray,
@@ -123,13 +123,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         inv_ddqz_z_full: np.ndarray,
         vertical_implicit_weight: np.ndarray,
         theta_v_at_cells_on_half_levels: np.ndarray,
-        exner_pr: np.ndarray,
+        perturbed_exner_at_cells_on_model_levels: np.ndarray,
         exner_tendency_due_to_slow_physics: np.ndarray,
         rho_iau_increment: np.ndarray,
         exner_iau_increment: np.ndarray,
         ddqz_z_half: np.ndarray,
         rayleigh_damping_factor: np.ndarray,
-        exner_ref_mc: np.ndarray,
+        reference_exner_at_cells_on_model_levels: np.ndarray,
         iau_wgt_dyn: float,
         dtime: float,
         is_iau_active: bool,
@@ -171,8 +171,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
                 ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
-                z_th_ddz_exner_c=z_th_ddz_exner_c,
-                rho_ic=rho_ic[:, :n_lev],
+                z_th_ddz_exner_c=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+                rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 vwind_expl_wgt=vertical_explicit_weight,
                 dtime=dtime,
@@ -193,7 +193,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 vwind_impl_wgt=vertical_implicit_weight,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
-                rho_ic=rho_ic[:, :n_lev],
+                rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 dtime=dtime,
                 rd=constants.RD,
                 cvd=constants.CVD,
@@ -232,7 +232,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 z_flxdiv_mass=divergence_of_mass,
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
-                exner_pr=exner_pr,
+                exner_pr=perturbed_exner_at_cells_on_model_levels,
                 z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
                 z_flxdiv_theta=divergence_of_theta_v,
                 theta_v_ic=theta_v_at_cells_on_half_levels,
@@ -315,10 +315,10 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 z_rho_expl=rho_explicit_term,
                 vwind_impl_wgt=vertical_implicit_weight,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-                rho_ic=rho_ic,
+                rho_ic=rho_at_cells_on_half_levels,
                 w=next_w,
                 z_exner_expl=exner_explicit_term,
-                exner_ref_mc=exner_ref_mc,
+                exner_ref_mc=reference_exner_at_cells_on_model_levels,
                 z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
                 z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
                 rho_now=current_rho,
@@ -369,11 +369,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
         vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        rho_ic = data_alloc.random_field(
+        rho_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
@@ -389,13 +391,17 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
         )
-        exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim
+        )
         exner_tendency_due_to_slow_physics = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
         rayleigh_damping_factor = data_alloc.random_field(grid, dims.KDim)
-        exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
+        reference_exner_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=1.0e-5
+        )
 
         tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
@@ -443,8 +449,8 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            rho_ic=rho_ic,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             vertical_explicit_weight=vertical_explicit_weight,
             current_exner=current_exner,
@@ -454,13 +460,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             inv_ddqz_z_full=inv_ddqz_z_full,
             vertical_implicit_weight=vertical_implicit_weight,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            exner_pr=exner_pr,
+            perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
             exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
             rho_iau_increment=rho_iau_increment,
             exner_iau_increment=exner_iau_increment,
             ddqz_z_half=ddqz_z_half,
             rayleigh_damping_factor=rayleigh_damping_factor,
-            exner_ref_mc=exner_ref_mc,
+            reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
             is_iau_active=is_iau_active,
