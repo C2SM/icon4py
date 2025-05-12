@@ -55,7 +55,7 @@ class InterpolationConfig:
     # for nested setup this value is a vector of size num_domains
     # and the default value is resolution dependent, according to the namelist
     # documentation in ICON
-    rbf_vector_scale: dict[RBFDimension, float] = MappingProxyType(
+    rbf_vector_scale: dict[RBFDimension, ta.wpfloat] = MappingProxyType(
         {
             RBFDimension.CELL: 1.0,
             RBFDimension.EDGE: 1.0,
@@ -183,12 +183,12 @@ def _arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     return np.squeeze(np.arccos(arc_lengths), axis=1)
 
 
-def _gaussian(lengths: np.ndarray, scale: float) -> np.ndarray:
+def _gaussian(lengths: np.ndarray, scale: ta.wpfloat) -> np.ndarray:
     val = lengths / scale
     return np.exp(-1.0 * val * val)
 
 
-def _inverse_multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
+def _inverse_multiquadratic(distance: np.ndarray, scale: ta.wpfloat) -> np.ndarray:
     """
 
     Args:
@@ -202,7 +202,7 @@ def _inverse_multiquadratic(distance: np.ndarray, scale: float) -> np.ndarray:
     return 1.0 / np.sqrt(1.0 + val * val)
 
 
-def _kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
+def _kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: ta.wpfloat):
     match kernel:
         case InterpolationKernel.GAUSSIAN:
             return _gaussian(lengths, scale)
@@ -240,7 +240,7 @@ def _compute_rbf_interpolation_matrix(
     v,
     rbf_offset,  # field_alloc.NDArray, [num_dim, RBFDimension(dim)]
     rbf_kernel: InterpolationKernel,
-    scale_factor: float,
+    scale_factor: ta.wpfloat,
 ):
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
@@ -418,7 +418,7 @@ def compute_rbf_interpolation_matrix_edge(
     edge_dual_normal_v: fa.EdgeField[ta.wpfloat],
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
-    scale_factor: float,
+    scale_factor: ta.wpfloat,
 ):
     # TODO: computing too much here
     coeffs = _compute_rbf_interpolation_matrix(
@@ -457,7 +457,7 @@ def compute_rbf_interpolation_matrix_vertex(
     edge_normal_z: fa.EdgeField[ta.wpfloat],
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
-    scale_factor: float,
+    scale_factor: ta.wpfloat,
 ) -> tuple[fa.VertexField, fa.VertexField]:
     zeros = gtx.zeros(vertex_center_lat.domain, dtype=ta.wpfloat)
     ones = gtx.ones(vertex_center_lat.domain, dtype=ta.wpfloat)
