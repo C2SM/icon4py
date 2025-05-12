@@ -282,9 +282,11 @@ def initialize_solve_nonhydro_diagnostic_state(
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
-        normal_wind_iau_increments=None,  # solve_nonhydro_init_savepoint.vn_incr(),
-        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        rho_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        normal_wind_iau_increments=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),
+        exner_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
         exner_dyn_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
     )
 

@@ -23,10 +23,19 @@ from icon4py.model.atmosphere.diffusion import (
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.io import io, utils as io_utils
 from icon4py.model.common.states import (
+    data as state_attr_data,
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+
+# FieldGroupIOConfig,
+# FieldGroupMonitor,
+# IOConfig,
+# IOMonitor,
+# generate_name,
+# to_delta,
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
@@ -34,6 +43,29 @@ from icon4py.model.driver import (
 
 
 log = logging.getLogger(__name__)
+
+RHO = "air_density"
+VN = "normal_velocity"
+EXNER = "exner_function"
+THETA_V = "virtual_potential_temperature"
+W = "upward_air_velocity"
+output_variables = [RHO, VN, EXNER, THETA_V, W]
+
+
+def output_prognostic_state(prognostics: prognostics.PrognosticState):
+    return {
+        RHO: io_utils.to_data_array(prognostics.rho, state_attr_data.PROGNOSTIC_CF_ATTRIBUTES[RHO]),
+        VN: io_utils.to_data_array(prognostics.vn, state_attr_data.PROGNOSTIC_CF_ATTRIBUTES[VN]),
+        EXNER: io_utils.to_data_array(
+            prognostics.exner, state_attr_data.PROGNOSTIC_CF_ATTRIBUTES[EXNER]
+        ),
+        THETA_V: io_utils.to_data_array(
+            prognostics.theta_v, state_attr_data.PROGNOSTIC_CF_ATTRIBUTES[THETA_V]
+        ),
+        W: io_utils.to_data_array(
+            prognostics.w, state_attr_data.PROGNOSTIC_CF_ATTRIBUTES[W], is_on_interface=True
+        ),
+    }
 
 
 class TimeLoop:
@@ -46,10 +78,12 @@ class TimeLoop:
         run_config: driver_config.Icon4pyRunConfig,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
+        io_monitor: io.IOMonitor,
     ):
         self.run_config: driver_config.Icon4pyRunConfig = run_config
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
+        self.io_monitor = io_monitor
 
         self._n_time_steps: int = int(
             (self.run_config.end_date - self.run_config.start_date) / self.run_config.dtime
@@ -119,6 +153,11 @@ class TimeLoop:
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
         )
+        log.info(f"output initial variables at {self._simulation_date}")
+        self.io_monitor.store(
+            output_prognostic_state(prognostic_states.current), self._simulation_date
+        )
+
         log.info(
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
@@ -170,6 +209,11 @@ class TimeLoop:
             timer.capture()
 
             self._is_first_step_in_simulation = False
+
+            log.info(f"output variables at {self._simulation_date}")
+            self.io_monitor.store(
+                output_prognostic_state(prognostic_states.current), self._simulation_date
+            )
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
@@ -320,10 +364,12 @@ class DriverParams(NamedTuple):
 
 def initialize(
     file_path: pathlib.Path,
+    output_path: str,
     props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
     grid_id: uuid.UUID,
+    grid_file: str,
     grid_root,
     grid_level,
     icon4py_driver_backend: str,
@@ -456,10 +502,31 @@ def initialize(
     )
     prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
+    global output_variables
+    logging.info(f"output start date: {config.run_config.start_date.isoformat()}")
+    field_configs = [
+        io.FieldGroupIOConfig(
+            output_interval="5 MINUTES",
+            start_time=config.run_config.start_date.isoformat(),
+            filename="output",
+            variables=output_variables,
+            timesteps_per_file=1,
+        )
+    ]
+    io_config = io.IOConfig(field_groups=field_configs, output_path=output_path)
+    io_monitor = io.IOMonitor(
+        io_config,
+        vertical_geometry,
+        icon_grid.config.horizontal_config,
+        grid_file,
+        grid_id,
+    )
+
     time_loop = TimeLoop(
         run_config=config.run_config,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
+        io_monitor=io_monitor,
     )
 
     return (
@@ -481,6 +548,11 @@ def initialize(
     "--run_path",
     default="./",
     help="Folder for code logs to file and to console. Only debug logging is going to the file.",
+)
+@click.option(
+    "--output_path",
+    default="./output/",
+    help="Folder for output.",
 )
 @click.option(
     "--mpi",
@@ -520,6 +592,11 @@ def initialize(
     help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
 )
 @click.option(
+    "--grid_file",
+    default="./testdata/grids/r02b04_global/icon_grid_0013_R02B04_R.nc",
+    help="file name",
+)
+@click.option(
     "--enable_output",
     is_flag=True,
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
@@ -533,10 +610,12 @@ def initialize(
 def icon4py_driver(
     input_path,
     run_path,
+    output_path,
     mpi,
     serialization_type,
     experiment_type,
     grid_id,
+    grid_file,
     grid_root,
     grid_level,
     enable_output,
@@ -571,10 +650,12 @@ def icon4py_driver(
     dp: DriverParams
     time_loop, ds, dp = initialize(
         pathlib.Path(input_path),
+        output_path,
         parallel_props,
         serialization_type,
         experiment_type,
         grid_id,
+        grid_file,
         grid_root,
         grid_level,
         icon4py_driver_backend,
