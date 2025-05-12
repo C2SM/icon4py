@@ -19,19 +19,27 @@ include:
 test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
-.test_tools:
+.test_tools_unittests:
   stage: test
   script:
-    - nox -s 'test_tools-3.10'
+    - nox -s 'test_tools-3.10(unittest)'
+
+.test_tools_datatests:
+  stage: test
+  script:
+    - nox -s 'test_tools-3.10(datatest)'
 # test_tools_x86_64:
-#   extends: [.test_tools, .test_template_x86_64]
-test_tools_aarch64:
-  extends: [.test_tools, .test_template_aarch64]
+#   extends: [.test_tools_datatests, .test_template_x86_64]
+test_tools_datatests_aarch64:
+  extends: [.test_tools_datatests, .test_template_aarch64]
+
+test_tools_unittests_aarch64:
+  extends: [.test_tools_unittests, .test_template_aarch64 ]
 
 .test_model_datatests:
   stage: test
   script:
-    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND 
+    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
     # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
@@ -39,7 +47,22 @@ test_tools_aarch64:
     #  missing updates for 'concat_where'.
     - COMPONENT: [diffusion, dycore, microphysics, common, driver]
       BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+      LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
+
+.test_model_basic:
+  stage: test
+  script:
+    - nox -s "test_model-3.10(basic, $COMPONENT)" -- --backend=$BACKEND
+  parallel:
+    matrix:
+    # TODO: advection tests are skipped, see .test_model_datatests for details.
+    - COMPONENT: [diffusion, dycore, microphysics, common, driver]
+      BACKEND: [embedded, gtfn_cpu]
+# test_model_datatests_x86_64:
+#   extends: [.test_model_datatests, .test_template_x86_64]
+test_model_unittests_aarch64:
+  extends: [.test_model_basic, .test_template_aarch64]

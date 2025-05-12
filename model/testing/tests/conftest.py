@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ruff: noqa: F405
+
 # Make sure custom icon4py pytest hooks are loaded
 try:
     import sys
