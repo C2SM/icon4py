@@ -221,18 +221,18 @@ def model_initialization_gauss3d(
     )
     log.info("U, V computation completed.")
 
-    exner_pr = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
     testcases_utils.compute_perturbed_exner.with_backend(backend)(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
-        exner_pr,
+        perturbed_exner,
         0,
         num_cells,
         0,
         num_levels,
         offset_provider={},
     )
-    log.info("exner_pr initialization completed.")
+    log.info("perturbed_exner initialization completed.")
 
     diagnostic_state = diagnostics.DiagnosticState(
         pressure=pressure,
@@ -262,7 +262,7 @@ def model_initialization_gauss3d(
         grid=grid, backend=backend
     )
     solve_nonhydro_diagnostic_state = testcases_utils.initialize_solve_nonhydro_diagnostic_state(
-        exner_pr=exner_pr, grid=grid, backend=backend
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner, grid=grid, backend=backend
     )
 
     prep_adv = testcases_utils.initialize_prep_advection(grid=grid, backend=backend)
