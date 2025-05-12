@@ -20,7 +20,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_o
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w_for_lower_boundary import (
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
