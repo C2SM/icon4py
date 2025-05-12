@@ -214,6 +214,15 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
+    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
+        dims.KDim == 0,
+        (
+            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        ),
+        (next_w, vertical_mass_flux_at_cells_on_half_levels),
+    )
+
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
@@ -237,15 +246,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         dtime=dtime,
-    )
-
-    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
-        dims.KDim == 0,
-        (
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-        ),
-        (next_w, vertical_mass_flux_at_cells_on_half_levels),
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -487,6 +487,15 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
+    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
+        dims.KDim == 0,
+        (
+            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        ),
+        (next_w, vertical_mass_flux_at_cells_on_half_levels),
+    )
+
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
@@ -510,15 +519,6 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         dtime=dtime,
-    )
-
-    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
-        dims.KDim == 0,
-        (
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-        ),
-        (next_w, vertical_mass_flux_at_cells_on_half_levels),
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
