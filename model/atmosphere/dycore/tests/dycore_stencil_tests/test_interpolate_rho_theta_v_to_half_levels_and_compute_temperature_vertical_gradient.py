@@ -63,13 +63,15 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         ddz_of_reference_exner_at_cells_on_half_levels: np.ndarray,
         ddqz_z_half: np.ndarray,
         wgtfac_c: np.ndarray,
-        exner_w_explicit_weight: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
         dtime: ta.wpfloat,
         rhotheta_explicit_weight_parameter: ta.wpfloat,
         rhotheta_implicit_weight_parameter: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        exner_w_explicit_weight = np.expand_dims(exner_w_explicit_weight, axis=-1)
+        exner_w_explicit_weight_parameter = np.expand_dims(
+            exner_w_explicit_weight_parameter, axis=-1
+        )
         koffset_current_rho = np.roll(current_rho, shift=1, axis=1)
         koffset_next_rho = np.roll(next_rho, shift=1, axis=1)
         koffset_current_theta_v = np.roll(current_theta_v, shift=1, axis=1)
@@ -123,7 +125,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             * (time_averaged_theta_v_kup - time_averaged_theta_v)
         )
         pressure_buoyancy_acceleration_at_cells_on_half_levels_full = (
-            exner_w_explicit_weight
+            exner_w_explicit_weight_parameter
             * theta_v_at_cells_on_half_levels_full
             * (
                 koffset_perturbed_exner_at_cells_on_model_levels
@@ -181,7 +183,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         reference_theta_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
-        exner_w_explicit_weight = data_alloc.random_field(grid, dims.CellDim)
+        exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )
@@ -225,7 +227,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
             wgtfac_c=wgtfac_c,
-            exner_w_explicit_weight=exner_w_explicit_weight,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             dtime=dtime,
             rhotheta_explicit_weight_parameter=rhotheta_explicit_weight_parameter,
             rhotheta_implicit_weight_parameter=rhotheta_implicit_weight_parameter,
