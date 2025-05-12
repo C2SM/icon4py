@@ -395,35 +395,35 @@ def compute_ddxt_z_half_e(
 
 
 @field_operator
-def _compute_vertical_explicit_weight(
-    vertical_implicit_weight: fa.CellField[wpfloat],
+def _compute_exner_w_explicit_weight_parameter(
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
 ) -> fa.CellField[wpfloat]:
-    return 1.0 - vertical_implicit_weight
+    return 1.0 - exner_w_implicit_weight_parameter
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_vertical_explicit_weight(
-    vertical_implicit_weight: fa.CellField[wpfloat],
-    vertical_explicit_weight: fa.CellField[wpfloat],
+def compute_exner_w_explicit_weight_parameter(
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
     """
-    Compute vertical_explicit_weight.
+    Compute exner_w_explicit_weight_parameter.
 
     See mo_vertical_grid.f90
 
     Args:
-        vertical_implicit_weight: offcentering in vertical mass flux
-        vertical_explicit_weight: (output) 1 - vertical_implicit_weight
+        exner_w_implicit_weight_parameter: offcentering in vertical mass flux
+        exner_w_explicit_weight_parameter: (output) 1 - exner_w_implicit_weight_parameter
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
 
     """
 
-    _compute_vertical_explicit_weight(
-        vertical_implicit_weight=vertical_implicit_weight,
-        out=vertical_explicit_weight,
+    _compute_exner_w_explicit_weight_parameter(
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
+        out=exner_w_explicit_weight_parameter,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
@@ -1079,7 +1079,7 @@ def compute_theta_exner_ref_mc(
     )
 
 
-def compute_vertical_implicit_weight(
+def compute_exner_w_implicit_weight_parameter(
     c2e: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
@@ -1103,7 +1103,7 @@ def compute_vertical_implicit_weight(
     offctr = array_ns.minimum(
         factor, array_ns.maximum(vwind_offctr, array_ns.maximum(maxslope, diff))
     )
-    vertical_implicit_weight = 0.5 + offctr
+    exner_w_implicit_weight_parameter = 0.5 + offctr
 
     k_start = max(0, nlev - 9)
 
@@ -1113,8 +1113,10 @@ def compute_vertical_implicit_weight(
         zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
         index_for_k = np.where(zdiff2_sliced < 0.6)[0]
         max_value_k = np.maximum(
-            1.2 - zdiff2_sliced, vertical_implicit_weight[horizontal_start_cell:]
+            1.2 - zdiff2_sliced, exner_w_implicit_weight_parameter[horizontal_start_cell:]
         )
-        vertical_implicit_weight[index_for_k + horizontal_start_cell] = max_value_k[index_for_k]
+        exner_w_implicit_weight_parameter[index_for_k + horizontal_start_cell] = max_value_k[
+            index_for_k
+        ]
 
-    return vertical_implicit_weight
+    return exner_w_implicit_weight_parameter

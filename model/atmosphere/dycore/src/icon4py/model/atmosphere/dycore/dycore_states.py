@@ -255,16 +255,18 @@ class MetricStateNonHydro:
     pg_edgeidx_dsl: fa.EdgeKField[bool]
     pg_exdist: fa.EdgeKField[float]
 
-    vertical_explicit_weight: fa.CellField[float]
+    exner_w_explicit_weight_parameter: fa.CellField[float]
     """
-    Declared as vwind_expl_wgt in ICON. The explicitness parameter in the vertically implicit dycore solver.
-    vertical_explicit_weight = 1 - vertical_implicit_weight
+    Declared as vwind_expl_wgt in ICON. The explicitness parameter for exner and w in the vertically
+    implicit dycore solver.
+    exner_w_explicit_weight_parameter = 1 - exner_w_implicit_weight_parameter
     """
-    vertical_implicit_weight: fa.CellField[float]
+    exner_w_implicit_weight_parameter: fa.CellField[float]
     """
-    Declared as vwind_impl_wgt in ICON. The implicitness parameter in the vertically implicit dycore solver.
-    It is denoted as eta below eq. 3.20 in ICON tutorial 2023. However, it is only vwind_offctr that can be 
-    set via namelist. The actual computation of vertical_implicit_weight is not shown in the tutorial.
+    Declared as vwind_impl_wgt in ICON. The implicitness parameter for exner and w in the vertically
+    implicit dycore solver. It is denoted as eta below eq. 3.20 in ICON tutorial 2023. However, 
+    it is only vwind_offctr that can be set via namelist. The actual computation of 
+    exner_w_implicit_weight_parameter is not shown in the tutorial.
     """
 
     horizontal_mask_for_3d_divdamp: fa.EdgeField[float]

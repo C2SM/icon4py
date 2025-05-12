@@ -429,11 +429,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxt_z_full)
 
-        compute_vertical_implicit_weight_np = factory.NumpyFieldsProvider(
-            func=functools.partial(mf.compute_vertical_implicit_weight, array_ns=self._xp),
+        compute_exner_w_implicit_weight_parameter_np = factory.NumpyFieldsProvider(
+            func=functools.partial(mf.compute_exner_w_implicit_weight_parameter, array_ns=self._xp),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
-            fields=(attrs.VERTICAL_IMPLICIT_WEIGHT,),
+            fields=(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,),
             deps={
                 "vct_a": "vct_a",
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
@@ -449,12 +449,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
         )
-        self.register_provider(compute_vertical_implicit_weight_np)
+        self.register_provider(compute_exner_w_implicit_weight_parameter_np)
 
-        compute_vertical_explicit_weight = factory.ProgramFieldProvider(
-            func=mf.compute_vertical_explicit_weight.with_backend(self._backend),
+        compute_exner_w_explicit_weight_parameter = factory.ProgramFieldProvider(
+            func=mf.compute_exner_w_explicit_weight_parameter.with_backend(self._backend),
             deps={
-                "vertical_implicit_weight": attrs.VERTICAL_IMPLICIT_WEIGHT,
+                "exner_w_implicit_weight_parameter": attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,
             },
             domain={
                 dims.CellDim: (
@@ -462,9 +462,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.END),
                 ),
             },
-            fields={"vertical_explicit_weight": attrs.VERTICAL_EXPLICIT_WEIGHT},
+            fields={"exner_w_explicit_weight_parameter": attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER},
         )
-        self.register_provider(compute_vertical_explicit_weight)
+        self.register_provider(compute_exner_w_explicit_weight_parameter)
 
         compute_exner_exfac = factory.ProgramFieldProvider(
             func=mf.compute_exner_exfac.with_backend(self._backend),

@@ -512,7 +512,7 @@ def test_dycore_wrapper_granule_inputs(
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
         reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
-        vertical_explicit_weight=metrics_savepoint.vwind_expl_wgt(),
+        exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
         ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
@@ -529,7 +529,7 @@ def test_dycore_wrapper_granule_inputs(
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
         wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(num_levels),
-        vertical_implicit_weight=metrics_savepoint.vwind_impl_wgt(),
+        exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
         coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
@@ -573,9 +573,9 @@ def test_dycore_wrapper_granule_inputs(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)
         ),
-        rho_iau_increment=rho_incr_field,  # sp.rho_incr(),
-        normal_wind_iau_increment=vn_incr_field,  # sp.vn_incr(),
-        exner_iau_increment=exner_incr_field,  # sp.exner_incr(),
+        rho_iau_increment=rho_incr_field,
+        normal_wind_iau_increment=vn_incr_field,
+        exner_iau_increment=exner_incr_field,
         exner_dynamical_increment=sp.exner_dyn_incr(),
     )
     prognostic_state_nnow = prognostics.PrognosticState(

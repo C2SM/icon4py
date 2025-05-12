@@ -1019,10 +1019,10 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)
 
-    assert params.advection_implicit_weight == savepoint_nonhydro_init.wgt_nnew_vel()
-    assert params.advection_explicit_weight == savepoint_nonhydro_init.wgt_nnow_vel()
-    assert params.rhotheta_implicit_weight == savepoint_nonhydro_init.wgt_nnew_rth()
-    assert params.rhotheta_explicit_weight == savepoint_nonhydro_init.wgt_nnow_rth()
+    assert params.advection_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_vel()
+    assert params.advection_explicit_weight_parameter == savepoint_nonhydro_init.wgt_nnow_vel()
+    assert params.rhotheta_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_rth()
+    assert params.rhotheta_explicit_weight_parameter == savepoint_nonhydro_init.wgt_nnow_rth()
 
 
 @pytest.mark.embedded_remap_error
@@ -1133,7 +1133,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     d2dexdz2_fac2_mc = metrics_savepoint.d2dexdz2_fac2_mc()
     wgtfacq_c = metrics_savepoint.wgtfacq_c_dsl()
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    vertical_explicit_weight = metrics_savepoint.vwind_expl_wgt()
+    exner_w_explicit_weight_parameter = metrics_savepoint.vwind_expl_wgt()
     ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
     time_extrapolation_parameter_for_exner = metrics_savepoint.exner_exfac()
@@ -1171,7 +1171,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
         wgtfacq_c=wgtfacq_c,
         wgtfac_c=wgtfac_c,
-        vertical_explicit_weight=vertical_explicit_weight,
+        exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
         pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
@@ -1298,8 +1298,8 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     perturbed_exner_at_cells_on_model_levels = sp_init.exner_pr()
     rho_at_cells_on_half_levels = sp_init.rho_ic()
     theta_v_at_cells_on_half_levels = sp_init.theta_v_ic()
-    rhotheta_explicit_weight = sp_init.wgt_nnow_rth()
-    rhotheta_implicit_weight = sp_init.wgt_nnew_rth()
+    rhotheta_explicit_weight_parameter = sp_init.wgt_nnow_rth()
+    rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
@@ -1317,7 +1317,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
 
     wgtfac_c = metrics_savepoint.wgtfac_c()
     reference_theta_at_cells_on_model_levels = metrics_savepoint.theta_ref_mc()
-    vertical_explicit_weight = metrics_savepoint.vwind_expl_wgt()
+    exner_w_explicit_weight_parameter = metrics_savepoint.vwind_expl_wgt()
     ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
 
@@ -1344,10 +1344,10 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
         wgtfac_c=wgtfac_c,
-        vertical_explicit_weight=vertical_explicit_weight,
+        exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
         dtime=dtime,
-        rhotheta_explicit_weight=rhotheta_explicit_weight,
-        rhotheta_implicit_weight=rhotheta_implicit_weight,
+        rhotheta_explicit_weight_parameter=rhotheta_explicit_weight_parameter,
+        rhotheta_implicit_weight_parameter=rhotheta_implicit_weight_parameter,
         horizontal_start=start_cell_lateral_boundary_level_3,
         horizontal_end=end_cell_local,
         vertical_start=1,
@@ -1710,8 +1710,8 @@ def test_apply_divergence_damping_and_update_vn(
         geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
         fourth_order_divdamp_factor=config.fourth_order_divdamp_factor,
         second_order_divdamp_factor=savepoint_nonhydro_init.divdamp_fac_o2(),
-        advection_explicit_weight=savepoint_nonhydro_init.wgt_nnow_vel(),
-        advection_implicit_weight=savepoint_nonhydro_init.wgt_nnew_vel(),
+        advection_explicit_weight_parameter=savepoint_nonhydro_init.wgt_nnow_vel(),
+        advection_implicit_weight_parameter=savepoint_nonhydro_init.wgt_nnew_vel(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
@@ -1877,13 +1877,13 @@ def test_vertically_implicit_solver_at_predictor_step(
         pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-        vertical_explicit_weight=metrics_savepoint.vwind_expl_wgt(),
+        exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
         current_exner=current_exner,
         current_rho=current_rho,
         current_theta_v=current_theta_v,
         current_w=current_w,
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-        vertical_implicit_weight=metrics_savepoint.vwind_impl_wgt(),
+        exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
@@ -2031,8 +2031,8 @@ def test_vertically_implicit_solver_at_corrector_step(
     dynamical_vertical_mass_flux_at_cells_on_half_levels = sp_stencil_init.mass_flx_ic()
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels = sp_stencil_init.vol_flx_ic()
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
-    advection_explicit_weight = nonhydro_params.advection_explicit_weight
-    advection_implicit_weight = nonhydro_params.advection_implicit_weight
+    advection_explicit_weight_parameter = nonhydro_params.advection_explicit_weight_parameter
+    advection_implicit_weight_parameter = nonhydro_params.advection_implicit_weight_parameter
     r_nsubsteps = 1.0 / config.ndyn_substeps_var
     kstart_moist = vertical_params.kstart_moist
 
@@ -2088,13 +2088,13 @@ def test_vertically_implicit_solver_at_corrector_step(
         pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-        vertical_explicit_weight=metrics_savepoint.vwind_expl_wgt(),
+        exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
         current_exner=current_exner,
         current_rho=current_rho,
         current_theta_v=current_theta_v,
         current_w=current_w,
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-        vertical_implicit_weight=metrics_savepoint.vwind_impl_wgt(),
+        exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
@@ -2103,8 +2103,8 @@ def test_vertically_implicit_solver_at_corrector_step(
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         rayleigh_damping_factor=rayleigh_damping_factor,
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
-        advection_explicit_weight=advection_explicit_weight,
-        advection_implicit_weight=advection_implicit_weight,
+        advection_explicit_weight_parameter=advection_explicit_weight_parameter,
+        advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         lprep_adv=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=float(config.ndyn_substeps_var),

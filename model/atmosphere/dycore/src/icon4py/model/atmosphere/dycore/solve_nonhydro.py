@@ -365,11 +365,11 @@ class NonHydrostaticParams:
         #: Weighting coefficients for velocity advection if tendency averaging is used
         #: The off-centering specified here turned out to be beneficial to numerical
         #: stability in extreme situations
-        self.advection_explicit_weight: Final[float] = 0.5 - config.veladv_offctr
+        self.advection_explicit_weight_parameter: Final[float] = 0.5 - config.veladv_offctr
         """
         Declared as wgt_nnow_vel in ICON.
         """
-        self.advection_implicit_weight: Final[float] = 0.5 + config.veladv_offctr
+        self.advection_implicit_weight_parameter: Final[float] = 0.5 + config.veladv_offctr
         """
         Declared as wgt_nnew_vel in ICON.
         """
@@ -377,11 +377,13 @@ class NonHydrostaticParams:
         #: Weighting coefficients for rho and theta at interface levels in the corrector step
         #: This empirically determined weighting minimizes the vertical wind off-centering
         #: needed for numerical stability of vertical sound wave propagation
-        self.rhotheta_implicit_weight: Final[float] = 0.5 + config.rhotheta_offctr
+        self.rhotheta_implicit_weight_parameter: Final[float] = 0.5 + config.rhotheta_offctr
         """
         Declared as wgt_nnew_rth in ICON.
         """
-        self.rhotheta_explicit_weight: Final[float] = 1.0 - self.rhotheta_implicit_weight
+        self.rhotheta_explicit_weight_parameter: Final[float] = (
+            1.0 - self.rhotheta_implicit_weight_parameter
+        )
         """
         Declared as wgt_nnow_rth in ICON.
         """
@@ -852,7 +854,7 @@ class SolveNonhydro:
             reference_theta_at_cells_on_half_levels=self._metric_state_nonhydro.reference_theta_at_cells_on_half_levels,
             wgtfacq_c=self._metric_state_nonhydro.wgtfacq_c,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
-            vertical_explicit_weight=self._metric_state_nonhydro.vertical_explicit_weight,
+            exner_w_explicit_weight_parameter=self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
             ddz_of_reference_exner_at_cells_on_half_levels=self._metric_state_nonhydro.ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
@@ -1101,13 +1103,13 @@ class SolveNonhydro:
             pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            vertical_explicit_weight=self._metric_state_nonhydro.vertical_explicit_weight,
+            exner_w_explicit_weight_parameter=self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
             current_exner=prognostic_states.current.exner,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
             current_w=prognostic_states.current.w,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-            vertical_implicit_weight=self._metric_state_nonhydro.vertical_implicit_weight,
+            exner_w_implicit_weight_parameter=self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             perturbed_exner_at_cells_on_model_levels=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
@@ -1251,10 +1253,10 @@ class SolveNonhydro:
             ddz_of_reference_exner_at_cells_on_half_levels=self._metric_state_nonhydro.ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
-            vertical_explicit_weight=self._metric_state_nonhydro.vertical_explicit_weight,
+            exner_w_explicit_weight_parameter=self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
             dtime=dtime,
-            rhotheta_explicit_weight=self._params.rhotheta_explicit_weight,
-            rhotheta_implicit_weight=self._params.rhotheta_implicit_weight,
+            rhotheta_explicit_weight_parameter=self._params.rhotheta_explicit_weight_parameter,
+            rhotheta_implicit_weight_parameter=self._params.rhotheta_implicit_weight_parameter,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(1),
@@ -1284,8 +1286,8 @@ class SolveNonhydro:
             geofac_grdiv=self._interpolation_state.geofac_grdiv,
             fourth_order_divdamp_factor=self._config.fourth_order_divdamp_factor,
             second_order_divdamp_factor=second_order_divdamp_factor,
-            advection_explicit_weight=self._params.advection_explicit_weight,
-            advection_implicit_weight=self._params.advection_implicit_weight,
+            advection_explicit_weight_parameter=self._params.advection_explicit_weight_parameter,
+            advection_implicit_weight_parameter=self._params.advection_implicit_weight_parameter,
             dtime=dtime,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
@@ -1380,13 +1382,13 @@ class SolveNonhydro:
             pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            vertical_explicit_weight=self._metric_state_nonhydro.vertical_explicit_weight,
+            exner_w_explicit_weight_parameter=self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
             current_exner=prognostic_states.current.exner,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
             current_w=prognostic_states.current.w,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-            vertical_implicit_weight=self._metric_state_nonhydro.vertical_implicit_weight,
+            exner_w_implicit_weight_parameter=self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             perturbed_exner_at_cells_on_model_levels=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
@@ -1395,8 +1397,8 @@ class SolveNonhydro:
             ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             rayleigh_damping_factor=self.rayleigh_damping_factor,
             reference_exner_at_cells_on_model_levels=self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
-            advection_explicit_weight=self._params.advection_explicit_weight,
-            advection_implicit_weight=self._params.advection_implicit_weight,
+            advection_explicit_weight_parameter=self._params.advection_explicit_weight_parameter,
+            advection_implicit_weight_parameter=self._params.advection_implicit_weight_parameter,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(self._config.ndyn_substeps_var),
@@ -1419,7 +1421,7 @@ class SolveNonhydro:
         if lprep_adv:
             if at_first_substep:
                 log.debug(
-                    f"corrector set prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+                    f"corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
                 )
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
@@ -1432,8 +1434,8 @@ class SolveNonhydro:
             log.debug(f" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
-                vwind_expl_wgt=self._metric_state_nonhydro.vertical_explicit_weight,
-                vwind_impl_wgt=self._metric_state_nonhydro.vertical_implicit_weight,
+                vwind_expl_wgt=self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
+                vwind_impl_wgt=self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
                 w_now=prognostic_states.current.w,
                 w_new=prognostic_states.next.w,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,

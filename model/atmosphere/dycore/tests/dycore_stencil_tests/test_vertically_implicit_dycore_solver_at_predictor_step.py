@@ -115,13 +115,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
         rho_at_cells_on_half_levels: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
-        vertical_explicit_weight: np.ndarray,
+        exner_w_explicit_weight_parameter: np.ndarray,
         current_exner: np.ndarray,
         current_rho: np.ndarray,
         current_theta_v: np.ndarray,
         current_w: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
-        vertical_implicit_weight: np.ndarray,
+        exner_w_implicit_weight_parameter: np.ndarray,
         theta_v_at_cells_on_half_levels: np.ndarray,
         perturbed_exner_at_cells_on_model_levels: np.ndarray,
         exner_tendency_due_to_slow_physics: np.ndarray,
@@ -174,7 +174,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 z_th_ddz_exner_c=pressure_buoyancy_acceleration_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
-                vwind_expl_wgt=vertical_explicit_weight,
+                vwind_expl_wgt=exner_w_explicit_weight_parameter,
                 dtime=dtime,
                 cpd=constants.CPD,
             ),
@@ -191,7 +191,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 rho_nnow=current_rho,
                 theta_v_nnow=current_theta_v,
                 inv_ddqz_z_full=inv_ddqz_z_full,
-                vwind_impl_wgt=vertical_implicit_weight,
+                vwind_impl_wgt=exner_w_implicit_weight_parameter,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 dtime=dtime,
@@ -258,7 +258,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         (tridiagonal_intermediate_result, next_w[:, :n_lev]) = np.where(
             (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-                vwind_impl_wgt=vertical_implicit_weight,
+                vwind_impl_wgt=exner_w_implicit_weight_parameter,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
                 ddqz_z_half=ddqz_z_half,
                 z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
@@ -313,7 +313,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
                 z_rho_expl=rho_explicit_term,
-                vwind_impl_wgt=vertical_implicit_weight,
+                vwind_impl_wgt=exner_w_implicit_weight_parameter,
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 rho_ic=rho_at_cells_on_half_levels,
                 w=next_w,
@@ -381,13 +381,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        vertical_explicit_weight = data_alloc.random_field(grid, dims.CellDim)
+        exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
         current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        vertical_implicit_weight = data_alloc.random_field(grid, dims.CellDim)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
         )
@@ -452,13 +452,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-            vertical_explicit_weight=vertical_explicit_weight,
+            exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             current_exner=current_exner,
             current_rho=current_rho,
             current_theta_v=current_theta_v,
             current_w=current_w,
             inv_ddqz_z_full=inv_ddqz_z_full,
-            vertical_implicit_weight=vertical_implicit_weight,
+            exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
             exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
