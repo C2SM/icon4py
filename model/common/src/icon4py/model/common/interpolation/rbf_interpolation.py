@@ -256,8 +256,10 @@ def _compute_rbf_interpolation_matrix(
     rbf_offset,  # field_alloc.NDArray, [num_dim, RBFDimension(dim)]
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
-    array_ns: ModuleType = np,
+    backend: gtx.backend.Backend | None = None,
 ):
+    array_ns = data_alloc.import_array_ns(backend)
+
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
     # another point on the sphere), but these don't hurt the computation.
@@ -271,9 +273,9 @@ def _compute_rbf_interpolation_matrix(
 
     edge_normal = array_ns.stack(
         (
-            index_offset(pad(edge_normal_x.asnumpy())),
-            index_offset(pad(edge_normal_y.asnumpy())),
-            index_offset(pad(edge_normal_z.asnumpy())),
+            index_offset(pad(edge_normal_x.ndarray)),
+            index_offset(pad(edge_normal_y.ndarray)),
+            index_offset(pad(edge_normal_z.ndarray)),
         ),
         axis=-1,
     )
@@ -281,9 +283,9 @@ def _compute_rbf_interpolation_matrix(
 
     edge_center = array_ns.stack(
         (
-            index_offset(pad(edge_center_x.asnumpy())),
-            index_offset(pad(edge_center_y.asnumpy())),
-            index_offset(pad(edge_center_z.asnumpy())),
+            index_offset(pad(edge_center_x.ndarray)),
+            index_offset(pad(edge_center_y.ndarray)),
+            index_offset(pad(edge_center_z.ndarray)),
         ),
         axis=-1,
     )
@@ -292,9 +294,9 @@ def _compute_rbf_interpolation_matrix(
     # Compute distances for right hand side(s) of linear system
     element_center = array_ns.stack(
         (
-            element_center_x.asnumpy(),
-            element_center_y.asnumpy(),
-            element_center_z.asnumpy(),
+            element_center_x.ndarray,
+            element_center_y.ndarray,
+            element_center_z.ndarray,
         ),
         axis=-1,
     )
@@ -318,9 +320,9 @@ def _compute_rbf_interpolation_matrix(
     assert len(u) == len(v)
     assert 1 <= len(u) <= 2
     for i in range(len(u)):
-        z_nx_x = gtx.zeros(domain, dtype=ta.wpfloat)
-        z_nx_y = gtx.zeros(domain, dtype=ta.wpfloat)
-        z_nx_z = gtx.zeros(domain, dtype=ta.wpfloat)
+        z_nx_x = gtx.zeros(domain, dtype=ta.wpfloat, allocator=backend)
+        z_nx_y = gtx.zeros(domain, dtype=ta.wpfloat, allocator=backend)
+        z_nx_z = gtx.zeros(domain, dtype=ta.wpfloat, allocator=backend)
 
         zonal_meridional_f(
             element_center_lat,
@@ -330,7 +332,7 @@ def _compute_rbf_interpolation_matrix(
             out=(z_nx_x, z_nx_y, z_nx_z),
             offset_provider={},
         )
-        z_nx.append(array_ns.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1))
+        z_nx.append(array_ns.stack((z_nx_x.ndarray, z_nx_y.ndarray, z_nx_z.ndarray), axis=-1))
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
 
         nxnx.append(
@@ -364,17 +366,25 @@ def _compute_rbf_interpolation_matrix(
     )
 
     # Solve linear system for coefficients
+    #
+    # Currently always on CPU. At the time of writing cupy does not have
+    # cho_solve with the same interface as scipy, but one has been proposed:
+    # https://github.com/cupy/cupy/pull/9116.
     # TODO: vectorize this?
-    rbf_vec_coeff = [array_ns.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))]
+    rbf_vec_coeff_np = [np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))]
+    rbf_offset_np = data_alloc.as_numpy(rbf_offset)
+    z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
+    rhs_np = [data_alloc.as_numpy(x) for x in rhs]
     for i in range(z_rbfmat.shape[0]):
-        invalid_neighbors = array_ns.where(rbf_offset[i, :] < 0)[0]
-        num_neighbors = rbf_offset.shape[1] - invalid_neighbors.size
-        rbfmat = z_rbfmat[i, :num_neighbors, :num_neighbors]
-        z_diag = sla.cho_factor(rbfmat)
+        invalid_neighbors = np.where(rbf_offset[i, :] < 0)[0]
+        num_neighbors = rbf_offset_np.shape[1] - invalid_neighbors.size
+        rbfmat_np = z_rbfmat_np[i, :num_neighbors, :num_neighbors]
+        z_diag_np = sla.cho_factor(rbfmat_np)
         for j in range(len(u)):
-            rbf_vec_coeff[j][i, :num_neighbors] = sla.cho_solve(
-                z_diag, array_ns.nan_to_num(rhs[j][i, :num_neighbors])
+            rbf_vec_coeff_np[j][i, :num_neighbors] = sla.cho_solve(
+                z_diag_np, np.nan_to_num(rhs_np[j][i, :num_neighbors])
             )
+    rbf_vec_coeff = [array_ns.asarray(x) for x in rbf_vec_coeff_np]
 
     # Normalize coefficients
     for j in range(len(u)):
@@ -399,10 +409,10 @@ def compute_rbf_interpolation_matrix_cell(
     rbf_offset: fa.CellField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
-    array_ns: ModuleType = np,
+    backend: gtx.backend.Backend | None = None,
 ) -> tuple[fa.CellField, fa.CellField]:
-    zeros = gtx.zeros(cell_center_lat.domain, dtype=ta.wpfloat)
-    ones = gtx.ones(cell_center_lat.domain, dtype=ta.wpfloat)
+    zeros = gtx.zeros(cell_center_lat.domain, dtype=ta.wpfloat, allocator=backend)
+    ones = gtx.ones(cell_center_lat.domain, dtype=ta.wpfloat, allocator=backend)
 
     coeffs = _compute_rbf_interpolation_matrix(
         cell_center_lat,
@@ -421,7 +431,7 @@ def compute_rbf_interpolation_matrix_cell(
         rbf_offset,
         rbf_kernel,
         scale_factor,
-        array_ns=array_ns,
+	backend=backend,
     )
     assert len(coeffs) == 2
     return coeffs
@@ -441,7 +451,7 @@ def compute_rbf_interpolation_matrix_edge(
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
-    array_ns: ModuleType = np,
+    backend: gtx.backend.Backend | None = None,
 ):
     # TODO: computing too much here
     coeffs = _compute_rbf_interpolation_matrix(
@@ -461,7 +471,7 @@ def compute_rbf_interpolation_matrix_edge(
         rbf_offset,
         rbf_kernel,
         scale_factor,
-        array_ns=array_ns,
+	backend=backend,
     )
     assert len(coeffs) == 1
     return coeffs[0]
@@ -482,10 +492,10 @@ def compute_rbf_interpolation_matrix_vertex(
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
-    array_ns: ModuleType = np,
+    backend: gtx.backend.Backend | None = None,
 ) -> tuple[fa.VertexField, fa.VertexField]:
-    zeros = gtx.zeros(vertex_center_lat.domain, dtype=ta.wpfloat)
-    ones = gtx.ones(vertex_center_lat.domain, dtype=ta.wpfloat)
+    zeros = gtx.zeros(vertex_center_lat.domain, dtype=ta.wpfloat, allocator=backend)
+    ones = gtx.ones(vertex_center_lat.domain, dtype=ta.wpfloat, allocator=backend)
 
     coeffs = _compute_rbf_interpolation_matrix(
         vertex_center_lat,
@@ -504,7 +514,7 @@ def compute_rbf_interpolation_matrix_vertex(
         rbf_offset,
         rbf_kernel,
         scale_factor,
-        array_ns=array_ns,
+        backend=backend,
     )
     assert len(coeffs) == 2
     return coeffs
