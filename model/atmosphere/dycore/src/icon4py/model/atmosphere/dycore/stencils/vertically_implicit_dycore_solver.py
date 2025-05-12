@@ -217,8 +217,8 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
         dims.KDim == 0,
         (
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
         ),
         (next_w, vertical_mass_flux_at_cells_on_half_levels),
     )
@@ -490,8 +490,8 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
         dims.KDim == 0,
         (
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
         ),
         (next_w, vertical_mass_flux_at_cells_on_half_levels),
     )
