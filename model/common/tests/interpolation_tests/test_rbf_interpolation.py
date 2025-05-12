@@ -85,7 +85,7 @@ def test_rbf_interpolation_matrix_cell(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
-    rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix_cell(
+    rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_matrix_cell(
         geometry.get(geometry_attrs.CELL_LAT),
         geometry.get(geometry_attrs.CELL_LON),
         geometry.get(geometry_attrs.CELL_CENTER_X),
@@ -107,8 +107,8 @@ def test_rbf_interpolation_matrix_cell(
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
     rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2()
 
-    assert rbf_vec_c1.shape == rbf_vec_coeff_c1_ref.shape
-    assert rbf_vec_c2.shape == rbf_vec_coeff_c2_ref.shape
+    assert rbf_vec_coeff_c1.shape == rbf_vec_coeff_c1_ref.shape
+    assert rbf_vec_coeff_c2.shape == rbf_vec_coeff_c2_ref.shape
     assert rbf_vec_coeff_c1_ref.shape == (
         icon_grid.num_cells,
         RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
@@ -119,12 +119,12 @@ def test_rbf_interpolation_matrix_cell(
     )
     # TODO: Why does memory usage blow up if I don't have the explicit asnumpy here?
     assert test_helpers.dallclose(
-        rbf_vec_c1.asnumpy(),
+        rbf_vec_coeff_c1.asnumpy(),
         rbf_vec_coeff_c1_ref.asnumpy(),
         atol=1e-8,
     )
     assert test_helpers.dallclose(
-        rbf_vec_c2.asnumpy(),
+        rbf_vec_coeff_c2.asnumpy(),
         rbf_vec_coeff_c2_ref.asnumpy(),
         atol=1e-8,
     )
@@ -141,7 +141,7 @@ def test_rbf_interpolation_matrix_vertex(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
-    rbf_vec_v1, rbf_vec_v2 = rbf.compute_rbf_interpolation_matrix_vertex(
+    rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_matrix_vertex(
         geometry.get(geometry_attrs.VERTEX_LAT),
         geometry.get(geometry_attrs.VERTEX_LON),
         geometry.get(geometry_attrs.VERTEX_CENTER_X),
@@ -162,8 +162,8 @@ def test_rbf_interpolation_matrix_vertex(
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
     rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2()
 
-    assert rbf_vec_v1.shape == rbf_vec_coeff_v1_ref.shape
-    assert rbf_vec_v2.shape == rbf_vec_coeff_v2_ref.shape
+    assert rbf_vec_coeff_v1.shape == rbf_vec_coeff_v1_ref.shape
+    assert rbf_vec_coeff_v2.shape == rbf_vec_coeff_v2_ref.shape
     assert rbf_vec_coeff_v1_ref.shape == (
         icon_grid.num_vertices,
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
@@ -173,12 +173,12 @@ def test_rbf_interpolation_matrix_vertex(
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
     )
     assert test_helpers.dallclose(
-        rbf_vec_v1.asnumpy(),
+        rbf_vec_coeff_v1.asnumpy(),
         rbf_vec_coeff_v1_ref.asnumpy(),
         atol=1e-9,
     )
     assert test_helpers.dallclose(
-        rbf_vec_v2.asnumpy(),
+        rbf_vec_coeff_v2.asnumpy(),
         rbf_vec_coeff_v2_ref.asnumpy(),
         atol=1e-9,
     )
@@ -204,7 +204,7 @@ def test_rbf_interpolation_matrix_edge(
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     rbf_dim = rbf.RBFDimension.EDGE
 
-    rbf_vec_e = rbf.compute_rbf_interpolation_matrix_edge(
+    rbf_vec_coeff_e = rbf.compute_rbf_interpolation_matrix_edge(
         geometry.get(geometry_attrs.EDGE_LAT),
         geometry.get(geometry_attrs.EDGE_LON),
         geometry.get(geometry_attrs.EDGE_CENTER_X),
@@ -229,13 +229,13 @@ def test_rbf_interpolation_matrix_edge(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
-    assert rbf_vec_e.shape == rbf_vec_coeff_e_ref.shape
+    assert rbf_vec_coeff_e.shape == rbf_vec_coeff_e_ref.shape
     assert rbf_vec_coeff_e_ref.shape == (
         icon_grid.num_edges,
         RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
     )
     assert test_helpers.dallclose(
-        rbf_vec_e.asnumpy()[start_index:],
+        rbf_vec_coeff_e.asnumpy()[start_index:],
         rbf_vec_coeff_e_ref.asnumpy()[start_index:],
         atol=atol,
     )
