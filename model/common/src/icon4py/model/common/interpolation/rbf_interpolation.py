@@ -132,7 +132,7 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     return offset
 
 
-def _dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+def _dot_product(v1: data_alloc.NDArray, v2: data_alloc.NDArray) -> data_alloc.NDArray:
     # alias: np.transpose(v2, axes=(0, 2, 1)) for 3d array
     v2_tilde = np.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
@@ -142,7 +142,7 @@ def _dot_product(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
 # NOTE: this one computes the pairwise arc lengths between elements in v, the
 # next version computes pairwise arc lengths between two different arrays
 # TODO: Combine?
-def _arc_length_pairwise(v: np.ndarray) -> np.ndarray:
+def _arc_length_pairwise(v: data_alloc.NDArray) -> data_alloc.NDArray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
@@ -167,7 +167,7 @@ def _arc_length_pairwise(v: np.ndarray) -> np.ndarray:
 # TODO: this is pretty much the same as above, except we don't get the squares
 # of the norms directly from the first matmul
 # TODO: this is used only in one place, it's probably not as generic as it looks
-def _arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+def _arc_length_2(v1: data_alloc.NDArray, v2: data_alloc.NDArray) -> data_alloc.NDArray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
@@ -183,12 +183,12 @@ def _arc_length_2(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     return np.squeeze(np.arccos(arc_lengths), axis=1)
 
 
-def _gaussian(lengths: np.ndarray, scale: ta.wpfloat) -> np.ndarray:
+def _gaussian(lengths: data_alloc.NDArray, scale: ta.wpfloat) -> data_alloc.NDArray:
     val = lengths / scale
     return np.exp(-1.0 * val * val)
 
 
-def _inverse_multiquadratic(distance: np.ndarray, scale: ta.wpfloat) -> np.ndarray:
+def _inverse_multiquadratic(distance: data_alloc.NDArray, scale: ta.wpfloat) -> data_alloc.NDArray:
     """
 
     Args:
@@ -202,7 +202,7 @@ def _inverse_multiquadratic(distance: np.ndarray, scale: ta.wpfloat) -> np.ndarr
     return 1.0 / np.sqrt(1.0 + val * val)
 
 
-def _kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: ta.wpfloat):
+def _kernel(kernel: InterpolationKernel, lengths: data_alloc.NDArray, scale: ta.wpfloat):
     match kernel:
         case InterpolationKernel.GAUSSIAN:
             return _gaussian(lengths, scale)
