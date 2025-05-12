@@ -15,6 +15,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.interpolation.rbf_interpolation import RBF_STENCIL_SIZE
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -100,6 +101,7 @@ def test_rbf_interpolation_matrix_cell(
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        array_ns=data_alloc.import_array_ns(backend),
     )
 
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
@@ -154,6 +156,7 @@ def test_rbf_interpolation_matrix_vertex(
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        array_ns=data_alloc.import_array_ns(backend),
     )
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
@@ -216,6 +219,7 @@ def test_rbf_interpolation_matrix_edge(
         grid_savepoint.e2c2e(),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        array_ns=data_alloc.import_array_ns(backend),
     )
 
     rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()

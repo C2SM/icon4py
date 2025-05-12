@@ -9,7 +9,7 @@
 import dataclasses
 import enum
 import math
-from types import MappingProxyType
+from types import MappingProxyType, ModuleType
 
 import gt4py.next as gtx
 import numpy as np
@@ -132,34 +132,36 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     return offset
 
 
-def _dot_product(v1: data_alloc.NDArray, v2: data_alloc.NDArray) -> data_alloc.NDArray:
-    # alias: np.transpose(v2, axes=(0, 2, 1)) for 3d array
-    v2_tilde = np.moveaxis(v2, 1, -1)
+def _dot_product(v1: data_alloc.NDArray, v2: data_alloc.NDArray,
+                 array_ns: ModuleType = np) -> data_alloc.NDArray:
+    # alias: array_ns.transpose(v2, axes=(0, 2, 1)) for 3d array
+    v2_tilde = array_ns.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
-    return np.matmul(v1, v2_tilde)
+    return array_ns.matmul(v1, v2_tilde)
 
 
 # NOTE: this one computes the pairwise arc lengths between elements in v, the
 # next version computes pairwise arc lengths between two different arrays
 # TODO: Combine?
-def _arc_length_pairwise(v: data_alloc.NDArray) -> data_alloc.NDArray:
+def _arc_length_pairwise(v: data_alloc.NDArray,
+                         array_ns: ModuleType = np) -> data_alloc.NDArray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
-    arc_lengths = _dot_product(v, v)  # np.matmul(v, np.transpose(v, axes=(0, 2, 1)))
+    arc_lengths = _dot_product(v, v, array_ns=array_ns)
     # Use the dot product of the diagonals to get the norm of each point
-    norms = np.sqrt(np.diagonal(arc_lengths, axis1=1, axis2=2))
+    norms = array_ns.sqrt(array_ns.diagonal(arc_lengths, axis1=1, axis2=2))
     # Divide the dot products by the broadcasted norms
     # TODO: Check that these are broadcast correctly. Leaving them out has
     # almost no impact on result, since they're close to 1, but may affect
     # precision.
-    arc_lengths = np.divide(arc_lengths, norms[:, :, np.newaxis])
-    arc_lengths = np.divide(arc_lengths, norms[:, np.newaxis, :])
+    arc_lengths = array_ns.divide(arc_lengths, norms[:, :, array_ns.newaxis])
+    arc_lengths = array_ns.divide(arc_lengths, norms[:, array_ns.newaxis, :])
     # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
     # inaccuracies)
-    arc_lengths = np.clip(arc_lengths, -1.0, 1.0)
+    arc_lengths = array_ns.clip(arc_lengths, -1.0, 1.0)
     # TODO: avoid intermediates?
-    return np.arccos(arc_lengths)
+    return array_ns.arccos(arc_lengths)
 
 
 # TODO: This assumes v1 is 2d and v3 is 3d
@@ -167,28 +169,30 @@ def _arc_length_pairwise(v: data_alloc.NDArray) -> data_alloc.NDArray:
 # TODO: this is pretty much the same as above, except we don't get the squares
 # of the norms directly from the first matmul
 # TODO: this is used only in one place, it's probably not as generic as it looks
-def _arc_length_2(v1: data_alloc.NDArray, v2: data_alloc.NDArray) -> data_alloc.NDArray:
+def _arc_length_2(v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np) -> data_alloc.NDArray:
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
-    arc_lengths = _dot_product(v1, v2)
-    v1_norm = np.linalg.norm(v1, axis=-1)
-    v2_norm = np.linalg.norm(v2, axis=-1)
+    arc_lengths = _dot_product(v1, v2, array_ns=array_ns)
+    v1_norm = array_ns.linalg.norm(v1, axis=-1)
+    v2_norm = array_ns.linalg.norm(v2, axis=-1)
     # Divide the dot products by the broadcasted norms
-    arc_lengths = np.divide(arc_lengths, v1_norm[:, :, np.newaxis])
-    arc_lengths = np.divide(arc_lengths, v2_norm[:, np.newaxis, :])
+    arc_lengths = array_ns.divide(arc_lengths, v1_norm[:, :, array_ns.newaxis])
+    arc_lengths = array_ns.divide(arc_lengths, v2_norm[:, array_ns.newaxis, :])
     # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
     # inaccuracies)
-    arc_lengths = np.clip(arc_lengths, -1.0, 1.0)
-    return np.squeeze(np.arccos(arc_lengths), axis=1)
+    arc_lengths = array_ns.clip(arc_lengths, -1.0, 1.0)
+    return array_ns.squeeze(array_ns.arccos(arc_lengths), axis=1)
 
 
-def _gaussian(lengths: data_alloc.NDArray, scale: ta.wpfloat) -> data_alloc.NDArray:
+def _gaussian(lengths: data_alloc.NDArray, scale: ta.wpfloat, array_ns: ModuleType = np) -> data_alloc.NDArray:
     val = lengths / scale
-    return np.exp(-1.0 * val * val)
+    return array_ns.exp(-1.0 * val * val)
 
 
-def _inverse_multiquadratic(distance: data_alloc.NDArray, scale: ta.wpfloat) -> data_alloc.NDArray:
+def _inverse_multiquadratic(distance: data_alloc.NDArray, scale: ta.wpfloat,
+    array_ns: ModuleType = np,
+                            ) -> data_alloc.NDArray:
     """
 
     Args:
@@ -199,15 +203,15 @@ def _inverse_multiquadratic(distance: data_alloc.NDArray, scale: ta.wpfloat) -> 
 
     """
     val = distance / scale
-    return 1.0 / np.sqrt(1.0 + val * val)
+    return 1.0 / array_ns.sqrt(1.0 + val * val)
 
 
-def _kernel(kernel: InterpolationKernel, lengths: data_alloc.NDArray, scale: ta.wpfloat):
+def _kernel(kernel: InterpolationKernel, lengths: data_alloc.NDArray, scale: ta.wpfloat, array_ns: ModuleType = np):
     match kernel:
         case InterpolationKernel.GAUSSIAN:
-            return _gaussian(lengths, scale)
+            return _gaussian(lengths, scale, array_ns=array_ns)
         case InterpolationKernel.INVERSE_MULTIQUADRATIC:
-            return _inverse_multiquadratic(lengths, scale)
+            return _inverse_multiquadratic(lengths, scale, array_ns=array_ns)
         case _:
             raise ValueError(f"Unsupported kernel: {kernel}")
 
@@ -241,6 +245,7 @@ def _compute_rbf_interpolation_matrix(
     rbf_offset,  # field_alloc.NDArray, [num_dim, RBFDimension(dim)]
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
+    array_ns: ModuleType = np,
 ):
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
@@ -248,12 +253,12 @@ def _compute_rbf_interpolation_matrix(
     # TODO: Can nans be signaling? default is warn:
     # https://numpy.org/doc/stable/user/misc.html#how-numpy-handles-numerical-exceptions
     def pad(f):
-        return np.pad(f, (0, 1), mode="constant", constant_values=0.0)
+        return array_ns.pad(f, (0, 1), mode="constant", constant_values=0.0)
 
     def index_offset(f):
         return f[rbf_offset]
 
-    edge_normal = np.stack(
+    edge_normal = array_ns.stack(
         (
             index_offset(pad(edge_normal_x.asnumpy())),
             index_offset(pad(edge_normal_y.asnumpy())),
@@ -263,7 +268,7 @@ def _compute_rbf_interpolation_matrix(
     )
     assert edge_normal.shape == (*rbf_offset.shape, 3)
 
-    edge_center = np.stack(
+    edge_center = array_ns.stack(
         (
             index_offset(pad(edge_center_x.asnumpy())),
             index_offset(pad(edge_center_y.asnumpy())),
@@ -274,7 +279,7 @@ def _compute_rbf_interpolation_matrix(
     assert edge_center.shape == (*rbf_offset.shape, 3)
 
     # Compute distances for right hand side(s) of linear system
-    element_center = np.stack(
+    element_center = array_ns.stack(
         (
             element_center_x.asnumpy(),
             element_center_y.asnumpy(),
@@ -283,9 +288,9 @@ def _compute_rbf_interpolation_matrix(
         axis=-1,
     )
     assert element_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = _arc_length_2(element_center[:, np.newaxis, :], edge_center)
+    vector_dist = _arc_length_2(element_center[:, array_ns.newaxis, :], edge_center, array_ns=array_ns)
     assert vector_dist.shape == rbf_offset.shape
-    rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor)
+    rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor, array_ns=array_ns)
     assert rbf_val.shape == rbf_offset.shape
 
     # Set up right hand side(s) of linear system
@@ -312,15 +317,15 @@ def _compute_rbf_interpolation_matrix(
             out=(z_nx_x, z_nx_y, z_nx_z),
             offset_provider={},
         )
-        z_nx.append(np.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1))
+        z_nx.append(array_ns.stack((z_nx_x.asnumpy(), z_nx_y.asnumpy(), z_nx_z.asnumpy()), axis=-1))
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
 
-        nxnx.append(np.matmul(z_nx[i][:, np.newaxis], edge_normal.transpose(0, 2, 1)).squeeze())
+        nxnx.append(array_ns.matmul(z_nx[i][:, array_ns.newaxis], edge_normal.transpose(0, 2, 1)).squeeze())
         rhs.append(rbf_val * nxnx[i])
         assert rhs[i].shape == rbf_offset.shape
 
     # Compute dot product of normal vectors for RBF interpolation matrix
-    z_nxprod = _dot_product(edge_normal, edge_normal)
+    z_nxprod = _dot_product(edge_normal, edge_normal, array_ns=array_ns)
     assert z_nxprod.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -328,7 +333,7 @@ def _compute_rbf_interpolation_matrix(
     )
 
     # Distance between edge midpoints for RBF interpolation matrix
-    z_dist = _arc_length_pairwise(edge_center)
+    z_dist = _arc_length_pairwise(edge_center, array_ns=array_ns)
     assert z_dist.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -336,7 +341,7 @@ def _compute_rbf_interpolation_matrix(
     )
 
     # Set up RBF interpolation matrix
-    z_rbfmat = z_nxprod * _kernel(rbf_kernel, z_dist, scale_factor)
+    z_rbfmat = z_nxprod * _kernel(rbf_kernel, z_dist, scale_factor, array_ns=array_ns)
     assert z_rbfmat.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -345,20 +350,20 @@ def _compute_rbf_interpolation_matrix(
 
     # Solve linear system for coefficients
     # TODO: vectorize this?
-    rbf_vec_coeff = [np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))]
+    rbf_vec_coeff = [array_ns.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))]
     for i in range(z_rbfmat.shape[0]):
-        invalid_neighbors = np.where(rbf_offset[i, :] < 0)[0]
+        invalid_neighbors = array_ns.where(rbf_offset[i, :] < 0)[0]
         num_neighbors = rbf_offset.shape[1] - invalid_neighbors.size
         rbfmat = z_rbfmat[i, :num_neighbors, :num_neighbors]
         z_diag = sla.cho_factor(rbfmat)
         for j in range(len(u)):
             rbf_vec_coeff[j][i, :num_neighbors] = sla.cho_solve(
-                z_diag, np.nan_to_num(rhs[j][i, :num_neighbors])
+                z_diag, array_ns.nan_to_num(rhs[j][i, :num_neighbors])
             )
 
     # Normalize coefficients
     for j in range(len(u)):
-        rbf_vec_coeff[j] /= np.sum(nxnx[j] * rbf_vec_coeff[j], axis=1)[:, np.newaxis]
+        rbf_vec_coeff[j] /= array_ns.sum(nxnx[j] * rbf_vec_coeff[j], axis=1)[:, array_ns.newaxis]
 
     dim2 = gtx.Dimension("What")  # TODO
     return tuple(gtx.as_field([dim, dim2], c) for c in rbf_vec_coeff)
@@ -379,6 +384,7 @@ def compute_rbf_interpolation_matrix_cell(
     rbf_offset: fa.CellField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
+    array_ns: ModuleType = np,
 ) -> tuple[fa.CellField, fa.CellField]:
     zeros = gtx.zeros(cell_center_lat.domain, dtype=ta.wpfloat)
     ones = gtx.ones(cell_center_lat.domain, dtype=ta.wpfloat)
@@ -400,6 +406,7 @@ def compute_rbf_interpolation_matrix_cell(
         rbf_offset,
         rbf_kernel,
         scale_factor,
+        array_ns=array_ns,
     )
     assert len(coeffs) == 2
     return coeffs
@@ -419,6 +426,7 @@ def compute_rbf_interpolation_matrix_edge(
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
+    array_ns: ModuleType = np,
 ):
     # TODO: computing too much here
     coeffs = _compute_rbf_interpolation_matrix(
@@ -438,6 +446,7 @@ def compute_rbf_interpolation_matrix_edge(
         rbf_offset,
         rbf_kernel,
         scale_factor,
+        array_ns=array_ns,
     )
     assert len(coeffs) == 1
     return coeffs[0]
@@ -458,6 +467,7 @@ def compute_rbf_interpolation_matrix_vertex(
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
+    array_ns: ModuleType = np,
 ) -> tuple[fa.VertexField, fa.VertexField]:
     zeros = gtx.zeros(vertex_center_lat.domain, dtype=ta.wpfloat)
     ones = gtx.ones(vertex_center_lat.domain, dtype=ta.wpfloat)
@@ -479,6 +489,7 @@ def compute_rbf_interpolation_matrix_vertex(
         rbf_offset,
         rbf_kernel,
         scale_factor,
+        array_ns=array_ns,
     )
     assert len(coeffs) == 2
     return coeffs
