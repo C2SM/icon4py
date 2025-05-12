@@ -431,7 +431,7 @@ def compute_rbf_interpolation_matrix_cell(
         rbf_offset,
         rbf_kernel,
         scale_factor,
-	backend=backend,
+        backend=backend,
     )
     assert len(coeffs) == 2
     return coeffs
@@ -471,7 +471,7 @@ def compute_rbf_interpolation_matrix_edge(
         rbf_offset,
         rbf_kernel,
         scale_factor,
-	backend=backend,
+        backend=backend,
     )
     assert len(coeffs) == 1
     return coeffs[0]
