@@ -70,9 +70,6 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file):
     assert (offset_table == v2e).all()
 
 
-# TODO: make cupy ready
-# TODO: grid_file here only for comparison?
-# TODO: more experiments? at least one regional (with missing neighbors)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment", [(dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)]
