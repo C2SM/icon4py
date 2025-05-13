@@ -475,8 +475,6 @@ class Diffusion:
         #---> IBM
         if "ibm" in extras:
             self._ibm = extras["ibm"]
-        if "plot" in extras:
-            self._plot = extras["plot"]
         #<--- IBM
 
     def _allocate_temporary_fields(self):
