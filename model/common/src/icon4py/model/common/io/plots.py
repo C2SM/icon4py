@@ -291,7 +291,14 @@ class Plot:
             return
         file_name = f"{self.PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}.pkl"
         with open(file_name, "wb") as f:
-            pickle.dump(state, f)
+            state_np = {
+                "vn": state.vn.asnumpy(),
+                "w": state.w.asnumpy(),
+                "rho": state.rho.asnumpy(),
+                "exner": state.exner.asnumpy(),
+                "theta_v": state.theta_v.asnumpy(),
+            }
+            pickle.dump(state_np, f)
         self.plot_counter += 1
 
     def _vec_interpolate_to_cell_center(self, vn_gtx):
