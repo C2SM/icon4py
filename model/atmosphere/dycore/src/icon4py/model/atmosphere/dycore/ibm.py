@@ -81,7 +81,8 @@ class ImmersedBoundaryMethod:
         neigh_full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
 
         #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-        half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+        #half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+        half_cell_mask_np = self._mask_building(grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
         full_cell_mask_np = half_cell_mask_np[:, :-1]
 
@@ -151,6 +152,44 @@ class ImmersedBoundaryMethod:
         ]
         for k in range(half_cell_mask_np.shape[1]):
             half_cell_mask_np[:, k] = xp.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
+            for building in buildings:
+                xmin, xmax, ymin, ymax, top = building
+                half_cell_mask_np[
+                    (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (half_level_heights[:,k] <= top), k
+                ] = True
+        return half_cell_mask_np
+
+    def _mask_building(
+        self,
+        grid_file_path: str,
+        savepoint_path: str,
+        backend: gtx_backend.Backend,
+        half_cell_mask_np: data_alloc.NDArray,
+    ) -> data_alloc.NDArray:
+        """
+        Create a building mask.
+        """
+        xp = data_alloc.import_array_ns(backend)
+
+        buildings = [
+            [490, 510, 490, 510,  100],
+            #[497, 503, 0, 1000, 105],
+            #[350, 400, 0, 1000, 75],
+        ]
+
+        grid_file = xr.open_dataset(grid_file_path)
+        data_provider = sb.IconSerialDataProvider(
+            backend=backend,
+            fname_prefix="icon_pydycore",
+            path=savepoint_path,
+        )
+        metrics_savepoint = data_provider.from_metrics_savepoint()
+        half_level_heights = metrics_savepoint.z_ifc().ndarray
+
+        cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
+        cell_y = xp.asarray(grid_file.cell_circumcenter_cartesian_y.values)
+        buildings = []
+        for k in range(half_cell_mask_np.shape[1]):
             for building in buildings:
                 xmin, xmax, ymin, ymax, top = building
                 half_cell_mask_np[
