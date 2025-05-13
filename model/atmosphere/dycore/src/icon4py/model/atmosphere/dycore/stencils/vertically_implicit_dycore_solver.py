@@ -358,7 +358,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
     next_w = (
         concat_where(
-            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
+            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1) & (dims.KDim < n_lev),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w_1=w_1,
@@ -638,7 +638,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
     next_w = (
         concat_where(
-            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
+            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1) & (dims.KDim < n_lev),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w_1=w_1,

@@ -473,11 +473,11 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         is_iau_active = True
         at_first_substep = True
         rayleigh_type = 2
-        index_of_damping_layer = 9
+        index_of_damping_layer = 3
         jk_start = 0
         at_last_substep = True
         kstart_moist = 1
-        dtime = 0.9
+        dtime = 0.001
         veladv_offctr = 0.25
         advection_explicit_weight_parameter = 0.5 - veladv_offctr
         advection_implicit_weight_parameter = 0.5 + veladv_offctr

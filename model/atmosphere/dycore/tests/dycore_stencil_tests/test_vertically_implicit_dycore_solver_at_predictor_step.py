@@ -424,11 +424,11 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         at_first_substep = True
         rayleigh_type = 2
         divdamp_type = 3
-        index_of_damping_layer = 9
+        index_of_damping_layer = 3
         jk_start = 0
         starting_vertical_index_for_3d_divdamp = 0
         kstart_moist = 1
-        dtime = 0.9
+        dtime = 0.001
         iau_wgt_dyn = 1.0
 
         cell_domain = h_grid.domain(dims.CellDim)
