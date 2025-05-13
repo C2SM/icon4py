@@ -1900,7 +1900,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         at_first_substep=at_first_substep,
         index_of_damping_layer=grid_savepoint.nrdmax(),
         jk_start=jk_start,
-        kstart_dd3d=nonhydro_params.starting_vertical_index_for_3d_divdamp,
+        starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         kstart_moist=vertical_params.kstart_moist,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
