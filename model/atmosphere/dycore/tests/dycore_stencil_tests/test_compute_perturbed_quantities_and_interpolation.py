@@ -65,6 +65,7 @@ from .test_set_theta_v_prime_ic_at_lower_boundary import (
 
 horzpres_discr_type = HorizontalPressureDiscretizationType()
 
+
 def compute_first_vertical_derivative_numpy(
     cell_kdim_field: np.ndarray, inv_ddqz_z_full: np.ndarray
 ) -> np.ndarray:
