@@ -138,7 +138,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         at_first_substep: bool,
         index_of_damping_layer: int,
         jk_start: int,
-        kstart_dd3d: int,
+        starting_vertical_index_for_3d_divdamp: int,
         kstart_moist: int,
         **kwargs: Any,
     ) -> dict:
@@ -335,7 +335,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             dwdz_at_cells_on_model_levels = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
-                & (vert_idx >= kstart_dd3d),
+                & (vert_idx >= starting_vertical_index_for_3d_divdamp),
                 compute_dwdz_for_divergence_damping_numpy(
                     connectivities=connectivities,
                     inv_ddqz_z_full=inv_ddqz_z_full,
@@ -418,13 +418,15 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         dwdz_at_cells_on_model_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         exner_dynamical_increment = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
+        current_w[:, 0] = 0.0  # realistic initial condition
+
         is_iau_active = True
         at_first_substep = True
         rayleigh_type = 2
         divdamp_type = 3
         index_of_damping_layer = 9
         jk_start = 0
-        kstart_dd3d = 0
+        starting_vertical_index_for_3d_divdamp = 0
         kstart_moist = 1
         dtime = 0.9
         iau_wgt_dyn = 1.0
@@ -475,7 +477,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             at_first_substep=at_first_substep,
             index_of_damping_layer=index_of_damping_layer,
             jk_start=jk_start,
-            kstart_dd3d=kstart_dd3d,
+            starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
             kstart_moist=kstart_moist,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,

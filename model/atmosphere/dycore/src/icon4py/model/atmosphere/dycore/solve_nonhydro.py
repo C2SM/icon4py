@@ -1126,7 +1126,7 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
             jk_start=self.jk_start,
-            kstart_dd3d=self._params.starting_vertical_index_for_3d_divdamp,
+            starting_vertical_index_for_3d_divdamp=self._params.starting_vertical_index_for_3d_divdamp,
             kstart_moist=self._vertical_params.kstart_moist,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
