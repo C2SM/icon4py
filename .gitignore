@@ -13,6 +13,7 @@ simple_mesh*.nc
 /prof
 .profile
 imgs*
+run0*
 *.log
 *.csv
 *.log
