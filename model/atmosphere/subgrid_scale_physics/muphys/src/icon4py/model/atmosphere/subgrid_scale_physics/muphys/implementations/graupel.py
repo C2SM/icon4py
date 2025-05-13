@@ -20,8 +20,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
     _cloud_to_snow, _cloud_to_graupel, _vapor_x_ice, _ice_to_snow, _ice_to_graupel, _rain_to_graupel, _snow_to_graupel, \
     _vapor_x_snow, _vapor_x_graupel, _snow_to_rain, _graupel_to_rain
 
-K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
+K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)  # Can be deleted???
 
+#@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))   <=== this should work now
 @gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, 0.0, False))
 def _precip(
     state:     tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool],

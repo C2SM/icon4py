@@ -56,11 +56,11 @@ def deposition_factor(
 
 @gtx.field_operator
 def _fall_speed_scalar(
-    density:      gtx.Field[[], ta.wpfloat],                            # Density of species
+    density:      ta.wpfloat,                            # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat,
-) -> gtx.Field[[], ta.wpfloat]:                          # Fall speed
+) -> ta.wpfloat:                          # Fall speed
 
     return prefactor * power((density+offset), exponent)
 
@@ -76,11 +76,11 @@ def _fall_speed(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fall_speed_scalar(
-    density:      gtx.Field[[], ta.wpfloat],                            # Density of species
+    density:      ta.wpfloat,                            # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat,
-    speed:        gtx.Field[[], ta.wpfloat],                            # output
+    speed:        ta.wpfloat,                            # output
 ):
     _fall_speed_scalar(density, prefactor, offset, exponent, out=speed)
 

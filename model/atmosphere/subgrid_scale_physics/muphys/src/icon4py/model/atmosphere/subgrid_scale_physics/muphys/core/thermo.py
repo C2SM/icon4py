@@ -40,13 +40,13 @@ def T_from_internal_energy(
 
 @gtx.field_operator
 def _T_from_internal_energy_scalar(
-    u:         gtx.Field[[], ta.wpfloat],             # Internal energy (extensive)
-    qv:        gtx.Field[[], ta.wpfloat],             # Water vapor specific humidity
-    qliq:      gtx.Field[[], ta.wpfloat],             # Specific mass of liquid phases
-    qice:      gtx.Field[[], ta.wpfloat],             # Specific mass of solid phases
-    rho:       gtx.Field[[], ta.wpfloat],             # Ambient density
-    dz:        gtx.Field[[], ta.wpfloat],             # Extent of grid cell
-) -> gtx.Field[[], ta.wpfloat]:                       # Temperature
+    u:         ta.wpfloat,             # Internal energy (extensive)
+    qv:        ta.wpfloat,             # Water vapor specific humidity
+    qliq:      ta.wpfloat,             # Specific mass of liquid phases
+    qice:      ta.wpfloat,             # Specific mass of solid phases
+    rho:       ta.wpfloat,             # Ambient density
+    dz:        ta.wpfloat,             # Extent of grid cell
+) -> ta.wpfloat:                       # Temperature
     qtot = qliq + qice + qv                           # total water specific mass
     cv   = ( t_d.cvd * ( 1.0 - qtot ) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice ) * rho * dz # Moist isometric specific heat
 
@@ -54,13 +54,13 @@ def _T_from_internal_energy_scalar(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def T_from_internal_energy_scalar(
-    u:         gtx.Field[[], ta.wpfloat],             # Internal energy (extensive)
-    qv:        gtx.Field[[], ta.wpfloat],             # Water vapor specific humidity
-    qliq:      gtx.Field[[], ta.wpfloat],             # Specific mass of liquid phases
-    qice:      gtx.Field[[], ta.wpfloat],             # Specific mass of solid phases
-    rho:       gtx.Field[[], ta.wpfloat],             # Ambient density
-    dz:        gtx.Field[[], ta.wpfloat],             # Extent of grid cell
-    temperature: gtx.Field[[], ta.wpfloat]            # output
+    u:         ta.wpfloat,             # Internal energy (extensive)
+    qv:        ta.wpfloat,             # Water vapor specific humidity
+    qliq:      ta.wpfloat,             # Specific mass of liquid phases
+    qice:      ta.wpfloat,             # Specific mass of solid phases
+    rho:       ta.wpfloat,             # Ambient density
+    dz:        ta.wpfloat,             # Extent of grid cell
+    temperature: ta.wpfloat            # output
 ):
     _T_from_internal_energy_scalar( u, qv, qliq, qice, rho, dz, out=temperature )
 
