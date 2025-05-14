@@ -65,6 +65,7 @@ from .test_set_theta_v_prime_ic_at_lower_boundary import (
 
 horzpres_discr_type = HorizontalPressureDiscretizationType()
 
+
 def compute_first_vertical_derivative_numpy(
     cell_kdim_field: np.ndarray, inv_ddqz_z_full: np.ndarray
 ) -> np.ndarray:
@@ -402,7 +403,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         limited_area = True
 
         cell_domain = h_grid.domain(dims.CellDim)
-        # n_lev = grid.num_levels
         start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
         start_cell_lateral_boundary_level_3 = grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
