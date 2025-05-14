@@ -44,9 +44,6 @@ class ImmersedBoundaryMethod:
         self.DO_IBM = DO_IBM
         self.DEBUG_LEVEL = DEBUG_LEVEL
 
-        if not self.DO_IBM:
-            return
-
         self._make_masks(
             grid=grid,
             savepoint_path=savepoint_path,
@@ -80,23 +77,25 @@ class ImmersedBoundaryMethod:
         full_vertex_mask_np = xp.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
         neigh_full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
 
-        #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-        half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
-        #half_cell_mask_np = self._mask_building(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+        if self.DO_IBM:
+            # fill masks, otherwise False everywhere
+            #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
+            half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            #half_cell_mask_np = self._mask_building(grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
-        full_cell_mask_np = half_cell_mask_np[:, :-1]
+            full_cell_mask_np = half_cell_mask_np[:, :-1]
 
-        c2e = grid.connectivities[dims.C2EDim]
-        for k in range(grid.num_levels):
-            full_edge_mask_np[c2e[xp.where(full_cell_mask_np[:,k])], k] = True
+            c2e = grid.connectivities[dims.C2EDim]
+            for k in range(grid.num_levels):
+                full_edge_mask_np[c2e[xp.where(full_cell_mask_np[:,k])], k] = True
 
-        c2v = grid.connectivities[dims.C2VDim]
-        for k in range(grid.num_levels):
-            full_vertex_mask_np[c2v[xp.where(full_cell_mask_np[:,k])], k] = True
+            c2v = grid.connectivities[dims.C2VDim]
+            for k in range(grid.num_levels):
+                full_vertex_mask_np[c2v[xp.where(full_cell_mask_np[:,k])], k] = True
 
-        c2e2c = grid.connectivities[dims.C2E2CDim]
-        for k in range(grid.num_levels):
-            neigh_full_cell_mask_np[c2e2c[xp.where(full_cell_mask_np[:,k])], k] = True
+            c2e2c = grid.connectivities[dims.C2E2CDim]
+            for k in range(grid.num_levels):
+                neigh_full_cell_mask_np[c2e2c[xp.where(full_cell_mask_np[:,k])], k] = True
 
         self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
         self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
@@ -128,7 +127,7 @@ class ImmersedBoundaryMethod:
 
         hill_x = 500.
         hill_y = 500.
-        hill_height = 100.
+        hill_height = 0.
         hill_width  = 100.
 
         grid_file = xr.open_dataset(grid_file_path)

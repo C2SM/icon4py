@@ -11,7 +11,8 @@ import pytest
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
+from icon4py.model.common.io import plots
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -131,6 +132,7 @@ def test_run_timeloop_single_step(
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
         # it does not matter what backend is set here because the granules are set externally in this test
+        # TODO (Jacopo): make this independent of the driver
         config = icon4py_configuration.read_config(
             icon4py_driver_backend="gtfn_cpu",
             experiment_type=experiment,
@@ -138,6 +140,21 @@ def test_run_timeloop_single_step(
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config
         icon4pyrun_config = config.run_config
+        #---> IBM
+        savepoint_path = "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
+        grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res250m.nc"
+        _ibm = ibm.ImmersedBoundaryMethod(
+            grid=icon_grid,
+            savepoint_path=savepoint_path,
+            grid_file_path=grid_file_path,
+            backend = config.run_config.backend,
+            )
+        _plot = plots.Plot(
+            savepoint_path=savepoint_path,
+            grid_file_path=grid_file_path,
+            backend = config.run_config.backend,
+            )
+        #<--- IBM
 
     else:
         diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
@@ -183,6 +200,9 @@ def test_run_timeloop_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
+        extras={
+            "ibm": _ibm,
+        }
     )
 
     sp = savepoint_nonhydro_init
@@ -266,6 +286,10 @@ def test_run_timeloop_single_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        extras={
+            "ibm": _ibm,
+            "plot": _plot,
+        }
     )
 
     diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
