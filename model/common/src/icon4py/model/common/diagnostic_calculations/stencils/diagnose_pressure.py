@@ -20,7 +20,7 @@ from icon4py.model.common import (
 )
 
 
-physics_constants: Final = phy_const._PhysicsConstants()
+physics_constants: Final = phy_const.PhysicsConstants()
 
 
 @scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))

@@ -19,7 +19,7 @@ from icon4py.model.common import (
 from icon4py.model.common.type_alias import wpfloat
 
 
-physics_constants: Final = phy_const._PhysicsConstants()
+physics_constants: Final = phy_const.PhysicsConstants()
 
 
 @gtx.field_operator

@@ -9,7 +9,7 @@ import dataclasses
 from typing import Final, Optional
 
 import gt4py.next as gtx
-from gt4py.eve.utils import FrozenNamespace
+from gt4py.eve import utils as eve_utils
 from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.fbuiltins import (
     abs,
@@ -30,11 +30,11 @@ from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-physics_constants: Final = phy_const._PhysicsConstants()
+physics_constants: Final = phy_const.PhysicsConstants()
 
 
 # TODO (Chia Rui): Refactor this class when direct import is enabled for gt4py stencils
-class MicrophysicsConstants(FrozenNamespace[ta.wpfloat]):
+class MicrophysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     """
     Constants used for the computation of saturated pressure in saturation adjustment and microphysics.
     It was originally in mo_lookup_tables_constants.f90.
@@ -43,12 +43,10 @@ class MicrophysicsConstants(FrozenNamespace[ta.wpfloat]):
     #: Latent heat of vaporisation for water [J kg-1]. Originally expressed as alv in ICON.
     vaporisation_latent_heat = 2.5008e6
     #: Melting temperature of ice/snow [K]
-    tmelt = 273.15
+    melting_temperature = 273.15
 
-    #: Dry air heat capacity at constant pressure / water heat capacity at constant pressure - 1
-    rcpl = 3.1733
-    #: Specific heat capacity of liquid water [J K-1 kg-1]. Originally expressed as clw in ICON.
-    specific_heat_capacity_for_water = (rcpl + 1.0) * phy_const.CPD
+    #: Specific heat capacity of liquid water [J K-1 kg-1]. Originally expressed as clw in ICON. 4.1733 is dry air heat capacity at constant pressure / water heat capacity at constant pressure.
+    specific_heat_capacity_for_water = 4.1733 * phy_const.CPD
 
     #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation. Originally expressed as c1es in ICON.
     tetens_p0 = 610.78
@@ -57,7 +55,7 @@ class MicrophysicsConstants(FrozenNamespace[ta.wpfloat]):
     #: bw in Tetens formula for saturation water pressure. Originally expressed as c4les in ICON.
     tetens_bw = 35.86
     #: numerator in temperature partial derivative of Tetens formula for saturation water pressure (psat tetens_der / (t - tetens_bw)^2). Originally expressed as c5les in ICON.
-    tetens_der = tetens_aw * (tmelt - tetens_bw)
+    tetens_der = tetens_aw * (melting_temperature - tetens_bw)
 
 
 # Instantiate the class
@@ -181,9 +179,6 @@ class SaturationAdjustment:
         self._lwdocvd = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._k_field = data_alloc.index_field(
-            self.grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, backend=self._backend
-        )
         self.compute_subsaturated_case_and_initialize_newton_iterations = (
             compute_subsaturated_case_and_initialize_newton_iterations.with_backend(self._backend)
         )
@@ -203,6 +198,13 @@ class SaturationAdjustment:
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
+
+    def _is_converged(self) -> bool:
+        return self._xp.any(
+            self._newton_iteration_mask.ndarray[
+                self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
+            ]
+        )
 
     def run(
         self,
@@ -260,13 +262,8 @@ class SaturationAdjustment:
         temperature_pair = common_utils.TimeStepPair(self._temperature1, self._temperature2)
 
         # TODO (Chia Rui): this is inspired by the cpu version of the original ICON saturation_adjustment code. Consider to refactor this code when break and for loop features are ready in gt4py.
-        not_converged = self._xp.any(
-            self._newton_iteration_mask.ndarray[
-                self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
-            ]
-        )
         num_iter = 0
-        while not_converged:
+        while self._is_converged():
             if num_iter > self.config.max_iter:
                 raise ConvergenceError(
                     f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {self._xp.abs(self._temperature1.ndarray - self._temperature2.ndarray).max()} . Please raise max_iter"
@@ -297,12 +294,6 @@ class SaturationAdjustment:
                 vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
-            )
-
-            not_converged = self._xp.any(
-                self._newton_iteration_mask.ndarray[
-                    self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
-                ]
             )
 
             temperature_pair.swap()
@@ -343,7 +334,8 @@ def _latent_heat_vaporization(
     """
     return (
         microphy_const.vaporisation_latent_heat
-        + (1850.0 - microphy_const.specific_heat_capacity_for_water) * (t - microphy_const.tmelt)
+        + (1850.0 - microphy_const.specific_heat_capacity_for_water)
+        * (t - microphy_const.melting_temperature)
         - physics_constants.rv * t
     )
 
@@ -360,7 +352,9 @@ def _sat_pres_water(t: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
         saturation water vapour pressure.
     """
     return microphy_const.tetens_p0 * exp(
-        microphy_const.tetens_aw * (t - microphy_const.tmelt) / (t - microphy_const.tetens_bw)
+        microphy_const.tetens_aw
+        * (t - microphy_const.melting_temperature)
+        / (t - microphy_const.tetens_bw)
     )
 
 

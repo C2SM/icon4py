@@ -10,7 +10,7 @@ import enum
 import sys
 from typing import Final
 
-from gt4py.eve.utils import FrozenNamespace
+from gt4py.eve import utils as eve_utils
 
 from icon4py.model.common import type_alias as ta
 
@@ -90,7 +90,7 @@ class RayleighType(enum.IntEnum):
     KLEMP = 2
 
 
-class _PhysicsConstants(FrozenNamespace[ta.wpfloat]):
+class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     rd = RD
     rv = RV
     cpd = CPD

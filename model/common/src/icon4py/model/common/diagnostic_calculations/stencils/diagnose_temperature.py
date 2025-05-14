@@ -17,7 +17,7 @@ from icon4py.model.common import (
 )
 
 
-physics_constants: Final = phy_const._PhysicsConstants()
+physics_constants: Final = phy_const.PhysicsConstants()
 
 
 @gtx.field_operator

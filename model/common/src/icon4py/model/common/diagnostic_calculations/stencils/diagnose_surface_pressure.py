@@ -21,7 +21,7 @@ from icon4py.model.common import (
 from icon4py.model.common.dimension import Koff
 
 
-physics_constants: Final = phy_const._PhysicsConstants()
+physics_constants: Final = phy_const.PhysicsConstants()
 
 
 @field_operator

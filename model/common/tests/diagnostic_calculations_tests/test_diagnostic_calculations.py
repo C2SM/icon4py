@@ -6,17 +6,24 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.diagnostic_calculations.stencils import (
+    calculate_tendency,
     diagnose_pressure,
     diagnose_surface_pressure,
     diagnose_temperature,
 )
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation.stencils import (
     edge_2_cell_vector_rbf_interpolation as rbf,
+)
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
@@ -231,4 +238,151 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
     assert helpers.dallclose(
         pressure_ref,
         pressure.asnumpy(),
+    )
+
+
+@pytest.mark.parametrize(
+    "experiment, model_top_height, damping_height, stretch_factor",
+    [
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
+    ],
+)
+@pytest.mark.parametrize(
+    "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
+)
+@pytest.mark.parametrize("location", [("interface-nwp")])
+def test_diagnostic_update_after_saturation_adjustement(
+    experiment,
+    location,
+    model_top_height,
+    damping_height,
+    stretch_factor,
+    date,
+    data_provider,
+    grid_savepoint,
+    metrics_savepoint,
+    icon_grid,
+    backend,
+):
+    satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
+    satad_exit = data_provider.from_savepoint_satad_exit(location=location, date=date)
+
+    dtime = 2.0
+
+    vertical_config = v_grid.VerticalGridConfig(icon_grid.num_levels)
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
+    virtual_temperature_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    )
+    exner_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+
+    tracer_state = tracers.TracerState(
+        qv=satad_exit.qv(),
+        qc=satad_exit.qc(),
+        qr=satad_init.qr(),
+        qi=satad_init.qi(),
+        qs=satad_init.qs(),
+        qg=satad_init.qg(),
+    )
+    exner = satad_init.exner()
+
+    diagnostic_state = diagnostics.DiagnosticState(
+        temperature=satad_exit.temperature(),
+        virtual_temperature=satad_init.virtual_temperature(),
+        pressure=satad_init.pressure(),
+        pressure_ifc=satad_init.pressure_ifc(),
+        u=None,
+        v=None,
+    )
+
+    cell_domain = h_grid.domain(dims.CellDim)
+    start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+    end_cell_local = icon_grid.start_index(cell_domain(h_grid.Zone.END))
+    calculate_tendency.calculate_virtual_temperature_tendency.with_backend(backend)(
+        dtime=dtime,
+        qv=tracer_state.qv,
+        qc=tracer_state.qc,
+        qi=tracer_state.qi,
+        qr=tracer_state.qr,
+        qs=tracer_state.qs,
+        qg=tracer_state.qg,
+        temperature=diagnostic_state.temperature,
+        virtual_temperature=diagnostic_state.virtual_temperature,
+        virtual_temperature_tendency=virtual_temperature_tendency,
+        horizontal_start=start_cell_nudging,
+        horizontal_end=end_cell_local,
+        vertical_start=vertical_params.kstart_moist,
+        vertical_end=icon_grid.num_levels,
+        offset_provider={},
+    )
+
+    updated_virtual_temperature = (
+        diagnostic_state.virtual_temperature.asnumpy()
+        + virtual_temperature_tendency.asnumpy() * dtime
+    )
+
+    calculate_tendency.calculate_exner_tendency.with_backend(backend)(
+        dtime=dtime,
+        virtual_temperature=diagnostic_state.virtual_temperature,
+        virtual_temperature_tendency=virtual_temperature_tendency,
+        exner=exner,
+        exner_tendency=exner_tendency,
+        horizontal_start=start_cell_nudging,
+        horizontal_end=end_cell_local,
+        vertical_start=vertical_params.kstart_moist,
+        vertical_end=icon_grid.num_levels,
+        offset_provider={},
+    )
+
+    updated_exner = exner.asnumpy() + exner_tendency.asnumpy() * dtime
+
+    diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
+        gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
+        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
+        metrics_savepoint.ddqz_z_full(),
+        diagnostic_state.pressure_ifc,
+        horizontal_start=start_cell_nudging,
+        horizontal_end=end_cell_local,
+        vertical_start=icon_grid.num_levels,
+        vertical_end=gtx.int32(icon_grid.num_levels + 1),
+        offset_provider={"Koff": dims.KDim},
+    )
+
+    diagnose_pressure.diagnose_pressure.with_backend(backend)(
+        metrics_savepoint.ddqz_z_full(),
+        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
+        diagnostic_state.surface_pressure,
+        diagnostic_state.pressure,
+        diagnostic_state.pressure_ifc,
+        horizontal_start=start_cell_nudging,
+        horizontal_end=end_cell_local,
+        vertical_start=gtx.int32(0),
+        vertical_end=icon_grid.num_levels,
+        offset_provider={},
+    )
+
+    assert helpers.dallclose(
+        updated_virtual_temperature,
+        satad_exit.virtual_temperature().asnumpy(),
+        atol=1.0e-13,
+    )
+    assert helpers.dallclose(
+        updated_exner,
+        satad_exit.exner().asnumpy(),
+        atol=1.0e-13,
+    )
+    assert helpers.dallclose(
+        diagnostic_state.pressure.asnumpy(),
+        satad_exit.pressure().asnumpy(),
+        atol=1.0e-13,
+    )
+    assert helpers.dallclose(
+        diagnostic_state.pressure_ifc.asnumpy(),
+        satad_exit.pressure_ifc().asnumpy(),
+        atol=1.0e-13,
     )
