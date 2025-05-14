@@ -11,9 +11,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common.math.derivative import compute_first_vertical_derivative_at_cells
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.math.derivative import compute_first_vertical_derivative_at_cells
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
@@ -38,7 +38,9 @@ class TestComputeFirstVerticalDerivative(StencilTest):
         inv_ddqz_z_full: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        first_vertical_derivative = compute_first_vertical_derivative_numpy(cell_kdim_field, inv_ddqz_z_full)
+        first_vertical_derivative = compute_first_vertical_derivative_numpy(
+            cell_kdim_field, inv_ddqz_z_full
+        )
         return dict(first_vertical_derivative=first_vertical_derivative)
 
     @pytest.fixture
