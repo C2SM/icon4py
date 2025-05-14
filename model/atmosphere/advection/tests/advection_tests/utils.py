@@ -52,7 +52,7 @@ def construct_interpolation_state(
 
 
 def construct_least_squares_state(
-    savepoint: sb.LeastSquaresSavepoint,
+    savepoint: sb.InterpolationSavepoint, backend: Optional[gtx_backend.Backend]
 ) -> advection_states.AdvectionLeastSquaresState:
     return advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=savepoint.lsq_pseudoinv_1(),

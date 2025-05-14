@@ -28,11 +28,11 @@ WEISMAN_KLEMP_EXPERIMENT = "weisman_klemp_torus"
 MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
 TORUS_100X116_1000M_GRID_URI = "https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download"
+TORUS_50000x5000_RES500 = "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
 GRID_URIS = {
     REGIONAL_EXPERIMENT: MC_CH_R04B09_DSL_GRID_URI,
     R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
-    # TODO (Chia Rui): check if we can use the grid for gauss3d and get a good quality data for testing microphysics
-    WEISMAN_KLEMP_EXPERIMENT: TORUS_100X116_1000M_GRID_URI,
+    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500,  # TODO: check
 }
 
 GRID_IDS = {
@@ -40,7 +40,7 @@ GRID_IDS = {
     REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
     JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
-    WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("24fe2406-8066-11e8-bc5b-f3dc5af69303"),
+    WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
 }
 
 
@@ -61,15 +61,14 @@ SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
 GRIDS_PATH = TEST_DATA_ROOT.joinpath("grids")
 
 DATA_URIS = {
-    1: "https://polybox.ethz.ch/index.php/s/xhooaubvGffG8Qy/download",
+    1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",
     2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
     4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
 }
-DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
-DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
-DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/IiRimdJH2ZBZ1od/download"}
-DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/91DEUGmAkBgrXO6/download"}
-DATA_URIS_ADVECTION = {1: "https://polybox.ethz.ch/index.php/s/3rTia1A41YW7KX9/download"}
+DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download"}
+DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download"}
+DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download"}
+DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"}
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
@@ -119,10 +118,6 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
-def get_datapath_for_experiment_advection(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
-    return ranked_base_path.joinpath(f"{experiment}/advection/ser_data")
-
-
 def create_icon_serial_data_provider(
     datapath, processor_props, backend: Optional[gtx_backend.Backend]
 ):
@@ -135,20 +130,4 @@ def create_icon_serial_data_provider(
         path=str(datapath),
         mpi_rank=processor_props.rank,
         do_print=True,
-    )
-
-
-def create_icon_serial_data_provider_advection(
-    datapath, processor_props, backend: Optional[gtx_backend.Backend]
-):
-    # note: this needs to be here, otherwise spack doesn't find serialbox
-    from icon4py.model.testing.serialbox import IconSerialDataProvider
-
-    return IconSerialDataProvider(
-        fname_prefix="icon_pyadvection",
-        backend=backend,
-        path=str(datapath),
-        mpi_rank=processor_props.rank,
-        do_print=True,
-        advection=True,
     )

@@ -302,7 +302,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 def test_compute_vertical_coordinate(
     grid_savepoint,
     metrics_savepoint,
-    external_parameters_savepoint,
+    topography_savepoint,
     interpolation_savepoint,
     icon_grid,
     experiment,
@@ -320,7 +320,7 @@ def test_compute_vertical_coordinate(
         vct_b=vct_b,
     )
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
-        topography = external_parameters_savepoint.topo_c()
+        topography = topography_savepoint.topo_c()
     elif experiment == dt_utils.GLOBAL_EXPERIMENT:
         topography = gtx.zeros(domain={dims.CellDim: range(icon_grid.num_cells)}, dtype=ta.wpfloat)
     else:

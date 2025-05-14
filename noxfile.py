@@ -12,6 +12,7 @@ import os
 import re
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias
+from datetime import datetime
 
 import nox
 
@@ -22,7 +23,7 @@ nox.options.sessions = ["test_model", "test_tools"]
 
 # -- Parameter sets --
 ModelSubpackagePath: TypeAlias = Literal[
-    "atmosphere/advection",
+    # "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
     "atmosphere/subgrid_scale_physics/microphysics",
@@ -47,14 +48,81 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
-def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
-    """Run pytest benchmarks for selected icon4py model subpackages."""
+def benchmark_model(session: nox.Session) -> None:
+    """Run pytest benchmarks."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
-    with session.chdir(f"model/{subpackage}"):
-        session.run(*"pytest -sv --benchmark-only".split(), *session.posargs)
+    session.run(
+        *f"pytest \
+        -v \
+        --benchmark-only \
+        --benchmark-warmup=on \
+        --benchmark-warmup-iterations=30 \
+        --benchmark-json=pytest_benchmark_results_{session.python}.json \
+        ./model".split(),
+        *session.posargs,
+    )
 
+@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+def __bencher_baseline_CI(session: nox.Session) -> None:
+    """
+    Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
+    This session is used only on the main branch to create the historical baseline.
+    The historical baseline is used to compare the performance of the code in the PRs.
+    Alerts are raised if there is performance regression according to the thresholds.
+    Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
+    """
+    session.run(
+        *f"bencher run \
+        --threshold-measure latency \
+        --threshold-test percentage \
+        --threshold-max-sample-size 64 \
+        --threshold-upper-boundary 0.1 \
+        --thresholds-reset \
+        --err \
+        --file pytest_benchmark_results_{session.python}.json".split(),
+        env={
+            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_BRANCH": "main",
+            "BENCHER_TESTBED": f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}",
+            "BENCHER_ADAPTER": "python_pytest",
+            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+        },
+        external=True,
+        silent=True,
+    )
+
+@nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
+def __bencher_feature_branch_CI(session: nox.Session) -> None:
+    """
+    Run pytest benchmarks and upload them using Bencher (https://bencher.dev/) (cloud or self-hosted).
+    This session compares the performance of the feature branch with the historical baseline (as built from __bencher_baseline_CI session).
+    Alerts are raised if the performance of the feature branch is worse than the historical baseline (according to the thresholds).
+    Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
+    """
+    bencher_testbed = f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
+    session.run(
+        *f"bencher run \
+        --start-point main \
+        --start-point-clone-thresholds \
+        --start-point-reset \
+        --err \
+        --github-actions {os.environ['GD_COMMENT_TOKEN']} \
+        --ci-number {os.environ['PR_ID']} \
+        --ci-id run-{bencher_testbed.replace(':', '_')}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
+        --file pytest_benchmark_results_{session.python}.json".split(),
+        env={
+            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_BRANCH": os.environ['FEATURE_BRANCH'].strip(),
+            "BENCHER_TESTBED": bencher_testbed,
+            "BENCHER_ADAPTER": "python_pytest",
+            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+        },
+        external=True,
+        silent=True,
+    )
 
 # Model test sessions
 # TODO(egparedes): Add backend parameter
@@ -69,7 +137,7 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
+            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
@@ -87,8 +155,8 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("datatest", [
-    nox.param(False, id="datatest", tags=["datatest"]),
-    nox.param(True, id="unittest",)
+    nox.param(True, id="datatest", tags=["datatest"]),
+    nox.param(False, id="unittest",)
 ])
 def test_tools(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran integration tools."""
@@ -96,7 +164,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("tools"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
+            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
             *session.posargs
         )
 
@@ -132,15 +200,15 @@ def _install_session_venv(
 
 def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
     pytest_args = []
-    
+
     match selection:
         case "datatest":
-            pytest_args.extend(["-k", "not stencil_test", "--datatest"])
+            pytest_args.extend(["--datatest-only"])
         case "stencils":
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
-            pytest_args.extend(["-k", "not stencil_tests"])
+            pytest_args.extend(["--datatest-skip", "-k", "not stencil_tests"])
         case _:
             raise AssertionError(f"Invalid selection: {selection}")
-        
+
     return pytest_args

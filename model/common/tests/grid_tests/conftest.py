@@ -14,7 +14,6 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     decomposition_info,
     download_ser_data,
     experiment,
-    external_parameters_savepoint,
     flat_height,
     grid_savepoint,
     htop_moist_proc,
@@ -28,6 +27,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     ranked_data_path,
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
+    topography_savepoint,
 )
 from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
 
