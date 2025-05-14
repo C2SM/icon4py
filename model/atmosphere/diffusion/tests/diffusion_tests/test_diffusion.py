@@ -34,7 +34,7 @@ from .utils import (
 )
 
 
-grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}, dt_utils.GAUSS3D_EXPERIMENT: {}}
+grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
 
 def get_grid_for_experiment(experiment, backend):
@@ -50,15 +50,11 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 
 def _get_or_initialize(experiment, backend, name):
-    match experiment:
-        case dt_utils.REGIONAL_EXPERIMENT:
-            grid_file = dt_utils.REGIONAL_EXPERIMENT
-        case dt_utils.GLOBAL_EXPERIMENT:
-            grid_file = dt_utils.R02B04_GLOBAL
-        case dt_utils.GAUSS3D_EXPERIMENT:
-            grid_file = dt_utils.GAUSS3D_EXPERIMENT
-        case _:
-            raise NotImplementedError("Unknown experiment")
+    grid_file = (
+        dt_utils.REGIONAL_EXPERIMENT
+        if experiment == dt_utils.REGIONAL_EXPERIMENT
+        else dt_utils.R02B04_GLOBAL
+    )
 
     if not grid_functionality[experiment].get(name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
@@ -417,7 +413,6 @@ def test_verify_diffusion_init_against_savepoint(
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
-        (dt_utils.GAUSS3D_EXPERIMENT, "2001-01-01T00:00:02.000", "2001-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
@@ -794,3 +789,4 @@ def test_run_diffusion_initial_step(
         prognostic_state=prognostic_state,
         diffusion_savepoint=savepoint_diffusion_exit,
     )
+
