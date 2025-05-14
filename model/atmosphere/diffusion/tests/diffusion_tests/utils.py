@@ -11,7 +11,6 @@ import numpy as np
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.testing import helpers, serialbox as sb
-from icon4py.model.driver import icon4py_configuration
 
 
 def verify_diffusion_fields(
@@ -69,10 +68,6 @@ def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
         return r04b09_diffusion_config(ndyn_substeps)
     elif name.lower() in "exclaim_ape_r02b04":
         return exclaim_ape_diffusion_config(ndyn_substeps)
-    elif name.lower() in "gauss3d_torus":
-        config = icon4py_configuration.read_config(name.lower())
-        diffusion_config = config.diffusion_config
-        return diffusion_config
 
 
 def r04b09_diffusion_config(
