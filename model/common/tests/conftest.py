@@ -11,10 +11,6 @@ import random
 
 import pytest
 
-from icon4py.model.testing.datatest_fixtures import (
-    decomposition_info,
-    experiment,
-)
 from icon4py.model.testing.helpers import connectivities_as_numpy
 
 
@@ -27,6 +23,9 @@ try:
 except KeyError:
     from icon4py.model.testing.pytest_config import *  # noqa: F403
 
+from icon4py.model.testing.datatest_fixtures import *  # noqa: F403
+
+
 __all__ = [
     # local:
     "random_name",
@@ -34,9 +33,16 @@ __all__ = [
     # imported fixtures:
     "backend",
     "grid",
-    "decomposition_info",
-    "experiment",
     "connectivities_as_numpy",
+    "icon_grid",
+    "experiment",
+    "processor_props",
+    "data_provider",
+    "ranked_data_path",
+    "grid_savepoint",
+    "decomposition_info",
+    "metrics_savepoint",
+    "interpolation_savepoint",
 ]
 
 
