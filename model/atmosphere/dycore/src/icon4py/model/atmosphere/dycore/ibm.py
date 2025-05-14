@@ -81,8 +81,8 @@ class ImmersedBoundaryMethod:
         neigh_full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
 
         #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-        #half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
-        half_cell_mask_np = self._mask_building(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+        half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+        #half_cell_mask_np = self._mask_building(grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
         full_cell_mask_np = half_cell_mask_np[:, :-1]
 
