@@ -60,6 +60,23 @@ horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
 
 
 @field_operator
+def _zero_initialize_for_limited_area_mode(
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    limited_area: bool,
+) -> tuple[
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+]:
+    (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = (
+        _init_two_cell_kdim_fields_with_zero_vp()
+        if limited_area
+        else (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels)
+    )
+
+    return (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels)
+
+@field_operator
 def _compute_perturbed_quantities_and_interpolation(
     current_rho: fa.CellKField[ta.wpfloat],
     reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
@@ -78,7 +95,6 @@ def _compute_perturbed_quantities_and_interpolation(
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    limited_area: bool,
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
 ) -> tuple[
@@ -157,7 +173,7 @@ def _surface_computations(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    temporal_extrapolation_of_perturbed_exner = _init_cell_kdim_field_with_zero_wp(),
+    temporal_extrapolation_of_perturbed_exner = _init_cell_kdim_field_with_zero_wp()
 
     exner_at_cells_on_half_levels = (
         _interpolate_to_surface(
@@ -356,14 +372,17 @@ def compute_perturbed_quantities_and_interpolation(
         - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
-    if limited_area:
-        _init_two_cell_kdim_fields_with_zero_vp(
-            out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
-            domain={
-                dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
-                dims.KDim: (vertical_start, vertical_end - 1),
-            },
-        )
+
+    _zero_initialize_for_limited_area_mode(
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        limited_area=limited_area,
+        out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
+            dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
 
     _extrapolate_temporally_exner_pressure(
         exner_exfac=time_extrapolation_parameter_for_exner,
@@ -409,7 +428,6 @@ def compute_perturbed_quantities_and_interpolation(
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-        limited_area=limited_area,
         igradp_method=igradp_method,
         nflatlev=nflatlev,
         out=(
