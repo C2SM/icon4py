@@ -886,6 +886,7 @@ class SolveNonhydro:
             igradp_method=self._config.igradp_method,
             nflatlev=self._vertical_params.nflatlev,
             nflat_gradp=self._vertical_params.nflat_gradp,
+            start_cell_lateral_boundary=self._start_cell_lateral_boundary,
             start_cell_lateral_boundary_level_3=self._start_cell_lateral_boundary_level_3,
             start_cell_halo_level_2=self._start_edge_halo_level_2,
             end_cell_halo=self._end_cell_halo,
