@@ -65,9 +65,11 @@ DATA_URIS = {
     2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
     4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
 }
-DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download",
-                 2: "https://polybox.ethz.ch/index.php/s/GQNcLtp4CN7ERbi/download",
-                 4: "https://polybox.ethz.ch/index.php/s/XCcE34Ry5EQckoK/download"}
+DATA_URIS_APE = {
+    1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download",
+    2: "https://polybox.ethz.ch/index.php/s/GQNcLtp4CN7ERbi/download",
+    4: "https://polybox.ethz.ch/index.php/s/XCcE34Ry5EQckoK/download",
+}
 
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download"}
 DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download"}
