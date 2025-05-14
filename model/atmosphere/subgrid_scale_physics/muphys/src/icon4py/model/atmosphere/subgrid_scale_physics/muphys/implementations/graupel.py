@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from gt4py.next.ffront.fbuiltins import where, maximum, minimum, power, sqrt
+from gt4py.next.ffront.fbuiltins import where, maximum, minimum, power, sqrt, astype
 from gt4py.next.ffront.experimental import concat_where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
@@ -98,12 +98,12 @@ def _graupel_mask(
     qs:     fa.CellKField[ta.wpfloat],             # Q snow content
 ) -> tuple[fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool]]:
 
-    mask = where( (maximum( qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > g_ct.qmin) | ((t < g_ct.tfrz_het2) & (qv > _qsat_ice_rho(t, rho) ) ), True, False )
-    is_sig_present = where( maximum( qg, maximum(qi, qs)) > g_ct.qmin, True, False )
-    kmin_r = where( qr > g_ct.qmin, True, False )
-    kmin_i = where( qi > g_ct.qmin, True, False )
-    kmin_s = where( qs > g_ct.qmin, True, False )
-    kmin_g = where( qg > g_ct.qmin, True, False )
+    mask = (maximum( qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > g_ct.qmin) | ((t < g_ct.tfrz_het2) & (qv > _qsat_ice_rho(t, rho) ) )
+    is_sig_present = (maximum( qg, maximum(qi, qs)) > g_ct.qmin)
+    kmin_r = (qr > g_ct.qmin)
+    kmin_i = (qi > g_ct.qmin)
+    kmin_s = (qs > g_ct.qmin)
+    kmin_g = (qg > g_ct.qmin)
     return mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g
 
 @gtx.field_operator
@@ -121,7 +121,32 @@ def _q_t_update(
     is_sig_present: fa.CellKField[bool],
     dt:             ta.wpfloat,
     qnc:            ta.wpfloat,
-) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+]:
 
     dvsw = qv - _qsat_rho( t, rho )
     qvsi = _qsat_ice_rho( t, rho )
@@ -205,8 +230,77 @@ def _q_t_update(
     sx2x_c_i = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_i * stot / sink_c, sx2x_c_i )
     sx2x_c_g = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_g * stot / sink_c, sx2x_c_g )
     sink_c   = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g, sink_c) # Missing: sx2x_c_v
+    return (sink_r,
+            sink_s,
+            sink_i,
+            sink_g,
+            sink_c,
+            sink_v,
+            sx2x_r_v,
+            sx2x_r_g,
+            sx2x_s_v,
+            sx2x_s_r,
+            sx2x_s_g,
+            sx2x_i_v,
+            sx2x_i_c,
+            sx2x_i_s,
+            sx2x_i_g,
+            sx2x_g_v,
+            sx2x_g_r,
+            sx2x_c_r,
+            sx2x_v_s,
+            sx2x_c_s,
+            sx2x_v_i,
+            sx2x_c_i,
+            sx2x_v_g,
+            sx2x_c_g)
 
-    stot     = qr / dt
+@gtx.field_operator
+def _q_t_update_2(
+    t: fa.CellKField[ta.wpfloat],
+    p: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    sink_r: fa.CellKField[ta.wpfloat],
+    sink_s: fa.CellKField[ta.wpfloat],
+    sink_i: fa.CellKField[ta.wpfloat],
+    sink_g: fa.CellKField[ta.wpfloat],
+    sink_c: fa.CellKField[ta.wpfloat],
+    sink_v: fa.CellKField[ta.wpfloat],
+    sx2x_r_v: fa.CellKField[ta.wpfloat],
+    sx2x_r_g: fa.CellKField[ta.wpfloat],
+    sx2x_s_v: fa.CellKField[ta.wpfloat],
+    sx2x_s_r: fa.CellKField[ta.wpfloat],
+    sx2x_s_g: fa.CellKField[ta.wpfloat],
+    sx2x_i_v: fa.CellKField[ta.wpfloat],
+    sx2x_i_c: fa.CellKField[ta.wpfloat],
+    sx2x_i_s: fa.CellKField[ta.wpfloat],
+    sx2x_i_g: fa.CellKField[ta.wpfloat],
+    sx2x_g_v: fa.CellKField[ta.wpfloat],
+    sx2x_g_r: fa.CellKField[ta.wpfloat],
+    sx2x_c_r: fa.CellKField[ta.wpfloat],
+    sx2x_v_s: fa.CellKField[ta.wpfloat],
+    sx2x_c_s: fa.CellKField[ta.wpfloat],
+    sx2x_v_i: fa.CellKField[ta.wpfloat],
+    sx2x_c_i: fa.CellKField[ta.wpfloat],
+    sx2x_v_g: fa.CellKField[ta.wpfloat],
+    sx2x_c_g: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],  # Q vapor content
+    qc: fa.CellKField[ta.wpfloat],  # Q cloud content
+    qr: fa.CellKField[ta.wpfloat],  # Q rain content
+    qs: fa.CellKField[ta.wpfloat],  # Q snow content
+    qi: fa.CellKField[ta.wpfloat],  # Q ice content
+    qg: fa.CellKField[ta.wpfloat],  # Q graupel content
+    mask: fa.CellKField[bool],
+    is_sig_present: fa.CellKField[bool],
+    dt: ta.wpfloat,
+    qnc: ta.wpfloat,
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat]
+]:
+    stot = qr / dt
     sx2x_r_v = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_v * stot / sink_r, sx2x_r_v )
     sx2x_r_g = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_g * stot / sink_r, sx2x_r_g )
     sink_r   = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_v + sx2x_r_g, sink_r) # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
@@ -229,8 +323,56 @@ def _q_t_update(
     sx2x_g_v = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v * stot / sink_g, sx2x_g_v )
     sx2x_g_r = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_r * stot / sink_g, sx2x_g_r )
     sink_g   = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v + sx2x_g_r, sink_g) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
+    return sink_r, sink_s, sink_i, sink_g
 
-
+@gtx.field_operator
+def _q_t_update_3(
+    t: fa.CellKField[ta.wpfloat],
+    p: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    sink_r: fa.CellKField[ta.wpfloat],
+    sink_s: fa.CellKField[ta.wpfloat],
+    sink_i: fa.CellKField[ta.wpfloat],
+    sink_g: fa.CellKField[ta.wpfloat],
+    sink_c: fa.CellKField[ta.wpfloat],
+    sink_v: fa.CellKField[ta.wpfloat],
+    sx2x_r_v: fa.CellKField[ta.wpfloat],
+    sx2x_r_g: fa.CellKField[ta.wpfloat],
+    sx2x_s_v: fa.CellKField[ta.wpfloat],
+    sx2x_s_r: fa.CellKField[ta.wpfloat],
+    sx2x_s_g: fa.CellKField[ta.wpfloat],
+    sx2x_i_v: fa.CellKField[ta.wpfloat],
+    sx2x_i_c: fa.CellKField[ta.wpfloat],
+    sx2x_i_s: fa.CellKField[ta.wpfloat],
+    sx2x_i_g: fa.CellKField[ta.wpfloat],
+    sx2x_g_v: fa.CellKField[ta.wpfloat],
+    sx2x_g_r: fa.CellKField[ta.wpfloat],
+    sx2x_c_r: fa.CellKField[ta.wpfloat],
+    sx2x_v_s: fa.CellKField[ta.wpfloat],
+    sx2x_c_s: fa.CellKField[ta.wpfloat],
+    sx2x_v_i: fa.CellKField[ta.wpfloat],
+    sx2x_c_i: fa.CellKField[ta.wpfloat],
+    sx2x_v_g: fa.CellKField[ta.wpfloat],
+    sx2x_c_g: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],  # Q vapor content
+    qc: fa.CellKField[ta.wpfloat],  # Q cloud content
+    qr: fa.CellKField[ta.wpfloat],  # Q rain content
+    qs: fa.CellKField[ta.wpfloat],  # Q snow content
+    qi: fa.CellKField[ta.wpfloat],  # Q ice content
+    qg: fa.CellKField[ta.wpfloat],  # Q graupel content
+    mask: fa.CellKField[bool],
+    is_sig_present: fa.CellKField[bool],
+    dt: ta.wpfloat,
+    qnc: ta.wpfloat,
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat]
+]:
     # water content updates:
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     dqdt_v = sx2x_r_v + sx2x_s_v + sx2x_i_v + sx2x_g_v - sink_v          # Missing: sx2x_c_v
@@ -251,8 +393,8 @@ def _q_t_update(
     qtot = qv + qice + qliq
 
     cv   = t_d.cvd + (t_d.cvv - t_d.cvd) * qtot + (t_d.clw - t_d.cvv) * qliq + (g_ct.ci - t_d.cvv) * qice
-    t = where( mask, t + dt * ( (dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv)*t) + \
-                                (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv)*t ) ) / cv, t )
+    # t = where( mask, t + dt * ( (dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv)*t) + \
+    #                             (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv)*t ) ) / cv, t )
     return qv, qc, qr, qs, qi, qg, t
 
 @gtx.field_operator
@@ -323,15 +465,188 @@ def _graupel_run(
     qge:       fa.CellKField[ta.wpfloat],             # Specific graupel water content
     dt:        ta.wpfloat,
     qnc:       ta.wpfloat,
-) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat], \
-           fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat], \
-           fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat], \
-           fa.CellKField[ta.wpfloat]]:
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[bool],
+    fa.CellKField[bool]
+]:
 
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
-    qv, qc, qr, qs, qi, qg, t = _q_t_update( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
-    qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = \
-        _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+    (sink_r,
+     sink_s,
+     sink_i,
+     sink_g,
+     sink_c,
+     sink_v,
+     sx2x_r_v,
+     sx2x_r_g,
+     sx2x_s_v,
+     sx2x_s_r,
+     sx2x_s_g,
+     sx2x_i_v,
+     sx2x_i_c,
+     sx2x_i_s,
+     sx2x_i_g,
+     sx2x_g_v,
+     sx2x_g_r,
+     sx2x_c_r,
+     sx2x_v_s,
+     sx2x_c_s,
+     sx2x_v_i,
+     sx2x_c_i,
+     sx2x_v_g,
+     sx2x_c_g) = _q_t_update( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
+
+    sink_r, sink_s, sink_i, sink_g = _q_t_update_2( te, p, rho, sink_r,
+     sink_s,
+     sink_i,
+     sink_g,
+     sink_c,
+     sink_v,
+     sx2x_r_v,
+     sx2x_r_g,
+     sx2x_s_v,
+     sx2x_s_r,
+     sx2x_s_g,
+     sx2x_i_v,
+     sx2x_i_c,
+     sx2x_i_s,
+     sx2x_i_g,
+     sx2x_g_v,
+     sx2x_g_r,
+     sx2x_c_r,
+     sx2x_v_s,
+     sx2x_c_s,
+     sx2x_v_i,
+     sx2x_c_i,
+     sx2x_v_g,
+     sx2x_c_g, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
+    return (sink_s,
+     sink_i,
+     sink_g,
+     sink_c,
+     sink_v,
+     sink_r,
+     sx2x_r_v,
+     sx2x_r_g,
+     sx2x_s_v,
+     sx2x_s_r,
+     sx2x_s_g,
+     sx2x_i_v,
+     sx2x_i_c,
+     sx2x_i_s,
+     sx2x_i_g,
+     sx2x_g_v,
+     sx2x_g_r,
+     sx2x_c_r,
+     sx2x_v_s,
+     sx2x_c_s,
+     sx2x_v_i,
+     sx2x_c_i,
+     sx2x_v_g,
+     sx2x_c_g,
+     mask,
+     is_sig_present)
+
+@gtx.field_operator
+def _graupel_run_2(
+    k: fa.KField[gtx.int32],
+    last_lev: gtx.int32,
+    dz: fa.CellKField[ta.wpfloat],  #
+    te: fa.CellKField[ta.wpfloat],  # Temperature
+    p: fa.CellKField[ta.wpfloat],  # Pressure
+    rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
+    qve: fa.CellKField[ta.wpfloat],  # Specific humidity
+    qce: fa.CellKField[ta.wpfloat],  # Specific cloud water content
+    qre: fa.CellKField[ta.wpfloat],  # Specific rain water
+    qse: fa.CellKField[ta.wpfloat],  # Specific snow water
+    qie: fa.CellKField[ta.wpfloat],  # Specific ice water content
+    qge: fa.CellKField[ta.wpfloat],  # Specific graupel water content
+    dt: ta.wpfloat,
+    qnc: ta.wpfloat,
+    sink_s: fa.CellKField[ta.wpfloat],
+     sink_i: fa.CellKField[ta.wpfloat],
+     sink_g: fa.CellKField[ta.wpfloat],
+     sink_c: fa.CellKField[ta.wpfloat],
+     sink_v: fa.CellKField[ta.wpfloat],
+     sink_r: fa.CellKField[ta.wpfloat],
+     sx2x_r_v: fa.CellKField[ta.wpfloat],
+     sx2x_r_g: fa.CellKField[ta.wpfloat],
+     sx2x_s_v: fa.CellKField[ta.wpfloat],
+     sx2x_s_r: fa.CellKField[ta.wpfloat],
+     sx2x_s_g: fa.CellKField[ta.wpfloat],
+     sx2x_i_v: fa.CellKField[ta.wpfloat],
+     sx2x_i_c: fa.CellKField[ta.wpfloat],
+     sx2x_i_s: fa.CellKField[ta.wpfloat],
+     sx2x_i_g: fa.CellKField[ta.wpfloat],
+     sx2x_g_v: fa.CellKField[ta.wpfloat],
+     sx2x_g_r: fa.CellKField[ta.wpfloat],
+     sx2x_c_r: fa.CellKField[ta.wpfloat],
+     sx2x_v_s: fa.CellKField[ta.wpfloat],
+     sx2x_c_s: fa.CellKField[ta.wpfloat],
+     sx2x_v_i: fa.CellKField[ta.wpfloat],
+     sx2x_c_i: fa.CellKField[ta.wpfloat],
+     sx2x_v_g: fa.CellKField[ta.wpfloat],
+     sx2x_c_g: fa.CellKField[ta.wpfloat],
+     mask: fa.CellKField[bool],
+     is_sig_present: fa.CellKField[bool]
+) -> tuple[
+    fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], \
+        fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], \
+        fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], \
+        fa.CellKField[ta.wpfloat]]:
+
+    qv, qc, qr, qs, qi, qg, t = _q_t_update_3( te, p, rho, sink_r,
+     sink_s,
+     sink_i,
+     sink_g,
+     sink_c,
+     sink_v,
+     sx2x_r_v,
+     sx2x_r_g,
+     sx2x_s_v,
+     sx2x_s_r,
+     sx2x_s_g,
+     sx2x_i_v,
+     sx2x_i_c,
+     sx2x_i_s,
+     sx2x_i_g,
+     sx2x_g_v,
+     sx2x_g_r,
+     sx2x_c_r,
+     sx2x_v_s,
+     sx2x_c_s,
+     sx2x_v_i,
+     sx2x_c_i,
+     sx2x_v_g,
+     sx2x_c_g, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
+
+    pflx, pr, ps, pi, pg, pre = p, p, p, p, p, p
+    # qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = \
+    #     _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
 
     return t, qv, qc, qr, qs, qi, qg, pflx, pr, ps, pi, pg, pre
 
@@ -364,6 +679,157 @@ def graupel_run(
     pi:        fa.CellKField[ta.wpfloat],             # Precipitation of ice
     pg:        fa.CellKField[ta.wpfloat],             # Precipitation of graupel
     pre:       fa.CellKField[ta.wpfloat],             # Precipitation of graupel
+    sink_s: fa.CellKField[ta.wpfloat],
+     sink_i: fa.CellKField[ta.wpfloat],
+     sink_g: fa.CellKField[ta.wpfloat],
+     sink_c: fa.CellKField[ta.wpfloat],
+     sink_v: fa.CellKField[ta.wpfloat],
+     sink_r: fa.CellKField[ta.wpfloat],
+     sx2x_r_v: fa.CellKField[ta.wpfloat],
+     sx2x_r_g: fa.CellKField[ta.wpfloat],
+     sx2x_s_v: fa.CellKField[ta.wpfloat],
+     sx2x_s_r: fa.CellKField[ta.wpfloat],
+     sx2x_s_g: fa.CellKField[ta.wpfloat],
+     sx2x_i_v: fa.CellKField[ta.wpfloat],
+     sx2x_i_c: fa.CellKField[ta.wpfloat],
+     sx2x_i_s: fa.CellKField[ta.wpfloat],
+     sx2x_i_g: fa.CellKField[ta.wpfloat],
+     sx2x_g_v: fa.CellKField[ta.wpfloat],
+     sx2x_g_r: fa.CellKField[ta.wpfloat],
+     sx2x_c_r: fa.CellKField[ta.wpfloat],
+     sx2x_v_s: fa.CellKField[ta.wpfloat],
+     sx2x_c_s: fa.CellKField[ta.wpfloat],
+     sx2x_v_i: fa.CellKField[ta.wpfloat],
+     sx2x_c_i: fa.CellKField[ta.wpfloat],
+     sx2x_v_g: fa.CellKField[ta.wpfloat],
+     sx2x_c_g: fa.CellKField[ta.wpfloat],
+     mask: fa.CellKField[bool],
+     is_sig_present: fa.CellKField[bool]
 ):
-    _graupel_run(k, last_lev, dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, \
+    _graupel_run(
+        k,
+        last_lev,
+        dz,  #
+        te,  # Temperature
+        p,  # Pressure
+        rho,  # Density containing dry air and water constituents
+        qve,  # Specific humidity
+        qce,  # Specific cloud water content
+        qre,  # Specific rain water
+        qse,  # Specific snow water
+        qie,  # Specific ice water content
+        qge,  # Specific graupel water content
+        dt,
+        qnc,
+        out=(sink_s,
+             sink_i,
+             sink_g,
+             sink_c,
+             sink_v,
+             sink_r,
+             sx2x_r_v,
+             sx2x_r_g,
+             sx2x_s_v,
+             sx2x_s_r,
+             sx2x_s_g,
+             sx2x_i_v,
+             sx2x_i_c,
+             sx2x_i_s,
+             sx2x_i_g,
+             sx2x_g_v,
+             sx2x_g_r,
+             sx2x_c_r,
+             sx2x_v_s,
+             sx2x_c_s,
+             sx2x_v_i,
+             sx2x_c_i,
+             sx2x_v_g,
+             sx2x_c_g,
+             mask,
+             is_sig_present)
+    )
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def graupel_run_2(
+    k: fa.KField[gtx.int32],
+    last_lev: gtx.int32,
+    dz: fa.CellKField[ta.wpfloat],  #
+    te: fa.CellKField[ta.wpfloat],  # Temperature
+    p: fa.CellKField[ta.wpfloat],  # Pressure
+    rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
+    qve: fa.CellKField[ta.wpfloat],  # Specific humidityn
+    qce: fa.CellKField[ta.wpfloat],  # Specific cloud water content
+    qre: fa.CellKField[ta.wpfloat],  # Specific rain water
+    qse: fa.CellKField[ta.wpfloat],  # Specific snow water
+    qie: fa.CellKField[ta.wpfloat],  # Specific ice water content
+    qge: fa.CellKField[ta.wpfloat],  # Specific graupel water content
+    dt: ta.wpfloat,  # Time step
+    qnc: ta.wpfloat,  #
+    t_out: fa.CellKField[ta.wpfloat],  # Revised temperature
+    qv_out: fa.CellKField[ta.wpfloat],  # Revised humidity
+    qc_out: fa.CellKField[ta.wpfloat],  # Revised cloud water
+    qr_out: fa.CellKField[ta.wpfloat],  # Revised rain water
+    qs_out: fa.CellKField[ta.wpfloat],  # Revised snow water
+    qi_out: fa.CellKField[ta.wpfloat],  # Revised ice water
+    qg_out: fa.CellKField[ta.wpfloat],  # Revised graupel water
+    pflx: fa.CellKField[ta.wpfloat],  # Total precipitation flux
+    pr: fa.CellKField[ta.wpfloat],  # Precipitation of rain
+    ps: fa.CellKField[ta.wpfloat],  # Precipitation of snow
+    pi: fa.CellKField[ta.wpfloat],  # Precipitation of ice
+    pg: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
+    pre: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
+    sink_s: fa.CellKField[ta.wpfloat],
+    sink_i: fa.CellKField[ta.wpfloat],
+    sink_g: fa.CellKField[ta.wpfloat],
+    sink_c: fa.CellKField[ta.wpfloat],
+    sink_v: fa.CellKField[ta.wpfloat],
+    sink_r: fa.CellKField[ta.wpfloat],
+    sx2x_r_v: fa.CellKField[ta.wpfloat],
+    sx2x_r_g: fa.CellKField[ta.wpfloat],
+    sx2x_s_v: fa.CellKField[ta.wpfloat],
+    sx2x_s_r: fa.CellKField[ta.wpfloat],
+    sx2x_s_g: fa.CellKField[ta.wpfloat],
+    sx2x_i_v: fa.CellKField[ta.wpfloat],
+    sx2x_i_c: fa.CellKField[ta.wpfloat],
+    sx2x_i_s: fa.CellKField[ta.wpfloat],
+    sx2x_i_g: fa.CellKField[ta.wpfloat],
+    sx2x_g_v: fa.CellKField[ta.wpfloat],
+    sx2x_g_r: fa.CellKField[ta.wpfloat],
+    sx2x_c_r: fa.CellKField[ta.wpfloat],
+    sx2x_v_s: fa.CellKField[ta.wpfloat],
+    sx2x_c_s: fa.CellKField[ta.wpfloat],
+    sx2x_v_i: fa.CellKField[ta.wpfloat],
+    sx2x_c_i: fa.CellKField[ta.wpfloat],
+    sx2x_v_g: fa.CellKField[ta.wpfloat],
+    sx2x_c_g: fa.CellKField[ta.wpfloat],
+    mask: fa.CellKField[bool],
+    is_sig_present: fa.CellKField[bool]
+):
+
+    _graupel_run_2(k, last_lev, dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, sink_s,
+     sink_i,
+     sink_g,
+     sink_c,
+     sink_v,
+     sink_r,
+     sx2x_r_v,
+     sx2x_r_g,
+     sx2x_s_v,
+     sx2x_s_r,
+     sx2x_s_g,
+     sx2x_i_v,
+     sx2x_i_c,
+     sx2x_i_s,
+     sx2x_i_g,
+     sx2x_g_v,
+     sx2x_g_r,
+     sx2x_c_r,
+     sx2x_v_s,
+     sx2x_c_s,
+     sx2x_v_i,
+     sx2x_c_i,
+     sx2x_v_g,
+     sx2x_c_g,
+     mask,
+     is_sig_present,
                  out=(t_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out, pflx, pr, ps, pi, pg, pre) )
