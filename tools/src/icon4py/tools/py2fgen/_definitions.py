@@ -77,7 +77,7 @@ if TYPE_CHECKING:
     ArrayInfo: TypeAlias = tuple[cffi.FFI.CData, tuple[int, ...], bool, bool]
     """
     ArrayInfo describes the runtime information of a buffer:
-    
+
     Attributes:
         pointer: The CFFI pointer.
         shape: Shape of the buffer.
