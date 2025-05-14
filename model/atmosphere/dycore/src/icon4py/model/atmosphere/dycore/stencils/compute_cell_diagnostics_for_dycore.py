@@ -35,7 +35,7 @@ from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
-    _compute_perturbation_of_rho_and_theta, compute_perturbation_of_rho_and_theta,
+    _compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
@@ -83,12 +83,6 @@ def _compute_perturbed_quantities_and_interpolation(
     limited_area: bool,
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
-    start_cell_lateral_boundary: gtx.int32,
-    start_cell_lateral_boundary_level_3: gtx.int32,
-    start_cell_halo_level_2: gtx.int32,
-    end_cell_end: gtx.int32,
-    end_cell_halo: gtx.int32,
-    end_cell_halo_level_2: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
@@ -102,12 +96,6 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
-        _init_two_cell_kdim_fields_with_zero_vp()
-        if limited_area
-        else (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels)
-    )
-
     exner_at_cells_on_half_levels = (
         concat_where(
             (maximum(1, nflatlev) <= dims.KDim),
@@ -302,6 +290,7 @@ def compute_perturbed_quantities_and_interpolation(
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
+    start_cell_lateral_boundary: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     start_cell_halo_level_2: gtx.int32,
     end_cell_halo: gtx.int32,
@@ -373,6 +362,15 @@ def compute_perturbed_quantities_and_interpolation(
         - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
+    if limited_area:
+        _init_two_cell_kdim_fields_with_zero_vp(
+            out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
+            domain={
+                dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+        )
+
     _extrapolate_temporally_exner_pressure(
         exner_exfac=time_extrapolation_parameter_for_exner,
         exner=current_exner,
@@ -479,7 +477,7 @@ def compute_perturbed_quantities_and_interpolation(
         },
     )
 
-    compute_perturbation_of_rho_and_theta(
+    _compute_perturbation_of_rho_and_theta(
         rho=current_rho,
         rho_ref_mc=reference_rho_at_cells_on_model_levels,
         theta_v=current_theta_v,
