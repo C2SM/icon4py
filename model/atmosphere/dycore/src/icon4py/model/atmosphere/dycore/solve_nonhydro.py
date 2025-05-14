@@ -414,7 +414,7 @@ class SolveNonhydro:
         owner_mask: fa.CellField[bool],
         backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
-        extras: dict = None,
+        extras: dict = {},
     ):
         self._exchange = exchange
         self._backend = backend
