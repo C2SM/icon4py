@@ -85,7 +85,7 @@ DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
 
-class _PhysicsConstants(FrozenNamespace[ta.wpfloat]):
+class PhysicsConstants(FrozenNamespace[ta.wpfloat]):
     """
     Constants used in gt4py stencils.
     """

@@ -39,7 +39,7 @@ from icon4py.model.common.states import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-# TODO (Chia Rui): Refactor this class when direct import is enabled for gt4py stencils
+# TODO (@Chia Rui): Refactor this class when direct import is enabled for gt4py stencils
 class SaturatedPressureConstants(FrozenNamespace):
     """
     Constants used for the computation of saturated pressure in saturation adjustment and microphysics.

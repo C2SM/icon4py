@@ -784,7 +784,6 @@ class SolveNonhydro:
             exner_now=prognostic_states.current.exner,
             rho_new=prognostic_states.next.rho,
             theta_v_new=prognostic_states.next.theta_v,
-            cvd_o_rd=constants.CVD_O_RD,
             horizontal_start=self._start_cell_halo,
             horizontal_end=self._end_cell_end,
             vertical_start=0,

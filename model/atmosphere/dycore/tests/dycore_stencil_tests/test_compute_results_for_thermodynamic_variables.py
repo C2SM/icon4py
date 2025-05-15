@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from typing import Any, Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -14,11 +14,14 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables,
 )
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
+
+
+dycore_consts: Final = constants.PhysicsConstants()
 
 
 def compute_results_for_thermodynamic_variables_numpy(
@@ -36,7 +39,6 @@ def compute_results_for_thermodynamic_variables_numpy(
     theta_v_now: np.ndarray,
     exner_now: np.ndarray,
     dtime: float,
-    cvd_o_rd: float,
 ) -> tuple[np.ndarray, ...]:
     rho_ic_offset_1 = rho_ic[:, 1:]
     w_offset_0 = w[:, :-1]
@@ -51,7 +53,12 @@ def compute_results_for_thermodynamic_variables_numpy(
         + exner_ref_mc
         - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
     )
-    theta_v_new = rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
+    theta_v_new = (
+        rho_now
+        * theta_v_now
+        * ((exner_new / exner_now - 1.0) * dycore_consts.cvd_o_rd + 1.0)
+        / rho_new
+    )
     return rho_new, exner_new, theta_v_new
 
 
@@ -75,7 +82,6 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         theta_v_now: np.ndarray,
         exner_now: np.ndarray,
         dtime: float,
-        cvd_o_rd: float,
         **kwargs: Any,
     ) -> dict:
         (rho_new, exner_new, theta_v_new) = compute_results_for_thermodynamic_variables_numpy(
@@ -93,7 +99,6 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
             theta_v_now=theta_v_now,
             exner_now=exner_now,
             dtime=dtime,
-            cvd_o_rd=cvd_o_rd,
         )
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 
@@ -121,7 +126,6 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         exner_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_v_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
-        cvd_o_rd = ta.wpfloat("9.0")
 
         return dict(
             z_rho_expl=z_rho_expl,
@@ -140,7 +144,6 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
             exner_new=exner_new,
             theta_v_new=theta_v_new,
             dtime=dtime,
-            cvd_o_rd=cvd_o_rd,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

@@ -52,7 +52,7 @@ from icon4py.model.common import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-dycore_consts: Final = constants._PhysicsConstants()
+dycore_consts: Final = constants.PhysicsConstants()
 rayleigh_damping_options: Final = model_options.RayleighType()
 
 
@@ -386,7 +386,6 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
             theta_v_now=current_theta_v,
             exner_now=current_exner,
             dtime=dtime,
-            cvd_o_rd=dycore_consts.cvd_o_rd,
         ),
         (next_rho, next_exner, next_theta_v),
     )
@@ -666,7 +665,6 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
             theta_v_now=current_theta_v,
             exner_now=current_exner,
             dtime=dtime,
-            cvd_o_rd=dycore_consts.cvd_o_rd,
         ),
         (next_rho, next_exner, next_theta_v),
     )

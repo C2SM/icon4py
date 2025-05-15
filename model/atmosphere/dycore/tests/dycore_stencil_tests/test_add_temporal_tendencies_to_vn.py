@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from typing import Any, Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -14,12 +14,15 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
+
+
+dycore_consts: Final = constants.PhysicsConstants()
 
 
 def add_temporal_tendencies_to_vn_numpy(
@@ -29,9 +32,10 @@ def add_temporal_tendencies_to_vn_numpy(
     z_theta_v_e: np.ndarray,
     z_gradh_exner: np.ndarray,
     dtime: float,
-    cpd: float,
 ) -> np.ndarray:
-    vn_nnew = vn_nnow + dtime * (ddt_vn_apc_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner)
+    vn_nnew = vn_nnow + dtime * (
+        ddt_vn_apc_ntl1 + ddt_vn_phy - dycore_consts.cpd * z_theta_v_e * z_gradh_exner
+    )
     return vn_nnew
 
 
@@ -48,17 +52,16 @@ class TestAddTemporalTendenciesToVn(StencilTest):
         z_theta_v_e: np.ndarray,
         z_gradh_exner: np.ndarray,
         dtime: float,
-        cpd: float,
         **kwargs: Any,
     ) -> dict:
         vn_nnew = add_temporal_tendencies_to_vn_numpy(
-            vn_nnow, ddt_vn_apc_ntl1, ddt_vn_phy, z_theta_v_e, z_gradh_exner, dtime, cpd
+            vn_nnow, ddt_vn_apc_ntl1, ddt_vn_phy, z_theta_v_e, z_gradh_exner, dtime
         )
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        dtime, cpd = wpfloat("10.0"), wpfloat("10.0")
+        dtime = wpfloat("10.0")
         vn_nnow = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ddt_vn_apc_ntl1 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         ddt_vn_phy = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
@@ -74,7 +77,6 @@ class TestAddTemporalTendenciesToVn(StencilTest):
             z_gradh_exner=z_gradh_exner,
             vn_nnew=vn_nnew,
             dtime=dtime,
-            cpd=cpd,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

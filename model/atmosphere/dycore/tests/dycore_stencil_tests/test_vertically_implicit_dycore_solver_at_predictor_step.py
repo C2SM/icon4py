@@ -325,7 +325,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 theta_v_now=current_theta_v,
                 exner_now=current_exner,
                 dtime=dtime,
-                cvd_o_rd=constants.CVD_O_RD,
             ),
             (next_rho, next_exner, next_theta_v),
         )

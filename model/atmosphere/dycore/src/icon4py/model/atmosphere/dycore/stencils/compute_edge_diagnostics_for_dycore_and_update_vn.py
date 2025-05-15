@@ -66,7 +66,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 rhotheta_avd_type: Final = dycore_states.RhoThetaAdvectionType()
 horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType()
 divergence_damp_order: Final = dycore_states.DivergenceDampingOrder()
-dycore_consts: Final = constants._PhysicsConstants()
+dycore_consts: Final = constants.PhysicsConstants()
 
 
 @gtx.field_operator
@@ -278,7 +278,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             z_theta_v_e=theta_v_at_edges_on_model_levels,
             z_gradh_exner=horizontal_pressure_gradient,
             dtime=dtime,
-            cpd=dycore_consts.cpd,
         ),
         next_vn,
     )

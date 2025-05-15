@@ -1043,15 +1043,19 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def rho_ic(self):
         return self._get_field("rho_ic", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def rho_incr(self):
         return self._get_field("rho_incr", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def exner_incr(self):
         return self._get_field("exner_incr", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def vn_incr(self):
         return self._get_field("vn_incr", dims.EdgeDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def exner_dyn_incr(self):
         return self._get_field("exner_dyn_incr", dims.CellDim, dims.KDim)
 
@@ -1257,9 +1261,11 @@ class NonHydroInitVerticallyImplicitSolverSavepoint(IconSavepoint):
     def ddt_exner_phy(self):
         return self._get_field("ddt_exner_phy", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def rho_incr(self):  # TODO
         return self._get_field("rho_now", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def exner_incr(self):  # TODO
         return self._get_field("exner_now", dims.CellDim, dims.KDim)
 
@@ -1278,6 +1284,7 @@ class NonHydroInitVerticallyImplicitSolverSavepoint(IconSavepoint):
     def z_dwdz_dd(self):
         return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def exner_dyn_incr(self):
         return self._get_field("exner_dyn_incr", dims.CellDim, dims.KDim)
 
