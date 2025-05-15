@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-from typing import Optional
 
 import gt4py.next as gtx
 from gt4py.eve.utils import FrozenNamespace
@@ -141,15 +140,15 @@ class DiagnosticStateNonHydro:
     """
 
     # Analysis increments
-    rho_iau_increment: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
+    rho_iau_increment: fa.EdgeKField[float]  # moist density increment [kg/m^3]
     """
     Declared as rho_incr in ICON.
     """
-    normal_wind_iau_increment: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    normal_wind_iau_increment: fa.EdgeKField[float]  # normal velocity increment [m/s]
     """
     Declared as vn_incr in ICON.
     """
-    exner_iau_increment: Optional[fa.EdgeKField[float]]  # exner increment [- ]
+    exner_iau_increment: fa.EdgeKField[float]  # exner increment [- ]
     """
     Declared as exner_incr in ICON.
     """
@@ -264,8 +263,8 @@ class MetricStateNonHydro:
     exner_w_implicit_weight_parameter: fa.CellField[float]
     """
     Declared as vwind_impl_wgt in ICON. The implicitness parameter for exner and w in the vertically
-    implicit dycore solver. It is denoted as eta below eq. 3.20 in ICON tutorial 2023. However, 
-    it is only vwind_offctr that can be set via namelist. The actual computation of 
+    implicit dycore solver. It is denoted as eta below eq. 3.20 in ICON tutorial 2023. However,
+    it is only vwind_offctr that can be set via namelist. The actual computation of
     exner_w_implicit_weight_parameter is not shown in the tutorial.
     """
 
