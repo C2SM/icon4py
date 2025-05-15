@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.dycore_states import (  # type: ignore[import-untyped]
+from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycore import (

@@ -12,9 +12,7 @@ import pytest
 
 import icon4py.model.common.type_alias as ta
 import icon4py.model.testing.helpers as test_helpers
-from icon4py.model.atmosphere.dycore.dycore_states import (  # type: ignore[import-untyped]
-    DivergenceDampingOrder,
-)
+from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     apply_divergence_damping_and_update_vn,
 )
