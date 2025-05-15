@@ -127,7 +127,7 @@ class ImmersedBoundaryMethod:
 
         hill_x = 500.
         hill_y = 500.
-        hill_height = 0.
+        hill_height = 100.
         hill_width  = 100.
 
         grid_file = xr.open_dataset(grid_file_path)
