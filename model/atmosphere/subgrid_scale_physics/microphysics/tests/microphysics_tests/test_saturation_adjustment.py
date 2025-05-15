@@ -26,13 +26,10 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
-@pytest.mark.parametrize(
-    "location, diagnose_values", [("nwp-gscp-interface", False), ("interface-nwp", True)]
-)
+@pytest.mark.parametrize("location", ["nwp-gscp-interface", "interface-nwp"])
 def test_saturation_adjustement(
     experiment,
     location,
-    diagnose_values,
     model_top_height,
     damping_height,
     stretch_factor,

@@ -199,7 +199,7 @@ class SaturationAdjustment:
         self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
-    def _is_converged(self) -> bool:
+    def _not_converged(self) -> bool:
         return self._xp.any(
             self._newton_iteration_mask.ndarray[
                 self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
@@ -263,7 +263,7 @@ class SaturationAdjustment:
 
         # TODO (Chia Rui): this is inspired by the cpu version of the original ICON saturation_adjustment code. Consider to refactor this code when break and for loop features are ready in gt4py.
         num_iter = 0
-        while self._is_converged():
+        while self._not_converged():
             if num_iter > self.config.max_iter:
                 raise ConvergenceError(
                     f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {self._xp.abs(self._temperature1.ndarray - self._temperature2.ndarray).max()} . Please raise max_iter"
