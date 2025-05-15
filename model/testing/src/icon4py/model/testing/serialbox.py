@@ -783,7 +783,7 @@ class MetricSavepoint(IconSavepoint):
 
     def wgtfacq_e_dsl(
         self, k_level
-    ):  # TODO: @abishekg7 Simplify this after serialized data is fixed
+    ):
         ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
         k = k_level - 3
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
@@ -1166,7 +1166,7 @@ class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
     def ddt_vn_phy(self):
         return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim)
 
-    def vn_incr(self):  # TODO should be vn_incr
+    def vn_incr(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
     def bdy_divdamp(self):
@@ -1262,11 +1262,11 @@ class NonHydroInitVerticallyImplicitSolverSavepoint(IconSavepoint):
         return self._get_field("ddt_exner_phy", dims.CellDim, dims.KDim)
 
     @IconSavepoint.optionally_registered()
-    def rho_incr(self):  # TODO
+    def rho_incr(self):
         return self._get_field("rho_now", dims.CellDim, dims.KDim)
 
     @IconSavepoint.optionally_registered()
-    def exner_incr(self):  # TODO
+    def exner_incr(self):
         return self._get_field("exner_now", dims.CellDim, dims.KDim)
 
     def z_raylfac(self):
@@ -2125,7 +2125,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep: int
     ) -> NonHydroExitEdgeDiagnosticsUpdateVnSavepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-14to28-exit"]  # TODO
+            self.serializer.savepoint["solve-nonhydro-14to28-exit"]
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]
