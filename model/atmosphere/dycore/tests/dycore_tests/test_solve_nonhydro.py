@@ -1134,12 +1134,13 @@ def test_compute_perturbed_quantities_and_interpolation(
     nflat_gradp = vertical_params.nflat_gradp
 
     cell_domain = h_grid.domain(dims.CellDim)
-    start_cell_lateral_boundary = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
+    start_cell_lateral_boundary = icon_grid.start_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY)
+    )
     start_cell_lateral_boundary_level_3 = icon_grid.start_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
     start_cell_halo_level_2 = icon_grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
-    end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     end_cell_halo_level_2 = icon_grid.end_index((cell_domain(h_grid.Zone.HALO_LEVEL_2)))
 
@@ -1205,7 +1206,6 @@ def test_compute_perturbed_quantities_and_interpolation(
         start_cell_lateral_boundary=start_cell_lateral_boundary,
         start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
         start_cell_halo_level_2=start_cell_halo_level_2,
-        end_cell_end=end_cell_end,
         end_cell_halo=end_cell_halo,
         end_cell_halo_level_2=end_cell_halo_level_2,
         horizontal_start=0,
