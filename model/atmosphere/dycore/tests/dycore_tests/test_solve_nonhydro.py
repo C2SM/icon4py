@@ -2156,10 +2156,14 @@ def test_vertically_implicit_solver_at_corrector_step(
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
     assert helpers.dallclose(
         dynamical_vertical_mass_flux_at_cells_on_half_levels.asnumpy()[start_cell_nudging:, :],
-        mass_flx_ic_ref.asnumpy()[start_cell_nudging:, :], rtol=1e-10, atol=1e-12,
+        mass_flx_ic_ref.asnumpy()[start_cell_nudging:, :],
+        rtol=1e-10,
+        atol=1e-12,
     )
     assert helpers.dallclose(
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels.asnumpy(),
-        vol_flx_ic_ref.asnumpy(), rtol=1e-10, atol=1e-12,
+        vol_flx_ic_ref.asnumpy(),
+        rtol=1e-10,
+        atol=1e-12,
     )
     assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
