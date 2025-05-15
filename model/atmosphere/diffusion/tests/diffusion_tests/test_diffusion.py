@@ -445,8 +445,10 @@ def test_run_diffusion_single_step(
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
 
+    # TODO (yilu) : dtime depends on?
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
 
+    # TODO (yilu): interpolation field should be computed
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=data_alloc.flatten_first_two_dims(
             dims.CEDim,
@@ -465,6 +467,7 @@ def test_run_diffusion_single_step(
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
+    # TODO (yilu): metrics field should be computed
     metric_state = diffusion_states.DiffusionMetricState(
         mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
