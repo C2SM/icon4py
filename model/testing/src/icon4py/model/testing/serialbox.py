@@ -1354,6 +1354,12 @@ class IconNonHydroExitSavepoint(IconSavepoint):
     def mass_fl_e(self):
         return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
 
+    def mass_flx_ic(self):
+        return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
+
+    def vol_flx_ic(self):
+        return self._get_field("vol_flx_ic", dims.CellDim, dims.KDim)
+
     def mass_flx_me(self):
         return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
 

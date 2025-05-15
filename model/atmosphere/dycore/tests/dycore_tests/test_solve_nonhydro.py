@@ -1937,8 +1937,6 @@ def test_vertically_implicit_solver_at_predictor_step(
         next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
-    # TODO: cannot find exit point for this
-    # TODO: assert helpers.dallclose(dwdz_at_cells_on_model_levels.asnumpy(), z_dwdz_dd_ref.asnumpy())
     assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
 
 
@@ -2050,6 +2048,8 @@ def test_vertically_implicit_solver_at_corrector_step(
     exner_ref = sp_nh_exit.exner_new()
     theta_v_ref = sp_nh_exit.theta_v_new()
     exner_dyn_incr_ref = sp_nh_exit.exner_dyn_incr()
+    mass_flx_ic_ref = sp_nh_exit.mass_flx_ic()
+    vol_flx_ic_ref = sp_nh_exit.vol_flx_ic()
 
     geofac_div = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.geofac_div()
@@ -2154,7 +2154,11 @@ def test_vertically_implicit_solver_at_corrector_step(
         next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
-    # TODO: cannot find exit points for these two
-    # TODO: assert helpers.dallclose(dynamical_vertical_mass_flux_at_cells_on_half_levels.asnumpy(), mass_flx_ic_ref.asnumpy())
-    # TODO: assert helpers.dallclose(vol_flx_ic.asnumpy(), vol_flx_ic_ref.asnumpy())
+    assert helpers.dallclose(
+        dynamical_vertical_mass_flux_at_cells_on_half_levels.asnumpy(), mass_flx_ic_ref.asnumpy()
+    )
+    assert helpers.dallclose(
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels.asnumpy(),
+        vol_flx_ic_ref.asnumpy(),
+    )
     assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
