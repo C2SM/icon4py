@@ -495,7 +495,7 @@ def compute_perturbed_quantities_and_interpolation(
             perturbed_theta_v_at_cells_on_model_levels,
         ),
         domain={
-            dims.CellDim: (start_cell_halo_level_2, end_cell_halo_level_2),
+            dims.CellDim: (end_cell_halo, end_cell_halo_level_2),
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
