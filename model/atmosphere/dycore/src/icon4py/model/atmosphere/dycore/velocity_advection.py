@@ -61,7 +61,6 @@ class VelocityAdvection:
             self._backend
         ).compile(
             skip_compute_predictor_vertical_advection=[False, True],
-            nflatlev=[self.vertical_params.nflatlev],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self.grid.num_levels + 1)],
             offset_provider=self.grid.offset_providers,
@@ -77,7 +76,6 @@ class VelocityAdvection:
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms = compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms.with_backend(
             self._backend
         ).compile(
-            nflatlev=[self.vertical_params.nflatlev],
             nlev=[self.grid.num_levels],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self.grid.num_levels + 1)],
@@ -86,16 +84,12 @@ class VelocityAdvection:
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity = compute_maximum_cfl_and_clip_contravariant_vertical_velocity.compute_maximum_cfl_and_clip_contravariant_vertical_velocity.with_backend(
             self._backend
         ).compile(
-            vertical_start=[
-                gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1)
-            ],
             vertical_end=[gtx.int32(self.grid.num_levels - 3)],
             offset_provider={},
         )
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w = compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w.with_backend(
             self._backend
         ).compile(
-            nflatlev=[self.vertical_params.nflatlev],
             nlev=[self.grid.num_levels],
             vertical_start=[0],
             vertical_end=[self.grid.num_levels + 1],
@@ -106,7 +100,6 @@ class VelocityAdvection:
             self._backend
         ).compile(
             nlev=[gtx.int32(self.grid.num_levels)],
-            end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
             vertical_start=[0],
             vertical_end=[gtx.int32(self.grid.num_levels)],
             offset_provider=self.grid.offset_providers,
@@ -116,7 +109,6 @@ class VelocityAdvection:
             self._backend
         ).compile(
             nlev=[self.grid.num_levels],
-            end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self.grid.num_levels)],
             offset_provider=self.grid.offset_providers,
