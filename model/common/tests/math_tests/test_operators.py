@@ -5,12 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_nabla2_on_cell_k
 from icon4py.model.common.utils.data_allocation import constant_field, zero_field
@@ -21,18 +23,15 @@ from icon4py.model.testing.helpers import StencilTest
 class TestNabla2OnCell(StencilTest):
     PROGRAM = compute_nabla2_on_cell
     OUTPUTS = ("nabla2_psi_c",)
-    MARKERS = (
-        pytest.mark.requires_k_dimension,
-        pytest.mark.embedded_remap_error,
-    )
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        psi_c: np.array,
-        geofac_n2s: np.array,
-        **kwargs,
-    ) -> dict:
+        psi_c: np.ndarray,
+        geofac_n2s: np.ndarray,
+        **kwargs: Any,
+    ) -> dict[str, np.ndarray]:
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
@@ -58,15 +57,15 @@ class TestNabla2OnCellK(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        psi_c: np.array,
-        geofac_n2s: np.array,
-        **kwargs,
-    ) -> dict:
+        psi_c: np.ndarray,
+        geofac_n2s: np.ndarray,
+        **kwargs: Any,
+    ) -> dict[str, np.ndarray]:
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         psi_c = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
         nabla2_psi_c = zero_field(grid, dims.CellDim, dims.KDim)
