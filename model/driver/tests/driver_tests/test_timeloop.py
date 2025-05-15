@@ -142,7 +142,7 @@ def test_run_timeloop_single_step(
         icon4pyrun_config = config.run_config
         #---> IBM
         savepoint_path = "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
-        grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res250m.nc"
+        grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_50000m_x_5000m_res500m.nc"
         _ibm = ibm.ImmersedBoundaryMethod(
             grid=icon_grid,
             savepoint_path=savepoint_path,
