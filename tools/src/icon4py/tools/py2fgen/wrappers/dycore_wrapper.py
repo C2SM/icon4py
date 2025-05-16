@@ -337,13 +337,17 @@ def solve_nh_run(
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 
     if vn_incr is None:
-        vn_incr = granule.dummy_field_factory("vn_incr", domain=vt.domain, dtype=vt.dtype)
+        vn_incr = granule.dummy_field_factory("vn_incr", domain=vn_now.domain, dtype=vn_now.dtype)
 
     if rho_incr is None:
-        rho_incr = granule.dummy_field_factory("rho_incr", domain=vt.domain, dtype=vt.dtype)
+        rho_incr = granule.dummy_field_factory(
+            "rho_incr", domain=rho_now.domain, dtype=rho_now.dtype
+        )
 
     if exner_incr is None:
-        exner_incr = granule.dummy_field_factory("exner_incr", domain=vt.domain, dtype=vt.dtype)
+        exner_incr = granule.dummy_field_factory(
+            "exner_incr", domain=exner_now.domain, dtype=exner_now.dtype
+        )
 
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=vn_traj,

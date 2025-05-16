@@ -429,7 +429,7 @@ def solve_nh_run_wrapper(
                 vn_incr_size_1,
             ),
             on_gpu,
-            False,
+            True,
         )
 
         rho_incr = (
@@ -439,7 +439,7 @@ def solve_nh_run_wrapper(
                 rho_incr_size_1,
             ),
             on_gpu,
-            False,
+            True,
         )
 
         exner_incr = (
@@ -449,7 +449,7 @@ def solve_nh_run_wrapper(
                 exner_incr_size_1,
             ),
             on_gpu,
-            False,
+            True,
         )
 
         mass_flx_me = (
