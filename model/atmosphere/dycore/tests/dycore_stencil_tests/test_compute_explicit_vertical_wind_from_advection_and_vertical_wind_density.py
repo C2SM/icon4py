@@ -21,6 +21,28 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    w_nnow: np.ndarray,
+    ddt_w_adv_ntl1: np.ndarray,
+    ddt_w_adv_ntl2: np.ndarray,
+    z_th_ddz_exner_c: np.ndarray,
+    rho_ic: np.ndarray,
+    w_concorr_c: np.ndarray,
+    vwind_expl_wgt: np.ndarray,
+    dtime: float,
+    wgt_nnow_vel: float,
+    wgt_nnew_vel: float,
+    cpd: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    z_w_expl = w_nnow + dtime * (
+        wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+    )
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    return (z_w_expl, z_contr_w_fl_l)
+
+
 class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(StencilTest):
     PROGRAM = compute_explicit_vertical_wind_from_advection_and_vertical_wind_density
     OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
@@ -35,17 +57,29 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
         rho_ic: np.ndarray,
         w_concorr_c: np.ndarray,
         vwind_expl_wgt: np.ndarray,
-        dtime: ta.wpfloat,
-        wgt_nnow_vel: ta.wpfloat,
-        wgt_nnew_vel: ta.wpfloat,
-        cpd: ta.wpfloat,
+        dtime: float,
+        wgt_nnow_vel: float,
+        wgt_nnew_vel: float,
+        cpd: float,
         **kwargs: Any,
     ) -> dict:
-        z_w_expl = w_nnow + dtime * (
-            wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+        (
+            z_w_expl,
+            z_contr_w_fl_l,
+        ) = compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
+            connectivities=connectivities,
+            w_nnow=w_nnow,
+            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            rho_ic=rho_ic,
+            w_concorr_c=w_concorr_c,
+            vwind_expl_wgt=vwind_expl_wgt,
+            dtime=dtime,
+            wgt_nnow_vel=wgt_nnow_vel,
+            wgt_nnew_vel=wgt_nnew_vel,
+            cpd=cpd,
         )
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-        z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture
