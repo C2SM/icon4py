@@ -45,7 +45,6 @@ def create_vertical_params(vertical_config, grid_savepoint):
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
@@ -95,7 +94,6 @@ def test_verify_velocity_init_against_savepoint(
     assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
