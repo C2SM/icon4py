@@ -619,9 +619,9 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
         vertical_config.SLEVE_decay_exponent,
     )
     vertical_coordinate[:, k] = (
-        vct_a[k][np.newaxis, :]
-        + smoothed_topography[:, np.newaxis] * z_fac1
-        + small_scale_topography[:, np.newaxis] * z_fac2
+        vct_a[k][array_ns.newaxis, :]
+        + smoothed_topography[:, array_ns.newaxis] * z_fac1
+        + small_scale_topography[:, array_ns.newaxis] * z_fac2
     )
 
     return vertical_coordinate
@@ -700,12 +700,12 @@ def _check_and_correct_layer_thickness(
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 2]
             - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
         ) / (stretching_factor * (1.0 + stretching_factor * (1.0 + stretching_factor)))
-        vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]] = np.maximum(
+        vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]] = array_ns.maximum(
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]],
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
             + delta_z3 * stretching_factor,
         )
-        vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1] = np.maximum(
+        vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1] = array_ns.maximum(
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1],
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]]
             + delta_z3 * stretching_factor**2,
@@ -782,9 +782,18 @@ def compute_vertical_coordinate(
         array_ns=array_ns,
     )
     vertical_coordinate = _check_and_correct_layer_thickness(
-        vertical_coordinate, vct_a, vertical_config, grid, array_ns=array_ns
+        vertical_coordinate=vertical_coordinate,
+        vct_a=vct_a,
+        vertical_config=vertical_config,
+        grid=grid,
+        array_ns=array_ns,
     )
 
-    _check_flatness_of_flat_level(vertical_coordinate, vct_a, vertical_geometry, array_ns=array_ns)
+    _check_flatness_of_flat_level(
+        vertical_coordinate=vertical_coordinate,
+        vct_a=vct_a,
+        vertical_geometry=vertical_geometry,
+        array_ns=array_ns,
+    )
 
     return vertical_coordinate

@@ -33,7 +33,7 @@ def test_topography_smoothing_with_serialized_data(
 
     num_iterations = 25
     topography = topography_savepoint.topo_c()
-    topography_smoothed_verif_np = topography_savepoint.topo_smt_c().ndarray
+    topography_smoothed_verif_np = topography_savepoint.topo_smt_c().asnumpy()
 
     topography_smoothed = topo.smooth_topography(
         topography=topography,
@@ -45,5 +45,5 @@ def test_topography_smoothing_with_serialized_data(
     )
 
     assert helpers.dallclose(
-        topography_smoothed_verif_np, topography_smoothed.ndarray, atol=1.0e-14
+        topography_smoothed_verif_np, topography_smoothed.asnumpy(), atol=1.0e-14
     )
