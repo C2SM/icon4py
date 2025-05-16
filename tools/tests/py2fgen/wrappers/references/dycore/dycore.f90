@@ -95,6 +95,12 @@ module dycore
                                     vn_incr, &
                                     vn_incr_size_0, &
                                     vn_incr_size_1, &
+                                    rho_incr, &
+                                    rho_incr_size_0, &
+                                    rho_incr_size_1, &
+                                    exner_incr, &
+                                    exner_incr_size_0, &
+                                    exner_incr_size_1, &
                                     mass_flx_me, &
                                     mass_flx_me_size_0, &
                                     mass_flx_me_size_1, &
@@ -290,6 +296,18 @@ module dycore
          integer(c_int), value :: vn_incr_size_0
 
          integer(c_int), value :: vn_incr_size_1
+
+         type(c_ptr), value, target :: rho_incr
+
+         integer(c_int), value :: rho_incr_size_0
+
+         integer(c_int), value :: rho_incr_size_1
+
+         type(c_ptr), value, target :: exner_incr
+
+         integer(c_int), value :: exner_incr_size_0
+
+         integer(c_int), value :: exner_incr_size_1
 
          type(c_ptr), value, target :: mass_flx_me
 
@@ -906,6 +924,8 @@ contains
                            vn_ie, &
                            vt, &
                            vn_incr, &
+                           rho_incr, &
+                           exner_incr, &
                            mass_flx_me, &
                            mass_flx_ic, &
                            vol_flx_ic, &
@@ -975,7 +995,11 @@ contains
 
       real(c_double), dimension(:, :), target :: vt
 
-      real(c_double), dimension(:, :), target :: vn_incr
+      real(c_double), dimension(:, :), pointer :: vn_incr
+
+      real(c_double), dimension(:, :), pointer :: rho_incr
+
+      real(c_double), dimension(:, :), pointer :: exner_incr
 
       real(c_double), dimension(:, :), target :: mass_flx_me
 
@@ -1115,6 +1139,14 @@ contains
 
       integer(c_int) :: vn_incr_size_1
 
+      integer(c_int) :: rho_incr_size_0
+
+      integer(c_int) :: rho_incr_size_1
+
+      integer(c_int) :: exner_incr_size_0
+
+      integer(c_int) :: exner_incr_size_1
+
       integer(c_int) :: mass_flx_me_size_0
 
       integer(c_int) :: mass_flx_me_size_1
@@ -1133,6 +1165,18 @@ contains
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
+
+      type(c_ptr) :: vn_incr_ptr
+
+      type(c_ptr) :: rho_incr_ptr
+
+      type(c_ptr) :: exner_incr_ptr
+
+      vn_incr_ptr = c_null_ptr
+
+      rho_incr_ptr = c_null_ptr
+
+      exner_incr_ptr = c_null_ptr
 
       !$acc host_data use_device(rho_now)
       !$acc host_data use_device(rho_new)
@@ -1162,11 +1206,13 @@ contains
       !$acc host_data use_device(grf_tend_vn)
       !$acc host_data use_device(vn_ie)
       !$acc host_data use_device(vt)
-      !$acc host_data use_device(vn_incr)
       !$acc host_data use_device(mass_flx_me)
       !$acc host_data use_device(mass_flx_ic)
       !$acc host_data use_device(vol_flx_ic)
       !$acc host_data use_device(vn_traj)
+      !$acc host_data use_device(vn_incr) if(associated(vn_incr))
+      !$acc host_data use_device(rho_incr) if(associated(rho_incr))
+      !$acc host_data use_device(exner_incr) if(associated(exner_incr))
 
 #ifdef _OPENACC
       on_gpu = .True.
@@ -1258,9 +1304,6 @@ contains
       vt_size_0 = SIZE(vt, 1)
       vt_size_1 = SIZE(vt, 2)
 
-      vn_incr_size_0 = SIZE(vn_incr, 1)
-      vn_incr_size_1 = SIZE(vn_incr, 2)
-
       mass_flx_me_size_0 = SIZE(mass_flx_me, 1)
       mass_flx_me_size_1 = SIZE(mass_flx_me, 2)
 
@@ -1272,6 +1315,24 @@ contains
 
       vn_traj_size_0 = SIZE(vn_traj, 1)
       vn_traj_size_1 = SIZE(vn_traj, 2)
+
+      if (associated(vn_incr)) then
+         vn_incr_ptr = c_loc(vn_incr)
+         vn_incr_size_0 = SIZE(vn_incr, 1)
+         vn_incr_size_1 = SIZE(vn_incr, 2)
+      end if
+
+      if (associated(rho_incr)) then
+         rho_incr_ptr = c_loc(rho_incr)
+         rho_incr_size_0 = SIZE(rho_incr, 1)
+         rho_incr_size_1 = SIZE(rho_incr, 2)
+      end if
+
+      if (associated(exner_incr)) then
+         exner_incr_ptr = c_loc(exner_incr)
+         exner_incr_size_0 = SIZE(exner_incr, 1)
+         exner_incr_size_1 = SIZE(exner_incr, 2)
+      end if
 
       rc = solve_nh_run_wrapper(rho_now=c_loc(rho_now), &
                                 rho_now_size_0=rho_now_size_0, &
@@ -1357,9 +1418,15 @@ contains
                                 vt=c_loc(vt), &
                                 vt_size_0=vt_size_0, &
                                 vt_size_1=vt_size_1, &
-                                vn_incr=c_loc(vn_incr), &
+                                vn_incr=vn_incr_ptr, &
                                 vn_incr_size_0=vn_incr_size_0, &
                                 vn_incr_size_1=vn_incr_size_1, &
+                                rho_incr=rho_incr_ptr, &
+                                rho_incr_size_0=rho_incr_size_0, &
+                                rho_incr_size_1=rho_incr_size_1, &
+                                exner_incr=exner_incr_ptr, &
+                                exner_incr_size_0=exner_incr_size_0, &
+                                exner_incr_size_1=exner_incr_size_1, &
                                 mass_flx_me=c_loc(mass_flx_me), &
                                 mass_flx_me_size_0=mass_flx_me_size_0, &
                                 mass_flx_me_size_1=mass_flx_me_size_1, &
@@ -1379,6 +1446,8 @@ contains
                                 ndyn_substeps=ndyn_substeps, &
                                 idyn_timestep=idyn_timestep, &
                                 on_gpu=on_gpu)
+      !$acc end host_data
+      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

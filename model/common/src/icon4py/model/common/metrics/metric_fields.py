@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from types import ModuleType
+from typing import Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -29,7 +30,7 @@ from gt4py.next import (
 )
 from gt4py.next.ffront.experimental import concat_where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_options
 from icon4py.model.common.dimension import (
     C2E,
     C2E2C,
@@ -56,6 +57,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 """
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """
+
+
+rayleigh_damping_options: Final = model_options.RayleighType()
 
 
 # TODO(@nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
@@ -218,8 +222,6 @@ def _compute_rayleigh_w(
     vct_a: fa.KField[wpfloat],
     damping_height: wpfloat,
     rayleigh_type: gtx.int32,
-    rayleigh_classic: gtx.int32,
-    rayleigh_klemp: gtx.int32,
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
@@ -227,13 +229,13 @@ def _compute_rayleigh_w(
     rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
-    if rayleigh_type == rayleigh_classic:
+    if rayleigh_type == rayleigh_damping_options.CLASSIC:
         rayleigh_w = (
             rayleigh_coeff
             * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
         )
 
-    elif rayleigh_type == rayleigh_klemp:
+    elif rayleigh_type == rayleigh_damping_options.KLEMP:
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )
@@ -246,8 +248,6 @@ def compute_rayleigh_w(
     vct_a: fa.KField[wpfloat],
     damping_height: wpfloat,
     rayleigh_type: gtx.int32,
-    rayleigh_classic: gtx.int32,
-    rayleigh_klemp: gtx.int32,
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
@@ -276,8 +276,6 @@ def compute_rayleigh_w(
         vct_a,
         damping_height,
         rayleigh_type,
-        rayleigh_classic,
-        rayleigh_klemp,
         rayleigh_coeff,
         vct_a_1,
         pi_const,
@@ -397,33 +395,35 @@ def compute_ddxt_z_half_e(
 
 
 @field_operator
-def _compute_vwind_expl_wgt(vwind_impl_wgt: fa.CellField[wpfloat]) -> fa.CellField[wpfloat]:
-    return 1.0 - vwind_impl_wgt
+def _compute_exner_w_explicit_weight_parameter(
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
+) -> fa.CellField[wpfloat]:
+    return 1.0 - exner_w_implicit_weight_parameter
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_vwind_expl_wgt(
-    vwind_impl_wgt: fa.CellField[wpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
+def compute_exner_w_explicit_weight_parameter(
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
     """
-    Compute vwind_expl_wgt.
+    Compute exner_w_explicit_weight_parameter.
 
     See mo_vertical_grid.f90
 
     Args:
-        vwind_impl_wgt: offcentering in vertical mass flux
-        vwind_expl_wgt: (output) 1 - of vwind_impl_wgt
+        exner_w_implicit_weight_parameter: offcentering in vertical mass flux
+        exner_w_explicit_weight_parameter: (output) 1 - exner_w_implicit_weight_parameter
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
 
     """
 
-    _compute_vwind_expl_wgt(
-        vwind_impl_wgt=vwind_impl_wgt,
-        out=vwind_expl_wgt,
+    _compute_exner_w_explicit_weight_parameter(
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
+        out=exner_w_explicit_weight_parameter,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
@@ -1079,7 +1079,7 @@ def compute_theta_exner_ref_mc(
     )
 
 
-def compute_vwind_impl_wgt(
+def compute_exner_w_implicit_weight_parameter(
     c2e: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
@@ -1103,7 +1103,7 @@ def compute_vwind_impl_wgt(
     offctr = array_ns.minimum(
         factor, array_ns.maximum(vwind_offctr, array_ns.maximum(maxslope, diff))
     )
-    vwind_impl_wgt = 0.5 + offctr
+    exner_w_implicit_weight_parameter = 0.5 + offctr
 
     k_start = max(0, nlev - 9)
 
@@ -1112,7 +1112,11 @@ def compute_vwind_impl_wgt(
     for jk in range(k_start, nlev):
         zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
         index_for_k = np.where(zdiff2_sliced < 0.6)[0]
-        max_value_k = np.maximum(1.2 - zdiff2_sliced, vwind_impl_wgt[horizontal_start_cell:])
-        vwind_impl_wgt[index_for_k + horizontal_start_cell] = max_value_k[index_for_k]
+        max_value_k = np.maximum(
+            1.2 - zdiff2_sliced, exner_w_implicit_weight_parameter[horizontal_start_cell:]
+        )
+        exner_w_implicit_weight_parameter[index_for_k + horizontal_start_cell] = max_value_k[
+            index_for_k
+        ]
 
-    return vwind_impl_wgt
+    return exner_w_implicit_weight_parameter
