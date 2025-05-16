@@ -9,7 +9,7 @@
 import sys
 from typing import Final
 
-from gt4py.eve.utils import FrozenNamespace
+from gt4py.eve import utils as eve_utils
 
 from icon4py.model.common import type_alias as ta
 
@@ -85,17 +85,20 @@ DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
 
-class PhysicsConstants(FrozenNamespace[ta.wpfloat]):
+class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     """
     Constants used in gt4py stencils.
     """
 
     rd = GAS_CONSTANT_DRY_AIR
     rv = GAS_CONSTANT_WATER_VAPOR
+    rv_o_rd_minus_1 = RV_O_RD_MINUS_1
     cvd = SPECIFIC_HEAT_CONSTANT_VOLUME
     cpd = SPECIFIC_HEAT_CONSTANT_PRESSURE
     rd_o_cpd = RD_O_CPD
     rd_o_cvd = RD_O_CVD
+    cpd_o_rd = CPD_O_RD
     cvd_o_rd = CVD_O_RD
     rd_o_p0ref = RD_O_P0REF
     grav_o_cpd = GRAV_O_CPD
+    grav_o_rd = GRAV_O_RD
