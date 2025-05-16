@@ -309,6 +309,7 @@ def test_compute_vertical_coordinate(
     experiment,
     backend,
 ):
+    xp = data_alloc.array_ns(backend)
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -323,12 +324,14 @@ def test_compute_vertical_coordinate(
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
         topography = topography_savepoint.topo_c()
     elif experiment == dt_utils.GLOBAL_EXPERIMENT:
-        topography = gtx.zeros(domain={dims.CellDim: range(icon_grid.num_cells)}, dtype=ta.wpfloat)
+        topography = data_alloc.zero_field(
+            icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
+        )
     else:
         raise ValueError(f"Unsupported experiment: {experiment}")
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
-    array_ns = data_alloc.array_ns(backend)
+
     vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate(
         vct_a=vct_a.ndarray,
         topography=topography.ndarray,
@@ -337,7 +340,7 @@ def test_compute_vertical_coordinate(
         grid=icon_grid,
         vertical_geometry=vertical_geometry,
         backend=backend,
-        array_ns=array_ns,
+        array_ns=xp,
     )
 
     assert helpers.dallclose(
