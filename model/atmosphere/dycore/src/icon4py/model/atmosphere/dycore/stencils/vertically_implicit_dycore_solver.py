@@ -345,7 +345,6 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     jk_start: gtx.int32,
     starting_vertical_index_for_3d_divdamp: gtx.int32,
     kstart_moist: gtx.int32,
-    n_lev: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -358,7 +357,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
     next_w = (
         concat_where(
-            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1) & (dims.KDim < n_lev),
+            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w_1=w_1,
@@ -371,7 +370,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     )
 
     next_rho, next_exner, next_theta_v = concat_where(
-        (jk_start <= dims.KDim) & (dims.KDim < n_lev),
+        jk_start <= dims.KDim,
         _compute_results_for_thermodynamic_variables(
             z_rho_expl=rho_explicit_term,
             vwind_impl_wgt=exner_w_implicit_weight_parameter,
@@ -393,7 +392,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     # compute dw/dz for divergence damping term
     dwdz_at_cells_on_model_levels = (
         concat_where(
-            (starting_vertical_index_for_3d_divdamp <= dims.KDim) & (dims.KDim < n_lev),
+            (starting_vertical_index_for_3d_divdamp <= dims.KDim),
             _compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=inv_ddqz_z_full,
                 w=next_w,
@@ -623,7 +622,6 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     kstart_moist: gtx.int32,
     at_first_substep: bool,
     at_last_substep: bool,
-    n_lev: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -637,7 +635,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
     next_w = (
         concat_where(
-            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1) & (dims.KDim < n_lev),
+            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w_1=w_1,
@@ -650,7 +648,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     )
 
     next_rho, next_exner, next_theta_v = concat_where(
-        (jk_start <= dims.KDim) & (dims.KDim < n_lev),
+        jk_start <= dims.KDim,
         _compute_results_for_thermodynamic_variables(
             z_rho_expl=rho_explicit_term,
             vwind_impl_wgt=exner_w_implicit_weight_parameter,
@@ -869,7 +867,6 @@ def vertically_implicit_solver_at_predictor_step(
         jk_start=jk_start,
         starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         kstart_moist=kstart_moist,
-        n_lev=vertical_end - 1,
         out=(
             next_w,
             next_rho,
@@ -1029,7 +1026,6 @@ def vertically_implicit_solver_at_corrector_step(
         kstart_moist=kstart_moist,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
-        n_lev=vertical_end - 1,
         out=(
             next_w,
             next_rho,
