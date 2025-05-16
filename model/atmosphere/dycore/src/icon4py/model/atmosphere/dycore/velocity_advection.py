@@ -76,7 +76,7 @@ class VelocityAdvection:
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms = compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms.with_backend(
             self._backend
         ).compile(
-            nlev=[self.grid.num_levels],
+            #nlev=[self.grid.num_levels],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self.grid.num_levels + 1)],
             offset_provider=self.grid.offset_providers,
