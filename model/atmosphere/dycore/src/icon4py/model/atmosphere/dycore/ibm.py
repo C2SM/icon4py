@@ -64,7 +64,7 @@ class ImmersedBoundaryMethod:
         grid: icon_grid.IconGrid,
         savepoint_path: str,
         grid_file_path: str,
-        backend: gtx_backend.Backend = gtx.gtfn_cpu,
+        backend: gtx_backend.Backend,
     ) -> None:
         """
         Create masks for the immersed boundary method.
@@ -86,16 +86,16 @@ class ImmersedBoundaryMethod:
             full_cell_mask_np = half_cell_mask_np[:, :-1]
 
             c2e = grid.connectivities[dims.C2EDim]
-            for k in range(grid.num_levels):
-                full_edge_mask_np[c2e[xp.where(full_cell_mask_np[:,k])], k] = True
+            for k in range(grid.num_levels-1,0,-1):
+                full_edge_mask_np[xp.unique(c2e[xp.where(full_cell_mask_np[:,k])[0]]), k] = True
 
             c2v = grid.connectivities[dims.C2VDim]
             for k in range(grid.num_levels):
-                full_vertex_mask_np[c2v[xp.where(full_cell_mask_np[:,k])], k] = True
+                full_vertex_mask_np[xp.unique(c2v[xp.where(full_cell_mask_np[:,k])[0]]), k] = True
 
             c2e2c = grid.connectivities[dims.C2E2CDim]
             for k in range(grid.num_levels):
-                neigh_full_cell_mask_np[c2e2c[xp.where(full_cell_mask_np[:,k])], k] = True
+                neigh_full_cell_mask_np[xp.unique(c2e2c[xp.where(full_cell_mask_np[:,k])[0]]), k] = True
 
         self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
         self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
