@@ -173,6 +173,12 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
+def topography_savepoint(data_provider):  # F811
+    """Load data from ICON external parameters savepoint."""
+    return data_provider.from_topography_savepoint()
+
+
+@pytest.fixture
 def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_init):  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
