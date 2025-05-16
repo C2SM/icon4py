@@ -30,6 +30,10 @@ jobs:
               with:
                 enable-cache: true
                 cache-dependency-glob: "uv.lock"
+                activate-environment: true
+
+            - name: Install icon4py namespace packages
+              run: uv sync --extra all
 
             - name: "Run pre-commit"
               uses: pre-commit/action@v3.0.1
