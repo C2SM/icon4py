@@ -20,7 +20,7 @@ Fortran granule interfaces:
 import cProfile
 import dataclasses
 import pstats
-from typing import Optional
+from typing import Callable, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -43,6 +43,7 @@ logger = setup_logger(__name__)
 class SolveNonhydroGranule:
     solve_nh: solve_nonhydro.SolveNonhydro
     backend: gtx_backend.Backend
+    dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
@@ -283,6 +284,7 @@ def solve_nh_init(
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
         backend=actual_backend,
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(actual_backend),
     )
 
 
@@ -316,9 +318,9 @@ def solve_nh_run(
     grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    vn_incr: Optional[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64]],
+    rho_incr: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    exner_incr: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -333,6 +335,15 @@ def solve_nh_run(
     global granule
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
+
+    if vn_incr is None:
+        vn_incr = granule.dummy_field_factory("vn_incr", domain=vt.domain, dtype=vt.dtype)
+
+    if rho_incr is None:
+        rho_incr = granule.dummy_field_factory("rho_incr", domain=vt.domain, dtype=vt.dtype)
+
+    if exner_incr is None:
+        exner_incr = granule.dummy_field_factory("exner_incr", domain=vt.domain, dtype=vt.dtype)
 
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=vn_traj,
