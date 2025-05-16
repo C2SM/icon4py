@@ -92,6 +92,7 @@ def test_verify_velocity_init_against_savepoint(
     assert helpers.dallclose(velocity_advection.cfl_clipping.asnumpy(), 0.0)
     assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
 
+
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(

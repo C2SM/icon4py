@@ -455,12 +455,6 @@ class SolveNonhydro:
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider={},
         )
-        self._compute_approx_of_2nd_vertical_derivative_of_exner = (
-            compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(self._backend).compile(
-                vertical_end=[gtx.int32(self._grid.num_levels)],
-                offset_provider=self._grid.offset_providers,
-            )
-        )
         self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
                 self._backend
@@ -494,6 +488,8 @@ class SolveNonhydro:
             igradp_method=[self._config.igradp_method],
             nflatlev=[self._vertical_params.nflatlev],
             nflat_gradp=[self._vertical_params.nflat_gradp],
+            horizontal_start=[gtx.int32(0)],
+            horizontal_end=[gtx.int32(self._grid.num_edges)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.offset_providers,
@@ -508,6 +504,8 @@ class SolveNonhydro:
             starting_vertical_index_for_3d_divdamp=[
                 self._params.starting_vertical_index_for_3d_divdamp
             ],
+            horizontal_start=[gtx.int32(0)],
+            horizontal_end=[gtx.int32(self._grid.num_edges)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.offset_providers,
@@ -544,6 +542,7 @@ class SolveNonhydro:
         self._add_analysis_increments_from_data_assimilation = (
             add_analysis_increments_from_data_assimilation.with_backend(self._backend)
         ).compile(
+            iau_wgt_dyn=[self._config.iau_wgt_dyn],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider={},
@@ -655,7 +654,10 @@ class SolveNonhydro:
         self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
             self._backend
         ).compile(
-            nflatlev=[self._vertical_params.nflatlev], offset_provider=self._grid.offset_providers
+            nflatlev_startindex=[self._vertical_params.nflatlev],
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels)],
+            offset_provider=self._grid.offset_providers,
         )
         self._predictor_stencils_37_38 = (
             nhsolve_stencils.predictor_stencils_37_38.with_backend(self._backend)
@@ -664,16 +666,30 @@ class SolveNonhydro:
         )
         self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend).compile(
             nflatlev_startindex_plus1=[gtx.int32(self._vertical_params.nflatlev + 1)],
+            nlev=[gtx.int32(self._grid.num_levels)],
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels + 1)],
             offset_provider=self._grid.offset_providers,
         )
         self._stencils_43_44_45_45b = nhsolve_stencils.stencils_43_44_45_45b.with_backend(
             self._backend
-        ).compile(offset_provider={})
+        ).compile(
+            nlev=[gtx.int32(self._grid.num_levels)],
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels + 1)],
+            offset_provider={},
+        )
         self._stencils_47_48_49 = nhsolve_stencils.stencils_47_48_49.with_backend(
             self._backend
-        ).compile(offset_provider=self._grid.offset_providers)
+        ).compile(
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels + 1)],
+            offset_provider=self._grid.offset_providers,
+        )
         self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend).compile(
-            offset_provider={}
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels + 1)],
+            offset_provider={},
         )
         self._en_smag_fac_for_zero_nshift = smagorinsky.en_smag_fac_for_zero_nshift.with_backend(
             self._backend
@@ -683,7 +699,12 @@ class SolveNonhydro:
         ).compile(offset_provider={})
         self._stencils_42_44_45_45b = nhsolve_stencils.stencils_42_44_45_45b.with_backend(
             self._backend
-        ).compile(offset_provider={})
+        ).compile(
+            nlev=[gtx.int32(self._grid.num_levels)],
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels + 1)],
+            offset_provider={},
+        )
 
         if self._config.divdamp_type == 32:
             xp = data_alloc.import_array_ns(self._backend)
