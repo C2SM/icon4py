@@ -508,14 +508,6 @@ icon4py.model.atmosphere.dycore.stencils.init\_two\_cell\_kdim\_fields\_with\_ze
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.init\_two\_cell\_kdim\_fields\_with\_zero\_wp module
----------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_wp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.init\_two\_edge\_kdim\_fields\_with\_zero\_wp module
 ---------------------------------------------------------------------------------------------
 
@@ -672,6 +664,14 @@ icon4py.model.atmosphere.dycore.stencils.update\_wind module
 ------------------------------------------------------------
 
 .. automodule:: icon4py.model.atmosphere.dycore.stencils.update_wind
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.stencils.vertically\_implicit\_dycore\_solver module
+------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver
    :members:
    :undoc-members:
    :show-inheritance:
