@@ -22,7 +22,7 @@ DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels
 DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
 DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
 INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
-SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divdamp"
+SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divergence_damping"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
 COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
 COEFF2_DWDZ: Final[str] = "coeff2_dwdz"
@@ -35,8 +35,12 @@ DDXT_Z_HALF_E: Final[str] = "ddxt_z_half_e"
 DDXN_Z_HALF_E: Final[str] = "ddxn_z_half_e"
 DDXN_Z_FULL: Final[str] = "ddxn_z_full"
 DDXT_Z_FULL: Final[str] = "ddxt_z_full"
-VWIND_IMPL_WGT: Final[str] = "vwind_impl_wgt"
-VWIND_EXPL_WGT: Final[str] = "vwind_expl_wgt"
+EXNER_W_IMPLICIT_WEIGHT_PARAMETER: Final[
+    str
+] = "implicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[
+    str
+] = "explicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
 EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
@@ -214,17 +218,17 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddxt_z_full",
         dtype=ta.wpfloat,
     ),
-    VWIND_IMPL_WGT: dict(
-        standard_name=VWIND_IMPL_WGT,
-        long_name="vwind_impl_wgt",
+    EXNER_W_IMPLICIT_WEIGHT_PARAMETER: dict(
+        standard_name="exner_w_implicit_weight_parameter",
+        long_name="implicitness_weight_for_exner_and_w_in_vertical_dycore_solver",
         units="",
         dims=(dims.CellDim,),
         icon_var_name="vwind_impl_wgt",
         dtype=ta.wpfloat,
     ),
-    VWIND_EXPL_WGT: dict(
-        standard_name=VWIND_EXPL_WGT,
-        long_name="vwind_expl_wgt",
+    EXNER_W_EXPLICIT_WEIGHT_PARAMETER: dict(
+        standard_name="exner_w_explicit_weight_parameter",
+        long_name="explicitness_weight_for_exner_and_w_in_vertical_dycore_solver",
         units="",
         dims=(dims.CellDim,),
         icon_var_name="vwind_expl_wgt",

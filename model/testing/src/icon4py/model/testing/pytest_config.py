@@ -20,6 +20,7 @@ from icon4py.model.testing.datatest_utils import (
 from icon4py.model.testing.helpers import apply_markers
 
 
+TEST_LEVELS = ("any", "unit", "integration")
 DEFAULT_GRID: Final[str] = "simple_grid"
 VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
 
@@ -70,6 +71,10 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
     )
+    config.addinivalue_line(
+        "markers",
+        "level(name): marks test as unit or integration tests, mostly applicable where both are available",
+    )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
@@ -79,19 +84,34 @@ def pytest_configure(config):
         backend_option = config.getoption("--backend")
         _check_backend_validity(backend_option)
 
+    # Handle datatest options: --datatest-only  and --datatest-skip
+    if m_option := config.getoption("-m", []):
+        m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
+    if config.getoption("--datatest-only"):
+        config.option.markexpr = " and ".join(["datatest", *m_option])
+
+    if config.getoption("--datatest-skip"):
+        config.option.markexpr = " and ".join(["not datatest", *m_option])
+
 
 def pytest_addoption(parser):
     """Add custom commandline options for pytest."""
     try:
-        parser.addoption(
-            "--datatest",
+        datatest = parser.getgroup("datatest", "Options for data testing")
+        datatest.addoption(
+            "--datatest-skip",
             action="store_true",
-            help="Run tests that use serialized data, can be slow since data might be downloaded from online storage.",
             default=False,
+            help="Skip all data tests",
+        )
+        datatest.addoption(
+            "--datatest-only",
+            action="store_true",
+            default=False,
+            help="Run only data tests",
         )
     except ValueError:
         pass
-
     try:
         parser.addoption(
             "--backend",
@@ -118,6 +138,17 @@ def pytest_addoption(parser):
             action="store_true",
             help="Switch unit tests from double to mixed-precision",
             default=False,
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--level",
+            action="store",
+            choices=TEST_LEVELS,
+            help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
+            default="any",
         )
     except ValueError:
         pass
@@ -149,6 +180,23 @@ def _get_grid(
             return simple_grid.SimpleGrid(selected_backend)
 
 
+def pytest_collection_modifyitems(config, items):
+    test_level = config.getoption("--level")
+    if test_level == "any":
+        return
+    for item in items:
+        if (marker := item.get_closest_marker("level")) is not None:
+            assert all(
+                level in TEST_LEVELS for level in marker.args
+            ), f"Invalid test level argument on function '{item.name}' - possible values are {TEST_LEVELS}"
+            if test_level not in marker.args:
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
+                    )
+                )
+
+
 def pytest_runtest_setup(item):
     backend = model_backends.BACKENDS[item.config.getoption("--backend")]
     if "grid" in item.funcargs:
@@ -160,7 +208,6 @@ def pytest_runtest_setup(item):
         item.own_markers,
         grid,
         backend,
-        is_datatest=item.config.getoption("--datatest"),
     )
 
 

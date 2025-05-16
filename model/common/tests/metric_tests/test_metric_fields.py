@@ -22,6 +22,7 @@ edge_domain = horizontal.domain(dims.EdgeDim)
 vertex_domain = horizontal.domain(dims.VertexDim)
 
 
+@pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
@@ -50,6 +51,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     assert testing_helpers.dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
@@ -72,6 +74,7 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
     assert testing_helpers.dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_scaling_factor_for_3d_divdamp(
@@ -99,6 +102,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
     )
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savepoint, backend):
@@ -115,8 +119,6 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
         vct_a=grid_savepoint.vct_a(),
         damping_height=damping_height,
         rayleigh_type=rayleigh_type,
-        rayleigh_classic=constants.RayleighType.CLASSIC,
-        rayleigh_klemp=constants.RayleighType.KLEMP,
         rayleigh_coeff=rayleigh_coeff,
         vct_a_1=vct_a_1,
         pi_const=math.pi,
@@ -128,6 +130,7 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
     assert testing_helpers.dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backend):
@@ -158,24 +161,30 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
     assert testing_helpers.dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_ref.asnumpy())
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
-    vwind_expl_wgt_full = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
+def test_compute_exner_w_explicit_weight_parameter(icon_grid, metrics_savepoint, backend):
+    exner_w_explicit_weight_parameter_full = data_alloc.zero_field(
+        icon_grid, dims.CellDim, backend=backend
+    )
     vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
-    vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
+    exner_w_implicit_weight_parameter = metrics_savepoint.vwind_impl_wgt()
 
-    mf.compute_vwind_expl_wgt.with_backend(backend)(
-        vwind_impl_wgt=vwind_impl_wgt,
-        vwind_expl_wgt=vwind_expl_wgt_full,
+    mf.compute_exner_w_explicit_weight_parameter.with_backend(backend)(
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
+        exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter_full,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    assert testing_helpers.dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
+    assert testing_helpers.dallclose(
+        exner_w_explicit_weight_parameter_full.asnumpy(), vwind_expl_wgt_ref.asnumpy()
+    )
 
 
+@pytest.mark.level("unit")
 @pytest.mark.infinite_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
@@ -200,9 +209,10 @@ def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_save
     assert testing_helpers.dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.GLOBAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT])
-def test_compute_vwind_impl_wgt(
+def test_compute_exner_w_implicit_weight_parameter(
     icon_grid, experiment, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
     z_ifc = metrics_savepoint.z_ifc()
@@ -261,7 +271,7 @@ def test_compute_vwind_impl_wgt(
     dual_edge_length = grid_savepoint.dual_edge_length()
     vwind_offctr = 0.2 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.15
     xp = data_alloc.import_array_ns(backend)
-    vwind_impl_wgt = mf.compute_vwind_impl_wgt(
+    exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
         c2e=icon_grid.connectivities[dims.C2EDim],
         vct_a=grid_savepoint.vct_a().ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
@@ -274,10 +284,11 @@ def test_compute_vwind_impl_wgt(
         array_ns=xp,
     )
     assert testing_helpers.dallclose(
-        vwind_impl_wgt_ref.asnumpy(), data_alloc.as_numpy(vwind_impl_wgt)
+        vwind_impl_wgt_ref.asnumpy(), data_alloc.as_numpy(exner_w_implicit_weight_parameter)
     )
 
 
+# TODO (@halungge) add test in test_metric_factory.py?
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -298,6 +309,7 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
     assert testing_helpers.dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
 
 
+@pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.skip_value_error
 @pytest.mark.datatest
@@ -419,6 +431,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
     assert testing_helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_horizontal_mask_for_3d_divdamp(
@@ -443,6 +456,7 @@ def test_compute_horizontal_mask_for_3d_divdamp(
     )
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
