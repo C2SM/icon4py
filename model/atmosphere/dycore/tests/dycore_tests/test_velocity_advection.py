@@ -45,6 +45,7 @@ def create_vertical_params(vertical_config, grid_savepoint):
     )
 
 
+@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
@@ -66,8 +67,6 @@ def test_verify_velocity_init_against_savepoint(
     experiment,
     backend,
 ):
-    if backend is None:
-        pytest.skip("_compiled_programs does not support embedded")
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
     vertical_config = v_grid.VerticalGridConfig(
@@ -93,7 +92,7 @@ def test_verify_velocity_init_against_savepoint(
     assert helpers.dallclose(velocity_advection.cfl_clipping.asnumpy(), 0.0)
     assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
 
-
+@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
@@ -102,15 +101,30 @@ def test_verify_velocity_init_against_savepoint(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
-    if backend is None:
-        pytest.skip("_compiled_programs does not support embedded")
+def test_scale_factors_by_dtime(
+    savepoint_velocity_init,
+    icon_grid,
+    grid_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    backend,
+):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=None,
         interpolation_state=None,
-        vertical_params=None,
+        vertical_params=vertical_params,
         edge_params=None,
         owner_mask=None,
         backend=backend,

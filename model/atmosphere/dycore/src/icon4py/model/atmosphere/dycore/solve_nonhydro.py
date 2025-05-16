@@ -487,12 +487,11 @@ class SolveNonhydro:
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
             self._backend
         ).compile(
-            # cpd=[constants.CPD],
-            # iau_wgt_dyn=[self._config.iau_wgt_dyn],
-            # is_iau_active=[self._config.is_iau_active],
-            # limited_area=[self._grid.limited_area],
-            # iadv_rhotheta=[self._config.iadv_rhotheta],
-            # igradp_method=[self._config.igradp_method],
+            iau_wgt_dyn=[self._config.iau_wgt_dyn],
+            is_iau_active=[self._config.is_iau_active],
+            limited_area=[self._grid.limited_area],
+            iadv_rhotheta=[self._config.iadv_rhotheta],
+            igradp_method=[self._config.igradp_method],
             nflatlev=[self._vertical_params.nflatlev],
             nflat_gradp=[self._vertical_params.nflat_gradp],
             vertical_start=[gtx.int32(0)],
@@ -565,7 +564,11 @@ class SolveNonhydro:
         )
         self._apply_rayleigh_damping_mechanism = apply_rayleigh_damping_mechanism.with_backend(
             self._backend
-        ).compile(offset_provider={})
+        ).compile(
+            vertical_start=[gtx.int32(1)],
+            vertical_end=[gtx.int32(self._vertical_params.end_index_of_damping_layer + 1)],
+            offset_provider={},
+        )
         self._compute_results_for_thermodynamic_variables = (
             compute_results_for_thermodynamic_variables.with_backend(self._backend).compile(
                 vertical_start=[gtx.int32(self.jk_start)],
@@ -581,7 +584,11 @@ class SolveNonhydro:
         )
         self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(
             self._backend
-        ).compile(vertical_end=[gtx.int32(self._grid.num_levels)], offset_provider={})
+        ).compile(
+            vertical_start=[self._vertical_params.kstart_moist],
+            vertical_end=[gtx.int32(self._grid.num_levels)],
+            offset_provider={},
+        )
         self._compute_avg_vn = compute_avg_vn.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
@@ -601,7 +608,9 @@ class SolveNonhydro:
         )
         self._update_dynamical_exner_time_increment = (
             update_dynamical_exner_time_increment.with_backend(self._backend).compile(
-                vertical_end=[gtx.int32(self._grid.num_levels)], offset_provider={}
+                vertical_start=[self._vertical_params.kstart_moist],
+                vertical_end=[gtx.int32(self._grid.num_levels)],
+                offset_provider={},
             )
         )
         self._init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
@@ -622,6 +631,8 @@ class SolveNonhydro:
         self._compute_perturbed_quantities_and_interpolation = compute_cell_diagnostics_for_dycore.compute_perturbed_quantities_and_interpolation.with_backend(
             self._backend
         ).compile(
+            nflatlev=[self._vertical_params.nflatlev],
+            nflat_gradp=[self._vertical_params.nflat_gradp],
             limited_area=[self._grid.limited_area],
             igradp_method=[self._config.igradp_method],
             horizontal_start=[gtx.int32(0)],
@@ -643,14 +654,17 @@ class SolveNonhydro:
 
         self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
             self._backend
-        ).compile(offset_provider=self._grid.offset_providers)
+        ).compile(
+            nflatlev=[self._vertical_params.nflatlev], offset_provider=self._grid.offset_providers
+        )
         self._predictor_stencils_37_38 = (
             nhsolve_stencils.predictor_stencils_37_38.with_backend(self._backend)
             .with_connectivities(self._grid.offset_providers)
             .freeze()
         )
         self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend).compile(
-            offset_provider=self._grid.offset_providers
+            nflatlev_startindex_plus1=[gtx.int32(self._vertical_params.nflatlev + 1)],
+            offset_provider=self._grid.offset_providers,
         )
         self._stencils_43_44_45_45b = nhsolve_stencils.stencils_43_44_45_45b.with_backend(
             self._backend

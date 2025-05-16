@@ -79,6 +79,8 @@ def apply_markers(
             case "embedded_remap_error" if is_embedded(backend):
                 # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")
+            case "embedded_static_args" if is_embedded(backend):
+                pytest.xfail(" gt4py _compiled_programs returns error when backend is None.")
             case "infinite_concat_where" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support infinite concat_where.")
             case "uses_as_offset" if is_embedded(backend):
