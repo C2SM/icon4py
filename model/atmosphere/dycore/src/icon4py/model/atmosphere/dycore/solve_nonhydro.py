@@ -257,24 +257,24 @@ class NonHydrostaticConfig:
         self.itime_scheme: int = itime_scheme
 
         #: Miura scheme for advection of rho and theta
-        self.iadv_rhotheta: int = iadv_rhotheta
+        self.iadv_rhotheta: dycore_states.RhoThetaAdvectionType = iadv_rhotheta
         #: Use truly horizontal pressure-gradient computation to ensure numerical
         #: stability without heavy orography smoothing
-        self.igradp_method: int = igradp_method
+        self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
 
         #: number of dynamics substeps per fast-physics timestep
         self.ndyn_substeps_var = ndyn_substeps_var
 
         #: type of Rayleigh damping
-        self.rayleigh_type: int = rayleigh_type
+        self.rayleigh_type: constants.RayleighType = rayleigh_type
         # used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
         self.rayleigh_coeff: float = rayleigh_coeff
 
         #: order of divergence damping
-        self.divdamp_order: int = divdamp_order
+        self.divdamp_order: dycore_states.DivergenceDampingOrder = divdamp_order
 
         #: type of divergence damping
-        self.divdamp_type: int = divdamp_type
+        self.divdamp_type: dycore_states.DivergenceDampingType = divdamp_type
         #: Lower and upper bound of transition zone between 2D and 3D divergence damping in case of divdamp_type = 32 [m]
         self.divdamp_trans_start: float = divdamp_trans_start
         self.divdamp_trans_end: float = divdamp_trans_end
@@ -519,9 +519,9 @@ class SolveNonhydro:
             self._backend
         )
         if self._config.divdamp_type == 32:
-            xp = data_alloc.import_array_ns(self.backend)
+            xp = data_alloc.import_array_ns(self._backend)
             self.starting_vertical_index_for_3d_divdamp = xp.min(
-                xp.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.ndarray > 0.0)
+                xp.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.ndarray > 0.0)[0]
             )
 
         self.velocity_advection = VelocityAdvection(
