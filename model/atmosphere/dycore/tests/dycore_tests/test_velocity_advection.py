@@ -67,6 +67,8 @@ def test_verify_velocity_init_against_savepoint(
     experiment,
     backend,
 ):
+    if backend is None:
+        pytest.skip("_compiled_programs does not support embedded")
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
     vertical_config = v_grid.VerticalGridConfig(
@@ -103,6 +105,8 @@ def test_verify_velocity_init_against_savepoint(
     ],
 )
 def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
+    if backend is None:
+        pytest.skip("_compiled_programs does not support embedded")
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
