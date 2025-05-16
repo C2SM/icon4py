@@ -13,6 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 
 
@@ -327,19 +328,20 @@ def test_compute_vertical_coordinate(
         raise ValueError(f"Unsupported experiment: {experiment}")
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
-
+    array_ns = data_alloc.array_ns(backend)
     vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate(
-        vct_a=vct_a,
-        topography=topography,
-        geofac_n2s=geofac_n2s,
+        vct_a=vct_a.ndarray,
+        topography=topography.ndarray,
+        geofac_n2s=geofac_n2s.ndarray,
+        cell_areas=cell_geometry.area.ndarray,
         grid=icon_grid,
         vertical_geometry=vertical_geometry,
-        cell_areas=cell_geometry.area,
         backend=backend,
+        array_ns=array_ns,
     )
 
     assert helpers.dallclose(
-        vertical_coordinates_on_cell_khalf.asnumpy(),
+        data_alloc.as_numpy(vertical_coordinates_on_cell_khalf),
         metrics_savepoint.z_ifc().asnumpy(),
         atol=1e-13,
     )

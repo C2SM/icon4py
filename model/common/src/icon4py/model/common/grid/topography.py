@@ -7,9 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.common.grid import base
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -47,10 +48,10 @@ def update_smoothed_topography(
 
 def smooth_topography(
     topography: fa.CellField[ta.wpfloat],
-    grid: icon_grid.IconGrid,
     cell_areas: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-    backend,
+    grid: base.BaseGrid,
+    backend: gtx_backend.Backend,
     num_iterations: int = 25,
 ) -> fa.CellField[ta.wpfloat]:
     """
@@ -58,7 +59,9 @@ def smooth_topography(
     coordinate.
     """
 
-    smoothed_topography = gtx.as_field((dims.CellDim,), topography.asnumpy())
+    smoothed_topography = gtx.as_field(
+        (dims.CellDim,), topography.ndarray, allocator=backend
+    )  # TODO (@halungge) this should copy?
 
     nabla2_topo = data_alloc.zero_field(grid, dims.CellDim, backend=backend)
 
