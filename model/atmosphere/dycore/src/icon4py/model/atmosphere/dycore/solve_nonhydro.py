@@ -524,25 +524,42 @@ class SolveNonhydro:
 
     def _allocate_local_fields(self):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, extend={dims.KDim: 1}, backend=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=ta.vpfloat,
+            extend={dims.KDim: 1},
+            backend=self._backend,
         )
         """
         Declared as z_exner_ex_pr in ICON.
         """
         self.exner_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, extend={dims.KDim: 1}, backend=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=ta.vpfloat,
+            extend={dims.KDim: 1},
+            backend=self._backend,
         )
         """
         Declared as z_exner_ic in ICON.
         """
         self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-            data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend)
+            data_alloc.zero_field(
+                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+            )
         )
         """
         Declared as z_dexner_dz_c_1 in ICON.
         """
         self.perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, extend={dims.KDim: 1}, backend=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=ta.vpfloat,
+            extend={dims.KDim: 1},
+            backend=self._backend,
         )
 
         """
@@ -570,7 +587,9 @@ class SolveNonhydro:
         Declared as z_rth_pr_2 in ICON.
         """
         self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-            data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend)
+            data_alloc.zero_field(
+                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+            )
         )
         """
         Declared as z_dexner_dz_c_2 in ICON.

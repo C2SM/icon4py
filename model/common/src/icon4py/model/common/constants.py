@@ -102,3 +102,4 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     rd_o_p0ref = RD_O_P0REF
     grav_o_cpd = GRAV_O_CPD
     grav_o_rd = GRAV_O_RD
+    p0ref = REFERENCE_PRESSURE

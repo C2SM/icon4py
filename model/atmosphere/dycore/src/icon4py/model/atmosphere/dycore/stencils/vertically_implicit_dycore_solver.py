@@ -352,7 +352,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
 ]:
     # Because we do not support nesting, it is safe to assume w_1 is a zero field
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
@@ -471,7 +471,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
-    tridiagonal_intermediate_result = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
+    tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
 
     w_explicit_term = concat_where(
         1 <= dims.KDim,
@@ -625,12 +625,12 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     at_last_substep: bool,
     n_lev: gtx.int32,
 ) -> tuple[
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
     # Because we do not support nesting, it is safe to assume w_1 is a zero field
