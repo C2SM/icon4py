@@ -309,7 +309,7 @@ def test_compute_vertical_coordinate(
     experiment,
     backend,
 ):
-    xp = data_alloc.array_ns(backend)
+    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     cell_geometry = grid_savepoint.construct_cell_geometry()
