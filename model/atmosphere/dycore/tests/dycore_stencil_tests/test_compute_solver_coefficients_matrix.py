@@ -31,8 +31,8 @@ def compute_solver_coefficients_matrix_numpy(
     theta_v_ic: np.ndarray,
     rho_ic: np.ndarray,
     dtime: float,
-    rd: float,
-    cvd: float,
+    rd: ta.wpfloat,
+    cvd: ta.wpfloat,
 ) -> tuple[np.ndarray, np.ndarray]:
     z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
     vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
@@ -55,8 +55,8 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         theta_v_ic: np.ndarray,
         rho_ic: np.ndarray,
         dtime: float,
-        rd: float,
-        cvd: float,
+        rd: ta.wpfloat,
+        cvd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
         (z_beta, z_alpha) = compute_solver_coefficients_matrix_numpy(
