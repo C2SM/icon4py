@@ -419,16 +419,6 @@ class SolveNonhydro:
 
         self.jk_start = 0  # used in stencil_55
 
-        self.velocity_advection = VelocityAdvection(
-            grid,
-            metric_state_nonhydro,
-            interpolation_state,
-            vertical_params,
-            edge_geometry,
-            owner_mask,
-            backend=self._backend,
-        )
-
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
@@ -550,13 +540,6 @@ class SolveNonhydro:
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
             offset_provider=[self._grid.offset_providers],
-        )
-        self._compute_results_for_thermodynamic_variables = compute_results_for_thermodynamic_variables.compute_results_for_thermodynamic_variables.with_backend(
-            self._backend
-        ).compile(
-            vertical_start=[gtx.int32(self.jk_start)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.offset_providers,
         )
         self._compute_dwdz_for_divergence_damping = (
             compute_dwdz_for_divergence_damping.with_backend(self._backend)
