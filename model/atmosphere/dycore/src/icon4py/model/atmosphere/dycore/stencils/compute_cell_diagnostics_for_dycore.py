@@ -100,9 +100,9 @@ def _compute_perturbed_quantities_and_interpolation(
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    #fa.CellKField[ta.vpfloat],
+    #fa.CellKField[ta.wpfloat],
+    #fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
@@ -155,9 +155,9 @@ def _compute_perturbed_quantities_and_interpolation(
 
     return (
         perturbed_rho_at_cells_on_model_levels_,
-        perturbed_theta_v_at_cells_on_model_levels,
-        temporal_extrapolation_of_perturbed_exner,
-        perturbed_exner_at_cells_on_model_levels,
+        #perturbed_theta_v_at_cells_on_model_levels,
+        #temporal_extrapolation_of_perturbed_exner,
+        #perturbed_exner_at_cells_on_model_levels,
         rho_at_cells_on_half_levels_,
         exner_at_cells_on_half_levels_,
         perturbed_theta_v_at_cells_on_half_levels_,
@@ -310,6 +310,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
+    vertical_end_m1: gtx.int32,
 ) -> tuple[
         fa.CellKField[ta.vpfloat],
         fa.CellKField[ta.wpfloat],
@@ -343,7 +344,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
     """
 
     (temporal_extrapolation_of_perturbed_exner_, perturbed_exner_at_cells_on_model_levels_) = concat_where(
-            (start_cell_lateral_boundary <= dims.CellDim) & (dims.CellDim < start_cell_lateral_boundary_level_3) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
+            (start_cell_lateral_boundary <= dims.CellDim) & (dims.CellDim < start_cell_lateral_boundary_level_3) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end_m1)),
             _zero_initialize_for_limited_area_mode(
                 temporal_extrapolation_of_perturbed_exner,
                 perturbed_exner_at_cells_on_model_levels,
@@ -353,7 +354,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
     )
 
     (temporal_extrapolation_of_perturbed_exner_, perturbed_exner_at_cells_on_model_levels_) = concat_where(
-            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
+            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end_m1)),
             _extrapolate_temporally_exner_pressure(
                 time_extrapolation_parameter_for_exner,
                 current_exner,
@@ -364,7 +365,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
     )
 
     (temporal_extrapolation_of_perturbed_exner_, exner_at_cells_on_half_levels_) = concat_where(
-        (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & ((vertical_end - 1) <= dims.KDim) & (dims.KDim < vertical_end),
+        (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & ((vertical_end_m1) <= dims.KDim) & (dims.KDim < vertical_end),
         _surface_computations(
             wgtfacq_c,
             exner_at_cells_on_half_levels,
@@ -375,16 +376,13 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
 
     (
         perturbed_rho_at_cells_on_model_levels_,
-        perturbed_theta_v_at_cells_on_model_levels_,
-        temporal_extrapolation_of_perturbed_exner_,
-        perturbed_exner_at_cells_on_model_levels_,
         rho_at_cells_on_half_levels_,
         exner_at_cells_on_half_levels_,
         perturbed_theta_v_at_cells_on_half_levels_,
         theta_v_at_cells_on_half_levels_,
         pressure_buoyancy_acceleration_at_cells_on_half_levels_,
     ) = concat_where(
-            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
+            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end_m1)),
             # Not everything that is used here is actually needed, some stuff is just passed through.
             #  I removed some but not all.
             _compute_perturbed_quantities_and_interpolation(
@@ -410,9 +408,6 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
             ),
             (
                 perturbed_rho_at_cells_on_model_levels,
-                perturbed_theta_v_at_cells_on_model_levels,
-                temporal_extrapolation_of_perturbed_exner_,
-                perturbed_exner_at_cells_on_model_levels_,
                 rho_at_cells_on_half_levels,
                 exner_at_cells_on_half_levels_,
                 perturbed_theta_v_at_cells_on_half_levels,
@@ -426,11 +421,11 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
         theta_v_at_cells_on_half_levels_,
         exner_at_cells_on_half_levels_,
     ) = concat_where(
-            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & ((vertical_end - 1) <= dims.KDim) & (dims.KDim < vertical_end),
+            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & ((vertical_end_m1) <= dims.KDim) & (dims.KDim < vertical_end),
             _set_theta_v_and_exner_on_surface_level(
                 temporal_extrapolation_of_perturbed_exner_,
                 wgtfacq_c,
-                perturbed_theta_v_at_cells_on_model_levels_,
+                perturbed_theta_v_at_cells_on_model_levels,
                 reference_theta_at_cells_on_half_levels,
             ),
             (
@@ -444,7 +439,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
     ) = concat_where(
-            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
+            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end_m1)),
             _compute_first_and_second_vertical_derivative_of_exner(
                 exner_at_cells_on_half_levels_,
                 inv_ddqz_z_full,
@@ -453,7 +448,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
                 perturbed_theta_v_at_cells_on_half_levels_,
                 d2dexdz2_fac1_mc,
                 d2dexdz2_fac2_mc,
-                perturbed_theta_v_at_cells_on_model_levels_,
+                perturbed_theta_v_at_cells_on_model_levels,
                 igradp_method,
                 nflatlev,
                 nflat_gradp,
@@ -468,8 +463,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
         perturbed_rho_at_cells_on_model_levels_,
         perturbed_theta_v_at_cells_on_model_levels_,
     ) = concat_where(
-            (start_cell_halo_level_2 <= dims.CellDim) & (dims.CellDim < end_cell_halo_level_2) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
-            # NOT YET SSAied
+            (start_cell_halo_level_2 <= dims.CellDim) & (dims.CellDim < end_cell_halo_level_2) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end_m1)),
             _compute_perturbation_of_rho_and_theta(
                 rho=current_rho,
                 rho_ref_mc=reference_rho_at_cells_on_model_levels,
@@ -478,7 +472,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
             ),
             (
                 perturbed_rho_at_cells_on_model_levels_,
-                perturbed_theta_v_at_cells_on_model_levels_,
+                perturbed_theta_v_at_cells_on_model_levels,
             )
     )
 
@@ -541,6 +535,7 @@ def compute_perturbed_quantities_and_interpolation(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
+    vertical_end_m1: gtx.int32,
 ):
     """
     Formerly known as fused_solve_nonhydro_stencil_1_to_13_predictor.
@@ -600,6 +595,7 @@ def compute_perturbed_quantities_and_interpolation(
         horizontal_end=horizontal_end,
         vertical_start=vertical_start,
         vertical_end=vertical_end,
+        vertical_end_m1=vertical_end_m1,
         out=(
             temporal_extrapolation_of_perturbed_exner,
             perturbed_exner_at_cells_on_model_levels,
