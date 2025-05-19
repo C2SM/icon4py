@@ -22,6 +22,21 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def solve_tridiagonal_matrix_for_w_back_substitution_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    z_q: np.ndarray,
+    w: np.ndarray,
+) -> np.ndarray:
+    w_new = np.zeros_like(w)
+    last_k_level = w.shape[1] - 1
+
+    w_new[:, last_k_level] = w[:, last_k_level] + z_q[:, last_k_level]
+    for k in reversed(range(1, last_k_level)):
+        w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
+    w_new[:, 0] = w[:, 0]
+    return w_new
+
+
 class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
     PROGRAM = solve_tridiagonal_matrix_for_w_back_substitution
     OUTPUTS = ("w",)
@@ -33,13 +48,7 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
         w: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        w_new = np.zeros_like(w)
-        last_k_level = w.shape[1] - 1
-
-        w_new[:, last_k_level] = w[:, last_k_level]
-        for k in reversed(range(1, last_k_level)):
-            w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
-        w_new[:, 0] = w[:, 0]
+        w_new = solve_tridiagonal_matrix_for_w_back_substitution_numpy(connectivities, z_q=z_q, w=w)
         return dict(w=w_new)
 
     @pytest.fixture
