@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, abs, astype, broadcast, int32, neighbor_sum, where
 
 from icon4py.model.common.dimension import (
     C2CE,
@@ -27,6 +27,7 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
     V2CDim,
+    VertexDim,
 )
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -38,15 +39,32 @@ def _compute_2nd_order_divergence_of_flux(
     vn: Field[[EdgeDim, KDim], wpfloat],
     dwdz: Field[[CellDim, KDim], vpfloat],
     area: Field[[CellDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+    pentagon_mask: Field[[CellDim], bool],
+    v2c_area_mask: Field[[VertexDim, V2CDim], wpfloat],
+    scale: wpfloat,
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
     divergence_wp = neighbor_sum(geofac_div(C2CE) * vn(C2E), axis=C2EDim)
     divergence_wp = divergence_wp + astype(dwdz, wpfloat)
     hexagon_area = neighbor_sum(area(V2C), axis=V2CDim)
+    # hexagon_area = neighbor_sum(v2c_area_mask * area(V2C), axis=V2CDim)
     # divergence_wp = -divergence_wp * area
-    divergence_wp = divergence_wp * area
-    divergence_at_vertex_wp = neighbor_sum(divergence_wp(V2C) / hexagon_area, axis=V2CDim)
+    divergence_area_wp = divergence_wp * area
+    divergence_at_vertex_wp = neighbor_sum(divergence_area_wp(V2C) / hexagon_area, axis=V2CDim)
     divergence_at_cell_wp = neighbor_sum(divergence_at_vertex_wp(C2V), axis=C2VDim) / 3.0
-    return astype(divergence_at_cell_wp, vpfloat)
+    # divergence_at_cell_wp = where(
+    #     pentagon_mask,
+    #     divergence_wp,
+    #     neighbor_sum(divergence_at_vertex_wp(C2V), axis=C2VDim) / 3.0
+    # )
+    scale = broadcast(scale, (CellDim, KDim))
+    divergence_residual_at_cell_wp = where(
+        abs(divergence_wp - divergence_at_cell_wp) > scale * abs(divergence_at_cell_wp),
+        divergence_wp - divergence_at_cell_wp,
+        # wpfloat("0.0"),
+        # wpfloat("0.0")
+        broadcast(wpfloat("0.0"), (CellDim, KDim)),
+    )
+    return astype(divergence_at_cell_wp, vpfloat), astype(divergence_residual_at_cell_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -55,7 +73,11 @@ def compute_2nd_order_divergence_of_flux(
     vn: Field[[EdgeDim, KDim], wpfloat],
     dwdz: Field[[CellDim, KDim], vpfloat],
     area: Field[[CellDim], wpfloat],
+    pentagon_mask: Field[[CellDim], bool],
+    v2c_area_mask: Field[[VertexDim, V2CDim], wpfloat],
+    scale: wpfloat,
     divergence: Field[[CellDim, KDim], vpfloat],
+    divergence_residual: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -66,6 +88,63 @@ def compute_2nd_order_divergence_of_flux(
         vn,
         dwdz,
         area,
+        pentagon_mask,
+        v2c_area_mask,
+        scale,
+        out=(divergence, divergence_residual),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@field_operator
+def _compute_pure_2nd_order_divergence_of_flux(
+    geofac_div: Field[[CEDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    dwdz: Field[[CellDim, KDim], vpfloat],
+    area: Field[[CellDim], vpfloat],
+    pentagon_mask: Field[[CellDim], bool],
+    v2c_area_mask: Field[[VertexDim, V2CDim], wpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    divergence_wp = neighbor_sum(geofac_div(C2CE) * vn(C2E), axis=C2EDim)
+    divergence_wp = divergence_wp + astype(dwdz, wpfloat)
+    hexagon_area = neighbor_sum(area(V2C), axis=V2CDim)
+    # hexagon_area = neighbor_sum(v2c_area_mask * area(V2C), axis=V2CDim)
+    # divergence_wp = -divergence_wp * area
+    divergence_area_wp = divergence_wp * area
+    divergence_at_vertex_wp = neighbor_sum(divergence_area_wp(V2C) / hexagon_area, axis=V2CDim)
+    divergence_at_cell_wp = neighbor_sum(divergence_at_vertex_wp(C2V), axis=C2VDim) / 3.0
+    # divergence_at_cell_wp = where(
+    #     pentagon_mask,
+    #     divergence_wp,
+    #     neighbor_sum(divergence_at_vertex_wp(C2V), axis=C2VDim) / 3.0
+    # )
+    return astype(divergence_at_cell_wp, vpfloat)
+
+
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def compute_pure_2nd_order_divergence_of_flux(
+    geofac_div: Field[[CEDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    dwdz: Field[[CellDim, KDim], vpfloat],
+    area: Field[[CellDim], wpfloat],
+    pentagon_mask: Field[[CellDim], bool],
+    v2c_area_mask: Field[[VertexDim, V2CDim], wpfloat],
+    divergence: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_pure_2nd_order_divergence_of_flux(
+        geofac_div,
+        vn,
+        dwdz,
+        area,
+        pentagon_mask,
+        v2c_area_mask,
         out=divergence,
         domain={
             CellDim: (horizontal_start, horizontal_end),

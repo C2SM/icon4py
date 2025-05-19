@@ -907,6 +907,7 @@ def stencils_39_40(
 def _stencils_42_44_45(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
+    z_w_divdamp: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
@@ -942,6 +943,7 @@ def _stencils_42_44_45(
         (k_field >= int32(1)) & (k_field < nlev),
         _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
+            z_w_divdamp,
             ddt_w_adv_ntl1,
             ddt_w_adv_ntl2,
             z_th_ddz_exner_c,
@@ -982,6 +984,7 @@ def _stencils_42_44_45(
 def stencils_42_44_45_45b(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
+    z_w_divdamp: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
@@ -1014,6 +1017,7 @@ def stencils_42_44_45_45b(
     _stencils_42_44_45(
         z_w_expl,
         w_nnow,
+        z_w_divdamp,
         ddt_w_adv_ntl1,
         ddt_w_adv_ntl2,
         z_th_ddz_exner_c,
@@ -1057,6 +1061,7 @@ def stencils_42_44_45_45b(
 def _stencils_43_44_45(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
+    z_w_divdamp: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
     z_contr_w_fl_l: Field[[CellDim, KDim], float],
@@ -1089,6 +1094,7 @@ def _stencils_43_44_45(
         (k_field >= int32(1)) & (k_field < nlev),
         _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
+            z_w_divdamp,
             ddt_w_adv_ntl1,
             z_th_ddz_exner_c,
             rho_ic,
@@ -1125,6 +1131,7 @@ def _stencils_43_44_45(
 def stencils_43_44_45_45b(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
+    z_w_divdamp: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
     z_contr_w_fl_l: Field[[CellDim, KDim], float],
@@ -1154,6 +1161,7 @@ def stencils_43_44_45_45b(
     _stencils_43_44_45(
         z_w_expl,
         w_nnow,
+        z_w_divdamp,
         ddt_w_adv_ntl1,
         z_th_ddz_exner_c,
         z_contr_w_fl_l,

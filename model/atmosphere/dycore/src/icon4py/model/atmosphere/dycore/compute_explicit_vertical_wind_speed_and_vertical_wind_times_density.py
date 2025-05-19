@@ -23,6 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     w_nnow: Field[[CellDim, KDim], wpfloat],
+    z_w_divdamp: Field[[CellDim, KDim], wpfloat],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
     z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
     rho_ic: Field[[CellDim, KDim], wpfloat],
@@ -36,7 +37,7 @@ def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
         (ddt_w_adv_ntl1, z_th_ddz_exner_c, w_concorr_c), wpfloat
     )
 
-    z_w_expl_wp = w_nnow + dtime * (ddt_w_adv_ntl1_wp - cpd * z_th_ddz_exner_c_wp)
+    z_w_expl_wp = w_nnow + dtime * (ddt_w_adv_ntl1_wp - cpd * z_th_ddz_exner_c_wp) + z_w_divdamp
     z_contr_w_fl_l_wp = rho_ic * (-w_concorr_c_wp + vwind_expl_wgt * w_nnow)
     return z_w_expl_wp, z_contr_w_fl_l_wp
 
@@ -45,6 +46,7 @@ def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
 def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     z_w_expl: Field[[CellDim, KDim], wpfloat],
     w_nnow: Field[[CellDim, KDim], wpfloat],
+    z_w_divdamp: Field[[CellDim, KDim], wpfloat],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
     z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
     z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
@@ -60,6 +62,7 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
 ):
     _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
         w_nnow,
+        z_w_divdamp,
         ddt_w_adv_ntl1,
         z_th_ddz_exner_c,
         rho_ic,

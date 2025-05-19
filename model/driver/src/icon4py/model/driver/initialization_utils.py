@@ -13,6 +13,7 @@
 
 import logging
 import math
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
@@ -52,6 +53,7 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
     V2C2EDim,
+    V2CDim,
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
@@ -79,9 +81,6 @@ from icon4py.model.driver.testcase_functions import (
     hydrostatic_adjustment_ndarray,
 )
 
-U_AMPLIFICATION_FACTOR = 1.0
-WAVENUMBER_FACTOR = 1.0
-
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = (
@@ -108,6 +107,20 @@ class ExperimentType(str, Enum):
     """initial condition of divergence convergence test on a globe"""
     ANY = "any"
     """any test with initial conditions read from serialized data (remember to set correct SIMULATION_START_DATE)"""
+
+
+class WAVETYPE(int, Enum):
+    SPHERICAL_HARMONICS = 1
+    X_WAVE = 2
+    Y_WAVE = 3
+    X_AND_Y_WAVE = 4
+
+
+@dataclass(frozen=True)
+class DivWave:
+    wave_type: WAVETYPE = WAVETYPE.SPHERICAL_HARMONICS
+    x_wavenumber_factor: float = 1.0
+    y_wavenumber_factor: float = 1.0
 
 
 def read_icon_grid(
@@ -139,11 +152,49 @@ def read_icon_grid(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
+def determine_u_v_in_div_converge_experiment(
+    lat: xp.ndarray, lon: xp.ndarray, div_wave: DivWave
+) -> tuple[xp.ndarray, xp.ndarray]:
+    if div_wave.wave_type == WAVETYPE.SPHERICAL_HARMONICS:
+        u_factor = 0.25 * xp.sqrt(0.5 * 105.0 / math.pi)
+        v_factor = -0.5 * xp.sqrt(0.5 * 15.0 / math.pi)
+        v_scale = 90.0 / 7.5
+        u_edge = (
+            u_factor
+            * xp.cos(2.0 * lon * div_wave.x_wavenumber_factor)
+            * xp.cos(lat * v_scale * div_wave.y_wavenumber_factor)
+            * xp.cos(lat * v_scale * div_wave.y_wavenumber_factor)
+            * xp.sin(lat * v_scale * div_wave.y_wavenumber_factor)
+        )
+        v_edge = (
+            v_factor
+            * xp.cos(lon * div_wave.x_wavenumber_factor)
+            * xp.cos(lat * v_scale * div_wave.y_wavenumber_factor)
+            * xp.sin(lat * v_scale * div_wave.y_wavenumber_factor)
+        )
+    elif div_wave.wave_type == WAVETYPE.X_WAVE:
+        u_edge = xp.cos(lon * div_wave.x_wavenumber_factor) / div_wave.x_wavenumber_factor
+        v_edge = xp.zeros(lon.shape[0], dtype=float)
+    elif div_wave.wave_type == WAVETYPE.Y_WAVE:
+        v_scale = 180.0 / 7.5
+        u_edge = xp.zeros(lon.shape[0], dtype=float)
+        v_edge = xp.cos(v_scale * lat * div_wave.y_wavenumber_factor) / div_wave.y_wavenumber_factor
+    elif div_wave.wave_type == WAVETYPE.X_AND_Y_WAVE:
+        u_edge = xp.cos(lon * div_wave.x_wavenumber_factor) / div_wave.x_wavenumber_factor
+        v_scale = 180.0 / 7.5
+        v_edge = xp.cos(v_scale * lat * div_wave.y_wavenumber_factor) / div_wave.y_wavenumber_factor
+    else:
+        raise NotImplementedError(f"Wave type {div_wave.wave_type} not implemented")
+
+    return u_edge, v_edge
+
+
 def model_initialization_div_converge(
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
     path: Path,
+    div_wave: DivWave,
     rank=0,
 ) -> tuple[
     DiffusionDiagnosticState,
@@ -171,14 +222,6 @@ def model_initialization_div_converge(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
 
-    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
-    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
-    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
-    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
-    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
-    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
-    geopot = data_provider.from_metrics_savepoint().geopot().ndarray
-
     primal_normal_x = edge_param.primal_normal[0].ndarray
     primal_normal_y = edge_param.primal_normal[1].ndarray
 
@@ -187,10 +230,6 @@ def model_initialization_div_converge(
     edge_lat = edge_param.edge_center[0].ndarray
     edge_lon = edge_param.edge_center[1].ndarray
 
-    cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
-    rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
-    rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
-
     num_cells = icon_grid.num_cells
     num_edges = icon_grid.num_edges
     num_levels = icon_grid.num_levels
@@ -198,30 +237,28 @@ def model_initialization_div_converge(
     grid_idx_edge_start_plus1 = icon_grid.get_end_index(
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
-    grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
-    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
-    )
-    grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
     mask = xp.ones((num_edges, num_levels), dtype=bool)
     mask[0:grid_idx_edge_start_plus1, :] = False
     if grid_idx_edge_start_plus1 > 0:
-        raise ValueError(f"grid_idx_edge_start_plus1 must be zero but its value is  {grid_idx_edge_start_plus1}")
+        raise ValueError(
+            f"grid_idx_edge_start_plus1 must be zero but its value is  {grid_idx_edge_start_plus1}"
+        )
     # primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
     # primal_normal_y = xp.repeat(xp.expand_dims(primal_normal_y, axis=-1), num_levels, axis=1)
 
     # Horizontal wind field
+    u_edge, v_edge = determine_u_v_in_div_converge_experiment(edge_lat, edge_lon, div_wave)
     vn_ndarray = xp.zeros((num_edges, num_levels), dtype=float)
-    global U_AMPLIFICATION_FACTOR
-    global WAVENUMBER_FACTOR
-    u_factor = 0.25 * xp.sqrt(0.5*105.0/math.pi) * U_AMPLIFICATION_FACTOR
-    v_factor = -0.5 * xp.sqrt(0.5*15.0/math.pi)
-    v_scale = 90.0 / 7.5
-    u_edge = u_factor * xp.cos(2.0 * edge_lon * WAVENUMBER_FACTOR) * xp.cos(edge_lat * v_scale * WAVENUMBER_FACTOR) * xp.cos(edge_lat * v_scale * WAVENUMBER_FACTOR) * xp.sin(edge_lat * v_scale * WAVENUMBER_FACTOR)
-    v_edge = v_factor * xp.cos(edge_lon * WAVENUMBER_FACTOR) * xp.cos(edge_lat * v_scale * WAVENUMBER_FACTOR) * xp.sin(edge_lat * v_scale * WAVENUMBER_FACTOR)
     for k in range(num_levels):
         vn_ndarray[:, k] = u_edge[:] * primal_normal_x[:] + v_edge[:] * primal_normal_y[:]
+        if k == 0:
+            log.critical(
+                f"Debug vn component1: {vn_ndarray[500, k]} {vn_ndarray[501, k]} {vn_ndarray[502, k]} {vn_ndarray[503, k]} {vn_ndarray[504, k]} {vn_ndarray[505, k]}"
+            )
+            log.critical(
+                f"Debug vn component2: {u_edge[500]} {u_edge[501]} {u_edge[502]} {u_edge[503]} {u_edge[504]} {u_edge[505]}"
+            )
     log.info("Wind profile assigned.")
 
     zero_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
@@ -245,20 +282,7 @@ def model_initialization_div_converge(
     exner_pr = as_field((CellDim, KDim), zero_ndarray)
     log.info("exner_pr initialization completed.")
 
-    debug_mask1 = xp.where((edge_lon > 0.0) & (edge_lat > 0.045) & (edge_lat < 0.055))
-    debug_mask2 = xp.where((edge_lon < 0.0) & (edge_lat > 0.045) & (edge_lat < 0.055))
-    band1 = xp.cos(2.0 * edge_lon[debug_mask1])
-    band2 = xp.cos(2.0 * edge_lon[debug_mask2])
-    print(band1.max(), band1.min())
-    print(band2.max(), band2.min())
-    u_cell = u_factor * xp.cos(2.0 * cell_lon * WAVENUMBER_FACTOR) * xp.cos(cell_lat * v_scale * WAVENUMBER_FACTOR) * xp.cos(cell_lat * v_scale * WAVENUMBER_FACTOR) * xp.sin(cell_lat * v_scale * WAVENUMBER_FACTOR)
-    v_cell = v_factor * xp.cos(cell_lon * WAVENUMBER_FACTOR) * xp.cos(cell_lat * v_scale * WAVENUMBER_FACTOR) * xp.sin(cell_lat * v_scale * WAVENUMBER_FACTOR)
-    debug_mask1 = xp.where((cell_lon > 0.0) & (cell_lat > 0.045) & (cell_lat < 0.055))
-    debug_mask2 = xp.where((cell_lon < 0.0) & (cell_lat > 0.045) & (cell_lat < 0.055))
-    band1 = xp.cos(2.0 * cell_lon[debug_mask1])
-    band2 = xp.cos(2.0 * cell_lon[debug_mask2])
-    print(band1.max(), band1.min())
-    print(band2.max(), band2.min())
+    u_cell, v_cell = determine_u_v_in_div_converge_experiment(cell_lat, cell_lon, div_wave)
     u = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(u_cell, axis=-1), num_levels, axis=1))
     v = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(v_cell, axis=-1), num_levels, axis=1))
     diagnostic_state = DiagnosticState(
@@ -309,6 +333,7 @@ def model_initialization_div_converge(
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c_residual=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -381,20 +406,23 @@ def model_initialization_globe_div_converge(
     grid_idx_edge_start_plus1 = icon_grid.get_end_index(
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
-    
+
     mask = xp.ones((num_edges, num_levels), dtype=bool)
     mask[0:grid_idx_edge_start_plus1, :] = False
     if grid_idx_edge_start_plus1 > 0:
-        raise ValueError(f"grid_idx_edge_start_plus1 must be zero but its value is  {grid_idx_edge_start_plus1}")
+        raise ValueError(
+            f"grid_idx_edge_start_plus1 must be zero but its value is  {grid_idx_edge_start_plus1}"
+        )
     # primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
     # primal_normal_y = xp.repeat(xp.expand_dims(primal_normal_y, axis=-1), num_levels, axis=1)
 
     # Horizontal wind field
     vn_ndarray = xp.zeros((num_edges, num_levels), dtype=float)
-    global U_AMPLIFICATION_FACTOR
-    u_factor = 0.25 * xp.sqrt(0.5*105.0/math.pi) * U_AMPLIFICATION_FACTOR
-    v_factor = -0.5 * xp.sqrt(0.5*15.0/math.pi)
-    u_edge = u_factor * xp.cos(2.0 * edge_lon) * xp.cos(edge_lat) * xp.cos(edge_lat) * xp.sin(edge_lat)
+    u_factor = 0.25 * xp.sqrt(0.5 * 105.0 / math.pi)
+    v_factor = -0.5 * xp.sqrt(0.5 * 15.0 / math.pi)
+    u_edge = (
+        u_factor * xp.cos(2.0 * edge_lon) * xp.cos(edge_lat) * xp.cos(edge_lat) * xp.sin(edge_lat)
+    )
     v_edge = v_factor * xp.cos(edge_lon) * xp.cos(edge_lat) * xp.sin(edge_lat)
     for k in range(num_levels):
         vn_ndarray[:, k] = u_edge[:] * primal_normal_x[:] + v_edge[:] * primal_normal_y[:]
@@ -421,7 +449,9 @@ def model_initialization_globe_div_converge(
     exner_pr = as_field((CellDim, KDim), zero_ndarray)
     log.info("exner_pr initialization completed.")
 
-    u_cell = u_factor * xp.cos(2.0 * cell_lon) * xp.cos(cell_lat) * xp.cos(cell_lat) * xp.sin(cell_lat)
+    u_cell = (
+        u_factor * xp.cos(2.0 * cell_lon) * xp.cos(cell_lat) * xp.cos(cell_lat) * xp.sin(cell_lat)
+    )
     v_cell = v_factor * xp.cos(cell_lon) * xp.cos(cell_lat) * xp.sin(cell_lat)
     u = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(u_cell, axis=-1), num_levels, axis=1))
     v = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(v_cell, axis=-1), num_levels, axis=1))
@@ -473,6 +503,7 @@ def model_initialization_globe_div_converge(
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c_residual=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -530,16 +561,16 @@ def model_initialization_gauss3d(
     )
 
     z_ifc = data_provider.from_metrics_savepoint().z_ifc().ndarray
-    mean1 = xp.average(z_ifc[:,0])
-    mean2 = xp.average(z_ifc[:,1])
-    mean3 = xp.average(z_ifc[:,2])
+    mean1 = xp.average(z_ifc[:, 0])
+    mean2 = xp.average(z_ifc[:, 1])
+    mean3 = xp.average(z_ifc[:, 2])
 
     for i in range(z_ifc.shape[0]):
-        if xp.abs(z_ifc[i,0] - mean1) > 1.e-8:
+        if xp.abs(z_ifc[i, 0] - mean1) > 1.0e-8:
             log.info(f"{i}, level 0: {z_ifc[i,0]}, {mean1}")
-        if xp.abs(z_ifc[i,1] - mean2) > 1.e-8:
+        if xp.abs(z_ifc[i, 1] - mean2) > 1.0e-8:
             log.info(f"{i}, level 1: {z_ifc[i,1]}, {mean2}")
-        if xp.abs(z_ifc[i,2] - mean3) > 1.e-8:
+        if xp.abs(z_ifc[i, 2] - mean3) > 1.0e-8:
             log.info(f"{i}, level 2: {z_ifc[i,2]}, {mean3}")
 
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
@@ -747,6 +778,7 @@ def model_initialization_gauss3d(
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c_residual=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -822,7 +854,7 @@ def model_initialization_jabw(
     cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
-    
+
     cell_size = cell_lat.size
     num_levels = icon_grid.num_levels
 
@@ -1142,6 +1174,7 @@ def model_initialization_jabw(
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         graddiv_w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        graddiv_w_concorr_c_residual=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -1226,6 +1259,7 @@ def model_initialization_serialbox(
         vn_ie=velocity_init_savepoint.vn_ie(),
         w_concorr_c=velocity_init_savepoint.w_concorr_c(),
         graddiv_w_concorr_c=None,
+        graddiv_w_concorr_c_residual=None,
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
@@ -1272,6 +1306,7 @@ def read_initial_state(
     path: Path,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
+    div_wave: DivWave = None,
 ) -> tuple[
     DiffusionDiagnosticState,
     DiagnosticStateNonHydro,
@@ -1325,7 +1360,9 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_div_converge(icon_grid, cell_param, edge_param, path, rank)
+        ) = model_initialization_div_converge(
+            icon_grid, cell_param, edge_param, path, div_wave, rank
+        )
     elif experiment_type == ExperimentType.GLOBEDIVCONVERGE:
         (
             diffusion_diagnostic_state,
@@ -1503,52 +1540,61 @@ def read_static_fields(
         ########################################
         # find pentagon
         pentagon = xp.zeros(icon_grid.num_vertices, dtype=bool)
+        pentagon_vertex_index = []
         for i in range(icon_grid.num_vertices):
             if v2c_connectivity[i, 4] == v2c_connectivity[i, 5]:
                 pentagon[i] = True
+                pentagon_vertex_index.append(i)
         hexagon_area_ref = xp.where(
             pentagon,
             xp.sum(cell_area[v2c_connectivity][:, :-1], axis=1),
             xp.sum(cell_area[v2c_connectivity][:, :], axis=1),
         )  # xp.sum(xp.where((v2c != -1), cell_area[v2c_connectivity], 0), axis=1)
-        geofac_2order_div_array_ref = xp.zeros((icon_grid.num_vertices, 6), dtype=float)
-        cell_edge_orientation_ref = cell_edge_orientation[v2c_connectivity]
-        v2c2eo = c2e_connectivity[v2c_connectivity]
-        v2c2eo_reshape = xp.reshape(v2c2eo, (v2c2eo.shape[0], v2c2eo.shape[1] * v2c2eo.shape[2]))
-        v2c2eo_bool = xp.zeros((v2c2eo_reshape.shape[0], v2c2eo_reshape.shape[1]), dtype=bool)
-        for i in range(icon_grid.num_vertices):
-            v2c2eo_bool[i] = xp.isin(v2c2eo_reshape[i], v2c2e_connectivity[i])
-            if i == 100:
-                log.info(
-                    f"debugging: ++ {i} {v2c2eo_bool[i]} {v2c2eo_reshape[i]} {v2c2e_connectivity[i]}"
-                )
-        v2c2eo_bool = xp.reshape(v2c2eo_bool, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2]))
-        v2c2eo_back = xp.reshape(
-            v2c2eo_reshape, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2])
-        )
-        assert xp.allclose(v2c2eo_back, v2c2eo, rtol=1.0e-12, atol=1.0e-12)
-        # cell_edge_orientation_ref = xp.reshape(cell_edge_orientation_ref, (cell_edge_orientation_ref.shape[0], cell_edge_orientation_ref.shape[1]*cell_edge_orientation_ref.shape[2]))
-        primal_edge_length_ref = primal_edge_length[v2c2eo_reshape]
-        primal_edge_length_ref = xp.reshape(
-            primal_edge_length_ref, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2])
-        )
-        log.info(
-            f"debugging new way: {geofac_2order_div_array_ref.shape} {cell_edge_orientation_ref.shape} {primal_edge_length_ref.shape} {v2c2eo_bool.shape}"
-        )
-        for j in range(6):
-            geofac_2order_div_array_ref[:, j] = xp.sum(
-                cell_edge_orientation_ref[:, j, :]
-                * primal_edge_length_ref[:, j, :]
-                * v2c2eo_bool[:, j, :],
-                axis=1,
-            )
-        hexagon_area_ref_expand = xp.expand_dims(hexagon_area_ref, axis=-1)
-        geofac_2order_div_array_ref = -geofac_2order_div_array_ref / hexagon_area_ref_expand
-        for i in range(icon_grid.num_vertices):
-            if pentagon[i] == True:
-                geofac_2order_div_array_ref[i, 5] = 0.0
-        ########################################
 
+        pentagon_mask = xp.zeros(icon_grid.num_cells, dtype=bool)
+        v2c_area_mask = xp.ones((icon_grid.num_vertices, 6), dtype=float)
+        for i in pentagon_vertex_index:
+            pentagon_mask[v2c_connectivity[i, :]] = True
+            v2c_area_mask[i, 5] = 0.0
+
+        geofac_2order_div_array_ref = xp.zeros((icon_grid.num_vertices, 6), dtype=float)
+        # cell_edge_orientation_ref = cell_edge_orientation[v2c_connectivity]
+        # v2c2eo = c2e_connectivity[v2c_connectivity]
+        # v2c2eo_reshape = xp.reshape(v2c2eo, (v2c2eo.shape[0], v2c2eo.shape[1] * v2c2eo.shape[2]))
+        # v2c2eo_bool = xp.zeros((v2c2eo_reshape.shape[0], v2c2eo_reshape.shape[1]), dtype=bool)
+        # for i in range(icon_grid.num_vertices):
+        #     v2c2eo_bool[i] = xp.isin(v2c2eo_reshape[i], v2c2e_connectivity[i])
+        #     if i == 100:
+        #         log.info(
+        #             f"debugging: ++ {i} {v2c2eo_bool[i]} {v2c2eo_reshape[i]} {v2c2e_connectivity[i]}"
+        #         )
+        # v2c2eo_bool = xp.reshape(v2c2eo_bool, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2]))
+        # v2c2eo_back = xp.reshape(
+        #     v2c2eo_reshape, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2])
+        # )
+        # assert xp.allclose(v2c2eo_back, v2c2eo, rtol=1.0e-12, atol=1.0e-12)
+        # # cell_edge_orientation_ref = xp.reshape(cell_edge_orientation_ref, (cell_edge_orientation_ref.shape[0], cell_edge_orientation_ref.shape[1]*cell_edge_orientation_ref.shape[2]))
+        # primal_edge_length_ref = primal_edge_length[v2c2eo_reshape]
+        # primal_edge_length_ref = xp.reshape(
+        #     primal_edge_length_ref, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2])
+        # )
+        # log.info(
+        #     f"debugging new way: {geofac_2order_div_array_ref.shape} {cell_edge_orientation_ref.shape} {primal_edge_length_ref.shape} {v2c2eo_bool.shape}"
+        # )
+        # for j in range(6):
+        #     geofac_2order_div_array_ref[:, j] = xp.sum(
+        #         cell_edge_orientation_ref[:, j, :]
+        #         * primal_edge_length_ref[:, j, :]
+        #         * v2c2eo_bool[:, j, :],
+        #         axis=1,
+        #     )
+        # hexagon_area_ref_expand = xp.expand_dims(hexagon_area_ref, axis=-1)
+        # geofac_2order_div_array_ref = -geofac_2order_div_array_ref / hexagon_area_ref_expand
+        # for i in range(icon_grid.num_vertices):
+        #     if pentagon[i] == True:
+        #         geofac_2order_div_array_ref[i, 5] = 0.0
+
+        ########################################
         # hexagon_area = xp.zeros(v2c_connectivity.shape[0], dtype=float)
         # log.info(f"debugging new way: {cell_edge_orientation.shape}")
         # log.info(f"debugging new way: {v2c_connectivity.shape}")
@@ -1601,6 +1647,8 @@ def read_static_fields(
         #         if xp.allclose(geofac_2order_div_array[i,:], geofac_2order_div_array_ref[i,:], rtol=1.e-12, atol=1.e-12):
         #             print(i, geofac_2order_div_array[i,:], '  ===  ', geofac_2order_div_array_ref[i,:])
         # sys.exit(0)
+        ########################################
+
         geofac_2order_div = as_field((VertexDim, V2C2EDim), geofac_2order_div_array_ref)
         log.info(f"geofac_div shape: {interpolation_savepoint.geofac_div().ndarray.shape}")
         log.info(f"geofac_div 0: {interpolation_savepoint.geofac_div().ndarray[0]}")
@@ -1676,6 +1724,8 @@ def read_static_fields(
             coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
             coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),
+            pentagon_mask=as_field((CellDim,), pentagon_mask),
+            v2c_area_mask=as_field((VertexDim, V2CDim), v2c_area_mask),
         )
 
         diagnostic_metric_state = DiagnosticMetricState(

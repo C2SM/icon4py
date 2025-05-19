@@ -218,8 +218,8 @@ class IconConfig:
 def read_config(
     experiment_type: ExperimentType = ExperimentType.ANY,
     dtime_seconds: float = None,
-    end_date = None,
-    output_seconds_interval: float = None
+    end_date=None,
+    output_seconds_interval: float = None,
 ) -> IconConfig:
     def _mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
@@ -714,7 +714,7 @@ def read_config(
             ),
         )
         output_variable_list.add_new_variable(
-            "before_flxdiv_vn",
+            "before_flxdiv1_vn",
             VariableDimension(
                 horizon_dimension=OutputDimension.CELL_DIM,
                 vertical_dimension=OutputDimension.FULL_LEVEL,
@@ -722,8 +722,8 @@ def read_config(
             ),
             VariableAttributes(
                 units="s-1",
-                standard_name="initial wind divergence",
-                long_name="divergence of wind before divergence damping",
+                standard_name="initial wind divergence order 1",
+                long_name="divergence of wind with order 1 before divergence damping",
                 CDI_grid_type="unstructured",
                 param="0.0.0",
                 number_of_grid_in_reference="1",
@@ -739,9 +739,9 @@ def read_config(
                 time_dimension=OutputDimension.TIME,
             ),
             VariableAttributes(
-                units="s-2",
-                standard_name="initial wind squared divergence",
-                long_name="squared divergence of wind before divergence damping",
+                units="s-1",
+                standard_name="initial wind divergence order 2",
+                long_name="divergence of wind with order 2 before divergence damping",
                 CDI_grid_type="unstructured",
                 param="0.0.0",
                 number_of_grid_in_reference="1",
@@ -750,7 +750,7 @@ def read_config(
             ),
         )
         output_variable_list.add_new_variable(
-            "after_flxdiv_vn",
+            "after_flxdiv1_vn",
             VariableDimension(
                 horizon_dimension=OutputDimension.CELL_DIM,
                 vertical_dimension=OutputDimension.FULL_LEVEL,
@@ -758,8 +758,8 @@ def read_config(
             ),
             VariableAttributes(
                 units="s-1",
-                standard_name="final wind divergence",
-                long_name="divergence of wind after divergence damping",
+                standard_name="final wind divergence order 1",
+                long_name="divergence of wind with order 1 after divergence damping",
                 CDI_grid_type="unstructured",
                 param="0.0.0",
                 number_of_grid_in_reference="1",
@@ -775,9 +775,9 @@ def read_config(
                 time_dimension=OutputDimension.TIME,
             ),
             VariableAttributes(
-                units="s-2",
-                standard_name="final wind squared divergence",
-                long_name="squared divergence of wind after divergence damping",
+                units="s-1",
+                standard_name="final wind divergence order 2",
+                long_name="divergence of wind with order 1 after divergence damping",
                 CDI_grid_type="unstructured",
                 param="0.0.0",
                 number_of_grid_in_reference="1",
@@ -930,8 +930,8 @@ def read_config(
             ),
         )
 
-        # 14400 for jabw
-        output_interval = timedelta(seconds=output_seconds_interval) if output_seconds_interval is not None else timedelta(seconds=14400)
+        assert output_seconds_interval is not None, "output_seconds_interval must not be None."
+        output_interval = timedelta(seconds=output_seconds_interval)
         return IconOutputConfig(
             output_time_interval=output_interval,
             output_file_time_interval=output_interval,
@@ -973,20 +973,19 @@ def read_config(
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
-            divdamp_fac=0.0,#0.0025,
+            divdamp_fac=0.0025,
             # divdamp_fac=0.00025,
             # divdamp_fac=0.0,
-            scal_divsign=1.0,
+            scal_divsign=10.0,
             do_o2_divdamp=False,
             do_3d_divergence_damping=True,
-            divergence_order=2,
-            do_multiple_divdamp=True,
+            divergence_order=3,
+            do_multiple_divdamp=False,
             number_of_divdamp_step=50,
             do_proper_diagnostics_divdamp=False,
             do_only_divdamp=False,
             do_proper_contravariant_divdamp=False,
             suppress_vertical_in_3d_divdamp=True,
-
             # do_o2_divdamp=False,
             # do_3d_divergence_damping=False,
             # divergence_order=1,
@@ -1008,8 +1007,8 @@ def read_config(
             hdiff_w_efdt_ratio=15.0,
             # hdiff_efdt_ratio=1.e15,
             # hdiff_w_efdt_ratio=1.e15,
-            # hdiff_efdt_ratio=1000.0,
-            # hdiff_w_efdt_ratio=1000.0,
+            # hdiff_efdt_ratio=100.0,
+            # hdiff_w_efdt_ratio=100.0,
             smagorinski_scaling_factor=0.015,
             # smagorinski_scaling_factor=0.025,
             # smagorinski_scaling_factor=0.0,
@@ -1028,17 +1027,19 @@ def read_config(
             max_nudging_coeff=0.02,
             rayleigh_coeff=0.1,
             divdamp_fac=0.0025,
+            divdamp_fac_w=0.001,
             # divdamp_fac=0.0,
             divdamp_z=40000.0,
             divdamp_z2=50000.0,
             scal_divsign=1.0,
+            first_order_div_threshold=0.0,
             do_o2_divdamp=False,
             do_3d_divergence_damping=True,
             divergence_order=1,
             do_multiple_divdamp=False,
-            number_of_divdamp_step=100,
+            number_of_divdamp_step=10,
             do_proper_diagnostics_divdamp=False,
-            do_only_divdamp = False,
+            do_only_divdamp=False,
             do_proper_contravariant_divdamp=False,
             suppress_vertical_in_3d_divdamp=True,
         )
@@ -1057,13 +1058,14 @@ def read_config(
         return NonHydrostaticConfig(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
-            divdamp_fac=0.1,#0.025, 0.1 for o2, 0.01 for 04
+            divdamp_fac=0.01,  # 0.025, 0.1 for o2, 0.01 for 04
             divdamp_z=40000.0,
             divdamp_z2=50000.0,
             scal_divsign=1.0,
-            do_o2_divdamp=True,
+            first_order_div_threshold=0.0,
+            do_o2_divdamp=False,
             do_3d_divergence_damping=True,
-            divergence_order=2,
+            divergence_order=1,
             do_multiple_divdamp=False,
             number_of_divdamp_step=100,
             do_proper_diagnostics_divdamp=True,
@@ -1074,14 +1076,14 @@ def read_config(
 
     def _jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=600.0),
-            # end_date=datetime(1, 1, 15, 0, 0, 0),
-            end_date=datetime(1, 1, 1, 8, 0, 0),
+            dtime=timedelta(seconds=600.0),  # 600
+            end_date=datetime(1, 1, 15, 0, 0, 0),
+            # end_date=datetime(1, 1, 1, 2, 0, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
-            n_substeps=5,
+            n_substeps=5,  # 5
         )
-        jabw_output_config = _output_config()
+        jabw_output_config = _output_config(output_seconds_interval=14400.0)
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
         jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
         return (
@@ -1094,13 +1096,13 @@ def read_config(
     def _gauss3d_config():
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=3.0),
-            end_date=datetime(1, 1, 1, 0, 30, 0),
+            end_date=datetime(1, 1, 1, 0, 20, 0),
             # end_date=datetime(1, 1, 1, 0, 0, 6),
             damping_height=25000.0,
             apply_initial_stabilization=False,
             n_substeps=5,
         )
-        gauss3d_output_config = _output_config()
+        gauss3d_output_config = _output_config(output_seconds_interval=120.0)
         gauss3d_diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)
         gauss3d_nonhydro_config = _gauss3d_nonhydro_config(icon_run_config.n_substeps)
         return (
@@ -1109,7 +1111,7 @@ def read_config(
             gauss3d_diffusion_config,
             gauss3d_nonhydro_config,
         )
-    
+
     def _div_converge_config(dtime_seconds: float, end_date, output_seconds_interval: float):
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=dtime_seconds),
@@ -1128,7 +1130,7 @@ def read_config(
             div_converge_diffusion_config,
             div_converge_nonhydro_config,
         )
-    
+
     def _globe_div_converge_config(dtime_seconds: float, end_date, output_seconds_interval: float):
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=dtime_seconds),
@@ -1139,16 +1141,18 @@ def read_config(
             update_diagnostic=False,
         )
         globe_div_converge_output_config = _output_config(output_seconds_interval)
-        globe_div_converge_diffusion_config = _div_converge_diffusion_config(icon_run_config.n_substeps)
-        globe_div_converge_nonhydro_config = _div_converge_nonhydro_config(icon_run_config.n_substeps)
+        globe_div_converge_diffusion_config = _div_converge_diffusion_config(
+            icon_run_config.n_substeps
+        )
+        globe_div_converge_nonhydro_config = _div_converge_nonhydro_config(
+            icon_run_config.n_substeps
+        )
         return (
             icon_run_config,
             globe_div_converge_output_config,
             globe_div_converge_diffusion_config,
             globe_div_converge_nonhydro_config,
         )
-
-
 
     if experiment_type == ExperimentType.JABW:
         (

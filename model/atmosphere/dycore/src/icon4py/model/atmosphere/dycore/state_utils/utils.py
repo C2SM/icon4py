@@ -158,16 +158,19 @@ def _calculate_scal_divdamp_half(
     scal_divdamp: Field[[KDim], float],
     scal_divdamp_o2: Field[[KDim], float],
     vct_a: Field[[KDim], float],
+    divdamp_fac_w: float,
 ) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
     level_above_height = 0.5 * (vct_a + vct_a(Koff[-1]))
     level_below_height = 0.5 * (vct_a + vct_a(Koff[1]))
     return (
-        (
+        divdamp_fac_w
+        * (
             scal_divdamp(Koff[-1]) * (vct_a - level_below_height)
             + scal_divdamp * (level_above_height - vct_a)
         )
         / (level_above_height - level_below_height),
-        (
+        divdamp_fac_w
+        * (
             scal_divdamp_o2(Koff[-1]) * (vct_a - level_below_height)
             + scal_divdamp_o2 * (level_above_height - vct_a)
         )
@@ -180,6 +183,7 @@ def calculate_scal_divdamp_half(
     scal_divdamp: Field[[KDim], float],
     scal_divdamp_o2: Field[[KDim], float],
     vct_a: Field[[KDim], float],
+    divdamp_fac_w: float,
     scal_divdamp_half: Field[[KDim], float],
     scal_divdamp_o2_half: Field[[KDim], float],
     vertical_start: int32,
@@ -189,6 +193,7 @@ def calculate_scal_divdamp_half(
         scal_divdamp,
         scal_divdamp_o2,
         vct_a,
+        divdamp_fac_w,
         out=(scal_divdamp_half, scal_divdamp_o2_half),
         domain={KDim: (vertical_start, vertical_end)},
     )

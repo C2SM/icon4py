@@ -24,12 +24,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _apply_3d_divergence_damping_to_w(
     scal_divdamp_half: Field[[KDim], wpfloat],
     graddiv_vertical: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    z_w_divdamp: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
     graddiv_vertical_wp = astype(graddiv_vertical, wpfloat)
     scal_divdamp_half = broadcast(scal_divdamp_half, (CellDim, KDim))
-    w_wp = w + (scal_divdamp_half * graddiv_vertical_wp)
-    return w_wp
+    z_w_divdamp_wp = z_w_divdamp + scal_divdamp_half * graddiv_vertical_wp
+    return z_w_divdamp_wp
 
 
 @field_operator
@@ -51,7 +51,7 @@ def apply_3d_divergence_damping(
     graddiv_normal: Field[[EdgeDim, KDim], vpfloat],
     graddiv_vertical: Field[[CellDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    z_w_divdamp: Field[[CellDim, KDim], wpfloat],
     edge_horizontal_start: int32,
     edge_horizontal_end: int32,
     cell_horizontal_start: int32,
@@ -72,10 +72,38 @@ def apply_3d_divergence_damping(
     _apply_3d_divergence_damping_to_w(
         scal_divdamp_half,
         graddiv_vertical,
-        w,
-        out=w,
+        z_w_divdamp,
+        out=z_w_divdamp,
         domain={
             CellDim: (cell_horizontal_start, cell_horizontal_end),
             KDim: (vertical_start + 1, vertical_end),
+        },
+    )
+
+
+@field_operator
+def _apply_3d_divergence_damping_only_to_w(
+    w: Field[[CellDim, KDim], wpfloat],
+    z_w_divdamp: Field[[CellDim, KDim], wpfloat],
+) -> Field[[CellDim, KDim], wpfloat]:
+    return w + z_w_divdamp
+
+
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def apply_3d_divergence_damping_only_to_w(
+    w: Field[[CellDim, KDim], wpfloat],
+    z_w_divdamp: Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _apply_3d_divergence_damping_only_to_w(
+        w,
+        z_w_divdamp,
+        out=w,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

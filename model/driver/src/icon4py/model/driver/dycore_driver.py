@@ -68,6 +68,7 @@ from icon4py.model.driver.icon_configuration import (
     read_config,
 )
 from icon4py.model.driver.initialization_utils import (
+    DivWave,
     ExperimentType,
     SerializationType,
     configure_logging,
@@ -1098,11 +1099,11 @@ class TimeLoop:
                     "scal_divdamp"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_scal_divdamp
                 output_data[
-                    "before_flxdiv_vn"
-                ] = self.solve_nonhydro.output_intermediate_fields.output_before_flxdiv_vn
+                    "before_flxdiv1_vn"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_before_flxdiv1_vn
                 output_data[
-                    "after_flxdiv_vn"
-                ] = self.solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
+                    "after_flxdiv1_vn"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_after_flxdiv1_vn
                 output_data[
                     "before_flxdiv2_vn"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_before_flxdiv2_vn
@@ -1338,8 +1339,9 @@ def initialize(
     enable_output: bool,
     enable_debug_message: bool,
     dtime_seconds: float = None,
-    end_date = None,
-    output_seconds_interval: float = None
+    end_date=None,
+    output_seconds_interval: float = None,
+    div_wave: DivWave = None,
 ):
     """
     Inititalize the driver run.
@@ -1468,6 +1470,7 @@ def initialize(
         file_path,
         rank=props.rank,
         experiment_type=experiment_type,
+        div_wave=div_wave,
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
@@ -1653,14 +1656,14 @@ def initialize(
         ] = solve_nonhydro.output_intermediate_fields.output_graddiv_vertical
         output_data["scal_divdamp"] = solve_nonhydro.output_intermediate_fields.output_scal_divdamp
         output_data[
-            "before_flxdiv_vn"
-        ] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv_vn
+            "before_flxdiv1_vn"
+        ] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv1_vn
         output_data[
             "before_flxdiv2_vn"
         ] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv2_vn
         output_data[
-            "after_flxdiv_vn"
-        ] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
+            "after_flxdiv1_vn"
+        ] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv1_vn
         output_data[
             "after_flxdiv2_vn"
         ] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv2_vn

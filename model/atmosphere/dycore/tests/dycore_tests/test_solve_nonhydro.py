@@ -235,7 +235,14 @@ def test_nonhydro_predictor_step(
         sp_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
     import numpy as np
-    print('DEBUGDEBUG: ', np.abs(solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lb_plus2:, 1:] - sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lb_plus2:, 1:]).max())
+
+    print(
+        "DEBUGDEBUG: ",
+        np.abs(
+            solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lb_plus2:, 1:]
+            - sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lb_plus2:, 1:]
+        ).max(),
+    )
     assert dallclose(
         solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lb_plus2:, 1:],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lb_plus2:, 1:],

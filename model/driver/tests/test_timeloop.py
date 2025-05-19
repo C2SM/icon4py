@@ -294,6 +294,8 @@ def test_run_timeloop_single_step(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
+        graddiv_w_concorr_c=None,
+        graddiv_w_concorr_c_residual=None,
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),

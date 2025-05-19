@@ -44,9 +44,8 @@ class DiagnosticStateNonHydro:
     w_concorr_c: Field[
         [CellDim, KDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    graddiv_w_concorr_c: Field[
-        [CellDim, KDim], float
-    ]
+    graddiv_w_concorr_c: Field[[CellDim, KDim], float]
+    graddiv_w_concorr_c_residual: Field[[CellDim, KDim], float]
     theta_v_ic: Field[[CellDim, KDim], float]
     exner_pr: Field[[CellDim, KDim], float]
     rho_ic: Field[[CellDim, KDim], float]
@@ -161,6 +160,9 @@ class MetricStateNonHydro:
     coeff2_dwdz: Field[[CellDim, KDim], float]
     coeff_gradekin: Field[[ECDim], float]
 
+    pentagon_mask: Field[[CellDim], bool]
+    v2c_area_mask: Field[[VertexDim, V2CDim], float]
+
 
 @dataclass
 class PrepAdvection:
@@ -198,8 +200,8 @@ class OutputIntermediateFields:
     output_scal_divdamp: Field[[KDim], float]
     output_graddiv_normal: Field[[EdgeDim, KDim], float]
     output_graddiv_vertical: Field[[CellDim, KDim], float]
-    output_before_flxdiv_vn: Field[[CellDim, KDim], float]
-    output_after_flxdiv_vn: Field[[CellDim, KDim], float]
+    output_before_flxdiv1_vn: Field[[CellDim, KDim], float]
+    output_after_flxdiv1_vn: Field[[CellDim, KDim], float]
     output_before_flxdiv2_vn: Field[[CellDim, KDim], float]
     output_after_flxdiv2_vn: Field[[CellDim, KDim], float]
     output_before_vn: Field[[EdgeDim, KDim], float]
@@ -231,8 +233,8 @@ class OutputIntermediateFields:
             output_scal_divdamp=_allocate(KDim, grid=grid),
             output_graddiv_normal=_allocate(EdgeDim, KDim, grid=grid),
             output_graddiv_vertical=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
-            output_before_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
-            output_after_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
+            output_before_flxdiv1_vn=_allocate(CellDim, KDim, grid=grid),
+            output_after_flxdiv1_vn=_allocate(CellDim, KDim, grid=grid),
             output_before_flxdiv2_vn=_allocate(CellDim, KDim, grid=grid),
             output_after_flxdiv2_vn=_allocate(CellDim, KDim, grid=grid),
             output_before_vn=_allocate(EdgeDim, KDim, grid=grid),

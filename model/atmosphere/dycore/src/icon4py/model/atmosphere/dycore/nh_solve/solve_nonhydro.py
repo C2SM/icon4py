@@ -54,8 +54,10 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell,
     compute_divergence_of_flux,
     compute_2nd_order_divergence_of_flux,
+    compute_pure_2nd_order_divergence_of_flux,
     compute_graddiv,
     apply_3d_divergence_damping,
+    apply_3d_divergence_damping_only_to_w,
     compute_tangential_wind_and_contravariant,
     # end of new divergence stencils
     compute_dwdz_for_divergence_damping,
@@ -169,6 +171,7 @@ class IntermediateFields:
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     z_beta: Field[[CellDim, KDim], float]
+    z_w_divdamp: Field[[EdgeDim, KDim], float]
     z_w_expl: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
@@ -185,29 +188,36 @@ class IntermediateFields:
     z_rho_expl: Field[[CellDim, KDim], float]
     z_dwdz_dd: Field[[CellDim, KDim], float]
     # New variables for new divergence damping
-    z_flxdiv_vn: Field[[CellDim, KDim], float]
     z_flxdiv_vn_and_w: Field[[CellDim, KDim], float]
     z_graddiv_normal: Field[[EdgeDim, KDim], float]
     z_graddiv_vertical: Field[[CellDim, KDim], float]
     z_dgraddiv_dz: Field[[CellDim, KDim], float]
-    z_flxdiv_graddiv_vn: Field[[CellDim, KDim], float]
     z_flxdiv_graddiv_vn_and_w: Field[[CellDim, KDim], float]
-    z_flxdiv2order_vn_vertex: Field[[VertexDim, KDim], float]
-    z_flxdiv2order_graddiv_vn_vertex: Field[[VertexDim, KDim], float]
+    z_flxdiv_vn_and_w_residual: Field[[CellDim, KDim], float]
+    z_graddiv_normal_residual: Field[[EdgeDim, KDim], float]
+    z_graddiv_vertical_residual: Field[[CellDim, KDim], float]
+    z_dgraddiv_dz_residual: Field[[CellDim, KDim], float]
+    z_flxdiv_graddiv_vn_and_w_residual: Field[[CellDim, KDim], float]
+
+    # z_flxdiv2order_vn_vertex: Field[[VertexDim, KDim], float]
+    # z_flxdiv2order_graddiv_vn_vertex: Field[[VertexDim, KDim], float]
 
     vt: Field[[EdgeDim, KDim], float]
     z_w_concorr_me: Field[[EdgeDim, KDim], float]
     z_w_concorr_mc: Field[[CellDim, KDim], float]
-    
+
     z_graddiv_vt: Field[[EdgeDim, KDim], float]
+    z_graddiv_vt_residual: Field[[EdgeDim, KDim], float]
     z_graddiv_w_concorr_me: Field[[EdgeDim, KDim], float]
-    
+    z_graddiv_w_concorr_me_residual: Field[[EdgeDim, KDim], float]
+
     @classmethod
     def allocate(cls, grid: BaseGrid):
         return IntermediateFields(
             z_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
             z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
             z_beta=_allocate(CellDim, KDim, grid=grid),
+            z_w_divdamp=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
             z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
             z_exner_expl=_allocate(CellDim, KDim, grid=grid),
             z_q=_allocate(CellDim, KDim, grid=grid),
@@ -217,22 +227,27 @@ class IntermediateFields:
             z_graddiv_vn=_allocate(EdgeDim, KDim, grid=grid),
             z_rho_expl=_allocate(CellDim, KDim, grid=grid),
             z_dwdz_dd=_allocate(CellDim, KDim, grid=grid),
-            z_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
             z_flxdiv_vn_and_w=_allocate(CellDim, KDim, grid=grid),
+            z_flxdiv_vn_and_w_residual=_allocate(CellDim, KDim, grid=grid),
             z_graddiv_normal=_allocate(EdgeDim, KDim, grid=grid),
             z_graddiv_vertical=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
+            z_graddiv_normal_residual=_allocate(EdgeDim, KDim, grid=grid),
+            z_graddiv_vertical_residual=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
             z_dgraddiv_dz=_allocate(CellDim, KDim, grid=grid),
-            z_flxdiv_graddiv_vn=_allocate(CellDim, KDim, grid=grid),
+            z_dgraddiv_dz_residual=_allocate(CellDim, KDim, grid=grid),
             z_flxdiv_graddiv_vn_and_w=_allocate(CellDim, KDim, grid=grid),
-            z_flxdiv2order_vn_vertex=_allocate(VertexDim, KDim, grid=grid),
-            z_flxdiv2order_graddiv_vn_vertex=_allocate(VertexDim, KDim, grid=grid),
+            z_flxdiv_graddiv_vn_and_w_residual=_allocate(CellDim, KDim, grid=grid),
+            # z_flxdiv2order_vn_vertex=_allocate(VertexDim, KDim, grid=grid),
+            # z_flxdiv2order_graddiv_vn_vertex=_allocate(VertexDim, KDim, grid=grid),
             z_kin_hor_e=_allocate(EdgeDim, KDim, grid=grid),
             z_vt_ie=_allocate(EdgeDim, KDim, grid=grid),
             vt=_allocate(EdgeDim, KDim, grid=grid),
             z_w_concorr_me=_allocate(EdgeDim, KDim, grid=grid),
             z_w_concorr_mc=_allocate(CellDim, KDim, grid=grid),
             z_graddiv_vt=_allocate(EdgeDim, KDim, grid=grid),
+            z_graddiv_vt_residual=_allocate(EdgeDim, KDim, grid=grid),
             z_graddiv_w_concorr_me=_allocate(EdgeDim, KDim, grid=grid),
+            z_graddiv_w_concorr_me_residual=_allocate(EdgeDim, KDim, grid=grid),
         )
 
 
@@ -271,8 +286,10 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000.0,
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
-        scal_divsign: float = 1.0,
+        divdamp_fac_w: float = 1.0,
         htop_moist_proc: float = 22500.0,
+        scal_divsign: float = 1.0,
+        first_order_div_threshold: float = 1.0,
         do_o2_divdamp: bool = False,
         do_multiple_divdamp: bool = False,
         do_3d_divergence_damping: bool = False,
@@ -327,7 +344,7 @@ class NonHydrostaticConfig:
         self.divdamp_z3: float = divdamp_z3
         self.divdamp_z4: float = divdamp_z4
 
-        self.scal_divsign: float = scal_divsign
+        self.divdamp_fac_w: float = divdamp_fac_w
 
         #: height [m] where moist physics is turned off
         self.htop_moist_proc: float = htop_moist_proc
@@ -346,6 +363,9 @@ class NonHydrostaticConfig:
         self.is_iau_active: bool = is_iau_active
         #: IAU weight for dynamics fields
         self.iau_wgt_dyn: float = iau_wgt_dyn
+
+        self.scal_divsign: float = scal_divsign
+        self.first_order_div_threshold: float = first_order_div_threshold
 
         self.do_o2_divdamp = do_o2_divdamp
         self.do_multiple_divdamp = do_multiple_divdamp
@@ -378,6 +398,17 @@ class NonHydrostaticConfig:
 
         if self.divdamp_type == 32:
             raise NotImplementedError("divdamp_type with value 32 not yet implemented")
+
+        if self.divergence_order == 3 and self.do_o2_divdamp:
+            raise NotImplementedError(
+                "Divergence order 3 and doing o2 divdamp cannot be set simultaneously."
+            )
+
+        if self.divergence_order >= 2:
+            if self.do_3d_divergence_damping is False:
+                raise NotImplementedError(
+                    "If you use 2d divergence, please set divergence order to 1 because only order 1 is supported."
+                )
 
 
 class NonHydrostaticParams:
@@ -539,6 +570,10 @@ class SolveNonhydro:
         )  # this is on half level, however, it only has nlev levels without the ground.
         self.z_graddiv2_normal = _allocate(EdgeDim, KDim, grid=self.grid)
         self.z_graddiv2_vertical = _allocate(CellDim, KDim, grid=self.grid, is_halfdim=True)
+        self.z_graddiv2_normal_residual = _allocate(EdgeDim, KDim, grid=self.grid)
+        self.z_graddiv2_vertical_residual = _allocate(
+            CellDim, KDim, grid=self.grid, is_halfdim=True
+        )
         self.intermediate_fields = IntermediateFields.allocate(self.grid)
         self.output_intermediate_fields = OutputIntermediateFields.allocate(self.grid)
 
@@ -1552,10 +1587,18 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
+        init_cell_kdim_field_with_zero_vp(
+            field_with_zero_vp=z_fields.z_w_divdamp,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=int32(self.grid.num_levels + 1),
+            offset_provider={},
+        )
         """
         z_w_expl (1:nlev-1):
             Compute the explicit term in vertical momentum equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
-            z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
+            z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz + F_divdamp @ k+1/2 level
             advection of w = ddt_w_adv_pc
             cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz = cpd z_th_ddz_exner_c
             eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
@@ -1594,6 +1637,7 @@ class SolveNonhydro:
         stencils_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_state[nnow].w,
+            z_w_divdamp=z_fields.z_w_divdamp,
             ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -1927,7 +1971,7 @@ class SolveNonhydro:
         at_last_substep: bool,
         do_output: bool,
         do_output_step: int,
-        do_output_substep: int,  
+        do_output_substep: int,
     ):
         start_cell_lb_plus2 = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
@@ -2007,12 +2051,118 @@ class SolveNonhydro:
                         Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
                         Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
                     """
+                    compute_pure_2nd_order_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_prognostic_state.vn,
+                        dwdz=input_z_fields.z_dwdz_dd,
+                        area=self.cell_params.area,
+                        pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                        v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                        divergence=input_z_fields.z_flxdiv_vn_and_w,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+
+                elif order == 3:
+                    """
+                    z_flxdiv_vn_and_w and z_flxdiv_vn_and_w_residual (0:nlev-1):
+                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                    """
                     compute_2nd_order_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
                         vn=input_prognostic_state.vn,
                         dwdz=input_z_fields.z_dwdz_dd,
                         area=self.cell_params.area,
+                        pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                        v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                        scale=self.config.first_order_div_threshold,
                         divergence=input_z_fields.z_flxdiv_vn_and_w,
+                        divergence_residual=input_z_fields.z_flxdiv_vn_and_w_residual,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                else:
+                    raise NotImplementedError("Order = {order} must be 1 or 2 or 3")
+            elif step == 2:
+                if order == 1:
+                    """
+                    z_flxdiv_graddiv_vn_and_w (0:nlev-1):
+                        Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
+                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                    """
+                    compute_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_z_fields.z_graddiv_normal,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
+                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    if self.config.suppress_vertical_in_3d_divdamp:
+                        if device == Device.GPU:
+                            assert xp.abs(input_z_fields.z_dgraddiv_dz.ndarray).max() == 0.0
+                        else:
+                            assert xp.abs(input_z_fields.z_dgraddiv_dz.asnumpy()).max() == 0.0
+                elif order == 2:
+                    """
+                    z_flxdiv_graddiv_vn_and_w (0:nlev-1):
+                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                    """
+                    compute_pure_2nd_order_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_z_fields.z_graddiv_normal,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
+                        area=self.cell_params.area,
+                        pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                        v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    if self.config.suppress_vertical_in_3d_divdamp:
+                        if device == Device.GPU:
+                            assert xp.abs(input_z_fields.z_dgraddiv_dz.ndarray).max() == 0.0
+                        else:
+                            assert xp.abs(input_z_fields.z_dgraddiv_dz.asnumpy()).max() == 0.0
+                elif order == 3:
+                    """
+                    z_flxdiv_graddiv_vn_and_w and z_flxdiv_graddiv_vn_and_w_residual (0:nlev-1):
+                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                    """
+                    compute_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_z_fields.z_graddiv_normal_residual,
+                        dwdz=input_z_fields.z_dgraddiv_dz_residual,
+                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w_residual,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    compute_pure_2nd_order_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_z_fields.z_graddiv_normal,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
+                        area=self.cell_params.area,
+                        pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                        v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,
                         vertical_start=0,
@@ -2025,54 +2175,62 @@ class SolveNonhydro:
                         else:
                             assert xp.abs(input_z_fields.z_dgraddiv_dz.asnumpy()).max() == 0.0
                 else:
-                    raise NotImplementedError("Order = {order} must be 1 or 2")
-            elif step == 2:
-                if order == 1:
-                    """
-                    z_flxdiv_graddiv_vn_and_w (0:nlev-1):
-                        Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
-                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
-                    """
-                    compute_divergence_of_flux(
-                        geofac_div=self.interpolation_state.geofac_div,
-                        # vn=input_z_fields.z_flxdiv_graddiv_vn,
-                        vn=input_z_fields.z_graddiv_normal,
-                        dwdz=input_z_fields.z_dgraddiv_dz,
-                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                        horizontal_start=start_cell_nudging,
-                        horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider=self.grid.offset_providers,
-                    )
-                elif order == 2:
-                    """
-                    z_flxdiv_vn_and_w (0:nlev-1):
-                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
-                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
-                    """
-                    compute_2nd_order_divergence_of_flux(
-                        geofac_div=self.interpolation_state.geofac_div,
-                        # vn=input_z_fields.z_flxdiv_graddiv_vn,
-                        vn=input_z_fields.z_graddiv_normal,
-                        dwdz=input_z_fields.z_dgraddiv_dz,
-                        area=self.cell_params.area,
-                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                        horizontal_start=start_cell_nudging,
-                        horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider=self.grid.offset_providers,
-                    )
-                else:
-                    raise NotImplementedError("Order = {order} must be 1 or 2")
+                    raise NotImplementedError("Order = {order} must be 1 or 2 or 3")
             else:
                 raise NotImplementedError("Step = {step} must be 1 or 2")
+
+        def aux_func_divergence_for_output(
+            input_prognostic_state: PrognosticState,
+            input_z_fields: IntermediateFields,
+            output_flxdiv1_vn: Field[[CellDim, KDim], float],
+            output_flxdiv2_vn: Field[[CellDim, KDim], float],
+            step: int,
+        ):
+            if step == 1:
+                """
+                z_flxdiv_vn_and_w (0:nlev-1):
+                    Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
+                    Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                """
+                compute_divergence_of_flux(
+                    geofac_div=self.interpolation_state.geofac_div,
+                    vn=input_prognostic_state.vn,
+                    dwdz=input_z_fields.z_dwdz_dd,
+                    divergence=output_flxdiv1_vn,
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
+                    vertical_start=0,
+                    vertical_end=self.grid.num_levels,
+                    offset_provider=self.grid.offset_providers,
+                )
+                """
+                z_flxdiv_vn_and_w (0:nlev-1):
+                    Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                    Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                """
+                compute_pure_2nd_order_divergence_of_flux(
+                    geofac_div=self.interpolation_state.geofac_div,
+                    vn=input_prognostic_state.vn,
+                    dwdz=input_z_fields.z_dwdz_dd,
+                    area=self.cell_params.area,
+                    pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                    v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                    divergence=output_flxdiv2_vn,
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
+                    vertical_start=0,
+                    vertical_end=self.grid.num_levels,
+                    offset_provider=self.grid.offset_providers,
+                )
+
+            else:
+                raise NotImplementedError("Step = {step} must be 1")
 
         def aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
             input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
+            order: int,
             step: int,
         ):
             if step == 1:
@@ -2115,8 +2273,8 @@ class SolveNonhydro:
                     w=input_prognostic_state.w,
                     w_concorr_c=input_diagnostic_state_nh.w_concorr_c,
                     z_dwdz_dd=input_z_fields.z_dwdz_dd,
-                    horizontal_start=start_cell_lb,
-                    horizontal_end=end_cell_nudging_minus1,
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
                     vertical_start=self.params.kstart_dd3d,
                     vertical_end=self.grid.num_levels,
                     offset_provider=self.grid.offset_providers,
@@ -2153,12 +2311,46 @@ class SolveNonhydro:
                         w=input_z_fields.z_graddiv_vertical,
                         w_concorr_c=input_diagnostic_state_nh.graddiv_w_concorr_c,
                         z_dwdz_dd=input_z_fields.z_dgraddiv_dz,
-                        horizontal_start=start_cell_lb,
-                        horizontal_end=end_cell_nudging_minus1,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
                         vertical_start=self.params.kstart_dd3d,
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
+
+                    if order == 3:
+                        compute_tangential_wind_and_contravariant(
+                            rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                            ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                            ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                            vn=input_z_fields.z_graddiv_normal_residual,
+                            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                            wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                            vt=input_z_fields.z_graddiv_vt_residual,
+                            z_w_concorr_me=input_z_fields.z_graddiv_w_concorr_me_residual,
+                            w_concorr_c=input_diagnostic_state_nh.graddiv_w_concorr_c_residual,
+                            k_field=self.k_field,
+                            nflatlev_startindex=self.vertical_params.nflatlev,
+                            nlev=self.grid.num_levels,
+                            edge_horizontal_start=start_edge_lb_plus4,
+                            edge_horizontal_end=end_edge_local_minus2,
+                            cell_horizontal_start=start_cell_lb_plus3,
+                            cell_horizontal_end=end_cell_local_minus1,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        compute_dwdz_for_divergence_damping(
+                            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                            w=input_z_fields.z_graddiv_vertical_residual,
+                            w_concorr_c=input_diagnostic_state_nh.graddiv_w_concorr_c_residual,
+                            z_dwdz_dd=input_z_fields.z_dgraddiv_dz_residual,
+                            horizontal_start=start_cell_nudging,
+                            horizontal_end=end_cell_local,
+                            vertical_start=self.params.kstart_dd3d,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
                 else:
                     end_cell_nudging_minus1 = self.grid.get_end_index(
                         CellDim,
@@ -2168,41 +2360,110 @@ class SolveNonhydro:
                         inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                         z_dgraddiv_vertical=input_z_fields.z_graddiv_vertical,
                         z_dgraddiv_dz=input_z_fields.z_dgraddiv_dz,
-                        horizontal_start=start_cell_lb,
-                        horizontal_end=end_cell_nudging_minus1,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
                         vertical_start=self.params.kstart_dd3d,
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
+                    if order == 3:
+                        compute_dgraddiv_dz_for_full3d_divergence_damping(
+                            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                            z_dgraddiv_vertical=input_z_fields.z_graddiv_vertical_residual,
+                            z_dgraddiv_dz=input_z_fields.z_dgraddiv_dz_residual,
+                            horizontal_start=start_cell_nudging,
+                            horizontal_end=end_cell_local,
+                            vertical_start=self.params.kstart_dd3d,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
 
         def aux_func_graddiv(
             input_prognostic_state: PrognosticState,
             input_z_fields: IntermediateFields,
             do_3d_divergence: bool,
+            order: int,
             step: int,
         ):
             if do_3d_divergence:
                 if step == 1:
-                    """
-                    z_graddiv_normal (0:nlev-1):
-                        Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
-                    z_graddiv_vertical (1:nlev-1):
-                        Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
-                    """
-                    compute_graddiv(
-                        inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
-                        ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
-                        divergence=input_z_fields.z_flxdiv_vn_and_w,
-                        graddiv_normal=input_z_fields.z_graddiv_normal,
-                        graddiv_vertical=input_z_fields.z_graddiv_vertical,
-                        edge_horizontal_start=start_edge_nudging_plus1,
-                        edge_horizontal_end=end_edge_local,
-                        cell_horizontal_start=start_cell_nudging,
-                        cell_horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider=self.grid.offset_providers,
-                    )
+                    if order == 3:
+                        """
+                        z_graddiv_normal and z_graddiv_normal_residual (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        z_graddiv_vertical and z_graddiv_vertical_residual (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_vn_and_w,
+                            graddiv_normal=input_z_fields.z_graddiv_normal,
+                            graddiv_vertical=input_z_fields.z_graddiv_vertical,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_vn_and_w_residual,
+                            graddiv_normal=input_z_fields.z_graddiv_normal_residual,
+                            graddiv_vertical=input_z_fields.z_graddiv_vertical_residual,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        if self.config.suppress_vertical_in_3d_divdamp:
+                            init_cell_kdim_field_with_zero_vp(
+                                field_with_zero_vp=input_z_fields.z_graddiv_vertical_residual,
+                                horizontal_start=start_cell_nudging,
+                                horizontal_end=end_cell_local,
+                                vertical_start=0,
+                                vertical_end=int32(self.grid.num_levels + 1),
+                                offset_provider={},
+                            )
+                            if device == Device.GPU:
+                                assert (
+                                    xp.abs(input_z_fields.z_graddiv_vertical_residual.ndarray).max()
+                                    == 0.0
+                                ), f"the max of z_graddiv_vertical_residual and z_graddiv_normal_residual are {xp.abs(input_z_fields.z_graddiv_vertical_residual.ndarray).max()} {xp.abs(input_z_fields.z_graddiv_normal_residual.ndarray).max()}"
+                            else:
+                                assert (
+                                    xp.abs(
+                                        input_z_fields.z_graddiv_vertical_residual.asnumpy()
+                                    ).max()
+                                    == 0.0
+                                ), f"the max of z_graddiv_vertical_residual and z_graddiv_normal_residual are {xp.abs(input_z_fields.z_graddiv_vertical_residual.asnumpy()).max()} {xp.abs(input_z_fields.z_graddiv_normal_residual.asnumpy()).max()}"
+                    else:
+                        """
+                        z_graddiv_normal (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        z_graddiv_vertical (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_vn_and_w,
+                            graddiv_normal=input_z_fields.z_graddiv_normal,
+                            graddiv_vertical=input_z_fields.z_graddiv_vertical,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
                     if self.config.suppress_vertical_in_3d_divdamp:
                         init_cell_kdim_field_with_zero_vp(
                             field_with_zero_vp=input_z_fields.z_graddiv_vertical,
@@ -2213,30 +2474,87 @@ class SolveNonhydro:
                             offset_provider={},
                         )
                         if device == Device.GPU:
-                            assert xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max() == 0.0, f"the max of z_graddiv_vertical and z_graddiv_normal are {xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max()} {xp.abs(input_z_fields.z_graddiv_normal.ndarray).max()}"
+                            assert (
+                                xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max() == 0.0
+                            ), f"the max of z_graddiv_vertical and z_graddiv_normal are {xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max()} {xp.abs(input_z_fields.z_graddiv_normal.ndarray).max()}"
                         else:
-                            assert xp.abs(input_z_fields.z_graddiv_vertical.asnumpy()).max() == 0.0, f"the max of z_graddiv_vertical and z_graddiv_normal are {xp.abs(input_z_fields.z_graddiv_vertical.asnumpy()).max()} {xp.abs(input_z_fields.z_graddiv_normal.asnumpy()).max()}"
+                            assert (
+                                xp.abs(input_z_fields.z_graddiv_vertical.asnumpy()).max() == 0.0
+                            ), f"the max of z_graddiv_vertical and z_graddiv_normal are {xp.abs(input_z_fields.z_graddiv_vertical.asnumpy()).max()} {xp.abs(input_z_fields.z_graddiv_normal.asnumpy()).max()}"
                 elif step == 2:
-                    """
-                    z_graddiv2_normal (0:nlev-1):
-                        Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
-                    z_graddiv2_vertical (1:nlev-1):
-                        Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
-                    """
-                    compute_graddiv(
-                        inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
-                        ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
-                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                        graddiv_normal=self.z_graddiv2_normal,
-                        graddiv_vertical=self.z_graddiv2_vertical,
-                        edge_horizontal_start=start_edge_nudging_plus1,
-                        edge_horizontal_end=end_edge_local,
-                        cell_horizontal_start=start_cell_nudging,
-                        cell_horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider=self.grid.offset_providers,
-                    )
+                    if order == 3:
+                        """
+                        z_graddiv2_normal and z_graddiv2_normal_residual (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        z_graddiv2_vertical and z_graddiv2_vertical_residual (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
+                            graddiv_normal=self.z_graddiv2_normal,
+                            graddiv_vertical=self.z_graddiv2_vertical,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w_residual,
+                            graddiv_normal=self.z_graddiv2_normal_residual,
+                            graddiv_vertical=self.z_graddiv2_vertical_residual,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        if self.config.suppress_vertical_in_3d_divdamp:
+                            init_cell_kdim_field_with_zero_vp(
+                                field_with_zero_vp=self.z_graddiv2_vertical_residual,
+                                horizontal_start=start_cell_nudging,
+                                horizontal_end=end_cell_local,
+                                vertical_start=0,
+                                vertical_end=int32(self.grid.num_levels + 1),
+                                offset_provider={},
+                            )
+                            if device == Device.GPU:
+                                assert (
+                                    xp.abs(self.z_graddiv2_vertical_residual.ndarray).max() == 0.0
+                                ), f"the max of z_graddiv2_vertical_residual and z_graddiv2_normal_residual are {xp.abs(self.z_graddiv2_vertical_residual.ndarray).max()} {xp.abs(self.z_graddiv2_normal_residual.ndarray).max()}"
+                            else:
+                                assert (
+                                    xp.abs(self.z_graddiv2_vertical_residual.asnumpy()).max() == 0.0
+                                ), f"the max of z_graddiv2_vertical_residual and z_graddiv2_normal_residual are {xp.abs(self.z_graddiv2_vertical_residual.asnumpy()).max()} {xp.abs(self.z_graddiv2_normal_residual.asnumpy()).max()}"
+                    else:
+                        """
+                        z_graddiv2_normal (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        z_graddiv2_vertical (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
+                            graddiv_normal=self.z_graddiv2_normal,
+                            graddiv_vertical=self.z_graddiv2_vertical,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
                     if self.config.suppress_vertical_in_3d_divdamp:
                         init_cell_kdim_field_with_zero_vp(
                             field_with_zero_vp=self.z_graddiv2_vertical,
@@ -2247,9 +2565,13 @@ class SolveNonhydro:
                             offset_provider={},
                         )
                         if device == Device.GPU:
-                            assert xp.abs(self.z_graddiv2_vertical.ndarray).max() == 0.0, f"the max of z_graddiv2_vertical and z_graddiv2_normal are {xp.abs(self.z_graddiv2_vertical.ndarray).max()} {xp.abs(self.z_graddiv2_normal.ndarray).max()}"
+                            assert (
+                                xp.abs(self.z_graddiv2_vertical.ndarray).max() == 0.0
+                            ), f"the max of z_graddiv2_vertical and z_graddiv2_normal are {xp.abs(self.z_graddiv2_vertical.ndarray).max()} {xp.abs(self.z_graddiv2_normal.ndarray).max()}"
                         else:
-                            assert xp.abs(self.z_graddiv2_vertical.asnumpy()).max() == 0.0, f"the max of z_graddiv2_vertical and z_graddiv2_normal are {xp.abs(self.z_graddiv2_vertical.asnumpy()).max()} {xp.abs(self.z_graddiv2_normal.asnumpy()).max()}"
+                            assert (
+                                xp.abs(self.z_graddiv2_vertical.asnumpy()).max() == 0.0
+                            ), f"the max of z_graddiv2_vertical and z_graddiv2_normal are {xp.abs(self.z_graddiv2_vertical.asnumpy()).max()} {xp.abs(self.z_graddiv2_normal.asnumpy()).max()}"
             else:
                 if step == 1:
                     """
@@ -2310,23 +2632,12 @@ class SolveNonhydro:
             do_3d_divergence_damping: bool,
         ):
             if output_group == "before":
-                copy_cell_kdim_field_to_vp(
-                    field=input_z_fields.z_flxdiv_vn_and_w,
-                    field_copy=self.output_intermediate_fields.output_before_flxdiv_vn,
-                    horizontal_start=int32(0),
-                    horizontal_end=end_cell_local,
-                    vertical_start=int32(0),
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
-                )
-                copy_cell_kdim_field_to_vp(
-                    field=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                    field_copy=self.output_intermediate_fields.output_before_flxdiv2_vn,
-                    horizontal_start=int32(0),
-                    horizontal_end=end_cell_local,
-                    vertical_start=int32(0),
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
+                aux_func_divergence_for_output(
+                    input_prognostic_state,
+                    input_z_fields,
+                    self.output_intermediate_fields.output_before_flxdiv1_vn,
+                    self.output_intermediate_fields.output_before_flxdiv2_vn,
+                    step=1,
                 )
                 copy_edge_kdim_field_to_vp(
                     field=input_prognostic_state.vn,
@@ -2409,23 +2720,12 @@ class SolveNonhydro:
                         )
 
             elif output_group == "after":
-                copy_cell_kdim_field_to_vp(
-                    field=input_z_fields.z_flxdiv_vn_and_w,
-                    field_copy=self.output_intermediate_fields.output_after_flxdiv_vn,
-                    horizontal_start=int32(0),
-                    horizontal_end=end_cell_local,
-                    vertical_start=int32(0),
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
-                )
-                copy_cell_kdim_field_to_vp(
-                    field=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                    field_copy=self.output_intermediate_fields.output_after_flxdiv2_vn,
-                    horizontal_start=int32(0),
-                    horizontal_end=end_cell_local,
-                    vertical_start=int32(0),
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
+                aux_func_divergence_for_output(
+                    input_prognostic_state,
+                    input_z_fields,
+                    self.output_intermediate_fields.output_after_flxdiv1_vn,
+                    self.output_intermediate_fields.output_after_flxdiv2_vn,
+                    step=1,
                 )
                 copy_edge_kdim_field_to_vp(
                     field=input_prognostic_state.vn,
@@ -2446,120 +2746,6 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
-        def output_div_data(
-            input_prognostic_state: PrognosticState,
-            input_diagnostic_state_nh: DiagnosticStateNonHydro,
-            input_z_fields: IntermediateFields,
-            input_do_output_step: int,
-            input_do_output_substep: int,
-            input_order: int,
-            input_do_o2: bool,
-            input_do_3d_divergence_damping: bool,
-            do_compute_diagnostics: bool,
-        ):
-            if do_compute_diagnostics:
-                aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-                    input_prognostic_state,
-                    input_diagnostic_state_nh,
-                    input_z_fields,
-                    step=1,
-                )
-
-            aux_func_divergence(input_prognostic_state, input_z_fields, order=input_order, step=1)
-
-            filename = (
-                "divergence_data_"
-                + str(input_do_output_step)
-                + "_"
-                + str(input_do_output_substep)
-                + ".dat"
-            )
-            if os.path.exists(filename):
-                append_write = "a"  # append if already exists
-            else:
-                append_write = "w"  # make a new file if not
-            expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
-            temporary = self.cell_params.area.ndarray
-            temporary = xp.expand_dims(temporary, axis=-1)
-            expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
-            total_weight = xp.sum(xp.sum(expanded_weight * expanded_dz, axis=1), axis=0)
-            if input_do_3d_divergence_damping:
-                if not input_do_o2:
-                    temporary1 = self.z_graddiv2_vn.ndarray**2
-                else:
-                    temporary1 = input_z_fields.z_graddiv_vn.ndarray**2
-                temporary3 = xp.zeros_like(expanded_weight)
-                c2e = self.grid.connectivities[C2EDim]
-                for k in range(self.grid.num_levels):
-                    temporary3[:, k] = xp.sum(temporary1[c2e, k], axis=1)
-                    temporary3[:, k] = xp.sqrt(temporary3[:, k]) / 2.0
-                with open(filename, append_write) as f:
-                    # f.write(str(xp.sum(xp.abs(input_z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
-                    f.write(
-                        str(
-                            xp.sum(
-                                xp.sum(
-                                    expanded_weight
-                                    * expanded_dz
-                                    * xp.abs(input_z_fields.z_flxdiv_vn_and_w.ndarray),
-                                    axis=1,
-                                ),
-                                axis=0,
-                            )
-                            / total_weight
-                        )
-                        + "   "
-                        + str(
-                            xp.sum(
-                                xp.sum(expanded_weight * expanded_dz * xp.abs(temporary3), axis=1),
-                                axis=0,
-                            )
-                            / total_weight
-                        )
-                        + "\n"
-                    )
-            else:
-                if not input_do_o2:
-                    temporary1 = self.z_graddiv2_normal.ndarray**2
-                    temporary2 = self.z_graddiv2_vertical.ndarray**2
-                else:
-                    temporary1 = input_z_fields.z_graddiv_normal.ndarray**2
-                    temporary2 = input_z_fields.z_graddiv_vertical.ndarray**2
-                temporary1 = input_z_fields.z_graddiv_normal.ndarray**2
-                temporary2 = input_z_fields.z_graddiv_vertical.ndarray**2
-                temporary3 = xp.zeros_like(expanded_weight)
-                c2e = self.grid.connectivities[C2EDim]
-                for k in range(self.grid.num_levels):
-                    temporary3[:, k] = (
-                        xp.sum(temporary1[c2e, k], axis=1) + temporary2[:, k + 1] + temporary2[:, k]
-                    )
-                    temporary3[:, k] = xp.sqrt(temporary3[:, k]) / 2.0
-                with open(filename, append_write) as f:
-                    # f.write(str(xp.sum(xp.abs(input_z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
-                    f.write(
-                        str(
-                            xp.sum(
-                                xp.sum(
-                                    expanded_weight
-                                    * expanded_dz
-                                    * xp.abs(input_z_fields.z_flxdiv_vn_and_w.ndarray),
-                                    axis=1,
-                                ),
-                                axis=0,
-                            )
-                            / total_weight
-                        )
-                        + "   "
-                        + str(
-                            xp.sum(
-                                xp.sum(expanded_weight * expanded_dz * xp.abs(temporary3), axis=1),
-                                axis=0,
-                            )
-                            / total_weight
-                        )
-                        + "\n"
-                    )
-
         def aux_func_compute_divergence_damping(
             input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
@@ -2568,49 +2754,57 @@ class SolveNonhydro:
             do_o2: bool,
             do_compute_diagnostics: bool,
             do_3d_divergence_damping: bool,
-            do_for_output: bool = False,
         ):
-            
             if do_o2:
                 if do_compute_diagnostics:
                     aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-                        input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=1
+                        input_prognostic_state,
+                        input_diagnostic_state_nh,
+                        input_z_fields,
+                        order,
+                        step=1,
                     )
 
-                if do_3d_divergence_damping or do_for_output:
+                if do_3d_divergence_damping:
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=1)
                 aux_func_graddiv(
-                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=1
+                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, order, step=1
                 )
             else:
                 if do_compute_diagnostics:
                     aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-                        input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=1
+                        input_prognostic_state,
+                        input_diagnostic_state_nh,
+                        input_z_fields,
+                        order=order,
+                        step=1,
                     )
 
-                if do_3d_divergence_damping or do_for_output:
+                if do_3d_divergence_damping:
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=1)
                 aux_func_graddiv(
-                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=1
+                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, order, step=1
                 )
 
-                if do_3d_divergence_damping or do_for_output:
+                if do_3d_divergence_damping:
                     aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-                        input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=2
+                        input_prognostic_state,
+                        input_diagnostic_state_nh,
+                        input_z_fields,
+                        order,
+                        step=2,
                     )
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=2)
                 aux_func_graddiv(
-                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=2
+                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, order, step=2
                 )
 
         def aux_func_apply_divergence_damping(
             input_prognostic_state: PrognosticState,
-            input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
-            order: int,
             do_o2: bool,
-            do_compute_diagnostics: bool,
             do_3d_divergence_damping: bool,
+            order: int,
         ):
             if do_3d_divergence_damping:
                 if do_o2:
@@ -2628,7 +2822,8 @@ class SolveNonhydro:
                         graddiv_normal=input_z_fields.z_graddiv_normal,
                         graddiv_vertical=input_z_fields.z_graddiv_vertical,
                         vn=input_prognostic_state.vn,
-                        w=input_prognostic_state.w,
+                        # w=input_prognostic_state.w,
+                        z_w_divdamp=input_z_fields.z_w_divdamp,
                         edge_horizontal_start=start_edge_nudging_plus1,
                         edge_horizontal_end=end_edge_local,
                         cell_horizontal_start=int32(0),
@@ -2638,21 +2833,56 @@ class SolveNonhydro:
                         offset_provider={},
                     )
                 else:
-                    apply_3d_divergence_damping(
-                        scal_divdamp=self.scal_divdamp,
-                        scal_divdamp_half=self.scal_divdamp_half,
-                        graddiv_normal=self.z_graddiv2_normal,
-                        graddiv_vertical=self.z_graddiv2_vertical,
-                        vn=input_prognostic_state.vn,
-                        w=input_prognostic_state.w,
-                        edge_horizontal_start=start_edge_nudging_plus1,
-                        edge_horizontal_end=end_edge_local,
-                        cell_horizontal_start=int32(0),
-                        cell_horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider={},
-                    )
+                    if order == 3:
+                        apply_3d_divergence_damping(
+                            scal_divdamp=self.scal_divdamp,
+                            scal_divdamp_half=self.scal_divdamp_half,
+                            graddiv_normal=self.z_graddiv2_normal,
+                            graddiv_vertical=self.z_graddiv2_vertical,
+                            vn=input_prognostic_state.vn,
+                            # w=input_prognostic_state.w,
+                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=int32(0),
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                        apply_3d_divergence_damping(
+                            scal_divdamp=self.scal_divdamp,
+                            scal_divdamp_half=self.scal_divdamp_half,
+                            graddiv_normal=self.z_graddiv2_normal_residual,
+                            graddiv_vertical=self.z_graddiv2_vertical_residual,
+                            vn=input_prognostic_state.vn,
+                            # w=input_prognostic_state.w,
+                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=int32(0),
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                    else:
+                        apply_3d_divergence_damping(
+                            scal_divdamp=self.scal_divdamp,
+                            scal_divdamp_half=self.scal_divdamp_half,
+                            graddiv_normal=self.z_graddiv2_normal,
+                            graddiv_vertical=self.z_graddiv2_vertical,
+                            vn=input_prognostic_state.vn,
+                            # w=input_prognostic_state.w,
+                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=int32(0),
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
             else:
                 if do_o2:
                     apply_4th_order_divergence_damping(
@@ -2679,13 +2909,22 @@ class SolveNonhydro:
 
         scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
 
+        init_cell_kdim_field_with_zero_vp(
+            field_with_zero_vp=z_fields.z_w_divdamp,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=int32(self.grid.num_levels + 1),
+            offset_provider={},
+        )
+
         copy_cell_kdim_field_to_vp(
             field=prognostic_state[nnow].w,
             field_copy=prognostic_state[nnew].w,
             horizontal_start=int32(0),
             horizontal_end=end_cell_local,
             vertical_start=int32(0),
-            vertical_end=int32(self.grid.num_levels+1),
+            vertical_end=int32(self.grid.num_levels + 1),
             offset_provider={},
         )
         copy_edge_kdim_field_to_vp(
@@ -2725,6 +2964,7 @@ class SolveNonhydro:
             scal_divdamp=self.scal_divdamp,
             scal_divdamp_o2=self.scal_divdamp_o2,
             vct_a=self.vertical_params.vct_a,
+            divdamp_fac_w=self.config.divdamp_fac_w,
             scal_divdamp_half=self.scal_divdamp_half,
             scal_divdamp_o2_half=self.scal_divdamp_o2_half,
             # k_field=self.k_field,
@@ -2732,7 +2972,7 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
         )
-        
+
         aux_func_compute_divergence_damping(
             prognostic_state[nnew],
             diagnostic_state_nh,
@@ -2741,7 +2981,6 @@ class SolveNonhydro:
             do_o2=self.config.do_o2_divdamp,
             do_compute_diagnostics=True,
             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
-            do_for_output=True,
         )
         copy_data_to_output(
             prognostic_state[nnew],
@@ -2752,12 +2991,19 @@ class SolveNonhydro:
         )
         aux_func_apply_divergence_damping(
             prognostic_state[nnew],
-            diagnostic_state_nh,
             z_fields,
-            order=self.config.divergence_order,
             do_o2=self.config.do_o2_divdamp,
-            do_compute_diagnostics=False,
             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
+            order=self.config.divergence_order,
+        )
+        apply_3d_divergence_damping_only_to_w(
+            prognostic_state[nnew].w,
+            z_fields.z_w_divdamp,
+            horizontal_start=int32(0),
+            horizontal_end=end_cell_local,
+            vertical_start=int32(1),
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
         )
         aux_func_compute_divergence_damping(
             prognostic_state[nnew],
@@ -2767,7 +3013,6 @@ class SolveNonhydro:
             do_o2=self.config.do_o2_divdamp,
             do_compute_diagnostics=True,
             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
-            do_for_output=True,
         )
         copy_data_to_output(
             prognostic_state[nnew],
@@ -2776,7 +3021,7 @@ class SolveNonhydro:
             self.config.do_o2_divdamp,
             self.config.do_3d_divergence_damping,
         )
-        
+
     def run_corrector_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
@@ -2872,11 +3117,13 @@ class SolveNonhydro:
                         Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
                         Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
                     """
-                    compute_2nd_order_divergence_of_flux(
+                    compute_pure_2nd_order_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
                         vn=input_prognostic_state.vn,
                         dwdz=input_z_fields.z_dwdz_dd,
                         area=self.cell_params.area,
+                        pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                        v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
                         divergence=input_z_fields.z_flxdiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,
@@ -2884,8 +3131,30 @@ class SolveNonhydro:
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
+                elif order == 3:
+                    """
+                    z_flxdiv_vn_and_w and z_flxdiv_vn_and_w_residual (0:nlev-1):
+                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                    """
+                    compute_2nd_order_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_prognostic_state.vn,
+                        dwdz=input_z_fields.z_dwdz_dd,
+                        area=self.cell_params.area,
+                        pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                        v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                        scale=self.config.first_order_div_threshold,
+                        divergence=input_z_fields.z_flxdiv_vn_and_w,
+                        divergence_residual=input_z_fields.z_flxdiv_vn_and_w_residual,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
                 else:
-                    raise NotImplementedError("Order = {order} must be 1 or 2")
+                    raise NotImplementedError("Order = {order} must be 1 or 2 or 3")
             elif step == 2:
                 if order == 1:
                     """
@@ -2895,28 +3164,8 @@ class SolveNonhydro:
                     """
                     compute_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
-                        # vn=input_z_fields.z_flxdiv_graddiv_vn,
                         vn=input_z_fields.z_graddiv_normal,
                         dwdz=input_z_fields.z_dgraddiv_dz,
-                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                        horizontal_start=start_cell_nudging,
-                        horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider=self.grid.offset_providers,
-                    )
-                elif order == 2:
-                    """
-                    z_flxdiv_vn_and_w (0:nlev-1):
-                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
-                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
-                    """
-                    compute_2nd_order_divergence_of_flux(
-                        geofac_div=self.interpolation_state.geofac_div,
-                        # vn=input_z_fields.z_flxdiv_graddiv_vn,
-                        vn=input_z_fields.z_graddiv_normal,
-                        dwdz=input_z_fields.z_dgraddiv_dz,
-                        area=self.cell_params.area,
                         divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,
@@ -2929,15 +3178,130 @@ class SolveNonhydro:
                             assert xp.abs(input_z_fields.z_dgraddiv_dz.ndarray).max() == 0.0
                         else:
                             assert xp.abs(input_z_fields.z_dgraddiv_dz.asnumpy()).max() == 0.0
+                elif order == 2:
+                    """
+                    z_flxdiv_graddiv_vn_and_w (0:nlev-1):
+                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                    """
+                    compute_pure_2nd_order_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_z_fields.z_graddiv_normal,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
+                        area=self.cell_params.area,
+                        pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                        v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    if self.config.suppress_vertical_in_3d_divdamp:
+                        if device == Device.GPU:
+                            assert xp.abs(input_z_fields.z_dgraddiv_dz.ndarray).max() == 0.0
+                        else:
+                            assert xp.abs(input_z_fields.z_dgraddiv_dz.asnumpy()).max() == 0.0
+                elif order == 3:
+                    """
+                    z_flxdiv_graddiv_vn_and_w and z_flxdiv_graddiv_vn_and_w_residual (0:nlev-1):
+                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                    """
+                    compute_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_z_fields.z_graddiv_normal_residual,
+                        dwdz=input_z_fields.z_dgraddiv_dz_residual,
+                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w_residual,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    compute_pure_2nd_order_divergence_of_flux(
+                        geofac_div=self.interpolation_state.geofac_div,
+                        vn=input_z_fields.z_graddiv_normal,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
+                        area=self.cell_params.area,
+                        pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                        v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    if self.config.suppress_vertical_in_3d_divdamp:
+                        if device == Device.GPU:
+                            assert xp.abs(input_z_fields.z_dgraddiv_dz.ndarray).max() == 0.0
+                            assert (
+                                xp.abs(input_z_fields.z_dgraddiv_dz_residual.ndarray).max() == 0.0
+                            )
+                        else:
+                            assert xp.abs(input_z_fields.z_dgraddiv_dz.asnumpy()).max() == 0.0
+                            assert (
+                                xp.abs(input_z_fields.z_dgraddiv_dz_residual.asnumpy()).max() == 0.0
+                            )
                 else:
-                    raise NotImplementedError("Order = {order} must be 1 or 2")
+                    raise NotImplementedError("Order = {order} must be 1 or 2 or 3")
             else:
                 raise NotImplementedError("Step = {step} must be 1 or 2")
+
+        def aux_func_divergence_for_output(
+            input_prognostic_state: PrognosticState,
+            input_z_fields: IntermediateFields,
+            output_flxdiv1_vn: Field[[CellDim, KDim], float],
+            output_flxdiv2_vn: Field[[CellDim, KDim], float],
+            step: int,
+        ):
+            if step == 1:
+                """
+                z_flxdiv_vn_and_w (0:nlev-1):
+                    Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
+                    Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                """
+                compute_divergence_of_flux(
+                    geofac_div=self.interpolation_state.geofac_div,
+                    vn=input_prognostic_state.vn,
+                    dwdz=input_z_fields.z_dwdz_dd,
+                    divergence=output_flxdiv1_vn,
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
+                    vertical_start=0,
+                    vertical_end=self.grid.num_levels,
+                    offset_provider=self.grid.offset_providers,
+                )
+                """
+                z_flxdiv_vn_and_w (0:nlev-1):
+                    Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                    Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                """
+                compute_pure_2nd_order_divergence_of_flux(
+                    geofac_div=self.interpolation_state.geofac_div,
+                    vn=input_prognostic_state.vn,
+                    dwdz=input_z_fields.z_dwdz_dd,
+                    area=self.cell_params.area,
+                    pentagon_mask=self.metric_state_nonhydro.pentagon_mask,
+                    v2c_area_mask=self.metric_state_nonhydro.v2c_area_mask,
+                    divergence=output_flxdiv2_vn,
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
+                    vertical_start=0,
+                    vertical_end=self.grid.num_levels,
+                    offset_provider=self.grid.offset_providers,
+                )
+
+            else:
+                raise NotImplementedError("Step = {step} must be 1")
 
         def aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
             input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
+            order: int,
             step: int,
         ):
             if step == 1:
@@ -2980,8 +3344,8 @@ class SolveNonhydro:
                     w=input_prognostic_state.w,
                     w_concorr_c=input_diagnostic_state_nh.w_concorr_c,
                     z_dwdz_dd=input_z_fields.z_dwdz_dd,
-                    horizontal_start=start_cell_lb,
-                    horizontal_end=end_cell_nudging_minus1,
+                    horizontal_start=start_cell_nudging,
+                    horizontal_end=end_cell_local,
                     vertical_start=self.params.kstart_dd3d,
                     vertical_end=self.grid.num_levels,
                     offset_provider=self.grid.offset_providers,
@@ -3018,12 +3382,46 @@ class SolveNonhydro:
                         w=input_z_fields.z_graddiv_vertical,
                         w_concorr_c=input_diagnostic_state_nh.graddiv_w_concorr_c,
                         z_dwdz_dd=input_z_fields.z_dgraddiv_dz,
-                        horizontal_start=start_cell_lb,
-                        horizontal_end=end_cell_nudging_minus1,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
                         vertical_start=self.params.kstart_dd3d,
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
+
+                    if order == 3:
+                        compute_tangential_wind_and_contravariant(
+                            rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                            ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                            ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                            vn=input_z_fields.z_graddiv_normal_residual,
+                            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                            wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                            vt=input_z_fields.z_graddiv_vt_residual,
+                            z_w_concorr_me=input_z_fields.z_graddiv_w_concorr_me_residual,
+                            w_concorr_c=input_diagnostic_state_nh.graddiv_w_concorr_c_residual,
+                            k_field=self.k_field,
+                            nflatlev_startindex=self.vertical_params.nflatlev,
+                            nlev=self.grid.num_levels,
+                            edge_horizontal_start=start_edge_lb_plus4,
+                            edge_horizontal_end=end_edge_local_minus2,
+                            cell_horizontal_start=start_cell_lb_plus3,
+                            cell_horizontal_end=end_cell_local_minus1,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        compute_dwdz_for_divergence_damping(
+                            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                            w=input_z_fields.z_graddiv_vertical_residual,
+                            w_concorr_c=input_diagnostic_state_nh.graddiv_w_concorr_c_residual,
+                            z_dwdz_dd=input_z_fields.z_dgraddiv_dz_residual,
+                            horizontal_start=start_cell_nudging,
+                            horizontal_end=end_cell_local,
+                            vertical_start=self.params.kstart_dd3d,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
                 else:
                     end_cell_nudging_minus1 = self.grid.get_end_index(
                         CellDim,
@@ -3033,41 +3431,110 @@ class SolveNonhydro:
                         inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                         z_dgraddiv_vertical=input_z_fields.z_graddiv_vertical,
                         z_dgraddiv_dz=input_z_fields.z_dgraddiv_dz,
-                        horizontal_start=start_cell_lb,
-                        horizontal_end=end_cell_nudging_minus1,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
                         vertical_start=self.params.kstart_dd3d,
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
+                    if order == 3:
+                        compute_dgraddiv_dz_for_full3d_divergence_damping(
+                            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                            z_dgraddiv_vertical=input_z_fields.z_graddiv_vertical_residual,
+                            z_dgraddiv_dz=input_z_fields.z_dgraddiv_dz_residual,
+                            horizontal_start=start_cell_nudging,
+                            horizontal_end=end_cell_local,
+                            vertical_start=self.params.kstart_dd3d,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
 
         def aux_func_graddiv(
             input_prognostic_state: PrognosticState,
             input_z_fields: IntermediateFields,
             do_3d_divergence: bool,
+            order: int,
             step: int,
         ):
             if do_3d_divergence:
                 if step == 1:
-                    """
-                    z_graddiv_normal (0:nlev-1):
-                        Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
-                    z_graddiv_vertical (1:nlev-1):
-                        Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
-                    """
-                    compute_graddiv(
-                        inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
-                        ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
-                        divergence=input_z_fields.z_flxdiv_vn_and_w,
-                        graddiv_normal=input_z_fields.z_graddiv_normal,
-                        graddiv_vertical=input_z_fields.z_graddiv_vertical,
-                        edge_horizontal_start=start_edge_nudging_plus1,
-                        edge_horizontal_end=end_edge_local,
-                        cell_horizontal_start=start_cell_nudging,
-                        cell_horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider=self.grid.offset_providers,
-                    )
+                    if order == 3:
+                        """
+                        z_graddiv_normal and z_graddiv_normal_residual (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        z_graddiv_vertical and z_graddiv_vertical_residual (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_vn_and_w,
+                            graddiv_normal=input_z_fields.z_graddiv_normal,
+                            graddiv_vertical=input_z_fields.z_graddiv_vertical,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_vn_and_w_residual,
+                            graddiv_normal=input_z_fields.z_graddiv_normal_residual,
+                            graddiv_vertical=input_z_fields.z_graddiv_vertical_residual,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        if self.config.suppress_vertical_in_3d_divdamp:
+                            init_cell_kdim_field_with_zero_vp(
+                                field_with_zero_vp=input_z_fields.z_graddiv_vertical_residual,
+                                horizontal_start=start_cell_nudging,
+                                horizontal_end=end_cell_local,
+                                vertical_start=0,
+                                vertical_end=int32(self.grid.num_levels + 1),
+                                offset_provider={},
+                            )
+                            if device == Device.GPU:
+                                assert (
+                                    xp.abs(input_z_fields.z_graddiv_vertical_residual.ndarray).max()
+                                    == 0.0
+                                ), f"the max of z_graddiv_vertical_residual and z_graddiv_normal_residual are {xp.abs(input_z_fields.z_graddiv_vertical_residual.ndarray).max()} {xp.abs(input_z_fields.z_graddiv_normal_residual.ndarray).max()}"
+                            else:
+                                assert (
+                                    xp.abs(
+                                        input_z_fields.z_graddiv_vertical_residual.asnumpy()
+                                    ).max()
+                                    == 0.0
+                                ), f"the max of z_graddiv_vertical_residual and z_graddiv_normal_residual are {xp.abs(input_z_fields.z_graddiv_vertical_residual.asnumpy()).max()} {xp.abs(input_z_fields.z_graddiv_normal_residual.asnumpy()).max()}"
+                    else:
+                        """
+                        z_graddiv_normal (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        z_graddiv_vertical (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_vn_and_w,
+                            graddiv_normal=input_z_fields.z_graddiv_normal,
+                            graddiv_vertical=input_z_fields.z_graddiv_vertical,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
                     if self.config.suppress_vertical_in_3d_divdamp:
                         init_cell_kdim_field_with_zero_vp(
                             field_with_zero_vp=input_z_fields.z_graddiv_vertical,
@@ -3078,30 +3545,87 @@ class SolveNonhydro:
                             offset_provider={},
                         )
                         if device == Device.GPU:
-                            assert xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max() == 0.0, f"the max of z_graddiv_vertical and z_graddiv_normal are {xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max()} {xp.abs(input_z_fields.z_graddiv_normal.ndarray).max()}"
+                            assert (
+                                xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max() == 0.0
+                            ), f"the max of z_graddiv_vertical and z_graddiv_normal are {xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max()} {xp.abs(input_z_fields.z_graddiv_normal.ndarray).max()}"
                         else:
-                            assert xp.abs(input_z_fields.z_graddiv_vertical.asnumpy()).max() == 0.0, f"the max of z_graddiv_vertical and z_graddiv_normal are {xp.abs(input_z_fields.z_graddiv_vertical.asnumpy()).max()} {xp.abs(input_z_fields.z_graddiv_normal.asnumpy()).max()}"
+                            assert (
+                                xp.abs(input_z_fields.z_graddiv_vertical.asnumpy()).max() == 0.0
+                            ), f"the max of z_graddiv_vertical and z_graddiv_normal are {xp.abs(input_z_fields.z_graddiv_vertical.asnumpy()).max()} {xp.abs(input_z_fields.z_graddiv_normal.asnumpy()).max()}"
                 elif step == 2:
-                    """
-                    z_graddiv2_normal (0:nlev-1):
-                        Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
-                    z_graddiv2_vertical (1:nlev-1):
-                        Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
-                    """
-                    compute_graddiv(
-                        inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
-                        ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
-                        divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                        graddiv_normal=self.z_graddiv2_normal,
-                        graddiv_vertical=self.z_graddiv2_vertical,
-                        edge_horizontal_start=start_edge_nudging_plus1,
-                        edge_horizontal_end=end_edge_local,
-                        cell_horizontal_start=start_cell_nudging,
-                        cell_horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider=self.grid.offset_providers,
-                    )
+                    if order == 3:
+                        """
+                        z_graddiv2_normal and z_graddiv2_normal_residual (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        z_graddiv2_vertical and z_graddiv2_vertical_residual (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
+                            graddiv_normal=self.z_graddiv2_normal,
+                            graddiv_vertical=self.z_graddiv2_vertical,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w_residual,
+                            graddiv_normal=self.z_graddiv2_normal_residual,
+                            graddiv_vertical=self.z_graddiv2_vertical_residual,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        if self.config.suppress_vertical_in_3d_divdamp:
+                            init_cell_kdim_field_with_zero_vp(
+                                field_with_zero_vp=self.z_graddiv2_vertical_residual,
+                                horizontal_start=start_cell_nudging,
+                                horizontal_end=end_cell_local,
+                                vertical_start=0,
+                                vertical_end=int32(self.grid.num_levels + 1),
+                                offset_provider={},
+                            )
+                            if device == Device.GPU:
+                                assert (
+                                    xp.abs(self.z_graddiv2_vertical_residual.ndarray).max() == 0.0
+                                ), f"the max of z_graddiv2_vertical_residual and z_graddiv2_normal_residual are {xp.abs(self.z_graddiv2_vertical_residual.ndarray).max()} {xp.abs(self.z_graddiv2_normal_residual.ndarray).max()}"
+                            else:
+                                assert (
+                                    xp.abs(self.z_graddiv2_vertical_residual.asnumpy()).max() == 0.0
+                                ), f"the max of z_graddiv2_vertical_residual and z_graddiv2_normal_residual are {xp.abs(self.z_graddiv2_vertical_residual.asnumpy()).max()} {xp.abs(self.z_graddiv2_normal_residual.asnumpy()).max()}"
+                    else:
+                        """
+                        z_graddiv2_normal (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        z_graddiv2_vertical (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_graddiv(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
+                            graddiv_normal=self.z_graddiv2_normal,
+                            graddiv_vertical=self.z_graddiv2_vertical,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=start_cell_nudging,
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
                     if self.config.suppress_vertical_in_3d_divdamp:
                         init_cell_kdim_field_with_zero_vp(
                             field_with_zero_vp=self.z_graddiv2_vertical,
@@ -3112,9 +3636,13 @@ class SolveNonhydro:
                             offset_provider={},
                         )
                         if device == Device.GPU:
-                            assert xp.abs(self.z_graddiv2_vertical.ndarray).max() == 0.0, f"the max of z_graddiv2_vertical and z_graddiv2_normal are {xp.abs(self.z_graddiv2_vertical.ndarray).max()} {xp.abs(self.z_graddiv2_normal.ndarray).max()}"
+                            assert (
+                                xp.abs(self.z_graddiv2_vertical.ndarray).max() == 0.0
+                            ), f"the max of z_graddiv2_vertical and z_graddiv2_normal are {xp.abs(self.z_graddiv2_vertical.ndarray).max()} {xp.abs(self.z_graddiv2_normal.ndarray).max()}"
                         else:
-                            assert xp.abs(self.z_graddiv2_vertical.asnumpy()).max() == 0.0, f"the max of z_graddiv2_vertical and z_graddiv2_normal are {xp.abs(self.z_graddiv2_vertical.asnumpy()).max()} {xp.abs(self.z_graddiv2_normal.asnumpy()).max()}"
+                            assert (
+                                xp.abs(self.z_graddiv2_vertical.asnumpy()).max() == 0.0
+                            ), f"the max of z_graddiv2_vertical and z_graddiv2_normal are {xp.abs(self.z_graddiv2_vertical.asnumpy()).max()} {xp.abs(self.z_graddiv2_normal.asnumpy()).max()}"
             else:
                 if step == 1:
                     """
@@ -3175,23 +3703,12 @@ class SolveNonhydro:
             do_3d_divergence_damping: bool,
         ):
             if output_group == "before":
-                copy_cell_kdim_field_to_vp(
-                    field=input_z_fields.z_flxdiv_vn_and_w,
-                    field_copy=self.output_intermediate_fields.output_before_flxdiv_vn,
-                    horizontal_start=int32(0),
-                    horizontal_end=end_cell_local,
-                    vertical_start=int32(0),
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
-                )
-                copy_cell_kdim_field_to_vp(
-                    field=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                    field_copy=self.output_intermediate_fields.output_before_flxdiv2_vn,
-                    horizontal_start=int32(0),
-                    horizontal_end=end_cell_local,
-                    vertical_start=int32(0),
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
+                aux_func_divergence_for_output(
+                    input_prognostic_state,
+                    input_z_fields,
+                    self.output_intermediate_fields.output_before_flxdiv1_vn,
+                    self.output_intermediate_fields.output_before_flxdiv2_vn,
+                    step=1,
                 )
                 copy_edge_kdim_field_to_vp(
                     field=input_prognostic_state.vn,
@@ -3274,23 +3791,12 @@ class SolveNonhydro:
                         )
 
             elif output_group == "after":
-                copy_cell_kdim_field_to_vp(
-                    field=input_z_fields.z_flxdiv_vn_and_w,
-                    field_copy=self.output_intermediate_fields.output_after_flxdiv_vn,
-                    horizontal_start=int32(0),
-                    horizontal_end=end_cell_local,
-                    vertical_start=int32(0),
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
-                )
-                copy_cell_kdim_field_to_vp(
-                    field=input_z_fields.z_flxdiv_graddiv_vn_and_w,
-                    field_copy=self.output_intermediate_fields.output_after_flxdiv2_vn,
-                    horizontal_start=int32(0),
-                    horizontal_end=end_cell_local,
-                    vertical_start=int32(0),
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
+                aux_func_divergence_for_output(
+                    input_prognostic_state,
+                    input_z_fields,
+                    self.output_intermediate_fields.output_after_flxdiv1_vn,
+                    self.output_intermediate_fields.output_after_flxdiv2_vn,
+                    step=1,
                 )
                 copy_edge_kdim_field_to_vp(
                     field=input_prognostic_state.vn,
@@ -3312,26 +3818,12 @@ class SolveNonhydro:
                 )
 
         def output_div_data(
-            input_prognostic_state: PrognosticState,
-            input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             input_do_output_step: int,
             input_do_output_substep: int,
-            input_order: int,
             input_do_o2: bool,
             input_do_3d_divergence_damping: bool,
-            do_compute_diagnostics: bool,
         ):
-            if do_compute_diagnostics:
-                aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-                    input_prognostic_state,
-                    input_diagnostic_state_nh,
-                    input_z_fields,
-                    step=1,
-                )
-
-            aux_func_divergence(input_prognostic_state, input_z_fields, order=input_order, step=1)
-
             filename = (
                 "divergence_data_"
                 + str(input_do_output_step)
@@ -3433,7 +3925,6 @@ class SolveNonhydro:
             do_o2: bool,
             do_compute_diagnostics: bool,
             do_3d_divergence_damping: bool,
-            do_for_output: bool = False,
         ):
             # debug_z_graddiv2_vn = _allocate(EdgeDim, KDim, grid=self.grid)
             # debug_z_graddiv_vn = _allocate(EdgeDim, KDim, grid=self.grid)
@@ -3459,44 +3950,60 @@ class SolveNonhydro:
             if do_o2:
                 if do_compute_diagnostics:
                     aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-                        input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=1
+                        input_prognostic_state,
+                        input_diagnostic_state_nh,
+                        input_z_fields,
+                        order,
+                        step=1,
                     )
 
-                if do_3d_divergence_damping or do_for_output:
+                if do_3d_divergence_damping:
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=1)
                 aux_func_graddiv(
-                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=1
+                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, order, step=1
                 )
             else:
                 if do_compute_diagnostics:
                     aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-                        input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=1
+                        input_prognostic_state,
+                        input_diagnostic_state_nh,
+                        input_z_fields,
+                        order,
+                        step=1,
                     )
 
-                if do_3d_divergence_damping or do_for_output:
+                if do_3d_divergence_damping:
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=1)
                 aux_func_graddiv(
-                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=1
+                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, order, step=1
                 )
 
-                if do_3d_divergence_damping or do_for_output:
+                if do_3d_divergence_damping:
                     aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-                        input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=2
+                        input_prognostic_state,
+                        input_diagnostic_state_nh,
+                        input_z_fields,
+                        order,
+                        step=2,
                     )
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=2)
                 aux_func_graddiv(
-                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=2
+                    input_prognostic_state, input_z_fields, do_3d_divergence_damping, order, step=2
                 )
 
         def aux_func_apply_divergence_damping(
             input_prognostic_state: PrognosticState,
-            input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
-            order: int,
             do_o2: bool,
-            do_compute_diagnostics: bool,
             do_3d_divergence_damping: bool,
+            order: int,
         ):
+            log.critical(
+                f"vertical absolute max value: {xp.abs(input_z_fields.z_graddiv_vertical.ndarray).max()} {xp.abs(input_z_fields.z_dgraddiv_dz.ndarray).max()} {xp.abs(self.z_graddiv2_vertical.ndarray).max()}"
+            )
+            log.critical(
+                f"horizontal absolute max value: {xp.abs(self.z_graddiv2_normal.ndarray).max()}"
+            )
             if do_3d_divergence_damping:
                 if do_o2:
                     """
@@ -3513,7 +4020,8 @@ class SolveNonhydro:
                         graddiv_normal=input_z_fields.z_graddiv_normal,
                         graddiv_vertical=input_z_fields.z_graddiv_vertical,
                         vn=input_prognostic_state.vn,
-                        w=input_prognostic_state.w,
+                        # w=input_prognostic_state.w,
+                        z_w_divdamp=input_z_fields.z_w_divdamp,
                         edge_horizontal_start=start_edge_nudging_plus1,
                         edge_horizontal_end=end_edge_local,
                         cell_horizontal_start=int32(0),
@@ -3523,21 +4031,61 @@ class SolveNonhydro:
                         offset_provider={},
                     )
                 else:
-                    apply_3d_divergence_damping(
-                        scal_divdamp=self.scal_divdamp,
-                        scal_divdamp_half=self.scal_divdamp_half,
-                        graddiv_normal=self.z_graddiv2_normal,
-                        graddiv_vertical=self.z_graddiv2_vertical,
-                        vn=input_prognostic_state.vn,
-                        w=input_prognostic_state.w,
-                        edge_horizontal_start=start_edge_nudging_plus1,
-                        edge_horizontal_end=end_edge_local,
-                        cell_horizontal_start=int32(0),
-                        cell_horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider={},
-                    )
+                    if order == 3:
+                        apply_3d_divergence_damping(
+                            scal_divdamp=self.scal_divdamp,
+                            scal_divdamp_half=self.scal_divdamp_half,
+                            graddiv_normal=self.z_graddiv2_normal,
+                            graddiv_vertical=self.z_graddiv2_vertical,
+                            vn=input_prognostic_state.vn,
+                            # w=input_prognostic_state.w,
+                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=int32(0),
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                        apply_3d_divergence_damping(
+                            scal_divdamp=self.scal_divdamp,
+                            scal_divdamp_half=self.scal_divdamp_half,
+                            graddiv_normal=self.z_graddiv2_normal_residual,
+                            graddiv_vertical=self.z_graddiv2_vertical_residual,
+                            vn=input_prognostic_state.vn,
+                            # w=input_prognostic_state.w,
+                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=int32(0),
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                    else:
+                        w_copy = xp.array(input_prognostic_state.w.ndarray, copy=True)
+                        vn_copy = xp.array(input_prognostic_state.vn.ndarray, copy=True)
+                        apply_3d_divergence_damping(
+                            scal_divdamp=self.scal_divdamp,
+                            scal_divdamp_half=self.scal_divdamp_half,
+                            graddiv_normal=self.z_graddiv2_normal,
+                            graddiv_vertical=self.z_graddiv2_vertical,
+                            vn=input_prognostic_state.vn,
+                            # w=input_prognostic_state.w,
+                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            edge_horizontal_start=start_edge_nudging_plus1,
+                            edge_horizontal_end=end_edge_local,
+                            cell_horizontal_start=int32(0),
+                            cell_horizontal_end=end_cell_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                        log.critical(
+                            f"wind max diff value: {xp.abs(input_prognostic_state.vn.ndarray - vn_copy).max()} {xp.abs(input_prognostic_state.w.ndarray - w_copy).max()}"
+                        )
             else:
                 if do_o2:
                     apply_4th_order_divergence_damping(
@@ -3604,6 +4152,7 @@ class SolveNonhydro:
             scal_divdamp=self.scal_divdamp,
             scal_divdamp_o2=self.scal_divdamp_o2,
             vct_a=self.vertical_params.vct_a,
+            divdamp_fac_w=self.config.divdamp_fac_w,
             scal_divdamp_half=self.scal_divdamp_half,
             scal_divdamp_o2_half=self.scal_divdamp_o2_half,
             # k_field=self.k_field,
@@ -3953,24 +4502,18 @@ class SolveNonhydro:
                         self.config.do_3d_divergence_damping,
                     )
                     output_div_data(
-                        prognostic_state[nnew],
-                        diagnostic_state_nh,
                         z_fields,
                         do_output_step,
                         do_output_substep,
-                        self.config.divergence_order,
                         self.config.do_o2_divdamp,
                         self.config.do_3d_divergence_damping,
-                        do_compute_diagnostics=False,
                     )
                 aux_func_apply_divergence_damping(
                     prognostic_state[nnew],
-                    diagnostic_state_nh,
                     z_fields,
-                    order=self.config.divergence_order,
                     do_o2=self.config.do_o2_divdamp,
-                    do_compute_diagnostics=False,
                     do_3d_divergence_damping=self.config.do_3d_divergence_damping,
+                    order=self.config.divergence_order,
                 )
 
                 if do_output:
@@ -3983,15 +4526,11 @@ class SolveNonhydro:
                     )
                     self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
                     output_div_data(
-                        prognostic_state[nnew],
-                        diagnostic_state_nh,
                         z_fields,
                         do_output_step,
                         do_output_substep,
-                        self.config.divergence_order,
                         self.config.do_o2_divdamp,
                         self.config.do_3d_divergence_damping,
-                        do_compute_diagnostics=True,
                     )
 
                 if self.config.do_multiple_divdamp:
@@ -4007,24 +4546,18 @@ class SolveNonhydro:
                         )
                         aux_func_apply_divergence_damping(
                             prognostic_state[nnew],
-                            diagnostic_state_nh,
                             z_fields,
-                            order=self.config.divergence_order,
                             do_o2=self.config.do_o2_divdamp,
-                            do_compute_diagnostics=True,
                             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
+                            order=self.config.divergence_order,
                         )
                         if do_output:
                             output_div_data(
-                                prognostic_state[nnew],
-                                diagnostic_state_nh,
                                 z_fields,
                                 do_output_step,
                                 do_output_substep,
-                                self.config.divergence_order,
                                 self.config.do_o2_divdamp,
                                 self.config.do_3d_divergence_damping,
-                                do_compute_diagnostics=True,
                             )
 
         # log.info(
@@ -4208,7 +4741,7 @@ class SolveNonhydro:
             """
             z_w_expl (1:nlev-1):
                 Compute the explicit term in vertical momentum equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
-                z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
+                z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz + F_divdamp @ k+1/2 level
                 advection of w_{k} = wgt_nnow_vel advection^{n}_{k} + wgt_nnew_rth advecton^{n+1*}_{k}
                 advection^{n} is ddt_vn_apc_pc[self.ntl1], which is computed in predictor step.
                 advection^{n+1*} is ddt_vn_apc_pc[self.ntl2], which is computed in velocity advecton corrector step.
@@ -4251,6 +4784,7 @@ class SolveNonhydro:
             stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
+                z_w_divdamp=z_fields.z_w_divdamp,
                 ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
                 ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc[self.ntl2],
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
@@ -4295,7 +4829,7 @@ class SolveNonhydro:
             """
             z_w_expl (1:nlev-1):
                 Compute the explicit term in vertical momentum equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
-                z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
+                z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz + F_divdamp @ k+1/2 level
                 advection of w = ddt_w_adv_pc
                 cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz = cpd z_th_ddz_exner_c
                 eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
@@ -4334,6 +4868,7 @@ class SolveNonhydro:
             stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
+                z_w_divdamp=z_fields.z_w_divdamp,
                 ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,

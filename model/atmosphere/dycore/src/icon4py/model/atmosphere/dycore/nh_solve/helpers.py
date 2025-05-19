@@ -57,6 +57,7 @@ from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
 )
 from icon4py.model.atmosphere.dycore.apply_3d_divergence_damping import (
     apply_3d_divergence_damping as apply_3d_divergence_damping_orig,
+    apply_3d_divergence_damping_only_to_w as apply_3d_divergence_damping_only_to_w_orig,
 )
 from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_vn import (
     apply_4th_order_3d_divergence_damping_to_vn as apply_4th_order_3d_divergence_damping_to_vn_orig,
@@ -81,6 +82,7 @@ from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence
 )
 from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux import (
     compute_2nd_order_divergence_of_flux as compute_2nd_order_divergence_of_flux_orig,
+    compute_pure_2nd_order_divergence_of_flux as compute_pure_2nd_order_divergence_of_flux_orig,
 )
 from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_full3d_graddiv import (
     compute_2nd_order_divergence_of_flux_of_full3d_graddiv as compute_2nd_order_divergence_of_flux_of_full3d_graddiv_orig,
@@ -446,8 +448,12 @@ interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell = CachedProgr
 
 compute_divergence_of_flux = CachedProgram(compute_divergence_of_flux_orig)
 compute_2nd_order_divergence_of_flux = CachedProgram(compute_2nd_order_divergence_of_flux_orig)
+compute_pure_2nd_order_divergence_of_flux = CachedProgram(
+    compute_pure_2nd_order_divergence_of_flux_orig
+)
 compute_graddiv = CachedProgram(compute_graddiv_orig)
 apply_3d_divergence_damping = CachedProgram(apply_3d_divergence_damping_orig)
+apply_3d_divergence_damping_only_to_w = CachedProgram(apply_3d_divergence_damping_only_to_w_orig)
 compute_tangential_wind_and_contravariant = CachedProgram(
     compute_tangential_wind_and_contravariant_orig
 )
