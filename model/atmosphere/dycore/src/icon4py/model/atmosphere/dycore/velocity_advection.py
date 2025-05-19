@@ -85,12 +85,11 @@ class VelocityAdvection:
             vertical_end=[gtx.int32(self.grid.num_levels + 1)],
             offset_provider=self.grid.offset_providers,
         )
+        max_v_start = max(3, self.vertical_params.end_index_of_damping_layer - 2)
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity = compute_maximum_cfl_and_clip_contravariant_vertical_velocity.compute_maximum_cfl_and_clip_contravariant_vertical_velocity.with_backend(
             self._backend
         ).compile(
-            vertical_start=[gtx.int32(
-                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
-            )],
+            vertical_start=[gtx.int32(max_v_start-1)],
             vertical_end=[gtx.int32(self.grid.num_levels - 3)],
             offset_provider={},
         )
