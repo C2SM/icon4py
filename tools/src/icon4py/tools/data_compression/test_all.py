@@ -1,3 +1,4 @@
+import sys
 import os
 current_folder = os.path.dirname(os.path.realpath(__file__))
 os.environ["HDF5_PLUGIN_PATH"] = os.environ.get('HDF5_PLUGIN_PATH', os.path.join(current_folder, 'EBCC/src/build/lib'))
@@ -22,8 +23,6 @@ from EBCC.src.zarr_filter import EBCCZarrFilter
 dask.config.set(array__chunk_size="4MiB")
 
 ds = xr.open_dataset('tigge_pl_t_q_dx=2_2024_08_02.nc')
-# for var in ds.data_vars:
-#     print(f"{var}: {ds[var].encoding}")
 print(f"ds.nbytes = {humanize.naturalsize(ds.nbytes, binary=True)}")
 utils.plot_data(ds, title_prefix="Uncompressed ")
 
@@ -31,51 +30,80 @@ utils.plot_data(ds, title_prefix="Uncompressed ")
 ################################################################################
 # Run EBCC compressor (h5py)
 ################################################################################
+for name, da in ds.items():
+    print("EBCC Compressor (h5py) for variable:", name)
+    try:
+        os.remove(f'test.hdf5')
+    except:
+        pass
+    f = h5py.File(f'test.hdf5', 'a')
+
+    data = ds[name].squeeze()
+    data_32 = np.array(data, dtype=np.float32)
+
+    ebcc_filter = EBCC_Filter(
+        base_cr=100,
+        height=data.shape[0],
+        width=data.shape[1],
+        data_dim=len(data.shape),
+        residual_opt=("relative_error_target", 0.009))
+
+    f.create_dataset(f'{name}_compressed', shape=data.shape,  **ebcc_filter)
+
+    f[f'{name}_compressed'][:] = data_32
+    uncompressed = f[f'{name}_compressed'][:]
+
+    data_range = (np.max(data) - np.min(data))
+    max_error = np.max(np.abs(data - uncompressed))
+    if data_range > 0:
+        rel_error = max_error / data_range
+        print('achieved max relative error:', rel_error.values)
+    else:
+        print('achieved max absolute error:', max_error.values)
+
+    original_size = data.nbytes
+    compressed_size = os.path.getsize(f'test.hdf5')
+
+    print(f'achieved compression ratio of {original_size/compressed_size}')
+
 try:
     os.remove(f'test.hdf5')
 except:
     pass
-f = h5py.File(f'test.hdf5', 'a')
-
-data = ds["t"].squeeze()
-
-ebcc_filter = EBCC_Filter(
-    base_cr=100,
-    height=data.shape[0],
-    width=data.shape[1],
-    data_dim=len(data.shape),
-    residual_opt=("relative_error_target", 0.009))
-
-f.create_dataset('compressed', shape=data.shape,  **ebcc_filter)
-
-f['compressed'][:] = data
-uncompressed = f['compressed'][:]
-
-# check if error target is correctly enforced
-#max_error = np.max(np.abs(data - uncompressed) / np.abs(data))
-data_range = (np.max(data) - np.min(data))
-max_error = np.max(np.abs(data - uncompressed))
-if data_range > 0:
-    rel_error = max_error / data_range
-    print('achieved max relative error:', rel_error)
-else:
-    print('achieved max absolute error:', max_error)
-
-original_size = data.nbytes
-compressed_size = os.path.getsize(f'test.hdf5')
-
-print(f'achieved compression ratio of {original_size/compressed_size}')
 
 
 ################################################################################
 # Run EBCC compressor (Zarr)
 ################################################################################
-filter = EBCCZarrFilter((100, 100, 1128792064, 0))
+for name, da in ds.items():
+    print("EBCC Compressor (Zarr) for variable:", name)
 
-encoded = filter.encode(data.tobytes())
-decoded = np.frombuffer(filter.decode(encoded), dtype=np.float32)
+    data = ds[name].squeeze()
+    data_32 = np.array(data, dtype=np.float32)
 
-exit()
+    ebcc_filter = EBCC_Filter(
+        base_cr=100,
+        height=data.shape[0],
+        width=data.shape[1],
+        data_dim=len(data.shape),
+        residual_opt=("relative_error_target", 0.009))
+    zarr_filter = EBCCZarrFilter(ebcc_filter.hdf_filter_opts)
+
+    encoded = zarr_filter.encode(data_32.tobytes())
+    decoded = np.frombuffer(zarr_filter.decode(encoded), dtype=np.float32).reshape(data.shape)
+    uncompressed = decoded
+
+    data_range = (np.max(data) - np.min(data))
+    max_error = np.max(np.abs(data - uncompressed))
+    if data_range > 0:
+        rel_error = max_error / data_range
+        print('achieved max relative error:', rel_error.values)
+    else:
+        print('achieved max absolute error:', max_error.values)
+
+    print(f'achieved compression ratio of {len(data.values.tobytes())/len(encoded)}')
+
+
 ################################################################################
 # Run a Linear Quantization compressor
 ################################################################################
