@@ -348,8 +348,8 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
         #- d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
 
-    (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = concat_where(
-            (start_cell_halo_level_2 <= dims.CellDim) & (dims.CellDim < start_cell_lateral_boundary_level_3) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
+    (temporal_extrapolation_of_perturbed_exner_, perturbed_exner_at_cells_on_model_levels_) = concat_where(
+            (start_cell_lateral_boundary <= dims.CellDim) & (dims.CellDim < start_cell_lateral_boundary_level_3) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
             _zero_initialize_for_limited_area_mode(
                 temporal_extrapolation_of_perturbed_exner,
                 perturbed_exner_at_cells_on_model_levels,
@@ -358,39 +358,39 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
             (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels)
     )
 
-    (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = concat_where(
+    (temporal_extrapolation_of_perturbed_exner_, perturbed_exner_at_cells_on_model_levels_) = concat_where(
             (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
             _extrapolate_temporally_exner_pressure(
                 time_extrapolation_parameter_for_exner,
                 current_exner,
                 reference_exner_at_cells_on_model_levels,
-                perturbed_exner_at_cells_on_model_levels
+                perturbed_exner_at_cells_on_model_levels_
             ),
-            (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels)
+            (temporal_extrapolation_of_perturbed_exner_, perturbed_exner_at_cells_on_model_levels_)
     )
 
-    (temporal_extrapolation_of_perturbed_exner, exner_at_cells_on_half_levels) = concat_where(
+    (temporal_extrapolation_of_perturbed_exner_, exner_at_cells_on_half_levels_) = concat_where(
         (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & ((vertical_end - 1) <= dims.KDim) & (dims.KDim < vertical_end),
         _surface_computations(
             wgtfacq_c,
             exner_at_cells_on_half_levels,
             igradp_method
         ),
-        (temporal_extrapolation_of_perturbed_exner, exner_at_cells_on_half_levels)
+        (temporal_extrapolation_of_perturbed_exner_, exner_at_cells_on_half_levels)
     )
 
     (
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
-        temporal_extrapolation_of_perturbed_exner,
-        perturbed_exner_at_cells_on_model_levels,
-        rho_at_cells_on_half_levels,
-        exner_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels,
-        theta_v_at_cells_on_half_levels,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels,
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        perturbed_rho_at_cells_on_model_levels_,
+        perturbed_theta_v_at_cells_on_model_levels_,
+        temporal_extrapolation_of_perturbed_exner_,
+        perturbed_exner_at_cells_on_model_levels_,
+        rho_at_cells_on_half_levels_,
+        exner_at_cells_on_half_levels_,
+        perturbed_theta_v_at_cells_on_half_levels_,
+        theta_v_at_cells_on_half_levels_,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels_,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
     ) = concat_where(
             (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
             _compute_perturbed_quantities_and_interpolation(
@@ -403,13 +403,13 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
                 perturbed_theta_v_at_cells_on_half_levels,
                 wgtfac_c,
                 vwind_expl_wgt,
-                perturbed_exner_at_cells_on_model_levels,
+                perturbed_exner_at_cells_on_model_levels_,
                 ddz_of_reference_exner_at_cells_on_half_levels,
                 ddqz_z_half,
                 pressure_buoyancy_acceleration_at_cells_on_half_levels,
                 rho_at_cells_on_half_levels,
-                exner_at_cells_on_half_levels,
-                temporal_extrapolation_of_perturbed_exner,
+                exner_at_cells_on_half_levels_,
+                temporal_extrapolation_of_perturbed_exner_,
                 ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
                 d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
                 theta_v_at_cells_on_half_levels,
@@ -419,10 +419,10 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
             (
                 perturbed_rho_at_cells_on_model_levels,
                 perturbed_theta_v_at_cells_on_model_levels,
-                temporal_extrapolation_of_perturbed_exner,
-                perturbed_exner_at_cells_on_model_levels,
+                temporal_extrapolation_of_perturbed_exner_,
+                perturbed_exner_at_cells_on_model_levels_,
                 rho_at_cells_on_half_levels,
-                exner_at_cells_on_half_levels,
+                exner_at_cells_on_half_levels_,
                 perturbed_theta_v_at_cells_on_half_levels,
                 theta_v_at_cells_on_half_levels,
                 pressure_buoyancy_acceleration_at_cells_on_half_levels,
@@ -432,51 +432,51 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
     )
 
     (
-        perturbed_theta_v_at_cells_on_half_levels,
-        theta_v_at_cells_on_half_levels,
-        exner_at_cells_on_half_levels,
+        perturbed_theta_v_at_cells_on_half_levels_,
+        theta_v_at_cells_on_half_levels_,
+        exner_at_cells_on_half_levels_,
     ) = concat_where(
-            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & ((vertical_end - 1) <= dims.KDim) & (dims.KDim <vertical_end),
+            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & ((vertical_end - 1) <= dims.KDim) & (dims.KDim < vertical_end),
             _set_theta_v_and_exner_on_surface_level(
-                temporal_extrapolation_of_perturbed_exner,
+                temporal_extrapolation_of_perturbed_exner_,
                 wgtfacq_c,
-                perturbed_theta_v_at_cells_on_model_levels,
+                perturbed_theta_v_at_cells_on_model_levels_,
                 reference_theta_at_cells_on_half_levels,
             ),
             (
-                perturbed_theta_v_at_cells_on_half_levels,
-                theta_v_at_cells_on_half_levels,
-                exner_at_cells_on_half_levels,
+                perturbed_theta_v_at_cells_on_half_levels_,
+                theta_v_at_cells_on_half_levels_,
+                exner_at_cells_on_half_levels_,
             )
     )
 
     (
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
     ) = concat_where(
             (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
             _compute_first_and_second_vertical_derivative_of_exner(
-                exner_at_cells_on_half_levels,
+                exner_at_cells_on_half_levels_,
                 inv_ddqz_z_full,
-                ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-                d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-                perturbed_theta_v_at_cells_on_half_levels,
+                ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
+                d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
+                perturbed_theta_v_at_cells_on_half_levels_,
                 d2dexdz2_fac1_mc,
                 d2dexdz2_fac2_mc,
-                perturbed_theta_v_at_cells_on_model_levels,
+                perturbed_theta_v_at_cells_on_model_levels_,
                 igradp_method,
                 nflatlev,
                 nflat_gradp,
             ),
             (
-                ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-                d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
+                d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
             )
     )
 
     (
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
+        perturbed_rho_at_cells_on_model_levels_,
+        perturbed_theta_v_at_cells_on_model_levels_,
     ) = concat_where(
             (start_cell_halo_level_2 <= dims.CellDim) & (dims.CellDim < end_cell_halo_level_2) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
             _compute_perturbation_of_rho_and_theta(
@@ -486,23 +486,23 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
                 theta_ref_mc=reference_theta_at_cells_on_model_levels,
             ),
             (
-                perturbed_rho_at_cells_on_model_levels,
-                perturbed_theta_v_at_cells_on_model_levels,
+                perturbed_rho_at_cells_on_model_levels_,
+                perturbed_theta_v_at_cells_on_model_levels_,
             )
     )
 
     return (
-            temporal_extrapolation_of_perturbed_exner,
-            perturbed_exner_at_cells_on_model_levels,
-            exner_at_cells_on_half_levels,
-            perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels,
-            rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels,
-            theta_v_at_cells_on_half_levels,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels,
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            temporal_extrapolation_of_perturbed_exner_,
+            perturbed_exner_at_cells_on_model_levels_,
+            exner_at_cells_on_half_levels_,
+            perturbed_rho_at_cells_on_model_levels_,
+            perturbed_theta_v_at_cells_on_model_levels_,
+            rho_at_cells_on_half_levels_,
+            perturbed_theta_v_at_cells_on_half_levels_,
+            theta_v_at_cells_on_half_levels_,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels_,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
+            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_,
     )
 
 
