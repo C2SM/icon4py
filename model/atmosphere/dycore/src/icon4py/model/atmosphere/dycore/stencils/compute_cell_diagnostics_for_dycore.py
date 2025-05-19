@@ -58,6 +58,23 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
 
+@field_operator
+def _initialize_zero_if_limited_area(
+    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    limited_area: bool,
+) -> tuple[
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+]:
+
+    (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
+        _init_two_cell_kdim_fields_with_zero_vp()
+        if limited_area
+        else (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels)
+    )
+
+    return perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels
 
 @field_operator
 def _compute_perturbed_quantities_and_interpolation(
@@ -102,16 +119,6 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
-        concat_where(
-            (start_cell_lateral_boundary <= dims.CellDim < start_cell_lateral_boundary_level_3),
-            _init_two_cell_kdim_fields_with_zero_vp(),
-            (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
-        )
-        if limited_area
-        else (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels)
-    )
-
     exner_at_cells_on_half_levels = (
         concat_where(
             (
@@ -391,6 +398,17 @@ def compute_perturbed_quantities_and_interpolation(
         - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
+    _initialize_zero_if_limited_area(
+        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+        limited_area=limited_area,
+        out=(perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
+            dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+
     _extrapolate_temporally_exner_pressure(
         exner_exfac=time_extrapolation_parameter_for_exner,
         exner=current_exner,
