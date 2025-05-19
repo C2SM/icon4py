@@ -454,7 +454,7 @@ def _compute_perturbed_quantities_and_interpolation_wrapper(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
     ) = concat_where(
-            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.CellDim) & (dims.CellDim < (vertical_end - 1)),
+            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo) & (vertical_start <= dims.KDim) & (dims.KDim < (vertical_end - 1)),
             _compute_first_and_second_vertical_derivative_of_exner(
                 exner_at_cells_on_half_levels,
                 inv_ddqz_z_full,
