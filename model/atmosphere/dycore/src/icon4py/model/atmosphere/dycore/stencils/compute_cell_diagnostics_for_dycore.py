@@ -112,6 +112,8 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
+    """Despite its name this field operator is not directly called by the program `compute_perturbed_quantities_and_interpolation`
+    """
     exner_at_cells_on_half_levels = (
         concat_where(
             (maximum(1, nflatlev) <= dims.KDim),
@@ -273,7 +275,7 @@ def _set_theta_v_and_exner_on_surface_level(
     )
 
 @field_operator
-def _compute_perturbed_quantities_and_interpolation(
+def _compute_perturbed_quantities_and_interpolation_wrapper(
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -328,6 +330,10 @@ def _compute_perturbed_quantities_and_interpolation(
         fa.CellKField[ta.wpfloat]
 ]:
     """
+    This function is a wrapper for everything `compute_perturbed_quantities_and_interpolation` does.
+    It can not be named `_compute_perturbed_quantities_and_interpolation` because that name is already
+    taken and it does something else.
+
     Returns:
         #- temporal_extrapolation_of_perturbed_exner
         #- perturbed_exner_at_cells_on_model_levels
@@ -546,6 +552,8 @@ def compute_perturbed_quantities_and_interpolation(
     vertical_end: gtx.int32,
 ):
     """
+    Formerly known as fused_solve_nonhydro_stencil_1_to_13_predictor.
+
     Returns:
         - temporal_extrapolation_of_perturbed_exner
         - perturbed_exner_at_cells_on_model_levels
@@ -560,7 +568,7 @@ def compute_perturbed_quantities_and_interpolation(
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
 
-    _compute_perturbed_quantities_and_interpolation(
+    _compute_perturbed_quantities_and_interpolation_wrapper(
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
