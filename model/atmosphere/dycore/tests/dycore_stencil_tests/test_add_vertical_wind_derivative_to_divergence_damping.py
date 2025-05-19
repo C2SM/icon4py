@@ -21,6 +21,28 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
 
+def add_vertical_wind_derivative_to_divergence_damping_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    hmask_dd3d: np.ndarray,
+    scalfac_dd3d: np.ndarray,
+    inv_dual_edge_length: np.ndarray,
+    z_dwdz_dd: np.ndarray,
+    z_graddiv_vn: np.ndarray,
+) -> np.ndarray:
+    scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
+    hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+
+    e2c = connectivities[dims.E2CDim]
+    z_dwdz_dd_e2c = z_dwdz_dd[e2c]
+    z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
+
+    z_graddiv_vn = z_graddiv_vn + (
+        hmask_dd3d * scalfac_dd3d * inv_dual_edge_length * z_dwdz_dd_weighted
+    )
+    return z_graddiv_vn
+
+
 class TestAddVerticalWindDerivativeToDivergenceDamping(helpers.StencilTest):
     PROGRAM = add_vertical_wind_derivative_to_divergence_damping
     OUTPUTS = ("z_graddiv_vn",)
@@ -36,16 +58,13 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(helpers.StencilTest):
         z_graddiv_vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
-        hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-
-        e2c = connectivities[dims.E2CDim]
-        z_dwdz_dd_e2c = z_dwdz_dd[e2c]
-        z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
-
-        z_graddiv_vn = z_graddiv_vn + (
-            hmask_dd3d * scalfac_dd3d * inv_dual_edge_length * z_dwdz_dd_weighted
+        z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(
+            connectivities,
+            hmask_dd3d,
+            scalfac_dd3d,
+            inv_dual_edge_length,
+            z_dwdz_dd,
+            z_graddiv_vn,
         )
         return dict(z_graddiv_vn=z_graddiv_vn)
 

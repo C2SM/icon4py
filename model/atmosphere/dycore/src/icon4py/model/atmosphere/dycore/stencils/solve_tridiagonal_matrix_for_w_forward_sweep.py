@@ -15,7 +15,7 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@scan_operator(axis=dims.KDim, forward=True, init=(vpfloat("0.0"), 0.0, True))
+@scan_operator(axis=dims.KDim, forward=True, init=(vpfloat("1.0"), 0.0, True))
 def _w(
     state: tuple[vpfloat, float, bool],
     w_prev: wpfloat,  # only accessed at the first k-level
