@@ -147,6 +147,7 @@ def test_run_timeloop_single_step(
             timeloop_date_exit,
             timeloop_diffusion_linit_init,
             ndyn_substeps=ndyn_substeps,
+            backend=backend,
         )
 
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
