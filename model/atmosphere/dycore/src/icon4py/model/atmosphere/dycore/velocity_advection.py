@@ -88,6 +88,10 @@ class VelocityAdvection:
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity = compute_maximum_cfl_and_clip_contravariant_vertical_velocity.compute_maximum_cfl_and_clip_contravariant_vertical_velocity.with_backend(
             self._backend
         ).compile(
+            vertical_start=[gtx.int32(
+                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+            )],
+            vertical_end=[gtx.int32(self.grid.num_levels - 3)],
             offset_provider={},
         )
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w = compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w.with_backend(
