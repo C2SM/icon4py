@@ -438,6 +438,7 @@ class Diffusion:
             apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
                 self._backend
             ).compile(
+                diff_multfac_w=[self.diff_multfac_w],
                 type_shear=[int32(self.config.shear_type.value)],
                 nrdmax=[int32(self._vertical_grid.end_index_of_damping_layer + 1)],
                 vertical_start=[0],
