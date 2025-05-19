@@ -1,0 +1,287 @@
+import os
+current_folder = os.path.dirname(os.path.realpath(__file__))
+os.environ["HDF5_PLUGIN_PATH"] = os.environ.get('HDF5_PLUGIN_PATH', os.path.join(current_folder, 'EBCC/src/build/lib'))
+
+import dask
+import xarray as xr
+import numpy as np
+import pandas as pd
+import utils
+import humanize
+import h5py
+
+import numcodecs_observers
+from numcodecs_combinators.stack import CodecStack
+from numcodecs_observers.bytesize import BytesizeObserver
+from numcodecs_observers.walltime import WalltimeObserver
+from numcodecs_wasm import WasmCodecInstructionCounterObserver
+
+from EBCC.filter_wrapper import EBCC_Filter
+from EBCC.src.zarr_filter import EBCCZarrFilter
+
+dask.config.set(array__chunk_size="4MiB")
+
+ds = xr.open_dataset('tigge_pl_t_q_dx=2_2024_08_02.nc')
+# for var in ds.data_vars:
+#     print(f"{var}: {ds[var].encoding}")
+print(f"ds.nbytes = {humanize.naturalsize(ds.nbytes, binary=True)}")
+utils.plot_data(ds, title_prefix="Uncompressed ")
+
+
+################################################################################
+# Run EBCC compressor (h5py)
+################################################################################
+try:
+    os.remove(f'test.hdf5')
+except:
+    pass
+f = h5py.File(f'test.hdf5', 'a')
+
+data = ds["t"].squeeze()
+
+ebcc_filter = EBCC_Filter(
+    base_cr=100,
+    height=data.shape[0],
+    width=data.shape[1],
+    data_dim=len(data.shape),
+    residual_opt=("relative_error_target", 0.009))
+
+f.create_dataset('compressed', shape=data.shape,  **ebcc_filter)
+
+f['compressed'][:] = data
+uncompressed = f['compressed'][:]
+
+# check if error target is correctly enforced
+#max_error = np.max(np.abs(data - uncompressed) / np.abs(data))
+data_range = (np.max(data) - np.min(data))
+max_error = np.max(np.abs(data - uncompressed))
+if data_range > 0:
+    rel_error = max_error / data_range
+    print('achieved max relative error:', rel_error)
+else:
+    print('achieved max absolute error:', max_error)
+
+original_size = data.nbytes
+compressed_size = os.path.getsize(f'test.hdf5')
+
+print(f'achieved compression ratio of {original_size/compressed_size}')
+
+
+################################################################################
+# Run EBCC compressor (Zarr)
+################################################################################
+filter = EBCCZarrFilter((100, 100, 1128792064, 0))
+
+encoded = filter.encode(data.tobytes())
+decoded = np.frombuffer(filter.decode(encoded), dtype=np.float32)
+
+exit()
+################################################################################
+# Run a Linear Quantization compressor
+################################################################################
+from numcodecs_wasm_linear_quantize import LinearQuantize
+from numcodecs_wasm_zlib import Zlib
+
+ds_linquant = {}
+metrics_total_linquant = {}
+
+for name, da in ds.items():
+    linquant_metrics = dict(
+        nbytes=BytesizeObserver(),
+        instructions=WasmCodecInstructionCounterObserver(),
+        timings=WalltimeObserver(),
+    )
+    
+    linquant_compressor = CodecStack(
+        LinearQuantize(bits=4, dtype=str(da.dtype)),
+        Zlib(level=4),
+    )
+
+    with numcodecs_observers.observe(
+        linquant_compressor, observers=linquant_metrics.values(),
+    ) as linquant_compressor_:
+        ds_linquant[name] = linquant_compressor_.encode_decode_data_array(da).compute()
+
+    print(f"{da.long_name}" + ":")
+    linquant_metrics = utils.format_compression_metrics(linquant_compressor, **linquant_metrics)
+    print(linquant_metrics)
+
+    metrics_total_linquant[name] = linquant_metrics.loc["Summary"]
+
+linquant_compressor = str(linquant_compressor)
+
+utils.plot_data(
+    ds_linquant, title_prefix="Compressed ",
+    title_postfix=f"\n{linquant_compressor}",
+)
+
+ds_linquant_error = {}
+errors_linquant = {}
+
+for name, da in ds.items():
+    with xr.set_options(keep_attrs=True):
+        ds_linquant_error[name] = ds_linquant[name] - da
+    errors_linquant[name] = utils.compute_relative_errors(ds_linquant[name], da)
+
+utils.plot_data(
+    ds_linquant_error, title_prefix="Compression Error for ",
+    title_postfix=f"\n{linquant_compressor}", error=True,
+)
+
+
+################################################################################
+# Run the BitRound compressor
+################################################################################
+from numcodecs_wasm_bit_round import BitRound
+from numcodecs_wasm_zlib import Zlib
+
+ds_bitround = {}
+metrics_total_bitround = {}
+
+bitround_compressor = CodecStack(
+    BitRound(keepbits=6),
+    Zlib(level=9),
+)
+
+for name, da in ds.items():
+    bitround_metrics = dict(
+        nbytes=BytesizeObserver(),
+        instructions=WasmCodecInstructionCounterObserver(),
+        timings=WalltimeObserver(),
+    )
+    
+    with numcodecs_observers.observe(
+        bitround_compressor, observers=bitround_metrics.values(),
+    ) as bitround_compressor_:
+        ds_bitround[name] = bitround_compressor_.encode_decode_data_array(da).compute()
+    
+    print(f"{da.long_name}" + ":")
+    bitround_metrics = utils.format_compression_metrics(bitround_compressor, **bitround_metrics)
+    print(bitround_metrics)
+
+    metrics_total_bitround[name] = bitround_metrics.loc["Summary"]
+
+bitround_compressor = str(bitround_compressor)
+
+ds_bitround_error = {}
+errors_bitround = {}
+
+for name, da in ds.items():
+    with xr.set_options(keep_attrs=True):
+        ds_bitround_error[name] = ds_bitround[name] - da
+    errors_bitround[name] = utils.compute_relative_errors(ds_bitround[name], da)
+
+
+################################################################################
+# Run the transform-based ZFP compressor
+################################################################################
+from numcodecs_wasm_asinh import Asinh
+from numcodecs_wasm_zfp import Zfp
+
+ds_zfp = {}
+metrics_total_zfp = {}
+
+zfp_compressor = CodecStack(
+    Asinh(linear_width=1.0),
+    Zfp(mode="fixed-accuracy", tolerance=1e-3),
+)
+
+for name, da in ds.items():
+    zfp_metrics = dict(
+        nbytes=BytesizeObserver(),
+        instructions=WasmCodecInstructionCounterObserver(),
+        timings=WalltimeObserver(),
+    )
+    
+    with numcodecs_observers.observe(
+        zfp_compressor, observers=zfp_metrics.values(),
+    ) as zfp_compressor_:
+        ds_zfp[name] = zfp_compressor_.encode_decode_data_array(da).compute()
+    
+    print(f"{da.long_name}" + ":")
+    zfp_metrics = utils.format_compression_metrics(zfp_compressor, **zfp_metrics)
+    print(zfp_metrics)
+
+    metrics_total_zfp[name] = zfp_metrics.loc["Summary"]
+
+zfp_compressor = str(zfp_compressor)
+
+ds_zfp_error = {}
+errors_zfp = {}
+
+for name, da in ds.items():
+    with xr.set_options(keep_attrs=True):
+        ds_zfp_error[name] = ds_zfp[name] - da
+    errors_zfp[name] = utils.compute_relative_errors(ds_zfp[name], da)
+
+
+################################################################################
+# Run the prediction-based SZ3 compressor
+################################################################################
+from numcodecs_wasm_sz3 import Sz3
+
+ds_sz3 = {}
+metrics_total_sz3 = {}
+
+sz3_compressor = CodecStack(Sz3(eb_mode="rel", eb_rel=1e-3))
+
+for name, da in ds.items():
+    sz3_metrics = dict(
+        nbytes=BytesizeObserver(),
+        instructions=WasmCodecInstructionCounterObserver(),
+        timings=WalltimeObserver(),
+    )
+    
+    with numcodecs_observers.observe(
+        sz3_compressor, observers=sz3_metrics.values(),
+    ) as sz3_compressor_:
+        ds_sz3[name] = sz3_compressor_.encode_decode_data_array(da).compute()
+    
+    print(f"{da.long_name}" + ":")
+    sz3_metrics = utils.format_compression_metrics(sz3_compressor, **sz3_metrics)
+    print(sz3_metrics)
+
+    metrics_total_sz3[name] = sz3_metrics.loc["Summary"]
+
+sz3_compressor = str(sz3_compressor)
+
+ds_sz3_error = {}
+errors_sz3 = {}
+
+for name, da in ds.items():
+    with xr.set_options(keep_attrs=True):
+        ds_sz3_error[name] = ds_sz3[name] - da
+    errors_sz3[name] = utils.compute_relative_errors(ds_sz3[name], da)
+
+
+################################################################################
+# Overview
+################################################################################
+data = []
+
+compressors = {
+    linquant_compressor: (errors_linquant, metrics_total_linquant),
+    bitround_compressor: (errors_bitround, metrics_total_bitround),
+    zfp_compressor: (errors_zfp, metrics_total_zfp),
+    sz3_compressor: (errors_sz3, metrics_total_sz3),
+}
+
+for compressor_name, (errors, stats) in compressors.items():
+    for variable, error_data in errors.items():
+        row = {
+            "Compressor": compressor_name,
+            "Variable": variable,
+            "Compression Ratio [raw B / enc B]": stats[variable]["compression ratio [raw B / enc B]"],
+            "L1 Error": error_data.get("Relative_Error_L1", None),
+            "L2 Error": error_data.get("Relative_Error_L2", None),
+            "Linf Error": error_data.get("Relative_Error_Linf", None),
+            "Encode Instructions [# / raw B]": stats[variable]["encode instructions [#/B]"],
+            "Decode Instructions [# / raw B]": stats[variable]["decode instructions [#/B]"],
+            "Encode Throughput [raw GB / s]": stats[variable]["encode throughput [raw GB/s]"],
+            "Decode Throughput [raw GB / s]": stats[variable]["decode throughput [raw GB/s]"],
+        }
+        data.append(row)
+
+
+df = pd.DataFrame(data).set_index(["Compressor", "Variable"])
+print(df)
