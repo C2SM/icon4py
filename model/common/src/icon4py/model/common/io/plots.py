@@ -29,6 +29,7 @@ pil_logger.setLevel(logging.INFO)
 log = logging.getLogger(__name__)
 
 DO_PLOTS = True
+PLOT_IMGS_DIR = "imgs"
 
 
 @gtx.field_operator
@@ -54,6 +55,20 @@ def interpolate_from_half_to_full_levels(
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
+def pickle_data(state, label: str = "") -> None:
+    if not os.path.isdir(PLOT_IMGS_DIR):
+        os.makedirs(PLOT_IMGS_DIR)
+    file_name = f"{PLOT_IMGS_DIR}/{label}.pkl"
+    with open(file_name, "wb") as f:
+        state_np = {
+            "vn": state.vn.asnumpy(),
+            "w": state.w.asnumpy(),
+            "rho": state.rho.asnumpy(),
+            "exner": state.exner.asnumpy(),
+            "theta_v": state.theta_v.asnumpy(),
+        }
+        pickle.dump(state_np, f)
 
 
 class Plot:
@@ -95,8 +110,8 @@ class Plot:
             self.grid_file = None
 
         # Constants
-        self.DO_PLOTS = True
-        self.PLOT_IMGS_DIR = "imgs"
+        self.DO_PLOTS = DO_PLOTS
+        self.PLOT_IMGS_DIR = PLOT_IMGS_DIR
         self.NUM_AXES_PER_COLUMN = 2
         self.DOMAIN_LENGTH = self.grid_file.domain_length
         self.DOMAIN_HEIGHT = self.grid_file.domain_height
@@ -289,16 +304,7 @@ class Plot:
     def pickle_data(self, state, label: str = "") -> None:
         if not self.DO_PLOTS:
             return
-        file_name = f"{self.PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}.pkl"
-        with open(file_name, "wb") as f:
-            state_np = {
-                "vn": state.vn.asnumpy(),
-                "w": state.w.asnumpy(),
-                "rho": state.rho.asnumpy(),
-                "exner": state.exner.asnumpy(),
-                "theta_v": state.theta_v.asnumpy(),
-            }
-            pickle.dump(state_np, f)
+        pickle_data(state=state, label=f"{self.plot_counter:06d}_{label}")
         self.plot_counter += 1
 
     def _vec_interpolate_to_cell_center(self, vn_gtx):
