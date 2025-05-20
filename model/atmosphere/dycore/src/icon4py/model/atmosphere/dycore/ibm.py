@@ -1,4 +1,5 @@
 import logging
+import enum
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -24,6 +25,12 @@ log = logging.getLogger(__name__)
 
 DO_IBM = True
 DEBUG_LEVEL = 2
+
+class IBMBoundaryConditions(enum.IntEnum):
+    #: No-slip boundary conditions: on all surfaces vn = w = 0
+    NO_SLIP = 0
+    #: Free-slip boundary conditions: on vertical surfaces vn = 0, dw/dz = 0; on horizontal surfaces w = 0, d(vn)/dn = 0
+    FREE_SLIP = 1
 
 
 class ImmersedBoundaryMethod:
