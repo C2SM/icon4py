@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import enum
 import sys
 from typing import Final
 
@@ -30,6 +29,7 @@ CVD: Final[ta.wpfloat] = SPECIFIC_HEAT_CONSTANT_VOLUME
 CVD_O_RD: Final[ta.wpfloat] = CVD / RD
 RD_O_CPD: Final[ta.wpfloat] = RD / CPD
 CPD_O_RD: Final[ta.wpfloat] = CPD / RD
+RD_O_CVD: Final[ta.wpfloat] = RD / CVD
 
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[ta.wpfloat] = 461.51
@@ -43,10 +43,12 @@ TVMPC1: Final[ta.wpfloat] = RV_O_RD_MINUS_1
 GRAVITATIONAL_ACCELERATION: Final[ta.wpfloat] = 9.80665
 GRAV: Final[ta.wpfloat] = GRAVITATIONAL_ACCELERATION
 GRAV_O_RD: Final[ta.wpfloat] = GRAV / RD
+GRAV_O_CPD: Final[ta.wpfloat] = GRAV / CPD
 
 #: reference pressure for Exner function [Pa]
 REFERENCE_PRESSURE: Final[ta.wpfloat] = 100000.0
 P0REF: Final[ta.wpfloat] = REFERENCE_PRESSURE
+RD_O_P0REF: Final[ta.wpfloat] = RD / P0REF
 
 #: sea level pressure [Pa]
 SEAL_LEVEL_PRESSURE: Final[ta.wpfloat] = 101325.0
@@ -83,20 +85,21 @@ DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6
 
 
-class RayleighType(enum.IntEnum):
-    #: classical Rayleigh damping, which makes use of a reference state.
-    CLASSIC = 1
-    #: Klemp (2008) type Rayleigh damping
-    KLEMP = 2
-
-
 class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
-    rd = RD
-    rv = RV
-    cpd = CPD
-    cvd = CVD
+    """
+    Constants used in gt4py stencils.
+    """
+
+    rd = GAS_CONSTANT_DRY_AIR
+    rv = GAS_CONSTANT_WATER_VAPOR
     rv_o_rd_minus_1 = RV_O_RD_MINUS_1
+    cvd = SPECIFIC_HEAT_CONSTANT_VOLUME
+    cpd = SPECIFIC_HEAT_CONSTANT_PRESSURE
     rd_o_cpd = RD_O_CPD
-    grav_o_rd = GRAV_O_RD
-    p0ref = P0REF
+    rd_o_cvd = RD_O_CVD
     cpd_o_rd = CPD_O_RD
+    cvd_o_rd = CVD_O_RD
+    rd_o_p0ref = RD_O_P0REF
+    grav_o_cpd = GRAV_O_CPD
+    grav_o_rd = GRAV_O_RD
+    p0ref = REFERENCE_PRESSURE

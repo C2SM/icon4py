@@ -22,6 +22,17 @@ from icon4py.model.common.utils.data_allocation import random_field, random_mask
 from icon4py.model.testing.helpers import StencilTest
 
 
+def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(
+    ipeidx_dsl: np.ndarray,
+    pg_exdist: np.ndarray,
+    z_hydro_corr: np.ndarray,
+    z_gradh_exner: np.ndarray,
+) -> np.ndarray:
+    z_hydro_corr = np.repeat(np.expand_dims(z_hydro_corr, axis=-1), z_gradh_exner.shape[1], axis=1)
+    z_gradh_exner = np.where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
+    return z_gradh_exner
+
+
 class TestApplyHydrostaticCorrectionToHorizontalGradientOfExnerPressure(StencilTest):
     PROGRAM = apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure
     OUTPUTS = ("z_gradh_exner",)
@@ -35,13 +46,12 @@ class TestApplyHydrostaticCorrectionToHorizontalGradientOfExnerPressure(StencilT
         z_gradh_exner: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_hydro_corr = np.repeat(
-            np.expand_dims(z_hydro_corr, axis=-1), z_gradh_exner.shape[1], axis=1
+        z_gradh_exner = apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(
+            ipeidx_dsl,
+            pg_exdist,
+            z_hydro_corr,
+            z_gradh_exner,
         )
-        z_gradh_exner = np.where(
-            ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner
-        )
-
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

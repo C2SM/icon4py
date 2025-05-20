@@ -262,13 +262,17 @@ def initialize_solve_nonhydro_diagnostic_state(
         rho_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        ddt_exner_phy=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        exner_tendency_due_to_slow_physics=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, backend=backend
+        ),
         grf_tend_rho=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
         grf_tend_thv=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
         grf_tend_w=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        mass_fl_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),
         normal_wind_tendency_due_to_slow_physics_process=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),
@@ -282,10 +286,14 @@ def initialize_solve_nonhydro_diagnostic_state(
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
-        normal_wind_iau_increments=None,  # solve_nonhydro_init_savepoint.vn_incr(),
-        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
-        exner_dyn_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        normal_wind_iau_increment=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),
+        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        exner_dynamical_increment=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, backend=backend
+        ),
     )
 
 
@@ -295,8 +303,12 @@ def initialize_prep_advection(
     return dycore_states.PrepAdvection(
         vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
         mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
-        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-        vol_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
     )
 
 

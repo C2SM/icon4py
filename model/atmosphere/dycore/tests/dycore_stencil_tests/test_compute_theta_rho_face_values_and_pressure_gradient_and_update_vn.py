@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.dycore.dycore_states import (
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -155,7 +155,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         hydrostatic_correction_on_lowest_level: np.ndarray,
         predictor_normal_wind_advective_tendency: np.ndarray,
         normal_wind_tendency_due_to_slow_physics_process: np.ndarray,
-        normal_wind_iau_increments: np.ndarray,
+        normal_wind_iau_increment: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
         pos_on_tplane_e_x: np.ndarray,
@@ -172,7 +172,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         pg_exdist: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         dtime: ta.wpfloat,
-        cpd: ta.wpfloat,
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
@@ -416,7 +415,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             * (
                 predictor_normal_wind_advective_tendency
                 + normal_wind_tendency_due_to_slow_physics_process
-                - cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
+                - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
             ),
             next_vn,
         )
@@ -424,7 +423,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         if is_iau_active:
             next_vn = np.where(
                 (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
-                next_vn + (iau_wgt_dyn * normal_wind_iau_increments),
+                next_vn + (iau_wgt_dyn * normal_wind_iau_increment),
                 next_vn,
             )
 
@@ -481,7 +480,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         normal_wind_tendency_due_to_slow_physics_process = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        normal_wind_iau_increments = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         next_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_pressure_gradient = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -504,7 +503,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         ikoffset = data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset_np)
 
         dtime = 0.9
-        cpd = 1004.64
         iau_wgt_dyn = 1.0
         is_iau_active = True
         limited_area = True
@@ -542,7 +540,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
             predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
             normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
-            normal_wind_iau_increments=normal_wind_iau_increments,
+            normal_wind_iau_increment=normal_wind_iau_increment,
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
             pos_on_tplane_e_x=pos_on_tplane_e_x,
@@ -559,7 +557,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             pg_exdist=pg_exdist,
             inv_dual_edge_length=inv_dual_edge_length,
             dtime=dtime,
-            cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
             limited_area=limited_area,
