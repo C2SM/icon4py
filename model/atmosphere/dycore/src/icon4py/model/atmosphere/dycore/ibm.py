@@ -80,10 +80,12 @@ class ImmersedBoundaryMethod:
         if self.DO_IBM:
             # fill masks, otherwise False everywhere
             #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-            half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
-            #half_cell_mask_np = self._mask_building(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            #half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            half_cell_mask_np = self._mask_blocks(grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
             full_cell_mask_np = half_cell_mask_np[:, :-1]
+
+            log.info(f"IBM: nr. of masked cells: {xp.sum(full_cell_mask_np)}")
 
             c2e = grid.connectivities[dims.C2EDim]
             for k in range(grid.num_levels-1,0,-1):
@@ -143,22 +145,11 @@ class ImmersedBoundaryMethod:
         compute_hill_elevation = lambda x, y: hill_height * xp.exp(-(compute_distance_from_hill(x, y) / hill_width)**2)
         cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
         cell_y = xp.asarray(grid_file.cell_circumcenter_cartesian_y.values)
-        buildings = []
-        buildings = [
-            #[390, 400, 0, 1000,  40],
-            #[497, 503, 0, 1000, 105],
-            #[350, 400, 0, 1000, 75],
-        ]
         for k in range(half_cell_mask_np.shape[1]):
-            half_cell_mask_np[:, k] = xp.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
-            for building in buildings:
-                xmin, xmax, ymin, ymax, top = building
-                half_cell_mask_np[
-                    (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (half_level_heights[:,k] <= top), k
-                ] = True
+            half_cell_mask_np[:, k] = xp.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, half_cell_mask_np[:, k])
         return half_cell_mask_np
 
-    def _mask_building(
+    def _mask_blocks(
         self,
         grid_file_path: str,
         savepoint_path: str,
@@ -166,14 +157,12 @@ class ImmersedBoundaryMethod:
         half_cell_mask_np: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
-        Create a building mask.
+        Create a blocks mask.
         """
         xp = data_alloc.import_array_ns(backend)
 
-        buildings = [
-            [490, 510, 490, 510,  100],
-            #[497, 503, 0, 1000, 105],
-            #[350, 400, 0, 1000, 75],
+        blocks = [
+            [450, 550, 450, 550, 100],
         ]
 
         grid_file = xr.open_dataset(grid_file_path)
@@ -187,13 +176,10 @@ class ImmersedBoundaryMethod:
 
         cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
         cell_y = xp.asarray(grid_file.cell_circumcenter_cartesian_y.values)
-        buildings = []
         for k in range(half_cell_mask_np.shape[1]):
-            for building in buildings:
-                xmin, xmax, ymin, ymax, top = building
-                half_cell_mask_np[
-                    (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (half_level_heights[:,k] <= top), k
-                ] = True
+            for block in blocks:
+                xmin, xmax, ymin, ymax, top = block
+                half_cell_mask_np[:, k] = xp.where( (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (half_level_heights[:,k] <= top), True, half_cell_mask_np[:, k])
         return half_cell_mask_np
 
 
