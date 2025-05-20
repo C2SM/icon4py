@@ -391,12 +391,9 @@ class Plot:
 
         cmin = data.min()
         cmax = data.max()
-        if cmin < 0 and cmax > 0 and np.abs(cmax + cmin) < cmax/3:
+        if cmin < 0 and cmax > 0: # and np.abs(cmax + cmin) < cmax/3:
             cmap = "seismic"
             norm = lambda cmin, cmax: colors.TwoSlopeNorm(vmin=min(-1e-9, cmin), vcenter=0, vmax=max(1e-9,cmax))
-            #nlevels = 5
-            #levels = np.r_[np.linspace(cmin,0,nlevels//2)[0:-1], np.linspace(0,cmax,nlevels//2)]
-            #cbarticks=[levels[i] for i in [0,nlevels//2-1,nlevels-2]]
         else:
             if cmax > -cmin:
                 cmap = "YlOrRd"
@@ -442,7 +439,12 @@ class Plot:
             plt.pause(1)
 
         self.plot_counter += 1
-        return axs
+        if "vvec_cell" in file_name:
+            return axs, self.tri.cell_x, self.tri.cell_y, u[:,-num_levels:], v[:,-num_levels:]
+        elif "vvec_edge" in file_name:
+            return axs, self.tri.edge_x, self.tri.edge_y, vn[:,-num_levels:], vt[:,-num_levels:]
+        else:
+            return axs, None, None, None, None
 
 
     def plot_sections(self, data, data2=None, sections_x: list[float] = [], sections_y: list[float] = [], plot_every=1, qscale=40, label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
