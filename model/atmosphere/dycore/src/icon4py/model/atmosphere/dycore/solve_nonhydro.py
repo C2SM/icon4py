@@ -565,8 +565,6 @@ class SolveNonhydro:
         #---> IBM
         if "ibm" in extras:
             self._ibm = extras["ibm"]
-        if "plot" in extras:
-            self._plot = extras["plot"]
         #<--- IBM
 
     def _allocate_local_fields(self):
@@ -774,7 +772,6 @@ class SolveNonhydro:
 
         #---> IBM
         if at_initial_timestep and at_first_substep:
-            self._plot.pickle_data(prognostic_states.current, "initial_condition")
             log.info(" ***IBM fixing initial conditions")
             self._ibm.set_dirichlet_value_vn(prognostic_states.current.vn)
             self._ibm.set_dirichlet_value_w(prognostic_states.current.w)
