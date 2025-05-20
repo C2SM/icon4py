@@ -32,7 +32,7 @@ from icon4py.model.testing import (
 
 
 if typing.TYPE_CHECKING:
-    import netCDF4
+    pass
 
 try:
     import netCDF4  # noqa # F401
@@ -172,7 +172,7 @@ def test_grid_manager_eval_v2e(caplog, grid_savepoint, experiment, grid_file, ba
 )
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim, backend):
-    refin_ctrl = _run_grid_manager(grid_file, backend).refinement
+    refin_ctrl = _run_grid_manager(grid_file, backend).grid.refinement_control
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
     assert np.all(
         refin_ctrl_serialized.ndarray
@@ -264,27 +264,6 @@ def invalid_index(ar: np.ndarray):
     return np.where(ar == gm.GridFile.INVALID_INDEX)
 
 
-def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
-    """
-    Assert invalid indices for E2C connectivity.
-
-    Local grids: there are edges at the boundary that have only one
-    neighboring cell, there are "missing values" in the grid file
-    and for E2C they do not get substituted in the ICON preprocessing.
-
-    Global grids have no "missing values" indices since all edges always have 2 neighboring cells.
-
-    Args:
-        e2c_table: E2C connectivity
-        grid_file: name of grid file used
-
-    """
-    if gridtest_utils.is_regional(grid_file):
-        assert has_invalid_index(e2c_table)
-    else:
-        assert not has_invalid_index(e2c_table)
-
-
 # e2c : exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
@@ -301,8 +280,8 @@ def test_grid_manager_eval_e2c(caplog, grid_savepoint, grid_file, experiment, ba
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_e2c = grid_savepoint.e2c()
     e2c_table = grid.get_offset_provider("E2C").asnumpy()
-    assert_invalid_indices(serialized_e2c, grid_file)
-    assert_invalid_indices(e2c_table, grid_file)
+    assert has_invalid_index(serialized_e2c) == grid.limited_area
+    assert has_invalid_index(e2c_table) == grid.limited_area
     assert np.allclose(e2c_table, serialized_e2c)
 
 
@@ -384,12 +363,11 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").asnumpy()
     serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").asnumpy()
-    assert_invalid_indices(serialized_e2c2e, grid_file)
+    assert has_invalid_index(serialized_e2c2e) == grid.limited_area
 
     e2c2e_table = grid.get_offset_provider("E2C2E").asnumpy()
     e2c2eO_table = grid.get_offset_provider("E2C2EO").asnumpy()
-
-    assert_invalid_indices(e2c2e_table, grid_file)
+    assert has_invalid_index(e2c2e_table) == grid.limited_area
     # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(dims.EdgeDim) + 1 for
     # boundaries all values are INVALID even though the half diamond exists (see mo_model_domimp_setup.f90 ll 163ff.)
     start_index = grid.start_index(
@@ -545,7 +523,7 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
         ), f"end index wrong for domain {domain}"
 
     for domain in utils.valid_boundary_zones_for_dim(dim):
-        if not gridtest_utils.is_regional(grid_file):
+        if not grid.limited_area:
             assert grid.start_index(domain) == 0
             assert grid.end_index(domain) == 0
         assert grid.start_index(domain) == serialized_grid.start_index(
@@ -696,3 +674,11 @@ def test_edge_vertex_distance(grid_file, grid_savepoint, backend):
         expected.asnumpy(),
         equal_nan=True,
     )
+
+
+@pytest.mark.parametrize(
+    "grid_file, expected", [(dt_utils.REGIONAL_EXPERIMENT, True), (dt_utils.R02B04_GLOBAL, False)]
+)
+def test_limited_area_on_grid(grid_file, expected):
+    grid = _run_grid_manager(grid_file, backend=None).grid
+    assert expected == grid.limited_area

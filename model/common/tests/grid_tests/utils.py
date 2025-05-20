@@ -24,6 +24,14 @@ def horizontal_dim():
         yield dim
 
 
+def local_dims():
+    import icon4py.model.common.dimension as dims
+
+    for d in vars(dims):
+        if isinstance(d, dims.Dimension) and d.kind == dims.DimensionKind.LOCAL:
+            yield d
+
+
 def global_grid_domains(dim: dims.Dimension):
     zones = [
         h_grid.Zone.END,

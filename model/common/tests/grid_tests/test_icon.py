@@ -8,15 +8,19 @@
 import functools
 import re
 
+import gt4py.next as gtx
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
+    base,
     grid_manager as gm,
     horizontal as h_grid,
     icon,
     vertical as v_grid,
 )
+from icon4py.model.common.grid.grid_manager import GridFile
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
 
 from . import utils
@@ -170,3 +174,23 @@ def test_grid_size(icon_grid):
 def test_has_skip_values(grid_file):
     grid = from_file(grid_file)
     assert grid.has_skip_values()
+
+
+@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
+def test_skip_values_on_connectivities(grid_file: str):
+    grid = from_file(grid_file)
+    for d, _ in grid.connectivities.items():
+        if d.kind == gtx.DimensionKind.LOCAL:
+            try:
+                connectivity = grid.get_offset_provider(d.value)
+                _assert_skip_value_configuration(connectivity)
+            except base.MissingConnectivity:
+                # Skip if the connectivity is not available
+                continue
+
+
+def _assert_skip_value_configuration(connectivity: gtx.Connectivity):
+    if connectivity.skip_value is not None:
+        assert np.any(
+            connectivity.ndarray == GridFile.INVALID_INDEX
+        ), f"`skip_value` property of connectivity {connectivity=} does not match connectivity table. "

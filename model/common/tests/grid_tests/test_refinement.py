@@ -6,15 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import pytest
 
-import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.refinement as refin
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 
 from . import utils
 
 
-def out_of_range(dim: dims.Dimension):
+def out_of_range(dim: gtx.Dimension):
     lower = range(-36, refin._UNORDERED[dim][1])
     for v in lower:
         yield v
@@ -24,7 +25,7 @@ def out_of_range(dim: dims.Dimension):
         yield v
 
 
-def refinement_value(dim: dims.Dimension):
+def refinement_value(dim: gtx.Dimension):
     lower = refin._UNORDERED[dim][1]
     upper = refin._MAX_ORDERED[dim]
     for v in range(lower, upper):
@@ -57,3 +58,13 @@ def test_valid_refinement_values(dim):
     for value in out_of_range(dim):
         with pytest.raises(AssertionError):
             refin.RefinementValue(dim, value)
+
+
+@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize(
+    "grid_file, expected", [(dt_utils.R02B04_GLOBAL, False), (dt_utils.REGIONAL_EXPERIMENT, True)]
+)
+def test_is_local_area_grid_for_grid_files(grid_file, expected, dim):
+    grid = grid_utils.get_grid_manager(grid_file, 1, None).grid
+    refinement_field = grid.refinement_control[dim]
+    assert expected == refin.is_limited_area_grid(refinement_field)

@@ -111,6 +111,10 @@ class BaseGrid(ABC):
     def geometry_type(self) -> GeometryType:
         ...
 
+    @functools.cached_property
+    def limited_area(self) -> bool:
+        return self.config.limited_area
+
     @abstractmethod
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         pass
@@ -127,7 +131,7 @@ class BaseGrid(ABC):
         return self.config.limited_area or self.geometry_type == GeometryType.ICOSAHEDRON
 
     @functools.cached_property
-    def offset_providers(self):
+    def offset_providers(self) -> Dict[str, gtx.Connectivity]:
         offset_providers = {}
         for key, value in self.offset_provider_mapping.items():
             try:
@@ -187,7 +191,7 @@ class BaseGrid(ABC):
             method, *args = self.offset_provider_mapping[name]
             return method(*args)
         else:
-            raise Exception(f"Offset provider for {name} not found.")
+            raise MissingConnectivity(f"Offset provider for {name} not found.")
 
     def update_size_connectivities(self, new_sizes):
         self.size.update(new_sizes)

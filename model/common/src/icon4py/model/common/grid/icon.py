@@ -16,6 +16,7 @@ import numpy as np
 
 from icon4py.model.common import constants, dimension as dims, utils
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class IconGrid(base.BaseGrid):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
         self._id = id_
+        self._refinement_control = {}
         self._start_indices = {}
         self._end_indices = {}
         self.global_properties: GlobalGridParams = None
@@ -159,7 +161,7 @@ class IconGrid(base.BaseGrid):
     def num_edges(self):
         return self.config.num_edges if self.config else 0
 
-    @property
+    @functools.cached_property
     def limited_area(self):
         # defined in mo_grid_nml.f90
         return self.config.limited_area
@@ -178,7 +180,6 @@ class IconGrid(base.BaseGrid):
             return True
         elif self.limited_area:
             if dimension in (
-                dims.C2E2C2E2CDim,
                 dims.C2E2C2EDim,
                 dims.E2CDim,
                 dims.C2E2CDim,
@@ -186,6 +187,11 @@ class IconGrid(base.BaseGrid):
                 dims.E2C2VDim,
                 dims.E2C2EDim,
                 dims.E2C2EODim,
+                dims.V2E2VDim,
+                # dims.ECVDim,
+                # dims.ECDim,
+                # dims.CECDim,
+                # dims.CEDim,
             ):
                 return True
         else:
@@ -202,6 +208,15 @@ class IconGrid(base.BaseGrid):
     @property
     def lvert_nest(self):
         return True if self.config.lvertnest else False
+
+    @property
+    def refinement_control(self) -> dict[gtx.Dimension, data_alloc.NDArray]:
+        """Return the refinement control field for the grid."""
+        return self._refinement_control
+
+    @utils.chainable
+    def with_refinement_control(self, refinement_control: dict[gtx.Dimension, data_alloc.NDArray]):
+        return self._refinement_control.update(refinement_control)
 
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
