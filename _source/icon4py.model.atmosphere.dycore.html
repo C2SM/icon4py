@@ -837,7 +837,7 @@ TODO: (magdalena) values should be read from a configuration file.
 Default values are taken from the defaults in the corresponding ICON Fortran namelist files.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.divdamp_order">
-<span class="sig-name descname"><span class="pre">divdamp_order</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.divdamp_order" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">divdamp_order</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#icon4py.model.atmosphere.dycore.dycore_states.DivergenceDampingOrder" title="icon4py.model.atmosphere.dycore.dycore_states.DivergenceDampingOrder"><span class="pre">dycore_states.DivergenceDampingOrder</span></a></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.divdamp_order" title="Link to this definition"></a></dt>
 <dd><p>order of divergence damping</p>
 </dd></dl>
 
@@ -849,7 +849,7 @@ Default values are taken from the defaults in the corresponding ICON Fortran nam
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.divdamp_type">
-<span class="sig-name descname"><span class="pre">divdamp_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.divdamp_type" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">divdamp_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#icon4py.model.atmosphere.dycore.dycore_states.DivergenceDampingType" title="icon4py.model.atmosphere.dycore.dycore_states.DivergenceDampingType"><span class="pre">dycore_states.DivergenceDampingType</span></a></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.divdamp_type" title="Link to this definition"></a></dt>
 <dd><p>type of divergence damping</p>
 </dd></dl>
 
@@ -914,7 +914,7 @@ quadratically with height.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.iadv_rhotheta">
-<span class="sig-name descname"><span class="pre">iadv_rhotheta</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.iadv_rhotheta" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">iadv_rhotheta</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#icon4py.model.atmosphere.dycore.dycore_states.RhoThetaAdvectionType" title="icon4py.model.atmosphere.dycore.dycore_states.RhoThetaAdvectionType"><span class="pre">dycore_states.RhoThetaAdvectionType</span></a></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.iadv_rhotheta" title="Link to this definition"></a></dt>
 <dd><p>Miura scheme for advection of rho and theta</p>
 </dd></dl>
 
@@ -926,7 +926,7 @@ quadratically with height.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.igradp_method">
-<span class="sig-name descname"><span class="pre">igradp_method</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.igradp_method" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">igradp_method</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#icon4py.model.atmosphere.dycore.dycore_states.HorizontalPressureDiscretizationType" title="icon4py.model.atmosphere.dycore.dycore_states.HorizontalPressureDiscretizationType"><span class="pre">dycore_states.HorizontalPressureDiscretizationType</span></a></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.igradp_method" title="Link to this definition"></a></dt>
 <dd><p>Use truly horizontal pressure-gradient computation to ensure numerical
 stability without heavy orography smoothing</p>
 </dd></dl>
@@ -959,7 +959,7 @@ use vertical nesting</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.rayleigh_type">
-<span class="sig-name descname"><span class="pre">rayleigh_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.rayleigh_type" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rayleigh_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">constants.RayleighType</span></em><a class="headerlink" href="#icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig.rayleigh_type" title="Link to this definition"></a></dt>
 <dd><p>type of Rayleigh damping</p>
 </dd></dl>
 
