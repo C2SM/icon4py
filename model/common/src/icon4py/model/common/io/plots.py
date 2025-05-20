@@ -722,9 +722,9 @@ class Plot:
                     f.write(vtk_data_array(k + "_z", np.float32, ncomp, offset=cell_offsets_dict[k + "_z"]).encode())
             f.write(b'      </CellData>\n')
             # Appended data
-            f.write(b'    <AppendedData encoding="raw">\n_')
+            f.write(b'      <AppendedData encoding="raw">\n_')
             f.write(appended)
-            f.write(b'\n    </AppendedData>\n')
+            f.write(b'\n      </AppendedData>\n')
             f.write(b'    </Piece>\n')
             f.write(b'  </UnstructuredGrid>\n')
             f.write(b'</VTKFile>\n')
