@@ -130,10 +130,9 @@ def test_run_timeloop_single_step(
     backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
-        # it does not matter what backend is set here because the granules are set externally in this test
         config = icon4py_configuration.read_config(
-            icon4py_driver_backend="gtfn_cpu",
             experiment_type=experiment,
+            backend=backend,
         )
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config
@@ -148,6 +147,7 @@ def test_run_timeloop_single_step(
             timeloop_date_exit,
             timeloop_diffusion_linit_init,
             ndyn_substeps=ndyn_substeps,
+            backend=backend,
         )
 
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
