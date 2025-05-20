@@ -44,6 +44,10 @@ def is_embedded(backend: gtx_backend.Backend | None) -> bool:
     return backend is None
 
 
+def is_gtfn_backend(backend: gtx_backend.Backend | None) -> bool:
+    return "gtfn" in backend.name if backend else False
+
+
 def is_roundtrip(backend: gtx_backend.Backend | None) -> bool:
     return backend.name == "roundtrip" if backend else False
 
