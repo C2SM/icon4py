@@ -417,8 +417,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         dwdz_at_cells_on_model_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         exner_dynamical_increment = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
-        current_w[:, 0] = 0.0  # realistic initial condition
-
         is_iau_active = True
         at_first_substep = True
         rayleigh_type = 2
