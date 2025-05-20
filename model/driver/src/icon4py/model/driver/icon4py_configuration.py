@@ -163,7 +163,7 @@ def read_config(
 
     def _gauss3d_vertical_config():
         return v_grid.VerticalGridConfig(
-            num_levels=100,
+            num_levels=400,
             rayleigh_damping_height=900.0,
             model_top_height=1000.0,
             flat_height=900.0,
@@ -191,7 +191,7 @@ def read_config(
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=0.1),
-            end_date = datetime.datetime(year=1, month=1, day=1, hour=0, minute=10, second=0, microsecond=0),
+            end_date = datetime.datetime(year=1, month=1, day=1, hour=0, minute=5, second=0, microsecond=0),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend_name=icon4py_driver_backend,

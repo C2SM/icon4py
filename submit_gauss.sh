@@ -3,8 +3,8 @@
 
 # santis batch job parameters
 # ------------------------------
-#SBATCH --partition=normal
-#SBATCH --time=1:30:00
+#SBATCH --partition=debug
+#SBATCH --time=0:30:00
 #SBATCH --job-name=torus_test
 #SBATCH --output=logs/torus.log
 #SBATCH --error=logs/torus.log
@@ -22,7 +22,7 @@ source venv_uv/bin/activate
 
 srun \
 	python model/driver/src/icon4py/model/driver/icon4py_driver.py \
-	/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data \
+	/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform400_flat/ser_data \
 	--icon4py_driver_backend=gtfn_gpu \
 	--experiment_type=gauss3d_torus \
 	--grid_root=2 --grid_level=0 --enable_output
