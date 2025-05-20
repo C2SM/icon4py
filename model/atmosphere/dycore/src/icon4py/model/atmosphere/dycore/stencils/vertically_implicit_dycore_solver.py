@@ -368,7 +368,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
         else next_w
     )
 
-    _compute_results_for_thermodynamic_variables(
+    next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
         vwind_impl_wgt=exner_w_implicit_weight_parameter,
         inv_ddqz_z_full=inv_ddqz_z_full,
@@ -641,7 +641,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
         else next_w
     )
 
-    _compute_results_for_thermodynamic_variables(
+    next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
         vwind_impl_wgt=exner_w_implicit_weight_parameter,
         inv_ddqz_z_full=inv_ddqz_z_full,
