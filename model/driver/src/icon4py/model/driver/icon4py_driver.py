@@ -15,7 +15,6 @@ from typing import Callable, NamedTuple
 import click
 import numpy as np
 from devtools import Timer
-
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.utils as common_utils

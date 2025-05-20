@@ -29,7 +29,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
+from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
 

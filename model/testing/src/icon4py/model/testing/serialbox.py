@@ -1844,6 +1844,14 @@ class IconSatadInitSavepoint(IconSatadExitSavepoint):
         return self._get_field("rho", dims.CellDim, dims.KDim)
 
 
+class TopographySavepoint(IconSavepoint):
+    def topo_c(self):
+        return self._get_field("topography", dims.CellDim)
+
+    def topo_smt_c(self):
+        return self._get_field("smooth_topography", dims.CellDim)
+
+
 class IconSerialDataProvider:
     def __init__(
         self,
@@ -2022,6 +2030,12 @@ class IconSerialDataProvider:
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric-state"].as_savepoint()
         return MetricSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_topography_savepoint(self) -> TopographySavepoint:
+        savepoint = self.serializer.savepoint["smooth-topo-savepoint"].as_savepoint()
+        return TopographySavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
