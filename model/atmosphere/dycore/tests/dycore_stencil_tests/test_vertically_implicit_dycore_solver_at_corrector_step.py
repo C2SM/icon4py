@@ -143,7 +143,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         at_first_substep: bool,
         at_last_substep: bool,
         index_of_damping_layer: int,
-        jk_start: int,
         kstart_moist: int,
         **kwargs: Any,
     ) -> dict:
@@ -310,27 +309,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 next_w[:, :n_lev],
             )
 
-        next_rho, next_exner, next_theta_v = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= jk_start),
-            compute_results_for_thermodynamic_variables_numpy(
-                connectivities=connectivities,
-                z_rho_expl=rho_explicit_term,
-                vwind_impl_wgt=exner_w_implicit_weight_parameter,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                rho_ic=rho_at_cells_on_half_levels,
-                w=next_w,
-                z_exner_expl=exner_explicit_term,
-                exner_ref_mc=reference_exner_at_cells_on_model_levels,
-                z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-                z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-                rho_now=current_rho,
-                theta_v_now=current_theta_v,
-                exner_now=current_exner,
-                dtime=dtime,
-            ),
-            (next_rho, next_exner, next_theta_v),
-        )
-
         if lprep_adv:
             if at_first_substep:
                 dynamical_vertical_mass_flux_at_cells_on_half_levels = np.zeros_like(
@@ -471,7 +449,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         at_first_substep = True
         rayleigh_type = 2
         index_of_damping_layer = 3
-        jk_start = 0
         at_last_substep = True
         kstart_moist = 1
         dtime = 0.001
@@ -533,7 +510,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
             index_of_damping_layer=index_of_damping_layer,
-            jk_start=jk_start,
             kstart_moist=kstart_moist,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,

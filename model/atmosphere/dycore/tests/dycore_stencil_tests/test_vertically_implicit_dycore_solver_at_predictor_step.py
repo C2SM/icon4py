@@ -137,7 +137,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         divdamp_type: int,
         at_first_substep: bool,
         index_of_damping_layer: int,
-        jk_start: int,
         starting_vertical_index_for_3d_divdamp: int,
         kstart_moist: int,
         **kwargs: Any,
@@ -308,27 +307,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 exner_dynamical_increment,
             )
 
-        next_rho, next_exner, next_theta_v = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= jk_start),
-            compute_results_for_thermodynamic_variables_numpy(
-                connectivities=connectivities,
-                z_rho_expl=rho_explicit_term,
-                vwind_impl_wgt=exner_w_implicit_weight_parameter,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                rho_ic=rho_at_cells_on_half_levels,
-                w=next_w,
-                z_exner_expl=exner_explicit_term,
-                exner_ref_mc=reference_exner_at_cells_on_model_levels,
-                z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-                z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-                rho_now=current_rho,
-                theta_v_now=current_theta_v,
-                exner_now=current_exner,
-                dtime=dtime,
-            ),
-            (next_rho, next_exner, next_theta_v),
-        )
-
         # compute dw/dz for divergence damping term
         if divdamp_type >= 3:
             dwdz_at_cells_on_model_levels = np.where(
@@ -422,7 +400,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         rayleigh_type = 2
         divdamp_type = 3
         index_of_damping_layer = 3
-        jk_start = 0
         starting_vertical_index_for_3d_divdamp = 0
         kstart_moist = 1
         dtime = 0.001
@@ -473,7 +450,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             divdamp_type=divdamp_type,
             at_first_substep=at_first_substep,
             index_of_damping_layer=index_of_damping_layer,
-            jk_start=jk_start,
             starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
             kstart_moist=kstart_moist,
             horizontal_start=start_cell_nudging,
