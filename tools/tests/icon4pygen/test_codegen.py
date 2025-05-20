@@ -134,6 +134,7 @@ def test_codegen(cli, stencil_module, stencil_name, flags, test_temp_dir) -> Non
         "compute_cell_diagnostics_for_velocity_advection",
         "compute_edge_diagnostics_for_dycore_and_update_vn",
         "compute_cell_diagnostics_for_dycore",
+        "vertically_implicit_dycore_solver",
     ):
         pytest.skip(f"{stencil_name} does not match standard structure")
 
