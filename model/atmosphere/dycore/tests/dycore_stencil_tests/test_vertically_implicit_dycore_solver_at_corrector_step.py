@@ -465,8 +465,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
 
-        current_w[:, 0] = 0.0  # realistic initial condition
-
         lprep_adv = True
         r_nsubsteps = 0.5
         is_iau_active = True
