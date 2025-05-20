@@ -27,7 +27,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver.test_cases import utils as testcases_utils
+from icon4py.model.driver.testcases import utils as testcases_utils
 from icon4py.model.testing import serialbox as sb
 
 
@@ -309,18 +309,18 @@ def model_initialization_jabw(
 
     log.info("U, V computation completed.")
 
-    exner_pr = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
     testcases_utils.compute_perturbed_exner.with_backend(backend)(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
-        exner_pr,
+        perturbed_exner,
         0,
         num_cells,
         0,
         num_levels,
         offset_provider={},
     )
-    log.info("exner_pr initialization completed.")
+    log.info("perturbed_exner initialization completed.")
 
     diagnostic_state = diagnostics.DiagnosticState(
         pressure=pressure,
@@ -350,7 +350,7 @@ def model_initialization_jabw(
         grid=grid, backend=backend
     )
     solve_nonhydro_diagnostic_state = testcases_utils.initialize_solve_nonhydro_diagnostic_state(
-        exner_pr=exner_pr,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
         grid=grid,
         backend=backend,
     )

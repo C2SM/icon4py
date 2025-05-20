@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     apply_divergence_damping_and_update_vn,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -39,8 +39,8 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         dwdz_at_cells_on_model_levels: np.ndarray,
         predictor_normal_wind_advective_tendency: np.ndarray,
         corrector_normal_wind_advective_tendency: np.ndarray,
-        normal_wind_tendency_due_to_physics_process: np.ndarray,
-        normal_wind_iau_increments: np.ndarray,
+        normal_wind_tendency_due_to_slow_physics_process: np.ndarray,
+        normal_wind_iau_increment: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
         horizontal_pressure_gradient: np.ndarray,
         reduced_fourth_order_divdamp_coeff_at_nest_boundary: np.ndarray,
@@ -53,10 +53,9 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         geofac_grdiv: np.ndarray,
         fourth_order_divdamp_factor: ta.wpfloat,
         second_order_divdamp_factor: ta.wpfloat,
-        wgt_nnow_vel: ta.wpfloat,
-        wgt_nnew_vel: ta.wpfloat,
+        advection_explicit_weight_parameter: ta.wpfloat,
+        advection_implicit_weight_parameter: ta.wpfloat,
         dtime: ta.wpfloat,
-        cpd: ta.wpfloat,
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
@@ -103,10 +102,10 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             current_vn
             + dtime
             * (
-                wgt_nnow_vel * predictor_normal_wind_advective_tendency
-                + wgt_nnew_vel * corrector_normal_wind_advective_tendency
-                + normal_wind_tendency_due_to_physics_process
-                - cpd * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
+                advection_explicit_weight_parameter * predictor_normal_wind_advective_tendency
+                + advection_implicit_weight_parameter * corrector_normal_wind_advective_tendency
+                + normal_wind_tendency_due_to_slow_physics_process
+                - constants.CPD * theta_v_at_edges_on_model_levels * horizontal_pressure_gradient
             ),
             next_vn,
         )
@@ -172,7 +171,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         if is_iau_active:
             next_vn = np.where(
                 (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
-                next_vn + (iau_wgt_dyn * normal_wind_iau_increments),
+                next_vn + (iau_wgt_dyn * normal_wind_iau_increment),
                 next_vn,
             )
 
@@ -191,13 +190,13 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         predictor_normal_wind_advective_tendency = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        normal_wind_tendency_due_to_physics_process = data_alloc.random_field(
+        normal_wind_tendency_due_to_slow_physics_process = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
         horizontal_gradient_of_normal_wind_divergence = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        normal_wind_iau_increments = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         next_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_pressure_gradient = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -209,9 +208,8 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim)
 
         dtime = 0.9
-        wgt_nnew_vel = 0.75
-        wgt_nnow_vel = 0.25
-        cpd = 1004.64
+        advection_implicit_weight_parameter = 0.75
+        advection_explicit_weight_parameter = 0.25
         iau_wgt_dyn = 1.0
         is_iau_active = True
         fourth_order_divdamp_factor = 0.004
@@ -236,8 +234,8 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             dwdz_at_cells_on_model_levels=dwdz_at_cells_on_model_levels,
             predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
             corrector_normal_wind_advective_tendency=corrector_normal_wind_advective_tendency,
-            normal_wind_tendency_due_to_physics_process=normal_wind_tendency_due_to_physics_process,
-            normal_wind_iau_increments=normal_wind_iau_increments,
+            normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
+            normal_wind_iau_increment=normal_wind_iau_increment,
             theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=horizontal_pressure_gradient,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
@@ -250,10 +248,9 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             geofac_grdiv=geofac_grdiv,
             fourth_order_divdamp_factor=fourth_order_divdamp_factor,
             second_order_divdamp_factor=second_order_divdamp_factor,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
+            advection_explicit_weight_parameter=advection_explicit_weight_parameter,
+            advection_implicit_weight_parameter=advection_implicit_weight_parameter,
             dtime=dtime,
-            cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
             limited_area=limited_area,
