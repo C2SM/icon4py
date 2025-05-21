@@ -20,20 +20,20 @@ CECDim = gtx.Dimension("CEC")
 ECDim = gtx.Dimension("EC")
 ECVDim = gtx.Dimension("ECV")
 CECECDim = gtx.Dimension("CECEC")
-E2CDim = gtx.Dimension("E2C", gtx.DimensionKind.LOCAL)  # local skip
+E2CDim = gtx.Dimension("E2C", gtx.DimensionKind.LOCAL)
 E2VDim = gtx.Dimension("E2V", gtx.DimensionKind.LOCAL)
 C2EDim = gtx.Dimension("C2E", gtx.DimensionKind.LOCAL)
-V2CDim = gtx.Dimension("V2C", gtx.DimensionKind.LOCAL)  # skip
+V2CDim = gtx.Dimension("V2C", gtx.DimensionKind.LOCAL)
 C2VDim = gtx.Dimension("C2V", gtx.DimensionKind.LOCAL)
-V2EDim = gtx.Dimension("V2E", gtx.DimensionKind.LOCAL)  # skip
-V2E2VDim = gtx.Dimension("V2E2V", gtx.DimensionKind.LOCAL)  # skip
-E2C2VDim = gtx.Dimension("E2C2V", gtx.DimensionKind.LOCAL)  # local skip,
-C2E2CODim = gtx.Dimension("C2E2CO", gtx.DimensionKind.LOCAL)  # local skip
-E2C2EODim = gtx.Dimension("E2C2EO", gtx.DimensionKind.LOCAL)  # local skip
-E2C2EDim = gtx.Dimension("E2C2E", gtx.DimensionKind.LOCAL)  # local skip
-C2E2CDim = gtx.Dimension("C2E2C", gtx.DimensionKind.LOCAL)  # local skip
-C2E2C2EDim = gtx.Dimension("C2E2C2E", gtx.DimensionKind.LOCAL)  # local skip
-C2E2C2E2CDim = gtx.Dimension("C2E2C2E2C", gtx.DimensionKind.LOCAL)  # local skip
+V2EDim = gtx.Dimension("V2E", gtx.DimensionKind.LOCAL)
+V2E2VDim = gtx.Dimension("V2E2V", gtx.DimensionKind.LOCAL)
+E2C2VDim = gtx.Dimension("E2C2V", gtx.DimensionKind.LOCAL)
+C2E2CODim = gtx.Dimension("C2E2CO", gtx.DimensionKind.LOCAL)
+E2C2EODim = gtx.Dimension("E2C2EO", gtx.DimensionKind.LOCAL)
+E2C2EDim = gtx.Dimension("E2C2E", gtx.DimensionKind.LOCAL)
+C2E2CDim = gtx.Dimension("C2E2C", gtx.DimensionKind.LOCAL)
+C2E2C2EDim = gtx.Dimension("C2E2C2E", gtx.DimensionKind.LOCAL)
+C2E2C2E2CDim = gtx.Dimension("C2E2C2E2C", gtx.DimensionKind.LOCAL)
 E2C = gtx.FieldOffset("E2C", source=CellDim, target=(EdgeDim, E2CDim))
 C2E = gtx.FieldOffset("C2E", source=EdgeDim, target=(CellDim, C2EDim))
 V2C = gtx.FieldOffset("V2C", source=CellDim, target=(VertexDim, V2CDim))
