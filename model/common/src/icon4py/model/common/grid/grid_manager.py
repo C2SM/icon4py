@@ -615,7 +615,7 @@ class GridManager:
             dims.V2E2V: self._get_index_field(ConnectivityName.V2E2V),
         }
 
-        grid.with_connectivities(
+        grid.with_neighbor_tables(
             {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
         )
 
@@ -691,7 +691,7 @@ def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) 
     )
     c2e2c2e2c = _construct_butterfly_cells(grid.connectivities[dims.C2E2CDim], array_ns=array_ns)
 
-    grid.with_connectivities(
+    grid.with_neighbor_tables(
         {
             dims.C2E2CODim: c2e2c0,
             dims.C2E2C2EDim: c2e2c2e,

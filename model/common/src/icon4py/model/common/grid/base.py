@@ -110,8 +110,9 @@ class BaseGrid(ABC):
     @abstractmethod
     def geometry_type(self) -> GeometryType:
         ...
+
     @property
-    def connectivities(self)-> Dict[gtx.Dimension, data_alloc.NDArray]:
+    def connectivities(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
         return self._neighbor_tables
 
     @functools.cached_property
@@ -146,7 +147,7 @@ class BaseGrid(ABC):
         return connectivity_map
 
     @utils.chainable
-    def with_connectivities(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
+    def with_neighbor_tables(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
         self._neighbor_tables.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
@@ -189,7 +190,7 @@ class BaseGrid(ABC):
             array_ns=xp,
         )
 
-    def get_offset_provider(self, name):
+    def get_connectivity(self, name: str) -> gtx.Connectivity:
         if name in self.connectivity_mapping:
             method, *args = self.connectivity_mapping[name]
             return method(*args)

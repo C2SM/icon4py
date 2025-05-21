@@ -436,7 +436,12 @@ class SimpleGrid(BaseGrid):
             ),
             "Koff": (lambda: dims.KDim,),  # Koff is a special case
             "C2E2C2E": (self._construct_connectivity, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
-            "C2E2C2E2C": (self._construct_connectivity, dims.C2E2C2E2CDim, dims.CellDim, dims.CellDim),
+            "C2E2C2E2C": (
+                self._construct_connectivity,
+                dims.C2E2C2E2CDim,
+                dims.CellDim,
+                dims.CellDim,
+            ),
             "E2ECV": (
                 self._get_connectivity_sparse_fields,
                 dims.E2C2VDim,
@@ -524,7 +529,7 @@ class SimpleGrid(BaseGrid):
             dims.C2E2C2E2CDim: simple_grid_data.c2e2c2e2c_table,
         }
 
-        self.with_config(config).with_connectivities(connectivity_dict)
+        self.with_config(config).with_neighbor_tables(connectivity_dict)
         self.update_size_connectivities(
             {
                 dims.ECVDim: self.size[dims.EdgeDim] * self.size[dims.E2C2VDim],
