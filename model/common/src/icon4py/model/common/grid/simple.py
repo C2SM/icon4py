@@ -504,6 +504,7 @@ class SimpleGrid(BaseGrid):
             horizontal_config=horizontal_grid_size,
             vertical_size=vertical_grid_config.num_levels,
             on_gpu=on_gpu,
+            limited_area=False,
         )
 
         simple_grid_data = SimpleGridData(on_gpu=on_gpu)

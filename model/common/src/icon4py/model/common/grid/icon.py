@@ -21,6 +21,17 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 log = logging.getLogger(__name__)
 
+CONNECTIVITIES_ON_BOUNDARIES = (
+    dims.C2E2C2EDim,
+    dims.E2CDim,
+    dims.C2E2CDim,
+    dims.C2E2CODim,
+    dims.E2C2VDim,
+    dims.E2C2EDim,
+    dims.E2C2EODim,
+)
+CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
+
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
@@ -176,23 +187,10 @@ class IconGrid(base.BaseGrid):
         assert (
             dimension.kind == gtx.DimensionKind.LOCAL
         ), "only local dimensions can have skip values"
-        if dimension in (dims.V2EDim, dims.V2CDim):
+        if dimension in CONNECTIVITIES_ON_PENTAGONS:
             return True
         elif self.limited_area:
-            if dimension in (
-                dims.C2E2C2EDim,
-                dims.E2CDim,
-                dims.C2E2CDim,
-                dims.C2E2CODim,
-                dims.E2C2VDim,
-                dims.E2C2EDim,
-                dims.E2C2EODim,
-                dims.V2E2VDim,
-                # dims.ECVDim,
-                # dims.ECDim,
-                # dims.CECDim,
-                # dims.CEDim,
-            ):
+            if dimension in CONNECTIVITIES_ON_BOUNDARIES:
                 return True
         else:
             return False

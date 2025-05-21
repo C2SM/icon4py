@@ -535,7 +535,7 @@ if dace:
                 f"__pattern_{dim.value}Dim_ptr": expose_cpp_ptr(exchange_obj._patterns[dim])
                 if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
-                for dim in dims.global_dimensions.values()
+                for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
             },
             **{
                 f"__domain_descriptor_{dim.value}Dim_ptr": expose_cpp_ptr(
@@ -543,7 +543,7 @@ if dace:
                 )
                 if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
-                for dim in dims.global_dimensions.values()
+                for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
             },
         }
 

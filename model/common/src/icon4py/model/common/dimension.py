@@ -14,12 +14,12 @@ KHalfDim = gtx.Dimension("KHalf", kind=gtx.DimensionKind.VERTICAL)
 EdgeDim = gtx.Dimension("Edge")
 CellDim = gtx.Dimension("Cell")
 VertexDim = gtx.Dimension("Vertex")
-global_dimensions = {"CellDim": CellDim, "EdgeDim": EdgeDim, "VertexDim": VertexDim}
+MAIN_HORIZONTAL_DIMENSIONS = {"CellDim": CellDim, "EdgeDim": EdgeDim, "VertexDim": VertexDim}
 CEDim = gtx.Dimension("CE")
-CECDim = gtx.Dimension("CEC")  # local skip
-ECDim = gtx.Dimension("EC")  # local skip
-ECVDim = gtx.Dimension("ECV")  # local skip
-CECECDim = gtx.Dimension("CECEC")  # local skip
+CECDim = gtx.Dimension("CEC")
+ECDim = gtx.Dimension("EC")
+ECVDim = gtx.Dimension("ECV")
+CECECDim = gtx.Dimension("CECEC")
 E2CDim = gtx.Dimension("E2C", gtx.DimensionKind.LOCAL)  # local skip
 E2VDim = gtx.Dimension("E2V", gtx.DimensionKind.LOCAL)
 C2EDim = gtx.Dimension("C2E", gtx.DimensionKind.LOCAL)

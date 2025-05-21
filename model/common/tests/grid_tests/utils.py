@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing import datatest_utils as dt_utils
@@ -19,20 +21,39 @@ r02b04_global_grid_path = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL)
 r02b04_global_data_file = r02b04_global_grid_path.joinpath("icon_grid_0013_R02B04_R.tar.gz").name
 
 
-def horizontal_dim():
-    for dim in (dims.VertexDim, dims.EdgeDim, dims.CellDim):
-        yield dim
-
-
-def local_dims():
-    import icon4py.model.common.dimension as dims
-
-    for d in vars(dims):
-        if isinstance(d, dims.Dimension) and d.kind == dims.DimensionKind.LOCAL:
+def horizontal_dims():
+    for d in vars(dims).values():
+        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL:
             yield d
 
 
-def global_grid_domains(dim: dims.Dimension):
+def main_horizontal_dims():
+    yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+
+
+def vertical_dims():
+    for d in vars(dims).values():
+        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.VERTICAL:
+            yield d
+
+
+def non_horizontal_dims():
+    yield from vertical_dims()
+    yield from local_dims()
+
+
+def local_dims():
+    for d in vars(dims).values():
+        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.LOCAL:
+            yield d
+
+
+def non_local_dims():
+    yield from vertical_dims()
+    yield from horizontal_dims()
+
+
+def global_grid_domains(dim: gtx.Dimension):
     zones = [
         h_grid.Zone.END,
         h_grid.Zone.LOCAL,

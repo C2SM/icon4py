@@ -622,7 +622,7 @@ class GridManager:
         _local_connectivities(grid)
         _update_size_for_1d_sparse_dims(grid)
         start, end, _ = self._read_start_end_indices()
-        for dim in dims.global_dimensions.values():
+        for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
             grid.with_start_end_indices(dim, start[dim], end[dim])
 
         return grid

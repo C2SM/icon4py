@@ -58,7 +58,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
 def test_distributed_local(processor_props, dim, icon_grid, caplog):  # noqa: F811  # fixture
     caplog.set_level(logging.INFO)
     check_comm_size(processor_props)
@@ -115,7 +115,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.datatest
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
 def test_distributed_halo(processor_props, dim, marker, icon_grid):  # noqa: F811  # fixture
     check_comm_size(processor_props)

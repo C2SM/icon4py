@@ -501,7 +501,7 @@ def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_grid, backend):
     caplog.set_level(logging.INFO)
     serialized_grid = icon_grid

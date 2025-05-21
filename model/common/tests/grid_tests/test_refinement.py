@@ -32,7 +32,7 @@ def refinement_value(dim: gtx.Dimension):
         yield v
 
 
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_ordered(dim):
     for value in refinement_value(dim):
         ordered = refin.RefinementValue(dim, value)
@@ -43,7 +43,7 @@ def test_ordered(dim):
             assert ordered.is_ordered()
 
 
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_nested(dim):
     for value in refinement_value(dim):
         nested = refin.RefinementValue(dim, value)
@@ -53,14 +53,14 @@ def test_nested(dim):
             assert not nested.is_nested()
 
 
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_valid_refinement_values(dim):
     for value in out_of_range(dim):
         with pytest.raises(AssertionError):
             refin.RefinementValue(dim, value)
 
 
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize(
     "grid_file, expected", [(dt_utils.R02B04_GLOBAL, False), (dt_utils.REGIONAL_EXPERIMENT, True)]
 )
