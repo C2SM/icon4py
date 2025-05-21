@@ -137,7 +137,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         divdamp_type: int,
         at_first_substep: bool,
         index_of_damping_layer: int,
-        jk_start: int,
         starting_vertical_index_for_3d_divdamp: int,
         kstart_moist: int,
         **kwargs: Any,
@@ -309,7 +308,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             )
 
         next_rho, next_exner, next_theta_v = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= jk_start),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
                 z_rho_expl=rho_explicit_term,
@@ -417,14 +416,11 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         dwdz_at_cells_on_model_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         exner_dynamical_increment = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
-        current_w[:, 0] = 0.0  # realistic initial condition
-
         is_iau_active = True
         at_first_substep = True
         rayleigh_type = 2
         divdamp_type = 3
         index_of_damping_layer = 3
-        jk_start = 0
         starting_vertical_index_for_3d_divdamp = 0
         kstart_moist = 1
         dtime = 0.001
@@ -475,7 +471,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             divdamp_type=divdamp_type,
             at_first_substep=at_first_substep,
             index_of_damping_layer=index_of_damping_layer,
-            jk_start=jk_start,
             starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
             kstart_moist=kstart_moist,
             horizontal_start=start_cell_nudging,

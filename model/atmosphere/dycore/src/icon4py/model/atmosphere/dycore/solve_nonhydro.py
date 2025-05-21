@@ -238,24 +238,24 @@ class NonHydrostaticConfig:
         self.itime_scheme: int = itime_scheme
 
         #: Miura scheme for advection of rho and theta
-        self.iadv_rhotheta: int = iadv_rhotheta
+        self.iadv_rhotheta: dycore_states.RhoThetaAdvectionType = iadv_rhotheta
         #: Use truly horizontal pressure-gradient computation to ensure numerical
         #: stability without heavy orography smoothing
-        self.igradp_method: int = igradp_method
+        self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
 
         #: number of dynamics substeps per fast-physics timestep
         self.ndyn_substeps_var: float = ndyn_substeps_var
 
         #: type of Rayleigh damping
-        self.rayleigh_type: int = rayleigh_type
+        self.rayleigh_type: constants.RayleighType = rayleigh_type
         # used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
         self.rayleigh_coeff: float = rayleigh_coeff
 
         #: order of divergence damping
-        self.divdamp_order: int = divdamp_order
+        self.divdamp_order: dycore_states.DivergenceDampingOrder = divdamp_order
 
         #: type of divergence damping
-        self.divdamp_type: int = divdamp_type
+        self.divdamp_type: dycore_states.DivergenceDampingType = divdamp_type
         #: Lower and upper bound of transition zone between 2D and 3D divergence damping in case of divdamp_type = 32 [m]
         self.divdamp_trans_start: float = divdamp_trans_start
         self.divdamp_trans_end: float = divdamp_trans_end
@@ -416,8 +416,6 @@ class SolveNonhydro:
         self._edge_geometry = edge_geometry
         self._cell_params = cell_geometry
 
-        self.jk_start = 0  # used in stencil_55
-
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend)
         self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(self._backend)
         self._update_theta_v = update_theta_v.with_backend(self._backend)
@@ -481,9 +479,9 @@ class SolveNonhydro:
         )
         self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(self._backend)
         if self._config.divdamp_type == 32:
-            xp = data_alloc.import_array_ns(self.backend)
+            xp = data_alloc.import_array_ns(self._backend)
             self.starting_vertical_index_for_3d_divdamp = xp.min(
-                xp.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.ndarray > 0.0)
+                xp.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.ndarray > 0.0)[0]
             )
 
         self.velocity_advection = VelocityAdvection(
@@ -497,14 +495,6 @@ class SolveNonhydro:
         )
         self._allocate_local_fields()
         self._determine_local_domains()
-        # TODO (magdalena) vertical nesting is only relevant in the context of
-        #      horizontal nesting, since we don't support this we should remove this option
-        self.l_vert_nested: bool = False
-        if grid.lvert_nest:
-            self.l_vert_nested = True
-            self.jk_start = 1
-        else:
-            self.jk_start = 0
 
         self._en_smag_fac_for_zero_nshift(
             self._vertical_params.interface_physical_height,
@@ -1145,7 +1135,6 @@ class SolveNonhydro:
             divdamp_type=self._config.divdamp_type,
             at_first_substep=at_first_substep,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            jk_start=self.jk_start,
             starting_vertical_index_for_3d_divdamp=self._params.starting_vertical_index_for_3d_divdamp,
             kstart_moist=self._vertical_params.kstart_moist,
             horizontal_start=self._start_cell_nudging,
@@ -1427,7 +1416,6 @@ class SolveNonhydro:
             is_iau_active=self._config.is_iau_active,
             rayleigh_type=self._config.rayleigh_type,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            jk_start=self.jk_start,
             kstart_moist=self._vertical_params.kstart_moist,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,

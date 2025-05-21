@@ -1829,7 +1829,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     iau_wgt_dyn = config.iau_wgt_dyn
     is_iau_active = config.is_iau_active
     divdamp_type = config.divdamp_type
-    jk_start = 0  # TODO: check - sp_stencil_init.jk_start()
 
     z_contr_w_fl_l_ref = sp_nh_exit.z_contr_w_fl_l()
     z_beta_ref = sp_nh_exit.z_beta()
@@ -1899,7 +1898,6 @@ def test_vertically_implicit_solver_at_predictor_step(
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         index_of_damping_layer=grid_savepoint.nrdmax(),
-        jk_start=jk_start,
         starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         kstart_moist=vertical_params.kstart_moist,
         horizontal_start=start_cell_nudging,
@@ -2036,7 +2034,6 @@ def test_vertically_implicit_solver_at_corrector_step(
 
     iau_wgt_dyn = config.iau_wgt_dyn
     is_iau_active = config.is_iau_active
-    jk_start = 0
 
     z_contr_w_fl_l_ref = sp_nh_exit.z_contr_w_fl_l()
     z_beta_ref = sp_nh_exit.z_beta()
@@ -2115,7 +2112,6 @@ def test_vertically_implicit_solver_at_corrector_step(
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
         index_of_damping_layer=grid_savepoint.nrdmax(),
-        jk_start=jk_start,
         kstart_moist=kstart_moist,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,

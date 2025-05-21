@@ -143,7 +143,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         at_first_substep: bool,
         at_last_substep: bool,
         index_of_damping_layer: int,
-        jk_start: int,
         kstart_moist: int,
         **kwargs: Any,
     ) -> dict:
@@ -311,7 +310,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             )
 
         next_rho, next_exner, next_theta_v = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= jk_start),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
                 z_rho_expl=rho_explicit_term,
@@ -465,15 +464,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
 
-        current_w[:, 0] = 0.0  # realistic initial condition
-
         lprep_adv = True
         r_nsubsteps = 0.5
         is_iau_active = True
         at_first_substep = True
         rayleigh_type = 2
         index_of_damping_layer = 3
-        jk_start = 0
         at_last_substep = True
         kstart_moist = 1
         dtime = 0.001
@@ -535,7 +531,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
             index_of_damping_layer=index_of_damping_layer,
-            jk_start=jk_start,
             kstart_moist=kstart_moist,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,

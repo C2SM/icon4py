@@ -141,7 +141,7 @@ class Field(Node, FieldEntity):
         """Handle extraction of field types for different fields e.g. Scalar."""
         if not isinstance(field.type, ts.FieldType):
             return field.type.kind  # type: ignore[union-attr]
-        return field.type.dtype.kind
+        return field.type.dtype.kind  # type: ignore[union-attr]
 
     @staticmethod
     def _has_vertical_dimension(field: past.DataSymbol) -> bool:

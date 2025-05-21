@@ -343,7 +343,6 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     divdamp_type: gtx.int32,
     at_first_substep: bool,
     index_of_damping_layer: gtx.int32,
-    jk_start: gtx.int32,
     starting_vertical_index_for_3d_divdamp: gtx.int32,
     kstart_moist: gtx.int32,
 ) -> tuple[
@@ -370,24 +369,20 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
         else next_w
     )
 
-    next_rho, next_exner, next_theta_v = concat_where(
-        jk_start <= dims.KDim,
-        _compute_results_for_thermodynamic_variables(
-            z_rho_expl=rho_explicit_term,
-            vwind_impl_wgt=exner_w_implicit_weight_parameter,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            rho_ic=rho_at_cells_on_half_levels,
-            w=next_w,
-            z_exner_expl=exner_explicit_term,
-            exner_ref_mc=reference_exner_at_cells_on_model_levels,
-            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            rho_now=current_rho,
-            theta_v_now=current_theta_v,
-            exner_now=current_exner,
-            dtime=dtime,
-        ),
-        (next_rho, next_exner, next_theta_v),
+    next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
+        z_rho_expl=rho_explicit_term,
+        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        rho_ic=rho_at_cells_on_half_levels,
+        w=next_w,
+        z_exner_expl=exner_explicit_term,
+        exner_ref_mc=reference_exner_at_cells_on_model_levels,
+        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        rho_now=current_rho,
+        theta_v_now=current_theta_v,
+        exner_now=current_exner,
+        dtime=dtime,
     )
 
     # compute dw/dz for divergence damping term
@@ -620,7 +615,6 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     dtime: ta.wpfloat,
     rayleigh_type: gtx.int32,
     index_of_damping_layer: gtx.int32,
-    jk_start: gtx.int32,
     kstart_moist: gtx.int32,
     at_first_substep: bool,
     at_last_substep: bool,
@@ -649,24 +643,20 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
         else next_w
     )
 
-    next_rho, next_exner, next_theta_v = concat_where(
-        jk_start <= dims.KDim,
-        _compute_results_for_thermodynamic_variables(
-            z_rho_expl=rho_explicit_term,
-            vwind_impl_wgt=exner_w_implicit_weight_parameter,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            rho_ic=rho_at_cells_on_half_levels,
-            w=next_w,
-            z_exner_expl=exner_explicit_term,
-            exner_ref_mc=reference_exner_at_cells_on_model_levels,
-            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            rho_now=current_rho,
-            theta_v_now=current_theta_v,
-            exner_now=current_exner,
-            dtime=dtime,
-        ),
-        (next_rho, next_exner, next_theta_v),
+    next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
+        z_rho_expl=rho_explicit_term,
+        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        rho_ic=rho_at_cells_on_half_levels,
+        w=next_w,
+        z_exner_expl=exner_explicit_term,
+        exner_ref_mc=reference_exner_at_cells_on_model_levels,
+        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        rho_now=current_rho,
+        theta_v_now=current_theta_v,
+        exner_now=current_exner,
+        dtime=dtime,
     )
 
     (
@@ -780,7 +770,6 @@ def vertically_implicit_solver_at_predictor_step(
     divdamp_type: gtx.int32,
     at_first_substep: bool,
     index_of_damping_layer: gtx.int32,
-    jk_start: gtx.int32,
     starting_vertical_index_for_3d_divdamp: gtx.int32,
     kstart_moist: gtx.int32,
     horizontal_start: gtx.int32,
@@ -867,7 +856,6 @@ def vertically_implicit_solver_at_predictor_step(
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         index_of_damping_layer=index_of_damping_layer,
-        jk_start=jk_start,
         starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         kstart_moist=kstart_moist,
         out=(
@@ -934,7 +922,6 @@ def vertically_implicit_solver_at_corrector_step(
     at_first_substep: bool,
     at_last_substep: bool,
     index_of_damping_layer: gtx.int32,
-    jk_start: gtx.int32,
     kstart_moist: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -1026,7 +1013,6 @@ def vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
         rayleigh_type=rayleigh_type,
         index_of_damping_layer=index_of_damping_layer,
-        jk_start=jk_start,
         kstart_moist=kstart_moist,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
