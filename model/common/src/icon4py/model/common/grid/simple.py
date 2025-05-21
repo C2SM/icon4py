@@ -503,8 +503,8 @@ class SimpleGrid(BaseGrid):
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
             vertical_size=vertical_grid_config.num_levels,
-            on_gpu=on_gpu,
             limited_area=False,
+            on_gpu=on_gpu,
         )
 
         simple_grid_data = SimpleGridData(on_gpu=on_gpu)
