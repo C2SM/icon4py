@@ -115,16 +115,16 @@ def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
     try:
         parser.open()
         assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.C2E), icon_grid.connectivities[dims.C2EDim] + 1
+            parser.int_variable(gm.ConnectivityName.C2E), icon_grid.neighbor_tables[dims.C2EDim] + 1
         )
         assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.E2C), icon_grid.connectivities[dims.E2CDim] + 1
+            parser.int_variable(gm.ConnectivityName.E2C), icon_grid.neighbor_tables[dims.E2CDim] + 1
         )
         assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.V2E), icon_grid.connectivities[dims.V2EDim] + 1
+            parser.int_variable(gm.ConnectivityName.V2E), icon_grid.neighbor_tables[dims.V2EDim] + 1
         )
         assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.V2C), icon_grid.connectivities[dims.V2CDim] + 1
+            parser.int_variable(gm.ConnectivityName.V2C), icon_grid.neighbor_tables[dims.V2CDim] + 1
         )
     except Exception as e:
         logging.error(e)

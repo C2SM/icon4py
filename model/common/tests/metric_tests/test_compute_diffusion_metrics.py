@@ -44,7 +44,7 @@ def test_compute_diffusion_metrics(
     maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
 
-    c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
+    c2e2c = data_alloc.as_numpy(icon_grid.neighbor_tables[dims.C2E2CDim])
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     z_mc = metrics_savepoint.z_mc()
     thslp_zdiffu = 0.02

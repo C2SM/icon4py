@@ -670,26 +670,26 @@ class GridManager:
 
 def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) -> icon.IconGrid:
     e2c2v = _construct_diamond_vertices(
-        grid.connectivities[dims.E2VDim],
-        grid.connectivities[dims.C2VDim],
-        grid.connectivities[dims.E2CDim],
+        grid.neighbor_tables[dims.E2VDim],
+        grid.neighbor_tables[dims.C2VDim],
+        grid.neighbor_tables[dims.E2CDim],
         array_ns=array_ns,
     )
     e2c2e = _construct_diamond_edges(
-        grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim], array_ns=array_ns
+        grid.neighbor_tables[dims.E2CDim], grid.neighbor_tables[dims.C2EDim], array_ns=array_ns
     )
     e2c2e0 = array_ns.column_stack((array_ns.asarray(range(e2c2e.shape[0])), e2c2e))
 
     c2e2c2e = _construct_triangle_edges(
-        grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim], array_ns=array_ns
+        grid.neighbor_tables[dims.C2E2CDim], grid.neighbor_tables[dims.C2EDim], array_ns=array_ns
     )
     c2e2c0 = array_ns.column_stack(
         (
-            array_ns.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
-            (grid.connectivities[dims.C2E2CDim]),
+            array_ns.asarray(range(grid.neighbor_tables[dims.C2E2CDim].shape[0])),
+            (grid.neighbor_tables[dims.C2E2CDim]),
         )
     )
-    c2e2c2e2c = _construct_butterfly_cells(grid.connectivities[dims.C2E2CDim], array_ns=array_ns)
+    c2e2c2e2c = _construct_butterfly_cells(grid.neighbor_tables[dims.C2E2CDim], array_ns=array_ns)
 
     grid.with_neighbor_tables(
         {

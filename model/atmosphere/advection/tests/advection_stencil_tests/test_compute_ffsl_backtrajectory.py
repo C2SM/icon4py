@@ -158,7 +158,7 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         cell_idx = data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=grid.connectivities[dims.E2CDim]
+            dims.ECDim, field=grid.neighbor_tables[dims.E2CDim]
         )
         cell_blk = data_alloc.constant_field(grid, 1, dims.ECDim, dtype=gtx.int32)
 

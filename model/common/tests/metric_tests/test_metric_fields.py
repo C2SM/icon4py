@@ -272,7 +272,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     vwind_offctr = 0.2 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.15
     xp = data_alloc.import_array_ns(backend)
     exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
-        c2e=icon_grid.connectivities[dims.C2EDim],
+        c2e=icon_grid.neighbor_tables[dims.C2EDim],
         vct_a=grid_savepoint.vct_a().ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
         z_ddxn_z_half_e=z_ddxn_z_half_e.ndarray,

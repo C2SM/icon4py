@@ -112,7 +112,7 @@ class BaseGrid(ABC):
         ...
 
     @property
-    def connectivities(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
+    def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
         return self._neighbor_tables
 
     @functools.cached_property
@@ -163,34 +163,34 @@ class BaseGrid(ABC):
         self.size[dims.KDim] = self.config.num_levels
 
     def _construct_connectivity(self, dim, from_dim, to_dim):
-        if dim not in self.connectivities:
+        if dim not in self._neighbor_tables:
             raise MissingConnectivity()
         assert (
-            self.connectivities[dim].dtype == gtx.int32
+            self._neighbor_tables[dim].dtype == gtx.int32
         ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
-            dim, self.connectivities[dim].dtype
+            dim, self._neighbor_tables[dim].dtype
         )
         return gtx.as_connectivity(
             [from_dim, dim],
             to_dim,
-            self.connectivities[dim],
+            self._neighbor_tables[dim],
             skip_value=-1 if self._has_skip_values(dim) else None,
         )
 
     def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
-        if dim not in self.connectivities:
+        if dim not in self._neighbor_tables:
             raise MissingConnectivity()
         xp = data_alloc.array_ns(self.config.on_gpu)
         return grid_utils.connectivity_for_1d_sparse_fields(
             dim,
-            self.connectivities[dim].shape,
+            self._neighbor_tables[dim].shape,
             from_dim,
             to_dim,
             has_skip_values=self._has_skip_values(dim),
             array_ns=xp,
         )
 
-    def get_connectivity(self, name: str) -> gtx.Connectivity:
+    def get_offset_provider(self, name: str) -> gtx.Connectivity:
         if name in self.connectivity_mapping:
             method, *args = self.connectivity_mapping[name]
             return method(*args)

@@ -180,7 +180,7 @@ def test_has_skip_values(grid_file):
 @pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
 def test_skip_values_on_connectivities(grid_file: str):
     grid = from_file(grid_file)
-    for d, _ in grid.connectivities.items():
+    for d, _ in grid.neighbor_tables.items():
         if d.kind == gtx.DimensionKind.LOCAL:
             try:
                 connectivity = grid.get_offset_provider(d.value)

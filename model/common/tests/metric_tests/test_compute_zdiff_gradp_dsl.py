@@ -61,7 +61,7 @@ def test_compute_zdiff_gradp_dsl(
     flat_idx_np = xp.amax(flat_idx.ndarray, axis=1)
 
     zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
-        e2c=icon_grid.connectivities[dims.E2CDim],
+        e2c=icon_grid.neighbor_tables[dims.E2CDim],
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
