@@ -25,7 +25,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @pytest.fixture(scope="session")
-def connectivities_as_numpy(grid, backend) -> dict[gtx.Dimension, np.ndarray]:
+def connectivities_as_numpy(grid) -> dict[gtx.Dimension, np.ndarray]:
     return {dim: data_alloc.as_numpy(table) for dim, table in grid.neighbor_tables.items()}
 
 
@@ -60,7 +60,7 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
-def allocate_data(backend, input_data):
+def allocate_data(backend:gtx_backend.Backend, input_data:dict[str, gtx.Field]) -> dict[str, gtx.Field]:
     _allocate_field = constructors.as_field.partial(allocator=backend)
     input_data = {
         k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v

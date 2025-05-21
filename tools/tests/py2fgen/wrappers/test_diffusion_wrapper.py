@@ -27,7 +27,7 @@ from icon4py.tools.py2fgen.wrappers import (
 from . import utils
 from .test_grid_init import grid_init  # noqa: F401
 
-
+@pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
