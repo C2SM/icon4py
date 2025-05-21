@@ -10,7 +10,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
+from icon4py.model.driver.testcases import jablonowski_williamson as jabw
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
