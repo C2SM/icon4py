@@ -532,10 +532,10 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels + 1),
         offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2V": icon_grid.get_offset_provider("E2V"),
-            "V2C": icon_grid.get_offset_provider("V2C"),
-            "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "V2C": icon_grid.get_connectivity("V2C"),
+            "E2C2E": icon_grid.get_connectivity("E2C2E"),
             "Koff": dims.KDim,
         },
     )
@@ -632,10 +632,10 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2V": icon_grid.get_offset_provider("E2V"),
-            "V2C": icon_grid.get_offset_provider("V2C"),
-            "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "V2C": icon_grid.get_connectivity("V2C"),
+            "E2C2E": icon_grid.get_connectivity("E2C2E"),
             "Koff": dims.KDim,
         },
     )
@@ -723,8 +723,8 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "C2E": icon_grid.get_connectivity("C2E"),
+            "C2CE": icon_grid.get_connectivity("C2CE"),
             "Koff": dims.KDim,
         },
     )
@@ -817,8 +817,8 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "C2E": icon_grid.get_connectivity("C2E"),
+            "C2CE": icon_grid.get_connectivity("C2CE"),
             "Koff": dims.KDim,
         },
     )
@@ -953,9 +953,9 @@ def test_compute_advection_in_vertical_momentum_equation(
         vertical_start=vertical_start,
         vertical_end=vertical_end,
         offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "C2CE": icon_grid.get_offset_provider("C2CE"),
-            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "C2E": icon_grid.get_connectivity("C2E"),
+            "C2CE": icon_grid.get_connectivity("C2CE"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
             "Koff": dims.KDim,
         },
     )
@@ -1075,11 +1075,11 @@ def test_compute_advection_in_horizontal_momentum_equation(
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "V2E": icon_grid.get_offset_provider("V2E"),
-            "E2EC": icon_grid.get_offset_provider("E2EC"),
-            "E2V": icon_grid.get_offset_provider("E2V"),
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "V2E": icon_grid.get_connectivity("V2E"),
+            "E2EC": icon_grid.get_connectivity("E2EC"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "Koff": dims.KDim,
         },
     )

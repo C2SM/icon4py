@@ -183,7 +183,7 @@ def test_skip_values_on_connectivities(grid_file: str):
     for d, _ in grid.neighbor_tables.items():
         if d.kind == gtx.DimensionKind.LOCAL:
             try:
-                connectivity = grid.get_offset_provider(d.value)
+                connectivity = grid.get_connectivity(d.value)
                 _assert_skip_value_configuration(connectivity)
             except base.MissingConnectivity:
                 # Skip if the connectivity is not available

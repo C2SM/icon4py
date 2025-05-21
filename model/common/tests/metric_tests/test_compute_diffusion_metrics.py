@@ -66,7 +66,7 @@ def test_compute_diffusion_metrics(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlev,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
 
     compute_weighted_cell_neighbor_sum.with_backend(backend)(
@@ -80,7 +80,7 @@ def test_compute_diffusion_metrics(
         vertical_start=0,
         vertical_end=nlev,
         offset_provider={
-            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
         },
     )
 
@@ -89,7 +89,7 @@ def test_compute_diffusion_metrics(
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
+        offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
     )
 
     mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_metrics(

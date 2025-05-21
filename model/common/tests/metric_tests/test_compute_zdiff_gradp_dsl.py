@@ -53,8 +53,8 @@ def test_compute_zdiff_gradp_dsl(
         vertical_start=0,
         vertical_end=icon_grid.num_levels - 1,
         offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "Koff": icon_grid.get_offset_provider("Koff"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "Koff": icon_grid.get_connectivity("Koff"),
         },
     )
 

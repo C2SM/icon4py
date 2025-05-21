@@ -89,7 +89,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
         edge_orientation=edge_orientation,
         area=area,
         out=geofac_div,
-        offset_provider={"C2E": mesh.get_offset_provider("C2E")},
+        offset_provider={"C2E": mesh.get_connectivity("C2E")},
     )
     assert test_helpers.dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
 
@@ -114,7 +114,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
         dual_area,
         owner_mask,
         out=geofac_rot[horizontal_start:, :],
-        offset_provider={"V2E": mesh.get_offset_provider("V2E")},
+        offset_provider={"V2E": mesh.get_connectivity("V2E")},
     )
 
     assert test_helpers.dallclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())

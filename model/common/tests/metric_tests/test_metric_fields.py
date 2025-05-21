@@ -45,7 +45,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlevp1,
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+        offset_provider={"Koff": icon_grid.get_connectivity("Koff")},
     )
 
     assert testing_helpers.dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
@@ -68,7 +68,7 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+        offset_provider={"Koff": icon_grid.get_connectivity("Koff")},
     )
 
     assert testing_helpers.dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
@@ -94,7 +94,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
         divdamp_type=divdamp_type,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+        offset_provider={"Koff": icon_grid.get_connectivity("Koff")},
     )
 
     assert testing_helpers.dallclose(
@@ -154,7 +154,7 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
         horizontal_end=icon_grid.num_cells,
         vertical_start=1,
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+        offset_provider={"Koff": icon_grid.get_connectivity("Koff")},
     )
 
     assert testing_helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
@@ -176,7 +176,7 @@ def test_compute_exner_w_explicit_weight_parameter(icon_grid, metrics_savepoint,
         exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter_full,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
 
     assert testing_helpers.dallclose(
@@ -203,7 +203,7 @@ def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_save
         horizontal_end=gtx.int32(icon_grid.num_cells),
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
 
     assert testing_helpers.dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
@@ -240,7 +240,7 @@ def test_compute_exner_w_implicit_weight_parameter(
         horizontal_end=horizontal_end,
         vertical_start=vertical_start,
         vertical_end=vertical_end,
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
+        offset_provider={"E2C": icon_grid.get_connectivity("E2C")},
     )
 
     horizontal_start_edge = icon_grid.start_index(
@@ -259,8 +259,8 @@ def test_compute_exner_w_implicit_weight_parameter(
         vertical_start=vertical_start,
         vertical_end=vertical_end,
         offset_provider={
-            "E2V": icon_grid.get_offset_provider("E2V"),
-            "V2C": icon_grid.get_offset_provider("V2C"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "V2C": icon_grid.get_connectivity("V2C"),
         },
     )
 
@@ -304,7 +304,7 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
         horizontal_end=icon_grid.num_edges,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
+        offset_provider={"E2C": icon_grid.get_connectivity("E2C")},
     )
     assert testing_helpers.dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
 
@@ -355,8 +355,8 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         vertical_start=gtx.int32(0),
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "Koff": icon_grid.get_offset_provider("Koff"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "Koff": icon_grid.get_connectivity("Koff"),
         },
     )
     flat_idx_max = gtx.as_field(
@@ -380,8 +380,8 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         vertical_start=int(0),
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "Koff": icon_grid.get_offset_provider("Koff"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "Koff": icon_grid.get_connectivity("Koff"),
         },
     )
 
