@@ -417,7 +417,7 @@ class SimpleGrid(BaseGrid):
         super().__init__()
 
         self._configure(backend)
-        self.connectivity_mapping = {
+        self._connectivity_mapping = {
             "C2E": (self._construct_connectivity, dims.C2EDim, dims.CellDim, dims.EdgeDim),
             "C2E2CO": (self._construct_connectivity, dims.C2E2CODim, dims.CellDim, dims.CellDim),
             "C2E2C": (self._construct_connectivity, dims.C2E2CDim, dims.CellDim, dims.CellDim),

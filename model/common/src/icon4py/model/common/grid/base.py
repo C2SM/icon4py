@@ -74,7 +74,7 @@ class BaseGrid(ABC):
         self.config: GridConfig = None
         self._neighbor_tables: Dict[gtx.Dimension, data_alloc.NDArray] = {}
         self.size: Dict[gtx.Dimension, int] = {}
-        self.connectivity_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
+        self._connectivity_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
 
     @property
     @abstractmethod
@@ -137,7 +137,7 @@ class BaseGrid(ABC):
     @functools.cached_property
     def connectivities(self) -> Dict[str, gtx.Connectivity]:
         connectivity_map = {}
-        for key, value in self.connectivity_mapping.items():
+        for key, value in self._connectivity_mapping.items():
             try:
                 method, *args = value
                 connectivity_map[key] = method(*args) if args else method()
@@ -191,8 +191,8 @@ class BaseGrid(ABC):
         )
 
     def get_connectivity(self, name: str) -> gtx.Connectivity:
-        if name in self.connectivity_mapping:
-            method, *args = self.connectivity_mapping[name]
+        if name in self._connectivity_mapping:
+            method, *args = self._connectivity_mapping[name]
             return method(*args)
         else:
             raise MissingConnectivity(f"Offset provider for {name} not found.")

@@ -69,7 +69,7 @@ class IconGrid(base.BaseGrid):
         self._start_indices = {}
         self._end_indices = {}
         self.global_properties: GlobalGridParams = None
-        self.connectivity_mapping = {
+        self._connectivity_mapping = {
             "C2E": (self._construct_connectivity, dims.C2EDim, dims.CellDim, dims.EdgeDim),
             "E2C": (self._construct_connectivity, dims.E2CDim, dims.EdgeDim, dims.CellDim),
             "E2V": (self._construct_connectivity, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
