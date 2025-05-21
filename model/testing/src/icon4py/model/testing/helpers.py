@@ -168,7 +168,7 @@ def _test_and_benchmark(
         functools.partial(
             self.PROGRAM.with_backend(backend),
             **input_data,
-            offset_provider=grid.offset_providers,
+            offset_provider=grid.connectivities,
         ),
         functools.partial(
             _verify_stencil_test,

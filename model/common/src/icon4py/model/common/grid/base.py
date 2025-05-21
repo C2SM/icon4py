@@ -135,7 +135,7 @@ class BaseGrid(ABC):
         return self.config.limited_area or self.geometry_type == GeometryType.ICOSAHEDRON
 
     @functools.cached_property
-    def offset_providers(self) -> Dict[str, gtx.Connectivity]:
+    def connectivities(self) -> Dict[str, gtx.Connectivity]:
         connectivity_map = {}
         for key, value in self.connectivity_mapping.items():
             try:
@@ -190,7 +190,7 @@ class BaseGrid(ABC):
             array_ns=xp,
         )
 
-    def get_offset_provider(self, name: str) -> gtx.Connectivity:
+    def get_connectivity(self, name: str) -> gtx.Connectivity:
         if name in self.connectivity_mapping:
             method, *args = self.connectivity_mapping[name]
             return method(*args)
