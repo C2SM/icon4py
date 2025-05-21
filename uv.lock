@@ -915,7 +915,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/GridTools/dace?branch=gt4py-next-integration#8b9b674abfcbd0148a32a87fa6d88e240030435d" }
+source = { git = "https://github.com/GridTools/dace?branch=gt4py-next-integration#4b49068dfbd1d839a562c1d4535c7ea340597c07" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1415,8 +1415,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post456+fc329e65"
-source = { git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507#fc329e6507adc4dae796ab9e8628468784240df9" }
+version = "1.0.4.post772+bf188b4c"
+source = { git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace#bf188b4c15a89084de44d8ec049f37db79f1d59b" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1747,7 +1747,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1764,7 +1764,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1781,7 +1781,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1798,7 +1798,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1867,10 +1867,10 @@ requires-dist = [
     { name = "dace", marker = "extra == 'dace'", specifier = ">=1.0" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
-    { name = "gt4py", extras = ["dace-next"], marker = "extra == 'dace'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
+    { name = "gt4py", extras = ["dace-next"], marker = "extra == 'dace'", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["dace", "distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1904,7 +1904,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1929,7 +1929,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1971,9 +1971,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250507" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },

@@ -18,9 +18,29 @@ from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn_by_i
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
+
+
+def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
+    vn_nnow: np.ndarray,
+    ddt_vn_apc_ntl1: np.ndarray,
+    ddt_vn_apc_ntl2: np.ndarray,
+    ddt_vn_phy: np.ndarray,
+    z_theta_v_e: np.ndarray,
+    z_gradh_exner: np.ndarray,
+    dtime: ta.wpfloat,
+    wgt_nnow_vel: ta.wpfloat,
+    wgt_nnew_vel: ta.wpfloat,
+    cpd: ta.wpfloat,
+) -> np.ndarray:
+    vn_nnew = vn_nnow + dtime * (
+        wgt_nnow_vel * ddt_vn_apc_ntl1
+        + wgt_nnew_vel * ddt_vn_apc_ntl2
+        + ddt_vn_phy
+        - cpd * z_theta_v_e * z_gradh_exner
+    )
+    return vn_nnew
 
 
 class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest):
@@ -42,27 +62,33 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
         cpd: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        vn_nnew = vn_nnow + dtime * (
-            wgt_nnow_vel * ddt_vn_apc_ntl1
-            + wgt_nnew_vel * ddt_vn_apc_ntl2
-            + ddt_vn_phy
-            - cpd * z_theta_v_e * z_gradh_exner
+        vn_nnew = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
+            vn_nnow,
+            ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2,
+            ddt_vn_phy,
+            z_theta_v_e,
+            z_gradh_exner,
+            dtime,
+            wgt_nnow_vel,
+            wgt_nnew_vel,
+            cpd,
         )
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_nnow = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ddt_vn_apc_ntl1 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        ddt_vn_apc_ntl2 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        ddt_vn_phy = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn_nnew = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        dtime = wpfloat("5.0")
-        wgt_nnow_vel = wpfloat("8.0")
-        wgt_nnew_vel = wpfloat("7.0")
-        cpd = wpfloat("2.0")
+        vn_nnow = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        ddt_vn_apc_ntl1 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_vn_apc_ntl2 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_vn_phy = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_theta_v_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        vn_nnew = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        dtime = ta.wpfloat("5.0")
+        wgt_nnow_vel = ta.wpfloat("8.0")
+        wgt_nnew_vel = ta.wpfloat("7.0")
+        cpd = ta.wpfloat("2.0")
 
         return dict(
             vn_nnow=vn_nnow,
