@@ -68,7 +68,25 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry,))
 
     def _register_computed_fields(self):
-        # TODO: register compute for another fields
+
+        # TODO (Yilu): not sure whether to use EmbeddedFieldOperatorProvider
+        nudgecoeffs = factory.EmbeddedFieldOperatorProvider(
+            func=interpolation_fields._compute_nudgecoeffs.with_backend(None),
+            domain=(dims.EdgeDim),
+            fields={attrs.nudgecoeffs},
+            deps={
+                "refin_ctrl":
+                "grf_nudge_start_e":
+            },
+        params = {
+                "nudge_max_coeffs":
+                "nudge_efold_width":
+                "nudge_zone_width":
+            },
+        )
+        self.register_provider(nudgecoeffs)
+
+
         geofac_div = factory.EmbeddedFieldOperatorProvider(
             # needs to be computed on fieldview-embedded backend
             func=interpolation_fields.compute_geofac_div.with_backend(None),

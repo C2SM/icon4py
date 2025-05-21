@@ -25,6 +25,7 @@ E_FLX_AVG: Final[str] = "e_flux_average"
 POS_ON_TPLANE_E_X: Final[str] = "pos_on_tplane_e_x"
 POS_ON_TPLANE_E_Y: Final[str] = "pos_on_tplane_e_y"
 CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
+NUDGECOEFFS: Final[str] = "nudgecoeffs"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -33,6 +34,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="c_lin_e",
+        dtype=ta.wpfloat,
+    ),
+    NUDGECOEFFS: dict(
+        standard_name=NUDGECOEFFS,
+        long_name="nudgecoeffs",
+        units="", # TODO (Yilu) : need to check unit
+        dims=(dims.EdgeDim),
+        icon_var_name="nudgecoeffs",
         dtype=ta.wpfloat,
     ),
     C_BLN_AVG: dict(
