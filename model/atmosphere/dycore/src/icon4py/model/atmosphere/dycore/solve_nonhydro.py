@@ -495,6 +495,9 @@ class SolveNonhydro:
         )
         self._allocate_local_fields()
         self._determine_local_domains()
+        # TODO (magdalena) vertical nesting is only relevant in the context of
+        #      horizontal nesting, since we don't support this we should remove this option
+        self.l_vert_nested: bool = False
 
         self._en_smag_fac_for_zero_nshift(
             self._vertical_params.interface_physical_height,
