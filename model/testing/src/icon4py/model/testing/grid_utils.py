@@ -130,12 +130,14 @@ def get_num_levels(experiment: str):
 
 
 def get_grid_geometry(
-    backend: Optional[gtx_backend.Backend], experiment: str, grid_file: str
+    backend: Optional[gtx_backend.Backend], grid_file: str, num_levels
 ) -> geometry.GridGeometry:
     on_gpu = data_alloc.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
-    num_levels = get_num_levels(experiment)
-    register_name = "_".join((experiment, data_alloc.backend_name(backend)))
+    # num_levels = get_num_levels(experiment)
+    # TODO: cache key
+
+    register_name = "_".join((grid_file, data_alloc.backend_name(backend)))
 
     def _construct_dummy_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):

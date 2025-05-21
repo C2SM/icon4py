@@ -56,10 +56,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_grid: VerticalGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
+        topography: ta.CellField, # TODO
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
-        interface_model_height: gtx.Field,
+        # interface_model_height: gtx.Field,
         e_refin_ctrl: gtx.Field,
         c_refin_ctrl: gtx.Field,
         damping_height: float,
@@ -99,6 +100,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
         }
+        # TODO: this can be deleted because it is the topography
         z_ifc_sliced = gtx.as_field(
             (dims.CellDim,), interface_model_height.ndarray[:, self._grid.num_levels]
         )
@@ -116,8 +118,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
-                    attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
-                    "z_ifc_sliced": z_ifc_sliced,
+                    "topograpy": topography,
                     "vct_a": vct_a,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
@@ -136,8 +137,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     @property
     def _sources(self) -> factory.FieldSource:
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
-
+    # TODO
     def _register_computed_fields(self):
+        CELL_HEIGHT_ON_INTERFACE_LEVEL =factory.NumpyFieldsProvider(
+            func = v_grid.compute_vertical_coordinate.with_backend(
+
+            )
+        )
+
         height = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
                 self._backend
@@ -568,7 +575,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
-                "z_ifc_sliced": "z_ifc_sliced",
+                "z_ifc_sliced": "topography",
                 "e_owner_mask": "e_owner_mask",
                 "flat_idx_max": attrs.FLAT_IDX_MAX,
                 "e_lev": "e_lev",
@@ -638,7 +645,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "flat_idx": attrs.FLAT_IDX_MAX,
-                "z_ifc_sliced": "z_ifc_sliced",
+                "z_ifc_sliced": "topography",
             },
             connectivities={"e2c": dims.E2CDim},
             domain=(dims.EdgeDim, dims.KDim),
