@@ -150,7 +150,7 @@ class Plot:
     def _remove_boundary_triangles(
         self,
         tri: mpl.tri.Triangulation,
-        criterion: str = 'wrapping',
+        criterion: str = 'too_long',
         mask_edges: bool = False,
     ) -> mpl.tri.Triangulation:
         """
@@ -199,6 +199,17 @@ class Plot:
                 node_y_diff = tri.y[triangle] - np.roll(tri.y[triangle], 1)
                 edges = np.sqrt(node_x_diff**2 + node_y_diff**2)
                 if np.max(edges) > ratio*np.min(edges):
+                    boundary_triangles_mask.append(True)
+                else:
+                    boundary_triangles_mask.append(False)
+        elif criterion == 'too_long':
+            # Remove triangles that have too long edges
+            ratio = 1.5
+            for triangle in tri.triangles:
+                node_x_diff = tri.x[triangle] - np.roll(tri.x[triangle], 1)
+                node_y_diff = tri.y[triangle] - np.roll(tri.y[triangle], 1)
+                edges = np.sqrt(node_x_diff**2 + node_y_diff**2)
+                if np.max(edges) > ratio*tri.edge_length:
                     boundary_triangles_mask.append(True)
                 else:
                     boundary_triangles_mask.append(False)
@@ -284,7 +295,7 @@ class Plot:
         else:
             tri = self._remove_boundary_triangles(
                 tri,
-                criterion="elongated",
+                criterion="too_long",
             )
 
         return tri
