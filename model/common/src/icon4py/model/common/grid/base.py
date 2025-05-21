@@ -72,9 +72,9 @@ class GridConfig:
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None
-        self.connectivities: Dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._neighbor_tables: Dict[gtx.Dimension, data_alloc.NDArray] = {}
         self.size: Dict[gtx.Dimension, int] = {}
-        self.offset_provider_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
+        self.connectivity_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
 
     @property
     @abstractmethod
@@ -110,6 +110,9 @@ class BaseGrid(ABC):
     @abstractmethod
     def geometry_type(self) -> GeometryType:
         ...
+    @property
+    def connectivities(self)-> Dict[gtx.Dimension, data_alloc.NDArray]:
+        return self._neighbor_tables
 
     @functools.cached_property
     def limited_area(self) -> bool:
@@ -132,19 +135,19 @@ class BaseGrid(ABC):
 
     @functools.cached_property
     def offset_providers(self) -> Dict[str, gtx.Connectivity]:
-        offset_providers = {}
-        for key, value in self.offset_provider_mapping.items():
+        connectivity_map = {}
+        for key, value in self.connectivity_mapping.items():
             try:
                 method, *args = value
-                offset_providers[key] = method(*args) if args else method()
+                connectivity_map[key] = method(*args) if args else method()
             except MissingConnectivity:
                 warnings.warn(f"{key} connectivity is missing from grid.", stacklevel=2)
 
-        return offset_providers
+        return connectivity_map
 
     @utils.chainable
     def with_connectivities(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
-        self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
+        self._neighbor_tables.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     @utils.chainable
@@ -158,7 +161,7 @@ class BaseGrid(ABC):
         self.size[dims.EdgeDim] = self.config.num_edges
         self.size[dims.KDim] = self.config.num_levels
 
-    def _get_offset_provider(self, dim, from_dim, to_dim):
+    def _construct_connectivity(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
         assert (
@@ -187,8 +190,8 @@ class BaseGrid(ABC):
         )
 
     def get_offset_provider(self, name):
-        if name in self.offset_provider_mapping:
-            method, *args = self.offset_provider_mapping[name]
+        if name in self.connectivity_mapping:
+            method, *args = self.connectivity_mapping[name]
             return method(*args)
         else:
             raise MissingConnectivity(f"Offset provider for {name} not found.")
