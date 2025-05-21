@@ -86,7 +86,7 @@ def _compute_perturbed_quantities_and_interpolation(
     perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     wgtfac_c: fa.CellKField[ta.wpfloat],
-    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     ddqz_z_half: fa.CellKField[ta.wpfloat],
@@ -94,6 +94,8 @@ def _compute_perturbed_quantities_and_interpolation(
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
@@ -106,6 +108,8 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
     exner_at_cells_on_half_levels = (
@@ -136,7 +140,7 @@ def _compute_perturbed_quantities_and_interpolation(
         theta_ref_mc=reference_theta_at_cells_on_model_levels,
         rho_ic=rho_at_cells_on_half_levels,
         wgtfac_c=wgtfac_c,
-        vwind_expl_wgt=exner_w_explicit_weight_parameter,
+        vwind_expl_wgt=vwind_expl_wgt,
         exner_pr=perturbed_exner_at_cells_on_model_levels,
         d_exner_dz_ref_ic=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
@@ -161,6 +165,8 @@ def _compute_perturbed_quantities_and_interpolation(
         perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
         pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
     )
 
 
@@ -286,7 +292,7 @@ def compute_perturbed_quantities_and_interpolation(
     reference_theta_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     wgtfacq_c: fa.CellKField[ta.vpfloat],
     wgtfac_c: fa.CellKField[ta.vpfloat],
-    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
@@ -334,7 +340,7 @@ def compute_perturbed_quantities_and_interpolation(
         - reference_theta_at_cells_on_half_levels: reference virtual potential temperature [K]
         - wgtfacq_c: metrics field (weights for interpolation)
         - wgtfac_c: metrics field
-        - exner_w_explicit_weight_parameter: explicitness weight for exner and w in the vertically implicit dycore solver
+        - vwind_expl_wgt: external weight field for wind extrapolation
         - ddz_of_reference_exner_at_cells_on_half_levels: vertical gradient of reference exner function [m-1]
         - ddqz_z_half: vertical spacing pn half levels (distance between the height of cell centers at k at k-1)  [m]
         - pressure_buoyancy_acceleration_at_cells_on_half_levels: pressure buoyancy acceleration [m s-2]
@@ -419,7 +425,7 @@ def compute_perturbed_quantities_and_interpolation(
         perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
         wgtfac_c=wgtfac_c,
-        exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
+        vwind_expl_wgt=vwind_expl_wgt,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
@@ -427,6 +433,8 @@ def compute_perturbed_quantities_and_interpolation(
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         igradp_method=igradp_method,
         nflatlev=nflatlev,
@@ -440,6 +448,8 @@ def compute_perturbed_quantities_and_interpolation(
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
             pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
@@ -515,10 +525,10 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     wgtfac_c: fa.CellKField[ta.vpfloat],
-    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
     dtime: ta.wpfloat,
-    rhotheta_explicit_weight_parameter: ta.wpfloat,
-    rhotheta_implicit_weight_parameter: ta.wpfloat,
+    wgt_nnow_rth: ta.wpfloat,
+    wgt_nnew_rth: ta.wpfloat,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
@@ -547,21 +557,13 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
         / ddqz_z_half_wp
     )
 
-    time_averaged_rho = (
-        rhotheta_explicit_weight_parameter * current_rho
-        + rhotheta_implicit_weight_parameter * next_rho
-    )
-    time_averaged_rho_kup = rhotheta_explicit_weight_parameter * current_rho(
-        Koff[-1]
-    ) + rhotheta_implicit_weight_parameter * next_rho(Koff[-1])
+    time_averaged_rho = wgt_nnow_rth * current_rho + wgt_nnew_rth * next_rho
+    time_averaged_rho_kup = wgt_nnow_rth * current_rho(Koff[-1]) + wgt_nnew_rth * next_rho(Koff[-1])
 
-    time_averaged_theta_v = (
-        rhotheta_explicit_weight_parameter * current_theta_v
-        + rhotheta_implicit_weight_parameter * next_theta_v
-    )
-    time_averaged_theta_v_kup = rhotheta_explicit_weight_parameter * current_theta_v(
+    time_averaged_theta_v = wgt_nnow_rth * current_theta_v + wgt_nnew_rth * next_theta_v
+    time_averaged_theta_v_kup = wgt_nnow_rth * current_theta_v(
         Koff[-1]
-    ) + rhotheta_implicit_weight_parameter * next_theta_v(Koff[-1])
+    ) + wgt_nnew_rth * next_theta_v(Koff[-1])
 
     rho_at_cells_on_half_levels = (
         wgtfac_c_wp * time_averaged_rho
@@ -591,7 +593,7 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
         * (time_averaged_theta_v_kup - time_averaged_theta_v)
     )
     pressure_buoyancy_acceleration_at_cells_on_half_levels = (
-        exner_w_explicit_weight_parameter
+        vwind_expl_wgt
         * theta_v_at_cells_on_half_levels
         * (
             perturbed_exner_at_cells_on_model_levels(Koff[-1])
@@ -629,10 +631,10 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     wgtfac_c: fa.CellKField[ta.vpfloat],
-    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
+    vwind_expl_wgt: fa.CellField[ta.wpfloat],
     dtime: ta.wpfloat,
-    rhotheta_explicit_weight_parameter: ta.wpfloat,
-    rhotheta_implicit_weight_parameter: ta.wpfloat,
+    wgt_nnow_rth: ta.wpfloat,
+    wgt_nnew_rth: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -660,10 +662,10 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
         - ddz_of_reference_exner_at_cells_on_half_levels: vertical gradient of reference exner function at cells on half levels [m-1]
         - ddqz_z_half: vertical spacing on half levels (distance between the height of cell centers at k at k-1)  [m]
         - wgtfac_c: metrics field
-        - exner_w_explicit_weight_parameter: explicitness weight for exner and w in the vertically implicit dycore solver
+        - vwind_expl_wgt: external weight field for wind extrapolation
         - dtime: time step
-        - rhotheta_explicit_weight_parameter: explicitness weight of density and virtual potential temperature
-        - rhotheta_implicit_weight_parameter: implicitness weight of density and virtual potential temperature
+        - wgt_nnow_rth: interpolation coefficient of virtual potential temperature at predictor step
+        - wgt_nnew_rth: interpolation coefficient of virtual potential temperature at corrector step
         - horizontal_start: start index of the horizontal domain
         - horizontal_end: end index of the horizontal domain
         - vertical_start: start index of the vertical domain
@@ -687,10 +689,10 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
         ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half,
         wgtfac_c,
-        exner_w_explicit_weight_parameter,
+        vwind_expl_wgt,
         dtime,
-        rhotheta_explicit_weight_parameter,
-        rhotheta_implicit_weight_parameter,
+        wgt_nnow_rth,
+        wgt_nnew_rth,
         out=(
             rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels,
