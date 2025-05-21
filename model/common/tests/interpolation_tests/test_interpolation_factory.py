@@ -311,3 +311,5 @@ def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend,
 
     assert field.shape == (grid.num_vertices, 6)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+
+#TODO (Yilu): add another test for the new added fields/attributes

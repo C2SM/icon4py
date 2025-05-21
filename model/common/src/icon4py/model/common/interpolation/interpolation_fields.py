@@ -22,6 +22,7 @@ from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+# TODO (YILU): should add another compute field function
 
 def compute_c_lin_e(
     edge_cell_length: data_alloc.NDArray,

@@ -68,6 +68,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry,))
 
     def _register_computed_fields(self):
+        # TODO: register compute for another fields
         geofac_div = factory.EmbeddedFieldOperatorProvider(
             # needs to be computed on fieldview-embedded backend
             func=interpolation_fields.compute_geofac_div.with_backend(None),
