@@ -32,7 +32,7 @@ from icon4py.model.testing import (
 
 
 if typing.TYPE_CHECKING:
-    pass
+    import netCDF4
 
 try:
     import netCDF4  # noqa # F401
