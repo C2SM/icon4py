@@ -60,7 +60,9 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
-def allocate_data(backend:gtx_backend.Backend, input_data:dict[str, gtx.Field]) -> dict[str, gtx.Field]:
+def allocate_data(
+    backend: Optional[gtx_backend.Backend], input_data: dict[str, gtx.Field]
+) -> dict[str, gtx.Field]:
     _allocate_field = constructors.as_field.partial(allocator=backend)
     input_data = {
         k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
