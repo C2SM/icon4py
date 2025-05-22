@@ -16,22 +16,14 @@ import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
 from gt4py.next import backend as gtx_backend
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn_cached,
-    run_gtfn_gpu_cached,
-)
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal, icon
 
 
 try:
     import dace  # type: ignore[import-untyped]
-    from gt4py.next.program_processors.runners.dace import (
-        run_dace_cpu_cached,
-        run_dace_gpu_cached,
-    )
 except ImportError:
     from types import ModuleType
     from typing import Optional
@@ -66,13 +58,13 @@ class BackendIntEnum(eve.IntEnum):
 
 
 _BACKEND_MAP = {
-    BackendIntEnum._GTFN_CPU: run_gtfn_cached,
-    BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
+    BackendIntEnum._GTFN_CPU: model_backends.BACKENDS["gtfn_cpu"],
+    BackendIntEnum._GTFN_GPU: model_backends.BACKENDS["gtfn_cpu"],
 }
 if dace:
     _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: run_dace_cpu_cached,
-        BackendIntEnum._DACE_GPU: run_dace_gpu_cached,
+        BackendIntEnum._DACE_CPU: model_backends.BACKENDS["dace_cpu"],
+        BackendIntEnum._DACE_GPU: model_backends.BACKENDS["dace_gpu"],
     }
 
 
