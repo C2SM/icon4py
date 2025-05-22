@@ -186,6 +186,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     dtime: ta.wpfloat,
     is_iau_active: bool,
     n_lev: gtx.int32,
+    n_lev_m1: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
@@ -293,7 +294,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
 
     # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
     tridiagonal_intermediate_result = concat_where(
-        dims.KDim == n_lev - 1,
+        dims.KDim == n_lev_m1,
         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
         tridiagonal_intermediate_result,
     )
@@ -455,6 +456,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     dtime: ta.wpfloat,
     is_iau_active: bool,
     n_lev: gtx.int32,
+    n_lev_m1: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
@@ -565,7 +567,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
 
     # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
     tridiagonal_intermediate_result = concat_where(
-        dims.KDim == n_lev - 1,
+        dims.KDim == n_lev_m1,
         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
         tridiagonal_intermediate_result,
     )
@@ -826,6 +828,7 @@ def vertically_implicit_solver_at_predictor_step(
         dtime=dtime,
         is_iau_active=is_iau_active,
         n_lev=vertical_end - 1,
+        n_lev_m1=vertical_end - 2,
         out=(
             vertical_mass_flux_at_cells_on_half_levels,
             tridiagonal_beta_coeff_at_cells_on_model_levels,
@@ -980,6 +983,7 @@ def vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
         is_iau_active=is_iau_active,
         n_lev=vertical_end - 1,
+        n_lev_m1=vertical_end - 2,
         out=(
             vertical_mass_flux_at_cells_on_half_levels,
             tridiagonal_beta_coeff_at_cells_on_model_levels,
