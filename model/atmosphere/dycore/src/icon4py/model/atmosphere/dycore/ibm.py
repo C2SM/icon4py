@@ -79,6 +79,7 @@ class ImmersedBoundaryMethod:
         xp = data_alloc.import_array_ns(backend)
 
         half_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
+        half_edge_mask_np = xp.zeros((grid.num_edges, grid.num_levels+1), dtype=bool)
         full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
         full_edge_mask_np = xp.zeros((grid.num_edges, grid.num_levels), dtype=bool)
         full_vertex_mask_np = xp.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
@@ -87,16 +88,17 @@ class ImmersedBoundaryMethod:
         if self.DO_IBM:
             # fill masks, otherwise False everywhere
             #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-            #half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
-            half_cell_mask_np = self._mask_blocks(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            #half_cell_mask_np = self._mask_blocks(grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
             full_cell_mask_np = half_cell_mask_np[:, :-1]
 
             log.info(f"IBM: nr. of masked cells: {xp.sum(full_cell_mask_np)}")
 
             c2e = grid.connectivities[dims.C2EDim]
-            for k in range(grid.num_levels-1,0,-1):
-                full_edge_mask_np[xp.unique(c2e[xp.where(full_cell_mask_np[:,k])[0]]), k] = True
+            for k in range(grid.num_levels+1):
+                half_edge_mask_np[xp.unique(c2e[xp.where(half_cell_mask_np[:,k])[0]]), k] = True
+            full_edge_mask_np = half_edge_mask_np[:, :-1]
 
             c2v = grid.connectivities[dims.C2VDim]
             for k in range(grid.num_levels):
@@ -109,6 +111,7 @@ class ImmersedBoundaryMethod:
         self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
         self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
         self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
+        self.half_edge_mask = gtx.as_field((EdgeDim, KDim), half_edge_mask_np)
         self.full_vertex_mask = gtx.as_field((VertexDim, KDim), full_vertex_mask_np)
         self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np)
 

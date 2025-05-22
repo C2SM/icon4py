@@ -534,6 +534,7 @@ class SolveNonhydro:
             edge_geometry,
             owner_mask,
             backend=self._backend,
+            extras=extras,
         )
         self._allocate_local_fields()
         self._determine_local_domains()

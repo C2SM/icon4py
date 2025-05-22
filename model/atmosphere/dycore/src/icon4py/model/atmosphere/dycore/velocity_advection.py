@@ -43,6 +43,7 @@ class VelocityAdvection:
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
         backend: Optional[gtx_backend.Backend],
+        extras: dict = {},
     ):
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend
@@ -81,6 +82,11 @@ class VelocityAdvection:
         self._compute_advection_in_horizontal_momentum_equation = compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
             self._backend
         )
+
+        #---> IBM
+        if "ibm" in extras:
+            self._ibm = extras["ibm"]
+        #<--- IBM
 
     def _allocate_local_fields(self):
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
@@ -182,6 +188,7 @@ class VelocityAdvection:
         self._compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
             tangential_wind=diagnostic_state.tangential_wind,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            ibm_dvndz_mask=self._ibm.half_edge_mask,
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
