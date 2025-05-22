@@ -576,178 +576,21 @@ class Plot:
         else:
             return axs, x_coords, y_coords, data[idxs,:], None, idxs
 
-    def export_vtk(self, filename: str, data: dict):
-        """
-        Export data to a VTK UnstructuredGrid (.vtu, binary) file for ParaView/VisIt.
+    def _get_section_indexes(self, grid_x, grid_y, s_x=None, s_y=None, dist=1e-3):
 
-        Args:
-            filename: Output file path (should end with .vtu).
-            data: Dictionary of {varname: ndarray} to export.
-                  The location (cell, edge, vertex) and vertical coordinate (full/half) are inferred from array shape.
-        """
-        import struct
-        # --- Shorthands for sizes ---
-        num_vertices = len(self.tri.x)
-        num_edges = len(self.tri.edge_x)
-        num_cells = len(self.tri.cell_x)
-        num_full_levels = self.full_level_heights.shape[1]
-        num_half_levels = self.half_level_heights.shape[1]
-        # Triangles (cells): only unmasked
-        mask = self.tri.mask if self.tri.mask is not None else np.zeros(self.tri.triangles.shape[0], dtype=bool)
-        triangles = self.tri.triangles[~mask]
-        n_cells = triangles.shape[0]
-        # VTK cell types: 5 = triangle
-        cell_types = np.full(n_cells, 5, dtype=np.uint8)
-        # Cell offsets for VTK
-        cell_offsets = np.arange(1, n_cells+1, dtype=np.int32) * 3
-        # Points: always vertices
-        points = np.stack([self.tri.x, self.tri.y, np.zeros_like(self.tri.x)], axis=1).astype(np.float32)
-        n_points = num_vertices
+        if (s_x is not None) and (s_y is None):
+            coords  = grid_x
+            s_coord = s_x
+            x_coord = grid_y
+        elif (s_x is None) and (s_y is not None):
+            coords  = grid_y
+            s_coord = s_y
+            x_coord = grid_x
+        else:
+            raise NotImplementedError("Only sections parallel to axes are supported")
 
-        # --- Organize data by inferred location and Z coordinate ---
-        point_data = {}
-        cell_data = {}
-        edge_point_data = {}
-        edge_points_needed = False
-        z_coords = {}  # {varname: z_array}
-
-        for k, arr in data.items():
-            arr = np.ascontiguousarray(arr)
-            arr_shape0 = arr.shape[0]
-            arr_shape1 = arr.shape[1] if arr.ndim > 1 else 1
-            # Infer location
-            if arr_shape0 == num_vertices:
-                point_data[k] = arr
-            elif arr_shape0 == num_cells:
-                # Only use unmasked cells
-                if arr.shape[0] == len(mask):
-                    arr = arr[~mask]
-                cell_data[k] = arr
-            elif arr_shape0 == num_edges:
-                edge_point_data[k] = arr
-                edge_points_needed = True
-            else:
-                raise ValueError(f"Cannot infer location for variable '{k}' with shape {arr.shape}")
-            # Infer Z
-            if arr_shape1 == num_full_levels:
-                z_coords[k] = self.full_level_heights[0]
-            elif arr_shape1 == num_half_levels:
-                z_coords[k] = self.half_level_heights[0]
-            elif arr_shape1 == 1:
-                z_coords[k] = None
-            else:
-                raise ValueError(f"Cannot infer Z for variable '{k}' with shape {arr.shape}")
-
-        # If edge data present, add edge points after vertex points
-        if edge_points_needed:
-            edge_coords = np.stack([self.tri.edge_x, self.tri.edge_y, np.zeros_like(self.tri.edge_x)], axis=1).astype(np.float32)
-            points = np.concatenate([points, edge_coords], axis=0)
-            n_points = points.shape[0]
-            # Pad all vertex point_data to new n_points
-            for k in point_data:
-                arr = point_data[k]
-                if arr.ndim == 1:
-                    arr = np.pad(arr, (0, num_edges), mode='constant')
-                else:
-                    arr = np.pad(arr, ((0, num_edges), (0,0)), mode='constant')
-                point_data[k] = arr
-            # Place edge data after vertex data
-            for k in edge_point_data:
-                arr = edge_point_data[k]
-                if arr.ndim == 1:
-                    arr = np.pad(arr, (num_vertices, 0), mode='constant')
-                else:
-                    arr = np.pad(arr, ((num_vertices,0),(0,0)), mode='constant')
-                point_data[k] = arr
-
-        # --- Prepare appended binary data ---
-        appended = b""
-        offsets = {}
-        offset = 0
-
-        def append_array(arr):
-            nonlocal appended, offset
-            arr = np.ascontiguousarray(arr)
-            raw = arr.tobytes()
-            header = struct.pack("<Q", len(raw))
-            appended += header + raw
-            prev = offset
-            offset += len(header) + len(raw)
-            return prev
-
-        # Points
-        offsets['points'] = append_array(points)
-        # Cells
-        offsets['connectivity'] = append_array(triangles.astype(np.int32))
-        offsets['offsets'] = append_array(cell_offsets)
-        offsets['types'] = append_array(cell_types)
-        # Data arrays
-        point_offsets = {}
-        for k, arr in point_data.items():
-            arr = np.ascontiguousarray(arr)
-            if arr.ndim == 1:
-                arr = arr[:, None]
-            point_offsets[k] = append_array(arr.astype(np.float32))
-            # Add Z coordinate if present
-            if z_coords[k] is not None:
-                z_arr = np.broadcast_to(z_coords[k], arr.shape)
-                point_offsets[k + "_z"] = append_array(z_arr.astype(np.float32))
-        cell_offsets_dict = {}
-        for k, arr in cell_data.items():
-            arr = np.ascontiguousarray(arr)
-            if arr.ndim == 1:
-                arr = arr[:, None]
-            cell_offsets_dict[k] = append_array(arr.astype(np.float32))
-            # Add Z coordinate if present
-            if z_coords[k] is not None:
-                z_arr = np.broadcast_to(z_coords[k], arr.shape)
-                cell_offsets_dict[k + "_z"] = append_array(z_arr.astype(np.float32))
-
-        # --- Write XML ---
-        def vtk_data_array(name, dtype, ncomp=1, fmt="appended", offset=0):
-            vtk_type = {
-                np.dtype('float32'): "Float32",
-                np.dtype('float64'): "Float64",
-                np.dtype('int32'): "Int32",
-                np.dtype('uint8'): "UInt8",
-            }[np.dtype(dtype)]
-            return f'<DataArray type="{vtk_type}" Name="{name}" NumberOfComponents="{ncomp}" format="{fmt}" offset="{offset}"/>\n'
-
-        with open(filename, "wb") as f:
-            f.write(b'<?xml version="1.0"?>\n')
-            f.write(b'<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">\n')
-            f.write(b'  <UnstructuredGrid>\n')
-            f.write(f'    <Piece NumberOfPoints="{n_points}" NumberOfCells="{n_cells}">\n'.encode())
-            # Points
-            f.write(b'      <Points>\n')
-            f.write(vtk_data_array("Points", np.float32, 3, offset=offsets['points']).encode())
-            f.write(b'      </Points>\n')
-            # Cells
-            f.write(b'      <Cells>\n')
-            f.write(vtk_data_array("connectivity", np.int32, 1, offset=offsets['connectivity']).encode())
-            f.write(vtk_data_array("offsets", np.int32, 1, offset=offsets['offsets']).encode())
-            f.write(vtk_data_array("types", np.uint8, 1, offset=offsets['types']).encode())
-            f.write(b'      </Cells>\n')
-            # PointData
-            f.write(b'      <PointData>\n')
-            for k, arr in point_data.items():
-                ncomp = arr.shape[1] if arr.ndim > 1 else 1
-                f.write(vtk_data_array(k, np.float32, ncomp, offset=point_offsets[k]).encode())
-                if z_coords[k] is not None:
-                    f.write(vtk_data_array(k + "_z", np.float32, ncomp, offset=point_offsets[k + "_z"]).encode())
-            f.write(b'      </PointData>\n')
-            # CellData
-            f.write(b'      <CellData>\n')
-            for k, arr in cell_data.items():
-                ncomp = arr.shape[1] if arr.ndim > 1 else 1
-                f.write(vtk_data_array(k, np.float32, ncomp, offset=cell_offsets_dict[k]).encode())
-                if z_coords[k] is not None:
-                    f.write(vtk_data_array(k + "_z", np.float32, ncomp, offset=cell_offsets_dict[k + "_z"]).encode())
-            f.write(b'      </CellData>\n')
-            # Appended data
-            f.write(b'      <AppendedData encoding="raw">\n_')
-            f.write(appended)
-            f.write(b'\n      </AppendedData>\n')
-            f.write(b'    </Piece>\n')
-            f.write(b'  </UnstructuredGrid>\n')
-            f.write(b'</VTKFile>\n')
+        nn = np.argmin(np.abs(coords - s_coord))
+        idxs = np.argwhere(np.abs(coords - coords[nn]) < dist).flatten()
+        sorting = np.argsort(x_coord[idxs])
+        idxs = idxs[sorting]
+        return idxs
