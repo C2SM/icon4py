@@ -193,6 +193,9 @@ class ImmersedBoundaryMethod:
         return half_cell_mask_np
 
 
+    # --------------------------------------------------------------------------
+    # dirichlet values part
+
     def set_dirichlet_value_vn(
         self,
         vn: fa.EdgeKField[float],
@@ -263,6 +266,9 @@ class ImmersedBoundaryMethod:
             offset_provider={},
         )
 
+    # --------------------------------------------------------------------------
+    # non-hydro and advection part
+
     def set_bcs_w_matrix(
         self,
         theta_v_ic: fa.CellKField[float],
@@ -332,6 +338,24 @@ class ImmersedBoundaryMethod:
             out=grad_y,
             offset_provider={},
         )
+
+    def set_bcs_gradh_w(
+        self,
+        horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[float],
+    ):
+        if not self.DO_IBM:
+            return
+        # Set the horizontal advection of w to zero at the vertical surfaces
+        self.set_bcs_edges(
+            mask=self.half_edge_mask,
+            dir_value=0,
+            field=horizontal_advection_of_w_at_edges_on_half_levels,
+            out=horizontal_advection_of_w_at_edges_on_half_levels,
+            offset_provider={},
+        )
+
+    # --------------------------------------------------------------------------
+    # diffusion part
 
     def set_bcs_uv_vertices(
         self,

@@ -357,6 +357,10 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
+        #---> IBM
+        self._ibm.set_bcs_gradh_w(self._horizontal_advection_of_w_at_edges_on_half_levels)
+        #<--- IBM
+
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w(
             horizontal_kinetic_energy_at_cells_on_model_levels=self._horizontal_kinetic_energy_at_cells_on_model_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
