@@ -318,7 +318,11 @@ class Plot:
         pickle_data(state=state, label=f"{self.plot_counter:06d}_{label}")
         self.plot_counter += 1
 
-    def _vec_interpolate_to_cell_center(self, vn_gtx):
+    def _vec_interpolate_to_cell_center(self, vn):
+        if type(vn) is np.ndarray:
+            vn_gtx = gtx.as_field((dims.EdgeDim, dims.KDim), vn)
+        else:
+            vn_gtx = vn
         u_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim, backend=self._backend)
         v_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim, backend=self._backend)
         self._edge_2_cell_vector_rbf_interpolation(
@@ -335,7 +339,11 @@ class Plot:
         )
         return u_gtx.asnumpy(), v_gtx.asnumpy()
 
-    def _compute_vt(self, vn_gtx):
+    def _compute_vt(self, vn):
+        if type(vn) is np.ndarray:
+            vn_gtx = gtx.as_field((dims.EdgeDim, dims.KDim), vn)
+        else:
+            vn_gtx = vn
         vt_gtx = data_alloc.zero_field(self.grid, dims.EdgeDim, dims.KDim, backend=self._backend)
         self._compute_tangential_wind(
             vn=vn_gtx,
@@ -349,7 +357,11 @@ class Plot:
         )
         return vt_gtx.asnumpy()
 
-    def _scal_interpolate_to_full_levels(self, w_half_gtx):
+    def _scal_interpolate_to_full_levels(self, w_half):
+        if type(w_half) is np.ndarray:
+            w_half_gtx = gtx.as_field((dims.CellDim, dims.KDim), w_half)
+        else:
+            w_half_gtx = w_half
         w_full_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim, backend=self._backend)
         self._interpolate_to_full_levels(
             half_field=w_half_gtx,
