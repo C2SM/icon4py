@@ -673,7 +673,6 @@ class SolveNonhydro:
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
         cell_domain = h_grid.domain(dims.CellDim)
-        cell_halo_level_2 = cell_domain(h_grid.Zone.HALO_LEVEL_2)
         edge_domain = h_grid.domain(dims.EdgeDim)
         edge_halo_level_2 = edge_domain(h_grid.Zone.HALO_LEVEL_2)
 
@@ -686,11 +685,14 @@ class SolveNonhydro:
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._start_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.LOCAL))
         self._start_cell_halo = self._grid.start_index(cell_domain(h_grid.Zone.HALO))
+        self._start_cell_halo_level_2 = self._grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
+
         self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
+        self._end_cell_halo_level_2 = self._grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         self._start_edge_lateral_boundary = self._grid.start_index(
@@ -906,10 +908,10 @@ class SolveNonhydro:
             nflat_gradp=self._vertical_params.nflat_gradp,
             start_cell_lateral_boundary=self._start_cell_lateral_boundary,
             start_cell_lateral_boundary_level_3=self._start_cell_lateral_boundary_level_3,
-            start_cell_halo_level_2=self._start_edge_halo_level_2,
+            start_cell_halo_level_2=self._start_cell_halo_level_2,
             end_cell_end=self._end_cell_end,
             end_cell_halo=self._end_cell_halo,
-            end_cell_halo_level_2=self._end_edge_halo_level_2,
+            end_cell_halo_level_2=self._end_cell_halo_level_2,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(self._grid.num_cells),
             vertical_start=gtx.int32(0),
