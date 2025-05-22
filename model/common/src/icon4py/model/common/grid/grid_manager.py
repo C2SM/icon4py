@@ -10,6 +10,7 @@ import logging
 import pathlib
 from types import ModuleType
 from typing import Literal, Optional, Protocol, TypeAlias, Union
+import functools
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -549,23 +550,24 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
-        backend: Optional[gtx_backend.Backend],
         decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-    ) -> tuple[dict[dims.Dimension : data_alloc.NDArray]]:
+        array_ns: ModuleType = np,
+    ) -> dict[gtx.Dimension : data_alloc.NDArray]:
         """
         Reads the refinement control fields from the grid file.
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
-        xp = data_alloc.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
             dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
         }
         refinement_control_fields = {
-            dim: xp.asarray(self._reader.int_variable(name, decomposition_info, transpose=False))
+            dim: array_ns.asarray(
+                self._reader.int_variable(name, decomposition_info, transpose=False)
+            )
             for dim, name in refinement_control_names.items()
         }
         return refinement_control_fields
@@ -599,6 +601,10 @@ class GridManager:
 
         """
         grid = self._initialize_global(limited_area, on_gpu)
+        xp = data_alloc.array_ns(on_gpu)
+        _refinement_fields = functools.partial(self._read_grid_refinement_fields, array_ns=xp)
+        refinement_fields = _refinement_fields()
+        grid.with_refinement_control(refinement_fields)
 
         global_connectivities = {
             dims.C2E2C: self._get_index_field(ConnectivityName.C2E2C),
@@ -610,7 +616,7 @@ class GridManager:
             dims.C2V: self._get_index_field(ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(ConnectivityName.V2E2V),
         }
-        xp = data_alloc.array_ns(on_gpu)
+
         grid.with_connectivities(
             {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
         )

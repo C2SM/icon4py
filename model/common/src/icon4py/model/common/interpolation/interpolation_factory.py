@@ -53,7 +53,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
-        self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0}
+        self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0, "grf_nudge_start_e": 0.0, "nudge_max_coeffs": 0.0, "nudge_efold_width": 0.0, "nudge_zone_width": 0.0}
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -69,20 +69,19 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     def _register_computed_fields(self):
 
-        # TODO (Yilu): not sure whether to use EmbeddedFieldOperatorProvider
-        nudgecoeffs = factory.EmbeddedFieldOperatorProvider(
+        nudgecoeffs = factory.ProgramFieldProvider(
             func=interpolation_fields._compute_nudgecoeffs.with_backend(None),
             domain=(dims.EdgeDim),
             fields={attrs.nudgecoeffs},
             deps={
-                "refin_ctrl":
-                "grf_nudge_start_e":
+                "refin_ctrl":self._grid.refinement_control[dims.EdgeDim],
             },
-        params = {
-                "nudge_max_coeffs":
-                "nudge_efold_width":
-                "nudge_zone_width":
-            },
+            params = {
+                    "grf_nudge_start_e":self._config["grf_nudge_start_e"],
+                    "nudge_max_coeffs":self._config["nudge_max_coeffs"],
+                    "nudge_efold_width":self._config["nudge_efold_width"],
+                    "nudge_zone_width":self._config["nudge_zone_width"],
+                },
         )
         self.register_provider(nudgecoeffs)
 
