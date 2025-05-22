@@ -120,6 +120,7 @@ def is_limited_area_grid(
 ) -> bool:
     """Check if the grid is a local area grid.
 
-    This is done by checking whether there are Boundary points in the grid.
+    This is done by checking whether there are Boundary points (Refinement value > 0) in the grid.
+    The .item() call is needed to get a scalar return for cupy arrays.
     """
-    return array_ns.any(refinement_field > 0)
+    return array_ns.any(refinement_field > 0).item()

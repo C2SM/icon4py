@@ -10,6 +10,7 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.grid.refinement as refin
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 
 from . import utils
@@ -64,7 +65,10 @@ def test_valid_refinement_values(dim):
 @pytest.mark.parametrize(
     "grid_file, expected", [(dt_utils.R02B04_GLOBAL, False), (dt_utils.REGIONAL_EXPERIMENT, True)]
 )
-def test_is_local_area_grid_for_grid_files(grid_file, expected, dim):
-    grid = grid_utils.get_grid_manager(grid_file, 1, None).grid
+def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
+    grid = grid_utils.get_grid_manager(grid_file, 1, backend).grid
+    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
     refinement_field = grid.refinement_control[dim]
-    assert expected == refin.is_limited_area_grid(refinement_field)
+    limited_area = refin.is_limited_area_grid(refinement_field, array_ns=xp)
+    assert isinstance(limited_area, bool)
+    assert expected == limited_area
