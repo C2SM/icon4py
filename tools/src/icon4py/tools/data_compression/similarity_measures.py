@@ -8,6 +8,8 @@
 
 import os
 import warnings
+
+
 warnings.filterwarnings("ignore")
 
 current_folder = os.path.dirname(os.path.realpath(__file__))
@@ -19,10 +21,13 @@ import xarray as xr
 from scipy import stats
 from scipy.spatial.distance import euclidean
 
+
 # scp -r santis:/capstor/store/cscs/userlab/cwp03/ppothapa/Dyamond_PostProcessed/exclaim_uncoupled_R02B10L120_pretest_post_script/out1/tot_prec_20200121T000000Z.nc ./icon4py/tools/src/icon4py/tools/data_compression/data
 # scp -r santis:/capstor/store/cscs/userlab/cwp03/ppothapa/Dyamond_PostProcessed/exclaim_uncoupled_R02B10L120_pretest_post_script/out1/tot_prec_20200430T000000Z.nc ./icon4py/tools/src/icon4py/tools/data_compression/data
 
-ds_1 = xr.open_dataset("data/tot_prec_20200121T000000Z.nc", chunks={}) # chunks specification to avoid loading all file at the beginning
+ds_1 = xr.open_dataset(
+    "data/tot_prec_20200121T000000Z.nc", chunks={}
+)  # chunks specification to avoid loading all file at the beginning
 ds_2 = xr.open_dataset("./data/tot_prec_20200430T000000Z.nc", chunks={})
 data_1 = ds_1["tot_prec"][0, :].values
 data_2 = ds_2["tot_prec"][0, :].values
@@ -43,8 +48,9 @@ print(f"Pearson correlation: {pearson_corr}")
 ### PAA - Piecewise Aggregate Approximation
 from tslearn.piecewise import PiecewiseAggregateApproximation
 
+
 paa_start_time = time.time()
-paa = PiecewiseAggregateApproximation(n_segments=round(data_1.shape[0]*1e-6))
+paa = PiecewiseAggregateApproximation(n_segments=round(data_1.shape[0] * 1e-6))
 paa_data = paa.fit_transform([data_1, data_2])
 paa_distance = paa.distance_paa(paa_data[0], paa_data[1])
 paa_end_time = time.time()
@@ -75,5 +81,7 @@ print(f"DWT distance total time: {dwt_total_time}")
 dwt_reconstructed_1 = pywt.waverec(dwt_data_1, wavelet="haar")
 dwt_reconstructed_2 = pywt.waverec(dwt_data_2, wavelet="haar")
 dwt_reconstructed = [dwt_reconstructed_1, dwt_reconstructed_2]
-dwt_pearson = stats.pearsonr([data_1, data_2], [dwt_reconstructed_1, dwt_reconstructed_2]).statistic.mean()
+dwt_pearson = stats.pearsonr(
+    [data_1, data_2], [dwt_reconstructed_1, dwt_reconstructed_2]
+).statistic.mean()
 print(f"DWT Pearson correlation: {dwt_pearson}")

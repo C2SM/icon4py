@@ -79,22 +79,24 @@ for name, da in ds.items():
     compressed_size = os.path.getsize("test.hdf5")
 
     ### Similarity measure
-    euclid_dist = euclidean(np.concatenate(data), np.concatenate(uncompressed))
+    euclid_dist_h5py = euclidean(np.concatenate(data), np.concatenate(uncompressed))
     paa_dist_h5py = calc_paa_dist(
         data.values, uncompressed, n_segments=round(data.shape[0] * 0.7)
     )  # number of segments should be low for data compression and higher for similarity measure
-    dwt_dist = calc_dwt_dist(
+    dwt_dist_h5py = calc_dwt_dist(
         data.values, uncompressed, n_levels=3
     )  # decomposition levels 2-4 are meant for denoising
     best_dist = (
         (paa_dist_h5py, "paa")
-        if (abs(paa_dist_h5py - euclid_dist) < abs(dwt_dist - euclid_dist))
-        else (dwt_dist, "dwt")
+        if (abs(paa_dist_h5py - euclid_dist_h5py) < abs(dwt_dist_h5py - euclid_dist_h5py))
+        else (dwt_dist_h5py, "dwt")
     )
     print("Best similarity measure achieved with:", best_dist[1], "method")
 
     print(f"achieved compression ratio of {original_size/compressed_size}")
+    print(f"achieved Euclidean distance of {euclid_dist_h5py}")
     print(f"achieved paa distance of {paa_dist_h5py}")
+    print(f"achieved DWT distance of {dwt_dist_h5py}")
 
 try:
     os.remove("test.hdf5")
@@ -134,9 +136,12 @@ for name, da in ds.items():
 
     paa_dist_zarr = calc_paa_dist(data.values, uncompressed, n_segments=round(data.shape[0] * 0.7))
     dwt_dist_zarr = calc_dwt_dist(data.values, uncompressed, n_levels=3)
+    euclid_dist_zarr = euclidean(np.concatenate(data.values), np.concatenate(uncompressed))
 
     print(f"achieved compression ratio of {len(data.values.tobytes())/len(encoded)}")
-    print(f"achieved paa distance of {paa_dist_zarr}")
+    print(f"achieved Euclidean distance of {euclid_dist_zarr}")
+    print(f"achieved PAA distance of {paa_dist_zarr}")
+    print(f"achieved DWT distance of {dwt_dist_zarr}")
 
 
 ################################################################################
@@ -185,6 +190,7 @@ ds_linquant_error = {}
 errors_linquant = {}
 paa_dist_linquant = {}
 dwt_dist_linquant = {}
+euclid_dist_linquant = {}
 
 for name, da in ds.items():
     with xr.set_options(keep_attrs=True):
@@ -194,6 +200,9 @@ for name, da in ds.items():
         ds_linquant[name].values[0], da.values[0], n_segments=round(da.values[0].shape[0] * 0.7)
     )
     dwt_dist_linquant[name] = calc_dwt_dist(ds_linquant[name].values[0], da.values[0], n_levels=3)
+    euclid_dist_linquant[name] = euclidean(
+        np.concatenate(ds_linquant[name].values[0]), np.concatenate(da.values[0])
+    )
 
 utils.plot_data(
     ds_linquant_error,
@@ -243,6 +252,7 @@ ds_bitround_error = {}
 errors_bitround = {}
 paa_dist_bitround = {}
 dwt_dist_bitround = {}
+euclid_dist_bitround = {}
 
 for name, da in ds.items():
     with xr.set_options(keep_attrs=True):
@@ -252,6 +262,9 @@ for name, da in ds.items():
         ds_bitround[name].values[0], da.values[0], n_segments=round(da.values[0].shape[0] * 0.7)
     )
     dwt_dist_bitround[name] = calc_dwt_dist(ds_bitround[name].values[0], da.values[0], n_levels=3)
+    euclid_dist_bitround[name] = euclidean(
+        np.concatenate(ds_bitround[name].values[0]), np.concatenate(da.values[0])
+    )
 
 
 ################################################################################
@@ -294,6 +307,7 @@ ds_zfp_error = {}
 errors_zfp = {}
 paa_dist_zfp = {}
 dwt_dist_zfp = {}
+euclid_dist_zfp = {}
 
 for name, da in ds.items():
     with xr.set_options(keep_attrs=True):
@@ -303,6 +317,9 @@ for name, da in ds.items():
         ds_zfp[name].values[0], da.values[0], n_segments=round(da.values[0].shape[0] * 0.7)
     )
     dwt_dist_zfp[name] = calc_dwt_dist(ds_zfp[name].values[0], da.values[0], n_levels=3)
+    euclid_dist_zfp[name] = euclidean(
+        np.concatenate(ds_zfp[name].values[0]), np.concatenate(da.values[0])
+    )
 
 
 ################################################################################
@@ -341,6 +358,7 @@ ds_sz3_error = {}
 errors_sz3 = {}
 paa_dist_sz3 = {}
 dwt_dist_sz3 = {}
+euclid_dist_sz3 = {}
 
 for name, da in ds.items():
     with xr.set_options(keep_attrs=True):
@@ -350,6 +368,9 @@ for name, da in ds.items():
         ds_sz3[name].values[0], da.values[0], n_segments=round(da.values[0].shape[0] * 0.7)
     )
     dwt_dist_sz3[name] = calc_dwt_dist(ds_sz3[name].values[0], da.values[0], n_levels=3)
+    euclid_dist_sz3[name] = euclidean(
+        np.concatenate(ds_sz3[name].values[0]), np.concatenate(da.values[0])
+    )
 
 ################################################################################
 # Overview
@@ -362,18 +383,20 @@ compressors = {
         metrics_total_linquant,
         paa_dist_linquant,
         dwt_dist_linquant,
+        euclid_dist_linquant,
     ),
     bitround_compressor: (
         errors_bitround,
         metrics_total_bitround,
         paa_dist_bitround,
         dwt_dist_bitround,
+        euclid_dist_bitround,
     ),
-    zfp_compressor: (errors_zfp, metrics_total_zfp, paa_dist_zfp, dwt_dist_zfp),
-    sz3_compressor: (errors_sz3, metrics_total_sz3, paa_dist_sz3, dwt_dist_sz3),
+    zfp_compressor: (errors_zfp, metrics_total_zfp, paa_dist_zfp, dwt_dist_zfp, euclid_dist_zfp),
+    sz3_compressor: (errors_sz3, metrics_total_sz3, paa_dist_sz3, dwt_dist_sz3, euclid_dist_sz3),
 }
 
-for compressor_name, (errors, stats, paa_dist, dwt_dist) in compressors.items():
+for compressor_name, (errors, stats, paa_dist, dwt_dist, euclid_dist) in compressors.items():
     for variable, error_data in errors.items():
         row = {
             "Compressor": compressor_name,
@@ -381,6 +404,7 @@ for compressor_name, (errors, stats, paa_dist, dwt_dist) in compressors.items():
             "Compression Ratio [raw B / enc B]": stats[variable][
                 "compression ratio [raw B / enc B]"
             ],
+            "Euclidean distance": euclid_dist[variable],
             "PAA distance": paa_dist[variable],
             "DWT distance": dwt_dist[variable],
             "L1 Error": error_data.get("Relative_Error_L1", None),
