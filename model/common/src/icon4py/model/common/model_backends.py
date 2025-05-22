@@ -13,7 +13,6 @@ from typing import Final
 import gt4py.next.backend as gtx_backend
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
-from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -42,7 +41,7 @@ def _customize_dace_backend(dace_backend: gtx_backend.Backend) -> gtx_backend.Ba
                 dace_backend.executor.step.translation.step,
                 make_persistent=True,
                 async_sdfg_call=data_alloc.is_cupy_device(dace_backend),
-                blocking_dim=dims.KDim,
+                blocking_dim=None,  # Enable kblocking on vertical dim by setting 'dims.KDim'
                 blocking_size=10,
             ),
             bindings=functools.partial(
