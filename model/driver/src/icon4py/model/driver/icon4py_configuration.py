@@ -163,7 +163,7 @@ def read_config(
 
     def _gauss3d_vertical_config():
         return v_grid.VerticalGridConfig(
-            num_levels=400,
+            num_levels=200,
             rayleigh_damping_height=900.0,
             model_top_height=1000.0,
             flat_height=900.0,
