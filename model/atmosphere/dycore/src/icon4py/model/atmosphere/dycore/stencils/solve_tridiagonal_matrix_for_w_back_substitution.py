@@ -14,7 +14,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@scan_operator(axis=dims.KDim, forward=False, init=wpfloat("1.0"))
+@scan_operator(axis=dims.KDim, forward=False, init=wpfloat("0.0"))
 def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
     w_state: wpfloat, z_q: vpfloat, w: wpfloat
 ) -> wpfloat:

@@ -292,12 +292,12 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         (tridiagonal_intermediate_result, next_w),
     )
 
-    # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
-    tridiagonal_intermediate_result = concat_where(
-        dims.KDim == n_lev_m1,
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-        tridiagonal_intermediate_result,
-    )
+    # # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
+    # tridiagonal_intermediate_result = concat_where(
+    #     dims.KDim == n_lev_m1,
+    #     broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+    #     tridiagonal_intermediate_result,
+    # )
 
     next_w = concat_where(
         dims.KDim > 0,
@@ -560,12 +560,12 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         (tridiagonal_intermediate_result, next_w),
     )
 
-    # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
-    tridiagonal_intermediate_result = concat_where(
-        dims.KDim == n_lev_m1,
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-        tridiagonal_intermediate_result,
-    )
+    # # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
+    # tridiagonal_intermediate_result = concat_where(
+    #     dims.KDim == n_lev_m1,
+    #     broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+    #     tridiagonal_intermediate_result,
+    # )
 
     next_w = concat_where(
         dims.KDim > 0,
