@@ -57,7 +57,7 @@ def construct_metric_state(
         inv_ddqz_z_full=savepoint.inv_ddqz_z_full(),
         reference_rho_at_cells_on_model_levels=savepoint.rho_ref_mc(),
         reference_theta_at_cells_on_model_levels=savepoint.theta_ref_mc(),
-        vwind_expl_wgt=savepoint.vwind_expl_wgt(),
+        exner_w_explicit_weight_parameter=savepoint.vwind_expl_wgt(),
         ddz_of_reference_exner_at_cells_on_half_levels=savepoint.d_exner_dz_ref_ic(),
         ddqz_z_half=savepoint.ddqz_z_half(),
         reference_theta_at_cells_on_half_levels=savepoint.theta_ref_ic(),
@@ -74,7 +74,7 @@ def construct_metric_state(
         ddxt_z_full=savepoint.ddxt_z_full(),
         wgtfac_e=savepoint.wgtfac_e(),
         wgtfacq_e=savepoint.wgtfacq_e_dsl(num_k_lev),
-        vwind_impl_wgt=savepoint.vwind_impl_wgt(),
+        exner_w_implicit_weight_parameter=savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=savepoint.scalfac_dd3d(),
         coeff1_dwdz=savepoint.coeff1_dwdz(),
@@ -134,11 +134,11 @@ def construct_diagnostics(
         theta_v_at_cells_on_half_levels=init_savepoint.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=init_savepoint.exner_pr(),
         rho_at_cells_on_half_levels=init_savepoint.rho_ic(),
-        ddt_exner_phy=init_savepoint.ddt_exner_phy(),
+        exner_tendency_due_to_slow_physics=init_savepoint.ddt_exner_phy(),
         grf_tend_rho=init_savepoint.grf_tend_rho(),
         grf_tend_thv=init_savepoint.grf_tend_thv(),
         grf_tend_w=init_savepoint.grf_tend_w(),
-        mass_fl_e=init_savepoint.mass_fl_e(),
+        mass_flux_at_edges_on_model_levels=init_savepoint.mass_fl_e(),
         normal_wind_tendency_due_to_slow_physics_process=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
@@ -150,12 +150,12 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-        normal_wind_iau_increments=data_alloc.zero_field(
+        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        normal_wind_iau_increment=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),
-        exner_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-        exner_dyn_incr=init_savepoint.exner_dyn_incr(),
+        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        exner_dynamical_increment=init_savepoint.exner_dyn_incr(),
     )
 
 

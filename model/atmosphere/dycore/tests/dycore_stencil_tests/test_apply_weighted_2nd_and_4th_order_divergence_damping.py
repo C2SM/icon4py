@@ -22,6 +22,18 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
+    scal_divdamp: np.ndarray,
+    bdy_divdamp: np.ndarray,
+    nudgecoeff_e: np.ndarray,
+    z_graddiv2_vn: np.ndarray,
+    vn: np.ndarray,
+) -> np.ndarray:
+    nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
+    vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn
+    return vn
+
+
 class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
     PROGRAM = apply_weighted_2nd_and_4th_order_divergence_damping
     OUTPUTS = ("vn",)
@@ -36,8 +48,13 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
         vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
-        vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn
+        vn = apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
+            scal_divdamp,
+            bdy_divdamp,
+            nudgecoeff_e,
+            z_graddiv2_vn,
+            vn,
+        )
         return dict(vn=vn)
 
     @pytest.fixture

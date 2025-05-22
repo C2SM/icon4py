@@ -88,10 +88,14 @@ def _calculate_divdamp_fields(
 
 
 @gtx.field_operator
-def _compute_z_raylfac(rayleigh_w: fa.KField[float], dtime: float) -> fa.KField[float]:
+def _compute_rayleigh_damping_factor(
+    rayleigh_w: fa.KField[float], dtime: float
+) -> fa.KField[float]:
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
 @gtx.program
-def compute_z_raylfac(rayleigh_w: fa.KField[float], dtime: float, z_raylfac: fa.KField[float]):
-    _compute_z_raylfac(rayleigh_w, dtime, out=z_raylfac)
+def compute_rayleigh_damping_factor(
+    rayleigh_w: fa.KField[float], dtime: float, rayleigh_damping_factor: fa.KField[float]
+):
+    _compute_rayleigh_damping_factor(rayleigh_w, dtime, out=rayleigh_damping_factor)
