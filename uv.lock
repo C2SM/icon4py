@@ -915,7 +915,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/GridTools/dace?branch=gt4py-next-integration#4b49068dfbd1d839a562c1d4535c7ea340597c07" }
+source = { git = "https://github.com/GridTools/dace?branch=gt4py-next-integration#8bed0e004f1001443247f129baf9de64e4467cdc" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1415,8 +1415,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post772+bf188b4c"
-source = { git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace#bf188b4c15a89084de44d8ec049f37db79f1d59b" }
+version = "1.0.4.post773+4d140e3c"
+source = { git = "https://github.com/GridTools/gt4py?branch=icon4py_staging_dace#4d140e3c4fc9d050c1a77233a17810590b1671ab" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
