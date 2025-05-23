@@ -13,6 +13,7 @@ from typing import Literal, Optional, Protocol, TypeAlias, Union
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
+import gt4py.next.common as gtx_common
 import numpy as np
 
 from icon4py.model.common import dimension as dims, exceptions, type_alias as ta

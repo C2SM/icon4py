@@ -20,8 +20,8 @@ from icon4py.model.common.grid import (
     grid_manager as gm,
     horizontal as h_grid,
     refinement as refin,
-    vertical as v_grid,
     simple,
+    vertical as v_grid,
 )
 from icon4py.model.common.grid.grid_manager import GeometryName
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -645,7 +645,7 @@ def test_dual_area(grid_file, grid_savepoint, backend):
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
-[
+    [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
@@ -713,10 +713,11 @@ def test_clear_skip_values(grid_file, caplog, backend):
         clear_skip_values(connectivity)
         assert not np.any(connectivity.asnumpy() == gm.GridFile.INVALID_INDEX).item()
 
+
 def test_clear_skip_values_validate_disconnected_grids():
     grid = simple.SimpleGrid()
     connectivity = grid.get_offset_provider("V2E")
-    connectivity.ndarray[2,:] = gm.GridFile.INVALID_INDEX
+    connectivity.ndarray[2, :] = gm.GridFile.INVALID_INDEX
 
     with pytest.raises(AssertionError) as error:
         gm.clear_skip_values(connectivity)
