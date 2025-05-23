@@ -201,8 +201,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
-    tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
-
     w_explicit_term = concat_where(
         1 <= dims.KDim,
         _compute_w_explicit_term_with_predictor_advective_tendency(
@@ -283,12 +281,11 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
             z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
             z_w_expl=w_explicit_term,
             z_exner_expl=exner_explicit_term,
-            z_q=tridiagonal_intermediate_result,
             w=next_w,
             dtime=dtime,
             cpd=dycore_consts.cpd,
         ),
-        (tridiagonal_intermediate_result, next_w),
+        (broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), next_w),
     )
 
     # # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
@@ -466,8 +463,6 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
-    tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
-
     w_explicit_term = concat_where(
         1 <= dims.KDim,
         _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
@@ -551,12 +546,11 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
             z_w_expl=w_explicit_term,
             z_exner_expl=exner_explicit_term,
-            z_q=tridiagonal_intermediate_result,
             w=next_w,
             dtime=dtime,
             cpd=dycore_consts.cpd,
         ),
-        (tridiagonal_intermediate_result, next_w),
+        (broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), next_w),
     )
 
     # # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
