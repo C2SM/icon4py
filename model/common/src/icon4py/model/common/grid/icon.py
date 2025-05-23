@@ -16,9 +16,21 @@ import numpy as np
 
 from icon4py.model.common import constants, dimension as dims, utils
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
+
+CONNECTIVITIES_ON_BOUNDARIES = (
+    dims.C2E2C2EDim,
+    dims.E2CDim,
+    dims.C2E2CDim,
+    dims.C2E2CODim,
+    dims.E2C2VDim,
+    dims.E2C2EDim,
+    dims.E2C2EODim,
+)
+CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -53,26 +65,27 @@ class IconGrid(base.BaseGrid):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
         self._id = id_
+        self._refinement_control = {}
         self._start_indices = {}
         self._end_indices = {}
         self.global_properties: GlobalGridParams = None
-        self.offset_provider_mapping = {
-            "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
-            "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),
-            "E2V": (self._get_offset_provider, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
-            "C2E2C": (self._get_offset_provider, dims.C2E2CDim, dims.CellDim, dims.CellDim),
-            "C2E2C2E": (self._get_offset_provider, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
+        self._connectivity_mapping = {
+            "C2E": (self._construct_connectivity, dims.C2EDim, dims.CellDim, dims.EdgeDim),
+            "E2C": (self._construct_connectivity, dims.E2CDim, dims.EdgeDim, dims.CellDim),
+            "E2V": (self._construct_connectivity, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
+            "C2E2C": (self._construct_connectivity, dims.C2E2CDim, dims.CellDim, dims.CellDim),
+            "C2E2C2E": (self._construct_connectivity, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
             "E2EC": (
                 self._get_connectivity_sparse_fields,
                 dims.E2CDim,
                 dims.EdgeDim,
                 dims.ECDim,
             ),
-            "C2E2CO": (self._get_offset_provider, dims.C2E2CODim, dims.CellDim, dims.CellDim),
-            "E2C2V": (self._get_offset_provider, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
-            "V2E": (self._get_offset_provider, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
-            "V2C": (self._get_offset_provider, dims.V2CDim, dims.VertexDim, dims.CellDim),
-            "C2V": (self._get_offset_provider, dims.C2VDim, dims.CellDim, dims.VertexDim),
+            "C2E2CO": (self._construct_connectivity, dims.C2E2CODim, dims.CellDim, dims.CellDim),
+            "E2C2V": (self._construct_connectivity, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
+            "V2E": (self._construct_connectivity, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
+            "V2C": (self._construct_connectivity, dims.V2CDim, dims.VertexDim, dims.CellDim),
+            "C2V": (self._construct_connectivity, dims.C2VDim, dims.CellDim, dims.VertexDim),
             "E2ECV": (
                 self._get_connectivity_sparse_fields,
                 dims.E2C2VDim,
@@ -91,9 +104,14 @@ class IconGrid(base.BaseGrid):
                 dims.CellDim,
                 dims.CEDim,
             ),
-            "E2C2E": (self._get_offset_provider, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
-            "E2C2EO": (self._get_offset_provider, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
-            "C2E2C2E2C": (self._get_offset_provider, dims.C2E2C2E2CDim, dims.CellDim, dims.CellDim),
+            "E2C2E": (self._construct_connectivity, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
+            "E2C2EO": (self._construct_connectivity, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
+            "C2E2C2E2C": (
+                self._construct_connectivity,
+                dims.C2E2C2E2CDim,
+                dims.CellDim,
+                dims.CellDim,
+            ),
             "Koff": (lambda: dims.KDim,),  # Koff is a special case
             "C2CECEC": (
                 self._get_connectivity_sparse_fields,
@@ -159,7 +177,7 @@ class IconGrid(base.BaseGrid):
     def num_edges(self):
         return self.config.num_edges if self.config else 0
 
-    @property
+    @functools.cached_property
     def limited_area(self):
         # defined in mo_grid_nml.f90
         return self.config.limited_area
@@ -174,19 +192,10 @@ class IconGrid(base.BaseGrid):
         assert (
             dimension.kind == gtx.DimensionKind.LOCAL
         ), "only local dimensions can have skip values"
-        if dimension in (dims.V2EDim, dims.V2CDim):
+        if dimension in CONNECTIVITIES_ON_PENTAGONS:
             return True
         elif self.limited_area:
-            if dimension in (
-                dims.C2E2C2E2CDim,
-                dims.C2E2C2EDim,
-                dims.E2CDim,
-                dims.C2E2CDim,
-                dims.C2E2CODim,
-                dims.E2C2VDim,
-                dims.E2C2EDim,
-                dims.E2C2EODim,
-            ):
+            if dimension in CONNECTIVITIES_ON_BOUNDARIES:
                 return True
         else:
             return False
@@ -202,6 +211,15 @@ class IconGrid(base.BaseGrid):
     @property
     def lvert_nest(self):
         return True if self.config.lvertnest else False
+
+    @property
+    def refinement_control(self) -> dict[gtx.Dimension, data_alloc.NDArray]:
+        """Return the refinement control field for the grid."""
+        return self._refinement_control
+
+    @utils.chainable
+    def with_refinement_control(self, refinement_control: dict[gtx.Dimension, data_alloc.NDArray]):
+        return self._refinement_control.update(refinement_control)
 
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """

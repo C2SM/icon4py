@@ -203,7 +203,7 @@ class VelocityAdvection:
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels + 1),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.connectivities,
         )
 
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms(
@@ -221,7 +221,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.connectivities,
         )
 
         # TODO most likely this should be inlined into the next function
@@ -267,7 +267,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.connectivities,
         )
 
         # TODO(havogt): can we move this to the end?
@@ -302,7 +302,7 @@ class VelocityAdvection:
             horizontal_end=self._end_edge_local,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.connectivities,
         )
 
     def _scale_factors_by_dtime(self, dtime):
@@ -347,7 +347,7 @@ class VelocityAdvection:
             horizontal_end=self._end_edge_halo,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.connectivities,
         )
 
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w(
@@ -363,7 +363,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.connectivities,
         )
 
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
@@ -406,7 +406,7 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.connectivities,
         )
 
         # TODO(havogt): can we move this to the end?
@@ -441,5 +441,5 @@ class VelocityAdvection:
             horizontal_end=self._end_edge_local,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.offset_providers,
+            offset_provider=self.grid.connectivities,
         )

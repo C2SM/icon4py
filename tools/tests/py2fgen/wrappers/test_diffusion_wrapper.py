@@ -28,6 +28,7 @@ from . import utils
 from .test_grid_init import grid_init  # noqa: F401
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -224,7 +225,7 @@ def test_diffusion_wrapper_granule_inputs(
             assert result, f"Grid comparison failed: {error_message}"
         except AssertionError as e:
             error_message = str(e)
-            if "object.connectivities" not in error_message:
+            if "object._neighbor_tables" not in error_message:
                 raise
             else:
                 pass

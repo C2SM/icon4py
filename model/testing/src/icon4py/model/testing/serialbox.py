@@ -486,7 +486,7 @@ class IconGridSavepoint(IconSavepoint):
             .with_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
             .with_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
             .with_start_end_indices(dims.CellDim, cell_starts, cell_ends)
-            .with_connectivities(
+            .with_neighbor_tables(
                 {
                     dims.C2EDim: xp.asarray(self.c2e()),
                     dims.E2CDim: xp.asarray(self.e2c()),
@@ -497,7 +497,7 @@ class IconGridSavepoint(IconSavepoint):
                     dims.E2C2EODim: xp.asarray(e2c2e0),
                 }
             )
-            .with_connectivities(
+            .with_neighbor_tables(
                 {
                     dims.E2VDim: xp.asarray(self.e2v()),
                     dims.V2EDim: xp.asarray(self.v2e()),

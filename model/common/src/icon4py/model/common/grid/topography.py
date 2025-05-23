@@ -73,7 +73,7 @@ def smooth_topography(
             horizontal_start=0,
             horizontal_end=grid.num_cells,
             offset_provider={
-                "C2E2CO": grid.get_offset_provider("C2E2CO"),
+                "C2E2CO": grid.get_connectivity("C2E2CO"),
             },
         )
 
