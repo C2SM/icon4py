@@ -238,9 +238,9 @@ def test_run_diffusion_single_step(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        interface_model_height=interface_model_height,
-        e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim), # TODO: this goes to grid, should be removed from metrics_factory
-        c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),  # TODO (Yilu): refin_ctrl should be moved from refin_ctrl
+        interface_model_height=interface_model_height, # TODO: interface_model_height should be registered in metrics factory
+        e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim), # TODO: this goes to grid
+        c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),  # TODO (Yilu): refin_ctrl
         damping_height=damping_height,
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
