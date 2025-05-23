@@ -200,7 +200,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
-    w_explicit_term = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
     tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
 
     w_explicit_term = concat_where(
