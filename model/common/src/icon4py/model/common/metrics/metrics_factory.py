@@ -48,6 +48,8 @@ vertical_domain = v_grid.domain(dims.KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
+# TODO (Yilu):
+
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
@@ -116,6 +118,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
+                    # TODO (Yilu): here interface_model_height
                     attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
                     "z_ifc_sliced": z_ifc_sliced,
                     "vct_a": vct_a,

@@ -12,6 +12,7 @@ from types import ModuleType
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import where
+from gt4py.next.ffront.fbuiltins import astype, exp
 
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.math.projection as proj
@@ -21,7 +22,9 @@ from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.utils import data_allocation as data_alloc
-
+from icon4py.model.common.type_alias import wpfloat
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.common import GridType
 
 def compute_c_lin_e(
     edge_cell_length: data_alloc.NDArray,
@@ -47,6 +50,46 @@ def compute_c_lin_e(
     c_lin_e[0:horizontal_start, :] = 0.0
     mask = array_ns.transpose(array_ns.tile(edge_owner_mask, (2, 1)))
     return array_ns.where(mask, c_lin_e, 0.0)
+
+@field_operator
+def _compute_nudgecoeffs(
+    refin_ctrl: fa.EdgeField[gtx.int32],
+    grf_nudge_start_e: gtx.int32,
+    nudge_max_coeffs: wpfloat,
+    nudge_efold_width: wpfloat,
+    nudge_zone_width: gtx.int32,
+) -> fa.EdgeField[wpfloat]:
+    return where(
+        ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
+        nudge_max_coeffs
+        * exp((-(astype(refin_ctrl - grf_nudge_start_e, wpfloat))) / (2.0 * nudge_efold_width)),
+        0.0,
+    )
+
+
+# TODO (@halungge) not registered in factory
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_nudgecoeffs(
+    nudgecoeffs_e: fa.EdgeField[wpfloat],
+    refin_ctrl: fa.EdgeField[gtx.int32],
+    grf_nudge_start_e: gtx.int32,
+    nudge_max_coeffs: wpfloat,
+    nudge_efold_width: wpfloat,
+    nudge_zone_width: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    """Compute nudging coefficient for edges based the grid refinement level of an edge."""
+    _compute_nudgecoeffs(
+        refin_ctrl,
+        grf_nudge_start_e,
+        nudge_max_coeffs,
+        nudge_efold_width,
+        nudge_zone_width,
+        out=nudgecoeffs_e,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
 
 
 @gtx.field_operator
