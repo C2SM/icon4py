@@ -45,6 +45,7 @@ def create_vertical_params(vertical_config, grid_savepoint):
     )
 
 
+@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
@@ -92,7 +93,7 @@ def test_verify_velocity_init_against_savepoint(
     assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
 
 
-@pytest.mark.datatest
+@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
@@ -101,13 +102,30 @@ def test_verify_velocity_init_against_savepoint(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
+def test_scale_factors_by_dtime(
+    savepoint_velocity_init,
+    icon_grid,
+    grid_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    backend,
+):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=None,
         interpolation_state=None,
-        vertical_params=None,
+        vertical_params=vertical_params,
         edge_params=None,
         owner_mask=None,
         backend=backend,
