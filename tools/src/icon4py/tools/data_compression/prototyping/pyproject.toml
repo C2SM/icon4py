@@ -1,0 +1,35 @@
+[build-system]
+# Minimum requirements for the build system to execute.
+requires = ["setuptools", "wheel"]  # PEP 508 specifications.
+
+[project]
+authors = [
+    {name = 'Christos Kotsalos', email = 'christos.kotsalos@cscs.ch'},
+    {name = 'Nicoletta Farabullini', email = 'nicoletta.farabullini@c2sm.ethz.ch'},
+]
+dependencies = [
+    "click",
+    "pyyaml",
+    "numpy",
+    "xarray",
+    "humanize",
+    "numcodecs_wasm_linear_quantize",
+    "numcodecs_wasm_zlib",
+    "numcodecs_observers",
+    "numcodecs_wasm",
+    "numcodecs_combinators",
+]
+description = 'Data compression tool for Weather and Climate data'
+name = 'data_compression_cscs_exclaim'
+readme = {file = 'README.md', content-type = 'text/markdown'}
+requires-python = '>=3.10'
+version = '0.0'
+
+[project.scripts]
+data_compression_cscs_exclaim = 'data_compression_cscs_exclaim.cli:cli'
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

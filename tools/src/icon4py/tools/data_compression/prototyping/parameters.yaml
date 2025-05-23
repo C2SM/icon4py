@@ -1,0 +1,4 @@
+linear_quantization_zlib_compressors:
+  params:
+    linear_quantization_bits: 4
+    zlib_level: 9
