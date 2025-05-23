@@ -54,11 +54,26 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
-        self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0, "nudge_max_coeffs": 0.375, "nudge_efold_width": 2.0, "nudge_zone_width": 10}
+        self._config = {
+            "divavg_cntrwgt": 0.5,
+            "weighting_factor": 0.0,
+            "nudge_max_coeffs": 0.375,
+            "nudge_efold_width": 2.0,
+            "nudge_zone_width": 10,
+        }
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
+
+        self.register_provider(
+            factory.PrecomputedFieldProvider(
+                {
+                    "refinement_control_at_edges": self._grid.refinement_control[dims.EdgeDim],
+                }
+            )
+        )
+
         self._register_computed_fields()
 
     def __repr__(self):
@@ -70,13 +85,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     def _register_computed_fields(self):
 
-        nudgecoeffs = factory.ProgramFieldProvider(
+        nudgecoeffs_e = factory.ProgramFieldProvider(
             func=interpolation_fields.compute_nudgecoeffs.with_backend(None),
             # TODO (Yilu): EdgeDims is not correct
             domain={dims.EdgeDim: (edge_domain(h_grid.Zone.NUDGING_LEVEL_2), edge_domain(h_grid.Zone.END))},
             fields={attrs.NUDGECOEFFS: attrs.NUDGECOEFFS},
             deps={
-                "refin_ctrl":self._grid.refinement_control[dims.EdgeDim],
+                "refin_ctrl": "refinement_control_at_edges",
             },
             params = {
                     "grf_nudge_start_e":refinement.refine_control_value(dims.EdgeDim, h_grid.Zone.NUDGING).value,
@@ -85,7 +100,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "nudge_zone_width":self._config["nudge_zone_width"],
                 },
         )
-        self.register_provider(nudgecoeffs)
+        self.register_provider(nudgecoeffs_e)
 
 
         geofac_div = factory.EmbeddedFieldOperatorProvider(

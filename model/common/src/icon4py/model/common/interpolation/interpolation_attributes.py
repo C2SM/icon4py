@@ -25,7 +25,7 @@ E_FLX_AVG: Final[str] = "e_flux_average"
 POS_ON_TPLANE_E_X: Final[str] = "pos_on_tplane_e_x"
 POS_ON_TPLANE_E_Y: Final[str] = "pos_on_tplane_e_y"
 CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
-NUDGECOEFFS: Final[str] = "nudgecoeffs"
+NUDGECOEFFS: Final[str] = "nudgecoeffs_e"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -38,7 +38,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     NUDGECOEFFS: dict(
         standard_name=NUDGECOEFFS,
-        long_name="nudgecoeffs",
+        long_name="nudgecoeffs_e",
         units="", # TODO (Yilu) : need to check unit
         dims=(dims.EdgeDim),
         icon_var_name="nudgecoeffs",
