@@ -166,7 +166,7 @@ def orchestrate(
                         exchange_obj,
                         {
                             k: v
-                            for k, v in grid.offset_providers.items()
+                            for k, v in grid.connectivities.items()
                             if gtx_dace_utils.connectivity_identifier(k) in sdfg.arrays
                         },
                     ),
