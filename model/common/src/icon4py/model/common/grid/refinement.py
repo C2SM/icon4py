@@ -86,7 +86,7 @@ def is_unordered_field(
 ) -> data_alloc.NDArray:
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
     return array_ns.where(
-        field == _UNORDERED[dim][0], True, np.where(field == _UNORDERED[dim][1], True, False)
+        field == _UNORDERED[dim][0], True, array_ns.where(field == _UNORDERED[dim][1], True, False)
     )
 
 
