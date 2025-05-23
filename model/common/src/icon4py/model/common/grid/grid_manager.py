@@ -20,7 +20,7 @@ from icon4py.model.common import dimension as dims, exceptions, type_alias as ta
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
-from icon4py.model.common.grid import base, icon, vertical as v_grid
+from icon4py.model.common.grid import base, icon, refinement, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -399,12 +399,11 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
+    def __call__(self, backend: Optional[gtx_backend.Backend]):
         if not self._reader:
             self.open()
         on_gpu = data_alloc.is_cupy_device(backend)
-        self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
-        self._refinement = self._read_grid_refinement_fields(backend)
+        self._grid = self._construct_grid(on_gpu=on_gpu)
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
 
@@ -593,17 +592,25 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-    def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:
+    def _construct_grid(self, on_gpu: bool) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in
         Icon4py from them. Adds constructed start/end index information to the grid.
 
         """
-        grid = self._initialize_global(limited_area, on_gpu)
         xp = data_alloc.array_ns(on_gpu)
+        _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
+        _local_connectivities = functools.partial(
+            _add_derived_connectivities,
+            array_ns=xp,
+        )
         _refinement_fields = functools.partial(self._read_grid_refinement_fields, array_ns=xp)
+
         refinement_fields = _refinement_fields()
+        grid = self._initialize_global(
+            _determine_limited_area(refinement_fields[dims.CellDim]), on_gpu
+        )
         grid.with_refinement_control(refinement_fields)
 
         global_connectivities = {

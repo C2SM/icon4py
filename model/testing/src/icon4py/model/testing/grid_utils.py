@@ -105,7 +105,7 @@ def _run_grid_manager_for_file(
         file,
         v_grid.VerticalGridConfig(num_levels=num_levels),
     )
-    manager(backend=backend, limited_area=limited_area)
+    manager(backend=backend)
     manager.close()
     return manager
 

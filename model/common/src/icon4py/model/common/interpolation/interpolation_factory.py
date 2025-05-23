@@ -17,7 +17,7 @@ from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
-    horizontal as h_grid,
+    horizontal as h_grid, refinement,
     icon,
 )
 from icon4py.model.common.interpolation import (
@@ -26,6 +26,7 @@ from icon4py.model.common.interpolation import (
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
+
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -53,7 +54,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
-        self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0, "grf_nudge_start_e": 0.0, "nudge_max_coeffs": 0.0, "nudge_efold_width": 0.0, "nudge_zone_width": 0.0}
+        self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0, "nudge_max_coeffs": 0.375, "nudge_efold_width": 2.0, "nudge_zone_width": 10}
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -70,14 +71,15 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def _register_computed_fields(self):
 
         nudgecoeffs = factory.ProgramFieldProvider(
-            func=interpolation_fields._compute_nudgecoeffs.with_backend(None),
-            domain=(dims.EdgeDim),
-            fields={attrs.nudgecoeffs},
+            func=interpolation_fields.compute_nudgecoeffs.with_backend(None),
+            # TODO (Yilu): EdgeDims is not correct
+            domain={dims.EdgeDim: (edge_domain(h_grid.Zone.NUDGING_LEVEL_2), edge_domain(h_grid.Zone.END))},
+            fields={attrs.NUDGECOEFFS: attrs.NUDGECOEFFS},
             deps={
                 "refin_ctrl":self._grid.refinement_control[dims.EdgeDim],
             },
             params = {
-                    "grf_nudge_start_e":self._config["grf_nudge_start_e"],
+                    "grf_nudge_start_e":refinement.refine_control_value(dims.EdgeDim, h_grid.Zone.NUDGING).value,
                     "nudge_max_coeffs":self._config["nudge_max_coeffs"],
                     "nudge_efold_width":self._config["nudge_efold_width"],
                     "nudge_zone_width":self._config["nudge_zone_width"],
