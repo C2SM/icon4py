@@ -221,11 +221,11 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     #     ),
     #     (next_w, vertical_mass_flux_at_cells_on_half_levels),
     # )
-    vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        dims.KDim == 0,
-        broadcast(wpfloat("0.0"), (dims.CellDim,)),
-        vertical_mass_flux_at_cells_on_half_levels,
-    )
+    # vertical_mass_flux_at_cells_on_half_levels = concat_where(
+    #     dims.KDim == 0,
+    #     broadcast(wpfloat("0.0"), (dims.CellDim,)),
+    #     vertical_mass_flux_at_cells_on_half_levels,
+    # )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
@@ -235,7 +235,11 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        vertical_mass_flux_at_cells_on_half_levels,
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            vertical_mass_flux_at_cells_on_half_levels,
+        ),
     )
 
     (
@@ -493,11 +497,11 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     #     ),
     #     (next_w, vertical_mass_flux_at_cells_on_half_levels),
     # )
-    vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        dims.KDim == 0,
-        broadcast(wpfloat("0.0"), (dims.CellDim,)),
-        vertical_mass_flux_at_cells_on_half_levels,
-    )
+    # vertical_mass_flux_at_cells_on_half_levels = concat_where(
+    #     dims.KDim == 0,
+    #     broadcast(wpfloat("0.0"), (dims.CellDim,)),
+    #     vertical_mass_flux_at_cells_on_half_levels,
+    # )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
@@ -507,7 +511,11 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        vertical_mass_flux_at_cells_on_half_levels,
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            vertical_mass_flux_at_cells_on_half_levels,
+        ),
     )
 
     (
