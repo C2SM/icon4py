@@ -27,7 +27,7 @@ BACKENDS: dict[str, gtx_backend.Backend | None] = {
 }
 
 
-def _customize_dace_backend(dace_backend: gtx_backend.Backend) -> gtx_backend.Backend:
+def customize_dace_backend(dace_backend: gtx_backend.Backend) -> gtx_backend.Backend:
     # In icon4py it is safe to assume that the field layout does not change
     #   between multiple calls to a gt4py program, therefore we can make temporary
     #   array persistent (thus, allocated at SDFG initialization) and we do not
@@ -61,8 +61,8 @@ try:
 
     BACKENDS.update(
         {
-            "dace_cpu": _customize_dace_backend(run_dace_cpu),
-            "dace_gpu": _customize_dace_backend(run_dace_gpu),
+            "dace_cpu": customize_dace_backend(run_dace_cpu),
+            "dace_gpu": customize_dace_backend(run_dace_gpu),
         }
     )
 
