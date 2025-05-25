@@ -469,7 +469,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
-    tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
+    # tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
 
     w_explicit_term = concat_where(
         1 <= dims.KDim,
@@ -485,13 +485,18 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
-    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
+    # (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
+    #     dims.KDim == 0,
+    #     (
+    #         broadcast(wpfloat("0.0"), (dims.CellDim,)),
+    #         broadcast(wpfloat("0.0"), (dims.CellDim,)),
+    #     ),
+    #     (next_w, vertical_mass_flux_at_cells_on_half_levels),
+    # )
+    vertical_mass_flux_at_cells_on_half_levels = concat_where(
         dims.KDim == 0,
-        (
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-        ),
-        (next_w, vertical_mass_flux_at_cells_on_half_levels),
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        vertical_mass_flux_at_cells_on_half_levels,
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
@@ -559,7 +564,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             dtime=dtime,
             cpd=dycore_consts.cpd,
         ),
-        (tridiagonal_intermediate_result, next_w),
+        (broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))),
     )
 
     # # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
