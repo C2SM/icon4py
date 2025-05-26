@@ -44,7 +44,6 @@ class TestComputeExnerFromRhotheta(StencilTest):
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
         rho = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
         exner = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
 
         return dict(
