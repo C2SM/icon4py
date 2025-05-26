@@ -55,3 +55,15 @@ C2CECEC = gtx.FieldOffset("C2CECEC", source=CECECDim, target=(CellDim, C2E2C2E2C
 V2E2V = gtx.FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = gtx.FieldOffset("Koff", source=KDim, target=(KDim,))
 KHalfOff = gtx.FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
+
+
+def from_value(name: str) -> gtx.Dimension | None:
+    """Get the dimension from its name."""
+    return next(
+        (
+            value
+            for value in globals().values()
+            if isinstance(value, gtx.Dimension) and value.value == name
+        ),
+        None,
+    )

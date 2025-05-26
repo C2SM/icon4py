@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Dict
 
 import gt4py.next as gtx
+import gt4py.next.common as gtx_common
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
@@ -111,9 +112,13 @@ class BaseGrid(ABC):
     def geometry_type(self) -> GeometryType:
         ...
 
-    @property
+    @functools.cached_property
     def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
-        return self._neighbor_tables
+        return {
+            dims.from_value(k): v.ndarray
+            for k, v in self.connectivities.items()
+            if gtx_common.is_neighbor_connectivity(v)
+        }
 
     @functools.cached_property
     def limited_area(self) -> bool:

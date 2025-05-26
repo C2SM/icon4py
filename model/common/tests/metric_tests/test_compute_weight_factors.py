@@ -44,7 +44,7 @@ def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_
 
     xp = data_alloc.import_array_ns(backend)
     wgtfacq_e_dsl_full = weight_factors.compute_wgtfacq_e_dsl(
-        e2c=icon_grid.neighbor_tables[dims.E2CDim],
+        e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
         wgtfacq_c_dsl=wgtfacq_c_dsl.ndarray,
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,

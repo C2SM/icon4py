@@ -609,7 +609,8 @@ class NumpyFieldsProvider(FieldProvider):
         self._validate_dependencies()
         args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
         offsets = {
-            k: grid_provider.grid.neighbor_tables[v] for k, v in self._connectivities.items()
+            k: grid_provider.grid.get_connectivity(v.value).ndarray
+            for k, v in self._connectivities.items()
         }
         args.update(offsets)
         args.update(self._params)

@@ -53,6 +53,12 @@ def non_local_dims():
     yield from horizontal_dims()
 
 
+def all_dims():
+    yield from vertical_dims()
+    yield from horizontal_dims()
+    yield from local_dims()
+
+
 def global_grid_domains(dim: gtx.Dimension):
     zones = [
         h_grid.Zone.END,
