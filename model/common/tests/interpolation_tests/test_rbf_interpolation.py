@@ -70,15 +70,16 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file):
     assert (offset_table == v2e).all()
 
 
-# TODO: make cupy ready
-# TODO: grid_file here only for comparison?
-# TODO: more experiments? at least one regional (with missing neighbors)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment", [(dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)]
+    "grid_file, experiment, atol",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-9),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-2),
+    ],
 )
 def test_rbf_interpolation_matrix_cell(
-    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment
+    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
@@ -93,7 +94,6 @@ def test_rbf_interpolation_matrix_cell(
         geometry.get(geometry_attrs.EDGE_CENTER_X),
         geometry.get(geometry_attrs.EDGE_CENTER_Y),
         geometry.get(geometry_attrs.EDGE_CENTER_Z),
-        # TODO: normals not dallclose? check
         geometry.get(geometry_attrs.EDGE_NORMAL_X),
         geometry.get(geometry_attrs.EDGE_NORMAL_Y),
         geometry.get(geometry_attrs.EDGE_NORMAL_Z),
@@ -101,6 +101,10 @@ def test_rbf_interpolation_matrix_cell(
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         backend=backend,
+    )
+
+    start_index = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
@@ -116,25 +120,28 @@ def test_rbf_interpolation_matrix_cell(
         icon_grid.num_cells,
         RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
     )
-    # TODO: Why does memory usage blow up if I don't have the explicit asnumpy here?
     assert test_helpers.dallclose(
-        rbf_vec_coeff_c1.asnumpy(),
-        rbf_vec_coeff_c1_ref.asnumpy(),
-        atol=1e-8,
+        rbf_vec_coeff_c1.asnumpy()[start_index:],
+        rbf_vec_coeff_c1_ref.asnumpy()[start_index:],
+        atol=atol,
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_c2.asnumpy(),
-        rbf_vec_coeff_c2_ref.asnumpy(),
-        atol=1e-8,
+        rbf_vec_coeff_c2.asnumpy()[start_index:],
+        rbf_vec_coeff_c2_ref.asnumpy()[start_index:],
+        atol=atol,
     )
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment", [(dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)]
+    "grid_file, experiment, atol",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-10),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 2e-3),
+    ],
 )
 def test_rbf_interpolation_matrix_vertex(
-    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment
+    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
 ):  # fixture
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
@@ -158,6 +165,10 @@ def test_rbf_interpolation_matrix_vertex(
         backend=backend,
     )
 
+    start_index = icon_grid.start_index(
+        h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
     rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2()
 
@@ -172,14 +183,14 @@ def test_rbf_interpolation_matrix_vertex(
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_v1.asnumpy(),
-        rbf_vec_coeff_v1_ref.asnumpy(),
-        atol=1e-9,
+        rbf_vec_coeff_v1.asnumpy()[start_index:],
+        rbf_vec_coeff_v1_ref.asnumpy()[start_index:],
+        atol=atol,
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_v2.asnumpy(),
-        rbf_vec_coeff_v2_ref.asnumpy(),
-        atol=1e-9,
+        rbf_vec_coeff_v2.asnumpy()[start_index:],
+        rbf_vec_coeff_v2_ref.asnumpy()[start_index:],
+        atol=atol,
     )
 
 
@@ -187,8 +198,8 @@ def test_rbf_interpolation_matrix_vertex(
 @pytest.mark.parametrize(
     "grid_file, experiment, atol",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-8),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 8e-14),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
     ],
 )
 def test_rbf_interpolation_matrix_edge(
@@ -221,12 +232,11 @@ def test_rbf_interpolation_matrix_edge(
         backend=backend,
     )
 
-    rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
-
-    # TODO: Do interpolation itself only on subset?
     start_index = icon_grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
+
+    rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
 
     assert rbf_vec_coeff_e.shape == rbf_vec_coeff_e_ref.shape
     assert rbf_vec_coeff_e_ref.shape == (
