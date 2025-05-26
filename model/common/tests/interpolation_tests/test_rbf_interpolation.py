@@ -128,14 +128,14 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file, grid_savepo
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-2),
     ],
 )
-def test_rbf_interpolation_matrix_cell(
+def test_rbf_interpolation_coeffs_cell(
     grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
 ):
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
-    rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_matrix_cell(
+    rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(
         geometry.get(geometry_attrs.CELL_LAT),
         geometry.get(geometry_attrs.CELL_LON),
         geometry.get(geometry_attrs.CELL_CENTER_X),
@@ -192,14 +192,14 @@ def test_rbf_interpolation_matrix_cell(
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 2e-3),
     ],
 )
-def test_rbf_interpolation_matrix_vertex(
+def test_rbf_interpolation_coeffs_vertex(
     grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
 ):
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
-    rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_matrix_vertex(
+    rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.VERTEX_LAT),
         geometry.get(geometry_attrs.VERTEX_LON),
         geometry.get(geometry_attrs.VERTEX_X),
@@ -256,7 +256,7 @@ def test_rbf_interpolation_matrix_vertex(
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
     ],
 )
-def test_rbf_interpolation_matrix_edge(
+def test_rbf_interpolation_coeffs_edge(
     grid_file,
     grid_savepoint,
     interpolation_savepoint,
@@ -269,7 +269,7 @@ def test_rbf_interpolation_matrix_edge(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 
-    rbf_vec_coeff_e = rbf.compute_rbf_interpolation_matrix_edge(
+    rbf_vec_coeff_e = rbf.compute_rbf_interpolation_coeffs_edge(
         geometry.get(geometry_attrs.EDGE_LAT),
         geometry.get(geometry_attrs.EDGE_LON),
         geometry.get(geometry_attrs.EDGE_CENTER_X),

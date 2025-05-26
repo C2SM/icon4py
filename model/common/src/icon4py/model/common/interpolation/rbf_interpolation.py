@@ -212,7 +212,7 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
     return x, y, z
 
 
-def _compute_rbf_interpolation_matrix(
+def _compute_rbf_interpolation_coeffs(
     element_center_lat,
     element_center_lon,
     element_center_x,
@@ -356,7 +356,7 @@ def _compute_rbf_interpolation_matrix(
     return rbf_vec_coeff
 
 
-def compute_rbf_interpolation_matrix_cell(
+def compute_rbf_interpolation_coeffs_cell(
     cell_center_lat: fa.CellField[ta.wpfloat],
     cell_center_lon: fa.CellField[ta.wpfloat],
     cell_center_x: fa.CellField[ta.wpfloat],
@@ -376,7 +376,7 @@ def compute_rbf_interpolation_matrix_cell(
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
-    coeffs = _compute_rbf_interpolation_matrix(
+    coeffs = _compute_rbf_interpolation_coeffs(
         cell_center_lat,
         cell_center_lon,
         cell_center_x,
@@ -398,7 +398,7 @@ def compute_rbf_interpolation_matrix_cell(
     return coeffs
 
 
-def compute_rbf_interpolation_matrix_edge(
+def compute_rbf_interpolation_coeffs_edge(
     edge_center_lat: fa.EdgeField[ta.wpfloat],
     edge_center_lon: fa.EdgeField[ta.wpfloat],
     edge_center_x: fa.EdgeField[ta.wpfloat],
@@ -414,7 +414,7 @@ def compute_rbf_interpolation_matrix_edge(
     scale_factor: ta.wpfloat,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    coeffs = _compute_rbf_interpolation_matrix(
+    coeffs = _compute_rbf_interpolation_coeffs(
         edge_center_lat,
         edge_center_lon,
         edge_center_x,
@@ -436,7 +436,7 @@ def compute_rbf_interpolation_matrix_edge(
     return coeffs[0]
 
 
-def compute_rbf_interpolation_matrix_vertex(
+def compute_rbf_interpolation_coeffs_vertex(
     vertex_center_lat: fa.VertexField[ta.wpfloat],
     vertex_center_lon: fa.VertexField[ta.wpfloat],
     vertex_center_x: fa.VertexField[ta.wpfloat],
@@ -456,7 +456,7 @@ def compute_rbf_interpolation_matrix_vertex(
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
-    coeffs = _compute_rbf_interpolation_matrix(
+    coeffs = _compute_rbf_interpolation_coeffs(
         vertex_center_lat,
         vertex_center_lon,
         vertex_center_x,
