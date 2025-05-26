@@ -316,7 +316,7 @@ def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_cartesian_centers(backend, grid_file, experiment):
+def test_cartesian_centers_edge(backend, grid_file, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = grid_geometry.grid
     x = grid_geometry.get(attrs.EDGE_CENTER_X)
@@ -328,6 +328,50 @@ def test_cartesian_centers(backend, grid_file, experiment):
     # those are coordinates on the unit sphere: hence norm should be 1
     norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
     math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
+    assert helpers.dallclose(norm.asnumpy(), 1.0)
+
+
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_cartesian_centers_cell(backend, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+    grid = grid_geometry.grid
+    x = grid_geometry.get(attrs.CELL_CENTER_X)
+    y = grid_geometry.get(attrs.CELL_CENTER_Y)
+    z = grid_geometry.get(attrs.CELL_CENTER_Z)
+    assert x.ndarray.shape == (grid.num_cells,)
+    assert y.ndarray.shape == (grid.num_cells,)
+    assert z.ndarray.shape == (grid.num_cells,)
+    # those are coordinates on the unit sphere: hence norm should be 1
+    norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
+    math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
+    assert helpers.dallclose(norm.asnumpy(), 1.0)
+
+
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_vertex(backend, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+    grid = grid_geometry.grid
+    x = grid_geometry.get(attrs.VERTEX_X)
+    y = grid_geometry.get(attrs.VERTEX_Y)
+    z = grid_geometry.get(attrs.VERTEX_Z)
+    assert x.ndarray.shape == (grid.num_vertices,)
+    assert y.ndarray.shape == (grid.num_vertices,)
+    assert z.ndarray.shape == (grid.num_vertices,)
+    # those are coordinates on the unit sphere: hence norm should be 1
+    norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
+    math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
     assert helpers.dallclose(norm.asnumpy(), 1.0)
 
 
