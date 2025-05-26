@@ -159,11 +159,11 @@ def test_velocity_predictor_step(
         theta_v_at_cells_on_half_levels=None,
         perturbed_exner_at_cells_on_model_levels=None,
         rho_at_cells_on_half_levels=None,
-        ddt_exner_phy=None,
+        exner_tendency_due_to_slow_physics=None,
         grf_tend_rho=None,
         grf_tend_thv=None,
         grf_tend_w=None,
-        mass_fl_e=None,
+        mass_flux_at_edges_on_model_levels=None,
         normal_wind_tendency_due_to_slow_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
@@ -172,10 +172,10 @@ def test_velocity_predictor_step(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,
-        normal_wind_iau_increments=None,
-        exner_incr=None,
-        exner_dyn_incr=None,
+        rho_iau_increment=None,
+        normal_wind_iau_increment=None,
+        exner_iau_increment=None,
+        exner_dynamical_increment=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
@@ -334,11 +334,11 @@ def test_velocity_corrector_step(
         theta_v_at_cells_on_half_levels=None,
         perturbed_exner_at_cells_on_model_levels=None,
         rho_at_cells_on_half_levels=None,
-        ddt_exner_phy=None,
+        exner_tendency_due_to_slow_physics=None,
         grf_tend_rho=None,
         grf_tend_thv=None,
         grf_tend_w=None,
-        mass_fl_e=None,
+        mass_flux_at_edges_on_model_levels=None,
         normal_wind_tendency_due_to_slow_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
@@ -347,10 +347,10 @@ def test_velocity_corrector_step(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,
-        normal_wind_iau_increments=None,
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=None,
+        rho_iau_increment=None,
+        normal_wind_iau_increment=None,
+        exner_iau_increment=None,  # sp.exner_incr(),
+        exner_dynamical_increment=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
