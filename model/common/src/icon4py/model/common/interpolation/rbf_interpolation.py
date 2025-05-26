@@ -43,21 +43,8 @@ class InterpolationKernel(enum.Enum):
     INVERSE_MULTIQUADRATIC = 3
 
 
-# TODO: Use these as default?
 @dataclasses.dataclass(frozen=True)
 class InterpolationConfig:
-    # for nested setup this value is a vector of size num_domains
-    # and the default value is resolution dependent, according to the namelist
-    # documentation in ICON
-    rbf_vector_scale: dict[RBFDimension, ta.wpfloat] = MappingProxyType(
-        {
-            RBFDimension.CELL: 1.0,
-            RBFDimension.EDGE: 1.0,
-            RBFDimension.VERTEX: 1.0,
-            RBFDimension.GRADIENT: 1.0,
-        }
-    )
-
     rbf_kernel: dict[RBFDimension, InterpolationKernel] = MappingProxyType(
         {
             RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
@@ -94,25 +81,16 @@ def construct_rbf_matrix_offsets_tables_for_cells(
     grid: base_grid.BaseGrid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the cell RBF matrix: rbf_vec_index_c"""
-    c2e2c = grid.connectivities[dims.C2E2CDim]
-    c2e = grid.connectivities[dims.C2EDim]
-    offset = c2e[c2e2c]
-    assert len(offset.shape) == 3
-    # flatten this offset to construct a (num_cells, RBFDimension.CELL) shape offset matrix
-    flattened_offset = offset.reshape((offset.shape[0], offset.shape[1] * offset.shape[2]))
-    assert flattened_offset.shape == (
-        grid.num_cells,
-        RBF_STENCIL_SIZE[RBFDimension.CELL],
-    )
-    return flattened_offset
+    offset = grid.connectivities[dims.C2E2C2EDim]
+    assert offset.shape == (grid.num_cells, RBF_STENCIL_SIZE[RBFDimension.CELL])
+    return offset
 
 
 def construct_rbf_matrix_offsets_tables_for_edges(
     grid: base_grid.BaseGrid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e"""
-    e2c2e = grid.connectivities[dims.E2C2EDim]
-    offset = e2c2e
+    offset = grid.connectivities[dims.E2C2EDim]
     assert offset.shape == (grid.num_edges, RBF_STENCIL_SIZE[RBFDimension.EDGE])
     return offset
 

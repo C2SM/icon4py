@@ -23,8 +23,15 @@ from icon4py.model.testing import (
 )
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
-def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file):
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+    ],
+)
+def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file, grid_savepoint, icon_grid):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
@@ -33,17 +40,30 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file):
         rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
     )
     assert np.max(offset_table) == grid.num_edges - 1
-    # TODO: This is literally doing the same as the implementation, access directly with c2c etc. in test?
-    c2e = grid.connectivities[dims.C2EDim]
-    c2e2c = grid.connectivities[dims.C2E2CDim]
-    for i in range(offset_table.shape[0]):
-        assert (offset_table[i][:3] == c2e[c2e2c[i][0]]).all()
-        assert (offset_table[i][3:6] == c2e[c2e2c[i][1]]).all()
-        assert (offset_table[i][6:] == c2e[c2e2c[i][2]]).all()
+
+    offset_table_savepoint = grid_savepoint.c2e2c2e()
+    assert offset_table.shape == offset_table_savepoint.shape
+
+    # Savepoint neighbors before start index may not be populated correctly,
+    # ignore them.
+    start_index = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+
+    for i in range(start_index, offset_table.shape[0]):
+        # Neighbors may not be in the same order. Ignore differences in order.
+        assert (np.sort(offset_table[i]) == np.sort(offset_table_savepoint[i])).all()
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
-def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file):
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+    ],
+)
+def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file, grid_savepoint, icon_grid):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
@@ -52,12 +72,28 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file):
         rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
     )
     assert np.max(offset_table) == grid.num_edges - 1
-    e2c2e = grid.connectivities[dims.E2C2EDim]
-    assert (offset_table == e2c2e).all()
+
+    offset_table_savepoint = grid_savepoint.e2c2e()
+    assert offset_table.shape == offset_table_savepoint.shape
+
+    start_index = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+
+    for i in range(start_index, offset_table.shape[0]):
+        # Neighbors may not be in the same order. Ignore differences in order.
+        assert (np.sort(offset_table[i]) == np.sort(offset_table_savepoint[i])).all()
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
-def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file):
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+    ],
+)
+def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file, grid_savepoint, icon_grid):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
@@ -66,8 +102,22 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file):
         rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
     )
     assert np.max(offset_table) == grid.num_edges - 1
-    v2e = grid.connectivities[dims.V2EDim]
-    assert (offset_table == v2e).all()
+
+    offset_table_savepoint = grid_savepoint.v2e()
+    assert offset_table.shape == offset_table_savepoint.shape
+
+    start_index = icon_grid.start_index(
+        h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+
+    for i in range(start_index, offset_table.shape[0]):
+        # TODO: Should this be fixed already when reading data?
+        for j in range(1, offset_table_savepoint.shape[1]):
+            if offset_table_savepoint[i, j] == offset_table_savepoint[i, j - 1]:
+                offset_table_savepoint[i, j] = -1
+
+        # Neighbors may not be in the same order. Ignore differences in order.
+        assert (np.sort(offset_table[i]) == np.sort(offset_table_savepoint[i])).all()
 
 
 @pytest.mark.datatest
@@ -80,7 +130,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file):
 )
 def test_rbf_interpolation_matrix_cell(
     grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
-):  # fixture
+):
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
@@ -106,6 +156,8 @@ def test_rbf_interpolation_matrix_cell(
     start_index = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
+
+    assert start_index < grid.num_cells
 
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
     rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2()
@@ -142,7 +194,7 @@ def test_rbf_interpolation_matrix_cell(
 )
 def test_rbf_interpolation_matrix_vertex(
     grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
-):  # fixture
+):
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
@@ -168,6 +220,8 @@ def test_rbf_interpolation_matrix_vertex(
     start_index = icon_grid.start_index(
         h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
+
+    assert start_index < grid.num_vertices
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
     rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2()
@@ -210,8 +264,9 @@ def test_rbf_interpolation_matrix_edge(
     backend,
     experiment,
     atol,
-):  # fixture
+):
     geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 
     rbf_vec_coeff_e = rbf.compute_rbf_interpolation_matrix_edge(
@@ -225,7 +280,9 @@ def test_rbf_interpolation_matrix_edge(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z),
         geometry.get(geometry_attrs.EDGE_DUAL_U),
         geometry.get(geometry_attrs.EDGE_DUAL_V),
-        # TODO: neighbors are not in the same order, use savepoint for now
+        # NOTE: Neighbors are not in the same order. Use savepoint to make sure
+        # order of coefficients computed by icon4py matches order of
+        # coefficients in savepoint.
         grid_savepoint.e2c2e(),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
@@ -235,6 +292,8 @@ def test_rbf_interpolation_matrix_edge(
     start_index = icon_grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
+
+    assert start_index < grid.num_edges
 
     rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
 
