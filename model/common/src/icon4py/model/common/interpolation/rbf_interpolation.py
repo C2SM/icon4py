@@ -341,13 +341,12 @@ def _compute_rbf_interpolation_matrix(
     z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
     rhs_np = [data_alloc.as_numpy(x) for x in rhs]
     for i in range(num_elements):
-        invalid_neighbors = np.where(rbf_offset[i, :] < 0)[0]
-        num_neighbors = rbf_offset_np.shape[1] - invalid_neighbors.size
-        rbfmat_np = z_rbfmat_np[i, :num_neighbors, :num_neighbors]
+        valid_neighbors = np.where(rbf_offset_np[i, :] >= 0)[0]
+        rbfmat_np = np.squeeze(z_rbfmat_np[np.ix_([i], valid_neighbors, valid_neighbors)])
         z_diag_np = sla.cho_factor(rbfmat_np)
         for j in range(num_zonal_meridional_components):
-            rbf_vec_coeff_np[j][i, :num_neighbors] = sla.cho_solve(
-                z_diag_np, np.nan_to_num(rhs_np[j][i, :num_neighbors])
+            rbf_vec_coeff_np[j][i, valid_neighbors] = sla.cho_solve(
+                z_diag_np, rhs_np[j][i, valid_neighbors]
             )
     rbf_vec_coeff = [array_ns.asarray(x) for x in rbf_vec_coeff_np]
 
