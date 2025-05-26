@@ -145,7 +145,7 @@ def geographical_to_cartesian_on_edges(
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def geographical_to_cartesian_on_vertex(
+def geographical_to_cartesian_on_vertices(
     lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat]
 ) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
     """

@@ -487,8 +487,7 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(tangent_cell_wrapper)
         cartesian_vertices = factory.EmbeddedFieldOperatorProvider(
-            # TODO: ..._on_vertices?
-            func=math_helpers.geographical_to_cartesian_on_vertex.with_backend(self.backend),
+            func=math_helpers.geographical_to_cartesian_on_vertices.with_backend(self.backend),
             domain=(dims.VertexDim,),
             fields={
                 attrs.VERTEX_X: attrs.VERTEX_X,

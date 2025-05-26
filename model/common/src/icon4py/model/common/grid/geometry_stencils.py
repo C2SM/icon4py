@@ -18,7 +18,7 @@ from icon4py.model.common.math.helpers import (
     arc_length_on_edges,
     cross_product_on_edges,
     geographical_to_cartesian_on_edges,
-    geographical_to_cartesian_on_vertex,
+    geographical_to_cartesian_on_vertices,
     normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
 )
@@ -47,7 +47,7 @@ def cartesian_coordinates_of_edge_tangent(
           y: y coordinate of normalized tangent vector
           z: z coordinate of normalized tangent vector
     """
-    vertex_x, vertex_y, vertex_z = geographical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
+    vertex_x, vertex_y, vertex_z = geographical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
 
     x = edge_orientation * (vertex_x(E2V[1]) - vertex_x(E2V[0]))
     y = edge_orientation * (vertex_y(E2V[1]) - vertex_y(E2V[0]))
@@ -397,7 +397,7 @@ def arc_distance_of_far_edges_in_diamond(
         arc length between the "far" vertices in the diamond.
 
     """
-    x, y, z = geographical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
+    x, y, z = geographical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
     x2 = x(E2C2V[2])
     x3 = x(E2C2V[3])
     y2 = y(E2C2V[2])
@@ -431,7 +431,7 @@ def edge_length(
     Returns:
         edge length
     """
-    x, y, z = geographical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
+    x, y, z = geographical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
     x0 = x(E2V[0])
     x1 = x(E2V[1])
     y0 = y(E2V[0])
