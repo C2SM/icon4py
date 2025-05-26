@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import backend as gtx_backend, constructors
-from gt4py.next.ffront.decorator import Program
+from gt4py.next.ffront.decorator import FieldOperator, Program
 from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
@@ -111,7 +111,7 @@ def run_verify_and_benchmark(
     Function to perform verification and benchmarking of test_func (along with normally executing it).
 
     Args:
-        test_func: Function to be ran, verified and benchmarked.
+        test_func: Function to be run, verified and benchmarked.
         verification_func: Function to be used for verification of test_func.
         benchmark_fixture: pytest-benchmark fixture.
 
@@ -136,9 +136,13 @@ def _verify_stencil_test(
             if isinstance(out, Output)
             else (out, (slice(None),), (slice(None),))
         )
+        if isinstance(self.PROGRAM, FieldOperator):
+            output_field = input_data["out"][list(reference_outputs.keys()).index(name)]
+        else:
+            output_field = input_data[name]
 
         np.testing.assert_allclose(
-            input_data[name].asnumpy()[gtslice],
+            output_field.asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
             err_msg=f"Verification failed for '{name}'",
@@ -163,6 +167,9 @@ def _test_and_benchmark(
     )
 
     input_data = allocate_data(backend, input_data)
+
+    if isinstance(self.PROGRAM, FieldOperator):
+        input_data, reference_outputs = _refactor_field_operator(input_data, reference_outputs)
 
     run_verify_and_benchmark(
         functools.partial(
@@ -199,7 +206,7 @@ class StencilTest:
         ...         return dict(some_output=np.asarray(some_input) * 2)
     """
 
-    PROGRAM: ClassVar[Program]
+    PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: typing.Optional[tuple] = None
 
@@ -218,3 +225,46 @@ def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
 def as_1d_connectivity(connectivity: np.ndarray) -> np.ndarray:
     old_shape = connectivity.shape
     return np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)
+
+
+def _refactor_field_operator(input_data: dict, reference_outputs: dict) -> tuple[dict, dict]:
+    ref_vals = list(reference_outputs.values())
+    size = ref_vals[0].shape
+    full_field_idx = [
+        i_dt_val
+        for i_dt_val, dt_val in enumerate(list(input_data.values()))
+        if (isinstance(dt_val, gtx.Field) and dt_val.shape == size)
+    ][0]
+    input_data.update(
+        out=tuple(
+            gtx.as_field((input_data[list(input_data)[full_field_idx]]._domain), ref_val)
+            for ref_val in ref_vals
+        )
+    )
+    input_data.update(domain={})
+    if "horizontal_start" in input_data.keys():
+        input_data["domain"].update(
+            {
+                input_data["out"][0].domain.dims[0]: (
+                    input_data["horizontal_start"],
+                    input_data["horizontal_end"],
+                )
+            }
+        )
+
+    if "vertical_start" in input_data.keys():
+        input_data["domain"].update(
+            {
+                input_data["out"][0].domain.dims[1]: (
+                    input_data["vertical_start"],
+                    input_data["vertical_end"],
+                )
+            }
+        )
+
+    input_data.pop("horizontal_start")
+    input_data.pop("horizontal_end")
+    input_data.pop("vertical_start")
+    input_data.pop("vertical_end")
+
+    return input_data, reference_outputs

@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import (
-    compute_exner_from_rhotheta,
+    _compute_exner_from_rhotheta,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
@@ -23,7 +23,7 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 class TestComputeExnerFromRhotheta(StencilTest):
-    PROGRAM = compute_exner_from_rhotheta
+    PROGRAM = _compute_exner_from_rhotheta
     OUTPUTS = ("theta_v", "exner")
 
     @staticmethod
@@ -49,7 +49,6 @@ class TestComputeExnerFromRhotheta(StencilTest):
 
         return dict(
             rho=rho,
-            theta_v=theta_v,
             exner=exner,
             rd_o_cvd=rd_o_cvd,
             rd_o_p0ref=rd_o_p0ref,
