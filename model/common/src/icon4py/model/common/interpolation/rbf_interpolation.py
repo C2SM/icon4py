@@ -11,7 +11,6 @@ import enum
 import math
 from types import MappingProxyType, ModuleType
 
-import gt4py.next as gtx
 import numpy as np
 import scipy.linalg as sla
 
@@ -21,11 +20,6 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.common.math.helpers import (
-    cartesian_coordinates_from_zonal_and_meridional_components_on_cells,
-    cartesian_coordinates_from_zonal_and_meridional_components_on_edges,
-    cartesian_coordinates_from_zonal_and_meridional_components_on_vertices,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -227,16 +221,23 @@ def _kernel(
             raise ValueError(f"Unsupported kernel: {kernel}")
 
 
-def _get_zonal_meridional_f(dim: gtx.Dimension):
-    match dim:
-        case gtx.Dimension("Cell"):
-            return cartesian_coordinates_from_zonal_and_meridional_components_on_cells
-        case gtx.Dimension("Edge"):
-            return cartesian_coordinates_from_zonal_and_meridional_components_on_edges
-        case gtx.Dimension("Vertex"):
-            return cartesian_coordinates_from_zonal_and_meridional_components_on_vertices
-        case _:
-            raise ValueError(f"Unsupported dimension: {dim}")
+def _cartesian_coordinates_from_zonal_and_meridional_components(
+    lat: data_alloc.NDArray,
+    lon: data_alloc.NDArray,
+    u: data_alloc.NDArray,
+    v: data_alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    cos_lat = array_ns.cos(lat)
+    sin_lat = array_ns.sin(lat)
+    cos_lon = array_ns.cos(lon)
+    sin_lon = array_ns.sin(lon)
+
+    x = -u * sin_lon - v * sin_lat * cos_lon
+    y = u * cos_lon - v * sin_lat * sin_lon
+    z = cos_lat * v
+
+    return x, y, z
 
 
 def _compute_rbf_interpolation_matrix(
@@ -256,10 +257,8 @@ def _compute_rbf_interpolation_matrix(
     rbf_offset,
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
-    backend: gtx.backend.Backend | None = None,
+    array_ns: ModuleType = np,
 ):
-    array_ns = data_alloc.import_array_ns(backend)
-
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
     # another point on the sphere), but these don't hurt the computation.
@@ -309,10 +308,6 @@ def _compute_rbf_interpolation_matrix(
     assert rbf_val.shape == rbf_offset.shape
 
     # Set up right hand side(s) of linear system
-    domain = element_center_lat.domain
-    dim = domain[0].dim
-    zonal_meridional_f = _get_zonal_meridional_f(dim)
-
     z_nx = []
     nxnx = []
     rhs = []
@@ -320,19 +315,14 @@ def _compute_rbf_interpolation_matrix(
     assert len(u) == len(v)
     assert 1 <= len(u) <= 2
     for i in range(len(u)):
-        z_nx_x = gtx.zeros(domain, dtype=ta.wpfloat, allocator=backend)
-        z_nx_y = gtx.zeros(domain, dtype=ta.wpfloat, allocator=backend)
-        z_nx_z = gtx.zeros(domain, dtype=ta.wpfloat, allocator=backend)
-
-        zonal_meridional_f(
-            element_center_lat,
-            element_center_lon,
+        z_nx_x, z_nx_y, z_nx_z = _cartesian_coordinates_from_zonal_and_meridional_components(
+            element_center_lat.ndarray,
+            element_center_lon.ndarray,
             u[i],
             v[i],
-            out=(z_nx_x, z_nx_y, z_nx_z),
-            offset_provider={},
+            array_ns=array_ns,
         )
-        z_nx.append(array_ns.stack((z_nx_x.ndarray, z_nx_y.ndarray, z_nx_z.ndarray), axis=-1))
+        z_nx.append(array_ns.stack((z_nx_x, z_nx_y, z_nx_z), axis=-1))
         assert z_nx[i].shape == (rbf_offset.shape[0], 3)
 
         nxnx.append(
@@ -389,8 +379,7 @@ def _compute_rbf_interpolation_matrix(
     for j in range(len(u)):
         rbf_vec_coeff[j] /= array_ns.sum(nxnx[j] * rbf_vec_coeff[j], axis=1)[:, array_ns.newaxis]
 
-    dim2 = gtx.Dimension("What")  # TODO
-    return tuple(gtx.as_field([dim, dim2], c) for c in rbf_vec_coeff)
+    return rbf_vec_coeff
 
 
 def compute_rbf_interpolation_matrix_cell(
@@ -408,10 +397,10 @@ def compute_rbf_interpolation_matrix_cell(
     rbf_offset: fa.CellField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
-    backend: gtx.backend.Backend | None = None,
+    array_ns: ModuleType = np,
 ) -> tuple[fa.CellField, fa.CellField]:
-    zeros = gtx.zeros(cell_center_lat.domain, dtype=ta.wpfloat, allocator=backend)
-    ones = gtx.ones(cell_center_lat.domain, dtype=ta.wpfloat, allocator=backend)
+    zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
+    ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
     coeffs = _compute_rbf_interpolation_matrix(
         cell_center_lat,
@@ -430,7 +419,7 @@ def compute_rbf_interpolation_matrix_cell(
         rbf_offset,
         rbf_kernel,
         scale_factor,
-        backend=backend,
+        array_ns=array_ns,
     )
     assert len(coeffs) == 2
     return coeffs
@@ -450,7 +439,7 @@ def compute_rbf_interpolation_matrix_edge(
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
-    backend: gtx.backend.Backend | None = None,
+    array_ns: ModuleType = np,
 ):
     coeffs = _compute_rbf_interpolation_matrix(
         edge_center_lat,
@@ -464,12 +453,12 @@ def compute_rbf_interpolation_matrix_edge(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [edge_dual_normal_u],
-        [edge_dual_normal_v],
+        [edge_dual_normal_u.ndarray],
+        [edge_dual_normal_v.ndarray],
         rbf_offset,
         rbf_kernel,
         scale_factor,
-        backend=backend,
+        array_ns=array_ns,
     )
     assert len(coeffs) == 1
     return coeffs[0]
@@ -490,10 +479,10 @@ def compute_rbf_interpolation_matrix_vertex(
     rbf_offset: fa.EdgeField[int],
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
-    backend: gtx.backend.Backend | None = None,
+    array_ns: ModuleType = np,
 ) -> tuple[fa.VertexField, fa.VertexField]:
-    zeros = gtx.zeros(vertex_center_lat.domain, dtype=ta.wpfloat, allocator=backend)
-    ones = gtx.ones(vertex_center_lat.domain, dtype=ta.wpfloat, allocator=backend)
+    zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
+    ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
     coeffs = _compute_rbf_interpolation_matrix(
         vertex_center_lat,
@@ -512,7 +501,7 @@ def compute_rbf_interpolation_matrix_vertex(
         rbf_offset,
         rbf_kernel,
         scale_factor,
-        backend=backend,
+        array_ns=array_ns,
     )
     assert len(coeffs) == 2
     return coeffs

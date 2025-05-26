@@ -15,6 +15,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.interpolation.rbf_interpolation import RBF_STENCIL_SIZE
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -99,7 +100,7 @@ def test_rbf_interpolation_matrix_cell(
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
-        backend=backend,
+        array_ns=data_alloc.import_array_ns(backend),
     )
 
     start_index = icon_grid.start_index(
@@ -120,12 +121,12 @@ def test_rbf_interpolation_matrix_cell(
         RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_c1.asnumpy()[start_index:],
+        rbf_vec_coeff_c1[start_index:],
         rbf_vec_coeff_c1_ref.asnumpy()[start_index:],
         atol=atol,
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_c2.asnumpy()[start_index:],
+        rbf_vec_coeff_c2[start_index:],
         rbf_vec_coeff_c2_ref.asnumpy()[start_index:],
         atol=atol,
     )
@@ -161,7 +162,7 @@ def test_rbf_interpolation_matrix_vertex(
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
-        backend=backend,
+        array_ns=data_alloc.import_array_ns(backend),
     )
 
     start_index = icon_grid.start_index(
@@ -182,12 +183,12 @@ def test_rbf_interpolation_matrix_vertex(
         RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_v1.asnumpy()[start_index:],
+        rbf_vec_coeff_v1[start_index:],
         rbf_vec_coeff_v1_ref.asnumpy()[start_index:],
         atol=atol,
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_v2.asnumpy()[start_index:],
+        rbf_vec_coeff_v2[start_index:],
         rbf_vec_coeff_v2_ref.asnumpy()[start_index:],
         atol=atol,
     )
@@ -228,7 +229,7 @@ def test_rbf_interpolation_matrix_edge(
         grid_savepoint.e2c2e(),
         rbf.InterpolationConfig.rbf_kernel[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
-        backend=backend,
+        array_ns=data_alloc.import_array_ns(backend),
     )
 
     start_index = icon_grid.start_index(
@@ -243,7 +244,7 @@ def test_rbf_interpolation_matrix_edge(
         RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_e.asnumpy()[start_index:],
+        rbf_vec_coeff_e[start_index:],
         rbf_vec_coeff_e_ref.asnumpy()[start_index:],
         atol=atol,
     )
