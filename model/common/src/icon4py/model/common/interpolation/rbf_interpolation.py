@@ -252,13 +252,14 @@ def _compute_rbf_interpolation_matrix(
     edge_normal_x,
     edge_normal_y,
     edge_normal_z,
-    u,
-    v,
+    uv,
     rbf_offset,
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
     array_ns: ModuleType = np,
 ):
+    num_elements = element_center_lat.shape[0]
+
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
     # another point on the sphere), but these don't hurt the computation.
@@ -311,15 +312,15 @@ def _compute_rbf_interpolation_matrix(
     z_nx = []
     nxnx = []
     rhs = []
+    num_zonal_meridional_components = len(uv)
 
-    assert len(u) == len(v)
-    assert 1 <= len(u) <= 2
-    for i in range(len(u)):
+    assert 1 <= num_zonal_meridional_components <= 2
+    for i in range(num_zonal_meridional_components):
         z_nx_x, z_nx_y, z_nx_z = _cartesian_coordinates_from_zonal_and_meridional_components(
             element_center_lat.ndarray,
             element_center_lon.ndarray,
-            u[i],
-            v[i],
+            uv[i][0],
+            uv[i][1],
             array_ns=array_ns,
         )
         z_nx.append(array_ns.stack((z_nx_x, z_nx_y, z_nx_z), axis=-1))
@@ -360,23 +361,25 @@ def _compute_rbf_interpolation_matrix(
     # Currently always on CPU. At the time of writing cupy does not have
     # cho_solve with the same interface as scipy, but one has been proposed:
     # https://github.com/cupy/cupy/pull/9116.
-    rbf_vec_coeff_np = [np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))]
+    rbf_vec_coeff_np = [
+        np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(num_zonal_meridional_components)
+    ]
     rbf_offset_np = data_alloc.as_numpy(rbf_offset)
     z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
     rhs_np = [data_alloc.as_numpy(x) for x in rhs]
-    for i in range(z_rbfmat.shape[0]):
+    for i in range(num_elements):
         invalid_neighbors = np.where(rbf_offset[i, :] < 0)[0]
         num_neighbors = rbf_offset_np.shape[1] - invalid_neighbors.size
         rbfmat_np = z_rbfmat_np[i, :num_neighbors, :num_neighbors]
         z_diag_np = sla.cho_factor(rbfmat_np)
-        for j in range(len(u)):
+        for j in range(num_zonal_meridional_components):
             rbf_vec_coeff_np[j][i, :num_neighbors] = sla.cho_solve(
                 z_diag_np, np.nan_to_num(rhs_np[j][i, :num_neighbors])
             )
     rbf_vec_coeff = [array_ns.asarray(x) for x in rbf_vec_coeff_np]
 
     # Normalize coefficients
-    for j in range(len(u)):
+    for j in range(num_zonal_meridional_components):
         rbf_vec_coeff[j] /= array_ns.sum(nxnx[j] * rbf_vec_coeff[j], axis=1)[:, array_ns.newaxis]
 
     return rbf_vec_coeff
@@ -414,8 +417,7 @@ def compute_rbf_interpolation_matrix_cell(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [ones, zeros],
-        [zeros, ones],
+        [(ones, zeros), (zeros, ones)],
         rbf_offset,
         rbf_kernel,
         scale_factor,
@@ -453,8 +455,7 @@ def compute_rbf_interpolation_matrix_edge(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [edge_dual_normal_u.ndarray],
-        [edge_dual_normal_v.ndarray],
+        [(edge_dual_normal_u.ndarray, edge_dual_normal_v.ndarray)],
         rbf_offset,
         rbf_kernel,
         scale_factor,
@@ -496,8 +497,7 @@ def compute_rbf_interpolation_matrix_vertex(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [ones, zeros],
-        [zeros, ones],
+        [(ones, zeros), (zeros, ones)],
         rbf_offset,
         rbf_kernel,
         scale_factor,
