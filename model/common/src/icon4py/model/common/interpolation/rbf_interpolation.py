@@ -372,7 +372,7 @@ def compute_rbf_interpolation_matrix_cell(
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
     array_ns: ModuleType = np,
-) -> tuple[fa.CellField, fa.CellField]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
@@ -413,7 +413,7 @@ def compute_rbf_interpolation_matrix_edge(
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
     array_ns: ModuleType = np,
-):
+) -> data_alloc.NDArray:
     coeffs = _compute_rbf_interpolation_matrix(
         edge_center_lat,
         edge_center_lon,
@@ -452,7 +452,7 @@ def compute_rbf_interpolation_matrix_vertex(
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
     array_ns: ModuleType = np,
-) -> tuple[fa.VertexField, fa.VertexField]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
