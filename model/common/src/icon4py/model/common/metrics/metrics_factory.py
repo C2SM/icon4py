@@ -48,9 +48,7 @@ vertical_domain = v_grid.domain(dims.KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
-# TODO (Yilu):
-
-
+# TODO (Yilu): z_ifc should be registed to metrics_field
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
@@ -58,6 +56,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_grid: VerticalGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
+        topography,
+        # TODO: type of topography
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
@@ -79,6 +79,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
+        self._topography = topography
         self._interpolation_source = interpolation_source
         log.info(
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -120,7 +121,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 {
                     # TODO (Yilu): here interface_model_height
                     attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
-                    "z_ifc_sliced": z_ifc_sliced, #TODO (Yilu): z_ifc could be deleted?
+                    "z_ifc_sliced": z_ifc_sliced,
                     "vct_a": vct_a,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
@@ -141,6 +142,30 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
 
     def _register_computed_fields(self):
+        vertical_coordinates_on_cell_khalf = factory.NumpyFieldsProvider(
+            func=functools.partial(
+                v_grid.compute_vertical_coordinate,
+                array_ns=self._xp,
+            ),
+            fields={"vertical_coordinates_on_cell_khalf": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,},
+            domain={},
+            deps={
+                "vct_a":"vct_a",
+                "topography":self._topography,
+                "cell_areas":geometry_attrs.CELL_AREA,
+                "geofac_n2s":interpolation_attributes.GEOFAC_N2S,
+            },
+            connectivities = {},
+            params={
+                "grid":self._grid,
+                "vertical_geometry":self._vertical_grid,
+                "backend":self._backend,
+            },
+        )
+        self.register_provider(vertical_coordinates_on_cell_khalf)
+        # TODO (Yilu): whether grid, vertical_geometry, backend can be in params
+        # TODO (Yilu): domain and connectivies
+
         height = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
                 self._backend
