@@ -370,7 +370,6 @@ def _compute_rbf_interpolation_matrix(
     # Currently always on CPU. At the time of writing cupy does not have
     # cho_solve with the same interface as scipy, but one has been proposed:
     # https://github.com/cupy/cupy/pull/9116.
-    # TODO: vectorize this?
     rbf_vec_coeff_np = [np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(len(u))]
     rbf_offset_np = data_alloc.as_numpy(rbf_offset)
     z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
@@ -453,7 +452,6 @@ def compute_rbf_interpolation_matrix_edge(
     scale_factor: ta.wpfloat,
     backend: gtx.backend.Backend | None = None,
 ):
-    # TODO: computing too much here
     coeffs = _compute_rbf_interpolation_matrix(
         edge_center_lat,
         edge_center_lon,

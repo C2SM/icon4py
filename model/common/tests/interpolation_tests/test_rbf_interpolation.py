@@ -66,7 +66,6 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file):
     )
     assert np.max(offset_table) == grid.num_edges - 1
     v2e = grid.connectivities[dims.V2EDim]
-    # for i in range(offset_table.shape[0]):
     assert (offset_table == v2e).all()
 
 
