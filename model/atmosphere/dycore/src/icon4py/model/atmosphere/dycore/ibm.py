@@ -88,8 +88,8 @@ class ImmersedBoundaryMethod:
         if self.DO_IBM:
             # fill masks, otherwise False everywhere
             #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-            half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
-            #half_cell_mask_np = self._mask_blocks(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            #half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            half_cell_mask_np = self._mask_blocks(grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
             full_cell_mask_np = half_cell_mask_np[:, :-1]
 
@@ -172,7 +172,11 @@ class ImmersedBoundaryMethod:
         xp = data_alloc.import_array_ns(backend)
 
         blocks = [
-            [450, 550, 450, 550, 100],
+            #[450, 550, 450, 550, 100], # 1x1 100x100x100
+            [200, 300, 200, 300, 100], # 2x2 100x100x100
+            [700, 800, 200, 300, 100], # 2x2 100x100x100
+            [200, 300, 700, 800, 100], # 2x2 100x100x100
+            [700, 800, 700, 800, 100], # 2x2 100x100x100
         ]
 
         grid_file = xr.open_dataset(grid_file_path)

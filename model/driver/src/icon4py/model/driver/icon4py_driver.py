@@ -169,7 +169,7 @@ class TimeLoop:
                 do_prep_adv,
             )
             timer.capture()
-            if time_step % 100 == 0 and time_step > 0:
+            if time_step % 600 == 0 and time_step > 0:
                 plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:06d}")
 
             self._is_first_step_in_simulation = False
@@ -410,7 +410,7 @@ def initialize(
     )
 
     #---> IBM
-    savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform200_flat/ser_data"
+    savepoint_path = "/capstor/scratch/cscs/jcanton/ser_data/exclaim_gauss3d.uniform800_flat/ser_data"
     grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
     _ibm = ibm.ImmersedBoundaryMethod(
         grid=icon_grid,
