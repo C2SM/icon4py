@@ -148,7 +148,7 @@ def test_rbf_interpolation_matrix_cell(
         geometry.get(geometry_attrs.EDGE_NORMAL_Y),
         geometry.get(geometry_attrs.EDGE_NORMAL_Z),
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
-        rbf.InterpolationConfig.rbf_kernel[rbf_dim],
+        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         array_ns=data_alloc.import_array_ns(backend),
     )
@@ -166,11 +166,11 @@ def test_rbf_interpolation_matrix_cell(
     assert rbf_vec_coeff_c2.shape == rbf_vec_coeff_c2_ref.shape
     assert rbf_vec_coeff_c1_ref.shape == (
         icon_grid.num_cells,
-        RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
+        RBF_STENCIL_SIZE[rbf_dim],
     )
     assert rbf_vec_coeff_c2_ref.shape == (
         icon_grid.num_cells,
-        RBF_STENCIL_SIZE[rbf.RBFDimension.CELL],
+        RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_c1[start_index:],
@@ -212,7 +212,7 @@ def test_rbf_interpolation_matrix_vertex(
         geometry.get(geometry_attrs.EDGE_NORMAL_Y),
         geometry.get(geometry_attrs.EDGE_NORMAL_Z),
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
-        rbf.InterpolationConfig.rbf_kernel[rbf_dim],
+        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         array_ns=data_alloc.import_array_ns(backend),
     )
@@ -230,11 +230,11 @@ def test_rbf_interpolation_matrix_vertex(
     assert rbf_vec_coeff_v2.shape == rbf_vec_coeff_v2_ref.shape
     assert rbf_vec_coeff_v1_ref.shape == (
         icon_grid.num_vertices,
-        RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
+        RBF_STENCIL_SIZE[rbf_dim],
     )
     assert rbf_vec_coeff_v2_ref.shape == (
         icon_grid.num_vertices,
-        RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX],
+        RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_v1[start_index:],
@@ -284,7 +284,7 @@ def test_rbf_interpolation_matrix_edge(
         # order of coefficients computed by icon4py matches order of
         # coefficients in savepoint.
         grid_savepoint.e2c2e(),
-        rbf.InterpolationConfig.rbf_kernel[rbf_dim],
+        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         array_ns=data_alloc.import_array_ns(backend),
     )
@@ -300,7 +300,7 @@ def test_rbf_interpolation_matrix_edge(
     assert rbf_vec_coeff_e.shape == rbf_vec_coeff_e_ref.shape
     assert rbf_vec_coeff_e_ref.shape == (
         icon_grid.num_edges,
-        RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE],
+        RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_e[start_index:],

@@ -6,10 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import dataclasses
 import enum
 import math
-from types import MappingProxyType, ModuleType
+from types import ModuleType
 
 import numpy as np
 import scipy.linalg as sla
@@ -43,16 +42,12 @@ class InterpolationKernel(enum.Enum):
     INVERSE_MULTIQUADRATIC = 3
 
 
-@dataclasses.dataclass(frozen=True)
-class InterpolationConfig:
-    rbf_kernel: dict[RBFDimension, InterpolationKernel] = MappingProxyType(
-        {
-            RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
-            RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
-            RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
-            RBFDimension.GRADIENT: InterpolationKernel.GAUSSIAN,
-        }
-    )
+DEFAULT_RBF_KERNEL: dict[RBFDimension, InterpolationKernel] = {
+    RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
+    RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
+    RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
+    RBFDimension.GRADIENT: InterpolationKernel.GAUSSIAN,
+}
 
 
 def compute_rbf_scale(mean_characteristic_length: ta.wpfloat, dim: RBFDimension):
