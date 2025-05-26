@@ -108,10 +108,16 @@ def _dot_product(
     return array_ns.matmul(v1, v2_tilde)
 
 
-# NOTE: this one computes the pairwise arc lengths between elements in v, the
-# next version computes pairwise arc lengths between two different arrays
-# TODO: Combine?
 def _arc_length_pairwise(v: data_alloc.NDArray, array_ns: ModuleType = np) -> data_alloc.NDArray:
+    """
+    Compute the pairwise arc lengths between points in each row of v.
+
+    Args:
+        v: 3D array of shape (n, m, 3) where n is the number of elements,
+           m is the number of points per row (RBF dimension), and 3 is the
+           dimension of the points.
+        array_ns: numpy or cupy module to use for computations.
+    """
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
@@ -119,26 +125,28 @@ def _arc_length_pairwise(v: data_alloc.NDArray, array_ns: ModuleType = np) -> da
     # Use the dot product of the diagonals to get the norm of each point
     norms = array_ns.sqrt(array_ns.diagonal(arc_lengths, axis1=1, axis2=2))
     # Divide the dot products by the broadcasted norms
-    # TODO: Check that these are broadcast correctly. Leaving them out has
-    # almost no impact on result, since they're close to 1, but may affect
-    # precision.
-    arc_lengths = array_ns.divide(arc_lengths, norms[:, :, array_ns.newaxis])
-    arc_lengths = array_ns.divide(arc_lengths, norms[:, array_ns.newaxis, :])
+    array_ns.divide(arc_lengths, norms[:, :, array_ns.newaxis], out=arc_lengths)
+    array_ns.divide(arc_lengths, norms[:, array_ns.newaxis, :], out=arc_lengths)
     # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
     # inaccuracies)
-    arc_lengths = array_ns.clip(arc_lengths, -1.0, 1.0)
-    # TODO: avoid intermediates?
+    array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
     return array_ns.arccos(arc_lengths)
 
 
-# TODO: This assumes v1 is 2d and v3 is 3d
-# TODO: name?
-# TODO: this is pretty much the same as above, except we don't get the squares
-# of the norms directly from the first matmul
-# TODO: this is used only in one place, it's probably not as generic as it looks
-def _arc_length_2(
+def _arc_length_vector_matrix(
     v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
+    """
+    Compute the arc lengths between each point in v1 and the points in v2 at the same row.
+
+    Args:
+        v1: 2D array of shape (n, 3) where n is the number of elements and 3 is
+            the dimension of the points.
+        v2: 3D array of shape (n, m, 3) where n is the number of elements,  m is
+            the number of points per row (RBF dimension), and 3 is the dimension
+            of the points.
+        array_ns: numpy or cupy module to use for computations.
+    """
     # For pairs of points p1 and p2 compute:
     # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
     # Compute all pairs of dot products
@@ -146,11 +154,11 @@ def _arc_length_2(
     v1_norm = array_ns.linalg.norm(v1, axis=-1)
     v2_norm = array_ns.linalg.norm(v2, axis=-1)
     # Divide the dot products by the broadcasted norms
-    arc_lengths = array_ns.divide(arc_lengths, v1_norm[:, :, array_ns.newaxis])
-    arc_lengths = array_ns.divide(arc_lengths, v2_norm[:, array_ns.newaxis, :])
+    array_ns.divide(arc_lengths, v1_norm[:, :, array_ns.newaxis], out=arc_lengths)
+    array_ns.divide(arc_lengths, v2_norm[:, array_ns.newaxis, :], out=arc_lengths)
     # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
     # inaccuracies)
-    arc_lengths = array_ns.clip(arc_lengths, -1.0, 1.0)
+    array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
     return array_ns.squeeze(array_ns.arccos(arc_lengths), axis=1)
 
 
@@ -166,15 +174,6 @@ def _inverse_multiquadratic(
     scale: ta.wpfloat,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    """
-
-    Args:
-        distance: radial distance
-        scale: scaling parameter
-
-    Returns:
-
-    """
     val = distance / scale
     return 1.0 / array_ns.sqrt(1.0 + val * val)
 
@@ -274,7 +273,7 @@ def _compute_rbf_interpolation_matrix(
         axis=-1,
     )
     assert element_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = _arc_length_2(
+    vector_dist = _arc_length_vector_matrix(
         element_center[:, array_ns.newaxis, :], edge_center, array_ns=array_ns
     )
     assert vector_dist.shape == rbf_offset.shape
