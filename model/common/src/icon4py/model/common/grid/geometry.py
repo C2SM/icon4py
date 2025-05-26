@@ -486,21 +486,21 @@ class GridGeometry(factory.FieldSource):
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
         )
         self.register_provider(tangent_cell_wrapper)
-        cartesian_vertex_centers = factory.EmbeddedFieldOperatorProvider(
+        cartesian_vertices = factory.EmbeddedFieldOperatorProvider(
             # TODO: ..._on_vertices?
             func=math_helpers.geographical_to_cartesian_on_vertex.with_backend(self.backend),
             domain=(dims.VertexDim,),
             fields={
-                attrs.VERTEX_CENTER_X: attrs.VERTEX_CENTER_X,
-                attrs.VERTEX_CENTER_Y: attrs.VERTEX_CENTER_Y,
-                attrs.VERTEX_CENTER_Z: attrs.VERTEX_CENTER_Z,
+                attrs.VERTEX_X: attrs.VERTEX_X,
+                attrs.VERTEX_Y: attrs.VERTEX_Y,
+                attrs.VERTEX_Z: attrs.VERTEX_Z,
             },
             deps={
                 "lat": attrs.VERTEX_LAT,
                 "lon": attrs.VERTEX_LON,
             },
         )
-        self.register_provider(cartesian_vertex_centers)
+        self.register_provider(cartesian_vertices)
         cartesian_edge_centers = factory.EmbeddedFieldOperatorProvider(
             func=math_helpers.geographical_to_cartesian_on_edges.with_backend(self.backend),
             domain=(dims.EdgeDim,),

@@ -150,9 +150,9 @@ def test_rbf_interpolation_matrix_vertex(
     rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_matrix_vertex(
         geometry.get(geometry_attrs.VERTEX_LAT),
         geometry.get(geometry_attrs.VERTEX_LON),
-        geometry.get(geometry_attrs.VERTEX_CENTER_X),
-        geometry.get(geometry_attrs.VERTEX_CENTER_Y),
-        geometry.get(geometry_attrs.VERTEX_CENTER_Z),
+        geometry.get(geometry_attrs.VERTEX_X),
+        geometry.get(geometry_attrs.VERTEX_Y),
+        geometry.get(geometry_attrs.VERTEX_Z),
         geometry.get(geometry_attrs.EDGE_CENTER_X),
         geometry.get(geometry_attrs.EDGE_CENTER_Y),
         geometry.get(geometry_attrs.EDGE_CENTER_Z),
