@@ -51,47 +51,6 @@ def compute_c_lin_e(
     mask = array_ns.transpose(array_ns.tile(edge_owner_mask, (2, 1)))
     return array_ns.where(mask, c_lin_e, 0.0)
 
-@field_operator
-def _compute_nudgecoeffs(
-    refin_ctrl: fa.EdgeField[gtx.int32],
-    grf_nudge_start_e: gtx.int32,
-    nudge_max_coeffs: wpfloat,
-    nudge_efold_width: wpfloat,
-    nudge_zone_width: gtx.int32,
-) -> fa.EdgeField[wpfloat]:
-    return where(
-        ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
-        nudge_max_coeffs
-        * exp((-(astype(refin_ctrl - grf_nudge_start_e, wpfloat))) / (2.0 * nudge_efold_width)),
-        0.0,
-    )
-
-
-# TODO (@halungge) not registered in factory
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_nudgecoeffs(
-    nudgecoeffs_e: fa.EdgeField[wpfloat],
-    refin_ctrl: fa.EdgeField[gtx.int32],
-    grf_nudge_start_e: gtx.int32,
-    nudge_max_coeffs: wpfloat,
-    nudge_efold_width: wpfloat,
-    nudge_zone_width: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-):
-    """Compute nudging coefficient for edges based the grid refinement level of an edge."""
-    _compute_nudgecoeffs(
-        refin_ctrl,
-        grf_nudge_start_e,
-        nudge_max_coeffs,
-        nudge_efold_width,
-        nudge_zone_width,
-        out=nudgecoeffs_e,
-        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
-    )
-
-
-
 @gtx.field_operator
 def compute_geofac_div(
     primal_edge_length: fa.EdgeField[ta.wpfloat],

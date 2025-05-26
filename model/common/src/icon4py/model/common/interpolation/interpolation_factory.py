@@ -26,8 +26,7 @@ from icon4py.model.common.interpolation import (
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
+import icon4py.model.common.metrics.compute_nudgecoeffs as common_metrics
 
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
@@ -86,7 +85,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def _register_computed_fields(self):
 
         nudgecoeffs_e = factory.ProgramFieldProvider(
-            func=interpolation_fields.compute_nudgecoeffs.with_backend(None),
+            func=common_metrics.compute_nudgecoeffs.with_backend(None),
             domain={dims.EdgeDim: (edge_domain(h_grid.Zone.NUDGING_LEVEL_2), edge_domain(h_grid.Zone.END))},
             fields={attrs.NUDGECOEFFS: attrs.NUDGECOEFFS},
             deps={

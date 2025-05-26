@@ -120,7 +120,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 {
                     # TODO (Yilu): here interface_model_height
                     attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
-                    "z_ifc_sliced": z_ifc_sliced,
+                    "z_ifc_sliced": z_ifc_sliced, #TODO (Yilu): z_ifc could be deleted?
                     "vct_a": vct_a,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
