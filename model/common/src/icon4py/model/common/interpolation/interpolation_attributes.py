@@ -40,8 +40,8 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=NUDGECOEFFS,
         long_name="nudgecoeffs_e",
         units="", # TODO (Yilu) : need to check unit
-        dims=(dims.EdgeDim),
-        icon_var_name="nudgecoeffs",
+        dims=(dims.EdgeDim,),
+        icon_var_name="nudgecoeffs_e",
         dtype=ta.wpfloat,
     ),
     C_BLN_AVG: dict(

@@ -87,7 +87,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         nudgecoeffs_e = factory.ProgramFieldProvider(
             func=interpolation_fields.compute_nudgecoeffs.with_backend(None),
-            # TODO (Yilu): EdgeDims is not correct
             domain={dims.EdgeDim: (edge_domain(h_grid.Zone.NUDGING_LEVEL_2), edge_domain(h_grid.Zone.END))},
             fields={attrs.NUDGECOEFFS: attrs.NUDGECOEFFS},
             deps={

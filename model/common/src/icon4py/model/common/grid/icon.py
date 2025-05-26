@@ -208,6 +208,9 @@ class IconGrid(base.BaseGrid):
     @property
     def refinement_control(self) -> dict[gtx.Dimension, data_alloc.NDArray]:
         """Return the refinement control field for the grid."""
+        self._refinement_control[dims.CellDim] = gtx.as_field((dims.CellDim,), self._refinement_control[dims.CellDim])
+        self._refinement_control[dims.EdgeDim] = gtx.as_field((dims.EdgeDim,), self._refinement_control[dims.EdgeDim])
+        self._refinement_control[dims.VertexDim] = gtx.as_field((dims.VertexDim,), self._refinement_control[dims.VertexDim])
         return self._refinement_control
 
     @utils.chainable
