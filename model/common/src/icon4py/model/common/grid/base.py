@@ -8,6 +8,7 @@
 import dataclasses
 import enum
 import functools
+import logging
 import uuid
 import warnings
 from abc import ABC, abstractmethod
@@ -20,9 +21,10 @@ from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
-from icon4py.model.common.grid.grid_manager import GridFile, _log
+from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+_log = logging.getLogger(__name__)
 
 class MissingConnectivity(ValueError):
     pass
@@ -158,7 +160,7 @@ class BaseGrid(ABC):
         self.size[dims.EdgeDim] = self.config.num_edges
         self.size[dims.KDim] = self.config.num_levels
 
-    def _get_offset_provider(self, dim, from_dim, to_dim):
+    def _get_offset_provider(self, dim, from_dim, to_dim, with_no_skip_value=True):
         if dim not in self.connectivities:
             raise MissingConnectivity(f"no neighbor_table for dimension {dim}.")
         assert (
@@ -166,12 +168,17 @@ class BaseGrid(ABC):
         ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
             dim, self.connectivities[dim].dtype
         )
-        return gtx.as_connectivity(
+        connectivity = gtx.as_connectivity(
             [from_dim, dim],
             to_dim,
             self.connectivities[dim],
             skip_value=-1 if self._has_skip_values(dim) else None,
         )
+        if with_no_skip_value:
+            connectivity = replace_skip_values(
+                connectivity, array_ns=data_alloc.array_ns(self.config.on_gpu)
+            )
+        return connectivity
 
     def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
@@ -235,9 +242,8 @@ def replace_skip_values(
     Returns:
         gtx.Connectivity object with manipulated neighbor tables
     """
-    # TODO @halungge: neighbour tables are copied, when constructing the Connectivity the original should be discarded. -> do in other PR
-    # ?? does this work for the wrapper?
-    # TODO @halungge: hide behind feature guard.
+    # TODO @halungge: neighbour tables are copied, when constructing the Connectivity: should the original be discarded from the grid?
+    #   Would that work for the wrapper?
 
     def _has_skip_values(neighbor_table: data_alloc.NDArray) -> bool:
         return array_ns.amin(neighbor_table).item() == GridFile.INVALID_INDEX
@@ -245,7 +251,7 @@ def replace_skip_values(
     if gtx_common.is_neighbor_connectivity(connectivity):
         _log.debug(f"Checking {connectivity.domain} for invalid index `{GridFile.INVALID_INDEX}`.")
         neighbor_table = connectivity.ndarray
-        if _has_skip_values(neighbor_table, array_ns=array_ns):
+        if _has_skip_values(neighbor_table):
             _log.info(f"Found invalid indices in {connectivity.domain}. Replacing...")
             max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
             assert array_ns.all(

@@ -21,7 +21,6 @@ from typing import (
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.grid.geometry_attributes as attrs
 import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import (
     constants,
@@ -36,6 +35,7 @@ from icon4py.model.common.grid import (
     grid_manager as gm,
     horizontal as h_grid,
     icon,
+    gridfile, geometry_attributes as attrs
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -147,11 +147,16 @@ class GridGeometry(factory.FieldSource):
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
                 # TODO (@magdalena) rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
-                attrs.EDGE_CELL_DISTANCE: extra_fields[gm.GeometryName.EDGE_CELL_DISTANCE],
-                attrs.EDGE_VERTEX_DISTANCE: extra_fields[gm.GeometryName.EDGE_VERTEX_DISTANCE],
-                attrs.CELL_AREA: extra_fields[gm.GeometryName.CELL_AREA],
-                attrs.DUAL_AREA: extra_fields[gm.GeometryName.DUAL_AREA],
-                attrs.TANGENT_ORIENTATION: extra_fields[gm.GeometryName.TANGENT_ORIENTATION],
+                attrs.EDGE_CELL_DISTANCE: extra_fields[
+                   gridfile.GeometryName.EDGE_CELL_DISTANCE],
+                attrs.EDGE_VERTEX_DISTANCE: extra_fields[
+                    gridfile.GeometryName.EDGE_VERTEX_DISTANCE],
+                attrs.CELL_AREA: extra_fields[
+                    gridfile.GeometryName.CELL_AREA],
+                attrs.DUAL_AREA: extra_fields[
+                    gridfile.GeometryName.DUAL_AREA],
+                attrs.TANGENT_ORIENTATION: extra_fields[
+                    gridfile.GeometryName.TANGENT_ORIENTATION],
                 "edge_owner_mask": gtx.as_field(
                     (dims.EdgeDim,),
                     decomposition_info.owner_mask(dims.EdgeDim),
@@ -159,10 +164,10 @@ class GridGeometry(factory.FieldSource):
                     allocator=self._backend,
                 ),
                 attrs.CELL_NORMAL_ORIENTATION: extra_fields[
-                    gm.GeometryName.CELL_NORMAL_ORIENTATION
+                    gridfile.GeometryName.CELL_NORMAL_ORIENTATION
                 ],
                 attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
-                    gm.GeometryName.EDGE_ORIENTATION_ON_VERTEX
+                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
                 ],
                 "vertex_owner_mask": gtx.as_field(
                     (dims.VertexDim,),
@@ -630,7 +635,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):
-        boundary_edges = xp.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
+        boundary_edges = xp.where(e2c_table[:, i] == gridfile.GridFile.INVALID_INDEX)
         lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
         lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
 

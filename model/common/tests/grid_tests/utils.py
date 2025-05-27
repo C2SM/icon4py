@@ -7,10 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.testing import datatest_utils as dt_utils
+from typing import Optional
 
+from gt4py.next import backend as gtx_backend
+
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid, grid_manager as gm
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
 
 r04b09_dsl_grid_path = dt_utils.GRIDS_PATH.joinpath(dt_utils.REGIONAL_EXPERIMENT)
 r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1.tar.gz").name
@@ -59,3 +62,16 @@ def valid_boundary_zones_for_dim(dim: dims.Dimension):
     ]
 
     yield from _domain(dim, zones)
+
+
+R02B04_GLOBAL_NUM_CELLS = 20480
+R02B04_GLOBAL_NUM_EDGES = 30720
+R02B04_GLOBAL_NUM_VERTEX = 10242
+managers = {}
+
+
+def run_grid_manager(file: str, backend: Optional[gtx_backend.Backend]) -> gm.GridManager:
+    if not managers.get(file):
+        manager = gridtest_utils.get_grid_manager(file, num_levels=1, backend=backend)
+        managers[file] = manager
+    return managers.get(file)

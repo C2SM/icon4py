@@ -14,6 +14,7 @@ import numpy as np
 from gt4py.next import where
 
 import icon4py.model.common.field_type_aliases as fa
+import icon4py.model.common.grid.gridfile
 import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
@@ -784,7 +785,7 @@ def compute_e_flx_avg(
     index = array_ns.arange(llb, e2c.shape[0])
     for i in range(c2e.shape[1]):
         # INVALID_INDEX
-        if i <= gm.GridFile.INVALID_INDEX:
+        if i <= icon4py.model.common.grid.gridfile.GridFile.INVALID_INDEX:
             continue
         e_flx_avg[llb:, 0] = array_ns.where(
             owner_mask[llb:],
@@ -872,7 +873,7 @@ def compute_cells_aw_verts(
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
         for je in range(v2e.shape[1]):
             # INVALID_INDEX
-            if v2e[jv, je] == gm.GridFile.INVALID_INDEX or (
+            if v2e[jv, je] == icon4py.model.common.grid.gridfile.GridFile.INVALID_INDEX or (
                 je > 0 and v2e[jv, je] == v2e[jv, je - 1]
             ):
                 continue
@@ -881,7 +882,7 @@ def compute_cells_aw_verts(
             cell_offset_idx_0 = e2c[ile, 0]
             cell_offset_idx_1 = e2c[ile, 1]
             for jc in range(v2e.shape[1]):
-                if v2c[jv, jc] == gm.GridFile.INVALID_INDEX or (
+                if v2c[jv, jc] == icon4py.model.common.grid.gridfile.GridFile.INVALID_INDEX or (
                     jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]
                 ):
                     continue
