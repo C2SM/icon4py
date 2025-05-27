@@ -408,8 +408,8 @@ def compute_rbf_interpolation_coeffs_cell(
 
 
 def compute_rbf_interpolation_coeffs_edge(
-    edge_center_lat: data_alloc.NDArray,
-    edge_center_lon: data_alloc.NDArray,
+    edge_lat: data_alloc.NDArray,
+    edge_lon: data_alloc.NDArray,
     edge_center_x: data_alloc.NDArray,
     edge_center_y: data_alloc.NDArray,
     edge_center_z: data_alloc.NDArray,
@@ -425,8 +425,8 @@ def compute_rbf_interpolation_coeffs_edge(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     coeffs = _compute_rbf_interpolation_coeffs(
-        edge_center_lat,
-        edge_center_lon,
+        edge_lat,
+        edge_lon,
         edge_center_x,
         edge_center_y,
         edge_center_z,
@@ -448,11 +448,11 @@ def compute_rbf_interpolation_coeffs_edge(
 
 
 def compute_rbf_interpolation_coeffs_vertex(
-    vertex_center_lat: data_alloc.NDArray,
-    vertex_center_lon: data_alloc.NDArray,
-    vertex_center_x: data_alloc.NDArray,
-    vertex_center_y: data_alloc.NDArray,
-    vertex_center_z: data_alloc.NDArray,
+    vertex_lat: data_alloc.NDArray,
+    vertex_lon: data_alloc.NDArray,
+    vertex_x: data_alloc.NDArray,
+    vertex_y: data_alloc.NDArray,
+    vertex_z: data_alloc.NDArray,
     edge_center_x: data_alloc.NDArray,
     edge_center_y: data_alloc.NDArray,
     edge_center_z: data_alloc.NDArray,
@@ -469,11 +469,11 @@ def compute_rbf_interpolation_coeffs_vertex(
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
     coeffs = _compute_rbf_interpolation_coeffs(
-        vertex_center_lat,
-        vertex_center_lon,
-        vertex_center_x,
-        vertex_center_y,
-        vertex_center_z,
+        vertex_lat,
+        vertex_lon,
+        vertex_x,
+        vertex_y,
+        vertex_z,
         edge_center_x,
         edge_center_y,
         edge_center_z,

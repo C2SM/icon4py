@@ -8,6 +8,7 @@
 
 import functools
 import logging
+import math
 from typing import Optional
 
 import gt4py.next as gtx
@@ -21,6 +22,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
+from icon4py.model.common.grid.states import compute_mean_cell_area_for_sphere as mean_cell_area
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_fields,
@@ -54,8 +56,22 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
+        mean_characteristic_length = math.sqrt(
+            mean_cell_area(constants.EARTH_RADIUS, grid.global_num_cells)
+        )
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
-        self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0}
+        self._config = {
+            "divavg_cntrwgt": 0.5,
+            "weighting_factor": 0.0,
+            "rbf_kernel_c": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
+            "rbf_kernel_e": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
+            "rbf_kernel_v": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
+            "rbf_scale_c": rbf.compute_rbf_scale(mean_characteristic_length, rbf.RBFDimension.CELL),
+            "rbf_scale_e": rbf.compute_rbf_scale(mean_characteristic_length, rbf.RBFDimension.EDGE),
+            "rbf_scale_v": rbf.compute_rbf_scale(
+                mean_characteristic_length, rbf.RBFDimension.VERTEX
+            ),
+        }
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -311,18 +327,72 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
-                # TODO: Config?
-                "rbf_kernel": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL].value,
-                # TODO: mean_cell_area?
-                # "scale_factor": rbf.compute_rbf_scale(math.sqrt(self.grid.mean_cell_area()), rbf.RBFDimension.CELL), # noqa: ERA001
-                "scale_factor": 0.5,  # TODO: How to get mean_cell_area?
-                # TODO:
+                "rbf_kernel": self._config["rbf_kernel_c"].value,
+                "scale_factor": self._config["rbf_scale_c"],
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
         )
         self.register_provider(rbf_vec_coeff_c)
+
+        rbf_vec_coeff_e = factory.NumpyFieldsProvider(
+            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=self._xp),
+            fields=(attrs.RBF_VEC_COEFF_E,),
+            domain=(dims.CellDim, dims.KDim),  # TODO: second dim, rbf stencil size?
+            deps={
+                "edge_lat": geometry_attrs.EDGE_LAT,
+                "edge_lon": geometry_attrs.EDGE_LON,
+                "edge_center_x": geometry_attrs.EDGE_CENTER_X,
+                "edge_center_y": geometry_attrs.EDGE_CENTER_Y,
+                "edge_center_z": geometry_attrs.EDGE_CENTER_Z,
+                "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
+                "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
+                "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
+                "edge_dual_normal_u": geometry_attrs.EDGE_DUAL_U,
+                "edge_dual_normal_v": geometry_attrs.EDGE_DUAL_V,
+            },
+            connectivities={"rbf_offset": dims.E2C2EDim},
+            params={
+                "rbf_kernel": self._config["rbf_kernel_e"].value,
+                "scale_factor": self._config["rbf_scale_e"],
+                "horizontal_start": self.grid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
+            },
+        )
+        self.register_provider(rbf_vec_coeff_e)
+
+        rbf_vec_coeff_v = factory.NumpyFieldsProvider(
+            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_vertex, array_ns=self._xp),
+            fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
+            domain=(
+                dims.VertexDim,
+                dims.KDim,
+            ),  # TODO: KDim? Custom dim? RBFVertexDim = Dimension("RBFVertex")?
+            deps={
+                "vertex_lat": geometry_attrs.VERTEX_LAT,
+                "vertex_lon": geometry_attrs.VERTEX_LON,
+                "vertex_x": geometry_attrs.VERTEX_X,
+                "vertex_y": geometry_attrs.VERTEX_Y,
+                "vertex_z": geometry_attrs.VERTEX_Z,
+                "edge_center_x": geometry_attrs.EDGE_CENTER_X,
+                "edge_center_y": geometry_attrs.EDGE_CENTER_Y,
+                "edge_center_z": geometry_attrs.EDGE_CENTER_Z,
+                "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
+                "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
+                "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
+            },
+            connectivities={"rbf_offset": dims.V2EDim},
+            params={
+                "rbf_kernel": self._config["rbf_kernel_v"].value,
+                "scale_factor": self._config["rbf_scale_v"],
+                "horizontal_start": self.grid.start_index(
+                    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
+            },
+        )
+        self.register_provider(rbf_vec_coeff_v)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
