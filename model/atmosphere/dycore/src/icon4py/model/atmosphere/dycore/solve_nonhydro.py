@@ -32,6 +32,9 @@ from icon4py.model.atmosphere.dycore.stencils import compute_cell_diagnostics_fo
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
+from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels import (
+    interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels,
+)
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
@@ -474,7 +477,9 @@ class SolveNonhydro:
         self._predictor_stencils_37_38 = nhsolve_stencils.predictor_stencils_37_38.with_backend(
             self._backend
         )
-        self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend)
+        self._interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels = interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels.interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels.with_backend(
+            self._backend
+        )
         self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend)
         self._en_smag_fac_for_zero_nshift = smagorinsky.en_smag_fac_for_zero_nshift.with_backend(
             self._backend
@@ -1090,12 +1095,12 @@ class SolveNonhydro:
                 offset_provider=self._grid.offset_providers,
             )
 
-        self._stencils_39_40(
+        self._interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
             e_bln_c_s=self._interpolation_state.e_bln_c_s,
-            z_w_concorr_me=self._contravariant_correction_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
             wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
-            w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             k_field=self.k_field,
             nflatlev_startindex_plus1=gtx.int32(self._vertical_params.nflatlev + 1),
             nlev=self._grid.num_levels,
