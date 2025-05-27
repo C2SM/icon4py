@@ -236,11 +236,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        concat_where(
-            dims.KDim == 0,
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            vertical_mass_flux_at_cells_on_half_levels,
-        ),
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
     (
@@ -507,11 +503,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        concat_where(
-            dims.KDim == 0,
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            vertical_mass_flux_at_cells_on_half_levels,
-        ),
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
     (
