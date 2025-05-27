@@ -2,3 +2,19 @@ linear_quantization_zlib_compressors:
   params:
     linear_quantization_bits: 4
     zlib_level: 9
+
+bitround_zlib_compressors:
+  params:
+    bitround_bits: 6
+    zlib_level: 9
+
+zfp_asinh_compressors:
+ params:
+     asinh_linear_width: 9
+     zfp_mode: "fixed-accuracy"
+     tolerance: 0.001
+
+sz3_eb_compressors:
+    params:
+        sz3_eb_mode:: "rel"
+        sz3_eb_rel: 0.001

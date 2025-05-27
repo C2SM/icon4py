@@ -1,25 +1,36 @@
-from collections.abc import Sequence
-from collections import OrderedDict
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
+import sys
+import traceback
+from collections import OrderedDict
+from collections.abc import Sequence
+
 import click
 import humanize
+import numpy as np
 import xarray as xr
-import sys
 import yaml
-import traceback
 
 
 def open_netcdf(netcdf_file: str, field_to_compress: str):
     ds = xr.open_dataset(netcdf_file)
-    
+
     if field_to_compress not in ds.data_vars:
         click.echo(f"Field {field_to_compress} not found in NetCDF file.")
+        click.echo(f"Available fields in the dataset: {list(ds.data_vars.keys())}.")
         click.echo("Aborting...")
         sys.exit(1)
-    
+
     click.echo(f"netcdf_file.nbytes = {humanize.naturalsize(ds.nbytes, binary=True)}")
-    click.echo(f"field_to_compress.nbytes = {humanize.naturalsize(ds[field_to_compress].nbytes, binary=True)}")
+    click.echo(
+        f"field_to_compress.nbytes = {humanize.naturalsize(ds[field_to_compress].nbytes, binary=True)}"
+    )
 
     return ds
 
@@ -32,22 +43,20 @@ def ordered_yaml_loader():
         loader.flatten_mapping(node)
         return OrderedDict(loader.construct_pairs(node))
 
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
+    OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
 
     return OrderedLoader
 
 
 def get_filter_parameters(parameters_file: str, filter_name: str):
-    with open(parameters_file, 'r') as f:
+    with open(parameters_file, "r") as f:
         params = yaml.load(f, Loader=ordered_yaml_loader())
-        
+
     try:
         filter_config = params[filter_name]["params"]
         return tuple(filter_config.values())
-    
-    except Exception as e:
+
+    except Exception:
         click.echo("An unexpected error occurred:", err=True)
         traceback.print_exc(file=sys.stderr)
 
@@ -162,7 +171,7 @@ def format_compression_metrics(
         )
 
     if timings is not None:
-        table["encode throughput [raw GB/s]"] = [
+        table["encode throughout [raw GB/s]"] = [
             round(
                 1e-9
                 * decoded_bytes[HashableCodec(c)]
@@ -183,7 +192,7 @@ def format_compression_metrics(
             else [0.0]
         )
 
-        table["decode throughput [raw GB/s]"] = [
+        table["decode throughout [raw GB/s]"] = [
             round(
                 1e-9
                 * decoded_bytes[HashableCodec(c)]

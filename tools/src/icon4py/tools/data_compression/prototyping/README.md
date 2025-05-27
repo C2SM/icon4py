@@ -17,8 +17,15 @@ pip install -e .
 ```
 --------------------------------------------------------------------------------
 
-Usage: data_compression_cscs_exclaim linear_quantization_zlib_compressors 
+Usage: data_compression_cscs_exclaim linear_quantization_zlib_compressors
            [OPTIONS] NETCDF_FILE FIELD_TO_COMPRESS PARAMETERS_FILE
+
+Example:
+```
+
+data_compression_cscs_exclaim linear_quantization_zlib_compressors netCDF_files/tigge_pl_t_q_dx=2_2024_08_02.nc t parameters.yaml
+
+````
 
 Options:
   --help  Show this message and exit.
@@ -26,3 +33,4 @@ Options:
 --------------------------------------------------------------------------------
 
 ```
+````

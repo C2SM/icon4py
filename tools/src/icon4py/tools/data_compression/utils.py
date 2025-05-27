@@ -302,7 +302,7 @@ def format_compression_metrics(
         )
 
     if timings is not None:
-        table["encode throughput [raw GB/s]"] = [
+        table["encode throughout [raw GB/s]"] = [
             round(
                 1e-9
                 * decoded_bytes[HashableCodec(c)]
@@ -323,7 +323,7 @@ def format_compression_metrics(
             else [0.0]
         )
 
-        table["decode throughput [raw GB/s]"] = [
+        table["decode throughout [raw GB/s]"] = [
             round(
                 1e-9
                 * decoded_bytes[HashableCodec(c)]

@@ -412,8 +412,8 @@ for compressor_name, (errors, stats, paa_dist, dwt_dist, euclid_dist) in compres
             "Linf Error": error_data.get("Relative_Error_Linf", None),
             "Encode Instructions [# / raw B]": stats[variable]["encode instructions [#/B]"],
             "Decode Instructions [# / raw B]": stats[variable]["decode instructions [#/B]"],
-            "Encode Throughput [raw GB / s]": stats[variable]["encode throughput [raw GB/s]"],
-            "Decode Throughput [raw GB / s]": stats[variable]["decode throughput [raw GB/s]"],
+            "Encode Throughout [raw GB / s]": stats[variable]["encode throughout [raw GB/s]"],
+            "Decode Throughout [raw GB / s]": stats[variable]["decode throughout [raw GB/s]"],
         }
         data.append(row)
 
