@@ -8,6 +8,8 @@
 
 from datetime import datetime, timedelta
 
+from gt4py.next import backend as gtx_backend
+
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.driver import icon4py_configuration as driver_config
@@ -105,6 +107,7 @@ def mch_ch_r04b09_dsl_icon4pyrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
+    backend: gtx_backend.Backend,
     ndyn_substeps: int,
 ) -> driver_config.Icon4pyRunConfig:
     """
@@ -120,7 +123,7 @@ def mch_ch_r04b09_dsl_icon4pyrun_config(
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=True,
         restart_mode=not diffusion_linit_init,
-        backend_name="gtfn_cpu",
+        backend=backend,
     )
 
 
@@ -128,6 +131,7 @@ def exclaim_ape_icon4pyrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
+    backend: gtx_backend.Backend,
     ndyn_substeps: int,
 ) -> driver_config.Icon4pyRunConfig:
     """
@@ -143,7 +147,7 @@ def exclaim_ape_icon4pyrun_config(
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=False,
         restart_mode=not diffusion_linit_init,
-        backend_name="gtfn_cpu",
+        backend=backend,
     )
 
 
@@ -152,13 +156,14 @@ def construct_icon4pyrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
+    backend: gtx_backend.Backend,
     ndyn_substeps: int = 5,
 ):
     if name.lower() in "mch_ch_r04b09_dsl":
         return mch_ch_r04b09_dsl_icon4pyrun_config(
-            date_init, date_exit, diffusion_linit_init, ndyn_substeps
+            date_init, date_exit, diffusion_linit_init, backend, ndyn_substeps
         )
     elif name.lower() in "exclaim_ape_r02b04":
         return exclaim_ape_icon4pyrun_config(
-            date_init, date_exit, diffusion_linit_init, ndyn_substeps
+            date_init, date_exit, diffusion_linit_init, backend, ndyn_substeps
         )
