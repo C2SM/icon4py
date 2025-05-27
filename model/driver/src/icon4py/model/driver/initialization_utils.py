@@ -29,7 +29,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
+from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
 
@@ -135,15 +135,15 @@ def model_initialization_serialbox(
         diffusion_init_savepoint,
     )
     solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
-        exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
-        rho_ic=solve_nonhydro_init_savepoint.rho_ic(),
-        ddt_exner_phy=solve_nonhydro_init_savepoint.ddt_exner_phy(),
+        theta_v_at_cells_on_half_levels=solve_nonhydro_init_savepoint.theta_v_ic(),
+        perturbed_exner_at_cells_on_model_levels=solve_nonhydro_init_savepoint.exner_pr(),
+        rho_at_cells_on_half_levels=solve_nonhydro_init_savepoint.rho_ic(),
+        exner_tendency_due_to_slow_physics=solve_nonhydro_init_savepoint.ddt_exner_phy(),
         grf_tend_rho=solve_nonhydro_init_savepoint.grf_tend_rho(),
         grf_tend_thv=solve_nonhydro_init_savepoint.grf_tend_thv(),
         grf_tend_w=solve_nonhydro_init_savepoint.grf_tend_w(),
-        mass_fl_e=solve_nonhydro_init_savepoint.mass_fl_e(),
-        ddt_vn_phy=solve_nonhydro_init_savepoint.ddt_vn_phy(),
+        mass_flux_at_edges_on_model_levels=solve_nonhydro_init_savepoint.mass_fl_e(),
+        normal_wind_tendency_due_to_slow_physics_process=solve_nonhydro_init_savepoint.ddt_vn_phy(),
         grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             velocity_init_savepoint.ddt_vn_apc_pc(1),
@@ -156,10 +156,10 @@ def model_initialization_serialbox(
         tangential_wind=velocity_init_savepoint.vt(),
         vn_on_half_levels=velocity_init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=velocity_init_savepoint.w_concorr_c(),
-        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
-        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
-        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
-        exner_dyn_incr=solve_nonhydro_init_savepoint.exner_dyn_incr(),
+        rho_iau_increment=solve_nonhydro_init_savepoint.rho_incr(),
+        normal_wind_iau_increment=solve_nonhydro_init_savepoint.vn_incr(),
+        exner_iau_increment=solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dynamical_increment=solve_nonhydro_init_savepoint.exner_dyn_incr(),
     )
 
     diagnostic_state = diagnostics.DiagnosticState(
@@ -209,8 +209,8 @@ def model_initialization_serialbox(
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
-        mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=solve_nonhydro_init_savepoint.mass_flx_ic(),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
             grid,
             dims.CellDim,
             dims.KDim,
@@ -370,7 +370,7 @@ def read_geometry_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-# TODO (Chia RUu): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
+# TODO (Chia Rui): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
     return sb.IconSerialDataProvider(
         backend=backend,
@@ -381,7 +381,7 @@ def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
     )
 
 
-# TODO (Chia RUu): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
+# TODO (Chia Rui): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
         grid_id, grid_root, grid_level
@@ -475,21 +475,21 @@ def read_static_fields(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
             rayleigh_w=metrics_savepoint.rayleigh_w(),
-            exner_exfac=metrics_savepoint.exner_exfac(),
-            exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+            time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
+            reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
             wgtfac_c=metrics_savepoint.wgtfac_c(),
             wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
             inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-            rho_ref_mc=metrics_savepoint.rho_ref_mc(),
-            theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-            vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
-            d_exner_dz_ref_ic=metrics_savepoint.d_exner_dz_ref_ic(),
+            reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
+            reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
+            exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
+            ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
             ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-            theta_ref_ic=metrics_savepoint.theta_ref_ic(),
+            reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
             d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
             d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
-            rho_ref_me=metrics_savepoint.rho_ref_me(),
-            theta_ref_me=metrics_savepoint.theta_ref_me(),
+            reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
+            reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
             ddxn_z_full=metrics_savepoint.ddxn_z_full(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
@@ -499,9 +499,9 @@ def read_static_fields(
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),
             wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid.num_levels),
-            vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
-            hmask_dd3d=metrics_savepoint.hmask_dd3d(),
-            scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+            exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
+            horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
+            scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
             coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
             coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),

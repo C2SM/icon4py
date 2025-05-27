@@ -454,7 +454,7 @@ class Diffusion:
 
         diffusion_utils._init_nabla2_factor_in_upper_damping_zone.with_backend(self._backend)(
             physical_heights=self._vertical_grid.interface_physical_height,
-            nrdmax=self._vertical_grid.end_index_of_damping_layer,
+            end_index_of_damping_layer=self._vertical_grid.end_index_of_damping_layer,
             nshift=0,
             heights_nrd_shift=self._vertical_grid.interface_physical_height.ndarray[
                 self._vertical_grid.end_index_of_damping_layer + 1
@@ -467,9 +467,9 @@ class Diffusion:
 
         self._determine_horizontal_domains()
 
-        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
-            self._grid.offset_providers
-        )
+        # TODO(edopao): we should call gtx.common.offset_provider_to_type()
+        #   but this requires some changes in gt4py domain inference.
+        self.compile_time_connectivities = self._grid.offset_providers
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
@@ -914,6 +914,7 @@ class Diffusion:
             "_backend",
             "_exchange",
             "_grid",
+            "compile_time_connectivities",
             *[
                 name
                 for name in self.__dict__.keys()

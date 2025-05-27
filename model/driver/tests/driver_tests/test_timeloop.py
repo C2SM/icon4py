@@ -130,10 +130,9 @@ def test_run_timeloop_single_step(
     backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
-        # it does not matter what backend is set here because the granules are set externally in this test
         config = icon4py_configuration.read_config(
-            icon4py_driver_backend="gtfn_cpu",
             experiment_type=experiment,
+            backend=backend,
         )
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config
@@ -148,6 +147,7 @@ def test_run_timeloop_single_step(
             timeloop_date_exit,
             timeloop_diffusion_linit_init,
             ndyn_substeps=ndyn_substeps,
+            backend=backend,
         )
 
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -188,7 +188,7 @@ def test_run_timeloop_single_step(
     sp = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(nonhydro_config)
     sp_v = savepoint_velocity_init
-    do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
+    do_prep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 
     linit = sp.get_metadata("linit").get("linit")
 
@@ -223,21 +223,21 @@ def test_run_timeloop_single_step(
         bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
-        exner_exfac=metrics_savepoint.exner_exfac(),
-        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
+        reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-        rho_ref_mc=metrics_savepoint.rho_ref_mc(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
-        d_exner_dz_ref_ic=metrics_savepoint.d_exner_dz_ref_ic(),
+        reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
+        reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
+        exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
+        ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-        theta_ref_ic=metrics_savepoint.theta_ref_ic(),
+        reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
         d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
         d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
-        rho_ref_me=metrics_savepoint.rho_ref_me(),
-        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
+        reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
@@ -247,9 +247,9 @@ def test_run_timeloop_single_step(
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
         wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
-        vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
-        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
-        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
+        horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
+        scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
         coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
@@ -275,8 +275,8 @@ def test_run_timeloop_single_step(
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
-        mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
             icon_grid,
             dims.CellDim,
             dims.KDim,
@@ -286,15 +286,15 @@ def test_run_timeloop_single_step(
 
     current_index, next_index = (1, 0) if not linit else (0, 1)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
+        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
+        perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
+        rho_at_cells_on_half_levels=sp.rho_ic(),
+        exner_tendency_due_to_slow_physics=sp.ddt_exner_phy(),
         grf_tend_rho=sp.grf_tend_rho(),
         grf_tend_thv=sp.grf_tend_thv(),
         grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
+        mass_flux_at_edges_on_model_levels=sp.mass_fl_e(),
+        normal_wind_tendency_due_to_slow_physics_process=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
@@ -305,10 +305,16 @@ def test_run_timeloop_single_step(
         tangential_wind=sp_v.vt(),
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=sp.exner_dyn_incr(),
+        rho_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, backend=backend
+        ),  # sp.rho_incr(),
+        normal_wind_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),  # sp.vn_incr(),
+        exner_iau_increment=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, backend=backend
+        ),  # sp.exner_incr(),
+        exner_dynamical_increment=sp.exner_dyn_incr(),
     )
 
     timeloop = icon4py_driver.TimeLoop(icon4pyrun_config, diffusion_granule, solve_nonhydro_granule)

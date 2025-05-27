@@ -10,9 +10,10 @@ import datetime
 import functools
 import logging
 
+from gt4py.next import backend as gtx_backend
+
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
-from icon4py.model.common import model_backends
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
 
@@ -24,12 +25,12 @@ n_substeps_reduced = 2
 
 @dataclasses.dataclass(frozen=True)
 class Icon4pyRunConfig:
-    backend_name: str
+    backend: gtx_backend.Backend
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
 
-    # TODO (Chia Rui): check ICON code if we need to define extra ndyn_substeps in timeloop that changes in runtime
+    # TODO (Chia Rui): ndyn_substeps in timeloop may change in runtime
     n_substeps: int = 5
     """ndyn_substeps in ICON"""
 
@@ -42,16 +43,9 @@ class Icon4pyRunConfig:
 
     restart_mode: bool = False
 
-    def __post_init__(self):
-        if self.backend_name not in model_backends.BACKENDS:
-            raise ValueError(
-                f"Invalid driver backend: {self.backend_name}. \n"
-                f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
-            )
-
     @functools.cached_property
     def backend(self):
-        return model_backends.BACKENDS[self.backend_name]
+        return self.backend
 
 
 @dataclasses.dataclass
@@ -63,8 +57,8 @@ class Icon4pyConfig:
 
 
 def read_config(
-    icon4py_driver_backend: str,
-    experiment_type: driver_init.ExperimentType = driver_init.ExperimentType.ANY,
+    experiment_type: driver_init.ExperimentType,
+    backend: gtx_backend.Backend,
 ) -> Icon4pyConfig:
     def _mch_ch_r04b09_vertical_config():
         return v_grid.VerticalGridConfig(
@@ -125,7 +119,7 @@ def read_config(
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
-            divdamp_fac=0.0025,
+            fourth_order_divdamp_factor=0.0025,
         )
 
     def _mch_ch_r04b09_config():
@@ -136,7 +130,7 @@ def read_config(
                 end_date=datetime.datetime(2021, 6, 20, 12, 0, 10),
                 n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
-                backend_name=icon4py_driver_backend,
+                backend=backend,
             ),
             _mch_ch_r04b09_vertical_config(),
             _mch_ch_r04b09_diffusion_config(),
@@ -149,7 +143,7 @@ def read_config(
             end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
-            backend_name=icon4py_driver_backend,
+            backend=backend,
         )
         jabw_vertical_config = _jabw_vertical_config()
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
@@ -175,7 +169,7 @@ def read_config(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
-            divdamp_fac=0.0025,
+            fourth_order_divdamp_factor=0.0025,
         )
 
     def _gauss3d_config():
@@ -184,7 +178,7 @@ def read_config(
             end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
             apply_initial_stabilization=False,
             n_substeps=5,
-            backend_name=icon4py_driver_backend,
+            backend=backend,
         )
         vertical_config = _gauss3d_vertical_config()
         diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)

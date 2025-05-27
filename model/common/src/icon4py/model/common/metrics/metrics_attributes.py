@@ -8,6 +8,8 @@
 
 from typing import Final
 
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
@@ -15,10 +17,12 @@ from icon4py.model.common.states import model
 # TODO: revise names with domain scientists
 
 Z_MC: Final[str] = "height"
+FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
-DDQZ_Z_FULL: Final[str] = "ddqz_z_full"
-INV_DDQZ_Z_FULL: Final[str] = "inv_ddqz_z_full"
-SCALFAC_DD3D: Final[str] = "scaling_factor_for_3d_divergence_damping"
+DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
+DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
+INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
+SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divergence_damping"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
 COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
 COEFF2_DWDZ: Final[str] = "coeff2_dwdz"
@@ -30,8 +34,13 @@ VERT_OUT: Final[str] = "vert_out"
 DDXT_Z_HALF_E: Final[str] = "ddxt_z_half_e"
 DDXN_Z_HALF_E: Final[str] = "ddxn_z_half_e"
 DDXN_Z_FULL: Final[str] = "ddxn_z_full"
-VWIND_IMPL_WGT: Final[str] = "vwind_impl_wgt"
-VWIND_EXPL_WGT: Final[str] = "vwind_expl_wgt"
+DDXT_Z_FULL: Final[str] = "ddxt_z_full"
+EXNER_W_IMPLICIT_WEIGHT_PARAMETER: Final[
+    str
+] = "implicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[
+    str
+] = "explicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
 EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
@@ -40,7 +49,7 @@ PG_EDGEIDX_DSL: Final[str] = "edge_mask_for_pressure_gradient_extrapolation"
 PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 BDY_HALO_C: Final[str] = "bdy_halo_c"
-HMASK_DD3D: Final[str] = "hmask_dd3d"
+HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
 ZDIFF_GRADP: Final[str] = "zdiff_gradp"
 COEFF_GRADEKIN: Final[str] = "coeff_gradekin"
 WGTFACQ_C: Final[str] = "weighting_factor_for_quadratic_interpolation_to_cell_surface"
@@ -57,6 +66,14 @@ ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
 
 
 attrs: dict[str, model.FieldMetaData] = {
+    FLAT_EDGE_INDEX: dict(
+        standard_name=FLAT_EDGE_INDEX,
+        long_name="indices of flat edges",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="flat_idx",
+        dtype=gtx.int32,
+    ),
     Z_MC: dict(
         standard_name=Z_MC,
         long_name="height",
@@ -75,10 +92,18 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     DDQZ_Z_FULL: dict(
         standard_name=DDQZ_Z_FULL,
-        long_name="ddqz_z_full",
+        long_name="functional determinant of the metrics (is positive), full levels",
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="ddqz_z_full",
+        dtype=ta.wpfloat,
+    ),
+    DDQZ_Z_FULL_E: dict(
+        standard_name=DDQZ_Z_FULL,
+        long_name="functional determinant at full level on edges",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="ddqz_z_full_e",
         dtype=ta.wpfloat,
     ),
     INV_DDQZ_Z_FULL: dict(
@@ -89,9 +114,9 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="inv_ddqz_z_full",
         dtype=ta.wpfloat,
     ),
-    SCALFAC_DD3D: dict(
-        standard_name=SCALFAC_DD3D,
-        long_name="Scaling factor for 3D divergence damping terms",
+    SCALING_FACTOR_FOR_3D_DIVDAMP: dict(
+        standard_name=SCALING_FACTOR_FOR_3D_DIVDAMP,
+        long_name="Scaling factor for 3D divergence damping",
         units="",
         dims=(dims.KDim,),
         icon_var_name="scalfac_dd3d",
@@ -179,23 +204,31 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     DDXN_Z_FULL: dict(
         standard_name=DDXN_Z_FULL,
-        long_name="ddxn_z_full",
+        long_name="normal_direction_of_slope",
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="ddxn_z_full",
         dtype=ta.wpfloat,
     ),
-    VWIND_IMPL_WGT: dict(
-        standard_name=VWIND_IMPL_WGT,
-        long_name="vwind_impl_wgt",
+    DDXT_Z_FULL: dict(
+        standard_name="tangential_direction_of_slope",
+        long_name="slope of the terrain (tangential direction)",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="ddxt_z_full",
+        dtype=ta.wpfloat,
+    ),
+    EXNER_W_IMPLICIT_WEIGHT_PARAMETER: dict(
+        standard_name="exner_w_implicit_weight_parameter",
+        long_name="implicitness_weight_for_exner_and_w_in_vertical_dycore_solver",
         units="",
         dims=(dims.CellDim,),
         icon_var_name="vwind_impl_wgt",
         dtype=ta.wpfloat,
     ),
-    VWIND_EXPL_WGT: dict(
-        standard_name=VWIND_EXPL_WGT,
-        long_name="vwind_expl_wgt",
+    EXNER_W_EXPLICIT_WEIGHT_PARAMETER: dict(
+        standard_name="exner_w_explicit_weight_parameter",
+        long_name="explicitness_weight_for_exner_and_w_in_vertical_dycore_solver",
         units="",
         dims=(dims.CellDim,),
         icon_var_name="vwind_expl_wgt",
@@ -265,9 +298,9 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="bdy_halo_c",
         dtype=bool,
     ),
-    HMASK_DD3D: dict(
-        standard_name=HMASK_DD3D,
-        long_name="hmask_dd3d",
+    HORIZONTAL_MASK_FOR_3D_DIVDAMP: dict(
+        standard_name=HORIZONTAL_MASK_FOR_3D_DIVDAMP,
+        long_name="horizontal mask for 3D divergence damping",
         units="",
         dims=(dims.EdgeDim,),
         icon_var_name="hmask_dd3d",

@@ -41,7 +41,11 @@ NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
 
 
-def as_numpy(array: NDArrayInterface):
+def backend_name(backend: gtx_backend.Backend | None) -> str:
+    return "embedded" if backend is None else backend.name
+
+
+def as_numpy(array: NDArrayInterface) -> np.ndarray:
     if isinstance(array, np.ndarray):
         return array
     elif isinstance(array, gtx.Field):
@@ -77,9 +81,14 @@ def import_array_ns(backend: Optional[gtx_backend.Backend]):
     return array_ns(is_cupy_device(backend))
 
 
-def as_field(field: gtx.Field, backend: Optional[gtx_backend.Backend] = None) -> gtx.Field:
+def as_field(
+    field: gtx.Field,
+    backend: Optional[gtx_backend.Backend] = None,
+    embedded_on_host: bool = False,
+) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
-    return gtx.as_field(field.domain, field.ndarray, allocator=backend)
+    data = field.asnumpy() if embedded_on_host else field.ndarray
+    return gtx.as_field(field.domain, data=data, allocator=backend)
 
 
 def flatten_first_two_dims(

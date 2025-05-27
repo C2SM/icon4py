@@ -171,7 +171,7 @@ def _compute_primal_normal_ec(
 
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
 
-    inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
+    inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e, array_ns)
     u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
     v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
     return (array_ns.where(owned, u_component, 0.0), array_ns.where(owned, v_component, 0.0))
@@ -210,7 +210,7 @@ def _compute_geofac_grg(
     geofac_grg_x = array_ns.zeros(target_shape)
     geofac_grg_y = array_ns.zeros(target_shape)
 
-    inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
+    inverse_neighbor = _create_inverse_neighbor_index(e2c, c2e, array_ns)
 
     tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
     geofac_grg_x[horizontal_start:, 0] = array_ns.sum(primal_normal_ec_u * tmp, axis=1)[
@@ -324,7 +324,7 @@ def compute_geofac_grdiv(
     return geofac_grdiv
 
 
-def rotate_latlon(
+def _rotate_latlon(
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     pollat: data_alloc.NDArray,
@@ -394,7 +394,7 @@ def _weighting_factors(
         Returns:
             wgt: numpy array of size [[3, flexible], ta.wpfloat]
     """
-    rotate = functools.partial(rotate_latlon, array_ns=array_ns)
+    rotate = functools.partial(_rotate_latlon, array_ns=array_ns)
 
     pollat = array_ns.where(yloc >= 0.0, yloc - math.pi * 0.5, yloc + math.pi * 0.5)
     pollon = xloc
@@ -588,7 +588,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
-    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
+    inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -643,7 +643,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     )
 
 
-def create_inverse_neighbor_index(
+def _create_inverse_neighbor_index(
     source_offset, inverse_offset, array_ns: ModuleType
 ) -> data_alloc.NDArray:
     """
@@ -854,22 +854,22 @@ def compute_cells_aw_verts(
     Compute cells_aw_verts.
 
     Args:
-        dual_area: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
-        edge_vert_length: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat]
+        dual_area: ndarray, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
+        edge_vert_length: \\  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat]
         edge_cell_length: //
-        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], bool]
-        v2e: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
-        e2v: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
-        v2c: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2CDim], gtx.int32]
-        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        horizontal_start:
+        owner_mask: ndarray, representing a gtx.Field[gtx.Dims[VertexDim], bool]
+        v2e: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
+        e2v: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
+        v2c: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, V2CDim], gtx.int32]
+        e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        horizontal_start: int32, representing the start index of the horizontal dimension
+        array_ns: array namespace to be used, defaults to numpy
 
     Returns:
-        aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
+        aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
     cells_aw_verts = array_ns.zeros(v2e.shape)
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
-        cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
             # INVALID_INDEX
             if v2e[jv, je] == gm.GridFile.INVALID_INDEX or (

@@ -55,12 +55,12 @@ class TestDiagnosePressure(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
         ddqz_z_full = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0, dtype=ta.wpfloat
         )
         virtual_temperature = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0e-2, dtype=ta.wpfloat
         )
-        surface_pressure = data_alloc.random_field(grid, dims.CellDim, low=1.0e-6, dtype=ta.wpfloat)
+        surface_pressure = data_alloc.random_field(grid, dims.CellDim, low=1.0, dtype=ta.wpfloat)
         pressure = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         pressure_ifc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
@@ -70,7 +70,6 @@ class TestDiagnosePressure(helpers.StencilTest):
             surface_pressure=surface_pressure,
             pressure=pressure,
             pressure_ifc=pressure_ifc,
-            grav_o_rd=phy_const.GRAV_O_RD,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(0),

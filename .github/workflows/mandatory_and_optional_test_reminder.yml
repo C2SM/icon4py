@@ -17,20 +17,20 @@ jobs:
                       Please make sure you run these tests via comment before you merge!
 
                       * `cscs-ci run default`
-                      * `launch jenkins spack`
 
                       **Optional Tests**
 
                       To run benchmarks you can use:
 
-                      * `cscs-ci run benchmark`
+                      * `cscs-ci run benchmark-bencher`
 
                       To run tests and benchmarks with the DaCe backend you can use:
 
                       * `cscs-ci run dace`
 
-                      In case your change might affect downstream [icon-exclaim](https://github.com/C2SM/icon-exclaim), please consider running
+                      To run test levels ignored by the default test suite (mostly simple datatest for static fields computations) you can use:
+                       * `cscs-ci run extra`
 
-                      * `launch jenkins icon`
+
 
                       For more detailed information please look at [CI in the EXCLAIM universe](https://github.com/C2SM/icon-exclaim/wiki).

@@ -14,7 +14,7 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import constants, dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, model_options, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -44,13 +44,13 @@ def solve_nh_init(
     metrics_savepoint,
     ndyn_substeps,
 ):
-    itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = solve_nh.RhoThetaAdvectionType.MIURA
-    igradp_method = solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
+    igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
-    rayleigh_type = constants.RayleighType.KLEMP
+    rayleigh_type = model_options.RayleighType.KLEMP
     rayleigh_coeff = 0.05
-    divdamp_order = solve_nh.DivergenceDampingOrder.COMBINED
+    divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
     iau_wgt_dyn = 1.0
     divdamp_type = 3
@@ -289,6 +289,7 @@ def test_dycore_wrapper_granule_inputs(
     caplog,
     icon_grid,
     at_initial_timestep,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
 
@@ -298,13 +299,13 @@ def test_dycore_wrapper_granule_inputs(
     # --- Granule input parameters for dycore init
 
     # non hydrostatic config parameters
-    itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = solve_nh.RhoThetaAdvectionType.MIURA
-    igradp_method = solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
+    igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
-    rayleigh_type = constants.RayleighType.KLEMP
+    rayleigh_type = model_options.RayleighType.KLEMP
     rayleigh_coeff = 0.05
-    divdamp_order = solve_nh.DivergenceDampingOrder.COMBINED
+    divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
     iau_wgt_dyn = 1.0
     divdamp_type = 3
@@ -422,7 +423,7 @@ def test_dycore_wrapper_granule_inputs(
     c_owner_mask = test_utils.array_to_array_info(grid_savepoint.c_owner_mask().ndarray)
 
     # --- Granule input parameters for dycore run
-    initial_divdamp_fac = sp.divdamp_fac_o2()
+    second_order_divdamp_factor = sp.divdamp_fac_o2()
 
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
@@ -449,6 +450,12 @@ def test_dycore_wrapper_granule_inputs(
     ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+    vn_incr_field = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)
+    rho_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)
+    exner_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
@@ -498,21 +505,21 @@ def test_dycore_wrapper_granule_inputs(
         bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
-        exner_exfac=metrics_savepoint.exner_exfac(),
-        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
+        reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-        rho_ref_mc=metrics_savepoint.rho_ref_mc(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
-        d_exner_dz_ref_ic=metrics_savepoint.d_exner_dz_ref_ic(),
+        reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
+        reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
+        exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
+        ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-        theta_ref_ic=metrics_savepoint.theta_ref_ic(),
+        reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
         d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
         d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
-        rho_ref_me=metrics_savepoint.rho_ref_me(),
-        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
+        reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
@@ -522,9 +529,9 @@ def test_dycore_wrapper_granule_inputs(
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
         wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(num_levels),
-        vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
-        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
-        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
+        horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
+        scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
         coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
@@ -550,15 +557,15 @@ def test_dycore_wrapper_granule_inputs(
         tangential_wind=sp.vt(),
         vn_on_half_levels=sp.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
+        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
+        perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
+        rho_at_cells_on_half_levels=sp.rho_ic(),
+        exner_tendency_due_to_slow_physics=sp.ddt_exner_phy(),
         grf_tend_rho=sp.grf_tend_rho(),
         grf_tend_thv=sp.grf_tend_thv(),
         grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
+        mass_flux_at_edges_on_model_levels=sp.mass_fl_e(),
+        normal_wind_tendency_due_to_slow_physics_process=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)
@@ -566,10 +573,10 @@ def test_dycore_wrapper_granule_inputs(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=sp.exner_dyn_incr(),
+        rho_iau_increment=rho_incr_field,
+        normal_wind_iau_increment=vn_incr_field,
+        exner_iau_increment=exner_incr_field,
+        exner_dynamical_increment=sp.exner_dyn_incr(),
     )
     prognostic_state_nnow = prognostics.PrognosticState(
         w=sp.w_now(),
@@ -592,12 +599,12 @@ def test_dycore_wrapper_granule_inputs(
     expected_prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
-        mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
             icon_grid, dims.CellDim, dims.KDim
         ),  # TODO: sp.vol_flx_ic(),
     )
-    expected_initial_divdamp_fac = sp.divdamp_fac_o2()
+    expected_second_order_divdamp_factor = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
     expected_lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     expected_at_first_substep = substep_init == 1
@@ -787,6 +794,9 @@ def test_dycore_wrapper_granule_inputs(
             grf_tend_vn=grf_tend_vn,
             vn_ie=vn_ie,
             vt=vt,
+            vn_incr=vn_incr,
+            rho_incr=rho_incr,
+            exner_incr=exner_incr,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vol_flx_ic=vol_flx_ic,
@@ -794,7 +804,7 @@ def test_dycore_wrapper_granule_inputs(
             dtime=dtime,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
-            divdamp_fac_o2=initial_divdamp_fac,
+            divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps=ndyn_substeps,
             idyn_timestep=substep,
         )
@@ -818,7 +828,7 @@ def test_dycore_wrapper_granule_inputs(
         assert result, f"Prep Advection comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
-            captured_kwargs["divdamp_fac_o2"], expected_initial_divdamp_fac
+            captured_kwargs["second_order_divdamp_factor"], expected_second_order_divdamp_factor
         )
         assert result, f"Divdamp Factor comparison failed: {error_message}"
 
@@ -872,6 +882,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     caplog,
     icon_grid,
     at_initial_timestep,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
 
@@ -884,7 +895,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 
     # solve nh run parameters
-    initial_divdamp_fac = sp.divdamp_fac_o2()  # This is a scalar, don't convert
+    second_order_divdamp_factor = sp.divdamp_fac_o2()  # This is a scalar, don't convert
 
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
@@ -911,6 +922,15 @@ def test_granule_solve_nonhydro_single_step_regional(
     ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+    vn_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
+    )
+    rho_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+    )
+    exner_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+    )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
@@ -962,6 +982,9 @@ def test_granule_solve_nonhydro_single_step_regional(
         grf_tend_vn=grf_tend_vn,
         vn_ie=vn_ie,
         vt=vt,
+        vn_incr=vn_incr,
+        rho_incr=rho_incr,
+        exner_incr=exner_incr,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
         vn_traj=vn_traj,
@@ -969,7 +992,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         dtime=dtime,
         lprep_adv=lprep_adv,
         at_initial_timestep=at_initial_timestep,
-        divdamp_fac_o2=initial_divdamp_fac,  # This is a scalar
+        divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
         ndyn_substeps=ndyn_substeps,
         idyn_timestep=substep,
     )
@@ -1034,6 +1057,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     ndyn_substeps,
     vn_only,  # TODO we don't use that value?
     at_initial_timestep,
+    backend,
 ):
     # savepoints
     sp = savepoint_nonhydro_init
@@ -1045,7 +1069,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
     # solve nh run parameters
     linit = sp.get_metadata("linit").get("linit")
-    initial_divdamp_fac = sp.divdamp_fac_o2()
+    second_order_divdamp_factor = sp.divdamp_fac_o2()
 
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
@@ -1076,6 +1100,15 @@ def test_granule_solve_nonhydro_multi_step_regional(
         ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+    vn_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
+    )
+    rho_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+    )
+    exner_incr = test_utils.array_to_array_info(
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+    )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
@@ -1131,6 +1164,9 @@ def test_granule_solve_nonhydro_multi_step_regional(
             grf_tend_vn=grf_tend_vn,
             vn_ie=vn_ie,
             vt=vt,
+            vn_incr=vn_incr,
+            rho_incr=rho_incr,
+            exner_incr=exner_incr,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vn_traj=vn_traj,
@@ -1138,7 +1174,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             dtime=dtime,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
-            divdamp_fac_o2=initial_divdamp_fac,
+            divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps=ndyn_substeps,
             idyn_timestep=i_substep,
         )
