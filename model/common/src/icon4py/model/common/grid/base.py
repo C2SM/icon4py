@@ -24,7 +24,9 @@ from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 _log = logging.getLogger(__name__)
+
 
 class MissingConnectivity(ValueError):
     pass
@@ -57,6 +59,7 @@ class GridConfig:
     length_rescale_factor: float = 1.0
     lvertnest: bool = False
     on_gpu: bool = False
+    keep_skip_values: bool = True
 
     @property
     def num_levels(self):
@@ -123,14 +126,22 @@ class BaseGrid(ABC):
 
     def has_skip_values(self):
         """
-        Check whether there are skip values on any connectivity in the grid.
+        Whether there are skip values on any connectivity in the grid.
 
         Decision is made base on the following properties:
         - limited_area = True -> True
         - geometry_type: either TORUS or ICOSAHEDRON, ICOSAHEDRON has Pentagon points ->True
+        - if config.no_skip_values is True (remaining skip values are removed from neighbor_tables at runtime) -> False
 
         """
-        return self.config.limited_area or self.geometry_type == GeometryType.ICOSAHEDRON
+        match self.geometry_type:
+            case GeometryType.TORUS:
+                return self.config.keep_skip_values and self.limited_area
+            case GeometryType.ICOSAHEDRON:
+                return self.config.keep_skip_values
+            case _:
+                _log.warning(f"Unknown geometry type {self.geometry_type}. Assuming skip values.")
+                return True
 
     @functools.cached_property
     def offset_providers(self):
@@ -160,7 +171,7 @@ class BaseGrid(ABC):
         self.size[dims.EdgeDim] = self.config.num_edges
         self.size[dims.KDim] = self.config.num_levels
 
-    def _get_offset_provider(self, dim, from_dim, to_dim, with_no_skip_value=True):
+    def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity(f"no neighbor_table for dimension {dim}.")
         assert (
@@ -174,7 +185,7 @@ class BaseGrid(ABC):
             self.connectivities[dim],
             skip_value=-1 if self._has_skip_values(dim) else None,
         )
-        if with_no_skip_value:
+        if not self.config.keep_skip_values:
             connectivity = replace_skip_values(
                 connectivity, array_ns=data_alloc.array_ns(self.config.on_gpu)
             )

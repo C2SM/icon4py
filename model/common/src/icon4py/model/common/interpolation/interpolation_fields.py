@@ -19,7 +19,6 @@ import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
-from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.utils import data_allocation as data_alloc
 

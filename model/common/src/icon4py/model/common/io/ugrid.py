@@ -18,7 +18,6 @@ import icon4py.model.common.dimension as dim
 from icon4py.model.common.grid import gridfile
 
 
-
 log = logging.getLogger(__name__)
 
 FILL_VALUE = gridfile.GridFile.INVALID_INDEX

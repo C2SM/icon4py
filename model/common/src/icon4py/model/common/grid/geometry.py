@@ -31,11 +31,12 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     base,
+    geometry_attributes as attrs,
     geometry_stencils as stencils,
     grid_manager as gm,
+    gridfile,
     horizontal as h_grid,
     icon,
-    gridfile, geometry_attributes as attrs
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -147,16 +148,13 @@ class GridGeometry(factory.FieldSource):
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
                 # TODO (@magdalena) rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
-                attrs.EDGE_CELL_DISTANCE: extra_fields[
-                   gridfile.GeometryName.EDGE_CELL_DISTANCE],
+                attrs.EDGE_CELL_DISTANCE: extra_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE],
                 attrs.EDGE_VERTEX_DISTANCE: extra_fields[
-                    gridfile.GeometryName.EDGE_VERTEX_DISTANCE],
-                attrs.CELL_AREA: extra_fields[
-                    gridfile.GeometryName.CELL_AREA],
-                attrs.DUAL_AREA: extra_fields[
-                    gridfile.GeometryName.DUAL_AREA],
-                attrs.TANGENT_ORIENTATION: extra_fields[
-                    gridfile.GeometryName.TANGENT_ORIENTATION],
+                    gridfile.GeometryName.EDGE_VERTEX_DISTANCE
+                ],
+                attrs.CELL_AREA: extra_fields[gridfile.GeometryName.CELL_AREA],
+                attrs.DUAL_AREA: extra_fields[gridfile.GeometryName.DUAL_AREA],
+                attrs.TANGENT_ORIENTATION: extra_fields[gridfile.GeometryName.TANGENT_ORIENTATION],
                 "edge_owner_mask": gtx.as_field(
                     (dims.EdgeDim,),
                     decomposition_info.owner_mask(dims.EdgeDim),
