@@ -10,12 +10,12 @@ import enum
 import math
 from types import ModuleType
 
+import gt4py.next as gtx
 import numpy as np
 import scipy.linalg as sla
 
 from icon4py.model.common import (
     dimension as dims,
-    field_type_aliases as fa,
     type_alias as ta,
 )
 from icon4py.model.common.grid import base as base_grid
@@ -213,24 +213,27 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
 
 
 def _compute_rbf_interpolation_coeffs(
-    element_center_lat,
-    element_center_lon,
-    element_center_x,
-    element_center_y,
-    element_center_z,
-    edge_center_x,
-    edge_center_y,
-    edge_center_z,
-    edge_normal_x,
-    edge_normal_y,
-    edge_normal_z,
-    uv,
-    rbf_offset,
+    element_center_lat: data_alloc.NDArray,
+    element_center_lon: data_alloc.NDArray,
+    element_center_x: data_alloc.NDArray,
+    element_center_y: data_alloc.NDArray,
+    element_center_z: data_alloc.NDArray,
+    edge_center_x: data_alloc.NDArray,
+    edge_center_y: data_alloc.NDArray,
+    edge_center_z: data_alloc.NDArray,
+    edge_normal_x: data_alloc.NDArray,
+    edge_normal_y: data_alloc.NDArray,
+    edge_normal_z: data_alloc.NDArray,
+    uv: list[tuple[data_alloc.NDArray, data_alloc.NDArray]],
+    rbf_offset: data_alloc.NDArray,
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ):
-    num_elements = element_center_lat.shape[0]
+    rbf_offset_shape_full = rbf_offset.shape
+    rbf_offset = rbf_offset[horizontal_start:]
+    num_elements = rbf_offset.shape[0]
 
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
@@ -245,9 +248,9 @@ def _compute_rbf_interpolation_coeffs(
 
     edge_normal = array_ns.stack(
         (
-            index_offset(pad(edge_normal_x.ndarray)),
-            index_offset(pad(edge_normal_y.ndarray)),
-            index_offset(pad(edge_normal_z.ndarray)),
+            index_offset(pad(edge_normal_x)),
+            index_offset(pad(edge_normal_y)),
+            index_offset(pad(edge_normal_z)),
         ),
         axis=-1,
     )
@@ -255,9 +258,9 @@ def _compute_rbf_interpolation_coeffs(
 
     edge_center = array_ns.stack(
         (
-            index_offset(pad(edge_center_x.ndarray)),
-            index_offset(pad(edge_center_y.ndarray)),
-            index_offset(pad(edge_center_z.ndarray)),
+            index_offset(pad(edge_center_x)),
+            index_offset(pad(edge_center_y)),
+            index_offset(pad(edge_center_z)),
         ),
         axis=-1,
     )
@@ -266,9 +269,9 @@ def _compute_rbf_interpolation_coeffs(
     # Compute distances for right hand side(s) of linear system
     element_center = array_ns.stack(
         (
-            element_center_x.ndarray,
-            element_center_y.ndarray,
-            element_center_z.ndarray,
+            element_center_x[horizontal_start:],
+            element_center_y[horizontal_start:],
+            element_center_z[horizontal_start:],
         ),
         axis=-1,
     )
@@ -289,10 +292,10 @@ def _compute_rbf_interpolation_coeffs(
     assert 1 <= num_zonal_meridional_components <= 2
     for i in range(num_zonal_meridional_components):
         z_nx_x, z_nx_y, z_nx_z = _cartesian_coordinates_from_zonal_and_meridional_components(
-            element_center_lat.ndarray,
-            element_center_lon.ndarray,
-            uv[i][0],
-            uv[i][1],
+            element_center_lat[horizontal_start:],
+            element_center_lon[horizontal_start:],
+            uv[i][0][horizontal_start:],
+            uv[i][1][horizontal_start:],
             array_ns=array_ns,
         )
         z_nx.append(array_ns.stack((z_nx_x, z_nx_y, z_nx_z), axis=-1))
@@ -334,7 +337,8 @@ def _compute_rbf_interpolation_coeffs(
     # cho_solve with the same interface as scipy, but one has been proposed:
     # https://github.com/cupy/cupy/pull/9116.
     rbf_vec_coeff_np = [
-        np.zeros(rbf_offset.shape, dtype=ta.wpfloat) for j in range(num_zonal_meridional_components)
+        np.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
+        for j in range(num_zonal_meridional_components)
     ]
     rbf_offset_np = data_alloc.as_numpy(rbf_offset)
     z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
@@ -344,33 +348,37 @@ def _compute_rbf_interpolation_coeffs(
         rbfmat_np = np.squeeze(z_rbfmat_np[np.ix_([i], valid_neighbors, valid_neighbors)])
         z_diag_np = sla.cho_factor(rbfmat_np)
         for j in range(num_zonal_meridional_components):
-            rbf_vec_coeff_np[j][i, valid_neighbors] = sla.cho_solve(
+            rbf_vec_coeff_np[j][i + horizontal_start, valid_neighbors] = sla.cho_solve(
                 z_diag_np, rhs_np[j][i, valid_neighbors]
             )
     rbf_vec_coeff = [array_ns.asarray(x) for x in rbf_vec_coeff_np]
 
     # Normalize coefficients
     for j in range(num_zonal_meridional_components):
-        rbf_vec_coeff[j] /= array_ns.sum(nxnx[j] * rbf_vec_coeff[j], axis=1)[:, array_ns.newaxis]
+        rbf_vec_coeff[j][horizontal_start:] /= array_ns.sum(
+            nxnx[j] * rbf_vec_coeff[j][horizontal_start:], axis=1
+        )[:, array_ns.newaxis]
 
     return rbf_vec_coeff
 
 
 def compute_rbf_interpolation_coeffs_cell(
-    cell_center_lat: fa.CellField[ta.wpfloat],
-    cell_center_lon: fa.CellField[ta.wpfloat],
-    cell_center_x: fa.CellField[ta.wpfloat],
-    cell_center_y: fa.CellField[ta.wpfloat],
-    cell_center_z: fa.CellField[ta.wpfloat],
-    edge_center_x: fa.EdgeField[ta.wpfloat],
-    edge_center_y: fa.EdgeField[ta.wpfloat],
-    edge_center_z: fa.EdgeField[ta.wpfloat],
-    edge_normal_x: fa.EdgeField[ta.wpfloat],
-    edge_normal_y: fa.EdgeField[ta.wpfloat],
-    edge_normal_z: fa.EdgeField[ta.wpfloat],
-    rbf_offset: fa.CellField[int],
-    rbf_kernel: InterpolationKernel,
+    cell_center_lat: data_alloc.NDArray,
+    cell_center_lon: data_alloc.NDArray,
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
+    cell_center_z: data_alloc.NDArray,
+    edge_center_x: data_alloc.NDArray,
+    edge_center_y: data_alloc.NDArray,
+    edge_center_z: data_alloc.NDArray,
+    edge_normal_x: data_alloc.NDArray,
+    edge_normal_y: data_alloc.NDArray,
+    edge_normal_z: data_alloc.NDArray,
+    rbf_offset: data_alloc.NDArray,
+    # TODO: Can't pass enum as "params" in NumpyFieldsProvider?
+    rbf_kernel: int,
     scale_factor: ta.wpfloat,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -390,8 +398,9 @@ def compute_rbf_interpolation_coeffs_cell(
         edge_normal_z,
         [(ones, zeros), (zeros, ones)],
         rbf_offset,
-        rbf_kernel,
+        InterpolationKernel(rbf_kernel),
         scale_factor,
+        horizontal_start,
         array_ns=array_ns,
     )
     assert len(coeffs) == 2
@@ -399,19 +408,20 @@ def compute_rbf_interpolation_coeffs_cell(
 
 
 def compute_rbf_interpolation_coeffs_edge(
-    edge_center_lat: fa.EdgeField[ta.wpfloat],
-    edge_center_lon: fa.EdgeField[ta.wpfloat],
-    edge_center_x: fa.EdgeField[ta.wpfloat],
-    edge_center_y: fa.EdgeField[ta.wpfloat],
-    edge_center_z: fa.EdgeField[ta.wpfloat],
-    edge_normal_x: fa.EdgeField[ta.wpfloat],
-    edge_normal_y: fa.EdgeField[ta.wpfloat],
-    edge_normal_z: fa.EdgeField[ta.wpfloat],
-    edge_dual_normal_u: fa.EdgeField[ta.wpfloat],
-    edge_dual_normal_v: fa.EdgeField[ta.wpfloat],
-    rbf_offset: fa.EdgeField[int],
-    rbf_kernel: InterpolationKernel,
+    edge_center_lat: data_alloc.NDArray,
+    edge_center_lon: data_alloc.NDArray,
+    edge_center_x: data_alloc.NDArray,
+    edge_center_y: data_alloc.NDArray,
+    edge_center_z: data_alloc.NDArray,
+    edge_normal_x: data_alloc.NDArray,
+    edge_normal_y: data_alloc.NDArray,
+    edge_normal_z: data_alloc.NDArray,
+    edge_dual_normal_u: data_alloc.NDArray,
+    edge_dual_normal_v: data_alloc.NDArray,
+    rbf_offset: data_alloc.NDArray,
+    rbf_kernel: int,
     scale_factor: ta.wpfloat,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     coeffs = _compute_rbf_interpolation_coeffs(
@@ -426,10 +436,11 @@ def compute_rbf_interpolation_coeffs_edge(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [(edge_dual_normal_u.ndarray, edge_dual_normal_v.ndarray)],
+        [(edge_dual_normal_u, edge_dual_normal_v)],
         rbf_offset,
-        rbf_kernel,
+        InterpolationKernel(rbf_kernel),
         scale_factor,
+        horizontal_start,
         array_ns=array_ns,
     )
     assert len(coeffs) == 1
@@ -437,20 +448,21 @@ def compute_rbf_interpolation_coeffs_edge(
 
 
 def compute_rbf_interpolation_coeffs_vertex(
-    vertex_center_lat: fa.VertexField[ta.wpfloat],
-    vertex_center_lon: fa.VertexField[ta.wpfloat],
-    vertex_center_x: fa.VertexField[ta.wpfloat],
-    vertex_center_y: fa.VertexField[ta.wpfloat],
-    vertex_center_z: fa.VertexField[ta.wpfloat],
-    edge_center_x: fa.EdgeField[ta.wpfloat],
-    edge_center_y: fa.EdgeField[ta.wpfloat],
-    edge_center_z: fa.EdgeField[ta.wpfloat],
-    edge_normal_x: fa.EdgeField[ta.wpfloat],
-    edge_normal_y: fa.EdgeField[ta.wpfloat],
-    edge_normal_z: fa.EdgeField[ta.wpfloat],
-    rbf_offset: fa.EdgeField[int],
-    rbf_kernel: InterpolationKernel,
+    vertex_center_lat: data_alloc.NDArray,
+    vertex_center_lon: data_alloc.NDArray,
+    vertex_center_x: data_alloc.NDArray,
+    vertex_center_y: data_alloc.NDArray,
+    vertex_center_z: data_alloc.NDArray,
+    edge_center_x: data_alloc.NDArray,
+    edge_center_y: data_alloc.NDArray,
+    edge_center_z: data_alloc.NDArray,
+    edge_normal_x: data_alloc.NDArray,
+    edge_normal_y: data_alloc.NDArray,
+    edge_normal_z: data_alloc.NDArray,
+    rbf_offset: data_alloc.NDArray,
+    rbf_kernel: int,
     scale_factor: ta.wpfloat,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -470,8 +482,9 @@ def compute_rbf_interpolation_coeffs_vertex(
         edge_normal_z,
         [(ones, zeros), (zeros, ones)],
         rbf_offset,
-        rbf_kernel,
+        InterpolationKernel(rbf_kernel),
         scale_factor,
+        horizontal_start,
         array_ns=array_ns,
     )
     assert len(coeffs) == 2

@@ -135,32 +135,32 @@ def test_rbf_interpolation_coeffs_cell(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
+    horizontal_start = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    assert horizontal_start < grid.num_cells
+
     rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(
-        geometry.get(geometry_attrs.CELL_LAT),
-        geometry.get(geometry_attrs.CELL_LON),
-        geometry.get(geometry_attrs.CELL_CENTER_X),
-        geometry.get(geometry_attrs.CELL_CENTER_Y),
-        geometry.get(geometry_attrs.CELL_CENTER_Z),
-        geometry.get(geometry_attrs.EDGE_CENTER_X),
-        geometry.get(geometry_attrs.EDGE_CENTER_Y),
-        geometry.get(geometry_attrs.EDGE_CENTER_Z),
-        geometry.get(geometry_attrs.EDGE_NORMAL_X),
-        geometry.get(geometry_attrs.EDGE_NORMAL_Y),
-        geometry.get(geometry_attrs.EDGE_NORMAL_Z),
+        geometry.get(geometry_attrs.CELL_LAT).ndarray,
+        geometry.get(geometry_attrs.CELL_LON).ndarray,
+        geometry.get(geometry_attrs.CELL_CENTER_X).ndarray,
+        geometry.get(geometry_attrs.CELL_CENTER_Y).ndarray,
+        geometry.get(geometry_attrs.CELL_CENTER_Z).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        horizontal_start,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
-    start_index = icon_grid.start_index(
-        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-
-    assert start_index < grid.num_cells
-
-    rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1()
-    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2()
+    rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().ndarray
+    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2().ndarray
 
     assert rbf_vec_coeff_c1.shape == rbf_vec_coeff_c1_ref.shape
     assert rbf_vec_coeff_c2.shape == rbf_vec_coeff_c2_ref.shape
@@ -173,13 +173,13 @@ def test_rbf_interpolation_coeffs_cell(
         RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_c1[start_index:],
-        rbf_vec_coeff_c1_ref.asnumpy()[start_index:],
+        rbf_vec_coeff_c1[horizontal_start:],
+        rbf_vec_coeff_c1_ref[horizontal_start:],
         atol=atol,
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_c2[start_index:],
-        rbf_vec_coeff_c2_ref.asnumpy()[start_index:],
+        rbf_vec_coeff_c2[horizontal_start:],
+        rbf_vec_coeff_c2_ref[horizontal_start:],
         atol=atol,
     )
 
@@ -199,29 +199,29 @@ def test_rbf_interpolation_coeffs_vertex(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
+    horizontal_start = icon_grid.start_index(
+        h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    assert horizontal_start < grid.num_vertices
+
     rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_coeffs_vertex(
-        geometry.get(geometry_attrs.VERTEX_LAT),
-        geometry.get(geometry_attrs.VERTEX_LON),
-        geometry.get(geometry_attrs.VERTEX_X),
-        geometry.get(geometry_attrs.VERTEX_Y),
-        geometry.get(geometry_attrs.VERTEX_Z),
-        geometry.get(geometry_attrs.EDGE_CENTER_X),
-        geometry.get(geometry_attrs.EDGE_CENTER_Y),
-        geometry.get(geometry_attrs.EDGE_CENTER_Z),
-        geometry.get(geometry_attrs.EDGE_NORMAL_X),
-        geometry.get(geometry_attrs.EDGE_NORMAL_Y),
-        geometry.get(geometry_attrs.EDGE_NORMAL_Z),
+        geometry.get(geometry_attrs.VERTEX_LAT).ndarray,
+        geometry.get(geometry_attrs.VERTEX_LON).ndarray,
+        geometry.get(geometry_attrs.VERTEX_X).ndarray,
+        geometry.get(geometry_attrs.VERTEX_Y).ndarray,
+        geometry.get(geometry_attrs.VERTEX_Z).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        horizontal_start,
         array_ns=data_alloc.import_array_ns(backend),
     )
-
-    start_index = icon_grid.start_index(
-        h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-
-    assert start_index < grid.num_vertices
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
     rbf_vec_coeff_v2_ref = interpolation_savepoint.rbf_vec_coeff_v2()
@@ -237,13 +237,13 @@ def test_rbf_interpolation_coeffs_vertex(
         RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_v1[start_index:],
-        rbf_vec_coeff_v1_ref.asnumpy()[start_index:],
+        rbf_vec_coeff_v1[horizontal_start:],
+        rbf_vec_coeff_v1_ref.asnumpy()[horizontal_start:],
         atol=atol,
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_v2[start_index:],
-        rbf_vec_coeff_v2_ref.asnumpy()[start_index:],
+        rbf_vec_coeff_v2[horizontal_start:],
+        rbf_vec_coeff_v2_ref.asnumpy()[horizontal_start:],
         atol=atol,
     )
 
@@ -269,31 +269,31 @@ def test_rbf_interpolation_coeffs_edge(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 
+    horizontal_start = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    assert horizontal_start < grid.num_edges
+
     rbf_vec_coeff_e = rbf.compute_rbf_interpolation_coeffs_edge(
-        geometry.get(geometry_attrs.EDGE_LAT),
-        geometry.get(geometry_attrs.EDGE_LON),
-        geometry.get(geometry_attrs.EDGE_CENTER_X),
-        geometry.get(geometry_attrs.EDGE_CENTER_Y),
-        geometry.get(geometry_attrs.EDGE_CENTER_Z),
-        geometry.get(geometry_attrs.EDGE_NORMAL_X),
-        geometry.get(geometry_attrs.EDGE_NORMAL_Y),
-        geometry.get(geometry_attrs.EDGE_NORMAL_Z),
-        geometry.get(geometry_attrs.EDGE_DUAL_U),
-        geometry.get(geometry_attrs.EDGE_DUAL_V),
+        geometry.get(geometry_attrs.EDGE_LAT).ndarray,
+        geometry.get(geometry_attrs.EDGE_LON).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_X).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_Y).ndarray,
+        geometry.get(geometry_attrs.EDGE_CENTER_Z).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_X).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
+        geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
+        geometry.get(geometry_attrs.EDGE_DUAL_U).ndarray,
+        geometry.get(geometry_attrs.EDGE_DUAL_V).ndarray,
         # NOTE: Neighbors are not in the same order. Use savepoint to make sure
         # order of coefficients computed by icon4py matches order of
         # coefficients in savepoint.
         grid_savepoint.e2c2e(),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        horizontal_start,
         array_ns=data_alloc.import_array_ns(backend),
     )
-
-    start_index = icon_grid.start_index(
-        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-
-    assert start_index < grid.num_edges
 
     rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
 
@@ -303,7 +303,7 @@ def test_rbf_interpolation_coeffs_edge(
         RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_e[start_index:],
-        rbf_vec_coeff_e_ref.asnumpy()[start_index:],
+        rbf_vec_coeff_e[horizontal_start:],
+        rbf_vec_coeff_e_ref.asnumpy()[horizontal_start:],
         atol=atol,
     )

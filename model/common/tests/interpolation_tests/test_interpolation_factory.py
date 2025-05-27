@@ -32,6 +32,7 @@ E2C_SIZE = 2
 
 interpolation_factories = {}
 
+cell_domain = h_grid.domain(dims.CellDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
 
 
@@ -311,3 +312,31 @@ def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend,
 
     assert field.shape == (grid.num_vertices, 6)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.parametrize(
+    "grid_file, experiment, atol",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-9),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-2),
+    ],
+)
+@pytest.mark.datatest
+def test_rbf_interpolation_coeffs(interpolation_savepoint, grid_file, experiment, backend, atol):
+    field_ref_1 = interpolation_savepoint.rbf_vec_coeff_c1()
+    field_ref_2 = interpolation_savepoint.rbf_vec_coeff_c2()
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
+    grid = factory.grid
+    field_1 = factory.get(attrs.RBF_VEC_COEFF_C1)
+    field_2 = factory.get(attrs.RBF_VEC_COEFF_C2)
+    horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+
+    assert field_1.shape == (grid.num_cells, 9)  # rbf.RBFDimension.CELL)
+    assert field_2.shape == (grid.num_cells, 9)  # rbf.RBFDimension.CELL)
+    assert test_helpers.dallclose(
+        field_ref_1.asnumpy()[horizontal_start:], field_1.asnumpy()[horizontal_start:], atol=atol
+    )
+    assert test_helpers.dallclose(
+        field_ref_2.asnumpy()[horizontal_start:], field_2.asnumpy()[horizontal_start:], atol=atol
+    )

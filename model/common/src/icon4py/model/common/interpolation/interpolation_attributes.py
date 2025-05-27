@@ -25,6 +25,8 @@ E_FLX_AVG: Final[str] = "e_flux_average"
 POS_ON_TPLANE_E_X: Final[str] = "pos_on_tplane_e_x"
 POS_ON_TPLANE_E_Y: Final[str] = "pos_on_tplane_e_y"
 CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
+RBF_VEC_COEFF_C1: Final[str] = "rbf_interpolation_coefficient_cell_1"  # TODO: long name?
+RBF_VEC_COEFF_C2: Final[str] = "rbf_interpolation_coefficient_cell_2"  # TODO: long name?
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -129,6 +131,22 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.VertexDim, dims.V2CDim),
         icon_var_name="cells_aw_verts",
+        dtype=ta.wpfloat,
+    ),
+    RBF_VEC_COEFF_C1: dict(
+        standard_name=RBF_VEC_COEFF_C1,
+        long_name="rbf interpolation coefficient from cells to edges 1",  # TODO: name
+        units="",
+        dims=(dims.CellDim, dims.KDim),  # TODO KDim?
+        icon_var_name="rbf_vec_coeff_c1",
+        dtype=ta.wpfloat,
+    ),
+    RBF_VEC_COEFF_C2: dict(
+        standard_name=RBF_VEC_COEFF_C2,
+        long_name="rbf interpolation coefficient from cells to edges 2",  # TODO: name
+        units="",
+        dims=(dims.CellDim, dims.KDim),  # TODO KDim?
+        icon_var_name="rbf_vec_coeff_c1",
         dtype=ta.wpfloat,
     ),
 }

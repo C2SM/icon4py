@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import functools
 import logging
 from typing import Optional
@@ -23,6 +24,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_fields,
+    rbf_interpolation as rbf,
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -289,6 +291,38 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(cells_aw_verts)
+
+        rbf_vec_coeff_c = factory.NumpyFieldsProvider(
+            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_cell, array_ns=self._xp),
+            fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
+            domain=(dims.CellDim, dims.KDim),  # TODO: second dim, rbf stencil size?
+            deps={
+                "cell_center_lat": geometry_attrs.CELL_LAT,
+                "cell_center_lon": geometry_attrs.CELL_LON,
+                "cell_center_x": geometry_attrs.CELL_CENTER_X,
+                "cell_center_y": geometry_attrs.CELL_CENTER_Y,
+                "cell_center_z": geometry_attrs.CELL_CENTER_Z,
+                "edge_center_x": geometry_attrs.EDGE_CENTER_X,
+                "edge_center_y": geometry_attrs.EDGE_CENTER_Y,
+                "edge_center_z": geometry_attrs.EDGE_CENTER_Z,
+                "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
+                "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
+                "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
+            },
+            connectivities={"rbf_offset": dims.C2E2C2EDim},
+            params={
+                # TODO: Config?
+                "rbf_kernel": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL].value,
+                # TODO: mean_cell_area?
+                # "scale_factor": rbf.compute_rbf_scale(math.sqrt(self.grid.mean_cell_area()), rbf.RBFDimension.CELL), # noqa: ERA001
+                "scale_factor": 0.5,  # TODO: How to get mean_cell_area?
+                # TODO:
+                "horizontal_start": self.grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
+            },
+        )
+        self.register_provider(rbf_vec_coeff_c)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
