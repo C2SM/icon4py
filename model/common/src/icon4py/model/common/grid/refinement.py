@@ -113,6 +113,7 @@ def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone) -> RefinementVal
         case _:
             raise NotImplementedError
 
+
 def is_limited_area_grid(
     refinement_field: data_alloc.NDArray,
     array_ns: ModuleType = np,

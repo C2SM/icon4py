@@ -6,11 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import enum
+import functools
 import logging
 import pathlib
 from types import ModuleType
 from typing import Literal, Optional, Protocol, TypeAlias, Union
-import functools
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend

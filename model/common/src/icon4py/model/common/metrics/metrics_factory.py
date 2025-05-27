@@ -16,7 +16,6 @@ import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -47,6 +46,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 vertical_domain = v_grid.domain(dims.KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
+
 
 # TODO (Yilu): z_ifc should be registed to metrics_field
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -100,14 +100,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thslp_zdiffu": 0.02,
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
-            "num_cells": 100, #TODO: check the values for num_cells, num_values, nflatlev
+            "num_cells": 100,  # TODO: check the values for num_cells, num_values, nflatlev
             "num_levels": 10,
             "nflatlev": 10,
             "model_top_height": 23500.0,
             "SLEVE_decay_scale_1": 4000.0,
             "SLEVE_decay_exponent": 1.2,
-            "SLEVE_decay_scale_2":2500.0,
-            "SLEVE_minimum_layer_thickness_1":100.0,
+            "SLEVE_decay_scale_2": 2500.0,
+            "SLEVE_minimum_layer_thickness_1": 100.0,
             "SLEVE_minimum_relative_layer_thickness_1": 1.0 / 3.0,
             "SLEVE_minimum_layer_thickness_2": 500.0,
             "SLEVE_minimum_relative_layer_thickness_2": 0.5,
@@ -132,7 +132,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 {
                     # TODO (Yilu): here interface_model_height
                     attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
-                    "z_ifc_sliced": z_ifc_sliced, # TODO (Yilu): z_ifc_sliced could be removed?
+                    "z_ifc_sliced": z_ifc_sliced,  # TODO (Yilu): z_ifc_sliced could be removed?
                     "vct_a": vct_a,
                     "topography": self._topography,
                     "c_refin_ctrl": c_refin_ctrl,
@@ -159,30 +159,37 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
             ),
-            fields={"vertical_coordinates_on_cell_khalf": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,},
-            domain={dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
-                    dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
-                    },
-            deps={
-                "vct_a":"vct_a",
-                "topography": "topography",
-                "cell_areas":geometry_attrs.CELL_AREA,
-                "geofac_n2s":interpolation_attributes.GEOFAC_N2S,
+            fields={
+                "vertical_coordinates_on_cell_khalf": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
             },
-            connectivities = {"c2e2cod":dims.C2E2CODim},
+            domain={
+                dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
+                dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
+            },
+            deps={
+                "vct_a": "vct_a",
+                "topography": "topography",
+                "cell_areas": geometry_attrs.CELL_AREA,
+                "geofac_n2s": interpolation_attributes.GEOFAC_N2S,
+            },
+            connectivities={"c2e2cod": dims.C2E2CODim},
             params={
                 "num_cells": self._config["num_cells"],
-                "num_levels":self._config["num_levels"],
-                "nflatlev":self._config["nflatlev"],
-                "model_top_height":self._config["model_top_height"],
-                "SLEVE_decay_scale_1":self._config["SLEVE_decay_scale_1"],
-                "SLEVE_decay_exponent":self._config["SLEVE_decay_exponent"],
-                "SLEVE_decay_scale_2":self._config["SLEVE_decay_scale_2"],
-                "SLEVE_minimum_layer_thickness_1":self._config["SLEVE_minimum_layer_thickness_1"],
-                "SLEVE_minimum_relative_layer_thickness_1":self._config["SLEVE_minimum_relative_layer_thickness_1"],
-                "SLEVE_minimum_layer_thickness_2":self._config["SLEVE_minimum_layer_thickness_2"],
-                "SLEVE_minimum_relative_layer_thickness_2":self._config["SLEVE_minimum_relative_layer_thickness_2"],
-                "lowest_layer_thickness":self._config["lowest_layer_thickness"],
+                "num_levels": self._config["num_levels"],
+                "nflatlev": self._config["nflatlev"],
+                "model_top_height": self._config["model_top_height"],
+                "SLEVE_decay_scale_1": self._config["SLEVE_decay_scale_1"],
+                "SLEVE_decay_exponent": self._config["SLEVE_decay_exponent"],
+                "SLEVE_decay_scale_2": self._config["SLEVE_decay_scale_2"],
+                "SLEVE_minimum_layer_thickness_1": self._config["SLEVE_minimum_layer_thickness_1"],
+                "SLEVE_minimum_relative_layer_thickness_1": self._config[
+                    "SLEVE_minimum_relative_layer_thickness_1"
+                ],
+                "SLEVE_minimum_layer_thickness_2": self._config["SLEVE_minimum_layer_thickness_2"],
+                "SLEVE_minimum_relative_layer_thickness_2": self._config[
+                    "SLEVE_minimum_relative_layer_thickness_2"
+                ],
+                "lowest_layer_thickness": self._config["lowest_layer_thickness"],
             },
         )
         self.register_provider(vertical_coordinates_on_cell_khalf)

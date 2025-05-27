@@ -12,13 +12,15 @@ from typing import Optional
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
+import icon4py.model.common.metrics.compute_nudgecoeffs as common_metrics
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
-    horizontal as h_grid, refinement,
+    horizontal as h_grid,
     icon,
+    refinement,
 )
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -26,7 +28,7 @@ from icon4py.model.common.interpolation import (
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
-import icon4py.model.common.metrics.compute_nudgecoeffs as common_metrics
+
 
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
@@ -83,23 +85,28 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry,))
 
     def _register_computed_fields(self):
-
         nudgecoeffs_e = factory.ProgramFieldProvider(
             func=common_metrics.compute_nudgecoeffs.with_backend(None),
-            domain={dims.EdgeDim: (edge_domain(h_grid.Zone.NUDGING_LEVEL_2), edge_domain(h_grid.Zone.END))},
+            domain={
+                dims.EdgeDim: (
+                    edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
+                    edge_domain(h_grid.Zone.END),
+                )
+            },
             fields={attrs.NUDGECOEFFS: attrs.NUDGECOEFFS},
             deps={
                 "refin_ctrl": "refinement_control_at_edges",
             },
-            params = {
-                    "grf_nudge_start_e":refinement.refine_control_value(dims.EdgeDim, h_grid.Zone.NUDGING).value,
-                    "nudge_max_coeffs":self._config["nudge_max_coeffs"],
-                    "nudge_efold_width":self._config["nudge_efold_width"],
-                    "nudge_zone_width":self._config["nudge_zone_width"],
-                },
+            params={
+                "grf_nudge_start_e": refinement.refine_control_value(
+                    dims.EdgeDim, h_grid.Zone.NUDGING
+                ).value,
+                "nudge_max_coeffs": self._config["nudge_max_coeffs"],
+                "nudge_efold_width": self._config["nudge_efold_width"],
+                "nudge_zone_width": self._config["nudge_zone_width"],
+            },
         )
         self.register_provider(nudgecoeffs_e)
-
 
         geofac_div = factory.EmbeddedFieldOperatorProvider(
             # needs to be computed on fieldview-embedded backend

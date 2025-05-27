@@ -19,11 +19,11 @@ import numpy as np
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.states.metadata as data
-from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
 import icon4py.model.common.type_alias as ta
-from icon4py.model.common.grid import base, icon as icon_grid, topography as topo
+from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.datatest_fixtures import lowest_layer_thickness
+
 
 log = logging.getLogger(__name__)
 
@@ -585,13 +585,12 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
             - (vct_a / decay_scale) ** decay_exponent
         ) / array_ns.sinh((model_top_height / decay_scale) ** decay_exponent)
 
-
     smoothed_topography = topo.smooth_topography(
         topography=topography,
         cell_areas=cell_areas,
         geofac_n2s=geofac_n2s,
         c2e2co=c2e2co,
-    ).ndarray # TODO (Yilu): ndarray can be removed
+    ).ndarray  # TODO (Yilu): ndarray can be removed
 
     vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=float)
     vertical_coordinate[:, num_levels] = topography
@@ -630,11 +629,11 @@ def _check_and_correct_layer_thickness(
     vct_a: data_alloc.NDArray,
     num_cells: gtx.int32,
     num_levels: gtx.int32,
-    SLEVE_minimum_layer_thickness_1:ta.wpfloat,
-    SLEVE_minimum_relative_layer_thickness_1:ta.wpfloat,
-    SLEVE_minimum_layer_thickness_2:ta.wpfloat,
-    SLEVE_minimum_relative_layer_thickness_2:ta.wpfloat,
-    lowest_layer_thickness:ta.wpfloat,
+    SLEVE_minimum_layer_thickness_1: ta.wpfloat,
+    SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
+    SLEVE_minimum_layer_thickness_2: ta.wpfloat,
+    SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
+    lowest_layer_thickness: ta.wpfloat,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     ktop_thicklimit = array_ns.asarray(num_cells * [num_levels], dtype=float)
@@ -644,21 +643,15 @@ def _check_and_correct_layer_thickness(
         delta_vct_a = vct_a[k] - vct_a[k + 1]
         if delta_vct_a < SLEVE_minimum_layer_thickness_1:
             # limit layer thickness to SLEVE_minimum_relative_layer_thickness_1 times its nominal value
-            minimum_layer_thickness = (
-                SLEVE_minimum_relative_layer_thickness_1 * delta_vct_a
-            )
+            minimum_layer_thickness = SLEVE_minimum_relative_layer_thickness_1 * delta_vct_a
         elif delta_vct_a < SLEVE_minimum_layer_thickness_2:
             # limitation factor changes from SLEVE_minimum_relative_layer_thickness_1 to SLEVE_minimum_relative_layer_thickness_2
             layer_thickness_adjustment_factor = (
                 (SLEVE_minimum_layer_thickness_2 - delta_vct_a)
-                / (
-                    SLEVE_minimum_layer_thickness_2
-                    - SLEVE_minimum_layer_thickness_1
-                )
+                / (SLEVE_minimum_layer_thickness_2 - SLEVE_minimum_layer_thickness_1)
             ) ** 2
             minimum_layer_thickness = (
-                SLEVE_minimum_relative_layer_thickness_1
-                * layer_thickness_adjustment_factor
+                SLEVE_minimum_relative_layer_thickness_1 * layer_thickness_adjustment_factor
                 + SLEVE_minimum_relative_layer_thickness_2
                 * (1.0 - layer_thickness_adjustment_factor)
             ) * delta_vct_a
@@ -670,9 +663,7 @@ def _check_and_correct_layer_thickness(
                 * (delta_vct_a / SLEVE_minimum_layer_thickness_2) ** (1.0 / 3.0)
             )
 
-        minimum_layer_thickness = max(
-            minimum_layer_thickness, min(50, lowest_layer_thickness)
-        )
+        minimum_layer_thickness = max(minimum_layer_thickness, min(50, lowest_layer_thickness))
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
@@ -719,9 +710,7 @@ def _check_and_correct_layer_thickness(
                 f"Model top is too low and num_levels, {num_levels}, > 6."
             )
         else:
-            log.warning(
-                f"Model top is too low. But num_levels, {num_levels}, <= 6. "
-            )
+            log.warning(f"Model top is too low. But num_levels, {num_levels}, <= 6. ")
 
     return vertical_coordinate
 
@@ -733,10 +722,7 @@ def _check_flatness_of_flat_level(
     array_ns: ModuleType = np,
 ) -> None:
     # Check if level nflatlev is still flat
-    if not array_ns.all(
-        vertical_coordinate[:, nflatlev - 1]
-        == vct_a[nflatlev - 1]
-    ):
+    if not array_ns.all(vertical_coordinate[:, nflatlev - 1] == vct_a[nflatlev - 1]):
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
 
 
@@ -745,19 +731,19 @@ def compute_vertical_coordinate(
     topography: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
-    c2e2co:data_alloc.NDArray,
-    num_cells:gtx.int32,
-    num_levels:gtx.int32,
-    nflatlev:gtx.int32,
-    model_top_height:ta.wpfloat,
-    SLEVE_decay_scale_1:ta.wpfloat,
-    SLEVE_decay_exponent:ta.wpfloat,
-    SLEVE_decay_scale_2:ta.wpfloat,
-    SLEVE_minimum_layer_thickness_1:ta.wpfloat,
-    SLEVE_minimum_relative_layer_thickness_1:ta.wpfloat,
-    SLEVE_minimum_layer_thickness_2:ta.wpfloat,
-    SLEVE_minimum_relative_layer_thickness_2:ta.wpfloat,
-    lowest_layer_thickness:ta.wpfloat,
+    c2e2co: data_alloc.NDArray,
+    num_cells: gtx.int32,
+    num_levels: gtx.int32,
+    nflatlev: gtx.int32,
+    model_top_height: ta.wpfloat,
+    SLEVE_decay_scale_1: ta.wpfloat,
+    SLEVE_decay_exponent: ta.wpfloat,
+    SLEVE_decay_scale_2: ta.wpfloat,
+    SLEVE_minimum_layer_thickness_1: ta.wpfloat,
+    SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
+    SLEVE_minimum_layer_thickness_2: ta.wpfloat,
+    SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
+    lowest_layer_thickness: ta.wpfloat,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """

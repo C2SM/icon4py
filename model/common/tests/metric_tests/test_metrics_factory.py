@@ -25,7 +25,7 @@ from icon4py.model.testing import (
     helpers as test_helpers,
     serialbox,
 )
-from icon4py.model.testing.datatest_fixtures import topography_savepoint
+
 
 metrics_factories = {}
 
@@ -85,7 +85,6 @@ def _get_metrics_factory(
         )
     else:
         raise ValueError(f"Unsupported experiment: {experiment}")
-
 
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
@@ -623,6 +622,7 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1])
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
+
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -632,7 +632,15 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     ],
 )
 @pytest.mark.datatest
-def test_vertical_coordinates_on_cells_khalf(grid_savepoint, metrics_savepoint, topography_savepoint, grid_file, icon_grid, experiment, backend):
+def test_vertical_coordinates_on_cells_khalf(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend,
+):
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -642,9 +650,10 @@ def test_vertical_coordinates_on_cells_khalf(grid_savepoint, metrics_savepoint, 
         metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field=factory.get(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL)
+    field = factory.get(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL)
     field_ref = metrics_savepoint.z_ifc()
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
+
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error

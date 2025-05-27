@@ -63,7 +63,7 @@ MASK_HDIFF: Final[str] = "mask_hdiff"
 ZD_DIFFCOEF_DSL: Final[str] = "zd_diffcoef_dsl"
 ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
 ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
-CELL_HEIGHT_ON_INTERFACE_LEVEL:Final[str] = "vertical_coordinates_on_cell_khalf"
+CELL_HEIGHT_ON_INTERFACE_LEVEL: Final[str] = "vertical_coordinates_on_cell_khalf"
 
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -412,11 +412,11 @@ attrs: dict[str, model.FieldMetaData] = {
         dtype=ta.wpfloat,
     ),
     CELL_HEIGHT_ON_INTERFACE_LEVEL: dict(
-            standard_name=CELL_HEIGHT_ON_INTERFACE_LEVEL,
-            long_name="vertical_coordinates_on_cell_khalf",
-            units="m",
-            dims=(dims.CellDim, dims.KHalfDim),
-            icon_var_name="z_ifc",
-            dtype=ta.wpfloat,
-        ),
+        standard_name=CELL_HEIGHT_ON_INTERFACE_LEVEL,
+        long_name="vertical_coordinates_on_cell_khalf",
+        units="m",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="z_ifc",
+        dtype=ta.wpfloat,
+    ),
 }

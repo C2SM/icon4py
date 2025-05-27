@@ -16,7 +16,6 @@ import numpy as np
 
 from icon4py.model.common import constants, dimension as dims, utils
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
