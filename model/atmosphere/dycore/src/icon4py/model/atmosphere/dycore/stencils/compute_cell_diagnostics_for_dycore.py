@@ -31,14 +31,9 @@ from gt4py.next.ffront.fbuiltins import astype, bool, broadcast, maximum
 from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
 )
-from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
-    _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import \
-    _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers
 from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperatures_and_pressure_gradient import \
     _compute_virtual_potential_temperatures_and_pressure_gradient
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
@@ -56,6 +51,8 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_wp import \
+    _interpolate_cell_field_to_half_levels_wp
 from icon4py.model.common.math.derivative import _compute_first_vertical_derivative_at_cells
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -84,9 +81,6 @@ def _compute_perturbed_quantities_and_interpolation(
     reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
     reference_theta_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     wgtfac_c: fa.CellKField[ta.wpfloat],
     vwind_expl_wgt: fa.CellField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
@@ -126,18 +120,17 @@ def _compute_perturbed_quantities_and_interpolation(
         else exner_at_cells_on_half_levels
     )
 
-    (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = concat_where(
-        dims.KDim == 0,
-        _compute_perturbation_of_rho_and_theta(current_rho, reference_rho_at_cells_on_model_levels, current_theta_v, reference_theta_at_cells_on_model_levels),
-        (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
-    )
+    (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = _compute_perturbation_of_rho_and_theta(
+            current_rho,
+            reference_rho_at_cells_on_model_levels,
+            current_theta_v,
+            reference_theta_at_cells_on_model_levels,
+        )
 
-    (rho_at_cells_on_half_levels, perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = concat_where(
+    rho_at_cells_on_half_levels = concat_where(
         dims.KDim >= 1,
-        _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
-            wgtfac_c, current_rho, reference_rho_at_cells_on_model_levels, current_theta_v, reference_theta_at_cells_on_model_levels
-        ),
-        (rho_at_cells_on_half_levels, perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
+        _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho),
+        rho_at_cells_on_half_levels
     )
 
     (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels, pressure_buoyancy_acceleration_at_cells_on_half_levels) = concat_where(
@@ -151,13 +144,7 @@ def _compute_perturbed_quantities_and_interpolation(
             ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half,
         ),
-        (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels, pressure_buoyancy_acceleration_at_cells_on_half_levels),
-    )
-
-    perturbed_theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim == 0,
-        broadcast(0.0, (dims.CellDim, dims.KDim)),
-        perturbed_theta_v_at_cells_on_half_levels,
+        (broadcast(0.0, (dims.CellDim, dims.KDim)), theta_v_at_cells_on_half_levels, pressure_buoyancy_acceleration_at_cells_on_half_levels),
     )
 
     return (
@@ -422,9 +409,6 @@ def compute_perturbed_quantities_and_interpolation(
         reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
         current_theta_v=current_theta_v,
         reference_theta_at_cells_on_model_levels=reference_theta_at_cells_on_model_levels,
-        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
         wgtfac_c=wgtfac_c,
         vwind_expl_wgt=vwind_expl_wgt,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
