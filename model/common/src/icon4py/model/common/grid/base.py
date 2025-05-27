@@ -120,9 +120,19 @@ class BaseGrid(ABC):
     def geometry_type(self) -> GeometryType:
         ...
 
+    @property
+    @abstractmethod
+    def limited_area(self) -> bool:
+        """
+        Whether the grid is a limited area grid.
+
+        Limited area grids are used in the ICON model to represent a subdomain of the global grid.
+        """
+        ...
+
     @abstractmethod
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
-        pass
+        ...
 
     def has_skip_values(self):
         """

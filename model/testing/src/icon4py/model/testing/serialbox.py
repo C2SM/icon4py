@@ -473,6 +473,7 @@ class IconGridSavepoint(IconSavepoint):
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             on_gpu=on_gpu,
+            # we don't want to manipulate anything on the test data from ICON
             keep_skip_values=True,
         )
         c2e2c = self.c2e2c()
