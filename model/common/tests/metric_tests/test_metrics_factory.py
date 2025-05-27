@@ -11,7 +11,7 @@ from typing import Optional
 import pytest
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import (
@@ -25,7 +25,7 @@ from icon4py.model.testing import (
     helpers as test_helpers,
     serialbox,
 )
-
+from icon4py.model.testing.datatest_fixtures import topography_savepoint
 
 metrics_factories = {}
 
@@ -69,11 +69,23 @@ def _get_metrics_factory(
     backend: Optional[gtx_backend.Backend],
     experiment: str,
     grid_file: str,
+    icon_grid,
     grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
+
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        topography = topography_savepoint.topo_c()
+    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+        topography = data_alloc.zero_field(
+            icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
+        )
+    else:
+        raise ValueError(f"Unsupported experiment: {experiment}")
+
 
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
@@ -110,6 +122,7 @@ def _get_metrics_factory(
             vertical_grid=vertical_grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
+            topography=topography,
             interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
@@ -619,13 +632,15 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     ],
 )
 @pytest.mark.datatest
-def test_vertical_coordinates_on_cells_khalf(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_vertical_coordinates_on_cells_khalf(grid_savepoint, metrics_savepoint, topography_savepoint, grid_file, icon_grid, experiment, backend):
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
+        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
     )
     field=factory.get(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL)
     field_ref = metrics_savepoint.z_ifc()

@@ -16,6 +16,7 @@ import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -23,7 +24,6 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
@@ -53,11 +53,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
         grid: icon.IconGrid,
-        vertical_grid: VerticalGrid,
+        vertical_grid: v_grid.VerticalGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        topography,
-        # TODO: type of topography
+        topography: data_alloc.NDArray,
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
@@ -101,6 +100,18 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thslp_zdiffu": 0.02,
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
+            "num_cells":
+            "num_levels":
+            "nflatlev":
+            "model_top_height": 23500.0,
+            "SLEVE_decay_scale_1": 4000.0,
+            "SLEVE_decay_exponent": 1.2,
+            "SLEVE_decay_scale_2":2500.0,
+            "SLEVE_minimum_layer_thickness_1":100.0,
+            "SLEVE_minimum_relative_layer_thickness_1": 1.0 / 3.0,
+            "SLEVE_minimum_layer_thickness_2": 500.0,
+            "SLEVE_minimum_relative_layer_thickness_2": 0.5,
+            "lowest_layer_thickness": 50.0,
         }
         z_ifc_sliced = gtx.as_field(
             (dims.CellDim,), interface_model_height.ndarray[:, self._grid.num_levels]
@@ -123,6 +134,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
                     "z_ifc_sliced": z_ifc_sliced,
                     "vct_a": vct_a,
+                    "topography": self._topography,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -148,18 +160,21 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 array_ns=self._xp,
             ),
             fields={"vertical_coordinates_on_cell_khalf": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,},
-            domain={},
+            domain={dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
+                    dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
+                    },
             deps={
                 "vct_a":"vct_a",
-                "topography":self._topography,
+                "topography": "topography",
                 "cell_areas":geometry_attrs.CELL_AREA,
                 "geofac_n2s":interpolation_attributes.GEOFAC_N2S,
             },
-            connectivities = {},
+            connectivities = {"c2e2cod":dims.C2E2CODim},
             params={
-                "grid":self._grid,
-                "vertical_geometry":self._vertical_grid,
-                "backend":self._backend,
+                "num_cells": ,
+                "num_levels":self._grid,
+                "nflatlev":self._vertical_grid,
+
             },
         )
         self.register_provider(vertical_coordinates_on_cell_khalf)

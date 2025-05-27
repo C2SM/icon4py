@@ -14,6 +14,8 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+import numpy as np
+
 
 @gtx.field_operator
 def _update_smoothed_topography(
@@ -45,13 +47,33 @@ def update_smoothed_topography(
         },
     )
 
+def compute_nabla2_on_cell_numpy(
+    psi_c: data_alloc.NDArray,
+    geofac_n2s: data_alloc.NDArray,
+    c2e2co:data_alloc.NDArray,
+) -> np.ndarray:
+    """
+    Computes the Laplacian (nabla squared) of a scalar field defined on cell
+    centres. (Numpy version)
+    """
+    nabla2_psi_c =np.sum(psi_c[c2e2co] * geofac_n2s, axis=1)
+    return nabla2_psi_c
+
+def update_smoothed_topography_numpy(
+    smoothed_topography: np.ndarray,
+    nabla2_topo: np.ndarray,
+    cell_areas: np.ndarray,
+) -> np.ndarray:
+    """
+        Updates the smoothed topography field inside the loop. (Numpy version)
+    """
+    return smoothed_topography + 0.125 * nabla2_topo * cell_areas
 
 def smooth_topography(
-    topography: fa.CellField[ta.wpfloat],
-    cell_areas: fa.CellField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-    grid: base.BaseGrid,
-    backend: gtx_backend.Backend,
+    topography: data_alloc.NDArray,
+    cell_areas: data_alloc.NDArray,
+    geofac_n2s: data_alloc.NDArray,
+    c2e2co: data_alloc.NDArray,
     num_iterations: int = 25,
 ) -> fa.CellField[ta.wpfloat]:
     """
@@ -59,31 +81,12 @@ def smooth_topography(
     coordinate.
     """
 
-    smoothed_topography = gtx.as_field(
-        (dims.CellDim,), topography.ndarray, allocator=backend
-    )  # TODO (@halungge) this should copy?
-
-    nabla2_topo = data_alloc.zero_field(grid, dims.CellDim, backend=backend)
+    smoothed_topography = topography.copy()
 
     for _ in range(num_iterations):
-        compute_nabla2_on_cell.with_backend(backend)(
-            psi_c=smoothed_topography,
-            geofac_n2s=geofac_n2s,
-            nabla2_psi_c=nabla2_topo,
-            horizontal_start=0,
-            horizontal_end=grid.num_cells,
-            offset_provider={
-                "C2E2CO": grid.get_offset_provider("C2E2CO"),
-            },
-        )
 
-        update_smoothed_topography.with_backend(backend)(
-            nabla2_topo=nabla2_topo,
-            cell_areas=cell_areas,
-            smoothed_topography=smoothed_topography,
-            horizontal_start=0,
-            horizontal_end=grid.num_cells,
-            offset_provider={},
-        )
+        nabla2_topo=compute_nabla2_on_cell_numpy(smoothed_topography, geofac_n2s, c2e2co)
+        smoothed_topography = update_smoothed_topography_numpy(smoothed_topography, nabla2_topo, cell_areas)
 
     return smoothed_topography
+
