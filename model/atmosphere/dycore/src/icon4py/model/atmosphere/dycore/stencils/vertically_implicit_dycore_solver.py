@@ -282,22 +282,16 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         else (rho_explicit_term, exner_explicit_term)
     )
 
-    tridiagonal_intermediate_result, next_w = concat_where(
-        dims.KDim > 0,
-        _solve_tridiagonal_matrix_for_w_forward_sweep(
-            vwind_impl_wgt=exner_w_implicit_weight_parameter,
-            theta_v_ic=theta_v_at_cells_on_half_levels,
-            ddqz_z_half=ddqz_z_half,
-            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            z_w_expl=w_explicit_term,
-            z_exner_expl=exner_explicit_term,
-            # z_q=tridiagonal_intermediate_result,
-            # w=next_w,
-            dtime=dtime,
-            cpd=dycore_consts.cpd,
-        ),
-        (broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))),
+    tridiagonal_intermediate_result, next_w = _solve_tridiagonal_matrix_for_w_forward_sweep(
+        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        theta_v_ic=theta_v_at_cells_on_half_levels,
+        ddqz_z_half=ddqz_z_half,
+        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        z_w_expl=w_explicit_term,
+        z_exner_expl=exner_explicit_term,
+        dtime=dtime,
+        cpd=dycore_consts.cpd,
     )
 
     # # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
@@ -312,7 +306,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         _solve_tridiagonal_matrix_for_w_back_substitution_scan(
             z_q=tridiagonal_intermediate_result, w=next_w
         ),
-        next_w,
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
     return (
@@ -559,22 +553,18 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         else (rho_explicit_term, exner_explicit_term)
     )
 
-    tridiagonal_intermediate_result, next_w = concat_where(
-        dims.KDim > 0,
-        _solve_tridiagonal_matrix_for_w_forward_sweep(
-            vwind_impl_wgt=exner_w_implicit_weight_parameter,
-            theta_v_ic=theta_v_at_cells_on_half_levels,
-            ddqz_z_half=ddqz_z_half,
-            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            z_w_expl=w_explicit_term,
-            z_exner_expl=exner_explicit_term,
-            # z_q=tridiagonal_intermediate_result,
-            # w=next_w,
-            dtime=dtime,
-            cpd=dycore_consts.cpd,
-        ),
-        (broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))),
+    tridiagonal_intermediate_result, next_w = _solve_tridiagonal_matrix_for_w_forward_sweep(
+        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        theta_v_ic=theta_v_at_cells_on_half_levels,
+        ddqz_z_half=ddqz_z_half,
+        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        z_w_expl=w_explicit_term,
+        z_exner_expl=exner_explicit_term,
+        # z_q=tridiagonal_intermediate_result,
+        # w=next_w,
+        dtime=dtime,
+        cpd=dycore_consts.cpd,
     )
 
     # # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
@@ -590,7 +580,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             z_q=tridiagonal_intermediate_result,
             w=next_w,
         ),
-        next_w,
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
     return (
