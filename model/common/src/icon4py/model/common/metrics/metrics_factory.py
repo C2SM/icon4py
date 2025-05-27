@@ -100,9 +100,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thslp_zdiffu": 0.02,
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
-            "num_cells":
-            "num_levels":
-            "nflatlev":
+            "num_cells": 100, #TODO: check the values for num_cells, num_values, nflatlev
+            "num_levels": 10,
+            "nflatlev": 10,
             "model_top_height": 23500.0,
             "SLEVE_decay_scale_1": 4000.0,
             "SLEVE_decay_exponent": 1.2,
@@ -132,7 +132,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 {
                     # TODO (Yilu): here interface_model_height
                     attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
-                    "z_ifc_sliced": z_ifc_sliced,
+                    "z_ifc_sliced": z_ifc_sliced, # TODO (Yilu): z_ifc_sliced could be removed?
                     "vct_a": vct_a,
                     "topography": self._topography,
                     "c_refin_ctrl": c_refin_ctrl,
@@ -171,10 +171,18 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities = {"c2e2cod":dims.C2E2CODim},
             params={
-                "num_cells": ,
-                "num_levels":self._grid,
-                "nflatlev":self._vertical_grid,
-
+                "num_cells": self._config["num_cells"],
+                "num_levels":self._config["num_levels"],
+                "nflatlev":self._config["nflatlev"],
+                "model_top_height":self._config["model_top_height"],
+                "SLEVE_decay_scale_1":self._config["SLEVE_decay_scale_1"],
+                "SLEVE_decay_exponent":self._config["SLEVE_decay_exponent"],
+                "SLEVE_decay_scale_2":self._config["SLEVE_decay_scale_2"],
+                "SLEVE_minimum_layer_thickness_1":self._config["SLEVE_minimum_layer_thickness_1"],
+                "SLEVE_minimum_relative_layer_thickness_1":self._config["SLEVE_minimum_relative_layer_thickness_1"],
+                "SLEVE_minimum_layer_thickness_2":self._config["SLEVE_minimum_layer_thickness_2"],
+                "SLEVE_minimum_relative_layer_thickness_2":self._config["SLEVE_minimum_relative_layer_thickness_2"],
+                "lowest_layer_thickness":self._config["lowest_layer_thickness"],
             },
         )
         self.register_provider(vertical_coordinates_on_cell_khalf)
