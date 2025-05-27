@@ -135,7 +135,7 @@ def _compute_perturbed_quantities_and_interpolation(
             wgtfac_c,
             perturbed_theta_v_at_cells_on_model_levels,
             current_theta_v,
-            vwind_expl_wgt,
+            exner_w_explicit_weight_parameter,
             perturbed_exner_at_cells_on_model_levels,
             ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half,
