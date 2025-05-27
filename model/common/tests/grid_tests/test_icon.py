@@ -21,6 +21,7 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
+from icon4py.model.common.grid.base import MissingConnectivity
 from icon4py.model.common.grid.grid_manager import GridFile
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
 
@@ -181,8 +182,11 @@ def test_has_skip_values(grid_file):
 @pytest.mark.parametrize("dim", utils.local_dims())
 def test_skip_values_on_connectivities(grid_file: str, dim: gtx.Dimension):
     grid = from_file(grid_file)
-    connectivity = grid.get_connectivity(dim.value)
-    _assert_skip_value_configuration(connectivity)
+    try:
+        connectivity = grid.get_connectivity(dim.value)
+        _assert_skip_value_configuration(connectivity)
+    except MissingConnectivity:
+        pass  # V2E2V exist but is not registered in the IconGrid, because it is not used.
 
 
 def _assert_skip_value_configuration(connectivity: gtx.Connectivity):

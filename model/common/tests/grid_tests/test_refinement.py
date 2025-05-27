@@ -69,6 +69,6 @@ def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
     grid = grid_utils.get_grid_manager(grid_file, 1, backend).grid
     xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
     refinement_field = grid.refinement_control[dim]
-    limited_area = refin.is_limited_area_grid(refinement_field, array_ns=xp)
+    limited_area = refin.is_limited_area_grid(refinement_field.ndarray, array_ns=xp)
     assert isinstance(limited_area, bool)
     assert expected == limited_area

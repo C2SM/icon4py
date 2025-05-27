@@ -402,8 +402,7 @@ class GridManager:
     def __call__(self, backend: Optional[gtx_backend.Backend]):
         if not self._reader:
             self.open()
-        on_gpu = data_alloc.is_cupy_device(backend)
-        self._grid = self._construct_grid(on_gpu=on_gpu)
+        self._grid = self._construct_grid(backend=backend)
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
 
@@ -492,6 +491,32 @@ class GridManager:
             ),
         }
 
+    def _read_grid_refinement_fields(
+        self,
+        decomposition_info: Optional[decomposition.DecompositionInfo] = None,
+        backend: Optional[gtx_backend.Backend] = None,
+    ) -> dict[gtx.Dimension, gtx.Field]:
+        """
+        Reads the refinement control fields from the grid file.
+
+        Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
+        see [refinement.py](refinement.py)
+        """
+        refinement_control_names = {
+            dims.CellDim: GridRefinementName.CONTROL_CELLS,
+            dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
+            dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
+        }
+        refinement_control_fields = {
+            dim: gtx.as_field(
+                (dim,),
+                self._reader.int_variable(name, decomposition_info, transpose=False),
+                allocator=backend,
+            )
+            for dim, name in refinement_control_names.items()
+        }
+        return refinement_control_fields
+
     def _read_start_end_indices(
         self,
     ) -> tuple[
@@ -547,30 +572,6 @@ class GridManager:
 
         return start_indices, end_indices, grid_refinement_dimensions
 
-    def _read_grid_refinement_fields(
-        self,
-        decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-        array_ns: ModuleType = np,
-    ) -> dict[gtx.Dimension : data_alloc.NDArray]:
-        """
-        Reads the refinement control fields from the grid file.
-
-        Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
-        see [refinement.py](refinement.py)
-        """
-        refinement_control_names = {
-            dims.CellDim: GridRefinementName.CONTROL_CELLS,
-            dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
-            dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
-        }
-        refinement_control_fields = {
-            dim: array_ns.asarray(
-                self._reader.int_variable(name, decomposition_info, transpose=False)
-            )
-            for dim, name in refinement_control_names.items()
-        }
-        return refinement_control_fields
-
     @property
     def grid(self) -> icon.IconGrid:
         return self._grid
@@ -583,24 +584,25 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-    def _construct_grid(self, on_gpu: bool) -> icon.IconGrid:
+    def _construct_grid(self, backend: gtx_backend) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in
         Icon4py from them. Adds constructed start/end index information to the grid.
 
         """
-        xp = data_alloc.array_ns(on_gpu)
+        xp = data_alloc.import_array_ns(backend)
+        on_gpu = data_alloc.is_cupy_device(backend)
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
         _local_connectivities = functools.partial(
             _add_derived_connectivities,
             array_ns=xp,
         )
-        _refinement_fields = functools.partial(self._read_grid_refinement_fields, array_ns=xp)
+        _refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)
 
         refinement_fields = _refinement_fields()
         grid = self._initialize_global(
-            _determine_limited_area(refinement_fields[dims.CellDim]), on_gpu
+            _determine_limited_area(refinement_fields[dims.CellDim].ndarray), on_gpu
         )
         grid.with_refinement_control(refinement_fields)
 
