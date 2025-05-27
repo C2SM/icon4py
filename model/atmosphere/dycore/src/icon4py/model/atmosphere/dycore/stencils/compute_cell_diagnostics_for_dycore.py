@@ -37,6 +37,10 @@ from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import \
+    _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers
+from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperatures_and_pressure_gradient import \
+    _compute_virtual_potential_temperatures_and_pressure_gradient
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
@@ -122,29 +126,32 @@ def _compute_perturbed_quantities_and_interpolation(
         else exner_at_cells_on_half_levels
     )
 
-    (
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
-        rho_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels,
-        theta_v_at_cells_on_half_levels,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels,
-    ) = _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
-        rho=current_rho,
-        z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
-        z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels,
-        rho_ref_mc=reference_rho_at_cells_on_model_levels,
-        theta_v=current_theta_v,
-        theta_ref_mc=reference_theta_at_cells_on_model_levels,
-        rho_ic=rho_at_cells_on_half_levels,
-        wgtfac_c=wgtfac_c,
-        vwind_expl_wgt=vwind_expl_wgt,
-        exner_pr=perturbed_exner_at_cells_on_model_levels,
-        d_exner_dz_ref_ic=ddz_of_reference_exner_at_cells_on_half_levels,
-        ddqz_z_half=ddqz_z_half,
-        z_theta_v_pr_ic=perturbed_theta_v_at_cells_on_half_levels,
-        theta_v_ic=theta_v_at_cells_on_half_levels,
-        z_th_ddz_exner_c=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+    (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = concat_where(
+        dims.KDim == 0,
+        _compute_perturbation_of_rho_and_theta(current_rho, reference_rho_at_cells_on_model_levels, current_theta_v, reference_theta_at_cells_on_model_levels),
+        (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
+    )
+
+    (rho_at_cells_on_half_levels, perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = concat_where(
+        dims.KDim >= 1,
+        _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
+            wgtfac_c, current_rho, reference_rho_at_cells_on_model_levels, current_theta_v, reference_theta_at_cells_on_model_levels
+        ),
+        (rho_at_cells_on_half_levels, perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
+    )
+
+    (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels, pressure_buoyancy_acceleration_at_cells_on_half_levels) = concat_where(
+        dims.KDim >= 1,
+        _compute_virtual_potential_temperatures_and_pressure_gradient(
+            wgtfac_c,
+            perturbed_theta_v_at_cells_on_model_levels,
+            current_theta_v,
+            vwind_expl_wgt,
+            perturbed_exner_at_cells_on_model_levels,
+            ddz_of_reference_exner_at_cells_on_half_levels,
+            ddqz_z_half,
+        ),
+        (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels, pressure_buoyancy_acceleration_at_cells_on_half_levels),
     )
 
     perturbed_theta_v_at_cells_on_half_levels = concat_where(
