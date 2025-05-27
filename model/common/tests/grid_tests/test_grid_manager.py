@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 import logging
 import typing
 from typing import Optional
@@ -20,11 +19,9 @@ from icon4py.model.common.grid import (
     grid_manager as gm,
     horizontal as h_grid,
     refinement as refin,
-    simple,
     vertical as v_grid,
 )
 from icon4py.model.common.grid.grid_manager import GeometryName
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -697,28 +694,3 @@ def test_edge_vertex_distance(grid_file, grid_savepoint, backend):
         expected.asnumpy(),
         equal_nan=True,
     )
-
-
-@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
-def test_clear_skip_values(grid_file, caplog, backend):
-    caplog.set_level(logging.DEBUG)
-    xp = data_alloc.import_array_ns(backend)
-    clear_skip_values = functools.partial(gm.clear_skip_values, array_ns=xp)
-
-    grid = _run_grid_manager(grid_file, backend=None).grid
-    horizontal_connectivities = (
-        c for c in grid.offset_providers.values() if isinstance(c, gtx.Connectivity)
-    )
-    for connectivity in horizontal_connectivities:
-        clear_skip_values(connectivity)
-        assert not np.any(connectivity.asnumpy() == gm.GridFile.INVALID_INDEX).item()
-
-
-def test_clear_skip_values_validate_disconnected_grids():
-    grid = simple.SimpleGrid()
-    connectivity = grid.get_offset_provider("V2E")
-    connectivity.ndarray[2, :] = gm.GridFile.INVALID_INDEX
-
-    with pytest.raises(AssertionError) as error:
-        gm.clear_skip_values(connectivity)
-        assert "disconnected" in error.value
