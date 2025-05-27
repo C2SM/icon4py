@@ -5,10 +5,10 @@ from icon4py.model.common.grid import gridfile
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
 from . import utils
 
-
 @pytest.mark.with_netcdf
-def test_grid_file_dimension(global_grid_file):
-    parser = gridfile.GridFile(str(global_grid_file))
+def test_grid_file_dimension():
+    global_grid_file = str(gridtest_utils.resolve_full_grid_file_name(dt_utils.R02B04_GLOBAL))
+    parser = gridfile.GridFile(global_grid_file)
     try:
         parser.open()
         assert parser.dimension(

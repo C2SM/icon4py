@@ -116,14 +116,17 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
+    def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool, limited_area=True):
         if not self._reader:
             self.open()
         on_gpu = data_alloc.is_cupy_device(backend)
-        self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
+        self._grid = self._construct_grid(on_gpu=on_gpu, with_skip_values=keep_skip_values,
+                                          limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields(backend)
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
+        self.close()
+
 
     def _read_coordinates(self, backend: Optional[gtx_backend.Backend]) -> CoordinateDict:
         return {
@@ -309,14 +312,14 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-    def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:
+    def _construct_grid(self, on_gpu: bool, with_skip_values: bool, limited_area: bool) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in
         Icon4py from them. Adds constructed start/end index information to the grid.
 
         """
-        grid = self._initialize_global(limited_area, on_gpu)
+        grid = self._initialize_global(with_skip_values, limited_area, on_gpu)
 
         global_connectivities = {
             dims.C2E2C: self._get_index_field(gridfile.ConnectivityName.C2E2C),
@@ -346,12 +349,13 @@ class GridManager:
             field = field + self._transformation(field)
         return field
 
-    def _initialize_global(self, limited_area: bool, on_gpu: bool) -> icon.IconGrid:
+    def _initialize_global(self, with_skip_values: bool, limited_area: bool, on_gpu: bool) -> icon.IconGrid:
         """
         Read basic information from the grid file:
         Mostly reads global grid file parameters and dimensions.
 
         Args:
+            with_skip_values: bool whether or not to remove skip values in neighbor tables
             limited_area: bool whether or not the produced grid is a limited area grid.
             # TODO (@halungge) this is not directly encoded in the grid, which is why we passed it in. It could be determined from the refinement fields though.
 
@@ -376,6 +380,8 @@ class GridManager:
             vertical_size=self._vertical_config.num_levels,
             on_gpu=on_gpu,
             limited_area=limited_area,
+            keep_skip_values=with_skip_values,
+
         )
         grid = icon.IconGrid(uuid).with_config(config).with_global_params(global_params)
         return grid

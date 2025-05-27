@@ -23,17 +23,12 @@ from . import utils
 
 
 @functools.cache
-def grid_from_file() -> icon.IconGrid:
-    return from_file(dt_utils.REGIONAL_EXPERIMENT)
-
-
-@functools.cache
-def from_file(filename: str) -> icon.IconGrid:
-    file_name = gridtest_utils.resolve_full_grid_file_name(filename)
+def grid_from_limited_area_grid_file() -> icon.IconGrid:
+    file_name = gridtest_utils.resolve_full_grid_file_name(dt_utils.REGIONAL_EXPERIMENT)
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
     )
-    manager(backend=None)
+    manager(keep_skip_values=True, backend=None)
     return manager.grid
 
 
@@ -77,7 +72,7 @@ INTERIOR_IDX = {
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
 def test_halo(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     # For single node this returns an empty region - start and end index are the same see  also ./mpi_tests/test_icon.py
     domain = h_grid.domain(dim)(marker)
     assert grid.start_index(domain) == HALO_IDX[dim][0]
@@ -89,7 +84,7 @@ def test_halo(icon_grid, source, dim, marker):
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
 def test_local(dim, source, icon_grid):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     assert grid.start_index(domain) == 0
     assert grid.end_index(domain) == grid.size[dim]
@@ -101,7 +96,7 @@ def test_local(dim, source, icon_grid):
 @pytest.mark.parametrize("marker", lateral_boundary())
 def test_lateral_boundary(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if num > 4 and dim in (dims.VertexDim, dims.CellDim):
         with pytest.raises(AssertionError) as e:
@@ -120,7 +115,7 @@ def test_lateral_boundary(icon_grid, source, dim, marker):
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
 def test_end(icon_grid, source, dim):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     domain = h_grid.domain(dim)(h_grid.Zone.END)
     assert grid.start_index(domain) == grid.size[dim]
     assert grid.end_index(domain) == grid.size[dim]
@@ -132,7 +127,7 @@ def test_end(icon_grid, source, dim):
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
 def test_nudging(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if dim == dims.VertexDim or (dim == dims.CellDim and num > 1):
         with pytest.raises(AssertionError) as e:
@@ -151,7 +146,7 @@ def test_nudging(icon_grid, source, dim, marker):
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
 def test_interior(icon_grid, source, dim):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     domain = h_grid.domain(dim)(h_grid.Zone.INTERIOR)
     start_index = grid.start_index(domain)
     end_index = grid.end_index(domain)

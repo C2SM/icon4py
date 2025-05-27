@@ -190,6 +190,7 @@ def construct_icon_grid(
         vertical_size=vertical_size,
         limited_area=limited_area,
         on_gpu=on_gpu,
+        keep_skip_values=False,
     )
 
     grid = (
