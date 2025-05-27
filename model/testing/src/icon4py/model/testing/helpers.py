@@ -234,10 +234,10 @@ def _refactor_field_operator(input_data: dict, reference_outputs: dict) -> tuple
         i_dt_val
         for i_dt_val, dt_val in enumerate(list(input_data.values()))
         if (isinstance(dt_val, gtx.Field) and dt_val.shape == size)
-    ][0]
+    ]
     input_data.update(
         out=tuple(
-            gtx.as_field((input_data[list(input_data)[full_field_idx]]._domain), ref_val)
+            gtx.as_field((input_data[list(input_data)[full_field_idx[0]]]._domain), ref_val)
             for ref_val in ref_vals
         )
     )
