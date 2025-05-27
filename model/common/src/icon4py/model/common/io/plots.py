@@ -29,7 +29,7 @@ pil_logger.setLevel(logging.INFO)
 log = logging.getLogger(__name__)
 
 DO_PLOTS = True
-PLOT_IMGS_DIR = "imgs"
+PLOT_IMGS_DIR = "run62_barray_4x4_nlev800_noSlip"
 
 
 @gtx.field_operator
