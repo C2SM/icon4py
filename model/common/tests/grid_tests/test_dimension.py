@@ -10,7 +10,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 
-from .grid_tests import utils
+from . import utils
 
 
 @pytest.mark.parametrize("dim", utils.all_dims())
