@@ -53,6 +53,7 @@ class IconGrid(base.BaseGrid):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
         self._id = id_
+        self._refinement_control = {}
         self._start_indices = {}
         self._end_indices = {}
         self.global_properties: GlobalGridParams = None
@@ -202,6 +203,15 @@ class IconGrid(base.BaseGrid):
     @property
     def lvert_nest(self):
         return True if self.config.lvertnest else False
+
+    @property
+    def refinement_control(self) -> dict[gtx.Dimension, gtx.Field]:
+        """Return the refinement control field for the grid."""
+        return self._refinement_control
+
+    @utils.chainable
+    def with_refinement_control(self, refinement_control: dict[gtx.Dimension, gtx.Field]):
+        return self._refinement_control.update(refinement_control)
 
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """

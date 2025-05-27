@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import enum
+import functools
 import logging
 import pathlib
 from types import ModuleType
@@ -19,7 +20,7 @@ from icon4py.model.common import dimension as dims, exceptions, type_alias as ta
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
-from icon4py.model.common.grid import base, icon, vertical as v_grid
+from icon4py.model.common.grid import base, icon, refinement, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -398,12 +399,10 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
+    def __call__(self, backend: Optional[gtx_backend.Backend]):
         if not self._reader:
             self.open()
-        on_gpu = data_alloc.is_cupy_device(backend)
-        self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
-        self._refinement = self._read_grid_refinement_fields(backend)
+        self._grid = self._construct_grid(backend=backend)
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
 
@@ -549,23 +548,26 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
-        backend: Optional[gtx_backend.Backend],
         decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-    ) -> tuple[dict[dims.Dimension : data_alloc.NDArray]]:
+        backend: Optional[gtx_backend.Backend] = None,
+    ) -> dict[gtx.Dimension : gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
-        xp = data_alloc.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
             dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
         }
         refinement_control_fields = {
-            dim: xp.asarray(self._reader.int_variable(name, decomposition_info, transpose=False))
+            dim: gtx.as_field(
+                (dim,),
+                self._reader.int_variable(name, decomposition_info, transpose=False),
+                allocator=backend,
+            )
             for dim, name in refinement_control_names.items()
         }
         return refinement_control_fields
@@ -591,14 +593,27 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-    def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:
+    def _construct_grid(self, backend: gtx.backend) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in
         Icon4py from them. Adds constructed start/end index information to the grid.
 
         """
-        grid = self._initialize_global(limited_area, on_gpu)
+        xp = data_alloc.array_ns(backend)
+        on_gpu = data_alloc.is_cupy_device(backend)
+        _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
+        _local_connectivities = functools.partial(
+            _add_derived_connectivities,
+            array_ns=xp,
+        )
+        _refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)
+
+        refinement_fields = _refinement_fields()
+        grid = self._initialize_global(
+            _determine_limited_area(refinement_fields[dims.CellDim].ndarray), on_gpu
+        )
+        grid.with_refinement_control(refinement_fields)
 
         global_connectivities = {
             dims.C2E2C: self._get_index_field(ConnectivityName.C2E2C),
@@ -610,7 +625,7 @@ class GridManager:
             dims.C2V: self._get_index_field(ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(ConnectivityName.V2E2V),
         }
-        xp = data_alloc.array_ns(on_gpu)
+
         grid.with_connectivities(
             {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
         )
