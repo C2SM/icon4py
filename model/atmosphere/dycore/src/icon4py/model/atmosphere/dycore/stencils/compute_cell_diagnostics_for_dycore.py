@@ -111,7 +111,8 @@ def _compute_perturbed_quantities_and_interpolation(
     exner_at_cells_on_half_levels = (
         concat_where(
             (
-                (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo)
+                (start_cell_lateral_boundary_level_3 <= dims.CellDim)
+                & (dims.CellDim < end_cell_halo)
                 & (maximum(1, nflatlev) <= dims.KDim)
             ),
             _interpolate_cell_field_to_half_levels_vp(
