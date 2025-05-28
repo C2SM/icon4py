@@ -611,8 +611,8 @@ class SolveNonhydro:
             .freeze()
         )
         self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend).compile(
-            nflatlev_startindex_plus1=[gtx.int32(self._vertical_params.nflatlev + 1)],
-            nlev=[gtx.int32(self._grid.num_levels)],
+            nflatlev_startindex_plus1=[self._vertical_params.nflatlev + gtx.int32(1)],
+            nlev=[self._grid.num_levels],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
             offset_provider=self._grid.offset_providers,

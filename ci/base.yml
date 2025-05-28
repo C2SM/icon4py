@@ -91,4 +91,5 @@ build_image_aarch64:
     # Another problem, observed in test stage, is that gpu tests hang in combination with CUDA MPS,
     # when high test parallelism is used.
     NUM_PROCESSES: 16
+    GT4PY_BUILD_JOBS: 4
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
