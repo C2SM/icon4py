@@ -309,11 +309,8 @@ def compute_perturbed_quantities_and_interpolation(
     start_cell_lateral_boundary: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     start_cell_halo_level_2: gtx.int32,
-    end_cell_end: gtx.int32,
     end_cell_halo: gtx.int32,
     end_cell_halo_level_2: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):

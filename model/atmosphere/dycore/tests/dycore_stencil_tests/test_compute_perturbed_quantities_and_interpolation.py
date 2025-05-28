@@ -127,13 +127,12 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         start_cell_lateral_boundary: gtx.int32,
         start_cell_lateral_boundary_level_3: gtx.int32,
         start_cell_halo_level_2: gtx.int32,
-        end_cell_end: gtx.int32,
         end_cell_halo: gtx.int32,
         end_cell_halo_level_2: gtx.int32,
         **kwargs: Any,
     ) -> dict:
         vert_idx = np.arange(kwargs["vertical_end"])
-        cell = np.arange(kwargs["horizontal_end"])
+        cell = np.arange(end_cell_halo_level_2)
         horz_idx = cell[:, np.newaxis]
         vertical_end = kwargs["vertical_end"]
 
@@ -142,7 +141,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
                 perturbed_rho_at_cells_on_model_levels,
                 perturbed_theta_v_at_cells_on_model_levels[:, : vertical_end - 1],
             ) = np.where(
-                (start_cell_lateral_boundary <= horz_idx) & (horz_idx < end_cell_end),
+                (start_cell_lateral_boundary <= horz_idx) & (horz_idx < start_cell_lateral_boundary_level_3),
                 (
                     np.zeros_like(perturbed_rho_at_cells_on_model_levels),
                     np.zeros_like(
@@ -408,7 +407,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
         end_cell_halo = grid.end_index(cell_domain(h_grid.Zone.HALO))
-        end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
         start_cell_halo_level_2 = grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
@@ -450,11 +448,8 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
             start_cell_lateral_boundary=start_cell_lateral_boundary,
             start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
             start_cell_halo_level_2=start_cell_halo_level_2,
-            end_cell_end=end_cell_end,
             end_cell_halo=end_cell_halo,
             end_cell_halo_level_2=end_cell_halo_level_2,
-            horizontal_start=0,
-            horizontal_end=grid.num_cells,
             vertical_start=0,
             vertical_end=grid.num_levels + 1,
         )
