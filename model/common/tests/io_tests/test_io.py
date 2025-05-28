@@ -11,7 +11,6 @@ import re
 from typing import Union
 
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 import uxarray as ux
@@ -31,7 +30,7 @@ from icon4py.model.common.io.io import (
 )
 from icon4py.model.common.states import data
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils, grid_utils
+from icon4py.model.testing import datatest_utils, definitions as test_definitions, grid_utils
 
 
 # setting backend to fieldview embedded here.

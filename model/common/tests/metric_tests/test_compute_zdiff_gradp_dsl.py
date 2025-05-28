@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
@@ -16,6 +15,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_flat_idx,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions as test_definitions
 from icon4py.model.testing.helpers import (
     dallclose,
 )

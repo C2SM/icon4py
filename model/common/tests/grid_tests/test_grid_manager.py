@@ -12,7 +12,6 @@ import typing
 from typing import Optional
 
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
@@ -26,6 +25,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.grid_manager import GeometryName
 from icon4py.model.testing import (
+    definitions as test_definitions,
     grid_utils as gridtest_utils,
     helpers,
 )

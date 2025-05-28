@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -19,6 +18,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
+    definitions as test_definitions,
     grid_utils,
     helpers,
     reference_funcs as ref_funcs,

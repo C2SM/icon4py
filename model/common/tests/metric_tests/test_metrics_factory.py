@@ -8,7 +8,6 @@
 import logging
 from typing import Optional
 
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 from gt4py.next import backend as gtx_backend
 
@@ -21,6 +20,7 @@ from icon4py.model.common.metrics import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
+    definitions as test_definitions,
     grid_utils as gridtest_utils,
     helpers as test_helpers,
     serialbox,

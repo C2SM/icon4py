@@ -6,13 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
-from icon4py.model.testing import helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 
 @pytest.mark.level("unit")

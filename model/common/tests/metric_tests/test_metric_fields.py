@@ -8,14 +8,13 @@
 import math
 
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers as testing_helpers
+from icon4py.model.testing import definitions as test_definitions, helpers as testing_helpers
 
 
 cell_domain = horizontal.domain(dims.CellDim)

@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
@@ -27,7 +26,7 @@ from icon4py.model.common.states import (
     tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 
 @pytest.mark.datatest

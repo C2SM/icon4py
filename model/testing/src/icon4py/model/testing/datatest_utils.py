@@ -15,13 +15,7 @@ from typing import Final, Optional
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.testing.definitions import (
-    Experiment.GAUSS3D,
-    Experiment.GLOBAL,
-    Experiment.JABW,
-    Experiment.REGIONAL,
-    Experiment.WEISMAN_KLEMP,
-)
+from icon4py.model.testing.definitions import Experiment
 
 
 _TEST_UTILS_PATH: Final = pathlib.Path(__file__) / ".."

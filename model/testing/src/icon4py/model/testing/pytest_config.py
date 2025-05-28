@@ -8,15 +8,12 @@
 import os
 from typing import Final
 
-from icon4py.model.testing.definitions import Experiment.GLOBAL
 import pytest
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
-from icon4py.model.testing.definitions import (
-    Experiment.REGIONAL,
-)
+from icon4py.model.testing.definitions import Experiment
 from icon4py.model.testing.helpers import apply_markers
 
 

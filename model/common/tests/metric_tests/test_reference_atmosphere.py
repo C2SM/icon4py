@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.type_alias as ta
@@ -23,6 +22,7 @@ from icon4py.model.common.metrics.reference_atmosphere import (
     compute_reference_atmosphere_edge_fields,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions as test_definitions
 
 
 @pytest.mark.datatest

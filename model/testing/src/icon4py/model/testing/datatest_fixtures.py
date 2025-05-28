@@ -5,11 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.model.testing import definitions as test_definitions
 
 from . import data_handling as data, datatest_utils as dt_utils
 

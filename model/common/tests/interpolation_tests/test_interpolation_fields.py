@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -28,6 +27,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_pos_on_tplane_e_x_y,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions as test_definitions
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     download_ser_data,

@@ -8,14 +8,13 @@
 import math
 
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils, helpers
+from icon4py.model.testing import definitions as test_definitions, grid_utils, helpers
 
 
 NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS

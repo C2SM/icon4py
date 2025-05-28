@@ -22,8 +22,11 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils
-from icon4py.model.testing import definitions as test_definitions
+from icon4py.model.testing import (
+    data_handling,
+    datatest_utils as dt_utils,
+    definitions as test_definitions,
+)
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -120,10 +123,10 @@ def _download_and_load_gridfile(
     return gm
 
 
-def is_regional(Experiment.or_file: str):
+def is_regional(experiment_or_file: str):
     return (
-        test_definitions.Experiment.REGIONAL in Experiment.or_file
-        or REGIONAL_GRIDFILE in Experiment.or_file
+        test_definitions.Experiment.REGIONAL in experiment_or_file
+        or REGIONAL_GRIDFILE in experiment_or_file
     )
 
 

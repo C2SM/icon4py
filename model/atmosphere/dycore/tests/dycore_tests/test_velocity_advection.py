@@ -8,7 +8,6 @@
 import logging
 
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 from icon4py.model.atmosphere.dycore import (
@@ -29,7 +28,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 from . import utils
 

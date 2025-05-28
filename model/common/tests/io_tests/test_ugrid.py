@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 import xarray as xa
@@ -18,7 +17,7 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.testing import datatest_utils, grid_utils
+from icon4py.model.testing import datatest_utils, definitions as test_definitions, grid_utils
 
 
 def grid_files():

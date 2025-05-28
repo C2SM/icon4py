@@ -13,6 +13,7 @@ from typing import Final
 
 class Experiment(enum.Enum):
     """Enumeration of available experiments."""
+
     GLOBAL = "exclaim_ape_R02B04"
     REGIONAL = "mch_ch_r04b09_dsl"
     R02B04 = "r02b04_global"
@@ -20,14 +21,6 @@ class Experiment(enum.Enum):
     GAUSS3D = "gauss3d_torus"
     WEISMAN_KLEMP = "weisman_klemp_torus"
 
-
-
-Experiment.GLOBAL = "exclaim_ape_R02B04"
-Experiment.REGIONAL = "mch_ch_r04b09_dsl"
-Experiment.R02B04 = "r02b04_global"
-Experiment.JABW = "jabw_R02B04"
-Experiment.GAUSS3D = "gauss3d_torus"
-Experiment.WEISMAN_KLEMP = "weisman_klemp_torus"
 
 MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"

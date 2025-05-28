@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
@@ -22,7 +21,7 @@ from icon4py.model.driver import (
     icon4py_driver,
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.testing import helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 from .utils import (
     construct_diffusion_config,

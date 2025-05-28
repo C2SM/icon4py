@@ -6,13 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 
 @pytest.mark.embedded_remap_error

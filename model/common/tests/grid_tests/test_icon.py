@@ -8,7 +8,6 @@
 import functools
 import re
 
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -18,7 +17,7 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-from icon4py.model.testing import grid_utils as gridtest_utils
+from icon4py.model.testing import definitions as test_definitions, grid_utils as gridtest_utils
 
 from . import utils
 

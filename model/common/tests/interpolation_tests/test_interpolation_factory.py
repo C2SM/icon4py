@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
@@ -19,6 +18,7 @@ from icon4py.model.common.interpolation import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
+    definitions as test_definitions,
     grid_utils as gridtest_utils,
     helpers as test_helpers,
 )

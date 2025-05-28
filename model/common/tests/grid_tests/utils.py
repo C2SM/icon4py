@@ -9,8 +9,7 @@ from __future__ import annotations
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing import definitions as test_definitions
+from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_definitions
 
 
 r04b09_dsl_grid_path = dt_utils.GRIDS_PATH.joinpath(test_definitions.Experiment.REGIONAL)

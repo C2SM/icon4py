@@ -9,7 +9,6 @@
 import logging
 
 import gt4py.next as gtx
-from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
@@ -29,6 +28,7 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
+    definitions as test_definitions,
     helpers,
 )
 

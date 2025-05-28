@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
-from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 
@@ -20,7 +19,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils, helpers
+from icon4py.model.testing import definitions as test_definitions, grid_utils, helpers
 
 
 def test_geometry_raises_for_unknown_field(backend):
