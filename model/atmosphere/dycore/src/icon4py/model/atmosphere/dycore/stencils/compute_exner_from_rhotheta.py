@@ -14,10 +14,9 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@field_operator(grid_type=GridType.UNSTRUCTURED)
 def _compute_exner_from_rhotheta(
     rho: fa.CellKField[wpfloat],
-    theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
@@ -42,7 +41,6 @@ def compute_exner_from_rhotheta(
 ):
     _compute_exner_from_rhotheta(
         rho,
-        theta_v,
         exner,
         rd_o_cvd,
         rd_o_p0ref,
