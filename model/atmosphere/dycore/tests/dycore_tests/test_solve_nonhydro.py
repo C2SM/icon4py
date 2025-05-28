@@ -1188,11 +1188,8 @@ def test_compute_perturbed_quantities_and_interpolation(
         start_cell_lateral_boundary=start_cell_lateral_boundary,
         start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
         start_cell_halo_level_2=start_cell_halo_level_2,
-        end_cell_end=end_cell_end,
         end_cell_halo=end_cell_halo,
         end_cell_halo_level_2=end_cell_halo_level_2,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={
