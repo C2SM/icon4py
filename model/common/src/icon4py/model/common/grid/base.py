@@ -8,16 +8,24 @@
 import dataclasses
 import enum
 import functools
+import logging
 import uuid
 import warnings
 from abc import ABC, abstractmethod
+from types import ModuleType
 from typing import Callable, Dict
 
 import gt4py.next as gtx
+import numpy as np
+from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
+from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+_log = logging.getLogger(__name__)
 
 
 class MissingConnectivity(ValueError):
@@ -51,6 +59,7 @@ class GridConfig:
     length_rescale_factor: float = 1.0
     lvertnest: bool = False
     on_gpu: bool = False
+    keep_skip_values: bool = True
 
     @property
     def num_levels(self):
@@ -111,20 +120,38 @@ class BaseGrid(ABC):
     def geometry_type(self) -> GeometryType:
         ...
 
+    @property
+    @abstractmethod
+    def limited_area(self) -> bool:
+        """
+        Whether the grid is a limited area grid.
+
+        Limited area grids are used in the ICON model to represent a subdomain of the global grid.
+        """
+        ...
+
     @abstractmethod
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
-        pass
+        ...
 
     def has_skip_values(self):
         """
-        Check whether there are skip values on any connectivity in the grid.
+        Whether there are skip values on any connectivity in the grid.
 
         Decision is made base on the following properties:
         - limited_area = True -> True
         - geometry_type: either TORUS or ICOSAHEDRON, ICOSAHEDRON has Pentagon points ->True
+        - if config.no_skip_values is True (remaining skip values are removed from neighbor_tables at runtime) -> False
 
         """
-        return self.config.limited_area or self.geometry_type == GeometryType.ICOSAHEDRON
+        match self.geometry_type:
+            case GeometryType.TORUS:
+                return self.config.keep_skip_values and self.limited_area
+            case GeometryType.ICOSAHEDRON:
+                return self.config.keep_skip_values
+            case _:
+                _log.warning(f"Unknown geometry type {self.geometry_type}. Assuming skip values.")
+                return True
 
     @functools.cached_property
     def offset_providers(self):
@@ -156,18 +183,23 @@ class BaseGrid(ABC):
 
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
-            raise MissingConnectivity()
+            raise MissingConnectivity(f"no neighbor_table for dimension {dim}.")
         assert (
             self.connectivities[dim].dtype == gtx.int32
         ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
             dim, self.connectivities[dim].dtype
         )
-        return gtx.as_connectivity(
+        connectivity = gtx.as_connectivity(
             [from_dim, dim],
             to_dim,
             self.connectivities[dim],
             skip_value=-1 if self._has_skip_values(dim) else None,
         )
+        if not self.config.keep_skip_values:
+            connectivity = replace_skip_values(
+                connectivity, array_ns=data_alloc.array_ns(self.config.on_gpu)
+            )
+        return connectivity
 
     def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
@@ -199,3 +231,56 @@ class BaseGrid(ABC):
     @abstractmethod
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         ...
+
+
+def replace_skip_values(
+    connectivity: gtx.Connectivity, array_ns: ModuleType = np
+) -> gtx.Connectivity:
+    """
+    Manipulate a Connectivity's neighbor table to remove invalid indices.
+
+    This is a workaround to account for the lack of a clean implementation of the domain inference in GT4Py.
+    The workaround is currently needed for the MCH production runs (py2fgen wrapper)
+
+    (Remaining) invalid indices in the neighbor tables are replaced by the maximum of the valid indices of the given
+    entry, for example for a C2E2C table assume that  cell = 16 looks like this:
+
+    16 ->(15, -1, -1, 17)
+
+    it will become
+    16 -> (15, 17, 17, 17)
+
+    This might potentially lead to wrong results if computation over such values are effectively used.
+
+    ICON (Fortran) does something similar: They replace INVALID indices with the last valid neighbor and set interpolation coefficients to 0.
+    The don't do this for all neighbor tables but only for the ones where the apparently know the loop over, that is why even when
+
+    Hence, when calling from Fortran through py2fgen connectivity tables are passed into the wrapper
+    and most of them should already be manipulated only leaving those where invalid neighbors are not accessed in the dycore.
+
+    Args:
+        connectivity: gtx.Connectivity object to be manipulated
+    Returns:
+        gtx.Connectivity object with manipulated neighbor tables
+    """
+    # TODO @halungge: neighbour tables are copied, when constructing the Connectivity: should the original be discarded from the grid?
+    #   Would that work for the wrapper?
+
+    def _has_skip_values(neighbor_table: data_alloc.NDArray) -> bool:
+        return array_ns.amin(neighbor_table).item() == GridFile.INVALID_INDEX
+
+    if gtx_common.is_neighbor_connectivity(connectivity):
+        _log.debug(f"Checking {connectivity.domain} for invalid index `{GridFile.INVALID_INDEX}`.")
+        neighbor_table = connectivity.ndarray
+        if _has_skip_values(neighbor_table):
+            _log.info(f"Found invalid indices in {connectivity.domain}. Replacing...")
+            max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
+            assert array_ns.all(
+                max_valid_neighbor >= 0
+            ), f"{connectivity.domain} contains entries without any valid neighbor, disconnected grid?"
+            neighbor_table[:] = array_ns.where(
+                neighbor_table == GridFile.INVALID_INDEX, max_valid_neighbor, neighbor_table
+            )
+        else:
+            _log.debug(f"Found no invalid indices in {connectivity.domain}.")
+    return connectivity

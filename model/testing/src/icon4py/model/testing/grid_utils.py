@@ -11,12 +11,12 @@ from typing import Optional
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 
-import icon4py.model.common.grid.grid_manager as gm
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
+    grid_manager as gm,
     icon,
     vertical as v_grid,
 )
@@ -36,18 +36,20 @@ grid_geometries = {}
 
 
 def get_grid_manager_for_experiment(
-    experiment: str, backend: Optional[gtx_backend.Backend] = None
+    experiment: str, keep_skip_values: bool, backend: Optional[gtx_backend.Backend] = None
 ) -> gm.GridManager:
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         return _download_and_load_gridfile(
             dt_utils.R02B04_GLOBAL,
             num_levels=GLOBAL_NUM_LEVELS,
+            keep_skip_values=keep_skip_values,
             backend=backend,
         )
     elif experiment == dt_utils.REGIONAL_EXPERIMENT:
         return _download_and_load_gridfile(
             dt_utils.REGIONAL_EXPERIMENT,
             num_levels=MCH_CH_R04B09_LEVELS,
+            keep_skip_values=keep_skip_values,
             backend=backend,
         )
     else:
@@ -55,9 +57,14 @@ def get_grid_manager_for_experiment(
 
 
 def get_grid_manager(
-    grid_file: str, num_levels: int, backend: Optional[gtx_backend.Backend]
+    grid_file: str, num_levels: int, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
-    return _download_and_load_gridfile(grid_file, num_levels=num_levels, backend=backend)
+    return _download_and_load_gridfile(
+        file_path=grid_file,
+        num_levels=num_levels,
+        keep_skip_values=keep_skip_values,
+        backend=backend,
+    )
 
 
 def _file_name(grid_file: str):
@@ -85,37 +92,18 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
     return full_name
 
 
-def _run_grid_manager_for_file(
-    file: str, num_levels: int, backend: Optional[gtx_backend.Backend]
-) -> gm.GridManager:
-    """
-    Load a grid file.
-    Args:
-        file: full path to the file (file + path)
-        num_levels: number of vertical levels, needed for IconGrid construction but independent from grid file
-        backend: the gt4py Backend we are running on
-
-    Returns:
-
-    """
-    limited_area = is_regional(str(file))
-    transformation = gm.ToZeroBasedIndexTransformation()
-    manager = gm.GridManager(
-        transformation,
-        file,
-        v_grid.VerticalGridConfig(num_levels=num_levels),
-    )
-    manager(backend=backend, limited_area=limited_area)
-    manager.close()
-    return manager
-
-
 def _download_and_load_gridfile(
-    file_path: str, num_levels: int, backend: Optional[gtx_backend.Backend]
+    file_path: str, num_levels: int, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
     grid_file = _download_grid_file(file_path)
-    gm = _run_grid_manager_for_file(str(grid_file), num_levels, backend)
-    return gm
+    limited_area = is_regional(str(grid_file))
+    manager = gm.GridManager(
+        gm.ToZeroBasedIndexTransformation(),
+        grid_file,
+        v_grid.VerticalGridConfig(num_levels=num_levels),
+    )
+    manager(backend=backend, keep_skip_values=keep_skip_values, limited_area=limited_area)
+    return manager
 
 
 def is_regional(experiment_or_file: str):
@@ -151,7 +139,9 @@ def get_grid_geometry(
         return decomposition_info
 
     def _construct_grid_geometry():
-        gm = _download_and_load_gridfile(grid_file, num_levels=num_levels, backend=backend)
+        gm = _download_and_load_gridfile(
+            grid_file, keep_skip_values=True, num_levels=num_levels, backend=backend
+        )
         grid = gm.grid
         decomposition_info = _construct_dummy_decomposition_info(grid)
         geometry_source = geometry.GridGeometry(

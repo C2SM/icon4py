@@ -15,12 +15,12 @@ import uxarray
 import xarray as xa
 
 import icon4py.model.common.dimension as dim
-from icon4py.model.common.grid import grid_manager as gm
+from icon4py.model.common.grid import gridfile
 
 
 log = logging.getLogger(__name__)
 
-FILL_VALUE = gm.GridFile.INVALID_INDEX
+FILL_VALUE = gridfile.GridFile.INVALID_INDEX
 MESH = "mesh"
 
 HORIZONTAL_DIMENSION_MAPPING: Final[dict[gtx.Dimension, str]] = {
