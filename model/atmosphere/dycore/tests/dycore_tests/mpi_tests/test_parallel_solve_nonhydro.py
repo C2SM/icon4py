@@ -104,8 +104,8 @@ def test_run_solve_nonhydro_single_step(
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=savepoint_nonhydro_init.vn_traj(),
         mass_flx_me=savepoint_nonhydro_init.mass_flx_me(),
-        mass_flx_ic=savepoint_nonhydro_init.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=savepoint_nonhydro_init.mass_flx_ic(),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
     second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()
@@ -170,7 +170,7 @@ def test_run_solve_nonhydro_single_step(
 
     assert helpers.dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
-        diagnostic_state_nh.rho_ic.asnumpy(),
+        diagnostic_state_nh.rho_iau_increment.asnumpy(),
     )
 
     assert helpers.dallclose(
@@ -180,7 +180,7 @@ def test_run_solve_nonhydro_single_step(
 
     assert helpers.dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        diagnostic_state_nh.mass_fl_e.asnumpy(),
+        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 

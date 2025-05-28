@@ -15,6 +15,7 @@ from typing import Callable, NamedTuple
 import click
 import numpy as np
 from devtools import Timer
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
@@ -22,6 +23,7 @@ from icon4py.model.atmosphere.diffusion import (
     diffusion_states,
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -326,7 +328,7 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
-    icon4py_driver_backend: str,
+    backend: gtx_backend.Backend,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
     Initialize the driver run.
@@ -354,12 +356,12 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(icon4py_driver_backend, experiment_type)
+    config = driver_config.read_config(backend, experiment_type)
 
     decomp_info = driver_init.read_decomp_info(
         file_path,
         props,
-        config.run_config.backend,
+        backend,
         serialization_type,
         grid_id,
         grid_root,
@@ -369,7 +371,7 @@ def initialize(
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = driver_init.read_icon_grid(
         file_path,
-        backend=config.run_config.backend,
+        backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -385,7 +387,7 @@ def initialize(
     ) = driver_init.read_geometry_fields(
         file_path,
         vertical_grid_config=config.vertical_grid_config,
-        backend=config.run_config.backend,
+        backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -401,7 +403,7 @@ def initialize(
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,
-        config.run_config.backend,
+        backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -419,14 +421,14 @@ def initialize(
         edge_geometry,
         cell_geometry,
         exchange=exchange,
-        backend=config.run_config.backend,
+        backend=backend,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=icon_grid,
-        backend=config.run_config.backend,
+        backend=backend,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
@@ -450,7 +452,7 @@ def initialize(
         cell_geometry,
         edge_geometry,
         file_path,
-        backend=config.run_config.backend,
+        backend=backend,
         rank=props.rank,
         experiment_type=experiment_type,
     )
@@ -562,6 +564,14 @@ def icon4py_driver(
 
     2. run time loop
     """
+
+    if icon4py_driver_backend not in model_backends.BACKENDS:
+        raise ValueError(
+            f"Invalid driver backend: {icon4py_driver_backend}. \n"
+            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
+        )
+    backend = model_backends.BACKENDS[icon4py_driver_backend]
+
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     grid_id = uuid.UUID(grid_id)
     driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
@@ -577,7 +587,7 @@ def icon4py_driver(
         grid_id,
         grid_root,
         grid_level,
-        icon4py_driver_backend,
+        backend,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
     log.info(
