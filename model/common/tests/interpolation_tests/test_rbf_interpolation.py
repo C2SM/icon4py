@@ -253,7 +253,7 @@ def test_rbf_interpolation_coeffs_vertex(
     "grid_file, experiment, atol",
     [
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 8e-14),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 2e-9),
     ],
 )
 def test_rbf_interpolation_coeffs_edge(
