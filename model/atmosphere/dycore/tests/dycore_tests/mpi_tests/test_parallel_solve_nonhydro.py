@@ -170,7 +170,7 @@ def test_run_solve_nonhydro_single_step(
 
     assert helpers.dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
-        diagnostic_state_nh.rho_iau_increment.asnumpy(),
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
     )
 
     assert helpers.dallclose(
