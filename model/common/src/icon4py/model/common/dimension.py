@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Final
 
 import gt4py.next as gtx
 
@@ -56,14 +57,6 @@ V2E2V = gtx.FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = gtx.FieldOffset("Koff", source=KDim, target=(KDim,))
 KHalfOff = gtx.FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
 
-
-def from_value(name: str) -> gtx.Dimension | None:
-    """Get the dimension from its name."""
-    return next(
-        (
-            value
-            for value in globals().values()
-            if isinstance(value, gtx.Dimension) and value.value == name
-        ),
-        None,
-    )
+DIMENSIONS_BY_OFFSET_NAME: Final[dict[str, gtx.Dimension]] = {
+    dim.value: dim for dim in globals().values() if isinstance(dim, gtx.Dimension)
+}

@@ -115,7 +115,7 @@ class BaseGrid(ABC):
     @functools.cached_property
     def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
         return {
-            dims.from_value(k): v.ndarray
+            dims.DIMENSIONS_BY_OFFSET_NAME.get(k, None): v.ndarray
             for k, v in self.connectivities.items()
             if gtx_common.is_neighbor_connectivity(v)
         }

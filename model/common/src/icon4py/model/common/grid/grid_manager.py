@@ -399,7 +399,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: Optional[gtx_backend.Backend]) -> None:
+    def __call__(self, backend: Optional[gtx_backend.Backend]):
         if not self._reader:
             self.open()
         self._grid = self._construct_grid(backend=backend)
