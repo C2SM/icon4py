@@ -114,7 +114,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     VERTEX_Y: dict(
         standard_name=VERTEX_Y,
-        long_name="x component of cartesian coordinates of vertex",
+        long_name="y component of cartesian coordinates of vertex",
         units="1",
         dims=(dims.VertexDim,),
         icon_var_name="t_grid_vertices%vertex%x(2)",
