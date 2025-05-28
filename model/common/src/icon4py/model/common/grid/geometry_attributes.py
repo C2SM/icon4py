@@ -415,7 +415,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_CENTER_Y: dict(
         standard_name=EDGE_CENTER_Y,
-        long_name="x component of cartesian coordinates of edge centers",
+        long_name="y component of cartesian coordinates of edge centers",
         units="1",
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%cartesian_center%x(2)",
