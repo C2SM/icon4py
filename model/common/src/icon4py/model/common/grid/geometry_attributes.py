@@ -32,7 +32,6 @@ CELL_LON: Final[str] = "grid_longitude_of_cell_center"
 CELL_LAT: Final[str] = "grid_latitude_of_cell_center"
 CELL_CENTER_X: Final[str] = "x_component_of_cell_center"
 CELL_CENTER_Y: Final[str] = "y_component_of_cell_center"
-
 CELL_CENTER_Z: Final[str] = "z_component_of_cell_center"
 
 CELL_AREA: Final[str] = "cell_area"
