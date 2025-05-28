@@ -871,7 +871,7 @@ def compute_cells_aw_verts(
     cells_aw_verts = array_ns.zeros(v2e.shape)
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
         for je in range(v2e.shape[1]):
-            # INVALID_INDEX
+            # INVALID_INDEX, second part of the condition is to account from serialized connectivities
             if v2e[jv, je] == gm.GridFile.INVALID_INDEX or (
                 je > 0 and v2e[jv, je] == v2e[jv, je - 1]
             ):
