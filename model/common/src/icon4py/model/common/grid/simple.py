@@ -529,7 +529,7 @@ class SimpleGrid(BaseGrid):
             dims.C2E2C2E2CDim: simple_grid_data.c2e2c2e2c_table,
         }
 
-        self.with_config(config).with_neighbor_tables(connectivity_dict)
+        self.set_config(config).set_neighbor_tables(connectivity_dict)
         self.update_size_connectivities(
             {
                 dims.ECVDim: self.size[dims.EdgeDim] * self.size[dims.E2C2VDim],

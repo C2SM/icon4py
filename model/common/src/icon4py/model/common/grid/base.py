@@ -152,12 +152,12 @@ class BaseGrid(ABC):
         return connectivity_map
 
     @utils.chainable
-    def with_neighbor_tables(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
+    def set_neighbor_tables(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
         self._neighbor_tables.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     @utils.chainable
-    def with_config(self, config: GridConfig):
+    def set_config(self, config: GridConfig):
         self.config = config
         self._update_size()
 

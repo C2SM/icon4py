@@ -399,7 +399,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: Optional[gtx_backend.Backend]):
+    def __call__(self, backend: Optional[gtx_backend.Backend]) -> None:
         if not self._reader:
             self.open()
         self._grid = self._construct_grid(backend=backend)
@@ -604,7 +604,7 @@ class GridManager:
         grid = self._initialize_global(
             _determine_limited_area(refinement_fields[dims.CellDim].ndarray), on_gpu
         )
-        grid.with_refinement_control(refinement_fields)
+        grid.set_refinement_control(refinement_fields)
 
         global_connectivities = {
             dims.C2E2C: self._get_index_field(ConnectivityName.C2E2C),
@@ -617,7 +617,7 @@ class GridManager:
             dims.V2E2V: self._get_index_field(ConnectivityName.V2E2V),
         }
 
-        grid.with_neighbor_tables(
+        grid.set_neighbor_tables(
             {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
         )
 
@@ -625,7 +625,7 @@ class GridManager:
         _update_size_for_1d_sparse_dims(grid)
         start, end, _ = self._read_start_end_indices()
         for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
-            grid.with_start_end_indices(dim, start[dim], end[dim])
+            grid.set_start_end_indices(dim, start[dim], end[dim])
 
         return grid
 
@@ -666,7 +666,7 @@ class GridManager:
             on_gpu=on_gpu,
             limited_area=limited_area,
         )
-        grid = icon.IconGrid(uuid).with_config(config).with_global_params(global_params)
+        grid = icon.IconGrid(uuid).set_config(config).set_global_params(global_params)
         return grid
 
 
@@ -694,7 +694,7 @@ def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) 
     )
     c2e2c2e2c = _construct_butterfly_cells(c2e2c_table, array_ns=array_ns)
 
-    grid.with_neighbor_tables(
+    grid.set_neighbor_tables(
         {
             dims.C2E2CODim: c2e2c0,
             dims.C2E2C2EDim: c2e2c2e,

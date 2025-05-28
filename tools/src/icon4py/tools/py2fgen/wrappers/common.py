@@ -194,11 +194,11 @@ def construct_icon_grid(
 
     grid = (
         icon.IconGrid(id_=grid_id)
-        .with_config(config)
-        .with_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
-        .with_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)
-        .with_start_end_indices(dims.CellDim, cells_start_index, cells_end_index)
-        .with_neighbor_tables(
+        .set_config(config)
+        .set_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
+        .set_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)
+        .set_start_end_indices(dims.CellDim, cells_start_index, cells_end_index)
+        .set_neighbor_tables(
             {
                 dims.C2EDim: c2e,
                 dims.C2VDim: c2v,
@@ -209,7 +209,7 @@ def construct_icon_grid(
                 dims.E2C2EODim: e2c2e0,
             }
         )
-        .with_neighbor_tables(
+        .set_neighbor_tables(
             {
                 dims.V2EDim: v2e,
                 dims.E2VDim: e2v,

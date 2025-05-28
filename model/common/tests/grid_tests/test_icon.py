@@ -212,7 +212,7 @@ def test_has_skip_values_on_local_dims(dim, limited_area):
         horizontal_config=h_grid.HorizontalGridSize(1, 2, 3),
         vertical_size=1,
     )
-    grid = icon.IconGrid(uuid.uuid4()).with_config(config)
+    grid = icon.IconGrid(uuid.uuid4()).set_config(config)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS:
         assert grid._has_skip_values(dim)
     elif limited_area and dim in icon.CONNECTIVITIES_ON_BOUNDARIES:

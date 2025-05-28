@@ -132,7 +132,7 @@ class IconGrid(base.BaseGrid):
             return False
 
     @utils.chainable
-    def with_start_end_indices(
+    def set_start_end_indices(
         self,
         dim: gtx.Dimension,
         start_indices: np.ndarray,
@@ -143,7 +143,7 @@ class IconGrid(base.BaseGrid):
         self._end_indices[dim] = end_indices.astype(gtx.int32)
 
     @utils.chainable
-    def with_global_params(self, global_params: GlobalGridParams):
+    def set_global_params(self, global_params: GlobalGridParams):
         self.global_properties = global_params
 
     @property
@@ -217,7 +217,7 @@ class IconGrid(base.BaseGrid):
         return self._refinement_control
 
     @utils.chainable
-    def with_refinement_control(self, refinement_control: dict[gtx.Dimension, gtx.Field]):
+    def set_refinement_control(self, refinement_control: dict[gtx.Dimension, gtx.Field]):
         return self._refinement_control.update(refinement_control)
 
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
