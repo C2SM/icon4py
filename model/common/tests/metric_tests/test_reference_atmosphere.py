@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.type_alias as ta
@@ -22,11 +23,16 @@ from icon4py.model.common.metrics.reference_atmosphere import (
     compute_reference_atmosphere_edge_fields,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     icon_grid, metrics_savepoint, backend
 ):
@@ -71,7 +77,13 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_reference_atmosphere_on_half_level_mass_points(
     icon_grid, metrics_savepoint, backend
 ):
@@ -111,7 +123,13 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
@@ -130,7 +148,13 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_reference_atmosphere_on_full_level_edge_fields(
     icon_grid, interpolation_savepoint, metrics_savepoint, backend
 ):
@@ -182,7 +206,13 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
     z_mc = metrics_savepoint.z_mc()
     d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()

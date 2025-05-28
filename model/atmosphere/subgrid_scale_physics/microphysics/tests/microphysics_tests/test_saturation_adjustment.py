@@ -14,13 +14,13 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
     [
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
+        (test_definitions.Experiment.WEISMAN_KLEMP, 30000.0, 8000.0, 0.85),
     ],
 )
 @pytest.mark.parametrize(

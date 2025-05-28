@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -15,7 +16,7 @@ from . import data_handling as data, datatest_utils as dt_utils
 
 @pytest.fixture
 def experiment():
-    return dt_utils.REGIONAL_EXPERIMENT
+    return test_definitions.Experiment.REGIONAL
 
 
 @pytest.fixture(params=[False], scope="session")
@@ -41,16 +42,16 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        if experiment == dt_utils.GLOBAL_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
-        elif experiment == dt_utils.JABW_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_JABW[processor_props.comm_size]
-        elif experiment == dt_utils.GAUSS3D_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_GAUSS3D[processor_props.comm_size]
-        elif experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
+        if experiment == test_definitions.Experiment.GLOBAL:
+            uri = test_definitions.DATA_URIS_APE[processor_props.comm_size]
+        elif experiment == test_definitions.Experiment.JABW:
+            uri = test_definitions.DATA_URIS_JABW[processor_props.comm_size]
+        elif experiment == test_definitions.Experiment.GAUSS3D:
+            uri = test_definitions.DATA_URIS_GAUSS3D[processor_props.comm_size]
+        elif experiment == test_definitions.Experiment.WEISMAN_KLEMP:
+            uri = test_definitions.DATA_URIS_WK[processor_props.comm_size]
         else:
-            uri = dt_utils.DATA_URIS[processor_props.comm_size]
+            uri = test_definitions.DATA_URIS[processor_props.comm_size]
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
@@ -80,7 +81,7 @@ def grid_savepoint(data_provider, experiment):
 
 
 def is_regional(experiment_name):
-    return experiment_name == dt_utils.REGIONAL_EXPERIMENT
+    return experiment_name == test_definitions.Experiment.REGIONAL
 
 
 @pytest.fixture
@@ -471,7 +472,7 @@ def istep_exit():
 
 @pytest.fixture
 def lowest_layer_thickness(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+    if experiment == test_definitions.Experiment.REGIONAL:
         return 20.0
     else:
         return 50.0
@@ -479,9 +480,9 @@ def lowest_layer_thickness(experiment):
 
 @pytest.fixture
 def model_top_height(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+    if experiment == test_definitions.Experiment.REGIONAL:
         return 23000.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == test_definitions.Experiment.GLOBAL:
         return 75000.0
     else:
         return 23500.0
@@ -494,9 +495,9 @@ def flat_height():
 
 @pytest.fixture
 def stretch_factor(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+    if experiment == test_definitions.Experiment.REGIONAL:
         return 0.65
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == test_definitions.Experiment.GLOBAL:
         return 0.9
     else:
         return 1.0
@@ -504,9 +505,9 @@ def stretch_factor(experiment):
 
 @pytest.fixture
 def damping_height(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+    if experiment == test_definitions.Experiment.REGIONAL:
         return 12500.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == test_definitions.Experiment.GLOBAL:
         return 50000.0
     else:
         return 45000.0

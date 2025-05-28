@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
+from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 
@@ -19,12 +20,14 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing import grid_utils, helpers
 
 
 def test_geometry_raises_for_unknown_field(backend):
     geometry = grid_utils.get_grid_geometry(
-        backend, dt_utils.GLOBAL_EXPERIMENT, dt_utils.R02B04_GLOBAL
+        backend,
+        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiment.R02B04,
     )
     with pytest.raises(ValueError) as e:
         geometry.get("foo")
@@ -35,8 +38,16 @@ def test_geometry_raises_for_unknown_field(backend):
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-12),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+            1e-7,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+            3e-12,
+        ),
     ],
 )
 @pytest.mark.datatest
@@ -50,8 +61,14 @@ def test_edge_control_area(backend, grid_savepoint, grid_file, experiment, rtol)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 @pytest.mark.datatest
@@ -66,8 +83,16 @@ def test_coriolis_parameter(backend, grid_savepoint, grid_file, experiment):
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+            1e-9,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+            1e-12,
+        ),
     ],
 )
 @pytest.mark.datatest
@@ -81,8 +106,16 @@ def test_compute_edge_length(backend, grid_savepoint, grid_file, experiment, rto
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+            1e-9,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+            1e-12,
+        ),
     ],
 )
 @pytest.mark.datatest
@@ -97,8 +130,16 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+            1e-7,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+            1e-11,
+        ),
     ],
 )
 @pytest.mark.datatest
@@ -113,8 +154,16 @@ def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, experiment
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+            5e-9,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+            1e-11,
+        ),
     ],
 )
 @pytest.mark.datatest
@@ -134,8 +183,16 @@ def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, ex
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-10),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+            5e-10,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+            1e-12,
+        ),
     ],
 )
 @pytest.mark.datatest
@@ -151,8 +208,14 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_compute_coordinates_of_edge_tangent_and_normal(
@@ -184,8 +247,14 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
@@ -204,8 +273,14 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
@@ -220,8 +295,14 @@ def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_cell_area(backend, grid_savepoint, experiment, grid_file):
@@ -236,8 +317,14 @@ def test_cell_area(backend, grid_savepoint, experiment, grid_file):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
@@ -255,8 +342,14 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
@@ -274,8 +367,14 @@ def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
@@ -293,8 +392,14 @@ def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
@@ -327,8 +432,14 @@ def test_sparse_fields_creator():
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (
+            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiment.REGIONAL,
+        ),
+        (
+            test_definitions.Experiment.R02B04,
+            test_definitions.Experiment.GLOBAL,
+        ),
     ],
 )
 def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):

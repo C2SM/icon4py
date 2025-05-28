@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 import xarray as xa
@@ -22,8 +23,8 @@ from icon4py.model.testing import datatest_utils, grid_utils
 
 def grid_files():
     files = [
-        (datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE),
-        (datatest_utils.REGIONAL_EXPERIMENT, grid_utils.REGIONAL_GRIDFILE),
+        (test_definitions.Experiment.R02B04, grid_utils.GLOBAL_GRIDFILE),
+        (test_definitions.Experiment.REGIONAL, grid_utils.REGIONAL_GRIDFILE),
     ]
 
     for ff in files:

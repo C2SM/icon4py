@@ -6,10 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
-import icon4py.model.testing.datatest_utils as dt_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.metrics.metric_fields import (
@@ -23,7 +23,13 @@ from icon4py.model.testing.helpers import (
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_zdiff_gradp_dsl(
     icon_grid, metrics_savepoint, interpolation_savepoint, backend, experiment
 ):

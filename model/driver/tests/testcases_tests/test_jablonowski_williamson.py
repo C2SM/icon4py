@@ -11,14 +11,14 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import jablonowski_williamson as jabw
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, rank",
     [
-        (dt_utils.JABW_EXPERIMENT, 0),
+        (test_definitions.Experiment.JABW, 0),
     ],
 )
 def test_jabw_initial_condition(

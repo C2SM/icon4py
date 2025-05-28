@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
@@ -26,14 +27,14 @@ from icon4py.model.common.states import (
     tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import helpers
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
     [
-        dt_utils.JABW_EXPERIMENT,
+        test_definitions.Experiment.JABW,
     ],
 )
 def test_diagnose_temperature(
@@ -96,7 +97,7 @@ def test_diagnose_temperature(
 @pytest.mark.parametrize(
     "experiment",
     [
-        dt_utils.JABW_EXPERIMENT,
+        test_definitions.Experiment.JABW,
     ],
 )
 def test_diagnose_meridional_and_zonal_winds(
@@ -155,7 +156,7 @@ def test_diagnose_meridional_and_zonal_winds(
 @pytest.mark.parametrize(
     "experiment",
     [
-        dt_utils.JABW_EXPERIMENT,
+        test_definitions.Experiment.JABW,
     ],
 )
 def test_diagnose_surface_pressure(
@@ -196,7 +197,7 @@ def test_diagnose_surface_pressure(
 @pytest.mark.parametrize(
     "experiment",
     [
-        dt_utils.JABW_EXPERIMENT,
+        test_definitions.Experiment.JABW,
     ],
 )
 def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metrics_savepoint):
@@ -244,7 +245,7 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
     [
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
+        (test_definitions.Experiment.WEISMAN_KLEMP, 30000.0, 8000.0, 0.85),
     ],
 )
 @pytest.mark.parametrize(

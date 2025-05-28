@@ -6,17 +6,24 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import helpers
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()

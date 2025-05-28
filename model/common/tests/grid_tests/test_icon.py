@@ -8,6 +8,7 @@
 import functools
 import re
 
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -17,14 +18,14 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
+from icon4py.model.testing import grid_utils as gridtest_utils
 
 from . import utils
 
 
 @functools.cache
 def grid_from_file() -> icon.IconGrid:
-    return from_file(dt_utils.REGIONAL_EXPERIMENT)
+    return from_file(test_definitions.Experiment.REGIONAL)
 
 
 @functools.cache
@@ -166,7 +167,13 @@ def test_grid_size(icon_grid):
     assert 31558 == icon_grid.size[dims.EdgeDim]
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize(
+    "grid_file",
+    (
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.R02B04,
+    ),
+)
 def test_has_skip_values(grid_file):
     grid = from_file(grid_file)
     assert grid.has_skip_values()

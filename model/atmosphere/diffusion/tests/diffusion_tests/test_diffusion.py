@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -18,7 +19,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
     grid_utils,
     helpers,
     reference_funcs as ref_funcs,
@@ -34,7 +34,10 @@ from .utils import (
 )
 
 
-grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
+grid_functionality = {
+    test_definitions.Experiment.GLOBAL: {},
+    test_definitions.Experiment.REGIONAL: {},
+}
 
 
 def get_grid_for_experiment(experiment, backend):
@@ -51,9 +54,9 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 def _get_or_initialize(experiment, backend, name):
     grid_file = (
-        dt_utils.REGIONAL_EXPERIMENT
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else dt_utils.R02B04_GLOBAL
+        test_definitions.Experiment.REGIONAL
+        if experiment == test_definitions.Experiment.REGIONAL
+        else test_definitions.Experiment.R02B04
     )
 
     if not grid_functionality[experiment].get(name):
@@ -326,10 +329,10 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.parametrize(
     "experiment,step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:04.000"),
+        (test_definitions.Experiment.REGIONAL, "2021-06-20T12:00:10.000"),
+        (test_definitions.Experiment.REGIONAL, "2021-06-20T12:00:20.000"),
+        (test_definitions.Experiment.GLOBAL, "2000-01-01T00:00:02.000"),
+        (test_definitions.Experiment.GLOBAL, "2000-01-01T00:00:04.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -411,8 +414,16 @@ def test_verify_diffusion_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            test_definitions.Experiment.REGIONAL,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            test_definitions.Experiment.GLOBAL,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
@@ -437,7 +448,7 @@ def test_run_diffusion_single_step(
     if orchestration and data_alloc.is_cupy_device(backend):
         pytest.xfail("GPU compilation fails.")
 
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+    if experiment == test_definitions.Experiment.REGIONAL:
         # Skip benchmarks for this experiment
         benchmark = None
 
@@ -536,7 +547,11 @@ def test_run_diffusion_single_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (
+            test_definitions.Experiment.REGIONAL,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -687,7 +702,7 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [test_definitions.Experiment.REGIONAL])
 @pytest.mark.parametrize("linit", [True])
 @pytest.mark.parametrize("orchestration", [False, True])
 def test_run_diffusion_initial_step(

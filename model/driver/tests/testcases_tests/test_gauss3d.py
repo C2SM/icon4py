@@ -9,14 +9,14 @@
 import pytest
 
 from icon4py.model.driver.testcases import gauss3d
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, rank",
     [
-        (dt_utils.GAUSS3D_EXPERIMENT, 0),
+        (test_definitions.Experiment.GAUSS3D, 0),
     ],
 )
 def test_gauss3d_initial_condition(

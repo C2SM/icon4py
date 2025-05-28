@@ -8,14 +8,14 @@
 import os
 from typing import Final
 
+from icon4py.model.testing.definitions import Experiment.GLOBAL
 import pytest
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
-from icon4py.model.testing.datatest_utils import (
-    GLOBAL_EXPERIMENT,
-    REGIONAL_EXPERIMENT,
+from icon4py.model.testing.definitions import (
+    Experiment.REGIONAL,
 )
 from icon4py.model.testing.helpers import apply_markers
 
@@ -56,6 +56,18 @@ def backend(request):
 
 @pytest.fixture(scope="session")
 def grid(request, backend):
+    try:
+        grid_option = request.config.getoption("grid")
+    except ValueError:
+        grid_option = DEFAULT_GRID
+    else:
+        _check_grid_validity(grid_option)
+    grid = _get_grid(grid_option, backend)
+    return grid
+
+
+@pytest.fixture(scope="session")
+def benchmark_grid(request, backend):
     try:
         grid_option = request.config.getoption("grid")
     except ValueError:
@@ -134,6 +146,26 @@ def pytest_addoption(parser):
 
     try:
         parser.addoption(
+            "--validation-grid",
+            action="store",
+            default="simple_grid",
+            help="Grid to use. Defaults to simple_grid, other options include icon_grid",
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--benchmark-grid",
+            action="store",
+            default="simple_grid",
+            help="Grid to use. Defaults to simple_grid, other options include icon_grid",
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
             "--enable-mixed-precision",
             action="store_true",
             help="Switch unit tests from double to mixed-precision",
@@ -164,7 +196,7 @@ def _get_grid(
             )
 
             grid_instance = get_grid_manager_for_experiment(
-                REGIONAL_EXPERIMENT, backend=selected_backend
+                Experiment.REGIONAL, backend=selected_backend
             ).grid
             return grid_instance
         case "icon_grid_global":
@@ -173,7 +205,7 @@ def _get_grid(
             )
 
             grid_instance = get_grid_manager_for_experiment(
-                GLOBAL_EXPERIMENT, backend=selected_backend
+                Experiment.GLOBAL, backend=selected_backend
             ).grid
             return grid_instance
         case _:

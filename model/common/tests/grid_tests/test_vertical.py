@@ -8,13 +8,14 @@
 import math
 
 import gt4py.next as gtx
+from icon4py.model.testing import definitions as test_definitions
 import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing import grid_utils, helpers
 
 
 NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
@@ -45,7 +46,13 @@ def test_damping_layer_calculation(max_h, damping_height, delta, flat_height):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_damping_layer_calculation_from_icon_input(
     grid_savepoint, experiment, damping_height, flat_height
 ):
@@ -119,7 +126,10 @@ def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, expected_moist_level",
-    [(dt_utils.REGIONAL_EXPERIMENT, 0), (dt_utils.GLOBAL_EXPERIMENT, 25)],
+    [
+        (test_definitions.Experiment.REGIONAL, 0),
+        (test_definitions.Experiment.GLOBAL, 25),
+    ],
 )
 def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_level):
     threshold = 22500.0
@@ -137,7 +147,13 @@ def test_interface_physical_height(grid_savepoint):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_flat_level_calculation(grid_savepoint, experiment, flat_height):
     vertical_grid = configure_vertical_grid(grid_savepoint)
 
@@ -174,7 +190,7 @@ def test_grid_index_top(grid_savepoint, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(test_definitions.Experiment.GLOBAL, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(grid_savepoint, experiment, levels, dim, offset):
@@ -189,7 +205,7 @@ def test_grid_index_damping(grid_savepoint, experiment, levels, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(test_definitions.Experiment.GLOBAL, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(grid_savepoint, experiment, levels, dim, offset):
@@ -204,7 +220,7 @@ def test_grid_index_moist(grid_savepoint, experiment, levels, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(test_definitions.Experiment.GLOBAL, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(grid_savepoint, experiment, levels, dim, offset):
@@ -221,7 +237,10 @@ def test_grid_index_flat(grid_savepoint, experiment, levels, dim, offset):
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, levels",
-    [(dt_utils.REGIONAL_EXPERIMENT, NUM_LEVELS), (dt_utils.GLOBAL_EXPERIMENT, 60)],
+    [
+        (test_definitions.Experiment.REGIONAL, NUM_LEVELS),
+        (test_definitions.Experiment.GLOBAL, 60),
+    ],
 )
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -234,7 +253,7 @@ def test_grid_index_bottom(grid_savepoint, experiment, levels, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(test_definitions.Experiment.GLOBAL, 60)])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -250,7 +269,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(test_definitions.Experiment.GLOBAL, 60)])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -266,7 +285,13 @@ def test_grid_index_raises_if_index_below_zero(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT))
+@pytest.mark.parametrize(
+    "experiment",
+    (
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ),
+)
 def test_vct_a_vct_b_calculation_from_icon_input(
     grid_savepoint,
     experiment,
@@ -299,7 +324,13 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.GAUSS3D,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_vertical_coordinate(
     grid_savepoint,
     metrics_savepoint,
@@ -321,9 +352,9 @@ def test_compute_vertical_coordinate(
         vct_a=vct_a,
         vct_b=vct_b,
     )
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+    if experiment == test_definitions.Experiment.GAUSS3D:
         topography = topography_savepoint.topo_c()
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == test_definitions.Experiment.GLOBAL:
         topography = data_alloc.zero_field(
             icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
         )

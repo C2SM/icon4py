@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
@@ -20,13 +21,19 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import helpers
 
 
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_definitions.Experiment.REGIONAL,
+        test_definitions.Experiment.GLOBAL,
+    ],
+)
 def test_compute_diffusion_metrics(
     metrics_savepoint,
     experiment,
@@ -35,7 +42,7 @@ def test_compute_diffusion_metrics(
     grid_savepoint,
     backend,
 ):
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+    if experiment == test_definitions.Experiment.GLOBAL:
         pytest.skip(f"Fields not computed for {experiment}")
 
     maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)

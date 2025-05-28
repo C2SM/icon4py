@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from icon4py.model.testing import definitions as test_definitions
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
@@ -21,7 +22,7 @@ from icon4py.model.driver import (
     icon4py_driver,
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import helpers
 
 from .utils import (
     construct_diffusion_config,
@@ -36,7 +37,7 @@ from .utils import (
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            test_definitions.Experiment.REGIONAL,
             1,
             2,
             1,
@@ -50,7 +51,7 @@ from .utils import (
             False,
         ),
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            test_definitions.Experiment.REGIONAL,
             1,
             2,
             1,
@@ -64,7 +65,7 @@ from .utils import (
             True,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            test_definitions.Experiment.GLOBAL,
             1,
             2,
             1,
@@ -78,7 +79,7 @@ from .utils import (
             False,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            test_definitions.Experiment.GLOBAL,
             1,
             2,
             1,
@@ -92,7 +93,7 @@ from .utils import (
             True,
         ),
         (
-            dt_utils.GAUSS3D_EXPERIMENT,
+            test_definitions.Experiment.GAUSS3D,
             1,
             2,
             1,
@@ -129,7 +130,7 @@ def test_run_timeloop_single_step(
     vn_only,
     backend,
 ):
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+    if experiment == test_definitions.Experiment.GAUSS3D:
         config = icon4py_configuration.read_config(
             experiment_type=experiment,
             backend=backend,

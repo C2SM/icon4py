@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import pathlib
 from typing import Optional
 
@@ -22,6 +23,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import data_handling, datatest_utils as dt_utils
+from icon4py.model.testing import definitions as test_definitions
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -38,15 +40,15 @@ grid_geometries = {}
 def get_grid_manager_for_experiment(
     experiment: str, backend: Optional[gtx_backend.Backend] = None
 ) -> gm.GridManager:
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+    if experiment == test_definitions.Experiment.GLOBAL:
         return _download_and_load_gridfile(
-            dt_utils.R02B04_GLOBAL,
+            test_definitions.Experiment.R02B04,
             num_levels=GLOBAL_NUM_LEVELS,
             backend=backend,
         )
-    elif experiment == dt_utils.REGIONAL_EXPERIMENT:
+    elif experiment == test_definitions.Experiment.REGIONAL:
         return _download_and_load_gridfile(
-            dt_utils.REGIONAL_EXPERIMENT,
+            test_definitions.Experiment.REGIONAL,
             num_levels=MCH_CH_R04B09_LEVELS,
             backend=backend,
         )
@@ -62,9 +64,9 @@ def get_grid_manager(
 
 def _file_name(grid_file: str):
     match grid_file:
-        case dt_utils.REGIONAL_EXPERIMENT:
+        case test_definitions.Experiment.REGIONAL:
             return REGIONAL_GRIDFILE
-        case dt_utils.R02B04_GLOBAL:
+        case test_definitions.Experiment.R02B04:
             return GLOBAL_GRIDFILE
         case _:
             raise NotImplementedError(f"Add grid path for experiment '{grid_file}'")
@@ -78,7 +80,7 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
     full_name = resolve_full_grid_file_name(file_path)
     if not full_name.exists():
         data_handling.download_and_extract(
-            dt_utils.GRID_URIS[file_path],
+            test_definitions.GRID_URIS[file_path],
             full_name.parent,
             full_name.parent,
         )
@@ -118,15 +120,19 @@ def _download_and_load_gridfile(
     return gm
 
 
-def is_regional(experiment_or_file: str):
+def is_regional(Experiment.or_file: str):
     return (
-        dt_utils.REGIONAL_EXPERIMENT in experiment_or_file
-        or REGIONAL_GRIDFILE in experiment_or_file
+        test_definitions.Experiment.REGIONAL in Experiment.or_file
+        or REGIONAL_GRIDFILE in Experiment.or_file
     )
 
 
 def get_num_levels(experiment: str):
-    return MCH_CH_R04B09_LEVELS if experiment == dt_utils.REGIONAL_EXPERIMENT else GLOBAL_NUM_LEVELS
+    return (
+        MCH_CH_R04B09_LEVELS
+        if experiment == test_definitions.Experiment.REGIONAL
+        else GLOBAL_NUM_LEVELS
+    )
 
 
 def get_grid_geometry(

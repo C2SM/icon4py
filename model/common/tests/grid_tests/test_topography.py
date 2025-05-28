@@ -9,7 +9,7 @@
 import pytest
 
 from icon4py.model.common.grid import geometry, topography as topo
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 
 @pytest.mark.embedded_remap_error
@@ -17,7 +17,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 @pytest.mark.parametrize(
     "experiment",
     [
-        (dt_utils.GAUSS3D_EXPERIMENT),
+        (test_definitions.Experiment.GAUSS3D),
     ],
 )
 def test_topography_smoothing_with_serialized_data(
