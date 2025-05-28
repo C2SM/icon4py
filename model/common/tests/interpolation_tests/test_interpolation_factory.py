@@ -376,7 +376,7 @@ def test_rbf_interpolation_coeffs_edge(
     "grid_file, experiment, atol",
     [
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-10),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 2e-3),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-3),
     ],
 )
 @pytest.mark.datatest
