@@ -408,14 +408,14 @@ class Diffusion:
         ).compile(
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self.calculate_nabla2_and_smag_coefficients_for_vn = (
             calculate_nabla2_and_smag_coefficients_for_vn.with_backend(self._backend).compile(
                 smag_offset=[self.smag_offset],
                 vertical_start=[0],
                 vertical_end=[self._grid.num_levels],
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
         )
 
@@ -423,7 +423,7 @@ class Diffusion:
             calculate_diagnostic_quantities_for_turbulence.with_backend(self._backend).compile(
                 vertical_start=[1],
                 vertical_end=[self._grid.num_levels],
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
         )
         self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(self._backend).compile(
@@ -432,7 +432,7 @@ class Diffusion:
             limited_area=[self._grid.limited_area],
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
             apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
@@ -443,7 +443,7 @@ class Diffusion:
                 nrdmax=[int32(self._vertical_grid.end_index_of_damping_layer + 1)],
                 vertical_start=[0],
                 vertical_end=[self._grid.num_levels],
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
@@ -453,7 +453,7 @@ class Diffusion:
                 thresh_tdiff=[self.thresh_tdiff],
                 vertical_start=[(self._grid.num_levels - 2)],
                 vertical_end=[self._grid.num_levels],
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
         )
         self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(
@@ -461,14 +461,14 @@ class Diffusion:
         ).compile(
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
             truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(self._backend)
         ).compile(
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self.update_theta_and_exner = update_theta_and_exner.with_backend(self._backend).compile(
             vertical_start=[0],
