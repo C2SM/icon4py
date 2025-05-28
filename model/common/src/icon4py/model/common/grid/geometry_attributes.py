@@ -215,7 +215,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     CELL_CENTER_Y: dict(
         standard_name=CELL_CENTER_Y,
-        long_name="y-component of cell center",
+        long_name="y component of cell center",
         units="",
         dims=(dims.CellDim,),
         icon_var_name="t_grid_cells%%cartesian_center%x(2)",
@@ -223,7 +223,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     CELL_CENTER_Z: dict(
         standard_name=CELL_CENTER_Z,
-        long_name="z-component of cell center",
+        long_name="z component of cell center",
         units="",
         dims=(dims.CellDim,),
         icon_var_name="t_grid_cells%%cartesian_center%x(3)",
