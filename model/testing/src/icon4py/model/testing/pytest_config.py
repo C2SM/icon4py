@@ -95,17 +95,16 @@ def pytest_configure(config):
 
     # Split CUDA_VISIBLE_DEVICES across pytest-xdist workers
     # Each worker will get a different CUDA device
-    worker_name = os.environ.get("PYTEST_XDIST_WORKER", "master")
-    if worker_name.startswith("gw"):
+    if cuda_devices_env := os.environ.get("PYTEST_XDIST_SPLIT_CUDA_VISIBLE_DEVICES", None):
         try:
-            worker_id = int(worker_name[2:])
-        except ValueError:
-            worker_id = None
-        if worker_id is not None and (
-            cuda_devices_env := os.environ.get("PYTEST_XDIST_SPLIT_CUDA_VISIBLE_DEVICES", None)
-        ):
             cuda_devices = [d.strip() for d in cuda_devices_env.strip().split(",")]
+            assert cuda_devices
+            worker_name = os.environ.get("PYTEST_XDIST_WORKER", "master")
+            assert worker_name.startswith("gw")
+            worker_id = int(worker_name[2:])
             os.environ["CUDA_VISIBLE_DEVICES"] = cuda_devices[worker_id % len(cuda_devices)]
+        except Exception:
+            pass
 
 
 def pytest_addoption(parser):
