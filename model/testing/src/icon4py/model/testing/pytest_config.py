@@ -103,6 +103,9 @@ def pytest_configure(config):
             assert worker_name.startswith("gw")
             worker_id = int(worker_name[2:])
             os.environ["CUDA_VISIBLE_DEVICES"] = cuda_devices[worker_id % len(cuda_devices)]
+            print(f"====== PYTEST_XDIST_SPLIT_CUDA_VISIBLE_DEVICES={cuda_devices_env} ======")
+            print(f'{worker_id=}{os.environ["CUDA_VISIBLE_DEVICES"]}')
+            print("======")
         except Exception:
             pass
 
