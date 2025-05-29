@@ -4,6 +4,9 @@ include:
 .test_model_stencils:
   stage: test
   script:
+    - echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+    - echo "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
+    - echo "PYTEST_XDIST_SPLIT_CUDA_VISIBLE_DEVICES=$PYTEST_XDIST_SPLIT_CUDA_VISIBLE_DEVICES"
     - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
