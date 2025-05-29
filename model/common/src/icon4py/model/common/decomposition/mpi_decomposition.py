@@ -141,10 +141,13 @@ class GHexMultiNodeExchange:
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            dim: self._create_domain_descriptor(dim) for dim in dims.global_dimensions.values()
+            dim: self._create_domain_descriptor(dim)
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
-        self._patterns = {dim: self._create_pattern(dim) for dim in dims.global_dimensions.values()}
+        self._patterns = {
+            dim: self._create_pattern(dim) for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
 
@@ -222,7 +225,7 @@ class GHexMultiNodeExchange:
             This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
             the granule context where fields otherwise have length nproma.
         """
-        assert dim in dims.global_dimensions.values()
+        assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
