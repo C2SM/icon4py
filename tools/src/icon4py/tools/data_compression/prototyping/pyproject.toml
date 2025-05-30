@@ -27,6 +27,7 @@ version = '0.0'
 
 [project.scripts]
 data_compression_cscs_exclaim = 'data_compression_cscs_exclaim.cli:cli'
+model_eval_cscs_exclaim = 'model_eval_cscs_exclaim.cli:cli'
 
 [tool.setuptools]
 package-dir = {"" = "src"}
