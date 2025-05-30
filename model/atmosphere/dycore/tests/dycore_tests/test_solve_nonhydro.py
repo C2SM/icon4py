@@ -1517,8 +1517,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             vertical_start=icon_grid.num_levels - 1,
             vertical_end=icon_grid.num_levels,
             offset_provider={
-                "E2EC": icon_grid.get_offset_provider("E2EC"),
-                "E2C": icon_grid.get_offset_provider("E2C"),
+                "E2EC": icon_grid.get_connectivity("E2EC"),
+                "E2C": icon_grid.get_connectivity("E2C"),
                 "Koff": dims.KDim,
             },
         )
@@ -1584,10 +1584,10 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
-            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
-            "E2EC": icon_grid.get_offset_provider("E2EC"),
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
+            "E2EC": icon_grid.get_connectivity("E2EC"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "Koff": dims.KDim,
         },
     )
@@ -1727,10 +1727,10 @@ def test_apply_divergence_damping_and_update_vn(
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
-            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
-            "E2EC": icon_grid.get_offset_provider("E2EC"),
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
+            "E2EC": icon_grid.get_connectivity("E2EC"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "Koff": dims.KDim,
         },
     )
@@ -1850,8 +1850,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
     offset_provider = {
-        "C2E": icon_grid.get_offset_provider("C2E"),
-        "C2CE": icon_grid.get_offset_provider("C2CE"),
+        "C2E": icon_grid.get_connectivity("C2E"),
+        "C2CE": icon_grid.get_connectivity("C2CE"),
         "Koff": dims.KDim,
     }
 
@@ -2057,8 +2057,8 @@ def test_vertically_implicit_solver_at_corrector_step(
     end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
     offset_provider = {
-        "C2E": icon_grid.get_offset_provider("C2E"),
-        "C2CE": icon_grid.get_offset_provider("C2CE"),
+        "C2E": icon_grid.get_connectivity("C2E"),
+        "C2CE": icon_grid.get_connectivity("C2CE"),
         "Koff": dims.KDim,
     }
 

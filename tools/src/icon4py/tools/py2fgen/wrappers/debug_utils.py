@@ -38,11 +38,11 @@ def print_grid_decomp_info(
     log.info("icon_grid:vert_end:%s", icon_grid._end_indices[VertexDim])
     log.info("icon_grid:edge_start:%s", icon_grid._start_indices[EdgeDim])
     log.info("icon_grid:edge_end:%s", icon_grid._end_indices[EdgeDim])
-    log.info("icon_grid:c2e:%s", icon_grid.connectivities[C2EDim])
-    log.info("icon_grid:c2e2c:%s", icon_grid.connectivities[C2E2CDim])
-    log.info("icon_grid:v2e:%s", icon_grid.connectivities[V2EDim])
-    log.info("icon_grid:e2c2v:%s", icon_grid.connectivities[E2C2VDim])
-    log.info("icon_grid:e2c:%s", icon_grid.connectivities[E2CDim])
+    log.info("icon_grid:c2e:%s", icon_grid.neighbor_tables[C2EDim])
+    log.info("icon_grid:c2e2c:%s", icon_grid.neighbor_tables[C2E2CDim])
+    log.info("icon_grid:v2e:%s", icon_grid.neighbor_tables[V2EDim])
+    log.info("icon_grid:e2c2v:%s", icon_grid.neighbor_tables[E2C2VDim])
+    log.info("icon_grid:e2c:%s", icon_grid.neighbor_tables[E2CDim])
 
     log.info(
         "icon_grid:cell_start for rank %s is.... %s",
@@ -77,27 +77,27 @@ def print_grid_decomp_info(
     log.info(
         "icon_grid:c2e for rank %s is.... %s",
         processor_props.rank,
-        icon_grid.connectivities[C2EDim],
+        icon_grid.neighbor_tables[C2EDim],
     )
     log.info(
         "icon_grid:c2e2c for rank %s is.... %s",
         processor_props.rank,
-        icon_grid.connectivities[C2E2CDim],
+        icon_grid.neighbor_tables[C2E2CDim],
     )
     log.info(
         "icon_grid:v2e for rank %s is.... %s",
         processor_props.rank,
-        icon_grid.connectivities[V2EDim],
+        icon_grid.neighbor_tables[V2EDim],
     )
     log.info(
         "icon_grid:e2c2v for rank %s is.... %s",
         processor_props.rank,
-        icon_grid.connectivities[E2C2VDim],
+        icon_grid.neighbor_tables[E2C2VDim],
     )
     log.info(
         "icon_grid:e2c for rank %s is.... %s",
         processor_props.rank,
-        icon_grid.connectivities[E2CDim],
+        icon_grid.neighbor_tables[E2CDim],
     )
 
     log.info(
