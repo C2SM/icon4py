@@ -34,6 +34,7 @@ def customize_dace_backend(dace_backend: gtx_backend.Backend) -> gtx_backend.Bac
     #   need to update array shape and strides on each SDFG call.
     # Besides, we want to make an asynchronous SDFG call on gpu to allow overlapping
     #   of gpu kernel execution with the Python driver code (same behavior as in GTFN).
+    use_async_sdfg_call = False
     use_kblocking = False
     return dataclasses.replace(
         dace_backend,
@@ -41,10 +42,10 @@ def customize_dace_backend(dace_backend: gtx_backend.Backend) -> gtx_backend.Bac
             dace_backend.executor.step,
             translation=dataclasses.replace(
                 dace_backend.executor.step.translation.step,
-                make_persistent=True,
-                async_sdfg_call=data_alloc.is_cupy_device(dace_backend),
+                async_sdfg_call=(data_alloc.is_cupy_device(dace_backend) if use_async_sdfg_call else False),
                 blocking_dim=(dims.KDim if use_kblocking else None),
                 blocking_size=10,
+                make_persistent=True,
             ),
             bindings=functools.partial(
                 dace_backend.executor.step.bindings,
