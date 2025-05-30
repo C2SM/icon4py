@@ -417,8 +417,6 @@ class SolveNonhydro:
         self._edge_geometry = edge_geometry
         self._cell_params = cell_geometry
 
-        self.jk_start = 0  # used in stencil_55
-
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
@@ -648,11 +646,6 @@ class SolveNonhydro:
         # TODO (magdalena) vertical nesting is only relevant in the context of
         #      horizontal nesting, since we don't support this we should remove this option
         self.l_vert_nested: bool = False
-        if grid.lvert_nest:
-            self.l_vert_nested = True
-            self.jk_start = 1
-        else:
-            self.jk_start = 0
 
         self._en_smag_fac_for_zero_nshift(
             self._vertical_params.interface_physical_height,
@@ -1295,7 +1288,6 @@ class SolveNonhydro:
             divdamp_type=self._config.divdamp_type,
             at_first_substep=at_first_substep,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            jk_start=self.jk_start,
             starting_vertical_index_for_3d_divdamp=self._params.starting_vertical_index_for_3d_divdamp,
             kstart_moist=self._vertical_params.kstart_moist,
             horizontal_start=self._start_cell_nudging,
@@ -1577,7 +1569,6 @@ class SolveNonhydro:
             is_iau_active=self._config.is_iau_active,
             rayleigh_type=self._config.rayleigh_type,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            jk_start=self.jk_start,
             kstart_moist=self._vertical_params.kstart_moist,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
