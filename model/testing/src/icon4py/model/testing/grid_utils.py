@@ -98,14 +98,13 @@ def _run_grid_manager_for_file(
     Returns:
 
     """
-    limited_area = is_regional(str(file))
     transformation = gm.ToZeroBasedIndexTransformation()
     manager = gm.GridManager(
         transformation,
         file,
         v_grid.VerticalGridConfig(num_levels=num_levels),
     )
-    manager(backend=backend, limited_area=limited_area)
+    manager(backend=backend)
     manager.close()
     return manager
 
@@ -116,13 +115,6 @@ def _download_and_load_gridfile(
     grid_file = _download_grid_file(file_path)
     gm = _run_grid_manager_for_file(str(grid_file), num_levels, backend)
     return gm
-
-
-def is_regional(experiment_or_file: str):
-    return (
-        dt_utils.REGIONAL_EXPERIMENT in experiment_or_file
-        or REGIONAL_GRIDFILE in experiment_or_file
-    )
 
 
 def get_num_levels(experiment: str):

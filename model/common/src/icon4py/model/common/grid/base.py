@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Dict
 
 import gt4py.next as gtx
+import gt4py.next.common as gtx_common
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
@@ -72,9 +73,9 @@ class GridConfig:
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None
-        self.connectivities: Dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._neighbor_tables: Dict[gtx.Dimension, data_alloc.NDArray] = {}
         self.size: Dict[gtx.Dimension, int] = {}
-        self.offset_provider_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
+        self._connectivity_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
 
     @property
     @abstractmethod
@@ -111,6 +112,18 @@ class BaseGrid(ABC):
     def geometry_type(self) -> GeometryType:
         ...
 
+    @functools.cached_property
+    def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
+        return {
+            dims.DIMENSIONS_BY_OFFSET_NAME.get(k, None): v.ndarray
+            for k, v in self.connectivities.items()
+            if gtx_common.is_neighbor_connectivity(v)
+        }
+
+    @functools.cached_property
+    def limited_area(self) -> bool:
+        return self.config.limited_area
+
     @abstractmethod
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         pass
@@ -127,24 +140,24 @@ class BaseGrid(ABC):
         return self.config.limited_area or self.geometry_type == GeometryType.ICOSAHEDRON
 
     @functools.cached_property
-    def offset_providers(self):
-        offset_providers = {}
-        for key, value in self.offset_provider_mapping.items():
+    def connectivities(self) -> Dict[str, gtx.Connectivity]:
+        connectivity_map = {}
+        for key, value in self._connectivity_mapping.items():
             try:
                 method, *args = value
-                offset_providers[key] = method(*args) if args else method()
+                connectivity_map[key] = method(*args) if args else method()
             except MissingConnectivity:
                 warnings.warn(f"{key} connectivity is missing from grid.", stacklevel=2)
 
-        return offset_providers
+        return connectivity_map
 
     @utils.chainable
-    def with_connectivities(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
-        self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
+    def set_neighbor_tables(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
+        self._neighbor_tables.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     @utils.chainable
-    def with_config(self, config: GridConfig):
+    def set_config(self, config: GridConfig):
         self.config = config
         self._update_size()
 
@@ -154,40 +167,40 @@ class BaseGrid(ABC):
         self.size[dims.EdgeDim] = self.config.num_edges
         self.size[dims.KDim] = self.config.num_levels
 
-    def _get_offset_provider(self, dim, from_dim, to_dim):
-        if dim not in self.connectivities:
+    def _construct_connectivity(self, dim, from_dim, to_dim):
+        if dim not in self._neighbor_tables:
             raise MissingConnectivity()
         assert (
-            self.connectivities[dim].dtype == gtx.int32
+            self._neighbor_tables[dim].dtype == gtx.int32
         ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
-            dim, self.connectivities[dim].dtype
+            dim, self._neighbor_tables[dim].dtype
         )
         return gtx.as_connectivity(
             [from_dim, dim],
             to_dim,
-            self.connectivities[dim],
+            self._neighbor_tables[dim],
             skip_value=-1 if self._has_skip_values(dim) else None,
         )
 
     def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
-        if dim not in self.connectivities:
+        if dim not in self._neighbor_tables:
             raise MissingConnectivity()
         xp = data_alloc.array_ns(self.config.on_gpu)
         return grid_utils.connectivity_for_1d_sparse_fields(
             dim,
-            self.connectivities[dim].shape,
+            self._neighbor_tables[dim].shape,
             from_dim,
             to_dim,
             has_skip_values=self._has_skip_values(dim),
             array_ns=xp,
         )
 
-    def get_offset_provider(self, name):
-        if name in self.offset_provider_mapping:
-            method, *args = self.offset_provider_mapping[name]
+    def get_connectivity(self, name: str) -> gtx.Connectivity:
+        if name in self._connectivity_mapping:
+            method, *args = self._connectivity_mapping[name]
             return method(*args)
         else:
-            raise Exception(f"Offset provider for {name} not found.")
+            raise MissingConnectivity(f"Offset provider for {name} not found.")
 
     def update_size_connectivities(self, new_sizes):
         self.size.update(new_sizes)

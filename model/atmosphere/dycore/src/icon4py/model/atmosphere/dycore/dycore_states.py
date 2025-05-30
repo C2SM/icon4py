@@ -141,7 +141,7 @@ class DiagnosticStateNonHydro:
     """
 
     # Analysis increments
-    rho_iau_increment: fa.EdgeKField[ta.vpfloat]  # moist density increment [kg/m^3]
+    rho_iau_increment: fa.CellKField[ta.vpfloat]  # moist density increment [kg/m^3]
     """
     Declared as rho_incr in ICON.
     """
@@ -149,7 +149,7 @@ class DiagnosticStateNonHydro:
     """
     Declared as vn_incr in ICON.
     """
-    exner_iau_increment: fa.EdgeKField[ta.vpfloat]  # exner increment [- ]
+    exner_iau_increment: fa.CellKField[ta.vpfloat]  # exner increment [- ]
     """
     Declared as exner_incr in ICON.
     """

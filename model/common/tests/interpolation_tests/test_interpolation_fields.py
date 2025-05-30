@@ -89,7 +89,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
         edge_orientation=edge_orientation,
         area=area,
         out=geofac_div,
-        offset_provider={"C2E": mesh.get_offset_provider("C2E")},
+        offset_provider={"C2E": mesh.get_connectivity("C2E")},
     )
     assert test_helpers.dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
 
@@ -114,7 +114,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
         dual_area,
         owner_mask,
         out=geofac_rot[horizontal_start:, :],
-        offset_provider={"V2E": mesh.get_offset_provider("V2E")},
+        offset_provider={"V2E": mesh.get_connectivity("V2E")},
     )
 
     assert test_helpers.dallclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())
@@ -128,9 +128,9 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, 
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
-    c2e = icon_grid.connectivities[dims.C2EDim]
-    e2c = icon_grid.connectivities[dims.E2CDim]
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
+    c2e = icon_grid.neighbor_tables[dims.C2EDim]
+    e2c = icon_grid.neighbor_tables[dims.E2CDim]
+    c2e2c = icon_grid.neighbor_tables[dims.C2E2CDim]
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_n2s = functools.partial(compute_geofac_n2s, array_ns=xp)(
         dual_edge_length.ndarray,
@@ -154,9 +154,9 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, 
     c_lin_e = interpolation_savepoint.c_lin_e().ndarray
     geofac_grg_ref = interpolation_savepoint.geofac_grg()
     owner_mask = grid_savepoint.c_owner_mask().ndarray
-    c2e = icon_grid.connectivities[dims.C2EDim]
-    e2c = icon_grid.connectivities[dims.E2CDim]
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
+    c2e = icon_grid.neighbor_tables[dims.C2EDim]
+    e2c = icon_grid.neighbor_tables[dims.E2CDim]
+    c2e2c = icon_grid.neighbor_tables[dims.C2E2CDim]
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = functools.partial(compute_geofac_grg, array_ns=xp)(
@@ -193,9 +193,9 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
     owner_mask = grid_savepoint.e_owner_mask()
-    c2e = icon_grid.connectivities[dims.C2EDim]
-    e2c = icon_grid.connectivities[dims.E2CDim]
-    e2c2e = icon_grid.connectivities[dims.E2C2EDim]
+    c2e = icon_grid.neighbor_tables[dims.C2EDim]
+    e2c = icon_grid.neighbor_tables[dims.E2CDim]
+    e2c2e = icon_grid.neighbor_tables[dims.E2C2EDim]
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_grdiv = functools.partial(compute_geofac_grdiv, array_ns=xp)(
         geofac_div.ndarray,
@@ -228,7 +228,7 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, a
     lon = grid_savepoint.cell_center_lon().ndarray
     cell_owner_mask = grid_savepoint.c_owner_mask().ndarray
 
-    c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
+    c2e2c0 = icon_grid.neighbor_tables[dims.C2E2CODim]
 
     c_bln_avg = functools.partial(
         compute_mass_conserving_bilinear_cell_average_weight, array_ns=xp
@@ -257,10 +257,10 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
     primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().ndarray
     primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().ndarray
     primal_cart_normal_z = grid_savepoint.primal_cart_normal_z().ndarray
-    e2c = icon_grid.connectivities[dims.E2CDim]
-    c2e = icon_grid.connectivities[dims.C2EDim]
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
-    e2c2e = icon_grid.connectivities[dims.E2C2EDim]
+    e2c = icon_grid.neighbor_tables[dims.E2CDim]
+    c2e = icon_grid.neighbor_tables[dims.C2EDim]
+    c2e2c = icon_grid.neighbor_tables[dims.C2E2CDim]
+    e2c2e = icon_grid.neighbor_tables[dims.E2C2EDim]
     horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
@@ -290,10 +290,10 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
     dual_area = grid_savepoint.vertex_dual_area().ndarray
     edge_vert_length = grid_savepoint.edge_vert_length().ndarray
     edge_cell_length = grid_savepoint.edge_cell_length().ndarray
-    e2c = icon_grid.connectivities[dims.E2CDim]
-    v2c = icon_grid.connectivities[dims.V2CDim]
-    v2e = icon_grid.connectivities[dims.V2EDim]
-    e2v = icon_grid.connectivities[dims.E2VDim]
+    e2c = icon_grid.neighbor_tables[dims.E2CDim]
+    v2c = icon_grid.neighbor_tables[dims.V2CDim]
+    v2e = icon_grid.neighbor_tables[dims.V2EDim]
+    e2v = icon_grid.neighbor_tables[dims.E2VDim]
     horizontal_start_vertex = icon_grid.start_index(
         vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
@@ -316,7 +316,7 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s()
-    c2e = icon_grid.connectivities[dims.C2EDim]
+    c2e = icon_grid.neighbor_tables[dims.C2EDim]
     cells_lat = grid_savepoint.cell_center_lat().ndarray
     cells_lon = grid_savepoint.cell_center_lon().ndarray
     edges_lat = grid_savepoint.edges_center_lat().ndarray
@@ -350,9 +350,9 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
     edges_lat = grid_savepoint.edges_center_lat().ndarray
     verts_lon = grid_savepoint.verts_vertex_lon().ndarray
     verts_lat = grid_savepoint.verts_vertex_lat().ndarray
-    e2c = icon_grid.connectivities[dims.E2CDim]
-    e2v = icon_grid.connectivities[dims.E2VDim]
-    e2c2e = icon_grid.connectivities[dims.E2C2EDim]
+    e2c = icon_grid.neighbor_tables[dims.E2CDim]
+    e2v = icon_grid.neighbor_tables[dims.E2VDim]
+    e2c2e = icon_grid.neighbor_tables[dims.E2C2EDim]
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
         sphere_radius,

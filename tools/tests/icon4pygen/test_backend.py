@@ -59,7 +59,7 @@ def test_grid_size_param_generation(temporaries, imperative):
         testee_op(a, out=out)
 
     grid = SimpleGrid()
-    offset_provider = {"E2V": grid.get_offset_provider("E2V")}
+    offset_provider = {"E2V": grid.get_connectivity("E2V")}
     fencil = testee_prog.gtir
 
     # validate the grid sizes appear in the generated code

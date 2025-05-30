@@ -13,7 +13,7 @@ import numpy as np
 
 def connectivity_for_1d_sparse_fields(
     dim: gtx.Dimension,
-    old_shape: tuple[int, int],
+    old_shape: tuple[int, ...],
     origin_axis: gtx.Dimension,
     neighbor_axis: gtx.Dimension,
     has_skip_values: bool,
