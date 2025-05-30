@@ -417,17 +417,17 @@ class SimpleGrid(BaseGrid):
         super().__init__()
 
         self._configure(backend)
-        self.offset_provider_mapping = {
-            "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
-            "C2E2CO": (self._get_offset_provider, dims.C2E2CODim, dims.CellDim, dims.CellDim),
-            "C2E2C": (self._get_offset_provider, dims.C2E2CDim, dims.CellDim, dims.CellDim),
-            "E2C2EO": (self._get_offset_provider, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
-            "E2C2E": (self._get_offset_provider, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
-            "V2C": (self._get_offset_provider, dims.V2CDim, dims.VertexDim, dims.CellDim),
-            "V2E": (self._get_offset_provider, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
-            "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),
-            "E2V": (self._get_offset_provider, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
-            "E2C2V": (self._get_offset_provider, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
+        self._connectivity_mapping = {
+            "C2E": (self._construct_connectivity, dims.C2EDim, dims.CellDim, dims.EdgeDim),
+            "C2E2CO": (self._construct_connectivity, dims.C2E2CODim, dims.CellDim, dims.CellDim),
+            "C2E2C": (self._construct_connectivity, dims.C2E2CDim, dims.CellDim, dims.CellDim),
+            "E2C2EO": (self._construct_connectivity, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
+            "E2C2E": (self._construct_connectivity, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
+            "V2C": (self._construct_connectivity, dims.V2CDim, dims.VertexDim, dims.CellDim),
+            "V2E": (self._construct_connectivity, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
+            "E2C": (self._construct_connectivity, dims.E2CDim, dims.EdgeDim, dims.CellDim),
+            "E2V": (self._construct_connectivity, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
+            "E2C2V": (self._construct_connectivity, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
             "C2CE": (
                 self._get_connectivity_sparse_fields,
                 dims.C2EDim,
@@ -435,8 +435,13 @@ class SimpleGrid(BaseGrid):
                 dims.CEDim,
             ),
             "Koff": (lambda: dims.KDim,),  # Koff is a special case
-            "C2E2C2E": (self._get_offset_provider, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
-            "C2E2C2E2C": (self._get_offset_provider, dims.C2E2C2E2CDim, dims.CellDim, dims.CellDim),
+            "C2E2C2E": (self._construct_connectivity, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
+            "C2E2C2E2C": (
+                self._construct_connectivity,
+                dims.C2E2C2E2CDim,
+                dims.CellDim,
+                dims.CellDim,
+            ),
             "E2ECV": (
                 self._get_connectivity_sparse_fields,
                 dims.E2C2VDim,
@@ -524,7 +529,7 @@ class SimpleGrid(BaseGrid):
             dims.C2E2C2E2CDim: simple_grid_data.c2e2c2e2c_table,
         }
 
-        self.with_config(config).with_connectivities(connectivity_dict)
+        self.set_config(config).set_neighbor_tables(connectivity_dict)
         self.update_size_connectivities(
             {
                 dims.ECVDim: self.size[dims.EdgeDim] * self.size[dims.E2C2VDim],
