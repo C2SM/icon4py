@@ -35,10 +35,8 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
         horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
     )
 
-    contravariant_correction_at_cells_model_levels = concat_where(
-        dims.KDim >= nflatlev,
-        _interpolate_to_cell_center(contravariant_correction_at_edges_on_model_levels, e_bln_c_s),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+    contravariant_correction_at_cells_model_levels = _interpolate_to_cell_center(
+        contravariant_correction_at_edges_on_model_levels, e_bln_c_s
     )
 
     contravariant_correction_at_cells_on_half_levels = concat_where(
