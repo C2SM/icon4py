@@ -1,0 +1,163 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+import dataclasses
+import enum
+import os
+import pathlib
+from collections.abc import Mapping
+from typing import Final, Literal
+
+
+_TEST_UTILS_PATH: Final = pathlib.Path(__file__) / ".."
+_MODEL_PATH: Final = _TEST_UTILS_PATH / ".."
+_COMMON_PATH: Final = _MODEL_PATH / ".." / ".." / ".." / ".."
+
+DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
+TEST_DATA_PATH: Final[pathlib.Path] = pathlib.Path(
+    os.getenv("TEST_DATA_PATH") or (_COMMON_PATH / ".." / DEFAULT_TEST_DATA_FOLDER)
+)
+GRIDS_PATH: Final[pathlib.Path] = TEST_DATA_PATH / "grids"
+SERIALIZED_DATA_PATH: Final[pathlib.Path] = TEST_DATA_PATH / "ser_icondata"
+
+
+class GridKind(enum.Enum):
+    REGIONAL = "REGIONAL"
+    GLOBAL = "GLOBAL"
+    TORUS = "TORUS"
+
+
+@dataclasses.dataclass
+class Grid:
+    name: str
+    description: str
+    kind: GridKind
+    sizes: Mapping[Literal["cell", "edge", "vertex"], int]
+    file_name: str | None = None
+
+
+class Grids:
+    SIMPLE: Final = Grid(
+        name="<simple-grid>",
+        description="Torus grid, fully defined in code (simple.py) used for testing ",
+        sizes={"cell": 18, "vertex": 9, "edge": 27},
+        kind=GridKind.TORUS,
+        file_name=None,
+    )
+    R02B04_GLOBAL: Final = Grid(
+        name="R02B04_GLOBAL_GRID_URI",
+        description="R02B04, small global grid, default grid used in ICON testing",
+        sizes={"cell": 20480, "vertex": 10242, "edge": 30720},
+        kind=GridKind.GLOBAL,
+        file_name="icon_grid_0013_R02B04_R.nc",
+    )
+
+    R02B07_GLOBAL: Final = Grid(
+        name="R02B07_GLOBAL_GRID_URI",
+        description="R02b07, large global grid",
+        sizes={"cell": 1310720, "vertex": 655362, "edge": 1966080},
+        kind=GridKind.GLOBAL,
+        file_name="icon_grid_0023_R02B07_G.nc",
+    )
+    R19_B07_MCH_LOCAL: Final = Grid(
+        name="R19_B07_MCH_2KM",
+        description="Grid used in the icon-ch2 (2km resolution) operational setup of MeteoSwiss",
+        sizes={"cell": 283876, "vertex": 142724, "edge": 426599},
+        kind=GridKind.REGIONAL,
+        file_name="icon_grid_0002_R19B07_mch.nc",
+    )
+    MCH_OPR_R04B07_DOMAIN01: Final = Grid(
+        name="R04B07_DOMAIN01",
+        description="Grid used in the icon-ch2_small experiment (used by MeteoSwiss for quick verification of icon-ch2 setup) )",
+        sizes={"cell": 10700, "vertex": 5510, "edge": 16209},
+        kind=GridKind.REGIONAL,
+        file_name="mch_opr_r4b7_DOM01.nc",
+    )
+    MC_CH_R04B09_DSL: Final = Grid(
+        name="MC_CH_R04B09_DSL",
+        description="grid used in the mch_ch_r04b09_dsl experiment used for verification of ICON-exclaim DSL port",
+        sizes={"cell": 20896, "vertex": 10663, "edge": 31558},
+        kind=GridKind.REGIONAL,
+        file_name="grid.nc",
+    )
+    TORUS_100X116_1000M: Final = Grid(
+        name="TORUS_100X116_1000M_GRID_URI",
+        description="Torus grid with a domain length of 100000m and resolution (edge length) of 1000m ",
+        sizes={"cell": 23200, "vertex": 11600, "edge": 34800},
+        kind=GridKind.TORUS,
+        file_name=" Torus_Triangles_100x116_1000m.nc",
+    )
+    TORUS_50000x5000: Final = Grid(
+        name="TORUS_50000x5000_RES500",
+        description="Torus grid with a domain length 50000m of resolution of 557m",
+        sizes={"cell": 1056, "vertex": 52, "edge": 1584},
+        kind=GridKind.TORUS,
+        file_name="Torus_Triangles_50000m_x_5000m_res500m.nc",
+    )
+
+
+@dataclasses.dataclass
+class Experiment:
+    name: str
+    description: str
+    grid: Grid
+    num_levels: int
+    partitioned_data: Mapping[int, str] | None = None
+
+
+class Experiments:
+    GLOBAL: Final = Experiment(
+        name="exclaim_ape_R02B04", description="", grid=Grids.R02B04_GLOBAL, num_levels=60
+    )
+    REGIONAL: Final = Experiment(
+        name="mch_ch_r04b09_dsl",
+        description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
+        grid=Grids.MC_CH_R04B09_DSL,
+    )
+    JABW: Final = Experiment(
+        name="jabw_R02B04",
+        description="Jablonowski Williamson atmospheric test case",
+        grid=Grids.R02B04_GLOBAL,
+    )
+    GAUSS3D: Final = Experiment(
+        name="gauss3d_torus", description="Gauss 3d test case", grid=Grids.TORUS_50000x5000
+    )
+    WEISMAN_KLEMP: Final = Experiment(
+        name="weisman_klemp_torus",
+        description="Weisman-Klemp experiment on Torus Grid",
+        grid=Grids.TORUS_50000x5000,
+    )
+
+
+# GRID_DATA_URIS: Final[Mapping[GridName, Mapping[int, str]]] = {
+#     GridName.MC_CH_R04B09_DSL: {1: "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"},
+#     GridName.R02B04_GLOBAL: {1: "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"},
+#     GridName.TORUS_100X116_1000M: {1: "https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download"},
+#     GridName.TORUS_50000x5000: {1: "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"},
+#     GridName.ICON: {
+#         1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",
+#         2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
+#         4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
+#     },
+#     GridName.GLOBAL: {1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download"},
+#     GridName.DATA_URIS_JABW: {1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download"},
+#     GridName.DATA_URIS_GAUSS3D: {1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download"},
+#     GridName.DATA_URIS_WK: {1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"},
+# }
+# GRID_IDS = {
+#     ExperimentName.GLOBAL: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+#     ExperimentName.REGIONAL: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
+#     ExperimentName.JABW: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+#     ExperimentName.GAUSS3D: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
+#     ExperimentName.WEISMAN_KLEMP: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
+# }
+
+# MCH_CH_R04B09_LEVELS = 65
+# GLOBAL_NUM_LEVELS = 60
+# GLOBAL_GRIDFILE = "icon_grid_0013_R02B04_R.nc"
+# REGIONAL_GRIDFILE = "grid.nc"
