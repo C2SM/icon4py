@@ -203,9 +203,7 @@ class GHexMultiNodeExchange:
         )
         return pattern
 
-    def _slice_field_based_on_dim(
-        self, field: gtx.Field, dim: gtx.Dimension
-    ) -> data_alloc.NDArray:
+    def _slice_field_based_on_dim(self, field: gtx.Field, dim: gtx.Dimension) -> data_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
         """
