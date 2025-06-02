@@ -31,8 +31,8 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_nudgecoeffs_e(

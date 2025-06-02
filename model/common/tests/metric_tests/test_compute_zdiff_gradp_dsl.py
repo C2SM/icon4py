@@ -26,8 +26,8 @@ from icon4py.model.testing.helpers import (
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_zdiff_gradp_dsl(

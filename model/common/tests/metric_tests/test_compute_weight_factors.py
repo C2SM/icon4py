@@ -19,8 +19,8 @@ from icon4py.model.testing import definitions as test_definitions, helpers
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_wgtfac_c(icon_grid, metrics_savepoint, backend):  # fixture
@@ -66,8 +66,8 @@ def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_wgtfacq_c_dsl(icon_grid, metrics_savepoint, backend):

@@ -16,7 +16,7 @@ from icon4py.model.testing import definitions as test_definitions, helpers
 @pytest.mark.parametrize(
     "experiment, rank",
     [
-        (test_definitions.Experiment.GAUSS3D, 0),
+        (test_definitions.Experiments.GAUSS3D, 0),
     ],
 )
 def test_gauss3d_initial_condition(

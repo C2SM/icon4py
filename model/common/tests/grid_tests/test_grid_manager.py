@@ -65,7 +65,7 @@ def _run_grid_manager(file: str, backend: Optional[gtx_backend.Backend]) -> gm.G
 
 @pytest.fixture
 def global_grid_file():
-    return gridtest_utils.resolve_full_grid_file_name(test_definitions.Experiment.R02B04)
+    return gridtest_utils.resolve_full_grid_file_name(test_definitions.Experiments.R02B04)
 
 
 @pytest.mark.with_netcdf
@@ -88,12 +88,12 @@ def test_grid_file_dimension(global_grid_file):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -114,7 +114,7 @@ def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
 # TODO is this useful?
 @pytest.mark.skip
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("experiment", (test_definitions.Experiment.GLOBAL,))
+@pytest.mark.parametrize("experiment", (test_definitions.Experiments.GLOBAL,))
 def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
     caplog.set_level(logging.DEBUG)
     parser = gm.GridFile(str(global_grid_file))
@@ -150,12 +150,12 @@ def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -179,12 +179,12 @@ def test_grid_manager_eval_v2e(caplog, grid_savepoint, experiment, grid_file, ba
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -205,12 +205,12 @@ def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim, bac
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -264,12 +264,12 @@ def reset_invalid_index(index_array: np.ndarray):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -322,12 +322,12 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -349,12 +349,12 @@ def test_grid_manager_eval_e2c(caplog, grid_savepoint, grid_file, experiment, ba
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -379,12 +379,12 @@ def test_grid_manager_eval_c2e(caplog, grid_savepoint, grid_file, experiment, ba
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -403,12 +403,12 @@ def test_grid_manager_eval_c2e2c(caplog, grid_savepoint, grid_file, experiment, 
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -429,12 +429,12 @@ def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment,
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -466,12 +466,12 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -496,12 +496,12 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -522,7 +522,7 @@ def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file, backend):
 )
 @pytest.mark.with_netcdf
 def test_grid_manager_grid_size(dim, size, backend):
-    grid = _run_grid_manager(test_definitions.Experiment.R02B04, backend=backend).grid
+    grid = _run_grid_manager(test_definitions.Experiments.R02B04, backend=backend).grid
     assert size == grid.size[dim]
 
 
@@ -561,8 +561,8 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
 @pytest.mark.parametrize(
     "grid_file, global_num_cells",
     [
-        (test_definitions.Experiment.R02B04, R02B04_GLOBAL_NUM_CELLS),
-        (test_definitions.Experiment.REGIONAL, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (test_definitions.Experiments.R02B04, R02B04_GLOBAL_NUM_CELLS),
+        (test_definitions.Experiments.REGIONAL, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )
 def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
@@ -575,8 +575,8 @@ def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.JABW,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.JABW,
         )
     ],
 )
@@ -597,12 +597,12 @@ def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
     ],
 )
@@ -615,7 +615,7 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
         if (
             dim == dims.EdgeDim
             and domain.zone == h_grid.Zone.END
-            and experiment == test_definitions.Experiment.GLOBAL
+            and experiment == test_definitions.Experiments.GLOBAL
         ):
             pytest.xfail(
                 "FIXME: start_index in serialized data changed to 0 with unknown consequences, see also icon-exclaim output"
@@ -644,12 +644,12 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -669,12 +669,12 @@ def test_read_geometry_fields(grid_savepoint, grid_file, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -692,12 +692,12 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -715,12 +715,12 @@ def test_tangent_orientation(grid_file, grid_savepoint, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -738,12 +738,12 @@ def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -759,12 +759,12 @@ def test_dual_area(grid_file, grid_savepoint, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -785,12 +785,12 @@ def test_edge_cell_distance(grid_file, grid_savepoint, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -808,12 +808,12 @@ def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )

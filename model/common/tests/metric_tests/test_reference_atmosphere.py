@@ -29,8 +29,8 @@ from icon4py.model.testing import definitions as test_definitions
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
@@ -80,8 +80,8 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_reference_atmosphere_on_half_level_mass_points(
@@ -126,8 +126,8 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
@@ -151,8 +151,8 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_reference_atmosphere_on_full_level_edge_fields(
@@ -209,8 +209,8 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):

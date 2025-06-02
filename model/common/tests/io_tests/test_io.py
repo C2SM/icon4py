@@ -30,7 +30,7 @@ from icon4py.model.common.io.io import (
 )
 from icon4py.model.common.states import data
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils, definitions as test_definitions, grid_utils
+from icon4py.model.testing import definitions as test_definitions, grid_utils
 
 
 # setting backend to fieldview embedded here.
@@ -38,11 +38,11 @@ backend = None
 UNLIMITED = None
 simple_grid = simple.SimpleGrid()
 
-grid_file = datatest_utils.GRIDS_PATH.joinpath(
-    test_definitions.Experiment.R02B04, grid_utils.GLOBAL_GRIDFILE
+grid_file = test_definitions.GRIDS_PATH.joinpath(
+    test_definitions.Experiments.R02B04, test_definitions.GLOBAL_GRIDFILE
 )
 global_grid = grid_utils.get_grid_manager_for_experiment(
-    test_definitions.Experiment.GLOBAL, backend
+    test_definitions.Experiments.GLOBAL, backend
 ).grid
 
 
@@ -183,7 +183,7 @@ def test_io_monitor_write_ugrid_file(test_path):
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_grid_manager_for_experiment(
-        test_definitions.Experiment.GLOBAL, backend
+        test_definitions.Experiments.GLOBAL, backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -235,7 +235,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     grid = grid_utils.get_grid_manager_for_experiment(
-        test_definitions.Experiment.GLOBAL, backend
+        test_definitions.Experiments.GLOBAL, backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(

@@ -32,7 +32,7 @@ from .test_grid_init import grid_init  # noqa: F401
     "experiment, step_date_init, step_date_exit",
     [
         (
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -295,7 +295,7 @@ def test_diffusion_wrapper_granule_inputs(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),

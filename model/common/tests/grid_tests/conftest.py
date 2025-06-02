@@ -29,9 +29,9 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
 )
-from icon4py.model.testing.definitions import Experiment
+from icon4py.model.testing.definitions import Experiments
 
 
 @pytest.fixture
 def grid_file():
-    return Experiment.REGIONAL
+    return Experiments.REGIONAL

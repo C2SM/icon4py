@@ -20,7 +20,7 @@ from icon4py.model.testing import definitions as test_definitions, helpers
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
     [
-        (test_definitions.Experiment.WEISMAN_KLEMP, 30000.0, 8000.0, 0.85),
+        (test_definitions.Experiments.WEISMAN_KLEMP, 30000.0, 8000.0, 0.85),
     ],
 )
 @pytest.mark.parametrize(

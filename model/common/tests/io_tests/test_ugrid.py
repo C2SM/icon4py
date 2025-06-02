@@ -17,17 +17,17 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.testing import datatest_utils, definitions as test_definitions, grid_utils
+from icon4py.model.testing import definitions as test_definitions
 
 
 def grid_files():
     files = [
-        (test_definitions.Experiment.R02B04, grid_utils.GLOBAL_GRIDFILE),
-        (test_definitions.Experiment.REGIONAL, grid_utils.REGIONAL_GRIDFILE),
+        (test_definitions.Experiments.R02B04, test_definitions.GLOBAL_GRIDFILE),
+        (test_definitions.Experiments.REGIONAL, test_definitions.REGIONAL_GRIDFILE),
     ]
 
     for ff in files:
-        yield datatest_utils.GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
+        yield test_definitions.GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
 
 
 @pytest.mark.parametrize("file", grid_files())

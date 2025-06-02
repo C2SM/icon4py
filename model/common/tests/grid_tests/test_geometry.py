@@ -25,8 +25,8 @@ from icon4py.model.testing import definitions as test_definitions, grid_utils, h
 def test_geometry_raises_for_unknown_field(backend):
     geometry = grid_utils.get_grid_geometry(
         backend,
-        test_definitions.Experiment.GLOBAL,
-        test_definitions.Experiment.R02B04,
+        test_definitions.Experiments.GLOBAL,
+        test_definitions.Experiments.R02B04,
     )
     with pytest.raises(ValueError) as e:
         geometry.get("foo")
@@ -38,13 +38,13 @@ def test_geometry_raises_for_unknown_field(backend):
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             1e-7,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             3e-12,
         ),
     ],
@@ -61,12 +61,12 @@ def test_edge_control_area(backend, grid_savepoint, grid_file, experiment, rtol)
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -83,13 +83,13 @@ def test_coriolis_parameter(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             1e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-12,
         ),
     ],
@@ -106,13 +106,13 @@ def test_compute_edge_length(backend, grid_savepoint, grid_file, experiment, rto
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             1e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-12,
         ),
     ],
@@ -130,13 +130,13 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             1e-7,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -154,13 +154,13 @@ def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, experiment
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -183,13 +183,13 @@ def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, ex
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-10,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-12,
         ),
     ],
@@ -208,12 +208,12 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -247,12 +247,12 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -273,12 +273,12 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -295,12 +295,12 @@ def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -317,12 +317,12 @@ def test_cell_area(backend, grid_savepoint, experiment, grid_file):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -342,12 +342,12 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -367,12 +367,12 @@ def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -392,12 +392,12 @@ def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -432,12 +432,12 @@ def test_sparse_fields_creator():
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )

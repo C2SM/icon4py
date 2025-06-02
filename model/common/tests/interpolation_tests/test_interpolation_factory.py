@@ -39,8 +39,8 @@ vertex_domain = h_grid.domain(dims.VertexDim)
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
     ],
 )
@@ -64,13 +64,13 @@ def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, d
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -109,13 +109,13 @@ def _get_interpolation_factory(
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             1e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-12,
         ),
     ],
@@ -137,13 +137,13 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -174,13 +174,13 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -203,13 +203,13 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -229,12 +229,12 @@ def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend,
     "grid_file, experiment",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
         ),
     ],
 )
@@ -268,13 +268,13 @@ def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend)
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -301,8 +301,8 @@ def test_get_mass_conserving_cell_average_weight(
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
     ],
@@ -323,13 +323,13 @@ def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -349,13 +349,13 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],
@@ -376,13 +376,13 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
     "grid_file, experiment, rtol",
     [
         (
-            test_definitions.Experiment.REGIONAL,
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             5e-9,
         ),
         (
-            test_definitions.Experiment.R02B04,
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.R02B04,
+            test_definitions.Experiments.GLOBAL,
             1e-11,
         ),
     ],

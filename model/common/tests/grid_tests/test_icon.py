@@ -24,7 +24,7 @@ from . import utils
 
 @functools.cache
 def grid_from_file() -> icon.IconGrid:
-    return from_file(test_definitions.Experiment.REGIONAL)
+    return from_file(test_definitions.Experiments.REGIONAL)
 
 
 @functools.cache
@@ -169,8 +169,8 @@ def test_grid_size(icon_grid):
 @pytest.mark.parametrize(
     "grid_file",
     (
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.R02B04,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.R02B04,
     ),
 )
 def test_has_skip_values(grid_file):

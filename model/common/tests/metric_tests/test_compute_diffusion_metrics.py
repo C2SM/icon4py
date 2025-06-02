@@ -29,8 +29,8 @@ from icon4py.model.testing import definitions as test_definitions, helpers
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_diffusion_metrics(
@@ -41,7 +41,7 @@ def test_compute_diffusion_metrics(
     grid_savepoint,
     backend,
 ):
-    if experiment == test_definitions.Experiment.GLOBAL:
+    if experiment == test_definitions.Experiments.GLOBAL:
         pytest.skip(f"Fields not computed for {experiment}")
 
     maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)

@@ -17,7 +17,7 @@ from icon4py.model.testing import definitions as test_definitions, helpers
 @pytest.mark.parametrize(
     "experiment",
     [
-        (test_definitions.Experiment.GAUSS3D),
+        (test_definitions.Experiments.GAUSS3D),
     ],
 )
 def test_topography_smoothing_with_serialized_data(

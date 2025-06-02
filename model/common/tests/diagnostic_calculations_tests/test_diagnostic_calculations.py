@@ -33,7 +33,7 @@ from icon4py.model.testing import definitions as test_definitions, helpers
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.JABW,
+        test_definitions.Experiments.JABW,
     ],
 )
 def test_diagnose_temperature(
@@ -96,7 +96,7 @@ def test_diagnose_temperature(
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.JABW,
+        test_definitions.Experiments.JABW,
     ],
 )
 def test_diagnose_meridional_and_zonal_winds(
@@ -155,7 +155,7 @@ def test_diagnose_meridional_and_zonal_winds(
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.JABW,
+        test_definitions.Experiments.JABW,
     ],
 )
 def test_diagnose_surface_pressure(
@@ -196,7 +196,7 @@ def test_diagnose_surface_pressure(
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.JABW,
+        test_definitions.Experiments.JABW,
     ],
 )
 def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metrics_savepoint):
@@ -244,7 +244,7 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
     [
-        (test_definitions.Experiment.WEISMAN_KLEMP, 30000.0, 8000.0, 0.85),
+        (test_definitions.Experiments.WEISMAN_KLEMP, 30000.0, 8000.0, 0.85),
     ],
 )
 @pytest.mark.parametrize(

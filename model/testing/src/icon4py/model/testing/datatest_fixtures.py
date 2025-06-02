@@ -16,7 +16,7 @@ from . import data_handling as data, datatest_utils as dt_utils
 
 @pytest.fixture
 def experiment():
-    return test_definitions.Experiment.REGIONAL
+    return test_definitions.Experiments.REGIONAL
 
 
 @pytest.fixture(params=[False], scope="session")
@@ -26,7 +26,7 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props)
+    return dt_utils.get_ranked_data_path(test_definitions.SERIALIZED_DATA_PATH, processor_props)
 
 
 @pytest.fixture
@@ -42,13 +42,13 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        if experiment == test_definitions.Experiment.GLOBAL:
+        if experiment == test_definitions.Experiments.GLOBAL:
             uri = test_definitions.DATA_URIS_APE[processor_props.comm_size]
-        elif experiment == test_definitions.Experiment.JABW:
+        elif experiment == test_definitions.Experiments.JABW:
             uri = test_definitions.DATA_URIS_JABW[processor_props.comm_size]
-        elif experiment == test_definitions.Experiment.GAUSS3D:
+        elif experiment == test_definitions.Experiments.GAUSS3D:
             uri = test_definitions.DATA_URIS_GAUSS3D[processor_props.comm_size]
-        elif experiment == test_definitions.Experiment.WEISMAN_KLEMP:
+        elif experiment == test_definitions.Experiments.WEISMAN_KLEMP:
             uri = test_definitions.DATA_URIS_WK[processor_props.comm_size]
         else:
             uri = test_definitions.DATA_URIS[processor_props.comm_size]
@@ -81,7 +81,7 @@ def grid_savepoint(data_provider, experiment):
 
 
 def is_regional(experiment_name):
-    return experiment_name == test_definitions.Experiment.REGIONAL
+    return experiment_name == test_definitions.Experiments.REGIONAL
 
 
 @pytest.fixture
@@ -472,7 +472,7 @@ def istep_exit():
 
 @pytest.fixture
 def lowest_layer_thickness(experiment):
-    if experiment == test_definitions.Experiment.REGIONAL:
+    if experiment == test_definitions.Experiments.REGIONAL:
         return 20.0
     else:
         return 50.0
@@ -480,9 +480,9 @@ def lowest_layer_thickness(experiment):
 
 @pytest.fixture
 def model_top_height(experiment):
-    if experiment == test_definitions.Experiment.REGIONAL:
+    if experiment == test_definitions.Experiments.REGIONAL:
         return 23000.0
-    elif experiment == test_definitions.Experiment.GLOBAL:
+    elif experiment == test_definitions.Experiments.GLOBAL:
         return 75000.0
     else:
         return 23500.0
@@ -495,9 +495,9 @@ def flat_height():
 
 @pytest.fixture
 def stretch_factor(experiment):
-    if experiment == test_definitions.Experiment.REGIONAL:
+    if experiment == test_definitions.Experiments.REGIONAL:
         return 0.65
-    elif experiment == test_definitions.Experiment.GLOBAL:
+    elif experiment == test_definitions.Experiments.GLOBAL:
         return 0.9
     else:
         return 1.0
@@ -505,9 +505,9 @@ def stretch_factor(experiment):
 
 @pytest.fixture
 def damping_height(experiment):
-    if experiment == test_definitions.Experiment.REGIONAL:
+    if experiment == test_definitions.Experiments.REGIONAL:
         return 12500.0
-    elif experiment == test_definitions.Experiment.GLOBAL:
+    elif experiment == test_definitions.Experiments.GLOBAL:
         return 50000.0
     else:
         return 45000.0

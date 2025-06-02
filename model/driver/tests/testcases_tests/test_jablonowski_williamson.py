@@ -18,7 +18,7 @@ from icon4py.model.testing import definitions as test_definitions, helpers
 @pytest.mark.parametrize(
     "experiment, rank",
     [
-        (test_definitions.Experiment.JABW, 0),
+        (test_definitions.Experiments.JABW, 0),
     ],
 )
 def test_jabw_initial_condition(

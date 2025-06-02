@@ -36,7 +36,7 @@ from .utils import (
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             1,
             2,
             1,
@@ -50,7 +50,7 @@ from .utils import (
             False,
         ),
         (
-            test_definitions.Experiment.REGIONAL,
+            test_definitions.Experiments.REGIONAL,
             1,
             2,
             1,
@@ -64,7 +64,7 @@ from .utils import (
             True,
         ),
         (
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.GLOBAL,
             1,
             2,
             1,
@@ -78,7 +78,7 @@ from .utils import (
             False,
         ),
         (
-            test_definitions.Experiment.GLOBAL,
+            test_definitions.Experiments.GLOBAL,
             1,
             2,
             1,
@@ -92,7 +92,7 @@ from .utils import (
             True,
         ),
         (
-            test_definitions.Experiment.GAUSS3D,
+            test_definitions.Experiments.GAUSS3D,
             1,
             2,
             1,
@@ -129,7 +129,7 @@ def test_run_timeloop_single_step(
     vn_only,
     backend,
 ):
-    if experiment == test_definitions.Experiment.GAUSS3D:
+    if experiment == test_definitions.Experiments.GAUSS3D:
         config = icon4py_configuration.read_config(
             experiment_type=experiment,
             backend=backend,

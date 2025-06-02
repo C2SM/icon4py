@@ -13,7 +13,7 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
-from icon4py.model.testing.definitions import Experiment
+from icon4py.model.testing.definitions import Experiments
 from icon4py.model.testing.helpers import apply_markers
 
 
@@ -193,7 +193,7 @@ def _get_grid(
             )
 
             grid_instance = get_grid_manager_for_experiment(
-                Experiment.REGIONAL, backend=selected_backend
+                Experiments.REGIONAL, backend=selected_backend
             ).grid
             return grid_instance
         case "icon_grid_global":
@@ -202,7 +202,7 @@ def _get_grid(
             )
 
             grid_instance = get_grid_manager_for_experiment(
-                Experiment.GLOBAL, backend=selected_backend
+                Experiments.GLOBAL, backend=selected_backend
             ).grid
             return grid_instance
         case _:

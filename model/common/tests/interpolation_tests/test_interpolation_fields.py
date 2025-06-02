@@ -47,8 +47,8 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):  # fixture
@@ -85,8 +85,8 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -112,8 +112,8 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -143,8 +143,8 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -172,8 +172,8 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -219,8 +219,8 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -250,8 +250,8 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
 @pytest.mark.parametrize(
     "experiment, atol",
     [
-        (test_definitions.Experiment.REGIONAL, 1e-10),
-        (test_definitions.Experiment.GLOBAL, 1e-10),
+        (test_definitions.Experiments.REGIONAL, 1e-10),
+        (test_definitions.Experiments.GLOBAL, 1e-10),
     ],
 )
 def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, atol, backend):
@@ -289,8 +289,8 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, a
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -331,8 +331,8 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -367,8 +367,8 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -393,8 +393,8 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid, b
 @pytest.mark.parametrize(
     "experiment",
     [
-        test_definitions.Experiment.REGIONAL,
-        test_definitions.Experiment.GLOBAL,
+        test_definitions.Experiments.REGIONAL,
+        test_definitions.Experiments.GLOBAL,
     ],
 )
 def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):
