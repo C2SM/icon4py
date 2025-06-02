@@ -95,22 +95,25 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
 def _download_and_load_gridfile(
     file_path: str, num_levels: int, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
+    """
+    Load a grid file.
+    Args:
+        file: full path to the file (file + path)
+        num_levels: number of vertical levels, needed for IconGrid construction but independent from grid file
+        backend: the gt4py Backend we are running on
+
+    Returns:
+
+    """
     grid_file = _download_grid_file(file_path)
-    limited_area = is_regional(str(grid_file))
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(),
         grid_file,
         v_grid.VerticalGridConfig(num_levels=num_levels),
     )
-    manager(backend=backend, keep_skip_values=keep_skip_values, limited_area=limited_area)
+    manager(backend=backend, keep_skip_values=keep_skip_values)
+    manager.close()
     return manager
-
-
-def is_regional(experiment_or_file: str):
-    return (
-        dt_utils.REGIONAL_EXPERIMENT in experiment_or_file
-        or REGIONAL_GRIDFILE in experiment_or_file
-    )
 
 
 def get_num_levels(experiment: str):

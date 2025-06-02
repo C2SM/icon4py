@@ -207,7 +207,7 @@ class NoAdvection(Advection):
             horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -301,7 +301,7 @@ class GodunovSplittingAdvection(Advection):
             horizontal_end=self._end_cell_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil apply_density_increment - end")
 
@@ -366,7 +366,7 @@ class GodunovSplittingAdvection(Advection):
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
             log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
 

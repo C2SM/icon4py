@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims
@@ -29,12 +30,45 @@ R02B04_GLOBAL_NUM_VERTEX = 10242
 managers = {}
 
 
-def horizontal_dim():
-    for dim in (dims.VertexDim, dims.EdgeDim, dims.CellDim):
-        yield dim
+def horizontal_dims():
+    for d in vars(dims).values():
+        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL:
+            yield d
 
 
-def global_grid_domains(dim: dims.Dimension):
+def main_horizontal_dims():
+    yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+
+
+def vertical_dims():
+    for d in vars(dims).values():
+        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.VERTICAL:
+            yield d
+
+
+def non_horizontal_dims():
+    yield from vertical_dims()
+    yield from local_dims()
+
+
+def local_dims():
+    for d in vars(dims).values():
+        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.LOCAL:
+            yield d
+
+
+def non_local_dims():
+    yield from vertical_dims()
+    yield from horizontal_dims()
+
+
+def all_dims():
+    yield from vertical_dims()
+    yield from horizontal_dims()
+    yield from local_dims()
+
+
+def global_grid_domains(dim: gtx.Dimension):
     zones = [
         h_grid.Zone.END,
         h_grid.Zone.LOCAL,

@@ -68,7 +68,7 @@ INTERIOR_IDX = {
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
 def test_halo(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
@@ -81,7 +81,7 @@ def test_halo(icon_grid, source, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_local(dim, source, icon_grid):
     # working around the fact that fixtures cannot be used in parametrized functions
     grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
@@ -92,7 +92,7 @@ def test_local(dim, source, icon_grid):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", lateral_boundary())
 def test_lateral_boundary(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
@@ -112,7 +112,7 @@ def test_lateral_boundary(icon_grid, source, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_end(icon_grid, source, dim):
     # working around the fact that fixtures cannot be used in parametrized functions
     grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
@@ -124,7 +124,7 @@ def test_end(icon_grid, source, dim):
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
 @pytest.mark.parametrize("marker", nudging())
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_nudging(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
     grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
@@ -143,7 +143,7 @@ def test_nudging(icon_grid, source, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_interior(icon_grid, source, dim):
     # working around the fact that fixtures cannot be used in parametrized functions
     grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
