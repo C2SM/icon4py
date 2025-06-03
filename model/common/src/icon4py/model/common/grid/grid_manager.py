@@ -122,9 +122,7 @@ class GridManager:
     def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool):
         if not self._reader:
             self.open()
-        on_gpu = data_alloc.is_cupy_device(backend)
-        self._grid = self._construct_grid(on_gpu=on_gpu, with_skip_values=keep_skip_values)
-        self._refinement = self._read_grid_refinement_fields(backend)
+        self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
         self.close()
@@ -232,6 +230,12 @@ class GridManager:
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
+
+        Args:
+            decomposition_info: Optional decomposition information, if not provided the grid is assumed to be a single node run.
+            backend: Optional backend to use for reading the fields, if not provided the default backend is used.
+        Returns:
+            dict[gtx.Dimension, gtx.Field]: A dictionary containing the refinement control fields for each dimension.
         """
         refinement_control_names = {
             dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
@@ -303,29 +307,6 @@ class GridManager:
 
         return start_indices, end_indices, grid_refinement_dimensions
 
-    def _read_grid_refinement_fields(
-        self,
-        backend: Optional[gtx_backend.Backend],
-        decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-    ) -> tuple[dict[dims.Dimension : data_alloc.NDArray]]:
-        """
-        Reads the refinement control fields from the grid file.
-
-        Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
-        see [refinement.py](refinement.py)
-        """
-        xp = data_alloc.import_array_ns(backend)
-        refinement_control_names = {
-            dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
-            dims.EdgeDim: gridfile.GridRefinementName.CONTROL_EDGES,
-            dims.VertexDim: gridfile.GridRefinementName.CONTROL_VERTICES,
-        }
-        refinement_control_fields = {
-            dim: xp.asarray(self._reader.int_variable(name, decomposition_info, transpose=False))
-            for dim, name in refinement_control_names.items()
-        }
-        return refinement_control_fields
-
     @property
     def grid(self) -> icon.IconGrid:
         return self._grid
@@ -350,15 +331,14 @@ class GridManager:
         xp = data_alloc.import_array_ns(backend)
         on_gpu = data_alloc.is_cupy_device(backend)
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
-        _local_connectivities = functools.partial(
+        _derived_connectivities = functools.partial(
             _add_derived_connectivities,
             array_ns=xp,
         )
-        _refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)
-
-        refinement_fields = _refinement_fields()
+        refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
+        limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
         grid = self._initialize_global(
-            _determine_limited_area(refinement_fields[dims.CellDim].ndarray), on_gpu
+            with_skip_values=with_skip_values, limited_area=limited_area, on_gpu=on_gpu
         )
         grid.set_refinement_control(refinement_fields)
 
@@ -377,7 +357,7 @@ class GridManager:
             {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
         )
 
-        _local_connectivities(grid)
+        _derived_connectivities(grid)
         _update_size_for_1d_sparse_dims(grid)
         start, end, _ = self._read_start_end_indices()
         for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():

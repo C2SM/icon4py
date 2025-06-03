@@ -112,7 +112,6 @@ def _download_and_load_gridfile(
         v_grid.VerticalGridConfig(num_levels=num_levels),
     )
     manager(backend=backend, keep_skip_values=keep_skip_values)
-    manager.close()
     return manager
 
 
