@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Union
 
 import numpy as np
-from gt4py.next import Dimension, Field
+from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -167,7 +167,7 @@ class GHexMultiNodeExchange:
     def my_rank(self):
         return self._context.rank()
 
-    def _create_domain_descriptor(self, dim: Dimension):
+    def _create_domain_descriptor(self, dim: gtx.Dimension):
         all_global = self._decomposition_info.global_index(
             dim, definitions.DecompositionInfo.EntryType.ALL
         )
@@ -185,8 +185,8 @@ class GHexMultiNodeExchange:
         )
         return domain_desc
 
-    def _create_pattern(self, horizontal_dim: Dimension):
-        assert horizontal_dim.kind == dims.DimensionKind.HORIZONTAL
+    def _create_pattern(self, horizontal_dim: gtx.Dimension):
+        assert horizontal_dim.kind == gtx.DimensionKind.HORIZONTAL
 
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, definitions.DecompositionInfo.EntryType.HALO
@@ -203,9 +203,7 @@ class GHexMultiNodeExchange:
         )
         return pattern
 
-    def _slice_field_based_on_dim(
-        self, field: Field, dim: definitions.Dimension
-    ) -> data_alloc.NDArray:
+    def _slice_field_based_on_dim(self, field: gtx.Field, dim: gtx.Dimension) -> data_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
         """
@@ -218,7 +216,7 @@ class GHexMultiNodeExchange:
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
-    def exchange(self, dim: definitions.Dimension, *fields: Sequence[Field]):
+    def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]):
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
 
@@ -249,7 +247,7 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
