@@ -74,7 +74,7 @@ class Grids:
         sizes={"cell": 283876, "vertex": 142724, "edge": 426599},
         kind=GridKind.REGIONAL,
         file_name="icon_grid_0002_R19B07_mch.nc",
-        uri="https://polybox.ethz.ch/index.php/s/tFQian4aDzTES6c/download"
+        uri="https://polybox.ethz.ch/index.php/s/tFQian4aDzTES6c/download",
     )
     MCH_OPR_R04B07_DOMAIN01: Final = Grid(
         name="mch_icon-ch2-small",
@@ -82,7 +82,7 @@ class Grids:
         sizes={"cell": 10700, "vertex": 5510, "edge": 16209},
         kind=GridKind.REGIONAL,
         file_name="mch_opr_r4b7_DOM01.nc",
-        uri="https://polybox.ethz.ch/index.php/s/ZL7LeEDijGCSJGz/download"
+        uri="https://polybox.ethz.ch/index.php/s/ZL7LeEDijGCSJGz/download",
     )
     MCH_OPR_R19B08_DOMAIN01: Final = Grid(
         name="opr_r19b08",
@@ -90,7 +90,7 @@ class Grids:
         sizes={"cell": 44528, "vertex": 22569, "edge": 67096},
         kind=GridKind.REGIONAL,
         file_name="domain1_DOM01.nc",
-        uri="https://polybox.ethz.ch/index.php/s/P6XfWcYjnrsNmeX/download"
+        uri="https://polybox.ethz.ch/index.php/s/P6XfWcYjnrsNmeX/download",
     )
     MCH_CH_R04B09_DSL: Final = Grid(
         name="mch_ch_r04b09_dsl",
@@ -98,7 +98,7 @@ class Grids:
         sizes={"cell": 20896, "vertex": 10663, "edge": 31558},
         kind=GridKind.REGIONAL,
         file_name="grid.nc",
-        uri="https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
+        uri="https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download",
     )
     TORUS_100X116_1000M: Final = Grid(
         name="TORUS_100X116_1000M_GRID_URI",
@@ -106,7 +106,7 @@ class Grids:
         sizes={"cell": 23200, "vertex": 11600, "edge": 34800},
         kind=GridKind.TORUS,
         file_name=" Torus_Triangles_100x116_1000m.nc",
-        uri="https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download"
+        uri="https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download",
     )
     TORUS_50000x5000: Final = Grid(
         name="TORUS_50000x5000_RES500",
@@ -114,7 +114,7 @@ class Grids:
         sizes={"cell": 1056, "vertex": 52, "edge": 1584},
         kind=GridKind.TORUS,
         file_name="Torus_Triangles_50000m_x_5000m_res500m.nc",
-        uri="https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
+        uri="https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download",
     )
 
 
@@ -129,25 +129,43 @@ class Experiment:
 
 class Experiments:
     GLOBAL: Final = Experiment(
-        name="exclaim_ape_R02B04", description="", grid=Grids.R02B04_GLOBAL, num_levels=60
+        name="exclaim_ape_R02B04",
+        description="EXLCLAIM Aquaplanet experiment",
+        grid=Grids.R02B04_GLOBAL,
+        num_levels=60,
+        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download"},
     )
     REGIONAL: Final = Experiment(
         name="mch_ch_r04b09_dsl",
         description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
-        grid=Grids.MC_CH_R04B09_DSL,
+        grid=Grids.MCH_CH_R04B09_DSL,
+        num_levels=65,
+        partitioned_data={
+            1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",
+            2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
+            4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
+        },
     )
     JABW: Final = Experiment(
         name="jabw_R02B04",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
+        num_levels=35,
+        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download"},
     )
     GAUSS3D: Final = Experiment(
-        name="gauss3d_torus", description="Gauss 3d test case", grid=Grids.TORUS_50000x5000
+        name="gauss3d_torus",
+        description="Gauss 3d test case",
+        grid=Grids.TORUS_50000x5000,
+        num_levels=35,
+        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download"},
     )
     WEISMAN_KLEMP: Final = Experiment(
         name="weisman_klemp_torus",
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
+        num_levels=64,
+        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"},
     )
 
 
