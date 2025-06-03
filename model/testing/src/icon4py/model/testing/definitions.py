@@ -167,32 +167,3 @@ class Experiments:
         num_levels=64,
         partitioned_data={1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"},
     )
-
-
-# GRID_DATA_URIS: Final[Mapping[GridName, Mapping[int, str]]] = {
-#     GridName.MC_CH_R04B09_DSL: {1: "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"},
-#     GridName.R02B04_GLOBAL: {1: "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"},
-#     GridName.TORUS_100X116_1000M: {1: "https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download"},
-#     GridName.TORUS_50000x5000: {1: "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"},
-#     GridName.ICON: {
-#         1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",
-#         2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
-#         4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
-#     },
-#     GridName.GLOBAL: {1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download"},
-#     GridName.DATA_URIS_JABW: {1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download"},
-#     GridName.DATA_URIS_GAUSS3D: {1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download"},
-#     GridName.DATA_URIS_WK: {1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"},
-# }
-# GRID_IDS = {
-#     ExperimentName.GLOBAL: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-#     ExperimentName.REGIONAL: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
-#     ExperimentName.JABW: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-#     ExperimentName.GAUSS3D: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
-#     ExperimentName.WEISMAN_KLEMP: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
-# }
-
-# MCH_CH_R04B09_LEVELS = 65
-# GLOBAL_NUM_LEVELS = 60
-# GLOBAL_GRIDFILE = "icon_grid_0013_R02B04_R.nc"
-# REGIONAL_GRIDFILE = "grid.nc"
