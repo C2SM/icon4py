@@ -516,7 +516,6 @@ class SolveNonhydro:
             rayleigh_type=[self._config.rayleigh_type],
             divdamp_type=[self._config.divdamp_type],
             index_of_damping_layer=[self._vertical_params.end_index_of_damping_layer],
-            jk_start=[self.jk_start],
             starting_vertical_index_for_3d_divdamp=[
                 self._params.starting_vertical_index_for_3d_divdamp
             ],
@@ -533,7 +532,6 @@ class SolveNonhydro:
             is_iau_active=[self._config.is_iau_active],
             rayleigh_type=[self._config.rayleigh_type],
             index_of_damping_layer=[self._vertical_params.end_index_of_damping_layer],
-            jk_start=[self.jk_start],
             kstart_moist=[self._vertical_params.kstart_moist],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
