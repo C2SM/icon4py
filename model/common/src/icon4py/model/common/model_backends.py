@@ -33,6 +33,8 @@ try:
     #   need to update the array shape and strides on each SDFG call.
     def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
         return make_dace_backend(
+            auto_optimize=True,
+            cached=True,
             gpu=gpu,
             async_sdfg_call=True,
             make_persistent=True,
