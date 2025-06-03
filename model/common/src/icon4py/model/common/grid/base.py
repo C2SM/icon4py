@@ -274,12 +274,14 @@ def replace_skip_values(
     if gtx_common.is_neighbor_connectivity(connectivity):
         _log.debug(f"Checking {connectivity.domain} for invalid index `{GridFile.INVALID_INDEX}`.")
         neighbor_table = connectivity.ndarray
-        if _has_skip_values(neighbor_table):
+        if _has_skip_values(neighbor_table) and connectivity.skip_value is not None:
             _log.info(f"Found invalid indices in {connectivity.domain}. Replacing...")
             max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
-            assert array_ns.all(
-                max_valid_neighbor >= 0
-            ), f"{connectivity.domain} contains entries without any valid neighbor, disconnected grid?"
+            if not array_ns.all(max_valid_neighbor >= 0):
+                _log.warning(
+                    f"{connectivity.domain} contains entries without any valid neighbor, disconnected grid?"
+                )
+                max_valid_neighbor = array_ns.where(max_valid_neighbor < 0, 0.0, max_valid_neighbor)
             neighbor_table[:] = array_ns.where(
                 neighbor_table == GridFile.INVALID_INDEX, max_valid_neighbor, neighbor_table
             )
