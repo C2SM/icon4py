@@ -481,12 +481,12 @@ class IconGridSavepoint(IconSavepoint):
         xp = data_alloc.array_ns(on_gpu)
         grid = (
             icon.IconGrid(self._grid_id)
-            .with_config(config)
-            .with_global_params(self.global_grid_params)
-            .with_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
-            .with_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
-            .with_start_end_indices(dims.CellDim, cell_starts, cell_ends)
-            .with_connectivities(
+            .set_config(config)
+            .set_global_params(self.global_grid_params)
+            .set_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
+            .set_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
+            .set_start_end_indices(dims.CellDim, cell_starts, cell_ends)
+            .set_neighbor_tables(
                 {
                     dims.C2EDim: xp.asarray(self.c2e()),
                     dims.E2CDim: xp.asarray(self.e2c()),
@@ -497,7 +497,7 @@ class IconGridSavepoint(IconSavepoint):
                     dims.E2C2EODim: xp.asarray(e2c2e0),
                 }
             )
-            .with_connectivities(
+            .set_neighbor_tables(
                 {
                     dims.E2VDim: xp.asarray(self.e2v()),
                     dims.V2EDim: xp.asarray(self.v2e()),
@@ -1844,6 +1844,14 @@ class IconSatadInitSavepoint(IconSatadExitSavepoint):
         return self._get_field("rho", dims.CellDim, dims.KDim)
 
 
+class TopographySavepoint(IconSavepoint):
+    def topo_c(self):
+        return self._get_field("topography", dims.CellDim)
+
+    def topo_smt_c(self):
+        return self._get_field("smooth_topography", dims.CellDim)
+
+
 class IconSerialDataProvider:
     def __init__(
         self,
@@ -2022,6 +2030,12 @@ class IconSerialDataProvider:
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric-state"].as_savepoint()
         return MetricSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_topography_savepoint(self) -> TopographySavepoint:
+        savepoint = self.serializer.savepoint["smooth-topo-savepoint"].as_savepoint()
+        return TopographySavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
