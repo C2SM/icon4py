@@ -135,7 +135,7 @@ def test_diagnose_meridional_and_zonal_winds(
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "C2E2C2E": icon_grid.get_offset_provider("C2E2C2E"),
+            "C2E2C2E": icon_grid.get_connectivity("C2E2C2E"),
         },
     )
 

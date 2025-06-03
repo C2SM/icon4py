@@ -172,7 +172,7 @@ def model_initialization_gauss3d(
         end_edge_end,
         0,
         num_levels,
-        offset_provider=grid.offset_providers,
+        offset_provider=grid.connectivities,
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
@@ -217,7 +217,7 @@ def model_initialization_gauss3d(
         end_cell_end,
         0,
         num_levels,
-        offset_provider=grid.offset_providers,
+        offset_provider=grid.connectivities,
     )
     log.info("U, V computation completed.")
 
