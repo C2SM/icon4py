@@ -95,7 +95,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert all(
         _is_list_of_names(body.args) for body in fvprog.past_stage.past_node.body
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for body in fvprog.past_stage.past_node.body for arg in body.args)
+    input_arg_ids = set(arg.id for body in fvprog.past_stage.past_node.body for arg in body.args)  # type: ignore[attr-defined]
 
     out_args = (body.kwargs["out"] for body in fvprog.past_stage.past_node.body)
     output_fields = []
@@ -153,9 +153,10 @@ def _provide_neighbor_table(chain: str, is_global: bool) -> NeighborConnectivity
         skip_values = True
 
     include_center = True if chain.count("O") > 0 else False
-    dims_initials = [key[0] for key in dims.global_dimensions.keys()]
+    dims_initials = [key[0] for key in dims.MAIN_HORIZONTAL_DIMENSIONS.keys()]
     map_to_dim = {
-        d: list(dims.global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
+        d: list(dims.MAIN_HORIZONTAL_DIMENSIONS.values())[d_i]
+        for d_i, d in enumerate(dims_initials)
     }
     location_chain: list[Dimension] = [map_to_dim.get(c) for c in chain if c not in ("2", "O")]  # type: ignore[misc] # type specified
 
