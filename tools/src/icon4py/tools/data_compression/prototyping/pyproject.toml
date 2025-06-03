@@ -19,7 +19,6 @@ dependencies = [
     "numcodecs_wasm",
     "numcodecs_combinators",
     "streamlit",
-    "pywt",
     "tslearn",
     "scipy"
 ]

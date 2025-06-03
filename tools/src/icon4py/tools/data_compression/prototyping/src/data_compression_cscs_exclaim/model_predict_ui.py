@@ -19,8 +19,8 @@ from numcodecs_wasm_zfp import Zfp
 from numcodecs_wasm_zlib import Zlib
 
 
-#  prototyping % streamlit run ./src/model_eval_cscs_exclaim/model_predict_ui.py
-#  prototyping % model_eval_cscs_exclaim models_evaluation netCDF_files/tigge_pl_t_q_dx=2_2024_08_02.nc t parameters.yaml
+#  prototyping % streamlit run ./src/data_compression_cscs_exclaim/model_predict_ui.py
+#  prototyping % data_compression_cscs_exclaim models_evaluation netCDF_files/tigge_pl_t_q_dx=2_2024_08_02.nc t parameters.yaml
 
 # Page title
 st.title("Upload a file and evaluate compressors")
