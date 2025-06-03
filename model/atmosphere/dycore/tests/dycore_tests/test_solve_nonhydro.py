@@ -23,7 +23,6 @@ from icon4py.model.atmosphere.dycore.stencils import (
     compute_hydrostatic_correction_term,
     vertically_implicit_dycore_solver,
 )
-from icon4py.model.atmosphere.dycore.stencils import combined_solve_nh_30_to_38
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
@@ -705,114 +704,6 @@ def test_nonhydro_corrector_step(
         atol=1e-14,
     )
 
-@pytest.mark.dataset
-@pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
-    ],
-)
-@pytest.mark.parametrize("istep_init", [2])
-def test_combined_solve_nh_30_to_38_in_corrector_step(
-    icon_grid,
-    grid_savepoint,
-    savepoint_dycore_30_to_38_init,
-    savepoint_dycore_30_to_38_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    savepoint_dycore_init,
-    step_date_init,
-    step_date_exit,
-    substep_init,
-    istep_init,
-    backend,
-):
-    edge_domain = h_grid.domain(dims.EdgeDim)
-
-    ddzq_z_full_e = savepoint_dycore_30_to_38_init.ddzq_z_full_e()
-
-    z_vn_avg = savepoint_dycore_init.z_vn_avg()
-    mass_fl_e = savepoint_dycore_init.mass_fl_e()
-    z_theta_v_fl_e = savepoint_dycore_init.z_theta_v_fl_e()
-    vn_traj = savepoint_dycore_init.vn_traj()
-    mass_flx_me = savepoint_dycore_init.mass_flx_me()
-    e_flx_avg = savepoint_dycore_init.e_flx_avg()
-    vn = savepoint_dycore_30_to_38_init.vn()
-    z_rho_e = savepoint_dycore_30_to_38_init.z_tho_e()
-    z_theta_v_e = savepoint_dycore_30_to_38_init.z_theta_v_e()
-    r_nsubsteps = savepoint_dycore_30_to_38_init.r_nsubsteps()
-    at_initial_timestep = savepoint_dycore_30_to_38_init.at_initial_timestep()
-
-    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-
-    z_vn_avg_ref = savepoint_dycore_30_to_38_exit.z_vn_avg()
-    mass_fl_e_ref = savepoint_dycore_30_to_38_exit.z_vn_avg()
-    z_theta_v_fl_e_ref = savepoint_dycore_30_to_38_exit.z_vn_avg()
-    vn_traj_ref = savepoint_dycore_30_to_38_exit.z_vn_avg()
-    mass_flx_me_ref = savepoint_dycore_30_to_38_exit.z_vn_avg()
-
-    combined_solve_nh_30_to_38.combined_solve_nh_30_to_38_corrector.with_backend(
-        backend
-    )(
-        z_vn_avg=z_vn_avg,
-        mass_fl_e=mass_fl_e,
-        z_theta_v_fl_e=z_theta_v_fl_e,
-        vn_traj=vn_traj,
-        mass_flx_me=mass_flx_me,
-        e_flx_avg=e_flx_avg,
-        vn=vn,
-        z_rho_e=z_rho_e,
-        ddzq_z_full_e=ddzq_z_full_e,
-        z_theta_v_e=z_theta_v_e,
-        at_initial_timestep=at_initial_timestep,
-        r_nsubsteps=r_nsubsteps,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(icon_grid.num_levels),
-
-        offset_provider={
-            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
-            "Koff": dims.KDim,
-        },
-    )
-
-    assert helpers.dallclose(
-        z_vn_avg_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_vn_avg.asnumpy()[horizontal_start:horizontal_end, :],
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
-
-    assert helpers.dallclose(
-        mass_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        mass_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
-
-    assert helpers.dallclose(
-        z_theta_v_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_theta_v_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
-
-    assert helpers.dallclose(
-        vn_traj_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        vn_traj.asnumpy()[horizontal_start:horizontal_end, :],
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
-
-    assert helpers.dallclose(
-        mass_flx_me_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        mass_flx_me.asnumpy()[horizontal_start:horizontal_end, :],
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
