@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
 import logging
+from types import ModuleType
 from typing import Final
 
 import numpy as np
@@ -32,7 +33,7 @@ This module only contains functionality related to grid refinement as we use it 
 """
 _log = logging.getLogger(__name__)
 
-_MAX_ORDERED: Final[dict[dims.Dimension, int]] = {
+_MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 14,
     dims.EdgeDim: 24,
     dims.VertexDim: 13,
@@ -50,7 +51,7 @@ _UNORDERED: Final[dict[gtx.Dimension : tuple[int, int]]] = {
 }
 """Value indicating a point is in the unordered interior (fully prognostic) region: this is encoded by 0 or -4 in coarser parent grid."""
 
-_MIN_ORDERED: Final[dict[dims.Dimension, int]] = {
+_MIN_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dim: value[1] + 1 for dim, value in _UNORDERED.items()
 }
 """For coarse parent grids the overlapping boundary regions are counted with negative values, from -1 to max -3, (as -4 is used to mark interior points)"""
@@ -64,7 +65,7 @@ _NUDGING_START: Final[dict[gtx.Dimension : int]] = {
 
 @dataclasses.dataclass(frozen=True)
 class RefinementValue:
-    dim: dims.Dimension
+    dim: gtx.Dimension
     value: int
 
     def __post_init__(self):
@@ -80,15 +81,17 @@ class RefinementValue:
         return self.value not in _UNORDERED[self.dim]
 
 
-def is_unordered_field(field: data_alloc.NDArray, dim: dims.Dimension) -> data_alloc.NDArray:
+def is_unordered_field(
+    field: data_alloc.NDArray, dim: gtx.Dimension, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
-    return np.where(
-        field == _UNORDERED[dim][0], True, np.where(field == _UNORDERED[dim][1], True, False)
+    return array_ns.where(
+        field == _UNORDERED[dim][0], True, array_ns.where(field == _UNORDERED[dim][1], True, False)
     )
 
 
 def convert_to_unnested_refinement_values(
-    field: data_alloc.NDArray, dim: dims.Dimension
+    field: data_alloc.NDArray, dim: gtx.Dimension, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
     """Convenience function that converts the grid refinement value from a coarser
     parent grid to the canonical values used in an unnested setup.
@@ -96,7 +99,7 @@ def convert_to_unnested_refinement_values(
     The nested values are used for example in the radiation grids.
     """
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
-    return np.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
+    return array_ns.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
 
 
 def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone) -> RefinementValue:
@@ -109,3 +112,15 @@ def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone) -> RefinementVal
             return RefinementValue(dim, _NUDGING_START[dim])
         case _:
             raise NotImplementedError
+
+
+def is_limited_area_grid(
+    refinement_field: data_alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> bool:
+    """Check if the grid is a local area grid.
+
+    This is done by checking whether there are Boundary points (Refinement value > 0) in the grid.
+    The .item() call is needed to get a scalar return for cupy arrays.
+    """
+    return array_ns.any(refinement_field > 0).item()

@@ -442,7 +442,7 @@ class SolveNonhydro:
             ).compile(
                 vertical_start=[gtx.int32(0)],
                 vertical_end=[gtx.int32(self._grid.num_levels)],
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
         )
         self._init_two_edge_kdim_fields_with_zero_wp = (
@@ -456,7 +456,7 @@ class SolveNonhydro:
             compute_hydrostatic_correction_term.with_backend(self._backend).compile(
                 vertical_start=[gtx.int32(self._grid.num_levels - 1)],
                 vertical_end=[gtx.int32(self._grid.num_levels)],
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
         )
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
@@ -473,7 +473,7 @@ class SolveNonhydro:
             horizontal_end=[gtx.int32(self._grid.num_edges)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self._apply_divergence_damping_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn.with_backend(
             self._backend
@@ -489,7 +489,7 @@ class SolveNonhydro:
             horizontal_end=[gtx.int32(self._grid.num_edges)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self._compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
             self._backend
@@ -503,7 +503,7 @@ class SolveNonhydro:
         ).compile(
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self._compute_mass_flux = compute_mass_flux.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],
@@ -525,7 +525,7 @@ class SolveNonhydro:
             kstart_moist=[self._vertical_params.kstart_moist],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
-            offset_provider=[self._grid.offset_providers],
+            offset_provider=[self._grid.connectivities],
         )
         self._vertically_implicit_solver_at_corrector_step = vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step.with_backend(
             self._backend
@@ -539,18 +539,18 @@ class SolveNonhydro:
             kstart_moist=[self._vertical_params.kstart_moist],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
-            offset_provider=[self._grid.offset_providers],
+            offset_provider=[self._grid.connectivities],
         )
         self._compute_dwdz_for_divergence_damping = (
             compute_dwdz_for_divergence_damping.with_backend(self._backend)
         ).compile(
             vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self._compute_avg_vn = compute_avg_vn.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self._accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(
             self._backend
@@ -603,11 +603,11 @@ class SolveNonhydro:
             nflatlev_startindex=[self._vertical_params.nflatlev],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self._predictor_stencils_37_38 = (
             nhsolve_stencils.predictor_stencils_37_38.with_backend(self._backend)
-            .with_connectivities(self._grid.offset_providers)
+            .with_connectivities(self._grid.connectivities)
             .freeze()
         )
         self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend).compile(
@@ -615,7 +615,7 @@ class SolveNonhydro:
             nlev=[self._grid.num_levels],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],
@@ -1048,7 +1048,7 @@ class SolveNonhydro:
             horizontal_end=gtx.int32(self._grid.num_cells),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels + 1),
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         # Compute rho and theta at edges for horizontal flux divergence term
@@ -1061,7 +1061,7 @@ class SolveNonhydro:
                 horizontal_end=self._end_vertex_halo,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,  # UBOUND(p_cell_in,2)
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
             self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_states.current.theta_v,
@@ -1071,7 +1071,7 @@ class SolveNonhydro:
                 horizontal_end=self._end_vertex_halo,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
 
         log.debug(
@@ -1094,7 +1094,7 @@ class SolveNonhydro:
                 horizontal_end=self._end_edge_local,
                 vertical_start=self._grid.num_levels - 1,
                 vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
             lowest_level = self._grid.num_levels - 1
             hydrostatic_correction_on_lowest_level = gtx.as_field(
@@ -1155,7 +1155,7 @@ class SolveNonhydro:
             horizontal_end=gtx.int32(self._grid.num_edges),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels),
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         if self._grid.limited_area:
@@ -1187,7 +1187,7 @@ class SolveNonhydro:
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         self._compute_mass_flux(
@@ -1220,7 +1220,7 @@ class SolveNonhydro:
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         if not self.l_vert_nested:
@@ -1235,7 +1235,7 @@ class SolveNonhydro:
                 horizontal_end=self._end_edge_halo_level_2,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels + 1,
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
 
         self._stencils_39_40(
@@ -1251,7 +1251,7 @@ class SolveNonhydro:
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self._grid.num_levels + 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         self._vertically_implicit_solver_at_predictor_step(
@@ -1302,7 +1302,7 @@ class SolveNonhydro:
             horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels + 1),
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         if self._grid.limited_area:
@@ -1334,7 +1334,7 @@ class SolveNonhydro:
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=self._params.starting_vertical_index_for_3d_divdamp,
                 vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
+                offset_provider=self._grid.connectivities,
             )
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
@@ -1431,7 +1431,7 @@ class SolveNonhydro:
             horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(1),
             vertical_end=gtx.int32(self._grid.num_levels),
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         log.debug(f"corrector: start stencil apply_divergence_damping_and_update_vn")
@@ -1472,7 +1472,7 @@ class SolveNonhydro:
             horizontal_end=gtx.int32(self._grid.num_edges),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels),
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         log.debug("exchanging prognostic field 'vn'")
@@ -1486,7 +1486,7 @@ class SolveNonhydro:
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         log.debug("corrector: start stencil 32")
@@ -1585,7 +1585,7 @@ class SolveNonhydro:
             horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels + 1),
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
 
         if lprep_adv:
