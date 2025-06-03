@@ -333,7 +333,10 @@ def test_sparse_fields_creator():
 )
 def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):
     gm = grid_utils.get_grid_manager(
-        grid_file, keep_skip_values=True, backend=backend, num_levels=1
+        grid_file=grid_file,
+        num_levels=1,
+        keep_skip_values=True,
+        backend=backend,
     )
     grid = gm.grid
     coordinates = gm.coordinates

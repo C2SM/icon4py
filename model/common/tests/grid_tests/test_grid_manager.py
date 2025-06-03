@@ -85,7 +85,7 @@ def test_grid_manager_eval_v2e(caplog, grid_savepoint, experiment, grid_file, ba
 def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim, backend):
     refin_ctrl = utils.run_grid_manager(
         grid_file, keep_skip_values=True, backend=backend
-    ).refinement
+    ).grid.refinement_control
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
     assert np.all(
         refin_ctrl_serialized.ndarray
@@ -603,5 +603,5 @@ def test_edge_vertex_distance(grid_file, grid_savepoint, backend):
     "grid_file, expected", [(dt_utils.REGIONAL_EXPERIMENT, True), (dt_utils.R02B04_GLOBAL, False)]
 )
 def test_limited_area_on_grid(grid_file, expected):
-    grid = utils.run_grid_manager(grid_file, backend=None).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=None).grid
     assert expected == grid.limited_area

@@ -43,8 +43,8 @@ def test_has_skip_values_on_torus(
     )
     grid = (
         icon.IconGrid(uuid.uuid4())
-        .with_config(config)
-        .with_global_params(
+        .set_config(config)
+        .set_global_params(
             icon.GlobalGridParams(root=0, level=2, geometry_type=base.GeometryType.TORUS)
         )
     )
@@ -63,8 +63,8 @@ def test_has_skip_values_on_icosahedron_returns_keep_skip_value(keep_skip_values
     )
     grid = (
         icon.IconGrid(uuid.uuid4())
-        .with_config(config)
-        .with_global_params(
+        .set_config(config)
+        .set_global_params(
             icon.GlobalGridParams(root=0, level=2, geometry_type=base.GeometryType.ICOSAHEDRON)
         )
     )
@@ -80,7 +80,7 @@ def test_replace_skip_values(grid_file, caplog, backend):
 
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=None).grid
     horizontal_connectivities = (
-        c for c in grid.offset_providers.values() if isinstance(c, gtx.Connectivity)
+        c for c in grid.neighbor_tables.values() if isinstance(c, gtx.Connectivity)
     )
     for connectivity in horizontal_connectivities:
         clear_skip_values(connectivity)
@@ -89,7 +89,7 @@ def test_replace_skip_values(grid_file, caplog, backend):
 
 def test_replace_skip_values_validate_disconnected_grids():
     grid = simple.SimpleGrid()
-    connectivity = grid.get_offset_provider("V2E")
+    connectivity = grid.get_connectivity("V2E")
     connectivity.ndarray[2, :] = gridfile.GridFile.INVALID_INDEX
 
     with pytest.raises(AssertionError) as error:
