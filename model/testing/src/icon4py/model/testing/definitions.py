@@ -128,9 +128,9 @@ class Experiment:
 
 
 class Experiments:
-    APE_R02B04: Final = Experiment(
+    EXCLAIM_APE: Final = Experiment(
         name="exclaim_ape_R02B04",
-        description="EXLCLAIM Aquaplanet experiment",
+        description="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
         num_levels=60,
         partitioned_data={1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download"},
@@ -146,14 +146,14 @@ class Experiments:
             4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
         },
     )
-    JABW_R02B04: Final = Experiment(
+    JW: Final = Experiment(
         name="jabw_R02B04",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
         num_levels=35,
         partitioned_data={1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download"},
     )
-    GAUSS3D_TORUS: Final = Experiment(
+    GAUSS3D: Final = Experiment(
         name="gauss3d_torus",
         description="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
