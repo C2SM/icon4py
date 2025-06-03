@@ -495,9 +495,6 @@ class SolveNonhydro:
         )
         self._allocate_local_fields()
         self._determine_local_domains()
-        # TODO (magdalena) vertical nesting is only relevant in the context of
-        #      horizontal nesting, since we don't support this we should remove this option
-        self.l_vert_nested: bool = False
 
         self._en_smag_fac_for_zero_nshift(
             self._vertical_params.interface_physical_height,
@@ -1064,20 +1061,19 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        if not self.l_vert_nested:
-            self._predictor_stencils_37_38(
-                vn=prognostic_states.next.vn,
-                vt=diagnostic_state_nh.tangential_wind,
-                vn_ie=diagnostic_state_nh.vn_on_half_levels,
-                z_vt_ie=z_fields.tangential_wind_on_half_levels,
-                z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
-                wgtfacq_e_dsl=self._metric_state_nonhydro.wgtfacq_e,
-                horizontal_start=self._start_edge_lateral_boundary_level_5,
-                horizontal_end=self._end_edge_halo_level_2,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels + 1,
-                offset_provider=self._grid.offset_providers,
-            )
+        self._predictor_stencils_37_38(
+            vn=prognostic_states.next.vn,
+            vt=diagnostic_state_nh.tangential_wind,
+            vn_ie=diagnostic_state_nh.vn_on_half_levels,
+            z_vt_ie=z_fields.tangential_wind_on_half_levels,
+            z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+            wgtfacq_e_dsl=self._metric_state_nonhydro.wgtfacq_e,
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
+            vertical_start=0,
+            vertical_end=self._grid.num_levels + 1,
+            offset_provider=self._grid.offset_providers,
+        )
 
         self._stencils_39_40(
             e_bln_c_s=self._interpolation_state.e_bln_c_s,
