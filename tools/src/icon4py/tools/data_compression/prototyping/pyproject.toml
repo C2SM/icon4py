@@ -18,6 +18,10 @@ dependencies = [
     "numcodecs_observers",
     "numcodecs_wasm",
     "numcodecs_combinators",
+    "streamlit",
+    "pywt",
+    "tslearn",
+    "scipy"
 ]
 description = 'Data compression tool for Weather and Climate data'
 name = 'data_compression_cscs_exclaim'

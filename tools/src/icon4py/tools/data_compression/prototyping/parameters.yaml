@@ -15,6 +15,6 @@ zfp_asinh_compressors:
      tolerance: 0.001
 
 sz3_eb_compressors:
-    params:
-        sz3_eb_mode:: "rel"
-        sz3_eb_rel: 0.001
+ params:
+     sz3_eb_mode: "rel"
+     sz3_eb_rel: 0.001
