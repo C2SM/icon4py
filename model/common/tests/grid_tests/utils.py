@@ -36,6 +36,16 @@ def horizontal_dims():
             yield d
 
 
+def one_dimensional_sparse_dims():
+    for d in vars(dims).values():
+        if (
+            isinstance(d, gtx.Dimension)
+            and d.kind == gtx.DimensionKind.HORIZONTAL
+            and d not in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        ):
+            yield d
+
+
 def main_horizontal_dims():
     yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
 

@@ -28,6 +28,7 @@ CONNECTIVITIES_ON_BOUNDARIES = (
     dims.E2C2VDim,
     dims.E2C2EDim,
     dims.E2C2EODim,
+    dims.C2E2C2E2CDim,
 )
 CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
@@ -191,13 +192,10 @@ class IconGrid(base.BaseGrid):
         assert (
             dimension.kind == gtx.DimensionKind.LOCAL
         ), "only local dimensions can have skip values"
-        if dimension in CONNECTIVITIES_ON_PENTAGONS:
-            return True
-        elif self.limited_area:
-            if dimension in CONNECTIVITIES_ON_BOUNDARIES:
-                return True
-        else:
-            return False
+        value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
+            self.limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES
+        )
+        return value
 
     @property
     def id(self):

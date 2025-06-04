@@ -6,13 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import logging
 import re
 
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     grid_manager as gm,
+    gridfile,
     horizontal as h_grid,
     icon,
     vertical as v_grid,
@@ -159,3 +162,54 @@ def test_grid_size(icon_grid):
     assert 10663 == icon_grid.size[dims.VertexDim]
     assert 20896 == icon_grid.size[dims.CellDim]
     assert 31558 == icon_grid.size[dims.EdgeDim]
+
+
+@pytest.mark.parametrize("dim", ("C2CE", "E2EC", "E2ECV", "C2CEC", "C2CE", "C2CECEC"))
+@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+def test_1d_sparse_fields_connectivities_have_no_skip_values(grid_file, dim, backend):
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
+    connectivity = grid.get_connectivity(dim)
+    assert (
+        connectivity.skip_value is None
+    ), f"Connectivity {dim} for {grid_file} should not have skip values."
+    assert (
+        connectivity.asnumpy().min() >= 0
+    ), f"Connectivity {dim} for {grid_file} should not have negative values."
+
+
+@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize("dim", (utils.local_dims()))
+def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_file, dim, backend, caplog):
+    caplog.set_level(logging.DEBUG)
+    if dim == dims.V2E2VDim:
+        pytest.skip("V2E2VDim is not supported in the current grid configuration.")
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
+    connectivity = grid.get_connectivity(dim.value)
+
+    assert (
+        np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
+    ) == grid._has_skip_values(dim)
+    if not grid._has_skip_values(dim):
+        assert connectivity.skip_value is None
+    else:
+        assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
+
+
+@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize("dim", (utils.local_dims()))
+def test_when_replace_skip_values_then_only_pentagon_points_remain(grid_file, dim, backend, caplog):
+    caplog.set_level(logging.DEBUG)
+    if dim == dims.V2E2VDim:
+        pytest.skip("V2E2VDim is not supported in the current grid configuration.")
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=False, backend=backend).grid
+    connectivity = grid.get_connectivity(dim.value)
+    if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
+        assert np.any(
+            connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX
+        ).item(), f"Connectivity {dim.value} for {grid_file} should have skip values."
+        assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
+    else:
+        assert (
+            not np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
+        ), f"Connectivity {dim.value} for {grid_file} contains skip values, but none are expected."
+        assert connectivity.skip_value is None

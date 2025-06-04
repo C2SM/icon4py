@@ -13,7 +13,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from types import ModuleType
-from typing import Callable, Dict
+from typing import Callable, Dict, Sequence
 
 import gt4py.next as gtx
 import numpy as np
@@ -123,9 +123,10 @@ class BaseGrid(ABC):
     @functools.cached_property
     def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
         return {
-            dims.DIMENSIONS_BY_OFFSET_NAME.get(k, None): v.ndarray
+            dim: v.ndarray
             for k, v in self.connectivities.items()
-            if gtx_common.is_neighbor_connectivity(v)
+            if (dim := dims.DIMENSIONS_BY_OFFSET_NAME.get(k)) is not None
+            and gtx_common.is_neighbor_connectivity(v)
         }
 
     @functools.cached_property
@@ -173,28 +174,37 @@ class BaseGrid(ABC):
             dim, self._neighbor_tables[dim].dtype
         )
         skip_value = -1 if self._has_skip_values(dim) else None
+        if self._do_replace_skip_values_in_table(dim):
+            _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
+            skip_value = None
+            neighbor_table = replace_skip_values(
+                dim, self._neighbor_tables[dim], array_ns=data_alloc.array_ns(self.config.on_gpu)
+            )
+        else:
+            neighbor_table = self._neighbor_tables[dim]
         connectivity = gtx.as_connectivity(
             [from_dim, dim],
             to_dim,
-            self._neighbor_tables[dim],
+            data=neighbor_table,
             skip_value=skip_value,
         )
-        if not self.config.keep_skip_values:
-            connectivity = replace_skip_values(
-                self.limited_area, connectivity, array_ns=data_alloc.array_ns(self.config.on_gpu)
-            )
         return connectivity
+
+    def _do_replace_skip_values_in_table(self, dim):
+        return not self.config.keep_skip_values and (
+            self.limited_area or not self._has_skip_values(dim)
+        )
 
     def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self._neighbor_tables:
-            raise MissingConnectivity()
+            raise MissingConnectivity(f"No neighbor table for dimension {dim}.")
         xp = data_alloc.array_ns(self.config.on_gpu)
         return grid_utils.connectivity_for_1d_sparse_fields(
             dim,
             self._neighbor_tables[dim].shape,
             from_dim,
             to_dim,
-            has_skip_values=self._has_skip_values(dim),
+            has_skip_values=False,
             array_ns=xp,
         )
 
@@ -218,8 +228,8 @@ class BaseGrid(ABC):
 
 
 def replace_skip_values(
-    limited_area: bool, connectivity: gtx.Connectivity, array_ns: ModuleType = np
-) -> gtx.Connectivity:
+    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, array_ns: ModuleType = np
+):
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.
 
@@ -247,37 +257,28 @@ def replace_skip_values(
     and most of them should already be manipulated only leaving those where invalid neighbors are not accessed in the dycore.
 
     Args:
-        connectivity: gtx.Connectivity object to be manipulated
+        domain: the domain of the Connectivity
+        connectivity: NDArray object to be manipulated
     Returns:
-        gtx.Connectivity object with manipulated neighbor tables
+        NDArray without removed skip values
     """
     # TODO @halungge: neighbour tables are copied, when constructing the Connectivity: should the original be discarded from the grid?
     #   Would that work for the wrapper?
 
-    def _has_skip_values_in_table(neighbor_table: data_alloc.NDArray) -> bool:
-        return array_ns.amin(neighbor_table).item() == GridFile.INVALID_INDEX
+    def _has_skip_values_in_table(data: data_alloc.NDArray) -> bool:
+        return array_ns.amin(data).item() == GridFile.INVALID_INDEX
 
-    def _do_replace_skip_values_for_connectivity(
-        limited_area: bool, connectivity: gtx.Connectivity
-    ) -> bool:
-        return limited_area or connectivity.skip_value is None
-
-    if gtx_common.is_neighbor_connectivity(connectivity):
-        _log.debug(f"Checking {connectivity.domain} for invalid index `{GridFile.INVALID_INDEX}`.")
-        neighbor_table = connectivity.ndarray
-        if _has_skip_values_in_table(neighbor_table) and _do_replace_skip_values_for_connectivity(
-            limited_area, connectivity
-        ):
-            _log.info(f"Found invalid indices in {connectivity.domain}. Replacing...")
-            max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
-            if not array_ns.all(max_valid_neighbor >= 0):
-                _log.warning(
-                    f"{connectivity.domain} contains entries without any valid neighbor, disconnected grid?"
-                )
-                max_valid_neighbor = array_ns.where(max_valid_neighbor < 0, 0.0, max_valid_neighbor)
-            neighbor_table[:] = array_ns.where(
-                neighbor_table == GridFile.INVALID_INDEX, max_valid_neighbor, neighbor_table
+    if _has_skip_values_in_table(neighbor_table):
+        _log.info(f"Found invalid indices in {domain}. Replacing...")
+        max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
+        if not array_ns.all(max_valid_neighbor >= 0):
+            _log.warning(
+                f"{domain} contains entries without any valid neighbor, disconnected grid?"
             )
-        else:
-            _log.debug(f"Found no invalid indices in {connectivity.domain}.")
-    return connectivity
+            max_valid_neighbor = array_ns.where(max_valid_neighbor < 0, 0.0, max_valid_neighbor)
+        neighbor_table[:] = array_ns.where(
+            neighbor_table == GridFile.INVALID_INDEX, max_valid_neighbor, neighbor_table
+        )
+    else:
+        _log.debug(f"Found no invalid indices in {domain}.")
+    return neighbor_table
