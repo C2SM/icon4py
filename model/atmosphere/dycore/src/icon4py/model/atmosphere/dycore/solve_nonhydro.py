@@ -417,8 +417,6 @@ class SolveNonhydro:
         self._edge_geometry = edge_geometry
         self._cell_params = cell_geometry
 
-        self.jk_start = 0  # used in stencil_55
-
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
@@ -518,7 +516,6 @@ class SolveNonhydro:
             rayleigh_type=[self._config.rayleigh_type],
             divdamp_type=[self._config.divdamp_type],
             index_of_damping_layer=[self._vertical_params.end_index_of_damping_layer],
-            jk_start=[self.jk_start],
             starting_vertical_index_for_3d_divdamp=[
                 self._params.starting_vertical_index_for_3d_divdamp
             ],
@@ -535,7 +532,6 @@ class SolveNonhydro:
             is_iau_active=[self._config.is_iau_active],
             rayleigh_type=[self._config.rayleigh_type],
             index_of_damping_layer=[self._vertical_params.end_index_of_damping_layer],
-            jk_start=[self.jk_start],
             kstart_moist=[self._vertical_params.kstart_moist],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
@@ -645,14 +641,6 @@ class SolveNonhydro:
         )
         self._allocate_local_fields()
         self._determine_local_domains()
-        # TODO (magdalena) vertical nesting is only relevant in the context of
-        #      horizontal nesting, since we don't support this we should remove this option
-        self.l_vert_nested: bool = False
-        if grid.lvert_nest:
-            self.l_vert_nested = True
-            self.jk_start = 1
-        else:
-            self.jk_start = 0
 
         self._en_smag_fac_for_zero_nshift(
             self._vertical_params.interface_physical_height,
@@ -1223,20 +1211,19 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        if not self.l_vert_nested:
-            self._predictor_stencils_37_38(
-                vn=prognostic_states.next.vn,
-                vt=diagnostic_state_nh.tangential_wind,
-                vn_ie=diagnostic_state_nh.vn_on_half_levels,
-                z_vt_ie=z_fields.tangential_wind_on_half_levels,
-                z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
-                wgtfacq_e_dsl=self._metric_state_nonhydro.wgtfacq_e,
-                horizontal_start=self._start_edge_lateral_boundary_level_5,
-                horizontal_end=self._end_edge_halo_level_2,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels + 1,
-                offset_provider=self._grid.connectivities,
-            )
+        self._predictor_stencils_37_38(
+            vn=prognostic_states.next.vn,
+            vt=diagnostic_state_nh.tangential_wind,
+            vn_ie=diagnostic_state_nh.vn_on_half_levels,
+            z_vt_ie=z_fields.tangential_wind_on_half_levels,
+            z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+            wgtfacq_e_dsl=self._metric_state_nonhydro.wgtfacq_e,
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
+            vertical_start=0,
+            vertical_end=self._grid.num_levels + 1,
+            offset_provider=self._grid.connectivities,
+        )
 
         self._stencils_39_40(
             e_bln_c_s=self._interpolation_state.e_bln_c_s,
@@ -1295,7 +1282,6 @@ class SolveNonhydro:
             divdamp_type=self._config.divdamp_type,
             at_first_substep=at_first_substep,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            jk_start=self.jk_start,
             starting_vertical_index_for_3d_divdamp=self._params.starting_vertical_index_for_3d_divdamp,
             kstart_moist=self._vertical_params.kstart_moist,
             horizontal_start=self._start_cell_nudging,
@@ -1577,7 +1563,6 @@ class SolveNonhydro:
             is_iau_active=self._config.is_iau_active,
             rayleigh_type=self._config.rayleigh_type,
             index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            jk_start=self.jk_start,
             kstart_moist=self._vertical_params.kstart_moist,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
