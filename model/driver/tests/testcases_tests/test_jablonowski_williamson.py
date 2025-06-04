@@ -10,7 +10,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
+from icon4py.model.driver.testcases import jablonowski_williamson as jabw
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
@@ -89,7 +89,7 @@ def test_jabw_initial_condition(
     )
 
     assert helpers.dallclose(
-        solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
+        solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.asnumpy(),
         data_provider.from_savepoint_diagnostics_initial().exner_pr().asnumpy(),
         atol=1.0e-14,
     )

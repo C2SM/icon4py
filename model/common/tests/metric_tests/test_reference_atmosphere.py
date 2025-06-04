@@ -156,7 +156,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
         horizontal_end=gtx.int32(icon_grid.num_edges),
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
+        offset_provider={"E2C": icon_grid.get_connectivity("E2C")},
     )
     compute_reference_atmosphere_edge_fields.with_backend(backend)(
         z_me=z_me,
@@ -180,6 +180,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     assert helpers.dallclose(theta_ref_me.asnumpy(), theta_ref_me_ref.asnumpy())
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):

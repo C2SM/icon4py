@@ -23,12 +23,17 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
-@pytest.mark.cpu_only  # TODO (@halungge: fixed with PR https://github.com/C2SM/icon4py/pull/715)
+@pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
-    metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
+    metrics_savepoint,
+    experiment,
+    interpolation_savepoint,
+    icon_grid,
+    grid_savepoint,
+    backend,
 ):
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")
@@ -39,7 +44,7 @@ def test_compute_diffusion_metrics(
     maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
 
-    c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
+    c2e2c = data_alloc.as_numpy(icon_grid.neighbor_tables[dims.C2E2CDim])
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     z_mc = metrics_savepoint.z_mc()
     thslp_zdiffu = 0.02
@@ -61,7 +66,7 @@ def test_compute_diffusion_metrics(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlev,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
 
     compute_weighted_cell_neighbor_sum.with_backend(backend)(
@@ -75,7 +80,7 @@ def test_compute_diffusion_metrics(
         vertical_start=0,
         vertical_end=nlev,
         offset_provider={
-            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
         },
     )
 
@@ -84,7 +89,7 @@ def test_compute_diffusion_metrics(
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
+        offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
     )
 
     mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_metrics(

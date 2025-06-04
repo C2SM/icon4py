@@ -22,7 +22,9 @@ def fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
     return -a * mean_cell_area**2
 
 
-def reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(coeff: float, field: np.ndarray):
+def calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
+    coeff: float, field: np.ndarray
+) -> np.ndarray:
     return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
@@ -85,7 +87,7 @@ def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(backend):
     )(fourth_order_divdamp_scaling_coeff, coeff, constants.DBL_EPS, out=out, offset_provider={})
     assert helpers.dallclose(
         out.asnumpy(),
-        reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
+        calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
             coeff, fourth_order_divdamp_scaling_coeff.asnumpy()
         ),
     )
@@ -108,7 +110,9 @@ def test_calculate_divdamp_fields(backend):
     )
 
     reduced_fourth_order_divdamp_coeff_at_nest_boundary_ref = (
-        reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(nudge_max_coeff, scaled_ref)
+        calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
+            nudge_max_coeff, scaled_ref
+        )
     )
 
     dycore_utils._calculate_divdamp_fields.with_backend(backend)(

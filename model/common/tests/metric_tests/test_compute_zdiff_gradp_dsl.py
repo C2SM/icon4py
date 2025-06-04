@@ -21,6 +21,7 @@ from icon4py.model.testing.helpers import (
 )
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_zdiff_gradp_dsl(
@@ -52,15 +53,15 @@ def test_compute_zdiff_gradp_dsl(
         vertical_start=0,
         vertical_end=icon_grid.num_levels - 1,
         offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "Koff": icon_grid.get_offset_provider("Koff"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "Koff": icon_grid.get_connectivity("Koff"),
         },
     )
 
     flat_idx_np = xp.amax(flat_idx.ndarray, axis=1)
 
     zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
-        e2c=icon_grid.connectivities[dims.E2CDim],
+        e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,

@@ -13,6 +13,7 @@ import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.math.helpers as math_helpers
+import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -31,8 +32,6 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
-    compute_wgtfac_c,
-    compute_wgtfacq,
     compute_zdiff_gradp_dsl,
     metric_fields as mf,
     metrics_attributes as attrs,
@@ -240,8 +239,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "damping_height": self._config["damping_height"],
                 "rayleigh_type": self._config["rayleigh_type"],
-                "rayleigh_classic": constants.RayleighType.CLASSIC,
-                "rayleigh_klemp": constants.RayleighType.KLEMP,
                 "rayleigh_coeff": self._config["rayleigh_coeff"],
                 "vct_a_1": self._config["vct_a_1"],
                 "pi_const": math.pi,
@@ -432,11 +429,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxt_z_full)
 
-        compute_vwind_impl_wgt_np = factory.NumpyFieldsProvider(
-            func=functools.partial(mf.compute_vwind_impl_wgt, array_ns=self._xp),
+        compute_exner_w_implicit_weight_parameter_np = factory.NumpyFieldsProvider(
+            func=functools.partial(mf.compute_exner_w_implicit_weight_parameter, array_ns=self._xp),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
-            fields=(attrs.VWIND_IMPL_WGT,),
+            fields=(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,),
             deps={
                 "vct_a": "vct_a",
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
@@ -452,12 +449,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
         )
-        self.register_provider(compute_vwind_impl_wgt_np)
+        self.register_provider(compute_exner_w_implicit_weight_parameter_np)
 
-        compute_vwind_expl_wgt = factory.ProgramFieldProvider(
-            func=mf.compute_vwind_expl_wgt.with_backend(self._backend),
+        compute_exner_w_explicit_weight_parameter = factory.ProgramFieldProvider(
+            func=mf.compute_exner_w_explicit_weight_parameter.with_backend(self._backend),
             deps={
-                attrs.VWIND_IMPL_WGT: attrs.VWIND_IMPL_WGT,
+                "exner_w_implicit_weight_parameter": attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,
             },
             domain={
                 dims.CellDim: (
@@ -465,9 +462,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.END),
                 ),
             },
-            fields={"vwind_expl_wgt": attrs.VWIND_EXPL_WGT},
+            fields={"exner_w_explicit_weight_parameter": attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER},
         )
-        self.register_provider(compute_vwind_expl_wgt)
+        self.register_provider(compute_exner_w_explicit_weight_parameter)
 
         compute_exner_exfac = factory.ProgramFieldProvider(
             func=mf.compute_exner_exfac.with_backend(self._backend),
@@ -496,7 +493,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_exner_exfac)
 
         wgtfac_c_provider = factory.ProgramFieldProvider(
-            func=compute_wgtfac_c.compute_wgtfac_c.with_backend(self._backend),
+            func=weight_factors.compute_wgtfac_c.with_backend(self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
             },
@@ -562,7 +559,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(max_flat_index_provider)
 
-        compute_pg_idx_exdist = factory.ProgramFieldProvider(
+        pressure_gradient_fields = factory.ProgramFieldProvider(
             func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
                 self._backend
             ),
@@ -591,7 +588,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL, "pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
         )
-        self.register_provider(compute_pg_idx_exdist)
+        self.register_provider(pressure_gradient_fields)
 
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
@@ -676,7 +673,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(coeff_gradekin)
 
         compute_wgtfacq_c = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_wgtfacq.compute_wgtfacq_c_dsl, array_ns=self._xp),
+            func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL},
@@ -686,7 +683,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_wgtfacq.compute_wgtfacq_e_dsl, array_ns=self._xp),
+            func=functools.partial(weight_factors.compute_wgtfacq_e_dsl, array_ns=self._xp),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
