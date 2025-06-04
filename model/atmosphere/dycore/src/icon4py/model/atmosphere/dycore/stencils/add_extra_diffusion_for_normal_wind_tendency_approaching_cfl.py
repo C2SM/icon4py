@@ -50,20 +50,10 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
     )
 
-    w_con_e = where(
-        # TODO(havogt): my guess is if the second condition is `True`, then `(levelmask | levelmask(Koff[1]))` is also `True`
-        levelmask | levelmask(Koff[1]),
-        neighbor_sum(c_lin_e * z_w_con_c_full_wp(E2C), axis=E2CDim),
-        0.0,
-    )
-    difcoef = where(
-        abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat),
-        scalfac_exdiff
-        * minimum(
-            wpfloat("0.85") - cfl_w_limit_wp * dtime,
-            abs(w_con_e) * dtime / ddqz_z_full_e_wp - cfl_w_limit_wp * dtime,
-        ),
-        0.0,
+    w_con_e = neighbor_sum(c_lin_e * z_w_con_c_full_wp(E2C), axis=E2CDim)
+    difcoef = scalfac_exdiff * minimum(
+        wpfloat("0.85") - cfl_w_limit_wp * dtime,
+        abs(w_con_e) * dtime / ddqz_z_full_e_wp - cfl_w_limit_wp * dtime,
     )
     ddt_vn_apc_wp = where(
         (levelmask | levelmask(Koff[1]))
