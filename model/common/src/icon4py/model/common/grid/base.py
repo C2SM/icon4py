@@ -136,25 +136,6 @@ class BaseGrid(ABC):
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         ...
 
-    def has_skip_values(self):
-        """
-        Whether there are skip values on any connectivity in the grid.
-
-        Decision is made base on the following properties:
-        - limited_area = True -> True
-        - geometry_type: either TORUS or ICOSAHEDRON, ICOSAHEDRON has Pentagon points ->True
-        - if config.no_skip_values is True (remaining skip values are removed from neighbor_tables at runtime) -> False
-
-        """
-        match self.geometry_type:
-            case GeometryType.TORUS:
-                return self.config.keep_skip_values and self.limited_area
-            case GeometryType.ICOSAHEDRON:
-                return self.config.keep_skip_values
-            case _:
-                _log.warning(f"Unknown geometry type {self.geometry_type}. Assuming skip values.")
-                return True
-
     @functools.cached_property
     def connectivities(self) -> Dict[str, gtx.Connectivity]:
         connectivity_map = {}
