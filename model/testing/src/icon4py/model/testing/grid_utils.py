@@ -73,6 +73,12 @@ def _file_name(grid_file: str):
             return REGIONAL_GRIDFILE
         case dt_utils.R02B04_GLOBAL:
             return GLOBAL_GRIDFILE
+        case dt_utils.R02B07_GLOBAL:
+            return "icon_grid_0023_R02B07_G.nc"
+        case dt_utils.ICON_CH2_SMALL:
+            return "mch_opr_r4b7_DOM01.nc"
+        case dt_utils.REGIONAL_BENCHMARK:
+            return "domain1_DOM01.nc"
         case _:
             raise NotImplementedError(f"Add grid path for experiment '{grid_file}'")
 
