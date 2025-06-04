@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from gt4py import next as gtx
 
-from icon4py.model.common.grid import base, gridfile, icon, simple
+from icon4py.model.common.grid import base, gridfile, icon
 from icon4py.model.common.grid.base import HorizontalGridSize
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils
@@ -76,22 +76,15 @@ def test_has_skip_values_on_icosahedron_returns_keep_skip_value(keep_skip_values
 def test_replace_skip_values(grid_file, caplog, backend):
     caplog.set_level(logging.DEBUG)
     xp = data_alloc.import_array_ns(backend)
-    clear_skip_values = functools.partial(base.replace_skip_values, array_ns=xp)
 
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=None).grid
+    clear_skip_values = functools.partial(
+        base.replace_skip_values, limited_area=grid.limited_area, array_ns=xp
+    )
+
     horizontal_connectivities = (
         c for c in grid.neighbor_tables.values() if isinstance(c, gtx.Connectivity)
     )
     for connectivity in horizontal_connectivities:
         clear_skip_values(connectivity)
         assert not np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
-
-
-def test_replace_skip_values_validate_disconnected_grids():
-    grid = simple.SimpleGrid()
-    connectivity = grid.get_connectivity("V2E")
-    connectivity.ndarray[2, :] = gridfile.GridFile.INVALID_INDEX
-
-    with pytest.raises(AssertionError) as error:
-        base.replace_skip_values(connectivity)
-        assert "disconnected" in error.value
