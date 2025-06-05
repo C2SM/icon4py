@@ -136,7 +136,7 @@ if uploaded_file is not None and uploaded_file.name.endswith(".nc"):
                     "asinh_linear_width", min_value=1, max_value=100, value=9
                 )
                 zfp_tolerance = st.number_input(
-                    "zfp_tolerance", min_value=0.0, max_value=1.0, value=0.001, format="%.6f"
+                    "zfp_tolerance", min_value=0.0, max_value=1.0, value=0.001, format="%.4f"
                 )
                 # zfp_mode = st.selectbox(
                 #     "zfp_mode",
