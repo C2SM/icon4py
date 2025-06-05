@@ -101,7 +101,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
             "num_cells": 100,  # TODO: check the values for num_cells, num_values, nflatlev
-            "num_levels": 10,
+            "num_levels": 10, # TODO: the value of num_levels shoule also be checked
             "nflatlev": 10,
             "model_top_height": 23500.0,
             "SLEVE_decay_scale_1": 4000.0,
@@ -172,7 +172,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "cell_areas": geometry_attrs.CELL_AREA,
                 "geofac_n2s": interpolation_attributes.GEOFAC_N2S,
             },
-            connectivities={"c2e2cod": dims.C2E2CODim},
+            connectivities={"c2e2co": dims.C2E2CODim},
             params={
                 "num_cells": self._config["num_cells"],
                 "num_levels": self._config["num_levels"],

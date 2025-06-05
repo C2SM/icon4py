@@ -25,6 +25,14 @@ from icon4py.model.testing import (
     helpers as test_helpers,
     serialbox,
 )
+from icon4py.model.testing.datatest_fixtures import (
+    data_provider,
+    download_ser_data,
+    experiment,
+    processor_props,
+    ranked_data_path,
+    topography_savepoint,
+)
 
 
 metrics_factories = {}
@@ -610,13 +618,23 @@ def test_factory_coeff_gradekin(grid_savepoint, metrics_savepoint, grid_file, ex
     ],
 )
 @pytest.mark.datatest
-def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_wgtfacq_e(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend
+):
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
+        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.WGTFACQ_E)
     field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1])

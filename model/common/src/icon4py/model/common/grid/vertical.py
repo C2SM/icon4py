@@ -21,7 +21,7 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.common.states.metadata as data
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
-from icon4py.model.common.grid import topography as topo
+from icon4py.model.common.grid import base, icon as icon_grid, topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -555,9 +555,8 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
-    num_cells: gtx.int32,
-    num_levels: gtx.int32,
-    nflatlev: gtx.int32,
+    gird: base.BaseGrid,
+    vertical_geometry: VerticalGrid,
     model_top_height: ta.wpfloat,
     SLEVE_decay_scale_1: ta.wpfloat,
     SLEVE_decay_exponent: ta.wpfloat,
@@ -590,18 +589,18 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
         cell_areas=cell_areas,
         geofac_n2s=geofac_n2s,
         c2e2co=c2e2co,
-    ).ndarray  # TODO (Yilu): ndarray can be removed
+    )
 
-    vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=float)
-    vertical_coordinate[:, num_levels] = topography
+    vertical_coordinate = array_ns.zeros((icon_grid.num_cells, icon_grid.num_levels + 1), dtype=float)
+    vertical_coordinate[:, gird.num_levels] = topography
 
     # Small-scale topography (i.e. full topo - smooth topo)
     small_scale_topography = topography - smoothed_topography
 
-    k = range(nflatlev + 1)
+    k = range(vertical_geometry.nflatlev + 1)
     vertical_coordinate[:, k] = vct_a[k]
 
-    k = range(nflatlev + 1, num_levels)
+    k = range(vertical_geometry.nflatlev+ 1, grid.num_levels)
     # Scaling factors for large-scale and small-scale topography
     z_fac1 = _decay_func(
         vct_a[k],
@@ -627,8 +626,8 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
 def _check_and_correct_layer_thickness(
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
-    num_cells: gtx.int32,
-    num_levels: gtx.int32,
+    vertical_config: VerticalGridConfig,
+    grid: base.BaseGrid,
     SLEVE_minimum_layer_thickness_1: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
@@ -636,6 +635,8 @@ def _check_and_correct_layer_thickness(
     lowest_layer_thickness: ta.wpfloat,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    num_levels = grid.num_levels
+    num_cells = grid.num_cells
     ktop_thicklimit = array_ns.asarray(num_cells * [num_levels], dtype=float)
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
@@ -718,11 +719,11 @@ def _check_and_correct_layer_thickness(
 def _check_flatness_of_flat_level(
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
-    nflatlev: gtx.int32,
+    vertical_geometry: VerticalGrid,
     array_ns: ModuleType = np,
 ) -> None:
     # Check if level nflatlev is still flat
-    if not array_ns.all(vertical_coordinate[:, nflatlev - 1] == vct_a[nflatlev - 1]):
+    if not array_ns.all(vertical_coordinate[:, vertical_geometry.nflatlev - 1] == vct_a[vertical_geometry.nflatlev - 1]):
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
 
 
@@ -732,9 +733,8 @@ def compute_vertical_coordinate(
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
-    num_cells: gtx.int32,
-    num_levels: gtx.int32,
-    nflatlev: gtx.int32,
+    grid: icon_grid.IconGrid,
+    vertical_geometry: VerticalGrid,
     model_top_height: ta.wpfloat,
     SLEVE_decay_scale_1: ta.wpfloat,
     SLEVE_decay_exponent: ta.wpfloat,
@@ -773,9 +773,9 @@ def compute_vertical_coordinate(
         cell_areas=cell_areas,
         geofac_n2s=geofac_n2s,
         c2e2co=c2e2co,
-        num_cells=num_cells,
-        num_levels=num_levels,
-        nflatlev=nflatlev,
+        num_cells=grid.num_cells,
+        num_levels=grid.num_levels,
+        nflatlev=vertical_geometry.nflatlev,
         model_top_height=model_top_height,
         SLEVE_decay_scale_1=SLEVE_decay_scale_1,
         SLEVE_decay_exponent=SLEVE_decay_exponent,
@@ -786,8 +786,8 @@ def compute_vertical_coordinate(
     vertical_coordinate = _check_and_correct_layer_thickness(
         vertical_coordinate=vertical_coordinate,
         vct_a=vct_a,
-        num_cells=num_cells,
-        num_levels=num_levels,
+        num_cells=grid.num_cells,
+        num_levels=grid.num_levels,
         SLEVE_minimum_layer_thickness_1=SLEVE_minimum_layer_thickness_1,
         SLEVE_minimum_relative_layer_thickness_1=SLEVE_minimum_relative_layer_thickness_1,
         SLEVE_minimum_layer_thickness_2=SLEVE_minimum_layer_thickness_2,
@@ -799,7 +799,7 @@ def compute_vertical_coordinate(
     _check_flatness_of_flat_level(
         vertical_coordinate=vertical_coordinate,
         vct_a=vct_a,
-        nflatlev=nflatlev,
+        nflatlev=vertical_geometry.nflatlev,
         array_ns=array_ns,
     )
 

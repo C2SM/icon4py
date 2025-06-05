@@ -74,7 +74,7 @@ def smooth_topography(
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
     num_iterations: int = 25,
-) -> fa.CellField[ta.wpfloat]:
+) -> data_alloc.NDArray:
     """
     Computes the smoothed (laplacian-filtered) topography needed by the SLEVE
     coordinate.
