@@ -15,7 +15,7 @@ jobs:
             matrix:
                 python-version: ["3.10", "3.11"]
                 backend: ["embedded", "gtfn_cpu"] # TODO add dace-cpu
-                component: ["diffusion", "dycore", "microphysics", "common", "driver"] # TODO add advection
+                component: ["diffusion", "dycore", "microphysics", "driver"] #TODO add common (needs gridfiles) TODO add advection
                 #grid: ["simple_grid"] #, "icon_grid", "icon_grid_global"] #TODO  provide the grid files for icon_grid and icon_grid_global
         steps:
             - name: Checkout
