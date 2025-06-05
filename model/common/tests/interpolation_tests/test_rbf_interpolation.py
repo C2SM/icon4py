@@ -23,6 +23,7 @@ from icon4py.model.testing import (
 )
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -55,6 +56,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file, grid_savepoint
         assert (np.sort(offset_table[i]) == np.sort(offset_table_savepoint[i])).all()
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -85,6 +87,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file, grid_savepoint
         assert (np.sort(offset_table[i]) == np.sort(offset_table_savepoint[i])).all()
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -120,6 +123,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file, grid_savepo
         assert (np.sort(offset_table[i]) == np.sort(offset_table_savepoint[i])).all()
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment, atol",
@@ -184,6 +188,7 @@ def test_rbf_interpolation_coeffs_cell(
     )
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment, atol",
@@ -248,6 +253,7 @@ def test_rbf_interpolation_coeffs_vertex(
     )
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment, atol",
