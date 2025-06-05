@@ -14,7 +14,7 @@ import numpy as np
 from gt4py.next import where
 
 import icon4py.model.common.field_type_aliases as fa
-import icon4py.model.common.grid.gridfile
+from icon4py.model.common.grid import gridfile
 import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
@@ -784,7 +784,7 @@ def compute_e_flx_avg(
     index = array_ns.arange(llb, e2c.shape[0])
     for i in range(c2e.shape[1]):
         # INVALID_INDEX
-        if i <= icon4py.model.common.grid.gridfile.GridFile.INVALID_INDEX:
+        if i <= gridfile.GridFile.INVALID_INDEX:
             continue
         e_flx_avg[llb:, 0] = array_ns.where(
             owner_mask[llb:],
