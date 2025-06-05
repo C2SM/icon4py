@@ -194,13 +194,18 @@ class BaseGrid(ABC):
         """
         Check if the skip_values in a neighbor table  should be replaced.
 
-        There are various reasons for skip_values in neighbor tables depending on the type of grid::
+        There are various reasons for skip_values in neighbor tables depending on the type of grid:
             - pentagon points (icosahedral grid),
             - boundary layers of limited area grids,
             - halos for distributed grids.
 
         There is config flag to evaluate whether skip_value replacement should be done at all.
         If so, we replace skip_values for halos and boundary layers of limited area grids.
+
+        Even though by specifying the correct output domain of a stencil, access to
+        invalid indices is avoided in the output fields, temporary computations
+        inside a stencil do run over the entire data buffer including halos and boundaries
+        as the output domain is unknown at that point.
 
         Args:
             dim: The (local) dimension for which the neighbor table is checked.
