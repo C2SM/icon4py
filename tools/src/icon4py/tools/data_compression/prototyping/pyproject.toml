@@ -15,12 +15,18 @@ dependencies = [
     "humanize",
     "numcodecs_wasm_linear_quantize",
     "numcodecs_wasm_zlib",
+    "numcodecs_wasm_asinh",
+    "numcodecs_wasm_bit_round",
+    "numcodecs_wasm_sz3",
+    "numcodecs_wasm_zfp",
     "numcodecs_observers",
     "numcodecs_wasm",
     "numcodecs_combinators",
     "streamlit",
     "tslearn",
-    "scipy"
+    "scipy",
+    "PyWavelets",
+    "dask[complete]",
 ]
 description = 'Data compression tool for Weather and Climate data'
 name = 'data_compression_cscs_exclaim'
