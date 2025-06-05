@@ -238,8 +238,6 @@ def _compute_rbf_interpolation_coeffs(
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
     # another point on the sphere), but these don't hurt the computation.
-    # TODO: Can nans be signaling? default is warn:
-    # https://numpy.org/doc/stable/user/misc.html#how-numpy-handles-numerical-exceptions
     def pad(f):
         return array_ns.pad(f, (0, 1), mode="constant", constant_values=0.0)
 
