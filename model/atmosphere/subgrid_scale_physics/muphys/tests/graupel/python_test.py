@@ -8,7 +8,7 @@ import gt4py.next as gtx
 
 from icon4py.model.common import model_backends
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import saturation_adjustment
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import graupel_run
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import graupel_run, graupel_run_2
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -158,6 +158,7 @@ def write_fields(
 args = get_args()
 
 set_lib_path(args.ldir)
+sys.setrecursionlimit(10**4)
 # import py_graupel
 
 data = Data(args)
@@ -232,6 +233,8 @@ saturation_adjustment( te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpo
 ksize = data.dz.shape[0]
 k = gtx.as_field( (dims.KDim, ), np.arange(0,ksize,dtype=np.int32) )
 graupel_run = graupel_run.with_backend(model_backends.BACKENDS["dace_cpu"])
+graupel_run_2 = graupel_run_2.with_backend(model_backends.BACKENDS["dace_cpu"])
+cell_k_domain = {dims.CellDim: data.prr_gsp.shape[0], dims.KDim: ksize}
 graupel_run( k = k,
              last_lev = ksize-1,
              dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[:,:])),
@@ -259,6 +262,87 @@ graupel_run( k = k,
              pi     = pi_out,
              pg     = pg_out,
              pre    = pre_out,
+             sink_s= gtx.zeros(cell_k_domain),
+            sink_i= gtx.zeros(cell_k_domain),
+            sink_g= gtx.zeros(cell_k_domain),
+            sink_c= gtx.zeros(cell_k_domain),
+            sink_v= gtx.zeros(cell_k_domain),
+            sink_r= gtx.zeros(cell_k_domain),
+            sx2x_r_v= gtx.zeros(cell_k_domain),
+            sx2x_r_g= gtx.zeros(cell_k_domain),
+            sx2x_s_v= gtx.zeros(cell_k_domain),
+            sx2x_s_r= gtx.zeros(cell_k_domain),
+            sx2x_s_g= gtx.zeros(cell_k_domain),
+            sx2x_i_v= gtx.zeros(cell_k_domain),
+            sx2x_i_c= gtx.zeros(cell_k_domain),
+            sx2x_i_s= gtx.zeros(cell_k_domain),
+            sx2x_i_g= gtx.zeros(cell_k_domain),
+            sx2x_g_v= gtx.zeros(cell_k_domain),
+            sx2x_g_r= gtx.zeros(cell_k_domain),
+            sx2x_c_r= gtx.zeros(cell_k_domain),
+            sx2x_v_s= gtx.zeros(cell_k_domain),
+            sx2x_c_s= gtx.zeros(cell_k_domain),
+            sx2x_v_i= gtx.zeros(cell_k_domain),
+            sx2x_c_i= gtx.zeros(cell_k_domain),
+            sx2x_v_g= gtx.zeros(cell_k_domain),
+            sx2x_c_g= gtx.zeros(cell_k_domain),
+            mask= gtx.zeros(cell_k_domain, dtype=bool),
+            is_sig_present=gtx.zeros(cell_k_domain, dtype=bool),
+             offset_provider={"Koff": K}
+             )
+graupel_run_2( k = k,
+             last_lev = ksize-1,
+             dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[:,:])),
+             te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.t[0,:,:])),
+             p   = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.p[0,:,:])),
+             rho = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.rho[0,:,:])),
+             qve = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qv[0,:,:])),
+             qce = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qc[0,:,:])),
+             qre = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qr[0,:,:])),
+             qse = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qs[0,:,:])),
+             qie = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qi[0,:,:])),
+             qge = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qg[0,:,:])),
+             dt  = args.dt,
+             qnc = args.qnc,
+             t_out  = t_out,
+             qv_out = qv_out,
+             qc_out = qc_out,
+             qr_out = qr_out,
+             qs_out = qs_out,
+             qi_out = qi_out,
+             qg_out = qg_out,
+             pflx   = pflx_out,
+             pr     = pr_out,
+             ps     = ps_out,
+             pi     = pi_out,
+             pg     = pg_out,
+             pre    = pre_out,
+             sink_s= gtx.zeros(cell_k_domain),
+            sink_i= gtx.zeros(cell_k_domain),
+            sink_g= gtx.zeros(cell_k_domain),
+            sink_c= gtx.zeros(cell_k_domain),
+            sink_v= gtx.zeros(cell_k_domain),
+            sink_r= gtx.zeros(cell_k_domain),
+            sx2x_r_v= gtx.zeros(cell_k_domain),
+            sx2x_r_g= gtx.zeros(cell_k_domain),
+            sx2x_s_v= gtx.zeros(cell_k_domain),
+            sx2x_s_r= gtx.zeros(cell_k_domain),
+            sx2x_s_g= gtx.zeros(cell_k_domain),
+            sx2x_i_v= gtx.zeros(cell_k_domain),
+            sx2x_i_c= gtx.zeros(cell_k_domain),
+            sx2x_i_s= gtx.zeros(cell_k_domain),
+            sx2x_i_g= gtx.zeros(cell_k_domain),
+            sx2x_g_v= gtx.zeros(cell_k_domain),
+            sx2x_g_r= gtx.zeros(cell_k_domain),
+            sx2x_c_r= gtx.zeros(cell_k_domain),
+            sx2x_v_s= gtx.zeros(cell_k_domain),
+            sx2x_c_s= gtx.zeros(cell_k_domain),
+            sx2x_v_i= gtx.zeros(cell_k_domain),
+            sx2x_c_i= gtx.zeros(cell_k_domain),
+            sx2x_v_g= gtx.zeros(cell_k_domain),
+            sx2x_c_g= gtx.zeros(cell_k_domain),
+            mask= gtx.zeros(cell_k_domain, dtype=bool),
+            is_sig_present=gtx.zeros(cell_k_domain, dtype=bool),
              offset_provider={"Koff": K}
              )
 
