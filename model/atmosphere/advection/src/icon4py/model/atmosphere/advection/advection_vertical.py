@@ -133,7 +133,7 @@ class NoFluxCondition(BoundaryConditions):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
@@ -146,7 +146,7 @@ class NoFluxCondition(BoundaryConditions):
             horizontal_end=horizontal_end,
             vertical_start=self._grid.num_levels,
             vertical_end=self._grid.num_levels + 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
@@ -230,7 +230,7 @@ class NoLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -242,7 +242,7 @@ class NoLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field_koff_plus1 - end")
 
@@ -298,7 +298,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil limit_vertical_slope_semi_monotonically - end")
 
@@ -321,7 +321,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_vertical_parabola_limiter_condition - end")
 
@@ -337,7 +337,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil limit_vertical_parabola_semi_monotonically - end")
 
@@ -446,7 +446,7 @@ class NoAdvection(VerticalAdvection):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -602,7 +602,7 @@ class FirstOrderUpwind(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_vertical_tracer_flux_upwind - end")
 
@@ -649,7 +649,7 @@ class FirstOrderUpwind(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil integrate_tracer_vertically - end")
 
@@ -785,7 +785,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels + 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
@@ -803,7 +803,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm4gpu_courant_number - end")
 
@@ -820,7 +820,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm_slope - end")
 
@@ -842,7 +842,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=2,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm_quadratic_face_values - end")
 
@@ -856,7 +856,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=self._grid.num_levels - 1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm_quadratic_face_values - end")
 
@@ -869,7 +869,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -882,7 +882,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=self._grid.num_levels,
             vertical_end=self._grid.num_levels + 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field_koff_minus1 - end")
 
@@ -897,7 +897,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=2,
             vertical_end=self._grid.num_levels - 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm_quartic_face_values - end")
 
@@ -925,7 +925,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm4gpu_parabola_coefficients - end")
 
@@ -944,7 +944,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm4gpu_fractional_flux - end")
 
@@ -963,7 +963,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm4gpu_integer_flux - end")
 
@@ -1017,7 +1017,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil integrate_tracer_vertically - end")
 

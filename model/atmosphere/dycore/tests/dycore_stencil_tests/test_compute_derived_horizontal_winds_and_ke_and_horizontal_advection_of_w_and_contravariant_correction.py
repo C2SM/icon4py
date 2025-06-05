@@ -260,18 +260,18 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vn_on_half_levels = data_alloc.zero_field(
+        horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
+        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        vn_on_half_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
-        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(
+        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
-        horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
+        contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

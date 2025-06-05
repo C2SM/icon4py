@@ -346,7 +346,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         return np.asarray(np.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
-CoordinateDict: TypeAlias = dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
 GeometryDict: TypeAlias = dict[GeometryName, gtx.Field]
 
 
@@ -491,12 +491,38 @@ class GridManager:
             ),
         }
 
+    def _read_grid_refinement_fields(
+        self,
+        decomposition_info: Optional[decomposition.DecompositionInfo] = None,
+        backend: Optional[gtx_backend.Backend] = None,
+    ) -> dict[gtx.Dimension, gtx.Field]:
+        """
+        Reads the refinement control fields from the grid file.
+
+        Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
+        see [refinement.py](refinement.py)
+        """
+        refinement_control_names = {
+            dims.CellDim: GridRefinementName.CONTROL_CELLS,
+            dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
+            dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
+        }
+        refinement_control_fields = {
+            dim: gtx.as_field(
+                (dim,),
+                self._reader.int_variable(name, decomposition_info, transpose=False),
+                allocator=backend,
+            )
+            for dim, name in refinement_control_names.items()
+        }
+        return refinement_control_fields
+
     def _read_start_end_indices(
         self,
     ) -> tuple[
-        dict[dims.Dimension : data_alloc.NDArray],
-        dict[dims.Dimension : data_alloc.NDArray],
-        dict[dims.Dimension : gtx.int32],
+        dict[gtx.Dimension : data_alloc.NDArray],
+        dict[gtx.Dimension : data_alloc.NDArray],
+        dict[gtx.Dimension : gtx.int32],
     ]:
         """ "
         Read the start/end indices from the grid file.
@@ -546,44 +572,9 @@ class GridManager:
 
         return start_indices, end_indices, grid_refinement_dimensions
 
-    def _read_grid_refinement_fields(
-        self,
-        decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-        backend: Optional[gtx_backend.Backend] = None,
-    ) -> dict[gtx.Dimension : gtx.Field]:
-        """
-        Reads the refinement control fields from the grid file.
-
-        Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
-        see [refinement.py](refinement.py)
-        """
-        refinement_control_names = {
-            dims.CellDim: GridRefinementName.CONTROL_CELLS,
-            dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
-            dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
-        }
-        refinement_control_fields = {
-            dim: gtx.as_field(
-                (dim,),
-                self._reader.int_variable(name, decomposition_info, transpose=False),
-                allocator=backend,
-            )
-            for dim, name in refinement_control_names.items()
-        }
-        return refinement_control_fields
-
     @property
     def grid(self) -> icon.IconGrid:
         return self._grid
-
-    @property
-    def refinement(self):
-        """
-        Refinement control fields.
-
-        TODO (@halungge) should those be added to the IconGrid?
-        """
-        return self._refinement
 
     @property
     def geometry(self) -> GeometryDict:
@@ -593,7 +584,7 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-    def _construct_grid(self, backend: gtx.backend) -> icon.IconGrid:
+    def _construct_grid(self, backend: gtx_backend) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in
@@ -614,6 +605,20 @@ class GridManager:
             _determine_limited_area(refinement_fields[dims.CellDim].ndarray), on_gpu
         )
         grid.with_refinement_control(refinement_fields)
+        xp = data_alloc.import_array_ns(backend)
+        on_gpu = data_alloc.is_cupy_device(backend)
+        _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
+        _local_connectivities = functools.partial(
+            _add_derived_connectivities,
+            array_ns=xp,
+        )
+        _refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)
+
+        refinement_fields = _refinement_fields()
+        grid = self._initialize_global(
+            _determine_limited_area(refinement_fields[dims.CellDim].ndarray), on_gpu
+        )
+        grid.set_refinement_control(refinement_fields)
 
         global_connectivities = {
             dims.C2E2C: self._get_index_field(ConnectivityName.C2E2C),
@@ -626,14 +631,15 @@ class GridManager:
             dims.V2E2V: self._get_index_field(ConnectivityName.V2E2V),
         }
 
-        grid.with_connectivities(
+        grid.set_neighbor_tables(
             {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
         )
-        _add_derived_connectivities(grid, array_ns=xp)
+
+        _local_connectivities(grid)
         _update_size_for_1d_sparse_dims(grid)
         start, end, _ = self._read_start_end_indices()
-        for dim in dims.global_dimensions.values():
-            grid.with_start_end_indices(dim, start[dim], end[dim])
+        for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+            grid.set_start_end_indices(dim, start[dim], end[dim])
 
         return grid
 
@@ -674,34 +680,35 @@ class GridManager:
             on_gpu=on_gpu,
             limited_area=limited_area,
         )
-        grid = icon.IconGrid(uuid).with_config(config).with_global_params(global_params)
+        grid = icon.IconGrid(uuid).set_config(config).set_global_params(global_params)
         return grid
 
 
 def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) -> icon.IconGrid:
+    e2v_table = grid._neighbor_tables[dims.E2VDim]
+    c2v_table = grid._neighbor_tables[dims.C2VDim]
+    e2c_table = grid._neighbor_tables[dims.E2CDim]
+    c2e_table = grid._neighbor_tables[dims.C2EDim]
+    c2e2c_table = grid._neighbor_tables[dims.C2E2CDim]
     e2c2v = _construct_diamond_vertices(
-        grid.connectivities[dims.E2VDim],
-        grid.connectivities[dims.C2VDim],
-        grid.connectivities[dims.E2CDim],
+        e2v_table,
+        c2v_table,
+        e2c_table,
         array_ns=array_ns,
     )
-    e2c2e = _construct_diamond_edges(
-        grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim], array_ns=array_ns
-    )
+    e2c2e = _construct_diamond_edges(e2c_table, c2e_table, array_ns=array_ns)
     e2c2e0 = array_ns.column_stack((array_ns.asarray(range(e2c2e.shape[0])), e2c2e))
 
-    c2e2c2e = _construct_triangle_edges(
-        grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim], array_ns=array_ns
-    )
+    c2e2c2e = _construct_triangle_edges(c2e2c_table, c2e_table, array_ns=array_ns)
     c2e2c0 = array_ns.column_stack(
         (
-            array_ns.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
-            (grid.connectivities[dims.C2E2CDim]),
+            array_ns.asarray(range(c2e2c_table.shape[0])),
+            (c2e2c_table),
         )
     )
-    c2e2c2e2c = _construct_butterfly_cells(grid.connectivities[dims.C2E2CDim], array_ns=array_ns)
+    c2e2c2e2c = _construct_butterfly_cells(c2e2c_table, array_ns=array_ns)
 
-    grid.with_connectivities(
+    grid.set_neighbor_tables(
         {
             dims.C2E2CODim: c2e2c0,
             dims.C2E2C2EDim: c2e2c2e,

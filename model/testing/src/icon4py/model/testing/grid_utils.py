@@ -66,6 +66,12 @@ def _file_name(grid_file: str):
             return REGIONAL_GRIDFILE
         case dt_utils.R02B04_GLOBAL:
             return GLOBAL_GRIDFILE
+        case dt_utils.R02B07_GLOBAL:
+            return "icon_grid_0023_R02B07_G.nc"
+        case dt_utils.ICON_CH2_SMALL:
+            return "mch_opr_r4b7_DOM01.nc"
+        case dt_utils.REGIONAL_BENCHMARK:
+            return "domain1_DOM01.nc"
         case _:
             raise NotImplementedError(f"Add grid path for experiment '{grid_file}'")
 
@@ -98,7 +104,6 @@ def _run_grid_manager_for_file(
     Returns:
 
     """
-    limited_area = is_regional(str(file))
     transformation = gm.ToZeroBasedIndexTransformation()
     manager = gm.GridManager(
         transformation,
@@ -116,13 +121,6 @@ def _download_and_load_gridfile(
     grid_file = _download_grid_file(file_path)
     gm = _run_grid_manager_for_file(str(grid_file), num_levels, backend)
     return gm
-
-
-def is_regional(experiment_or_file: str):
-    return (
-        dt_utils.REGIONAL_EXPERIMENT in experiment_or_file
-        or REGIONAL_GRIDFILE in experiment_or_file
-    )
 
 
 def get_num_levels(experiment: str):

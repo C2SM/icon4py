@@ -86,7 +86,7 @@ def is_unordered_field(
 ) -> data_alloc.NDArray:
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
     return array_ns.where(
-        field == _UNORDERED[dim][0], True, np.where(field == _UNORDERED[dim][1], True, False)
+        field == _UNORDERED[dim][0], True, array_ns.where(field == _UNORDERED[dim][1], True, False)
     )
 
 
@@ -99,7 +99,7 @@ def convert_to_unnested_refinement_values(
     The nested values are used for example in the radiation grids.
     """
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
-    return np.array_ns(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
+    return array_ns.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
 
 
 def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone) -> RefinementValue:
@@ -119,6 +119,7 @@ def is_limited_area_grid(
     array_ns: ModuleType = np,
 ) -> bool:
     """Check if the grid is a local area grid.
+
     This is done by checking whether there are Boundary points (Refinement value > 0) in the grid.
     The .item() call is needed to get a scalar return for cupy arrays.
     """
