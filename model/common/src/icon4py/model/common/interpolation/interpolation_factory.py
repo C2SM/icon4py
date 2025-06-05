@@ -315,7 +315,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         rbf_vec_coeff_c = factory.NumpyFieldsProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_cell, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
-            domain=(dims.CellDim, dims.KDim),  # TODO: second dim, rbf stencil size?
+            domain=(dims.CellDim, dims.C2E2C2EDim),
             deps={
                 "cell_center_lat": geometry_attrs.CELL_LAT,
                 "cell_center_lon": geometry_attrs.CELL_LON,
@@ -343,7 +343,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         rbf_vec_coeff_e = factory.NumpyFieldsProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_E,),
-            domain=(dims.CellDim, dims.KDim),  # TODO: second dim, rbf stencil size?
+            domain=(dims.CellDim, dims.E2C2EDim),
             deps={
                 "edge_lat": geometry_attrs.EDGE_LAT,
                 "edge_lon": geometry_attrs.EDGE_LON,
@@ -370,10 +370,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         rbf_vec_coeff_v = factory.NumpyFieldsProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_vertex, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
-            domain=(
-                dims.VertexDim,
-                dims.KDim,
-            ),  # TODO: KDim? Custom dim? RBFVertexDim = Dimension("RBFVertex")?
+            domain=(dims.VertexDim, dims.V2EDim),
             deps={
                 "vertex_lat": geometry_attrs.VERTEX_LAT,
                 "vertex_lon": geometry_attrs.VERTEX_LON,

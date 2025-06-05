@@ -140,7 +140,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=RBF_VEC_COEFF_C1,
         long_name="rbf interpolation coefficient from cells to edges 1",  # TODO: name
         units="",
-        dims=(dims.CellDim, dims.KDim),  # TODO KDim?
+        dims=(dims.CellDim, dims.C2E2C2EDim),
         icon_var_name="rbf_vec_coeff_c1",
         dtype=ta.wpfloat,
     ),
@@ -148,7 +148,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=RBF_VEC_COEFF_C2,
         long_name="rbf interpolation coefficient from cells to edges 2",  # TODO: name
         units="",
-        dims=(dims.CellDim, dims.KDim),  # TODO KDim?
+        dims=(dims.CellDim, dims.C2E2C2EDim),
         icon_var_name="rbf_vec_coeff_c2",
         dtype=ta.wpfloat,
     ),
@@ -156,7 +156,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=RBF_VEC_COEFF_E,
         long_name="rbf interpolation coefficient from edges to edges",  # TODO: name
         units="",
-        dims=(dims.EdgeDim, dims.KDim),  # TODO KDim?
+        dims=(dims.EdgeDim, dims.E2C2EDim),
         icon_var_name="rbf_vec_coeff_e",
         dtype=ta.wpfloat,
     ),
@@ -164,7 +164,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=RBF_VEC_COEFF_V1,
         long_name="rbf interpolation coefficient from vertices to edges 1",  # TODO: name
         units="",
-        dims=(dims.VertexDim, dims.KDim),  # TODO KDim?
+        dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="rbf_vec_coeff_v1",
         dtype=ta.wpfloat,
     ),
@@ -172,7 +172,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=RBF_VEC_COEFF_V2,
         long_name="rbf interpolation coefficient from vertices to edges 2",  # TODO: name
         units="",
-        dims=(dims.VertexDim, dims.KDim),  # TODO KDim?
+        dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="rbf_vec_coeff_v2",
         dtype=ta.wpfloat,
     ),
