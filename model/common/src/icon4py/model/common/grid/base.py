@@ -190,7 +190,24 @@ class BaseGrid(ABC):
         )
         return connectivity
 
-    def _do_replace_skip_values_in_table(self, dim):
+    def _do_replace_skip_values_in_table(self, dim:gtx.Dimension) -> bool:
+        """
+        Check if the skip_values in a neighbor table  should be replaced.
+
+        There are various reasons for skip_values in neighbor tables depending on the type of grid::
+            - pentagon points (icosahedral grid),
+            - boundary layers of limited area grids,
+            - halos for distributed grids.
+
+        There is config flag to evaluate whether skip_value replacement should be done at all.
+        If so, we replace skip_values for halos and boundary layers of limited area grids.
+
+        Args:
+            dim: The (local) dimension for which the neighbor table is checked.
+        Returns:
+            bool: True if the skip values in the neighbor table should be replaced, False otherwise.
+
+        """
         return not self.config.keep_skip_values and (
             self.limited_area or not self._has_skip_values(dim)
         )
@@ -259,16 +276,14 @@ def replace_skip_values(
     Args:
         domain: the domain of the Connectivity
         connectivity: NDArray object to be manipulated
+        array_ns: numpy or cupy module to use for array operations
     Returns:
-        NDArray without removed skip values
+        NDArray without skip values
     """
     # TODO @halungge: neighbour tables are copied, when constructing the Connectivity: should the original be discarded from the grid?
     #   Would that work for the wrapper?
 
-    def _has_skip_values_in_table(data: data_alloc.NDArray) -> bool:
-        return array_ns.amin(data).item() == GridFile.INVALID_INDEX
-
-    if _has_skip_values_in_table(neighbor_table):
+    if _has_skip_values_in_table(neighbor_table, array_ns):
         _log.info(f"Found invalid indices in {domain}. Replacing...")
         max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
         if not array_ns.all(max_valid_neighbor >= 0):
@@ -282,3 +297,7 @@ def replace_skip_values(
     else:
         _log.debug(f"Found no invalid indices in {domain}.")
     return neighbor_table
+
+
+def _has_skip_values_in_table(data: data_alloc.NDArray, array_ns:ModuleType) -> bool:
+    return array_ns.amin(data).item() == GridFile.INVALID_INDEX
