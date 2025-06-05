@@ -135,6 +135,7 @@ class BaseGrid(ABC):
 
     @abstractmethod
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
+        """Determine whether a sparse dimension has skip values."""
         ...
 
     @functools.cached_property

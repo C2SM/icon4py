@@ -184,9 +184,9 @@ class IconGrid(base.BaseGrid):
 
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         """
-        Determine whether a sparse dimension has skip values.
+        For the icosahedral global grid skip values are only present for the pentagon points.
 
-        For the icosahedral global grid skip values are only present for the pentagon points. In the local area model there are also skip values at the boundaries when
+        In the local area model there are also skip values at the boundaries when
         accessing neighbouring cells or edges from vertices.
         """
         assert (
