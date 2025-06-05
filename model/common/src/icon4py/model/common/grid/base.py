@@ -250,8 +250,7 @@ def replace_skip_values(
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.
 
-    This is a workaround to account for the lack of a clean implementation of the domain inference in GT4Py.
-    The workaround is currently needed for the MCH production runs (py2fgen wrapper)
+    This is a workaround to account for the lack of a domain inference for unstructured neighbor accesses in GT4Py: when computing into temporaries we do not use the minimal domain (interior + respective halo), but the full domain, i.e. we compute at the outer-most halo/boundary lines where some neighbors do not exist.
 
     (Remaining) invalid indices in the neighbor tables are replaced by a valid (other) index of the given
     entry (we arbitrarily choose the maximum), for example for a C2E2C table assume that  cell = 16 looks like this:
