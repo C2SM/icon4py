@@ -98,14 +98,14 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
     PROGRAM = combined_solve_nh_30_to_38_predictor
     OUTPUTS = (
         "z_vn_avg",
-        "z_graddiv_vn",
-        "vt",
-        "mass_fl_e",
-        "z_theta_v_fl_e",
-        "vn_ie",
-        "vt_ie",
-        "z_kin_hor_e",
-        "z_w_concorr_me",
+        "horizontal_gradient_of_normal_wind_divergence",
+        "tangential_wind",
+        "mass_flux_at_edges_on_model_levels",
+        "theta_v_flux_at_edges_on_model_levels",
+        "vn_on_half_levels",
+        "tangential_wind_on_half_levels",
+        "horizontal_kinetic_energy_at_edges_on_model_levels",
+        "contravariant_correction_at_edges_on_model_levels",
     )
     MARKERS = (pytest.mark.embedded_remap_error,)
 
@@ -113,17 +113,17 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        vt_ie: np.ndarray,
-        vn_ie: np.ndarray,
-        z_kin_hor_e: np.ndarray,
-        z_w_concorr_me: np.ndarray,
+        tangential_wind_on_half_levels: np.ndarray,
+        vn_on_half_levels: np.ndarray,
+        horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
+        contravariant_correction_at_edges_on_model_levels: np.ndarray,
         vn: np.ndarray,
         e_flx_avg: np.ndarray,
         geofac_grdiv: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
-        z_rho_e: np.ndarray,
-        z_theta_v_e: np.ndarray,
-        ddzq_z_full_e: np.ndarray,
+        rho_at_edges_on_model_levels: np.ndarray,
+        theta_v_at_edges_on_model_levels: np.ndarray,
+        ddqz_z_full_e: np.ndarray,
         ddxn_z_full: np.ndarray,
         ddxt_z_full: np.ndarray,
         wgtfac_e: np.ndarray,
@@ -140,7 +140,7 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
-        z_vn_avg, z_graddiv_vn, vt = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
+        z_vn_avg, horizontal_gradient_of_normal_wind_divergence, tangential_wind = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
             connectivities,
             e_flx_avg,
             vn,
@@ -148,30 +148,30 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
             rbf_vec_coeff_e,
         )
 
-        mass_fl_e, z_theta_v_fl_e = compute_mass_flux_numpy(
-            z_rho_e,
+        mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = compute_mass_flux_numpy(
+            rho_at_edges_on_model_levels,
             z_vn_avg,
-            ddzq_z_full_e,
-            z_theta_v_e,
+            ddqz_z_full_e,
+            theta_v_at_edges_on_model_levels,
         )
 
-        z_w_concorr_me = np.where(
+        contravariant_correction_at_edges_on_model_levels = np.where(
             k_nlev >= nflatlev,
-            compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt),
-            z_w_concorr_me,
+            compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
+            contravariant_correction_at_edges_on_model_levels,
         )
 
         (
-            vn_ie,
-            vt_ie,
-            z_kin_hor_e,
+            vn_on_half_levels,
+            tangential_wind_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
         ) = compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
             connectivities,
             vn,
-            vt,
-            vn_ie,
-            vt_ie,
-            z_kin_hor_e,
+            tangential_wind,
+            vn_on_half_levels,
+            tangential_wind_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels,
             wgtfac_e,
             wgtfacq_e,
             skip_compute_predictor_vertical_advection,
@@ -180,28 +180,28 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
 
         return dict(
             z_vn_avg=z_vn_avg,
-            z_graddiv_vn=z_graddiv_vn,
-            vt=vt,
-            mass_fl_e=mass_fl_e,
-            z_theta_v_fl_e=z_theta_v_fl_e,
-            vn_ie=vn_ie,
-            vt_ie=vt_ie,
-            z_kin_hor_e= z_kin_hor_e,
-            z_w_concorr_me= z_w_concorr_me,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
+            tangential_wind=tangential_wind,
+            mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
+            vn_on_half_levels=vn_on_half_levels,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels= horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels= contravariant_correction_at_edges_on_model_levels,
         )
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
 
         z_vn_avg = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        z_graddiv_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vt = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vt_ie = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vn_ie = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        z_kin_hor_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        z_w_concorr_me = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        vn_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -209,9 +209,9 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
         e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
         geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
-        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddzq_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        rho_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
@@ -225,21 +225,21 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
 
         return dict(
             z_vn_avg=z_vn_avg,
-            z_graddiv_vn=z_graddiv_vn,
-            vt=vt,
-            mass_fl_e=mass_fl_e,
-            z_theta_v_fl_e=z_theta_v_fl_e,
-            vt_ie=vt_ie,
-            vn_ie=vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
-            z_w_concorr_me=z_w_concorr_me,
+            horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
+            tangential_wind=tangential_wind,
+            mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            vn_on_half_levels=vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             vn=vn,
             e_flx_avg=e_flx_avg,
             geofac_grdiv=geofac_grdiv,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
-            z_rho_e=z_rho_e,
-            z_theta_v_e=z_theta_v_e,
-            ddzq_z_full_e=ddzq_z_full_e,
+            rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
+            theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+            ddqz_z_full_e=ddqz_z_full_e,
             ddxn_z_full=ddxn_z_full,
             ddxt_z_full=ddxt_z_full,
             wgtfac_e=wgtfac_e,

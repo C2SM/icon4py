@@ -32,7 +32,7 @@ from .test_accumulate_prep_adv_fields import (
 
 class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
     PROGRAM = combined_solve_nh_30_to_38_corrector
-    OUTPUTS = ("z_vn_avg", "mass_fl_e", "z_theta_v_fl_e", "vn_traj", "mass_flx_me",)
+    OUTPUTS = ("z_vn_avg", "mass_flux_at_edges_on_model_levels", "theta_v_flux_at_edges_on_model_levels", "vn_traj", "mass_flx_me",)
     MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
@@ -42,10 +42,10 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
         mass_flx_me: np.ndarray,
         e_flx_avg: np.ndarray,
         vn: np.ndarray,
-        z_rho_e: np.ndarray,
-        ddzq_z_full_e: np.ndarray,
-        z_theta_v_e: np.ndarray,
-        at_initial_timestep: bool,
+        rho_at_edges_on_model_levels: np.ndarray,
+        ddqz_z_full_e: np.ndarray,
+        theta_v_at_edges_on_model_levels: np.ndarray,
+        at_first_substep: bool,
         r_nsubsteps: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
@@ -53,16 +53,16 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
         z_vn_avg = compute_avg_vn_numpy(connectivities, e_flx_avg, vn)
 
         mass_fl_e, z_theta_v_fl_e = compute_mass_flux_numpy(
-            z_rho_e,
+            rho_at_edges_on_model_levels,
             z_vn_avg,
-            ddzq_z_full_e,
-            z_theta_v_e,
+            ddqz_z_full_e,
+            theta_v_at_edges_on_model_levels,
         )
 
-        if at_initial_timestep:
+        if at_first_substep:
             vn_traj = 0
 
-        if at_initial_timestep:
+        if at_first_substep:
             mass_flx_me = 0
 
         vn_traj, mass_flx_me = accumulate_prep_adv_fields_numpy(
@@ -73,7 +73,7 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
             r_nsubsteps,
         )
 
-        return dict(z_vn_avg=z_vn_avg, mass_fl_e=mass_fl_e, z_theta_v_fl_e=z_theta_v_fl_e, vn_traj=vn_traj, mass_flx_me=mass_flx_me,)
+        return dict(z_vn_avg=z_vn_avg, mass_flux_at_edges_on_model_levels=mass_fl_e, theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e, vn_traj=vn_traj, mass_flx_me=mass_flx_me,)
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -87,9 +87,9 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
         e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddzq_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        at_initial_timestep = True
+        at_first_substep = True
         r_nsubsteps = 0.2
 
         edge_domain = h_grid.domain(dims.EdgeDim)
@@ -98,16 +98,16 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
 
         return dict(
             z_vn_avg=z_vn_avg,
-            mass_fl_e=mass_fl_e,
-            z_theta_v_fl_e=z_theta_v_fl_e,
+            mass_flux_at_edges_on_model_levels=mass_fl_e,
+            theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
             vn_traj=vn_traj,
             mass_flx_me=mass_flx_me,
             e_flx_avg=e_flx_avg,
             vn=vn,
-            z_rho_e=z_rho_e,
-            ddzq_z_full_e=ddzq_z_full_e,
-            z_theta_v_e=z_theta_v_e,
-            at_initial_timestep=at_initial_timestep,
+            rho_at_edges_on_model_levels=z_rho_e,
+            ddqz_z_full_e=ddqz_z_full_e,
+            theta_v_at_edges_on_model_levels=z_theta_v_e,
+            at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
