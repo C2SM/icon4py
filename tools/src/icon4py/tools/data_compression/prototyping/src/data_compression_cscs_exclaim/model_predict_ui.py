@@ -19,7 +19,7 @@ from numcodecs_wasm_zfp import Zfp
 from numcodecs_wasm_zlib import Zlib
 
 
-#  prototyping % streamlit run ./src/data_compression_cscs_exclaim/model_predict_ui.py
+#  prototyping % streamlit run ./src/data_compression_cscs_exclaim/model_predict_ui.py streamlit --server.maxUploadSize=1200
 #  prototyping % data_compression_cscs_exclaim models_evaluation netCDF_files/tigge_pl_t_q_dx=2_2024_08_02.nc t parameters.yaml
 
 # Page title
@@ -62,6 +62,7 @@ if uploaded_file is not None and uploaded_file.name.endswith(".nc"):
         lon_upper = round(ds[field_to_compress][lon_key].shape[0] * 0.2)
         ds = ds.isel(latitude=slice(0, lat_upper), longitude=slice(0, lon_upper))
         dwt_dists = {}
+        edit_params = st.checkbox("Adjust parameters")
 
         # Perform action based on dropdown
         if "linear_quantization_zlib_compressors" in selected_option_compressor:
@@ -69,12 +70,23 @@ if uploaded_file is not None and uploaded_file.name.endswith(".nc"):
                 "parameters.yaml", "linear_quantization_zlib_compressors"
             )
             ds_linquant = {}
+            zlib_level_lq = zlib_level
+            if edit_params:
+                st.markdown(
+                    f"<h1 style='font-size:{15}px; '>Linear Quantization compressor parameters</h1>",
+                    unsafe_allow_html=True,
+                )
+                linear_quantization_bits = st.number_input(
+                    "bits", min_value=1, max_value=64, value=4
+                )
+                zlib_level_lq = st.number_input("zlib_level_lq", min_value=0, max_value=9, value=9)
             linquant_compressor = CodecStack(
                 LinearQuantize(
                     bits=linear_quantization_bits, dtype=str(ds[field_to_compress].dtype)
                 ),
-                Zlib(level=zlib_level),
+                Zlib(level=zlib_level_lq),
             )
+
             ds_linquant[field_to_compress] = linquant_compressor.encode_decode_data_array(
                 ds[field_to_compress]
             ).compute()
@@ -89,9 +101,17 @@ if uploaded_file is not None and uploaded_file.name.endswith(".nc"):
                 "parameters.yaml", "bitround_zlib_compressors"
             )
             ds_bitround = {}
+            zlib_level_br = zlib_level
+            if edit_params:
+                st.markdown(
+                    f"<h1 style='font-size:{15}px; '>Bit Round compressor parameters</h1>",
+                    unsafe_allow_html=True,
+                )
+                bitround_bits = st.number_input("bitround_bits", min_value=1, max_value=52, value=6)
+                zlib_level_br = st.number_input("zlib_level_br", min_value=0, max_value=9, value=9)
             bitround_compressor = CodecStack(
                 BitRound(keepbits=bitround_bits),
-                Zlib(level=zlib_level),
+                Zlib(level=zlib_level_br),
             )
             ds_bitround[field_to_compress] = bitround_compressor.encode_decode_data_array(
                 ds[field_to_compress]
@@ -107,6 +127,23 @@ if uploaded_file is not None and uploaded_file.name.endswith(".nc"):
                 "parameters.yaml", "zfp_asinh_compressors"
             )
             ds_zfp = {}
+            if edit_params:
+                st.markdown(
+                    f"<h1 style='font-size:{15}px; '>Zfp compressor parameters</h1>",
+                    unsafe_allow_html=True,
+                )
+                asinh_linear_width = st.number_input(
+                    "asinh_linear_width", min_value=1, max_value=100, value=9
+                )
+                zfp_tolerance = st.number_input(
+                    "zfp_tolerance", min_value=0.0, max_value=1.0, value=0.001, format="%.6f"
+                )
+                # zfp_mode = st.selectbox(
+                #     "zfp_mode",
+                #     options=["fixed-accuracy", "fixed-precision", "fixed-rate", "expert", "reversible"],
+                #     index=options.index(st.session_state.selected_column),
+                #     key="zfp_mode_selected",
+                # )
             zfp_compressor = CodecStack(
                 Asinh(linear_width=asinh_linear_width),
                 Zfp(mode=zfp_mode, tolerance=zfp_tolerance),
@@ -125,6 +162,20 @@ if uploaded_file is not None and uploaded_file.name.endswith(".nc"):
                 "parameters.yaml", "sz3_eb_compressors"
             )
             ds_sz3 = {}
+            if edit_params:
+                st.markdown(
+                    f"<h1 style='font-size:{15}px; '>Zfp compressor parameters</h1>",
+                    unsafe_allow_html=True,
+                )
+                sz3_eb_rel = st.number_input(
+                    "sz3_eb_rel", min_value=0.0, max_value=1.0, value=0.001, format="%.4f"
+                )
+                # sz3_eb_mode = st.selectbox(
+                #     "sz3_eb_mode",
+                #     options=["rel", "abs", "abs-and-rel", "abs-or-rel", "psnr", "l2"],
+                #     index=options.index(st.session_state.selected_column),
+                #     key="zfp_mode_selected",
+                # )
             sz3_compressor = CodecStack(Sz3(eb_mode=sz3_eb_mode, eb_rel=sz3_eb_rel))
             ds_sz3[field_to_compress] = sz3_compressor.encode_decode_data_array(
                 ds[field_to_compress]
