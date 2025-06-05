@@ -63,12 +63,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._config = {
             "divavg_cntrwgt": 0.5,
             "weighting_factor": 0.0,
-            "rbf_kernel_c": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
-            "rbf_kernel_e": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
-            "rbf_kernel_v": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
-            "rbf_scale_c": rbf.compute_rbf_scale(mean_characteristic_length, rbf.RBFDimension.CELL),
-            "rbf_scale_e": rbf.compute_rbf_scale(mean_characteristic_length, rbf.RBFDimension.EDGE),
-            "rbf_scale_v": rbf.compute_rbf_scale(
+            "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
+            "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
+            "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
+            "rbf_scale_cell": rbf.compute_rbf_scale(
+                mean_characteristic_length, rbf.RBFDimension.CELL
+            ),
+            "rbf_scale_edge": rbf.compute_rbf_scale(
+                mean_characteristic_length, rbf.RBFDimension.EDGE
+            ),
+            "rbf_scale_vertex": rbf.compute_rbf_scale(
                 mean_characteristic_length, rbf.RBFDimension.VERTEX
             ),
         }
@@ -327,8 +331,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_c"].value,
-                "scale_factor": self._config["rbf_scale_c"],
+                "rbf_kernel": self._config["rbf_kernel_cell"].value,
+                "scale_factor": self._config["rbf_scale_cell"],
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -354,8 +358,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_e"].value,
-                "scale_factor": self._config["rbf_scale_e"],
+                "rbf_kernel": self._config["rbf_kernel_edge"].value,
+                "scale_factor": self._config["rbf_scale_edge"],
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -385,8 +389,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"rbf_offset": dims.V2EDim},
             params={
-                "rbf_kernel": self._config["rbf_kernel_v"].value,
-                "scale_factor": self._config["rbf_scale_v"],
+                "rbf_kernel": self._config["rbf_kernel_vertex"].value,
+                "scale_factor": self._config["rbf_scale_vertex"],
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
