@@ -190,7 +190,7 @@ class BaseGrid(ABC):
         )
         return connectivity
 
-    def _do_replace_skip_values_in_table(self, dim:gtx.Dimension) -> bool:
+    def _do_replace_skip_values_in_table(self, dim: gtx.Dimension) -> bool:
         """
         Check if the skip_values in a neighbor table  should be replaced.
 
@@ -298,5 +298,5 @@ def replace_skip_values(
     return neighbor_table
 
 
-def _has_skip_values_in_table(data: data_alloc.NDArray, array_ns:ModuleType) -> bool:
+def _has_skip_values_in_table(data: data_alloc.NDArray, array_ns: ModuleType) -> bool:
     return array_ns.amin(data).item() == GridFile.INVALID_INDEX

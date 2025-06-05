@@ -14,11 +14,11 @@ import numpy as np
 from gt4py.next import where
 
 import icon4py.model.common.field_type_aliases as fa
-from icon4py.model.common.grid import gridfile
 import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
+from icon4py.model.common.grid import gridfile
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -872,7 +872,7 @@ def compute_cells_aw_verts(
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
         for je in range(v2e.shape[1]):
             # INVALID_INDEX
-            if v2e[jv, je] == icon4py.model.common.grid.gridfile.GridFile.INVALID_INDEX or (
+            if v2e[jv, je] == gridfile.GridFile.INVALID_INDEX or (
                 je > 0 and v2e[jv, je] == v2e[jv, je - 1]
             ):
                 continue
@@ -881,7 +881,7 @@ def compute_cells_aw_verts(
             cell_offset_idx_0 = e2c[ile, 0]
             cell_offset_idx_1 = e2c[ile, 1]
             for jc in range(v2e.shape[1]):
-                if v2c[jv, jc] == icon4py.model.common.grid.gridfile.GridFile.INVALID_INDEX or (
+                if v2c[jv, jc] == gridfile.GridFile.INVALID_INDEX or (
                     jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]
                 ):
                     continue
