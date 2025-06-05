@@ -39,7 +39,7 @@ include:
 .test_model_datatests:
   stage: test
   script:
-    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL --durations=0 -vv
+    - nox --add-timestamp -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL --durations=0 -vv
   parallel:
     matrix:
     # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
