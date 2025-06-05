@@ -50,7 +50,7 @@ DEFAULT_RBF_KERNEL: dict[RBFDimension, InterpolationKernel] = {
 }
 
 
-def compute_rbf_scale(mean_characteristic_length: ta.wpfloat, dim: RBFDimension):
+def compute_default_rbf_scale(mean_characteristic_length: ta.wpfloat, dim: RBFDimension):
     """Compute the default RBF scale factor. This assumes that the Gaussian
     kernel is used for vertices and cells, and that the inverse multiquadratic
     kernel is used for edges."""

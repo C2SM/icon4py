@@ -66,13 +66,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
             "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
-            "rbf_scale_cell": rbf.compute_rbf_scale(
+            "rbf_scale_cell": rbf.compute_default_rbf_scale(
                 mean_characteristic_length, rbf.RBFDimension.CELL
             ),
-            "rbf_scale_edge": rbf.compute_rbf_scale(
+            "rbf_scale_edge": rbf.compute_default_rbf_scale(
                 mean_characteristic_length, rbf.RBFDimension.EDGE
             ),
-            "rbf_scale_vertex": rbf.compute_rbf_scale(
+            "rbf_scale_vertex": rbf.compute_default_rbf_scale(
                 mean_characteristic_length, rbf.RBFDimension.VERTEX
             ),
         }
