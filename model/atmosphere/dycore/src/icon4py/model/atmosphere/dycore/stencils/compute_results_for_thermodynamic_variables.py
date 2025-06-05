@@ -5,14 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Final
+
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+dycore_consts: Final = constants.PhysicsConstants()
 
 
 @field_operator
@@ -30,7 +35,6 @@ def _compute_results_for_thermodynamic_variables(
     theta_v_now: fa.CellKField[wpfloat],
     exner_now: fa.CellKField[wpfloat],
     dtime: wpfloat,
-    cvd_o_rd: wpfloat,
 ) -> tuple[
     fa.CellKField[wpfloat],
     fa.CellKField[wpfloat],
@@ -52,7 +56,7 @@ def _compute_results_for_thermodynamic_variables(
     theta_v_new_wp = (
         rho_now
         * theta_v_now
-        * ((exner_new_wp / exner_now - wpfloat("1.0")) * cvd_o_rd + wpfloat("1.0"))
+        * ((exner_new_wp / exner_now - wpfloat("1.0")) * dycore_consts.cvd_o_rd + wpfloat("1.0"))
         / rho_new_wp
     )
     return rho_new_wp, exner_new_wp, theta_v_new_wp
@@ -76,7 +80,6 @@ def compute_results_for_thermodynamic_variables(
     exner_new: fa.CellKField[wpfloat],
     theta_v_new: fa.CellKField[wpfloat],
     dtime: wpfloat,
-    cvd_o_rd: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -96,7 +99,6 @@ def compute_results_for_thermodynamic_variables(
         theta_v_now,
         exner_now,
         dtime,
-        cvd_o_rd,
         out=(rho_new, exner_new, theta_v_new),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

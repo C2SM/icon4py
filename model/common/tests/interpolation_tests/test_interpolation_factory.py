@@ -56,6 +56,7 @@ def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, d
         assert "unknown field" in error.value
 
 
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -92,6 +93,7 @@ def _get_interpolation_factory(
     return factory
 
 
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -109,6 +111,7 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
 
+@pytest.mark.level("integration")
 ## FIXME: does not validate
 #   -> connectivity order between reference from serialbox and computed value is different
 @pytest.mark.parametrize(
@@ -139,6 +142,7 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
         ), f"assertion failed for row {i}"
 
 
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -159,6 +163,7 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
     )
 
 
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -176,6 +181,7 @@ def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend,
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
 
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -208,6 +214,7 @@ def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend)
     )
 
 
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -232,7 +239,7 @@ def test_get_mass_conserving_cell_average_weight(
 #   -> connectivity order between reference from serialbox and computed value is different
 ## TODO (@halungge) rtol is from parametrization is overwritten in assert - function is most probably wrong
 #  TODO (@halungge) global grid is not tested
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -245,11 +252,12 @@ def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol
     factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG)
-    assert field.shape == (grid.num_edges, grid.connectivities[dims.E2C2EODim].shape[1])
+    assert field.shape == (grid.num_edges, grid.neighbor_tables[dims.E2C2EODim].shape[1])
     # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
     assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=5e-2)
 
 
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -267,7 +275,7 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
 
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -286,7 +294,7 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-8)
 
 
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU)
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [

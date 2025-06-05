@@ -58,7 +58,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         d_time: ta.wpfloat,
         levelmask: np.ndarray,
         nlev: int,
-        nrdmax: int,
+        end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
@@ -82,7 +82,8 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             ddqz_z_full_e,
         )
 
-        condition = (np.maximum(3, nrdmax - 2) - 1 <= k) & (k < nlev - 4)
+        condition = (np.maximum(3, end_index_of_damping_layer - 2) - 1 <= k) & (k < nlev - 4)
+
         normal_wind_advective_tendency_extra_diffu = (
             add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
                 connectivities,
@@ -152,7 +153,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
 
         nlev = grid.num_levels
 
-        nrdmax = 5
+        end_index_of_damping_layer = 5
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
@@ -179,7 +180,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             d_time=d_time,
             levelmask=levelmask,
             nlev=nlev,
-            nrdmax=nrdmax,
+            end_index_of_damping_layer=end_index_of_damping_layer,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,

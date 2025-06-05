@@ -112,7 +112,7 @@ explicit = true
 
 [tool.uv.sources]
 # ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master" }
-gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_staging_20250417" }
+gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_staging_20250507" }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
@@ -249,5 +249,5 @@ packages = []
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.testing.pytest_config', '--strict-markers']
 markers = [
-    "embedded_remap_error", "uses_as_offset", "skip_value_error", "datatest", "embedded_only", "cpu_only", "infinite_concat_where"
+    "embedded_remap_error", "embedded_static_args", "uses_as_offset", "skip_value_error", "datatest", "embedded_only", "cpu_only", "infinite_concat_where"
 ]

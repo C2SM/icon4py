@@ -35,12 +35,9 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     Fixture which is a prerequisite of all the other fixtures in this file.
     """
-    try:
-        # we don't want to run this ever if we are not running datatests
-        if "not datatest" in request.config.getoption("-k"):
-            return
-    except ValueError:
-        pass
+    # we don't want to run this ever if we are not running datatests
+    if "not datatest" in request.config.getoption("-k", ""):
+        return
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
@@ -176,6 +173,12 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
+def topography_savepoint(data_provider):  # F811
+    """Load data from ICON external parameters savepoint."""
+    return data_provider.from_topography_savepoint()
+
+
+@pytest.fixture
 def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_init):  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
@@ -270,6 +273,23 @@ def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_vertically_implicit_dycore_solver_init(
+    data_provider, istep_init, step_date_init, substep_init
+):
+    """
+    Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
+
+     metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_vertically_implicit_dycore_solver_init(
         istep=istep_init, date=step_date_init, substep=substep_init
     )
 

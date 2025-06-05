@@ -73,40 +73,6 @@ def _compute_z_vintcoeff(
     return z_vintcoeff[jc, :, :]
 
 
-def _compute_ls_params(
-    k_start: list,
-    k_end: list,
-    maxslp_avg: data_alloc.NDArray,
-    maxhgtd_avg: data_alloc.NDArray,
-    c_owner_mask: data_alloc.NDArray,
-    thslp_zdiffu: float,
-    thhgtd_zdiffu: float,
-    cell_nudging: int,
-    n_cells: int,
-    nlev: int,
-    array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, int, int]:
-    indlist = array_ns.zeros(n_cells, dtype=int)
-    listreduce = 0
-    ji = -1
-    ji_ind = -1
-
-    for jc in range(cell_nudging, n_cells):
-        if (
-            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
-        ) and c_owner_mask[jc]:
-            ji += 1
-            indlist[ji] = jc
-
-            if all((k_start[jc], k_end[jc])) and k_start[jc] > k_end[jc]:
-                listreduce += 1
-            else:
-                ji_ind += 1
-                indlist[ji_ind] = jc
-
-    return indlist, listreduce, ji
-
-
 def _compute_k_start_end(
     z_mc: data_alloc.NDArray,
     max_nbhgt: data_alloc.NDArray,
@@ -115,34 +81,27 @@ def _compute_k_start_end(
     c_owner_mask: data_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
-    cell_nudging: int,
-    n_cells: int,
     nlev: int,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    k_start = array_ns.zeros(n_cells, dtype=int)
-    k_end = array_ns.zeros(n_cells, dtype=int)
-    for jc in range(cell_nudging, n_cells):
-        if (
-            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
-        ) and c_owner_mask[jc]:
-            for jk in reversed(range(nlev)):
-                if z_mc[jc, jk] >= max_nbhgt[jc]:
-                    k_end[jc] = jk + 1
-                    break
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    condition1 = array_ns.logical_or(maxslp_avg >= thslp_zdiffu, maxhgtd_avg >= thhgtd_zdiffu)
+    cell_mask = array_ns.tile(
+        array_ns.where(condition1[:, nlev - 1], c_owner_mask, False), (nlev, 1)
+    ).T
+    threshold = array_ns.tile(max_nbhgt, (nlev, 1)).T
+    owned_cell_above_threshold = array_ns.logical_and(cell_mask, z_mc >= threshold)
+    last_true_indices = nlev - 1 - array_ns.argmax(owned_cell_above_threshold[:, ::-1], axis=1)
+    kend = array_ns.where(
+        array_ns.any(owned_cell_above_threshold, axis=1), last_true_indices + 1, 0
+    )
+    kstart = np.argmax(condition1, axis=1)
+    # reset the values where start > end to be an empty range(start, end)
+    kstart = array_ns.where(kstart > kend, nlev, kstart)
+    cell_index_mask = array_ns.where(kend > kstart, True, False)
 
-            for jk in range(nlev):
-                if maxslp_avg[jc, jk] >= thslp_zdiffu or maxhgtd_avg[jc, jk] >= thhgtd_zdiffu:
-                    k_start[jc] = jk
-                    break
-
-            if all((k_start[jc], k_end[jc])) and k_start[jc] > k_end[jc]:
-                k_start[jc] = nlev - 1
-
-    return k_start, k_end
+    return kstart, kend, cell_index_mask
 
 
-# TODO (@halungge) refactor this to fully get rid of the lists
 def compute_diffusion_metrics(
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
@@ -165,7 +124,7 @@ def compute_diffusion_metrics(
     zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
-    k_start, k_end = _compute_k_start_end(
+    k_start, k_end, mask = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
         maxslp_avg=maxslp_avg,
@@ -173,31 +132,16 @@ def compute_diffusion_metrics(
         c_owner_mask=c_owner_mask,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
-        cell_nudging=cell_nudging,
-        n_cells=n_cells,
         nlev=nlev,
         array_ns=array_ns,
     )
 
-    indlist, listreduce, ji = _compute_ls_params(
-        k_start=k_start,
-        k_end=k_end,
-        maxslp_avg=maxslp_avg,
-        maxhgtd_avg=maxhgtd_avg,
-        c_owner_mask=c_owner_mask,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
-        cell_nudging=cell_nudging,
-        n_cells=n_cells,
-        nlev=nlev,
-    )
-
-    listdim = ji - listreduce
-
-    for ji in range(listdim):
-        jc = indlist[ji]
-        k_range = range(k_start[jc].item(), k_end[jc].item())
-        if all(k_range):
+    # go back to loop for now... fix _compute_nbidx, _compute_z_vintcoeff later
+    for jc in range(cell_nudging, n_cells):
+        kend = k_end[jc].item()
+        kstart = k_start[jc].item()
+        if kend > kstart:
+            k_range = range(kstart, kend)
             nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)
             z_vintcoeff[jc, :, :] = _compute_z_vintcoeff(
                 k_range, z_mc, z_mc_off, z_vintcoeff, jc, nlev

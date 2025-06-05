@@ -20,6 +20,7 @@ from icon4py.model.testing.datatest_utils import (
 from icon4py.model.testing.helpers import apply_markers
 
 
+TEST_LEVELS = ("any", "unit", "integration")
 DEFAULT_GRID: Final[str] = "simple_grid"
 VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
 
@@ -70,6 +71,10 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
     )
+    config.addinivalue_line(
+        "markers",
+        "level(name): marks test as unit or integration tests, mostly applicable where both are available",
+    )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
@@ -92,6 +97,15 @@ def pytest_configure(config):
         else:
             new_option = f"({k_option}) and not datatest"
             config.option.keyword = new_option
+
+    # Handle datatest options: --datatest-only  and --datatest-skip
+    if m_option := config.getoption("-m", []):
+        m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
+    if config.getoption("--datatest-only"):
+        config.option.markexpr = " and ".join(["datatest", *m_option])
+
+    if config.getoption("--datatest-skip"):
+        config.option.markexpr = " and ".join(["not datatest", *m_option])
 
 
 def pytest_addoption(parser):
@@ -142,6 +156,17 @@ def pytest_addoption(parser):
     except ValueError:
         pass
 
+    try:
+        parser.addoption(
+            "--level",
+            action="store",
+            choices=TEST_LEVELS,
+            help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
+            default="any",
+        )
+    except ValueError:
+        pass
+
 
 def _get_grid(
     selected_grid_type: str, selected_backend: gtx_backend.Backend | None
@@ -167,6 +192,23 @@ def _get_grid(
             return grid_instance
         case _:
             return simple_grid.SimpleGrid(selected_backend)
+
+
+def pytest_collection_modifyitems(config, items):
+    test_level = config.getoption("--level")
+    if test_level == "any":
+        return
+    for item in items:
+        if (marker := item.get_closest_marker("level")) is not None:
+            assert all(
+                level in TEST_LEVELS for level in marker.args
+            ), f"Invalid test level argument on function '{item.name}' - possible values are {TEST_LEVELS}"
+            if test_level not in marker.args:
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
+                    )
+                )
 
 
 def pytest_runtest_setup(item):
