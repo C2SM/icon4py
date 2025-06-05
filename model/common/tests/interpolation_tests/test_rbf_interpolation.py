@@ -14,7 +14,6 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
-from icon4py.model.common.interpolation.rbf_interpolation import RBF_STENCIL_SIZE
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -170,11 +169,11 @@ def test_rbf_interpolation_coeffs_cell(
     assert rbf_vec_coeff_c2.shape == rbf_vec_coeff_c2_ref.shape
     assert rbf_vec_coeff_c1_ref.shape == (
         icon_grid.num_cells,
-        RBF_STENCIL_SIZE[rbf_dim],
+        rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert rbf_vec_coeff_c2_ref.shape == (
         icon_grid.num_cells,
-        RBF_STENCIL_SIZE[rbf_dim],
+        rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_c1[horizontal_start:],
@@ -235,11 +234,11 @@ def test_rbf_interpolation_coeffs_vertex(
     assert rbf_vec_coeff_v2.shape == rbf_vec_coeff_v2_ref.shape
     assert rbf_vec_coeff_v1_ref.shape == (
         icon_grid.num_vertices,
-        RBF_STENCIL_SIZE[rbf_dim],
+        rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert rbf_vec_coeff_v2_ref.shape == (
         icon_grid.num_vertices,
-        RBF_STENCIL_SIZE[rbf_dim],
+        rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_v1[horizontal_start:],
@@ -306,7 +305,7 @@ def test_rbf_interpolation_coeffs_edge(
     assert rbf_vec_coeff_e.shape == rbf_vec_coeff_e_ref.shape
     assert rbf_vec_coeff_e_ref.shape == (
         icon_grid.num_edges,
-        RBF_STENCIL_SIZE[rbf_dim],
+        rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_e[horizontal_start:],
