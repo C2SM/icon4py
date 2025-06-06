@@ -158,6 +158,8 @@ def write_fields(
 args = get_args()
 
 set_lib_path(args.ldir)
+sys.setrecursionlimit(10**4)
+
 # import py_graupel
 
 data = Data(args)
@@ -231,7 +233,7 @@ saturation_adjustment( te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpo
 
 ksize = data.dz.shape[0]
 k = gtx.as_field( (dims.KDim, ), np.arange(0,ksize,dtype=np.int32) )
-graupel_run = graupel_run.with_backend(model_backends.BACKENDS["dace_cpu"])
+graupel_run = graupel_run.with_backend(model_backends.BACKENDS["dace_gpu"])
 graupel_run( k = k,
              last_lev = ksize-1,
              dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[:,:])),
