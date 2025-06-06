@@ -76,7 +76,7 @@ class SimpleFieldSource(factory.FieldSource):
         return self._backend
 
 
-# TODO: this reads lat lon from the grid_savpoint, which could be read from the grid file/geometry, to make it non datatests
+# TODO: this reads lat lon from the grid_savepoint, which could be read from the grid file/geometry, to make it non datatests
 @pytest.fixture(scope="function")
 def cell_coordinate_source(grid_savepoint, backend):
     on_gpu = data_alloc.is_cupy_device(backend)
