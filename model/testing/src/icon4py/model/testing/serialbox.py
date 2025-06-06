@@ -565,12 +565,10 @@ class IconGridSavepoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> grid_states.CellParams:
-        return grid_states.CellParams.from_global_num_cells(
+        return grid_states.CellParams.from_cells(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
-            global_num_cells=self.global_grid_params.num_cells,
-            length_rescale_factor=1.0,
         )
 
 

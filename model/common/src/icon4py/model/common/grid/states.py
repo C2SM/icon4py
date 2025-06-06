@@ -208,7 +208,7 @@ class CellParams:
     area: fa.CellField[float] = None
 
     @classmethod
-    def from_global_num_cells(
+    def from_cells(
         cls,
         cell_center_lat: fa.CellField[float],
         cell_center_lon: fa.CellField[float],
