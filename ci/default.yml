@@ -39,7 +39,7 @@ include:
 .test_model_datatests:
   stage: test
   script:
-    - nox --add-timestamp -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL --durations=0 -vv
+    - /usr/bin/time --verbose numactl --membind=0,1,2,3 nox --add-timestamp -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL --durations=0 -vv
   parallel:
     matrix:
     # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
