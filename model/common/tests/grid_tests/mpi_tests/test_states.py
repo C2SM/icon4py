@@ -8,8 +8,7 @@
 
 import pytest
 
-import icon4py.model.common.constants as constants
-from icon4py.model.common.grid import icon, states as grid_states
+from icon4py.model.common.grid import icon
 
 
 @pytest.mark.parametrize(
@@ -21,6 +20,4 @@ from icon4py.model.common.grid import icon, states as grid_states
 )
 def test_mean_cell_area_calculation(grid_root, grid_level, expected):
     params = icon.GlobalGridParams(grid_root, grid_level)
-    assert expected == grid_states.compute_mean_cell_area_for_sphere(
-        constants.EARTH_RADIUS, params.num_cells
-    )
+    assert expected == params.mean_cell_area
