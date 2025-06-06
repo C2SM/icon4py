@@ -56,6 +56,8 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         abs(w_con_e) * dtime / ddqz_z_full_e_wp - cfl_w_limit_wp * dtime,
     )
     ddt_vn_apc_wp = where(
+        # TODO(havogt): my guess is if the second condition is `True`, then
+        # `(levelmask | levelmask(Koff[1]))` is also `True`
         (levelmask | levelmask(Koff[1]))
         & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
         ddt_vn_apc_wp
