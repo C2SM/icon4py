@@ -22,6 +22,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fix
     ranked_data_path,
 )
 
+
 @pytest.mark.datatest
 def test_create_single_node_runtime_without_mpi(icon_grid, processor_props):  # noqa: F811 # fixture
     decomposition_info = DecompositionInfo(

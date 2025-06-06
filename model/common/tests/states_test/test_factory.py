@@ -75,6 +75,7 @@ class SimpleFieldSource(factory.FieldSource):
     def backend(self):
         return self._backend
 
+
 # TODO: this reads lat lon from the grid_savpoint, which could be read from the grid file/geometry, to make it non datatests
 @pytest.fixture(scope="function")
 def cell_coordinate_source(grid_savepoint, backend):
@@ -102,6 +103,7 @@ def cell_coordinate_source(grid_savepoint, backend):
     coordinate_source = SimpleFieldSource(data_=data, backend=backend, grid=grid)
     yield coordinate_source
     coordinate_source.reset()
+
 
 @pytest.fixture(scope="function")
 def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
@@ -156,6 +158,7 @@ def test_program_provider(height_coordinate_source):
     assert isinstance(x, gtx.Field)
     assert dims.CellDim in x.domain.dims
 
+
 @pytest.mark.datatest
 def test_field_source_raise_error_on_register(cell_coordinate_source):
     program = math_helpers.average_two_vertical_levels_downwards_on_cells
@@ -171,6 +174,7 @@ def test_field_source_raise_error_on_register(cell_coordinate_source):
     with pytest.raises(ValueError) as err:
         cell_coordinate_source.register_provider(provider)
         assert "not provided by source " in err.value
+
 
 @pytest.mark.datatest
 def test_composite_field_source_contains_all_metadata(
@@ -195,6 +199,7 @@ def test_composite_field_source_contains_all_metadata(
     assert test_source.metadata.items() <= composite.metadata.items()
     assert height_coordinate_source.metadata.items() <= composite.metadata.items()
     assert cell_coordinate_source.metadata.items() <= composite.metadata.items()
+
 
 @pytest.mark.datatest
 def test_composite_field_source_get_all_fields(cell_coordinate_source, height_coordinate_source):
@@ -229,6 +234,7 @@ def test_composite_field_source_get_all_fields(cell_coordinate_source, height_co
     assert isinstance(lat, gtx.Field)
     assert dims.KDim in lat.domain.dims
     assert len(lat.domain.dims) == 2
+
 
 @pytest.mark.datatest
 def test_composite_field_source_raises_upon_get_unknown_field(
