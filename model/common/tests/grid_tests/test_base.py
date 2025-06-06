@@ -16,7 +16,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 def test_replace_skip_values(grid_file, caplog, backend):
     grid = simple.SimpleGrid()
     domain = (dims.CellDim, dims.C2E2CDim)
-    xp = data_alloc.array_ns(backend)
+    xp = data_alloc.import_array_ns(backend)
     neighbor_table = data_alloc.random_field(
         grid, *domain, low=0, high=grid.num_cells, dtype=gtx.int32, backend=backend
     ).ndarray
