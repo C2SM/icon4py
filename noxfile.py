@@ -183,6 +183,7 @@ def _install_session_venv(
     session.run_install(
         "uv",
         "sync",
+        "--active",
         *("--python", session.python),
         "--no-dev",
         *(f"--extra={e}" for e in extras),
