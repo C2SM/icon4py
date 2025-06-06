@@ -19,9 +19,9 @@ def test_replace_skip_values(grid_file, caplog, backend):
     xp = data_alloc.array_ns(backend)
     neighbor_table = data_alloc.random_field(
         grid, *domain, low=0, high=grid.num_cells, dtype=gtx.int32, backend=backend
-    )
+    ).ndarray
     neighbor_table[0, 1:] = gridfile.GridFile.INVALID_INDEX
 
     assert xp.any(neighbor_table == gridfile.GridFile.INVALID_INDEX)
-    neighbor_table = base.replace_skip_values(domain, neighbor_table.asnumpy(), array_ns=xp)
+    neighbor_table = base.replace_skip_values(domain, neighbor_table, array_ns=xp)
     assert not xp.any(neighbor_table == gridfile.GridFile.INVALID_INDEX)
