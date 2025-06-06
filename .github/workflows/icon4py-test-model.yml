@@ -36,7 +36,7 @@ jobs:
             - name: cache key
               id: cache-key
               run: |
-                 echo "key=$(python ./.github/validation_grids.py --option=cache-key") >> $GITHUB_OUTPUT
+                 echo "key=$(python ./.github/validation_grids.py --option=cache-key)" >> $GITHUB_OUTPUT
 
             - name: gridfile cache
               id: grid-cache
