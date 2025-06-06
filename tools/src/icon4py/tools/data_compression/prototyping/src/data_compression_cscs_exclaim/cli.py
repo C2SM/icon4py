@@ -27,14 +27,6 @@ from numcodecs_wasm_zfp import Zfp
 from numcodecs_wasm_zlib import Zlib
 
 
-def calc_dwt_dist(input_1, input_2, n_levels, wavelet="haar"):
-    dwt_data_1 = pywt.wavedec(input_1, wavelet=wavelet, level=n_levels)
-    dwt_data_2 = pywt.wavedec(input_2, wavelet=wavelet, level=n_levels)
-    distances = [np.linalg.norm(c1 - c2) for c1, c2 in zip(dwt_data_1, dwt_data_2)]
-    dwt_distance = np.sqrt(sum(d**2 for d in distances))
-    return dwt_distance
-
-
 @click.group()
 def cli():
     pass
@@ -262,7 +254,7 @@ def models_evaluation(netcdf_file: str, field_to_compress: str, parameters_file:
     ds_linquant[field_to_compress] = linquant_compressor.encode_decode_data_array(
         ds[field_to_compress]
     ).compute()
-    lquant_dwt_distances = calc_dwt_dist(
+    lquant_dwt_distances = utils.calc_dwt_dist(
         ds_linquant[field_to_compress], ds[field_to_compress], n_levels=4
     )
     dwt_dists["lquant_dwt_distances"] = lquant_dwt_distances
@@ -280,7 +272,7 @@ def models_evaluation(netcdf_file: str, field_to_compress: str, parameters_file:
     ds_bitround[field_to_compress] = bitround_compressor.encode_decode_data_array(
         ds[field_to_compress]
     ).compute()
-    bitround_dwt_distances = calc_dwt_dist(
+    bitround_dwt_distances = utils.calc_dwt_dist(
         ds_bitround[field_to_compress], ds[field_to_compress], n_levels=4
     )
     dwt_dists["bitround_dwt_distances"] = bitround_dwt_distances
@@ -298,7 +290,7 @@ def models_evaluation(netcdf_file: str, field_to_compress: str, parameters_file:
     ds_zfp[field_to_compress] = zfp_compressor.encode_decode_data_array(
         ds[field_to_compress]
     ).compute()
-    zfp_dwt_distances = calc_dwt_dist(ds_zfp[field_to_compress], ds[field_to_compress], n_levels=4)
+    zfp_dwt_distances = utils.calc_dwt_dist(ds_zfp[field_to_compress], ds[field_to_compress], n_levels=4)
     dwt_dists["zfp_dwt_distances"] = zfp_dwt_distances
     print("Zfp DWT disctance: " + f"{zfp_dwt_distances}")
 
@@ -309,7 +301,7 @@ def models_evaluation(netcdf_file: str, field_to_compress: str, parameters_file:
     ds_sz3[field_to_compress] = sz3_compressor.encode_decode_data_array(
         ds[field_to_compress]
     ).compute()
-    sz3_dwt_distances = calc_dwt_dist(ds_sz3[field_to_compress], ds[field_to_compress], n_levels=4)
+    sz3_dwt_distances = utils.calc_dwt_dist(ds_sz3[field_to_compress], ds[field_to_compress], n_levels=4)
     dwt_dists["sz3_eb_compressors"] = sz3_dwt_distances
     print("SZ3 DWT disctance: " + f"{sz3_dwt_distances}")
 

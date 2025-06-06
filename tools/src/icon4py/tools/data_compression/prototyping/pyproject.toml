@@ -27,6 +27,7 @@ dependencies = [
     "scipy",
     "PyWavelets",
     "dask[complete]",
+    "h5py",
 ]
 description = 'Data compression tool for Weather and Climate data'
 name = 'data_compression_cscs_exclaim'
