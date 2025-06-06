@@ -252,7 +252,7 @@ class BaseGrid(ABC):
 
 def replace_skip_values(
     domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, array_ns: ModuleType = np
-):
+) -> data_alloc.NDArray:
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.
 
@@ -295,7 +295,7 @@ def replace_skip_values(
             _log.warning(
                 f"{domain} contains entries without any valid neighbor, disconnected grid?"
             )
-            max_valid_neighbor = array_ns.where(max_valid_neighbor < 0, 0.0, max_valid_neighbor)
+            max_valid_neighbor = array_ns.where(max_valid_neighbor < 0, 0, max_valid_neighbor)
         neighbor_table[:] = array_ns.where(
             neighbor_table == GridFile.INVALID_INDEX, max_valid_neighbor, neighbor_table
         )
