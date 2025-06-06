@@ -8,7 +8,6 @@
 
 import functools
 import logging
-import math
 from typing import Optional
 
 import gt4py.next as gtx
@@ -22,7 +21,6 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.common.grid.states import compute_mean_cell_area_for_sphere as mean_cell_area
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_fields,
@@ -56,9 +54,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
-        mean_characteristic_length = math.sqrt(
-            mean_cell_area(constants.EARTH_RADIUS, grid.global_num_cells)
-        )
+        characteristic_length = self._grid.global_properties.characteristic_length
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divavg_cntrwgt": 0.5,
@@ -67,13 +63,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
             "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
             "rbf_scale_cell": rbf.compute_default_rbf_scale(
-                mean_characteristic_length, rbf.RBFDimension.CELL
+                characteristic_length, rbf.RBFDimension.CELL
             ),
             "rbf_scale_edge": rbf.compute_default_rbf_scale(
-                mean_characteristic_length, rbf.RBFDimension.EDGE
+                characteristic_length, rbf.RBFDimension.EDGE
             ),
             "rbf_scale_vertex": rbf.compute_default_rbf_scale(
-                mean_characteristic_length, rbf.RBFDimension.VERTEX
+                characteristic_length, rbf.RBFDimension.VERTEX
             ),
         }
         log.info(

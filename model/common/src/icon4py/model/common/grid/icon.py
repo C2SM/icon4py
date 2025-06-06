@@ -8,6 +8,7 @@
 import dataclasses
 import functools
 import logging
+import math
 import uuid
 from typing import Final
 
@@ -36,7 +37,21 @@ class GlobalGridParams:
             case base.GeometryType.TORUS:
                 return compute_torus_num_cells(1000, 1000)
             case _:
-                NotImplementedError(f"Unknown gemoetry type {self.geometry_type}")
+                NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+
+    @functools.cached_property
+    def characteristic_length(self):
+        return math.sqrt(self.mean_cell_area)
+
+    @functools.cached_property
+    def mean_cell_area(self):
+        match self.geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
+            case base.GeometryType.TORUS:
+                NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+            case _:
+                NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
 
 def compute_icosahedron_num_cells(root: int, level: int):
@@ -46,6 +61,21 @@ def compute_icosahedron_num_cells(root: int, level: int):
 def compute_torus_num_cells(x: int, y: int):
     # TODO (@halungge) add implementation
     raise NotImplementedError("TODO : lookup torus cell number computation")
+
+
+def compute_mean_cell_area_for_sphere(radius, num_cells):
+    """
+    Compute the mean cell area.
+
+    Computes the mean cell area by dividing the sphere by the number of cells in the
+    global grid.
+
+    Args:
+        radius: average earth radius, might be rescaled by a scaling parameter
+        num_cells: number of cells on the global grid
+    Returns: mean area of one cell [m^2]
+    """
+    return 4.0 * math.pi * radius**2 / num_cells
 
 
 class IconGrid(base.BaseGrid):
