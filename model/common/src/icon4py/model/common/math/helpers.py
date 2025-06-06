@@ -194,6 +194,19 @@ def dot_product_on_cells(
 
 
 @gtx.field_operator
+def dot_product_on_vertices(
+    x1: fa.VertexField[ta.wpfloat],
+    x2: fa.VertexField[ta.wpfloat],
+    y1: fa.VertexField[ta.wpfloat],
+    y2: fa.VertexField[ta.wpfloat],
+    z1: fa.VertexField[ta.wpfloat],
+    z2: fa.VertexField[ta.wpfloat],
+) -> fa.VertexField[ta.wpfloat]:
+    """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
+    return x1 * x2 + y1 * y2 + z1 * z2
+
+
+@gtx.field_operator
 def cross_product_on_edges(
     x1: fa.EdgeField[ta.wpfloat],
     x2: fa.EdgeField[ta.wpfloat],
@@ -243,6 +256,24 @@ def norm2_on_cells(
 
     """
     return sqrt(dot_product_on_cells(x, x, y, y, z, z))
+
+
+@gtx.field_operator
+def norm2_on_vertices(
+    x: fa.VertexField[ta.wpfloat], y: fa.VertexField[ta.wpfloat], z: fa.VertexField[ta.wpfloat]
+) -> fa.VertexField[ta.wpfloat]:
+    """
+    Compute 2 norm of a cartesian vector (x, y, z)
+    Args:
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    Returns:
+        norma
+
+    """
+    return sqrt(dot_product_on_vertices(x, x, y, y, z, z))
 
 
 @gtx.field_operator
