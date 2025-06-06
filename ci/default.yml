@@ -40,8 +40,23 @@ test_tools_datatests_aarch64:
     #  missing updates for 'concat_where'.
     - COMPONENT: [diffusion, dycore, microphysics, common, driver]
       BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+      LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
 
+.test_model_basic:
+  stage: test
+  script:
+    - nox -s "test_model-3.10(basic, $COMPONENT)" -- --backend=$BACKEND
+  parallel:
+    matrix:
+    # TODO: advection tests are skipped, see .test_model_datatests for details.
+    # TODO: other packages run in github actions - make common also run there
+    - COMPONENT: [common]
+      BACKEND: [embedded, gtfn_cpu]
+# test_model_datatests_x86_64:
+#   extends: [.test_model_datatests, .test_template_x86_64]
+test_model_unittests_aarch64:
+  extends: [.test_model_basic, .test_template_aarch64]
