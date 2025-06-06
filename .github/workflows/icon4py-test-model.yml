@@ -26,7 +26,7 @@ jobs:
             - name: Install system dependencies
               run: |
                 sudo apt-get update
-                sudo apt-get install libboost-all-dev
+                sudo apt-get install libboost-all-dev python3-dev
 
             - name: install uv
               uses: astral-sh/setup-uv@v5

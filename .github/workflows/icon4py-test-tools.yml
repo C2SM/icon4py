@@ -20,7 +20,7 @@ jobs:
             - name: Install system dependencies
               run: |
                 sudo apt-get update
-                sudo apt-get install libboost-all-dev
+                sudo apt-get install libboost-all-dev python3-dev
             # we need to install python with setup-python action and cannot rely on the setup-uv:
             # we need to link to the python library in the CFFI test in tools and  LD_LIBRARY_PATH
             # is not set correctly in the setup-uv action
