@@ -456,7 +456,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, on_gpu: bool) -> icon.IconGrid:
+    def construct_icon_grid(self, on_gpu: bool, keep_skip_values: bool = True) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -473,6 +473,7 @@ class IconGridSavepoint(IconSavepoint):
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             on_gpu=on_gpu,
+            keep_skip_values=keep_skip_values,
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()

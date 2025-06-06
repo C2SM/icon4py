@@ -178,7 +178,7 @@ def _get_grid(
             )
 
             grid_instance = get_grid_manager_for_experiment(
-                REGIONAL_EXPERIMENT, backend=selected_backend
+                REGIONAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
             ).grid
             return grid_instance
         case "icon_grid_global":
@@ -187,7 +187,7 @@ def _get_grid(
             )
 
             grid_instance = get_grid_manager_for_experiment(
-                GLOBAL_EXPERIMENT, backend=selected_backend
+                GLOBAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
             ).grid
             return grid_instance
         case _:
