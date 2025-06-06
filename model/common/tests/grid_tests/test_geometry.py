@@ -399,7 +399,12 @@ def test_sparse_fields_creator():
     ],
 )
 def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):
-    gm = grid_utils.get_grid_manager(grid_file, backend=backend, num_levels=1)
+    gm = grid_utils.get_grid_manager(
+        grid_file=grid_file,
+        num_levels=1,
+        keep_skip_values=True,
+        backend=backend,
+    )
     grid = gm.grid
     coordinates = gm.coordinates
 
@@ -410,7 +415,7 @@ def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_
     lat_0, lon_0, lat_1, lon_1 = geometry.create_auxiliary_coordinate_arrays_for_orientation(
         grid, cell_lat, cell_lon, edge_lat, edge_lon, backend=backend
     )
-    connectivity = data_alloc.as_numpy(grid.connectivities[dims.E2CDim])
+    connectivity = data_alloc.as_numpy(grid.neighbor_tables[dims.E2CDim])
     has_boundary_edges = np.count_nonzero(connectivity == -1)
     if has_boundary_edges == 0:
         assert helpers.dallclose(lat_0.asnumpy(), cell_lat.asnumpy()[connectivity[:, 0]])

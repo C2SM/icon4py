@@ -456,7 +456,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, on_gpu: bool) -> icon.IconGrid:
+    def construct_icon_grid(self, on_gpu: bool, keep_skip_values: bool = True) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -473,6 +473,7 @@ class IconGridSavepoint(IconSavepoint):
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             on_gpu=on_gpu,
+            keep_skip_values=keep_skip_values,
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
@@ -481,12 +482,12 @@ class IconGridSavepoint(IconSavepoint):
         xp = data_alloc.array_ns(on_gpu)
         grid = (
             icon.IconGrid(self._grid_id)
-            .with_config(config)
-            .with_global_params(self.global_grid_params)
-            .with_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
-            .with_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
-            .with_start_end_indices(dims.CellDim, cell_starts, cell_ends)
-            .with_connectivities(
+            .set_config(config)
+            .set_global_params(self.global_grid_params)
+            .set_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
+            .set_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
+            .set_start_end_indices(dims.CellDim, cell_starts, cell_ends)
+            .set_neighbor_tables(
                 {
                     dims.C2EDim: xp.asarray(self.c2e()),
                     dims.E2CDim: xp.asarray(self.e2c()),
@@ -497,7 +498,7 @@ class IconGridSavepoint(IconSavepoint):
                     dims.E2C2EODim: xp.asarray(e2c2e0),
                 }
             )
-            .with_connectivities(
+            .set_neighbor_tables(
                 {
                     dims.E2VDim: xp.asarray(self.e2v()),
                     dims.V2EDim: xp.asarray(self.v2e()),

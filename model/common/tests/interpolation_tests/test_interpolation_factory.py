@@ -255,7 +255,7 @@ def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol
     factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG)
-    assert field.shape == (grid.num_edges, grid.connectivities[dims.E2C2EODim].shape[1])
+    assert field.shape == (grid.num_edges, grid.neighbor_tables[dims.E2C2EODim].shape[1])
     # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
     assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=5e-2)
 
