@@ -48,7 +48,7 @@ jobs:
             - name: download grids
               if: steps.grid-cache.outputs.cache-hit != 'true'
               run: |
-                echo "python ./.github/validation_grids.py --option=download"
+                python ./.github/validation_grids.py --option=download
 
 
             - name: run nox session - unit tests
