@@ -10,7 +10,7 @@ import pytest
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.utils.data_allocation as data_alloc
 
-from . import data_handling as data, datatest_utils as dt_utils
+from . import data_handling as data, datatest_utils as dt_utils, definitions as test_definitions
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props)
+    return dt_utils.get_ranked_data_path(test_definitions.SERIALIZED_DATA_PATH, processor_props)
 
 
 @pytest.fixture

@@ -21,7 +21,11 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils
+from icon4py.model.testing import (
+    data_handling,
+    datatest_utils as dt_utils,
+    definitions as test_definitions,
+)
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -77,7 +81,7 @@ def _file_name(grid_file: str):
 
 
 def resolve_full_grid_file_name(grid_file_str: str) -> pathlib.Path:
-    return dt_utils.GRIDS_PATH.joinpath(grid_file_str, _file_name(grid_file_str))
+    return test_definitions.GRIDS_PATH.joinpath(grid_file_str, _file_name(grid_file_str))
 
 
 def _download_grid_file(file_path: str) -> pathlib.Path:
