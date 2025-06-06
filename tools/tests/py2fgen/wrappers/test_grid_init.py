@@ -15,7 +15,6 @@ from icon4py.tools.py2fgen import test_utils
 from icon4py.tools.py2fgen.wrappers import grid_wrapper
 
 
-@pytest.mark.datatest
 @pytest.fixture
 def grid_init(grid_savepoint):
     # --- Set Up Grid Parameters ---
