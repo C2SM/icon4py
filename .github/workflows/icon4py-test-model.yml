@@ -15,8 +15,10 @@ jobs:
             matrix:
                 python-version: ["3.10", "3.11"]
                 backend: ["embedded", "gtfn_cpu"] # TODO add dace-cpu
-                component: ["diffusion", "dycore", "microphysics", "driver", "common"] #TODO add common (needs gridfiles) TODO add advection
-                #grid: ["simple_grid"] #, "icon_grid", "icon_grid_global"] #TODO  provide the grid files for icon_grid and icon_grid_global
+                # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
+                #  The problem is that GTFN backend times out on the advection stencil tests.
+                component: ["diffusion", "dycore", "microphysics", "driver", "common"]
+                grid: ["simple_grid", "icon_grid"]
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -59,7 +61,6 @@ jobs:
               shell: bash
               env:
                 NUM_PROCESSES: auto
-                UV_PROJECT_ENVIRONMENT: .venv
               run: |
                 uv run nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
 
@@ -67,6 +68,5 @@ jobs:
               shell: bash
               env:
                   NUM_PROCESSES: auto
-                  UV_PROJECT_ENVIRONMENT: .venv
               run: |
-                uv run nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=simple_grid
+                uv run nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid
