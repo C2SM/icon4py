@@ -1223,14 +1223,12 @@ class SolveNonhydro:
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
-        second_order_divdamp_scaling_coeff = (
-            second_order_divdamp_factor * self._cell_params.mean_cell_area
-        )
+        second_order_divdamp_scaling_coeff = second_order_divdamp_factor * self._grid.mean_cell_area
 
         dycore_utils._calculate_divdamp_fields(
             self.interpolated_fourth_order_divdamp_factor,
             gtx.int32(self._config.divdamp_order),
-            self._cell_params.mean_cell_area,
+            self._grid.mean_cell_area,
             second_order_divdamp_factor,
             self._config.nudge_max_coeff,
             constants.DBL_EPS,
