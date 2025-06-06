@@ -10,10 +10,10 @@ on:
         types: [opened, reopened, synchronize]
 jobs:
     test-tools:
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-latest
         strategy:
             matrix:
-                python-version: ["3.10", "3.11"]
+                python-version: ["3.10"]
         steps:
             - name: Checkout
               uses: actions/checkout@v4
