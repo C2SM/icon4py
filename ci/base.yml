@@ -10,6 +10,7 @@ stages:
 variables:
   PYVERSION_PREFIX: py310
   PYVERSION: 3.10.9
+  FF_TIMESTAMPS: true
 
 # Base image build step with SHA256 checksum for caching
 .build_baseimage:
@@ -88,6 +89,10 @@ build_image_aarch64:
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
     # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
-    NUM_PROCESSES: 16
+    NUM_PROCESSES: 4
+    OMP_NUM_THREADS: 8 # TODO
+    OMP_PROC_BIND: false # TODO
+    CUDA_DEVICE_MAX_CONNECTIONS: 8 # TODO
     GT4PY_BUILD_JOBS: 8
+    GT4PY_BUILD_CACHE_LIFETIME: persistent
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
