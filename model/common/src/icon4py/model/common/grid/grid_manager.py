@@ -604,7 +604,7 @@ class GridManager:
         grid = self._initialize_global(
             _determine_limited_area(refinement_fields[dims.CellDim].ndarray), on_gpu
         )
-        grid.with_refinement_control(refinement_fields)
+        grid.set_refinement_control(refinement_fields)
         xp = data_alloc.import_array_ns(backend)
         on_gpu = data_alloc.is_cupy_device(backend)
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)

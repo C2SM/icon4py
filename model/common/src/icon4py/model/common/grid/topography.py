@@ -13,6 +13,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.grid import base
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.utils import data_allocation as data_alloc
+import numpy as np
 
 
 @gtx.field_operator

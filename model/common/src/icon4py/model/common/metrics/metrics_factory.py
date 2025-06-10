@@ -100,9 +100,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thslp_zdiffu": 0.02,
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
-            "num_cells": 100,  # TODO: check the values for num_cells, num_values, nflatlev
-            "num_levels": 10, # TODO: the value of num_levels shoule also be checked
-            "nflatlev": 10,
             "model_top_height": 23500.0,
             "SLEVE_decay_scale_1": 4000.0,
             "SLEVE_decay_exponent": 1.2,
@@ -130,8 +127,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
-                    # TODO (Yilu): here interface_model_height
                     attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
+                    #TODO (Yilu): noe let's check with z_fic_sliced and vtc_a
                     "z_ifc_sliced": z_ifc_sliced,  # TODO (Yilu): z_ifc_sliced could be removed?
                     "vct_a": vct_a,
                     "topography": self._topography,
@@ -159,9 +156,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
             ),
-            fields={
-                "vertical_coordinates_on_cell_khalf": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
-            },
+            fields=(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,),
             domain={
                 dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
                 dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
@@ -174,9 +169,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"c2e2co": dims.C2E2CODim},
             params={
-                "num_cells": self._config["num_cells"],
-                "num_levels": self._config["num_levels"],
-                "nflatlev": self._config["nflatlev"],
+                "num_cells": self._grid.num_cells,
+                "num_levels": self._vertical_grid.num_levels,
+                "nflatlev": self._vertical_grid.nflatlev,
                 "model_top_height": self._config["model_top_height"],
                 "SLEVE_decay_scale_1": self._config["SLEVE_decay_scale_1"],
                 "SLEVE_decay_exponent": self._config["SLEVE_decay_exponent"],
@@ -193,8 +188,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(vertical_coordinates_on_cell_khalf)
-        # TODO (Yilu): whether grid, vertical_geometry, backend can be in params
-        # TODO (Yilu): domain and connectivies
 
         height = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
