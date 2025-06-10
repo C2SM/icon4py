@@ -164,7 +164,7 @@ if uploaded_file is not None and uploaded_file.name.endswith(".nc"):
             ds_sz3 = {}
             if edit_params:
                 st.markdown(
-                    f"<h1 style='font-size:{15}px; '>Zfp compressor parameters</h1>",
+                    f"<h1 style='font-size:{15}px; '>Sz3 compressor parameters</h1>",
                     unsafe_allow_html=True,
                 )
                 sz3_eb_rel = st.number_input(
