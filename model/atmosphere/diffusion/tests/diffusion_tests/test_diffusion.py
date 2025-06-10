@@ -64,7 +64,6 @@ def _get_or_initialize(experiment, backend, name):
             cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
             cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
             area=geometry_.get(geometry_meta.CELL_AREA),
-            global_num_cells=grid.global_num_cells,
         )
         edge_params = grid_states.EdgeParams(
             edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
