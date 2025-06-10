@@ -35,8 +35,10 @@ from icon4py.model.testing import (
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
-def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file, grid_savepoint, icon_grid):
-    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
+def test_construct_rbf_matrix_offsets_tables_for_cells(
+    grid_file, grid_savepoint, icon_grid, backend
+):
+    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
     assert offset_table.shape == (
@@ -68,8 +70,10 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file, grid_savepoint
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
-def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file, grid_savepoint, icon_grid):
-    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
+def test_construct_rbf_matrix_offsets_tables_for_edges(
+    grid_file, grid_savepoint, icon_grid, backend
+):
+    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
     assert offset_table.shape == (
@@ -99,8 +103,10 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(grid_file, grid_savepoint
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
-def test_construct_rbf_matrix_offsets_tables_for_vertices(grid_file, grid_savepoint, icon_grid):
-    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, None)
+def test_construct_rbf_matrix_offsets_tables_for_vertices(
+    grid_file, grid_savepoint, icon_grid, backend
+):
+    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
     assert offset_table.shape == (
