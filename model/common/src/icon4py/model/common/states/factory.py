@@ -691,22 +691,6 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def _provider_on_backend(
-    provider: gtx.NeighborTableOffsetProvider, backend: Optional[gtx_backend.Backend]
-) -> gtx.NeighborTableOffsetProvider:
-    table = data_alloc.to_backend(provider.table, backend)
-    log.debug(
-        f"transferring offset provider {provider} to compute backend: {data_alloc.backend_name(backend)}"
-    )
-    return gtx.NeighborTableOffsetProvider(
-        table=table,
-        neighbor_axis=provider.neighbor_axis,
-        has_skip_values=provider.has_skip_values,
-        max_neighbors=provider.max_neighbors,
-        origin_axis=provider.origin_axis,
-    )
-
-
 def dtype_or_default(
     field_name: str, metadata: dict[str, model.FieldMetaData]
 ) -> state_utils.ScalarType:
