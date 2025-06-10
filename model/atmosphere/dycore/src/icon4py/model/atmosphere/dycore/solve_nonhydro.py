@@ -467,8 +467,6 @@ class SolveNonhydro:
             igradp_method=[self._config.igradp_method],
             nflatlev=[self._vertical_params.nflatlev],
             nflat_gradp=[self._vertical_params.nflat_gradp],
-            horizontal_start=[gtx.int32(0)],
-            horizontal_end=[gtx.int32(self._grid.num_edges)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
@@ -483,8 +481,6 @@ class SolveNonhydro:
             starting_vertical_index_for_3d_divdamp=[
                 self._params.starting_vertical_index_for_3d_divdamp
             ],
-            horizontal_start=[gtx.int32(0)],
-            horizontal_end=[gtx.int32(self._grid.num_edges)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
@@ -577,8 +573,6 @@ class SolveNonhydro:
             nflat_gradp=[self._vertical_params.nflat_gradp],
             limited_area=[self._grid.limited_area],
             igradp_method=[self._config.igradp_method],
-            horizontal_start=[gtx.int32(0)],
-            horizontal_end=[gtx.int32(self._grid.num_cells)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
             offset_provider={},
@@ -587,8 +581,6 @@ class SolveNonhydro:
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration.with_backend(
             self._backend
         ).compile(
-            horizontal_start=[gtx.int32(0)],
-            horizontal_end=[gtx.int32(self._grid.num_cells)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
             offset_provider={},
