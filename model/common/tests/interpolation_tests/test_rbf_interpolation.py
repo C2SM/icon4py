@@ -14,9 +14,9 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_attrs,
-    grid_manager as gm,
     horizontal as h_grid,
 )
+from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
@@ -125,7 +125,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     for i in range(start_index, offset_table.shape[0]):
         # Make sure invalid neighbors are represented the same way.
         _, index = np.unique(offset_table_savepoint[i, :], return_index=True)
-        offset_table_savepoint[i, max(index) + 1 :] = gm.GridFile.INVALID_INDEX
+        offset_table_savepoint[i, max(index) + 1 :] = GridFile.INVALID_INDEX
 
         # Neighbors may not be in the same order. Ignore differences in order.
         assert (np.sort(offset_table[i]) == np.sort(offset_table_savepoint[i])).all()

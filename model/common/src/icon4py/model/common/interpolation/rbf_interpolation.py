@@ -76,7 +76,7 @@ def construct_rbf_matrix_offsets_tables_for_cells(
     grid: base_grid.BaseGrid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the cell RBF matrix: rbf_vec_index_c"""
-    offset = grid.connectivities[dims.C2E2C2EDim]
+    offset = grid.neighbor_tables[dims.C2E2C2EDim]
     assert offset.shape == (grid.num_cells, RBF_STENCIL_SIZE[RBFDimension.CELL])
     return offset
 
@@ -85,7 +85,7 @@ def construct_rbf_matrix_offsets_tables_for_edges(
     grid: base_grid.BaseGrid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e"""
-    offset = grid.connectivities[dims.E2C2EDim]
+    offset = grid.neighbor_tables[dims.E2C2EDim]
     assert offset.shape == (grid.num_edges, RBF_STENCIL_SIZE[RBFDimension.EDGE])
     return offset
 
@@ -94,7 +94,7 @@ def construct_rbf_matrix_offsets_tables_for_vertices(
     grid: base_grid.BaseGrid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_v"""
-    offset = grid.connectivities[dims.V2EDim]
+    offset = grid.neighbor_tables[dims.V2EDim]
     assert offset.shape == (grid.num_vertices, RBF_STENCIL_SIZE[RBFDimension.VERTEX])
     return offset
 
