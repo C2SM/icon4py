@@ -40,6 +40,7 @@ class GlobalGridParams:
     root: int
     level: int
     num_cells: int = None
+    mean_cell_area: float = None
     geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
     radius = constants.EARTH_RADIUS
 
@@ -67,13 +68,16 @@ class GlobalGridParams:
 
     @functools.cached_property
     def mean_cell_area(self):
-        match self.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
-            case base.GeometryType.TORUS:
-                NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
-            case _:
-                NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+        if self.mean_cell_area is not None:
+            return self.mean_cell_area
+        else:
+            match self.geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
+                case base.GeometryType.TORUS:
+                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+                case _:
+                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
 
 def compute_icosahedron_num_cells(root: int, level: int):
