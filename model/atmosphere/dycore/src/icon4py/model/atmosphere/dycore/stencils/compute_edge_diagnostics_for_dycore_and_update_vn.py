@@ -155,26 +155,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             )
         )
 
-        # TODO move this boundary/halo condition to the place where the fields are consumed...
-        if limited_area:
-            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
-                (start_edge_lateral_boundary <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
-                (
-                    broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                    broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                ),
-                (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
-            )
-        else:
-            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
-                (start_edge_halo_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo_level_2),
-                (
-                    broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                    broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                ),
-                (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
-            )
-
         (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
             (start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
             _compute_horizontal_advection_of_rho_and_theta(
@@ -196,7 +176,10 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
                 z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
                 z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels,
             ),
-            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
+            (
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            ),
         )
 
     horizontal_pressure_gradient = concat_where(
@@ -213,7 +196,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     )
 
     if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
-        if nflatlev < (nflat_gradp + 1):
+        if nflatlev < (nflat_gradp + 1):  # TODO check this condition
             horizontal_pressure_gradient = concat_where(
                 (nflatlev <= dims.KDim) & (dims.KDim < (nflat_gradp + 1)),
                 concat_where(
@@ -247,6 +230,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             horizontal_pressure_gradient,
         )
 
+        # TODO what is `end_edge_end` and why do we apply everything else on a smaller domain?
         horizontal_pressure_gradient = concat_where(
             (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_end),
             _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
