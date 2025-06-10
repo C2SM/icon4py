@@ -141,7 +141,8 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
                 perturbed_rho_at_cells_on_model_levels,
                 perturbed_theta_v_at_cells_on_model_levels[:, : vertical_end - 1],
             ) = np.where(
-                (start_cell_lateral_boundary <= horz_idx) & (horz_idx < start_cell_lateral_boundary_level_3),
+                (start_cell_lateral_boundary <= horz_idx)
+                & (horz_idx < start_cell_lateral_boundary_level_3),
                 (
                     np.zeros_like(perturbed_rho_at_cells_on_model_levels),
                     np.zeros_like(
