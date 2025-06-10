@@ -231,26 +231,6 @@ def combined_solve_nh_30_to_38_predictor(
     )
 
 @gtx.field_operator
-def _init_to_zero_and_accumulate_prep_adv_fields(
-    z_vn_avg: fa.EdgeKField[ta.wpfloat],
-    mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    r_nsubsteps: ta.wpfloat,
-) -> tuple[
-    fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
-]:
-    vn_traj, mass_flx_me = _init_two_edge_kdim_fields_with_zero_wp()
-    vn_traj, mass_flx_me = _accumulate_prep_adv_fields(
-        z_vn_avg,
-        mass_flux_at_edges_on_model_levels,
-        vn_traj,
-        mass_flx_me,
-        r_nsubsteps,
-    )
-
-    return vn_traj, mass_flx_me
-
-@gtx.field_operator
 def _combined_solve_nh_30_to_38_corrector(
     vn_traj: fa.EdgeKField[ta.wpfloat],
     mass_flx_me: fa.EdgeKField[ta.wpfloat],
@@ -259,6 +239,7 @@ def _combined_solve_nh_30_to_38_corrector(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
+    prepare_advection: bool,
     at_first_substep: bool,
     r_nsubsteps: ta.wpfloat,
 ) -> tuple[
@@ -279,19 +260,19 @@ def _combined_solve_nh_30_to_38_corrector(
     )
 
     vn_traj, mass_flx_me = (
-        _init_to_zero_and_accumulate_prep_adv_fields(
-            z_vn_avg,
-            mass_flux_at_edges_on_model_levels,
-            r_nsubsteps,
+        (
+            (r_nsubsteps * z_vn_avg, r_nsubsteps * mass_flux_at_edges_on_model_levels)
+            if at_first_substep
+            else _accumulate_prep_adv_fields(
+                z_vn_avg,
+                mass_flux_at_edges_on_model_levels,
+                vn_traj,
+                mass_flx_me,
+                r_nsubsteps,
+            )
         )
-        if at_first_substep
-        else _accumulate_prep_adv_fields(
-            z_vn_avg,
-            mass_flux_at_edges_on_model_levels,
-            vn_traj,
-            mass_flx_me,
-            r_nsubsteps,
-        )
+        if prepare_advection
+        else (vn_traj, mass_flx_me)
     )
 
     return z_vn_avg, mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels, vn_traj, mass_flx_me
@@ -308,6 +289,7 @@ def combined_solve_nh_30_to_38_corrector(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
+    prepare_advection: bool,
     at_first_substep: bool,
     r_nsubsteps: ta.wpfloat,
     horizontal_start: gtx.int32,
@@ -323,6 +305,7 @@ def combined_solve_nh_30_to_38_corrector(
         rho_at_edges_on_model_levels,
         ddqz_z_full_e,
         theta_v_at_edges_on_model_levels,
+        prepare_advection,
         at_first_substep,
         r_nsubsteps,
         out=(

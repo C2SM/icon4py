@@ -1470,6 +1470,7 @@ class SolveNonhydro:
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+            prepare_advection=lprep_adv,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=self._start_edge_lateral_boundary_level_5,

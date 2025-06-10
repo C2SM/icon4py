@@ -45,6 +45,7 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
         rho_at_edges_on_model_levels: np.ndarray,
         ddqz_z_full_e: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
+        prepare_advection: bool,
         at_first_substep: bool,
         r_nsubsteps: ta.wpfloat,
         **kwargs: Any,
@@ -59,18 +60,20 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
             theta_v_at_edges_on_model_levels,
         )
 
-        if at_first_substep:
-            vn_traj = 0
-
-        if at_first_substep:
-            mass_flx_me = 0
-
-        vn_traj, mass_flx_me = accumulate_prep_adv_fields_numpy(
-            z_vn_avg,
-            mass_fl_e,
-            vn_traj,
-            mass_flx_me,
-            r_nsubsteps,
+        vn_traj, mass_flx_me = (
+            (
+                (r_nsubsteps * z_vn_avg, r_nsubsteps * mass_fl_e)
+                if at_first_substep
+                else accumulate_prep_adv_fields_numpy(
+                    z_vn_avg,
+                    mass_fl_e,
+                    vn_traj,
+                    mass_flx_me,
+                    r_nsubsteps,
+                )
+            )
+            if prepare_advection
+            else (vn_traj, mass_flx_me)
         )
 
         return dict(z_vn_avg=z_vn_avg, mass_flux_at_edges_on_model_levels=mass_fl_e, theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e, vn_traj=vn_traj, mass_flx_me=mass_flx_me,)
@@ -89,6 +92,7 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
         z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        prepare_advection = True
         at_first_substep = True
         r_nsubsteps = 0.2
 
@@ -107,6 +111,7 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
             rho_at_edges_on_model_levels=z_rho_e,
             ddqz_z_full_e=ddqz_z_full_e,
             theta_v_at_edges_on_model_levels=z_theta_v_e,
+            prepare_advection=prepare_advection,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=horizontal_start,
