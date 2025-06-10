@@ -16,6 +16,7 @@ import humanize
 import numpy as np
 import xarray as xr
 import yaml
+import pywt
 
 
 def open_netcdf(netcdf_file: str, field_to_compress: str):
@@ -214,3 +215,11 @@ def format_compression_metrics(
         )
 
     return table
+
+
+def calc_dwt_dist(input_1, input_2, n_levels, wavelet="haar"):
+    dwt_data_1 = pywt.wavedec(input_1, wavelet=wavelet, level=n_levels)
+    dwt_data_2 = pywt.wavedec(input_2, wavelet=wavelet, level=n_levels)
+    distances = [np.linalg.norm(c1 - c2) for c1, c2 in zip(dwt_data_1, dwt_data_2)]
+    dwt_distance = np.sqrt(sum(d**2 for d in distances))
+    return dwt_distance
