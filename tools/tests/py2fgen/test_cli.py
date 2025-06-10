@@ -8,6 +8,7 @@
 
 import os
 import subprocess
+import sys
 
 import pytest
 from click.testing import CliRunner
@@ -70,6 +71,9 @@ def run_test_case(
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
+        os.environ[
+            "LD_LIBRARY_PATH"
+        ] = f"{sys.base_prefix}/lib:{os.environ.get('LD_LIBRARY_PATH', '')}"
         invoke_cli(cli, module, function, library_name)
         compile_and_run_fortran(
             library_name,
