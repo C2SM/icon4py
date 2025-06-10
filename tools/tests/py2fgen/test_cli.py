@@ -71,9 +71,6 @@ def run_test_case(
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
-        os.environ[
-            "LD_LIBRARY_PATH"
-        ] = f"{sys.base_prefix}/lib:{os.environ.get('LD_LIBRARY_PATH', '')}"
         invoke_cli(cli, module, function, library_name)
         compile_and_run_fortran(
             library_name,
@@ -87,7 +84,8 @@ def run_test_case(
 
 
 def invoke_cli(cli, module, function, library_name):
-    cli_args = [module, function, library_name]
+    rpath = f"{sys.base_prefix}/lib"
+    cli_args = [module, function, library_name, "-r", rpath]
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
