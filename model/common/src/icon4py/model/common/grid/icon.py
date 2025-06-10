@@ -67,8 +67,6 @@ class GlobalGridParams:
 
     @functools.cached_property
     def mean_cell_area(self):
-        # TODO: Original version from CellParams. Do we need to keep this for torus grids:
-        # mean_cell_area = area.asnumpy().mean() # noqa: ERA001
         match self.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
                 return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
