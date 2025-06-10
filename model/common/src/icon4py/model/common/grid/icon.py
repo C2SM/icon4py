@@ -56,7 +56,7 @@ class GlobalGridParams:
                 case _:
                     NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
-        return self.num_cells
+        return self._num_cells
 
     @functools.cached_property
     def characteristic_length(self):
