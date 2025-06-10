@@ -60,7 +60,7 @@ def _get_or_initialize(experiment, backend, name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
         grid = geometry_.grid
 
-        cell_params = grid_states.CellParams.from_cells(
+        cell_params = grid_states.CellParams(
             cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
             cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
             area=geometry_.get(geometry_meta.CELL_AREA),
