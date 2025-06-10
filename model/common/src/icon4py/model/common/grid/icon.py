@@ -49,7 +49,6 @@ class GlobalGridParams:
         if self._num_cells is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    assert self.root > 0 and self.level >= 0
                     return compute_icosahedron_num_cells(self.root, self.level)
                 case base.GeometryType.TORUS:
                     return compute_torus_num_cells(1000, 1000)
