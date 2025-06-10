@@ -158,8 +158,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             ),
             fields=(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,),
             domain={
-                dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
                 dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
+                dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
             },
             deps={
                 "vct_a": "vct_a",
