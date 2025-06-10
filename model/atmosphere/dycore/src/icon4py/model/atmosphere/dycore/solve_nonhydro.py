@@ -577,8 +577,6 @@ class SolveNonhydro:
             nflat_gradp=[self._vertical_params.nflat_gradp],
             limited_area=[self._grid.limited_area],
             igradp_method=[self._config.igradp_method],
-            horizontal_start=[gtx.int32(0)],
-            horizontal_end=[gtx.int32(self._grid.num_cells)],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
             offset_provider={},

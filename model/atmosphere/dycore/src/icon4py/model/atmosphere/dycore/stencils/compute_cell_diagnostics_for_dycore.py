@@ -358,8 +358,6 @@ def compute_perturbed_quantities_and_interpolation(
         - end_cell_end: end index of the last lateral boundary level zone for cells
         - end_cell_halo: end index of the last halo level zone for cells
         - end_cell_halo_level_2: end index of the second halo level zone for cells
-        - horizontal_start: start index of the horizontal domain
-        - horizontal_end: end index of the horizontal domain
         - vertical_start: start index of the vertical domain
         - vertical_end: end index of the vertical domain
 
