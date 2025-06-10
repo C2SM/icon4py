@@ -125,55 +125,57 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
 ]:
-    (
-        ddx_perturbed_rho,
-        ddy_perturbed_rho,
-        ddx_perturbed_theta_v,
-        ddy_perturbed_theta_v,
-    ) = (
-        _mo_math_gradients_grad_green_gauss_cell_dsl(
-            p_ccpr1=perturbed_rho_at_cells_on_model_levels,
-            p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
-            geofac_grg_x=geofac_grg_x,
-            geofac_grg_y=geofac_grg_y,
-        )
-        if (iadv_rhotheta == rhotheta_avd_type.MIURA)
-        else (
-            broadcast(0.0, (dims.CellDim, dims.KDim)),
-            broadcast(0.0, (dims.CellDim, dims.KDim)),
-            broadcast(0.0, (dims.CellDim, dims.KDim)),
-            broadcast(0.0, (dims.CellDim, dims.KDim)),
-        )
-    )
+    # horizontal_pressure_gradient:
+    # rho_at_edges_on_model_levels: ???  (halo exchange afterwards)
+    # next_vn: interior (halo exchange afterwards and lateral boundary afterwards)
 
-    (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
-        concat_where(
-            (start_edge_halo_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo_level_2),
-            (
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-            ),
-            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
-        )
-        if iadv_rhotheta <= rhotheta_avd_type.MIURA
-        else (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels)
-    )
+    # [start_edge_nudging_level_2, end_edge_local[:
+    #  - horizontal_pressure_gradient
+    #  - next_vn
 
-    (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
-        concat_where(
-            (start_edge_lateral_boundary <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
-            (
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-            ),
-            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
+    if iadv_rhotheta <= rhotheta_avd_type.MIURA:  # TODO: How can this be false?
+        (
+            ddx_perturbed_rho,
+            ddy_perturbed_rho,
+            ddx_perturbed_theta_v,
+            ddy_perturbed_theta_v,
+        ) = (
+            _mo_math_gradients_grad_green_gauss_cell_dsl(
+                p_ccpr1=perturbed_rho_at_cells_on_model_levels,
+                p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
+                geofac_grg_x=geofac_grg_x,
+                geofac_grg_y=geofac_grg_y,
+            )
+            if (iadv_rhotheta == rhotheta_avd_type.MIURA)
+            else (
+                broadcast(0.0, (dims.CellDim, dims.KDim)),
+                broadcast(0.0, (dims.CellDim, dims.KDim)),
+                broadcast(0.0, (dims.CellDim, dims.KDim)),
+                broadcast(0.0, (dims.CellDim, dims.KDim)),
+            )
         )
-        if limited_area & (iadv_rhotheta <= rhotheta_avd_type.MIURA)
-        else (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels)
-    )
 
-    (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
-        concat_where(
+        # TODO move this boundary/halo condition to the place where the fields are consumed...
+        if limited_area:
+            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
+                (start_edge_lateral_boundary <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
+                (
+                    broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                    broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                ),
+                (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
+            )
+        else:
+            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
+                (start_edge_halo_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo_level_2),
+                (
+                    broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                    broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                ),
+                (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
+            )
+
+        (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
             (start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
             _compute_horizontal_advection_of_rho_and_theta(
                 p_vn=current_vn,
@@ -196,9 +198,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             ),
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
         )
-        if iadv_rhotheta <= rhotheta_avd_type.MIURA
-        else (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels)
-    )
 
     horizontal_pressure_gradient = concat_where(
         dims.KDim < nflatlev,
@@ -213,28 +212,25 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         horizontal_pressure_gradient,
     )
 
-    horizontal_pressure_gradient = (
-        concat_where(
-            (nflatlev <= dims.KDim) & (dims.KDim < (nflat_gradp + 1)),
-            concat_where(
-                (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-                _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-                    inv_dual_edge_length=inv_dual_edge_length,
-                    z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
-                    ddxn_z_full=ddxn_z_full,
-                    c_lin_e=c_lin_e,
-                    z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+    if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
+        if nflatlev < (nflat_gradp + 1):
+            horizontal_pressure_gradient = concat_where(
+                (nflatlev <= dims.KDim) & (dims.KDim < (nflat_gradp + 1)),
+                concat_where(
+                    (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+                    _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+                        inv_dual_edge_length=inv_dual_edge_length,
+                        z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+                        ddxn_z_full=ddxn_z_full,
+                        c_lin_e=c_lin_e,
+                        z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                    ),
+                    horizontal_pressure_gradient,
                 ),
                 horizontal_pressure_gradient,
-            ),
-            horizontal_pressure_gradient,
-        )
-        if (igradp_method == horzpres_discr_type.TAYLOR_HYDRO) & (nflatlev < (nflat_gradp + 1))
-        else horizontal_pressure_gradient
-    )
+            )
 
-    horizontal_pressure_gradient = (
-        concat_where(
+        horizontal_pressure_gradient = concat_where(
             (nflat_gradp + 1) <= dims.KDim,
             concat_where(
                 (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
@@ -250,12 +246,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             ),
             horizontal_pressure_gradient,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else horizontal_pressure_gradient
-    )
 
-    horizontal_pressure_gradient = (
-        concat_where(
+        horizontal_pressure_gradient = concat_where(
             (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_end),
             _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=ipeidx_dsl,
@@ -265,9 +257,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             ),
             horizontal_pressure_gradient,
         )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else horizontal_pressure_gradient
-    )
 
     next_vn = concat_where(
         (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
@@ -282,17 +271,14 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         next_vn,
     )
 
-    next_vn = (
-        concat_where(
+    if is_iau_active:
+        next_vn = concat_where(
             (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
             _add_analysis_increments_to_vn(
                 vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
             ),
             next_vn,
         )
-        if is_iau_active
-        else next_vn
-    )
 
     return (
         rho_at_edges_on_model_levels,
