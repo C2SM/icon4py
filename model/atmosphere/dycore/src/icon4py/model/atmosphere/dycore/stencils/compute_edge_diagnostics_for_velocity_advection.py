@@ -80,9 +80,9 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
 
     # --> IBM
     # Neumann
-    #vn_on_half_levels = where(ibm_dvndz_mask, vn, vn_on_half_levels)
-    ## Dirichlet
-    vn_on_half_levels = where(ibm_dvndz_mask, 0.0, vn_on_half_levels)
+    vn_on_half_levels = where(ibm_dvndz_mask, vn, vn_on_half_levels)
+    # Dirichlet
+    #vn_on_half_levels = where(ibm_dvndz_mask, 0.0, vn_on_half_levels)
     # <-- IBM
 
     tangential_wind_on_half_levels = (

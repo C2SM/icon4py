@@ -9,10 +9,10 @@
 #SBATCH --time=24:00:00
 #SBATCH --partition=normal
 
-#SBATCH --job-name=run62_barray_4x4_nlev800_noSlip
+#SBATCH --job-name=run62_barray_4x4_nlev800_pert
 
-#SBATCH --output=logs/torus.run62_barray_4x4_nlev800_noSlip.log
-#SBATCH --error=logs/torus.run62_barray_4x4_nlev800_noSlip.log
+#SBATCH --output=logs/torus.run62_barray_4x4_nlev800_pert.log
+#SBATCH --error=logs/torus.run62_barray_4x4_nlev800_pert.log
 
 export PYTHONOPTIMIZE=2
 export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1

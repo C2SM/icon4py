@@ -198,6 +198,12 @@ class ImmersedBoundaryMethod:
             [325, 425, 825, 930, 100], # 4x4 100x100x100
             [575, 675, 825, 930, 100], # 4x4 100x100x100
             [825, 925, 825, 930, 100], # 4x4 100x100x100
+            #
+            #[400, 420, 485, 510,  80], # on hill front
+            #[580, 600, 485, 510,  80], # on hill back
+            #[495, 520, 395, 420,  80], # on hill right
+            #[495, 520, 580, 600,  80], # on hill left
+            #[490, 510, 485, 510, 120], # on hill top
         ]
 
         grid_file = xr.open_dataset(grid_file_path)

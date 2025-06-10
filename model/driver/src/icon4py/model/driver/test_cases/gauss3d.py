@@ -126,7 +126,7 @@ def model_initialization_gauss3d(
     log.info("Topography can only be read from serialized data for now.")
 
     # Horizontal wind field
-    u = xp.where(mask, nh_u0, 0.0)
+    u = xp.where(mask, nh_u0, 0.0) + xp.random.normal(loc=0.0, scale=0.1, size=(num_edges, num_levels))
     vn_ndarray = u * primal_normal_x
     log.info("Wind profile assigned.")
 

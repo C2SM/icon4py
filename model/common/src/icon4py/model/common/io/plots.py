@@ -29,7 +29,7 @@ pil_logger.setLevel(logging.INFO)
 log = logging.getLogger(__name__)
 
 DO_PLOTS = True
-PLOT_IMGS_DIR = "run62_barray_4x4_nlev800_noSlip"
+PLOT_IMGS_DIR = "run62_barray_4x4_nlev800_pert"
 
 
 @gtx.field_operator
@@ -69,6 +69,7 @@ def pickle_data(state, label: str = "") -> None:
             "theta_v": state.theta_v.asnumpy(),
         }
         pickle.dump(state_np, f)
+        log.debug(f"PLOTS: saved {file_name}")
 
 
 class Plot:
@@ -303,7 +304,7 @@ class Plot:
     def plot_grid(self, ax=None) -> None:
 
         if ax is None:
-            fig = plt.figure(1); plt.show(block=False)
+            fig = plt.figure(1); #plt.show(block=False)
             ax = fig.subplots(nrows=1, ncols=1)
         ax.triplot(self.tri, color='k', linewidth=0.25)
         ax.plot(self.tri.x,      self.tri.y,      'vr')
@@ -454,7 +455,7 @@ class Plot:
         fig.subplots_adjust(wspace=0.12, hspace=0.1)
         plt.draw()
 
-        plt.show(block=False)
+        #plt.show(block=False)
         if file_name != '':
             fig.savefig(f"{file_name}.png", bbox_inches='tight')
             log.debug(f"Saved {file_name}")
@@ -563,7 +564,7 @@ class Plot:
         fig.subplots_adjust(wspace=0.12, hspace=0.1)
         plt.draw()
 
-        plt.show(block=False)
+        #plt.show(block=False)
         if file_name != '':
             fig.savefig(f"{file_name}.png", bbox_inches='tight')
             log.debug(f"Saved {file_name}")
