@@ -213,7 +213,7 @@ class CellParams:
     length_rescale_factor: float = 1.0
 
     @classmethod
-    def from_cells(
+    def from_global_num_cells(
         cls,
         cell_center_lat: fa.CellField[float],
         cell_center_lon: fa.CellField[float],
