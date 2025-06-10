@@ -409,6 +409,9 @@ class SolveNonhydro:
         self._backend = backend
 
         self._grid = grid
+        self._grid.set_global_params(
+            icon_grid.GlobalGridParams.from_global_num_cells(self._grid.global_num_cells)
+        )
         self._config = config
         self._params = params
         self._metric_state_nonhydro = metric_state_nonhydro

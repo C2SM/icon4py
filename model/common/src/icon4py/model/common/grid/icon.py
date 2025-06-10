@@ -36,20 +36,30 @@ CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
+    # TODO
     root: int
     level: int
+    num_cells: int = None
     geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
     radius = constants.EARTH_RADIUS
 
+    @classmethod
+    def from_global_num_cells(cls, global_num_cells: int):
+        return cls(0, 0, global_num_cells)
+
     @functools.cached_property
     def num_cells(self):
-        match self.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                return compute_icosahedron_num_cells(self.root, self.level)
-            case base.GeometryType.TORUS:
-                return compute_torus_num_cells(1000, 1000)
-            case _:
-                NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+        if self.num_cells is None:
+            match self.geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    assert self.root > 0 and self.level >= 0
+                    return compute_icosahedron_num_cells(self.root, self.level)
+                case base.GeometryType.TORUS:
+                    return compute_torus_num_cells(1000, 1000)
+                case _:
+                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+
+        return self.num_cells
 
     @functools.cached_property
     def characteristic_length(self):
