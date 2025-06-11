@@ -26,6 +26,7 @@ dependencies = [
     "icon4py-atmosphere-diffusion>=0.0.6",
     "icon4py-atmosphere-dycore>=0.0.6",
     "icon4py-atmosphere-microphysics>=0.0.6",
+    "icon4py-atmosphere-muphys>=0.0.6",
     "icon4py-common>=0.0.6",
     "icon4py-driver>=0.0.6",
 ]
@@ -117,6 +118,7 @@ icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
 icon4py-atmosphere-microphysics = { workspace = true }
+icon4py-atmosphere-muphys = { workspace = true }
 icon4py-common = { workspace = true }
 icon4py-driver = { workspace = true }
 icon4py-testing = { workspace = true }
@@ -129,6 +131,7 @@ members = [
     "model/atmosphere/diffusion",
     "model/atmosphere/dycore",
     "model/atmosphere/subgrid_scale_physics/microphysics",
+    "model/atmosphere/subgrid_scale_physics/muphys",
     "model/common",
     "model/driver",
     "model/testing",
