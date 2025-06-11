@@ -5,6 +5,7 @@ import numpy as np
 import argparse
 import pdb
 import gt4py.next as gtx
+import time
 
 from icon4py.model.common import model_backends
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import saturation_adjustment
@@ -233,7 +234,8 @@ saturation_adjustment( te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpo
 
 ksize = data.dz.shape[0]
 k = gtx.as_field( (dims.KDim, ), np.arange(0,ksize,dtype=np.int32) )
-graupel_run = graupel_run.with_backend(model_backends.BACKENDS["dace_gpu"])
+graupel_run = graupel_run.with_backend(model_backends.BACKENDS["gtfn_cpu"])
+start_time = time.time()
 graupel_run( k = k,
              last_lev = ksize-1,
              dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[:,:])),
@@ -263,6 +265,9 @@ graupel_run( k = k,
              pre    = pre_out,
              offset_provider={"Koff": K}
              )
+end_time = time.time()
+elapsed_time = end_time - start_time
+print("It took", elapsed_time, "seconds!")
 
 data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize-1)].asnumpy())
 data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize-1)].asnumpy())
