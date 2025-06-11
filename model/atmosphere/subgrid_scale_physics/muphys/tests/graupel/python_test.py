@@ -235,8 +235,38 @@ saturation_adjustment( te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpo
 ksize = data.dz.shape[0]
 k = gtx.as_field( (dims.KDim, ), np.arange(0,ksize,dtype=np.int32) )
 graupel_run = graupel_run.with_backend(model_backends.BACKENDS["gtfn_cpu"])
-start_time = time.time()
 graupel_run( k = k,
+             last_lev = ksize-1,
+             dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[:,:])),
+             te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.t[0,:,:])),
+             p   = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.p[0,:,:])),
+             rho = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.rho[0,:,:])),
+             qve = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qv[0,:,:])),
+             qce = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qc[0,:,:])),
+             qre = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qr[0,:,:])),
+             qse = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qs[0,:,:])),
+             qie = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qi[0,:,:])),
+             qge = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qg[0,:,:])),
+             dt  = args.dt,
+             qnc = args.qnc,
+             t_out  = t_out,
+             qv_out = qv_out,
+             qc_out = qc_out,
+             qr_out = qr_out,
+             qs_out = qs_out,
+             qi_out = qi_out,
+             qg_out = qg_out,
+             pflx   = pflx_out,
+             pr     = pr_out,
+             ps     = ps_out,
+             pi     = pi_out,
+             pg     = pg_out,
+             pre    = pre_out,
+             offset_provider={"Koff": K}
+             )
+start_time = time.time()
+for x in range(int(args.itime)):
+    graupel_run( k = k,
              last_lev = ksize-1,
              dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[:,:])),
              te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.t[0,:,:])),
@@ -267,7 +297,7 @@ graupel_run( k = k,
              )
 end_time = time.time()
 elapsed_time = end_time - start_time
-print("It took", elapsed_time, "seconds!")
+print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
 
 data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize-1)].asnumpy())
 data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize-1)].asnumpy())
