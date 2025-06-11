@@ -93,6 +93,18 @@ def pytest_configure(config):
     if config.getoption("--datatest-skip"):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
 
+    # Split CUDA_VISIBLE_DEVICES across pytest-xdist workers
+    # Each worker will get a different CUDA device
+    if cuda_devices_env := os.environ.get("PYTEST_XDIST_SPLIT_CUDA_VISIBLE_DEVICES", None):
+        worker_name = os.environ.get("PYTEST_XDIST_WORKER", "master")
+        if worker_name.startswith("gw"):  # Skip master worker or single worker runs
+            try:
+                cuda_devices = [d.strip() for d in cuda_devices_env.strip().split(",")]
+                worker_id = int(worker_name[2:])
+                os.environ["CUDA_VISIBLE_DEVICES"] = cuda_devices[worker_id % len(cuda_devices)]
+            except Exception:
+                pass
+
 
 def pytest_addoption(parser):
     """Add custom commandline options for pytest."""
