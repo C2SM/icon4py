@@ -27,24 +27,24 @@ from . import test_io
 
 @pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])
 def test_filter_by_standard_name(value):
-    state = test_io.model_state(test_io.simple_grid)
+    state = test_io.model_state(test_io.SIMPLE_GRID_INSTANCE)
     assert filter_by_standard_name(state, value) == {value: state[value]}
 
 
 def test_filter_by_standard_name_key_differs_from_name():
-    state = test_io.model_state(test_io.simple_grid)
+    state = test_io.model_state(test_io.SIMPLE_GRID_INSTANCE)
     assert filter_by_standard_name(state, "virtual_potential_temperature") == {
         "theta_v": state["theta_v"]
     }
 
 
 def test_filter_by_standard_name_non_existing_name():
-    state = test_io.model_state(test_io.simple_grid)
+    state = test_io.model_state(test_io.SIMPLE_GRID_INSTANCE)
     assert filter_by_standard_name(state, "does_not_exist") == {}
 
 
 def initialized_writer(
-    test_path, random_name, grid=test_io.simple_grid
+    test_path, random_name, grid=test_io.SIMPLE_GRID_INSTANCE
 ) -> tuple[NETCDFWriter, grid_def.BaseGrid]:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
@@ -67,8 +67,8 @@ def initialized_writer(
     return writer, grid
 
 
-def test_initialize_writer_time_var(test_path, random_name):
-    dataset, _ = initialized_writer(test_path, random_name)
+def test_initialize_writer_time_var(tmp_io_tests_path, random_name):
+    dataset, _ = initialized_writer(tmp_io_tests_path, random_name)
     time_var = dataset.variables[writers.TIME]
     assert time_var.dimensions == ("time",)
     assert time_var.units == "seconds since 1970-01-01 00:00:00"
@@ -78,8 +78,8 @@ def test_initialize_writer_time_var(test_path, random_name):
     assert len(time_var) == 0
 
 
-def test_initialize_writer_vertical_model_levels(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_initialize_writer_vertical_model_levels(tmp_io_tests_path, random_name):
+    dataset, grid = initialized_writer(tmp_io_tests_path, random_name)
     vertical = dataset.variables[writers.MODEL_LEVEL]
     assert vertical.units == "1"
     assert vertical.dimensions == (writers.MODEL_LEVEL,)
@@ -90,8 +90,8 @@ def test_initialize_writer_vertical_model_levels(test_path, random_name):
     assert np.all(vertical == np.arange(grid.num_levels))
 
 
-def test_initialize_writer_interface_levels(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_initialize_writer_interface_levels(tmp_io_tests_path, random_name):
+    dataset, grid = initialized_writer(tmp_io_tests_path, random_name)
     interface_levels = dataset.variables[writers.MODEL_INTERFACE_LEVEL]
     assert interface_levels.units == "1"
     assert interface_levels.datatype == np.int32
@@ -101,8 +101,8 @@ def test_initialize_writer_interface_levels(test_path, random_name):
     assert np.all(interface_levels == np.arange(grid.num_levels + 1))
 
 
-def test_initialize_writer_heights(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_initialize_writer_heights(tmp_io_tests_path, random_name):
+    dataset, grid = initialized_writer(tmp_io_tests_path, random_name)
     heights = dataset.variables["height"]
     assert heights.units == "m"
     assert heights.datatype == np.float64
@@ -113,8 +113,8 @@ def test_initialize_writer_heights(test_path, random_name):
     assert heights[-1] == 0.0
 
 
-def test_writer_append_timeslice(test_path, random_name):
-    writer, grid = initialized_writer(test_path, random_name)
+def test_writer_append_timeslice(tmp_io_tests_path, random_name):
+    writer, grid = initialized_writer(tmp_io_tests_path, random_name)
     time = datetime.now()
     assert len(writer.variables[writers.TIME]) == 0
     slice1 = {}
@@ -134,8 +134,8 @@ def test_writer_append_timeslice(test_path, random_name):
     )
 
 
-def test_writer_append_timeslice_create_new_var(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_writer_append_timeslice_create_new_var(tmp_io_tests_path, random_name):
+    dataset, grid = initialized_writer(tmp_io_tests_path, random_name)
     time = datetime.now()
     assert len(dataset.variables[writers.TIME]) == 0
     assert "air_density" not in dataset.variables
@@ -157,8 +157,8 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
     assert np.allclose(dataset.variables["air_density"][0], state["air_density"].data.T)
 
 
-def test_writer_append_timeslice_to_existing_var(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_writer_append_timeslice_to_existing_var(tmp_io_tests_path, random_name):
+    dataset, grid = initialized_writer(tmp_io_tests_path, random_name)
     time = datetime.now()
     state = dict(air_density=test_io.model_state(grid)["air_density"])
     dataset.append(state, time)
@@ -183,10 +183,10 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
 
 
 def test_initialize_writer_create_dimensions(
-    test_path,
+    tmp_io_tests_path,
     random_name,
 ):
-    writer, grid = initialized_writer(test_path, random_name)
+    writer, grid = initialized_writer(tmp_io_tests_path, random_name)
 
     assert writer["title"] == "test"
     assert writer["institution"] == "EXCLAIM - ETH Zurich"

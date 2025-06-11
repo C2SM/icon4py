@@ -41,7 +41,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        if experiment == dt_utils.GLOBAL_EXPERIMENT:
+        if experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
             uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
         elif experiment == dt_utils.JABW_EXPERIMENT:
             uri = dt_utils.DATA_URIS_JABW[processor_props.comm_size]
@@ -481,7 +481,7 @@ def lowest_layer_thickness(experiment):
 def model_top_height(experiment):
     if experiment == dt_utils.REGIONAL_EXPERIMENT:
         return 23000.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
         return 75000.0
     else:
         return 23500.0
@@ -496,7 +496,7 @@ def flat_height():
 def stretch_factor(experiment):
     if experiment == dt_utils.REGIONAL_EXPERIMENT:
         return 0.65
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
         return 0.9
     else:
         return 1.0
@@ -506,7 +506,7 @@ def stretch_factor(experiment):
 def damping_height(experiment):
     if experiment == dt_utils.REGIONAL_EXPERIMENT:
         return 12500.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
         return 50000.0
     else:
         return 45000.0

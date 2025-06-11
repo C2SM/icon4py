@@ -144,7 +144,7 @@ def test_time_step_flags(
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -510,7 +510,7 @@ def test_nonhydro_predictor_step(
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -719,7 +719,7 @@ def test_nonhydro_corrector_step(
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1037,7 +1037,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1255,7 +1255,7 @@ def test_compute_perturbed_quantities_and_interpolation(
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1398,7 +1398,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1622,7 +1622,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1754,7 +1754,7 @@ def test_apply_divergence_damping_and_update_vn(
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1952,7 +1952,7 @@ def test_vertically_implicit_solver_at_predictor_step(
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),

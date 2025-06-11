@@ -15,7 +15,7 @@ from gt4py.next import backend as gtx_backend
 from icon4py.model.common.decomposition import definitions as decomposition
 
 
-GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
+GLOBAL_EXPERIMENT__WIP = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
 R02B07_GLOBAL = "r02b07_global"
@@ -65,7 +65,7 @@ GRID_URIS = {
 }
 
 GRID_IDS = {
-    GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    GLOBAL_EXPERIMENT__WIP: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
     JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),

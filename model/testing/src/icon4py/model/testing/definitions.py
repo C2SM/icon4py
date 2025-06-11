@@ -6,26 +6,25 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import dataclasses
 import enum
 import os
 import pathlib
 from collections.abc import Mapping
-from typing import Final, Literal, NamedTuple, TypedDict
+from typing import Final, NamedTuple, TypedDict
 
 from typing_extensions import ReadOnly
 
 
-_TEST_UTILS_PATH: Final = pathlib.Path(__file__) / ".."
-_MODEL_PATH: Final = _TEST_UTILS_PATH / ".."
-_COMMON_PATH: Final = _MODEL_PATH / ".." / ".." / ".." / ".."
+_TEST_UTILS_PATH: Final = pathlib.Path(__file__).parent.resolve()
+_MODEL_PATH: Final = (_TEST_UTILS_PATH / "..").resolve()
+_COMMON_PATH: Final = (_MODEL_PATH / ".." / ".." / ".." / "..").resolve()
 
 DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
 TEST_DATA_PATH: Final[pathlib.Path] = pathlib.Path(
     os.getenv("TEST_DATA_PATH") or (_COMMON_PATH / ".." / DEFAULT_TEST_DATA_FOLDER)
-)
-GRIDS_PATH: Final[pathlib.Path] = TEST_DATA_PATH / "grids"
-SERIALIZED_DATA_PATH: Final[pathlib.Path] = TEST_DATA_PATH / "ser_icondata"
+).resolve()
+GRIDS_PATH: Final[pathlib.Path] = (TEST_DATA_PATH / "grids").resolve()
+SERIALIZED_DATA_PATH: Final[pathlib.Path] = (TEST_DATA_PATH / "ser_icondata").resolve()
 
 
 class GridKind(str, enum.Enum):

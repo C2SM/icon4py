@@ -28,7 +28,9 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT__WIP]
+)
 def test_compute_nudgecoeffs_e(
     grid_savepoint,  # noqa: F811 # fixture
     interpolation_savepoint,  # noqa: F811 # fixture

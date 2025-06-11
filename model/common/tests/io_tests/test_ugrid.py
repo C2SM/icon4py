@@ -22,7 +22,7 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.testing import datatest_utils, definitions as test_definitions, grid_utils
+from icon4py.model.testing import definitions as test_definitions, grid_utils
 
 
 def grid_files() -> Iterator[pathlib.Path]:
@@ -50,8 +50,8 @@ def test_convert_to_ugrid(file):
 
 
 @pytest.mark.parametrize("file", grid_files())
-def test_icon_ugrid_writer_writes_ugrid_file(file, test_path):
-    output_dir = test_path.joinpath("output")
+def test_icon_ugrid_writer_writes_ugrid_file(file, tmp_io_tests_path):
+    output_dir = tmp_io_tests_path.joinpath("output")
     output_dir.mkdir(0o755, exist_ok=True)
     writer = IconUGridWriter(file, output_dir)
     writer(validate=False)

@@ -34,7 +34,7 @@ from .utils import (
 )
 
 
-grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
+grid_functionality = {dt_utils.GLOBAL_EXPERIMENT__WIP: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
 
 def get_grid_for_experiment(experiment, backend):
@@ -328,8 +328,8 @@ def _verify_init_values_against_savepoint(
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:04.000"),
+        (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:04.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -412,7 +412,7 @@ def test_verify_diffusion_init_against_savepoint(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])

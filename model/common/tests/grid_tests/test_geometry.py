@@ -24,7 +24,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helper
 
 def test_geometry_raises_for_unknown_field(backend):
     geometry = grid_utils.get_grid_geometry(
-        dt_utils.GLOBAL_EXPERIMENT,
+        dt_utils.GLOBAL_EXPERIMENT__WIP,
         backend,
     )
     with pytest.raises(ValueError) as e:
@@ -37,7 +37,7 @@ def test_geometry_raises_for_unknown_field(backend):
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-12),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 3e-12),
     ],
 )
 @pytest.mark.datatest
@@ -52,7 +52,7 @@ def test_edge_control_area(backend, grid_savepoint, grid_file, experiment, rtol)
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -68,7 +68,7 @@ def test_coriolis_parameter(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-12),
     ],
 )
 @pytest.mark.datatest
@@ -83,7 +83,7 @@ def test_compute_edge_length(backend, grid_savepoint, grid_file, experiment, rto
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-12),
     ],
 )
 @pytest.mark.datatest
@@ -99,7 +99,7 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -115,7 +115,7 @@ def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, experiment
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -136,7 +136,7 @@ def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, ex
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-10),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-12),
     ],
 )
 @pytest.mark.datatest
@@ -153,7 +153,7 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_compute_coordinates_of_edge_tangent_and_normal(
@@ -186,7 +186,7 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
@@ -206,7 +206,7 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
@@ -222,7 +222,7 @@ def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_cell_area(backend, grid_savepoint, experiment, grid_file):
@@ -238,7 +238,7 @@ def test_cell_area(backend, grid_savepoint, experiment, grid_file):
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
@@ -257,7 +257,7 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
@@ -276,7 +276,7 @@ def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
@@ -295,7 +295,7 @@ def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
@@ -329,7 +329,7 @@ def test_sparse_fields_creator():
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):

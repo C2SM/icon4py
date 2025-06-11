@@ -64,7 +64,7 @@ from .utils import (
             True,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             1,
             2,
             1,
@@ -78,7 +78,7 @@ from .utils import (
             False,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT__WIP,
             1,
             2,
             1,

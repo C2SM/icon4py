@@ -61,7 +61,7 @@ def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, d
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -98,7 +98,7 @@ def _get_interpolation_factory(
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-12),
     ],
 )
 @pytest.mark.datatest
@@ -118,7 +118,7 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -147,7 +147,7 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -168,7 +168,7 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -186,7 +186,7 @@ def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend,
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -219,7 +219,7 @@ def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend)
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -262,7 +262,7 @@ def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -280,7 +280,7 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -299,7 +299,7 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
     "grid_file, experiment, rtol",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP, 1e-11),
     ],
 )
 @pytest.mark.datatest

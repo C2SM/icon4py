@@ -45,7 +45,7 @@ def metrics_config(experiment: str) -> tuple:
             model_top_height = 23000.0
             stretch_factor = 0.65
             damping_height = 12500.0
-        case dt_utils.GLOBAL_EXPERIMENT:
+        case dt_utils.GLOBAL_EXPERIMENT__WIP:
             model_top_height = 75000.0
             stretch_factor = 0.9
             damping_height = 50000.0
@@ -131,7 +131,7 @@ def _get_metrics_factory(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -153,7 +153,7 @@ def test_factory_z_mc(grid_savepoint, metrics_savepoint, grid_file, experiment, 
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -179,7 +179,7 @@ def test_factory_ddqz_z_and_inverse(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -201,7 +201,7 @@ def test_factory_ddqz_full_e(grid_savepoint, metrics_savepoint, grid_file, exper
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -223,7 +223,7 @@ def test_factory_ddqz_z_half(grid_savepoint, metrics_savepoint, grid_file, exper
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -247,7 +247,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -269,7 +269,7 @@ def test_factory_rayleigh_w(grid_savepoint, metrics_savepoint, grid_file, experi
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -294,7 +294,7 @@ def test_factory_coeffs_dwdz(grid_savepoint, metrics_savepoint, grid_file, exper
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -319,7 +319,7 @@ def test_factory_ref_mc(grid_savepoint, metrics_savepoint, grid_file, experiment
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -345,7 +345,7 @@ def test_factory_d2dexdz2_facs_mc(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -367,7 +367,7 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -396,7 +396,7 @@ def test_factory_ddxt_z_full(
             dt_utils.REGIONAL_EXPERIMENT,
             dt_utils.REGIONAL_EXPERIMENT,
         ),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -423,7 +423,7 @@ def test_factory_exner_w_implicit_weight_parameter(
             dt_utils.REGIONAL_EXPERIMENT,
             dt_utils.REGIONAL_EXPERIMENT,
         ),  # TODO: check vwind_offctr value for regional
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -448,7 +448,7 @@ def test_factory_exner_w_explicit_weight_parameter(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -471,7 +471,7 @@ def test_factory_exner_exfac(grid_savepoint, metrics_savepoint, grid_file, exper
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -497,7 +497,7 @@ def test_factory_pressure_gradient_fields(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -524,7 +524,7 @@ def test_factory_mask_bdy_prog_halo_c(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -550,7 +550,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -572,7 +572,7 @@ def test_factory_zdiff_gradp(grid_savepoint, metrics_savepoint, grid_file, exper
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest
@@ -594,7 +594,7 @@ def test_factory_coeff_gradekin(grid_savepoint, metrics_savepoint, grid_file, ex
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.datatest

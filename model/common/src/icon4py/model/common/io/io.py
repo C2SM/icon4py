@@ -148,19 +148,19 @@ class IOMonitor(monitor.Monitor):
     def __init__(
         self,
         config: IOConfig,
-        vertical_size: v_grid.VerticalGrid,
-        horizontal_size: h_grid.HorizontalGridSize,
-        grid_file_name: str,
+        vertical: v_grid.VerticalGrid,
+        horizontal: h_grid.HorizontalGridSize,
+        grid_file_name: pathlib.Path | str,
         grid_id: uuid.UUID,
-    ):
+    ) -> None:
         self.config = config
         self._grid_file = grid_file_name
-        self._initialize_output()
+        self._output_path = self._initialize_output()
         self._group_monitors = [
             FieldGroupMonitor(
                 conf,
-                vertical=vertical_size,
-                horizontal=horizontal_size,
+                vertical=vertical,
+                horizontal=horizontal,
                 grid_id=grid_id,
                 output_path=self._output_path,
             )
@@ -171,34 +171,35 @@ class IOMonitor(monitor.Monitor):
         with ugrid.load_data_file(self._grid_file) as ds:
             return ds.attrs
 
-    def _initialize_output(self) -> None:
-        self._create_output_dir()
-        self._write_ugrid()
+    def _initialize_output(self) -> pathlib.Path:
+        path = self._create_output_dir()
+        self._write_ugrid(path)
+        return path
 
-    def _create_output_dir(self) -> None:
+    def _create_output_dir(self) -> pathlib.Path:
         path = pathlib.Path(self.config.output_path)
         try:
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
-            self._output_path = path
+            return path
         except OSError as error:
             log.error(
                 f"Output directory at {path} exists: {error}. Re-run with another output directory. Aborting."
             )
             exit(1)
 
-    def _write_ugrid(self) -> None:
-        writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)
+    def _write_ugrid(self, output_path: pathlib.Path) -> None:
+        writer = ugrid.IconUGridWriter(self._grid_file, output_path)
         writer(validate=True)
 
     @property
-    def path(self):
+    def path(self) -> pathlib.Path:
         return self._output_path
 
     def store(self, state: dict, model_time: dt.datetime, *args, **kwargs) -> None:
         for m in self._group_monitors:
             m.store(state, model_time, *args, **kwargs)
 
-    def close(self):
+    def close(self) -> None:
         for m in self._group_monitors:
             m.close()
 
@@ -246,18 +247,10 @@ class FieldGroupMonitor(monitor.Monitor):
     This monitor is responsible for storing a group of fields that are output at the same time intervals.
     """
 
-    @property
-    def next_output_time(self):
-        return self._next_output_time
-
-    @property
-    def time_delta(self):
-        return self._time_delta
-
     def __init__(
         self,
         config: FieldGroupIOConfig,
-        vertical: int,
+        vertical: v_grid.VerticalGrid,
         horizontal: h_grid.HorizontalGridSize,
         grid_id: uuid.UUID,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
@@ -287,6 +280,14 @@ class FieldGroupMonitor(monitor.Monitor):
         self._file_counter = 0
         self._current_timesteps_in_file = 0
         self._dataset = None
+
+    @property
+    def next_output_time(self):
+        return self._next_output_time
+
+    @property
+    def time_delta(self):
+        return self._time_delta
 
     @property
     def output_path(self) -> pathlib.Path:
