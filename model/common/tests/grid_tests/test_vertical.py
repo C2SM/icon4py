@@ -351,7 +351,7 @@ def test_compute_vertical_coordinate(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT])
 def test_compute_vertical_coordinat_numpy(
     grid_savepoint,
     metrics_savepoint,
@@ -367,13 +367,19 @@ def test_compute_vertical_coordinat_numpy(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim),
+        flat_height=16000.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else ,
+        rayleigh_damping_height=12500.0,
+        htop_moist_proc=22500.0,
+        maximal_layer_thickness=
+
     )
+    assert vertical_config.nflatlev == grid_savepoint.nflatlev()
     vertical_geometry = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
     )
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+    if experiment == dt_utils.REGIONAL_EXPERIMENT:
         topography = topography_savepoint.topo_c()
     elif experiment == dt_utils.GLOBAL_EXPERIMENT:
         topography = data_alloc.zero_field(
@@ -393,11 +399,11 @@ def test_compute_vertical_coordinat_numpy(
         num_cells=icon_grid.num_cells,
         num_levels=vertical_config.num_levels,
         nflatlev=vertical_geometry.nflatlev,
-        model_top_height=23500.0,
+        model_top_height=23000.0, #23500.0,
         SLEVE_decay_scale_1=4000.0,
         SLEVE_decay_exponent=1.2,
         SLEVE_decay_scale_2=2500.0,
-        SLEVE_minimum_layer_thickness_1=100.0,
+        SLEVE_minimum_layer_thickness_1=20.0, #100.0,
         SLEVE_minimum_relative_layer_thickness_1=1.0/3.0,
         SLEVE_minimum_layer_thickness_2=500.0,
         SLEVE_minimum_relative_layer_thickness_2=0.5,

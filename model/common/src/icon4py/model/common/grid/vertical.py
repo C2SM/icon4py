@@ -71,7 +71,7 @@ def domain(dim: gtx.Dimension):
     return _domain
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=False)
 class VerticalGridConfig:
     """
     Contains necessary parameter to configure vertical grid.
@@ -80,7 +80,6 @@ class VerticalGridConfig:
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
-
     #: Number of full levels.
     num_levels: int
     #: Defined as max_lay_thckn in ICON namelist mo_sleve_nml. Maximum thickness of grid cells below top_height_limit_for_maximal_layer_thickness.
@@ -100,7 +99,7 @@ class VerticalGridConfig:
     #: Defined in ICON namelist nonhydrostatic_nml. Height [m] above which moist physics and advection of cloud and precipitation variables are turned off.
     htop_moist_proc: Final[float] = 22500.0
     #: file name containing vct_a and vct_b table
-    file_path: pathlib.Path = None
+    file_path: Optional[pathlib.Path] = None
 
     # Parameters for setting up the decay function of the topographic signal for
     # SLEVE. Default values from mo_sleve_nml.
@@ -118,7 +117,6 @@ class VerticalGridConfig:
     SLEVE_minimum_relative_layer_thickness_1: Final[float] = 1.0 / 3.0
     #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
     SLEVE_minimum_relative_layer_thickness_2: Final[float] = 0.5
-
 
 @dataclasses.dataclass(frozen=True)
 class VerticalGrid:

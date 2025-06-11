@@ -63,7 +63,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interface_model_height: gtx.Field,
         e_refin_ctrl: gtx.Field,
         c_refin_ctrl: gtx.Field,
-        damping_height: float,
         rayleigh_type: int,
         rayleigh_coeff: float,
         exner_expol: float,
@@ -90,7 +89,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "divdamp_trans_start": 12500.0,
             "divdamp_trans_end": 17500.0,
             "divdamp_type": 3,
-            "damping_height": damping_height,
+            "damping_height": vertical_grid.config.rayleigh_damping_height,
             "rayleigh_type": rayleigh_type,
             "rayleigh_coeff": rayleigh_coeff,
             "exner_expol": exner_expol,
@@ -100,15 +99,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thslp_zdiffu": 0.02,
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
-            "model_top_height": 23500.0,
-            "SLEVE_decay_scale_1": 4000.0,
-            "SLEVE_decay_exponent": 1.2,
-            "SLEVE_decay_scale_2": 2500.0,
-            "SLEVE_minimum_layer_thickness_1": 100.0,
-            "SLEVE_minimum_relative_layer_thickness_1": 1.0 / 3.0,
-            "SLEVE_minimum_layer_thickness_2": 500.0,
-            "SLEVE_minimum_relative_layer_thickness_2": 0.5,
-            "lowest_layer_thickness": 50.0,
         }
         z_ifc_sliced = gtx.as_field(
             (dims.CellDim,), interface_model_height.ndarray[:, self._grid.num_levels]
@@ -172,19 +162,15 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "num_cells": self._grid.num_cells,
                 "num_levels": self._vertical_grid.num_levels,
                 "nflatlev": self._vertical_grid.nflatlev,
-                "model_top_height": self._config["model_top_height"],
-                "SLEVE_decay_scale_1": self._config["SLEVE_decay_scale_1"],
-                "SLEVE_decay_exponent": self._config["SLEVE_decay_exponent"],
-                "SLEVE_decay_scale_2": self._config["SLEVE_decay_scale_2"],
-                "SLEVE_minimum_layer_thickness_1": self._config["SLEVE_minimum_layer_thickness_1"],
-                "SLEVE_minimum_relative_layer_thickness_1": self._config[
-                    "SLEVE_minimum_relative_layer_thickness_1"
-                ],
-                "SLEVE_minimum_layer_thickness_2": self._config["SLEVE_minimum_layer_thickness_2"],
-                "SLEVE_minimum_relative_layer_thickness_2": self._config[
-                    "SLEVE_minimum_relative_layer_thickness_2"
-                ],
-                "lowest_layer_thickness": self._config["lowest_layer_thickness"],
+                "model_top_height": self._vertical_grid.config.model_top_height,
+                "SLEVE_decay_scale_1": self.vertical_grid.config.SLEVE_decay_scale_1,
+                "SLEVE_decay_exponent": self._vertical_grid.config.SLEVE_decay_exponent,
+                "SLEVE_decay_scale_2": self._vertical_grid.config.SLEVE_decay_scale_2,
+                "SLEVE_minimum_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_layer_thickness_1,
+                "SLEVE_minimum_relative_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_1,
+                "SLEVE_minimum_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_layer_thickness_2,
+                "SLEVE_minimum_relative_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_2,
+                "lowest_layer_thickness": self._vertical_grid.config.lowest_layer_thickness,
             },
         )
         self.register_provider(vertical_coordinates_on_cell_khalf)

@@ -328,20 +328,6 @@ class GridManager:
         Icon4py from them. Adds constructed start/end index information to the grid.
 
         """
-        xp = data_alloc.array_ns(backend)
-        on_gpu = data_alloc.is_cupy_device(backend)
-        _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
-        _local_connectivities = functools.partial(
-            _add_derived_connectivities,
-            array_ns=xp,
-        )
-        _refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)
-
-        refinement_fields = _refinement_fields()
-        grid = self._initialize_global(
-            _determine_limited_area(refinement_fields[dims.CellDim].ndarray), on_gpu
-        )
-        grid.set_refinement_control(refinement_fields)
         xp = data_alloc.import_array_ns(backend)
         on_gpu = data_alloc.is_cupy_device(backend)
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)

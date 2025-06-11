@@ -31,7 +31,7 @@ from icon4py.model.testing.datatest_fixtures import (
     experiment,
     processor_props,
     ranked_data_path,
-    topography_savepoint,
+    topography_savepoint, maximal_layer_thickness,
 )
 
 
@@ -824,6 +824,7 @@ def test_vertical_coordinates_on_cells_khalf(
     experiment,
     backend,
 ):
+    vertical_config = vertical.VerticalGridConfig(grid_savepoint.num(dims.KDim))
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
