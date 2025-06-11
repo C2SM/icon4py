@@ -6,13 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import logging
 import re
 
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     grid_manager as gm,
+    gridfile,
     horizontal as h_grid,
     icon,
     vertical as v_grid,
@@ -23,17 +26,12 @@ from . import utils
 
 
 @functools.cache
-def grid_from_file() -> icon.IconGrid:
-    return from_file(dt_utils.REGIONAL_EXPERIMENT)
-
-
-@functools.cache
-def from_file(filename: str) -> icon.IconGrid:
-    file_name = gridtest_utils.resolve_full_grid_file_name(filename)
+def grid_from_limited_area_grid_file() -> icon.IconGrid:
+    file_name = gridtest_utils.resolve_full_grid_file_name(dt_utils.REGIONAL_EXPERIMENT)
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
     )
-    manager(backend=None)
+    manager(keep_skip_values=True, backend=None)
     return manager.grid
 
 
@@ -73,11 +71,11 @@ INTERIOR_IDX = {
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
 def test_halo(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     # For single node this returns an empty region - start and end index are the same see  also ./mpi_tests/test_icon.py
     domain = h_grid.domain(dim)(marker)
     assert grid.start_index(domain) == HALO_IDX[dim][0]
@@ -86,10 +84,10 @@ def test_halo(icon_grid, source, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_local(dim, source, icon_grid):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     assert grid.start_index(domain) == 0
     assert grid.end_index(domain) == grid.size[dim]
@@ -97,11 +95,11 @@ def test_local(dim, source, icon_grid):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", lateral_boundary())
 def test_lateral_boundary(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if num > 4 and dim in (dims.VertexDim, dims.CellDim):
         with pytest.raises(AssertionError) as e:
@@ -117,10 +115,10 @@ def test_lateral_boundary(icon_grid, source, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_end(icon_grid, source, dim):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     domain = h_grid.domain(dim)(h_grid.Zone.END)
     assert grid.start_index(domain) == grid.size[dim]
     assert grid.end_index(domain) == grid.size[dim]
@@ -129,10 +127,10 @@ def test_end(icon_grid, source, dim):
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
 @pytest.mark.parametrize("marker", nudging())
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_nudging(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if dim == dims.VertexDim or (dim == dims.CellDim and num > 1):
         with pytest.raises(AssertionError) as e:
@@ -148,10 +146,10 @@ def test_nudging(icon_grid, source, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("source", ("serialbox", "file"))
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_interior(icon_grid, source, dim):
     # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_file()
+    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
     domain = h_grid.domain(dim)(h_grid.Zone.INTERIOR)
     start_index = grid.start_index(domain)
     end_index = grid.end_index(domain)
@@ -166,7 +164,52 @@ def test_grid_size(icon_grid):
     assert 31558 == icon_grid.size[dims.EdgeDim]
 
 
+@pytest.mark.parametrize("dim", ("C2CE", "E2EC", "E2ECV", "C2CEC", "C2CE", "C2CECEC"))
 @pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
-def test_has_skip_values(grid_file):
-    grid = from_file(grid_file)
-    assert grid.has_skip_values()
+def test_1d_sparse_fields_connectivities_have_no_skip_values(grid_file, dim, backend):
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
+    connectivity = grid.get_connectivity(dim)
+    assert (
+        connectivity.skip_value is None
+    ), f"Connectivity {dim} for {grid_file} should not have skip values."
+    assert (
+        connectivity.asnumpy().min() >= 0
+    ), f"Connectivity {dim} for {grid_file} should not have negative values."
+
+
+@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize("dim", (utils.local_dims()))
+def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_file, dim, backend, caplog):
+    caplog.set_level(logging.DEBUG)
+    if dim == dims.V2E2VDim:
+        pytest.skip("V2E2VDim is not supported in the current grid configuration.")
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
+    connectivity = grid.get_connectivity(dim.value)
+
+    assert (
+        np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
+    ) == grid._has_skip_values(dim)
+    if not grid._has_skip_values(dim):
+        assert connectivity.skip_value is None
+    else:
+        assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
+
+
+@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize("dim", (utils.local_dims()))
+def test_when_replace_skip_values_then_only_pentagon_points_remain(grid_file, dim, backend, caplog):
+    caplog.set_level(logging.DEBUG)
+    if dim == dims.V2E2VDim:
+        pytest.skip("V2E2VDim is not supported in the current grid configuration.")
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=False, backend=backend).grid
+    connectivity = grid.get_connectivity(dim.value)
+    if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
+        assert np.any(
+            connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX
+        ).item(), f"Connectivity {dim.value} for {grid_file} should have skip values."
+        assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
+    else:
+        assert (
+            not np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
+        ), f"Connectivity {dim.value} for {grid_file} contains skip values, but none are expected."
+        assert connectivity.skip_value is None

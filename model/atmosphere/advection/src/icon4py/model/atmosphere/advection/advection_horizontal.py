@@ -139,7 +139,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
             horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug(
             "running stencil compute_positive_definite_horizontal_multiplicative_flux_factor - end"
@@ -160,7 +160,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
             horizontal_end=self._end_edge_halo,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug(
             "running stencil apply_positive_definite_horizontal_multiplicative_flux_factor - end"
@@ -257,7 +257,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self._grid.num_levels,  # originally UBOUND(p_cc,2)
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil reconstruct_linear_coefficients_svd - end")
 
@@ -278,7 +278,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             horizontal_end=self._end_edge_halo,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug(
             "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - end"
@@ -364,7 +364,7 @@ class NoAdvection(HorizontalAdvection):
             horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -516,7 +516,7 @@ class SemiLagrangian(FiniteVolume):
             horizontal_end=self._end_edge_halo,
             vertical_start=0,
             vertical_end=self._grid.num_levels,  # originally UBOUND(p_vn,2)
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_edge_tangential - end")
 
@@ -538,7 +538,7 @@ class SemiLagrangian(FiniteVolume):
             horizontal_end=self._end_edge_halo,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_barycentric_backtrajectory_alt - end")
 
@@ -582,7 +582,7 @@ class SemiLagrangian(FiniteVolume):
             horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil integrate_tracer_horizontally - end")
 

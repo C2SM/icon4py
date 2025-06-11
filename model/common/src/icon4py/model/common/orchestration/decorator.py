@@ -166,7 +166,7 @@ def orchestrate(
                         exchange_obj,
                         {
                             k: v
-                            for k, v in grid.offset_providers.items()
+                            for k, v in grid.connectivities.items()
                             if gtx_dace_utils.connectivity_identifier(k) in sdfg.arrays
                         },
                     ),
@@ -535,7 +535,7 @@ if dace:
                 f"__pattern_{dim.value}Dim_ptr": expose_cpp_ptr(exchange_obj._patterns[dim])
                 if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
-                for dim in dims.global_dimensions.values()
+                for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
             },
             **{
                 f"__domain_descriptor_{dim.value}Dim_ptr": expose_cpp_ptr(
@@ -543,7 +543,7 @@ if dace:
                 )
                 if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
-                for dim in dims.global_dimensions.values()
+                for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
             },
         }
 
@@ -611,8 +611,8 @@ if dace:
 
         return {
             **{
-                "CellDim_sym": grid.offset_providers["C2E"].ndarray.shape[0],
-                "EdgeDim_sym": grid.offset_providers["E2C"].ndarray.shape[0],
+                "CellDim_sym": grid.connectivities["C2E"].ndarray.shape[0],
+                "EdgeDim_sym": grid.connectivities["E2C"].ndarray.shape[0],
                 "KDim_sym": grid.num_levels,
             },
             **concretize_symbols_for_dace_structure,

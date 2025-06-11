@@ -32,6 +32,12 @@ from .test_add_analysis_increments_from_data_assimilation import (
 from .test_apply_rayleigh_damping_mechanism import (
     apply_rayleigh_damping_mechanism_numpy,
 )
+from .test_compute_contravariant_correction_of_w import (
+    compute_contravariant_correction_of_w_numpy,
+)
+from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
+    compute_contravariant_correction_of_w_for_lower_boundary_numpy,
+)
 from .test_compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping_numpy,
 )
@@ -97,6 +103,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        contravariant_correction_at_cells_on_half_levels: np.ndarray,
         vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
         tridiagonal_beta_coeff_at_cells_on_model_levels: np.ndarray,
         tridiagonal_alpha_coeff_at_cells_on_half_levels: np.ndarray,
@@ -114,7 +121,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         predictor_vertical_wind_advective_tendency: np.ndarray,
         pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
         rho_at_cells_on_half_levels: np.ndarray,
-        contravariant_correction_at_cells_on_half_levels: np.ndarray,
+        contravariant_correction_at_edges_on_model_levels: np.ndarray,
         exner_w_explicit_weight_parameter: np.ndarray,
         current_exner: np.ndarray,
         current_rho: np.ndarray,
@@ -130,24 +137,58 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         ddqz_z_half: np.ndarray,
         rayleigh_damping_factor: np.ndarray,
         reference_exner_at_cells_on_model_levels: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        wgtfac_c: np.ndarray,
+        wgtfacq_c: np.ndarray,
         iau_wgt_dyn: float,
         dtime: float,
         is_iau_active: bool,
         rayleigh_type: int,
         divdamp_type: int,
         at_first_substep: bool,
-        index_of_damping_layer: int,
-        jk_start: int,
+        end_index_of_damping_layer: int,
         starting_vertical_index_for_3d_divdamp: int,
         kstart_moist: int,
+        flat_level_index_plus1: int,
         **kwargs: Any,
     ) -> dict:
-        horizontal_start = kwargs["horizontal_start"]
-        horizontal_end = kwargs["horizontal_end"]
-        n_lev = kwargs["vertical_end"] - 1
+        horizontal_start = kwargs["start_cell_index_nudging"]
+        horizontal_end = kwargs["end_cell_index_local"]
+        horizontal_start_for_contravariant_correction = kwargs[
+            "start_cell_index_lateral_lvl_3_for_contravariant_correction"
+        ]
+        horizontal_end_for_contravariant_correction = kwargs[
+            "end_cell_index_halo_lvl1_for_contravariant_correction"
+        ]
+        n_lev = kwargs["vertical_end_index_model_surface"] - 1
         horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dynamical_increment.shape[1])
+
+        contravariant_correction_at_cells_on_half_levels[:, :-1] = np.where(
+            (horizontal_start_for_contravariant_correction <= horz_idx)
+            & (horz_idx < horizontal_end_for_contravariant_correction)
+            & (vert_idx >= flat_level_index_plus1),
+            compute_contravariant_correction_of_w_numpy(
+                connectivities=connectivities,
+                e_bln_c_s=e_bln_c_s,
+                z_w_concorr_me=contravariant_correction_at_edges_on_model_levels,
+                wgtfac_c=wgtfac_c,
+            ),
+            contravariant_correction_at_cells_on_half_levels[:, :-1],
+        )
+        contravariant_correction_at_cells_on_half_levels[
+            horizontal_start_for_contravariant_correction:horizontal_end_for_contravariant_correction,
+            -1,
+        ] = compute_contravariant_correction_of_w_for_lower_boundary_numpy(
+            connectivities=connectivities,
+            e_bln_c_s=e_bln_c_s,
+            z_w_concorr_me=contravariant_correction_at_edges_on_model_levels,
+            wgtfacq_c=wgtfacq_c,
+        )[
+            horizontal_start_for_contravariant_correction:horizontal_end_for_contravariant_correction,
+            -1,
+        ]
 
         divergence_of_mass = np.zeros_like(current_rho)
         divergence_of_theta_v = np.zeros_like(current_theta_v)
@@ -289,7 +330,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
                 & (vert_idx >= 1)
-                & (vert_idx < (index_of_damping_layer + 1)),
+                & (vert_idx < (end_index_of_damping_layer + 1)),
                 apply_rayleigh_damping_mechanism_numpy(
                     connectivities=connectivities,
                     z_raylfac=rayleigh_damping_factor,
@@ -309,7 +350,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             )
 
         next_rho, next_exner, next_theta_v = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= jk_start),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             compute_results_for_thermodynamic_variables_numpy(
                 connectivities=connectivities,
                 z_rho_expl=rho_explicit_term,
@@ -377,8 +418,11 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         rho_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
         )
-        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
+        contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim
         )
         exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
@@ -401,6 +445,9 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-5
         )
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, low=1.0e-5, high=0.99999)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5, high=0.99999)
+        wgtfacq_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5, high=0.99999)
 
         tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
@@ -421,18 +468,25 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         at_first_substep = True
         rayleigh_type = 2
         divdamp_type = 3
-        index_of_damping_layer = 3
-        jk_start = 0
+        end_index_of_damping_layer = 3
         starting_vertical_index_for_3d_divdamp = 0
         kstart_moist = 1
+        flat_level_index_plus1 = 3
         dtime = 0.001
         iau_wgt_dyn = 1.0
 
         cell_domain = h_grid.domain(dims.CellDim)
         start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        start_cell_index_lateral_lvl_3_for_contravariant_correction = grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+        )
+        end_cell_index_halo_lvl1_for_contravariant_correction = grid.end_index(
+            cell_domain(h_grid.Zone.HALO)
+        )
 
         return dict(
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
             tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
             tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
@@ -450,7 +504,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             current_exner=current_exner,
             current_rho=current_rho,
@@ -466,18 +520,23 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             ddqz_z_half=ddqz_z_half,
             rayleigh_damping_factor=rayleigh_damping_factor,
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
+            e_bln_c_s=e_bln_c_s,
+            wgtfac_c=wgtfac_c,
+            wgtfacq_c=wgtfacq_c,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
             is_iau_active=is_iau_active,
             rayleigh_type=rayleigh_type,
             divdamp_type=divdamp_type,
             at_first_substep=at_first_substep,
-            index_of_damping_layer=index_of_damping_layer,
-            jk_start=jk_start,
+            end_index_of_damping_layer=end_index_of_damping_layer,
             starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
             kstart_moist=kstart_moist,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=0,
-            vertical_end=grid.num_levels + 1,
+            flat_level_index_plus1=flat_level_index_plus1,
+            start_cell_index_nudging=start_cell_nudging,
+            end_cell_index_local=end_cell_local,
+            start_cell_index_lateral_lvl_3_for_contravariant_correction=start_cell_index_lateral_lvl_3_for_contravariant_correction,
+            end_cell_index_halo_lvl1_for_contravariant_correction=end_cell_index_halo_lvl1_for_contravariant_correction,
+            vertical_start_index_model_top=gtx.int32(0),
+            vertical_end_index_model_surface=gtx.int32(grid.num_levels + 1),
         )
