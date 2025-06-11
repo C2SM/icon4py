@@ -92,7 +92,7 @@ def apply_markers(
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
             case "skip_value_error":
-                if grid.limited_area or grid.has_skip_values():
+                if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
                     pytest.skip(
                         "Stencil does not support domain containing skip values. Consider shrinking domain."
