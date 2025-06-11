@@ -10,7 +10,7 @@ import functools
 import logging
 import math
 import uuid
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -36,19 +36,29 @@ CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
-    # TODO
-    root: int
-    level: int
-    _num_cells: int = None
-    _mean_cell_area: float = None
+    root: Optional[int] = None
+    level: Optional[int] = None
+    _num_cells: Optional[int] = None
+    _mean_cell_area: Optional[float] = None
     geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
-    radius = constants.EARTH_RADIUS
+    radius: float = constants.EARTH_RADIUS
+
+    @classmethod
+    def from_cells(
+        cls,
+        num_cells: int,
+        mean_cell_area: float,
+        geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
+        radius: float = constants.EARTH_RADIUS,
+    ):
+        return cls(None, None, num_cells, mean_cell_area, geometry_type)
 
     @functools.cached_property
     def num_cells(self):
         if self._num_cells is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
+                    assert self.root is not None and self.level is not None
                     return compute_icosahedron_num_cells(self.root, self.level)
                 case base.GeometryType.TORUS:
                     raise NotImplementedError("TODO : lookup torus cell number computation")
