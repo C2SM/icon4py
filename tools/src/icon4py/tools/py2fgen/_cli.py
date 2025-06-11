@@ -46,7 +46,6 @@ def main(
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
-    print(f"{rpath=}")
     plugin = _generator.get_cffi_description(module_import_path, functions, library_name)
 
     logger.info("Generating C header...")

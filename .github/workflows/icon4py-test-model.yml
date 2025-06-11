@@ -34,15 +34,11 @@ jobs:
                   enable-cache: true
                   cache-dependency-glob: "uv.lock"
                   python-version: ${{ matrix.python-version }}
-            # this is needed to make the uenv available for the grid file cache steps
-            - name: install
-              run: |
-                uv sync --locked --dev
 
             - name: cache key
               id: cache-key
               run: |
-                 echo "key=$(python .github/validation_grids.py --option=cache-key)" >> $GITHUB_OUTPUT
+                 echo "key=$(.github/validation_grid_utils.py --option=cache-key)" >> $GITHUB_OUTPUT
 
             - name: gridfile cache
               id: grid-cache
