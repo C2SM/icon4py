@@ -148,14 +148,24 @@ def _get_metrics_factory(
     ],
 )
 @pytest.mark.datatest
-def test_factory_z_mc(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_z_mc(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend
+):
     field_ref = metrics_savepoint.z_mc()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
+        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.Z_MC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -171,7 +181,13 @@ def test_factory_z_mc(grid_savepoint, metrics_savepoint, grid_file, experiment, 
 )
 @pytest.mark.datatest
 def test_factory_ddqz_z_and_inverse(
-    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend,
 ):
     inverse_field_ref = metrics_savepoint.inv_ddqz_z_full()
     field_ref = metrics_savepoint.ddqz_z_full()
@@ -179,8 +195,10 @@ def test_factory_ddqz_z_and_inverse(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
+        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
     )
     inverse_field = factory.get(attrs.INV_DDQZ_Z_FULL)
     field = factory.get(attrs.DDQZ_Z_FULL)
@@ -196,14 +214,24 @@ def test_factory_ddqz_z_and_inverse(
     ],
 )
 @pytest.mark.datatest
-def test_factory_ddqz_full_e(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_ddqz_full_e(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend
+):
     field_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
+        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.DDQZ_Z_FULL_E)
     assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
@@ -218,14 +246,24 @@ def test_factory_ddqz_full_e(grid_savepoint, metrics_savepoint, grid_file, exper
     ],
 )
 @pytest.mark.datatest
-def test_factory_ddqz_z_half(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_ddqz_z_half(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend
+):
     field_ref = metrics_savepoint.ddqz_z_half()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
+        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.DDQZ_Z_HALF)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -241,15 +279,23 @@ def test_factory_ddqz_z_half(grid_savepoint, metrics_savepoint, grid_file, exper
 )
 @pytest.mark.datatest
 def test_factory_scaling_factor_for_3d_divdamp(
-    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend,
 ):
     field_ref = metrics_savepoint.scalfac_dd3d()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_file=grid_file,
+        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.SCALING_FACTOR_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
