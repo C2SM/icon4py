@@ -153,7 +153,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def _register_computed_fields(self):
         vertical_coordinates_on_cell_khalf = factory.NumpyFieldsProvider(
             func=functools.partial(
-                v_grid.compute_vertical_coordinate,
+                v_grid.compute_vertical_coordinate_numpy,
                 array_ns=self._xp,
             ),
             fields=(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,),

@@ -71,7 +71,7 @@ def update_smoothed_topography_numpy(
     return smoothed_topography + 0.125 * nabla2_topo * cell_areas
 
 
-def smooth_topography(
+def smooth_topography_numpy(
     topography: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
@@ -91,4 +91,46 @@ def smooth_topography(
             smoothed_topography, nabla2_topo, cell_areas
         )
 
+    return smoothed_topography
+
+
+def smooth_topography(
+    topography: fa.CellField[ta.wpfloat],
+    cell_areas: fa.CellField[ta.wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
+    grid: base.BaseGrid,
+    backend: gtx_backend.Backend,
+    num_iterations: int = 25,
+) -> fa.CellField[ta.wpfloat]:
+    """
+    Computes the smoothed (laplacian-filtered) topography needed by the SLEVE
+    coordinate.
+    """
+
+    smoothed_topography = gtx.as_field(
+        (dims.CellDim,), topography.ndarray, allocator=backend
+    )  # TODO (@halungge) this should copy?
+
+    nabla2_topo = data_alloc.zero_field(grid, dims.CellDim, backend=backend)
+
+    for _ in range(num_iterations):
+        compute_nabla2_on_cell.with_backend(backend)(
+            psi_c=smoothed_topography,
+            geofac_n2s=geofac_n2s,
+            nabla2_psi_c=nabla2_topo,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            offset_provider={
+                "C2E2CO": grid.get_connectivity("C2E2CO"),
+            },
+        )
+
+        update_smoothed_topography.with_backend(backend)(
+            nabla2_topo=nabla2_topo,
+            cell_areas=cell_areas,
+            smoothed_topography=smoothed_topography,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            offset_provider={},
+        )
     return smoothed_topography

@@ -348,3 +348,65 @@ def test_compute_vertical_coordinate(
         metrics_savepoint.z_ifc().asnumpy(),
         atol=1e-13,
     )
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+def test_compute_vertical_coordinat_numpy(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    interpolation_savepoint,
+    icon_grid,
+    experiment,
+    backend,
+):
+    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
+    vct_a = grid_savepoint.vct_a()
+    vct_b = grid_savepoint.vct_b()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    vertical_config = v_grid.VerticalGridConfig(
+        num_levels=grid_savepoint.num(dims.KDim),
+    )
+    vertical_geometry = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=vct_a,
+        vct_b=vct_b,
+    )
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        topography = topography_savepoint.topo_c()
+    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+        topography = data_alloc.zero_field(
+            icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
+        )
+    else:
+        raise ValueError(f"Unsupported experiment: {experiment}")
+
+    geofac_n2s = interpolation_savepoint.geofac_n2s()
+
+    vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate_numpy(
+        vct_a=vct_a.ndarray,
+        topography=topography.ndarray,
+        cell_areas=cell_geometry.area.ndarray,
+        geofac_n2s=geofac_n2s.ndarray,
+        c2e2co=icon_grid.get_connectivity("C2E2CO").asnumpy(),
+        num_cells=icon_grid.num_cells,
+        num_levels=vertical_config.num_levels,
+        nflatlev=vertical_geometry.nflatlev,
+        model_top_height=23500.0,
+        SLEVE_decay_scale_1=4000.0,
+        SLEVE_decay_exponent=1.2,
+        SLEVE_decay_scale_2=2500.0,
+        SLEVE_minimum_layer_thickness_1=100.0,
+        SLEVE_minimum_relative_layer_thickness_1=1.0/3.0,
+        SLEVE_minimum_layer_thickness_2=500.0,
+        SLEVE_minimum_relative_layer_thickness_2=0.5,
+        lowest_layer_thickness=50.0,
+        array_ns=xp,
+    )
+
+    assert helpers.dallclose(
+        data_alloc.as_numpy(vertical_coordinates_on_cell_khalf),
+        metrics_savepoint.z_ifc().asnumpy(),
+        atol=1e-13,
+    )
