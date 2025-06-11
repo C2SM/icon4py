@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import dataclasses
 import enum
 import functools
@@ -140,7 +142,7 @@ class BaseGrid(ABC):
         return self.config.limited_area or self.geometry_type == GeometryType.ICOSAHEDRON
 
     @functools.cached_property
-    def connectivities(self) -> Dict[str, gtx.Connectivity]:
+    def connectivities(self) -> Dict[str, gtx.common.Connectivity]:
         connectivity_map = {}
         for key, value in self._connectivity_mapping.items():
             try:

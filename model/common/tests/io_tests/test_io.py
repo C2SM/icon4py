@@ -39,7 +39,7 @@ UNLIMITED = None
 simple_grid = simple.SimpleGrid()
 
 grid_file = test_definitions.GRIDS_PATH.joinpath(
-    datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE
+    datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE__WIP
 )
 global_grid = grid_utils.get_grid_manager_for_experiment(
     datatest_utils.GLOBAL_EXPERIMENT, backend

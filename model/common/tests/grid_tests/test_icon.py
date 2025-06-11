@@ -35,7 +35,7 @@ def grid_from_file() -> icon.IconGrid:
 
 @functools.cache
 def from_file(filename: str) -> icon.IconGrid:
-    file_name = gridtest_utils.resolve_full_grid_file_name(filename)
+    file_name = gridtest_utils.get_grid_file_path(filename)
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
     )

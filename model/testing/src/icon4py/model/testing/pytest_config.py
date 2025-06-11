@@ -13,16 +13,16 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
-from icon4py.model.testing.datatest_utils import (
-    GLOBAL_EXPERIMENT,
-    REGIONAL_EXPERIMENT,
-)
-from icon4py.model.testing.helpers import apply_markers
+
+# from icon4py.model.testing.datatest_utils import (
+#     GLOBAL_EXPERIMENT,
+#     REGIONAL_EXPERIMENT,
+# )
+from icon4py.model.testing import definitions as test_definitions, helpers
 
 
 TEST_LEVELS = ("any", "unit", "integration")
 DEFAULT_GRID: Final[str] = "simple_grid"
-VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
 
 
 def _check_backend_validity(backend_name: str) -> None:
@@ -35,10 +35,30 @@ def _check_backend_validity(backend_name: str) -> None:
         )
 
 
-def _check_grid_validity(grid_name: str) -> None:
-    assert (
-        grid_name in VALID_GRIDS
-    ), f"Invalid value for '--grid' option - possible names are {VALID_GRIDS}"
+def _get_grid(
+    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
+) -> base_grid.BaseGrid:
+    match selected_grid_type:
+        case "icon_grid":
+            from icon4py.model.testing.grid_utils import (
+                get_grid_manager_for_experiment,
+            )
+
+            grid_instance = get_grid_manager_for_experiment(
+                REGIONAL_EXPERIMENT, backend=selected_backend
+            ).grid
+            return grid_instance
+        case "icon_grid_global":
+            from icon4py.model.testing.grid_utils import (
+                get_grid_manager_for_experiment,
+            )
+
+            grid_instance = get_grid_manager_for_experiment(
+                GLOBAL_EXPERIMENT, backend=selected_backend
+            ).grid
+            return grid_instance
+        case _:
+            return simple_grid.SimpleGrid(selected_backend)
 
 
 @pytest.fixture(scope="session")
@@ -56,12 +76,14 @@ def backend(request):
 
 @pytest.fixture(scope="session")
 def grid(request, backend):
+    grid_option = (
+        request.config.getoption("grid") if request.config.hasoption("grid") else DEFAULT_GRID
+    )
     try:
-        grid_option = request.config.getoption("grid")
-    except ValueError:
-        grid_option = DEFAULT_GRID
-    else:
-        _check_grid_validity(grid_option)
+        grid = test_definitions.Grid[grid_option]
+    except KeyError:
+        f"Invalid value for '--grid' option - possible names are {test_definitions.Grid.__members__.keys()}"
+
     grid = _get_grid(grid_option, backend)
     return grid
 
@@ -154,32 +176,6 @@ def pytest_addoption(parser):
         pass
 
 
-def _get_grid(
-    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
-) -> base_grid.BaseGrid:
-    match selected_grid_type:
-        case "icon_grid":
-            from icon4py.model.testing.grid_utils import (
-                get_grid_manager_for_experiment,
-            )
-
-            grid_instance = get_grid_manager_for_experiment(
-                REGIONAL_EXPERIMENT, backend=selected_backend
-            ).grid
-            return grid_instance
-        case "icon_grid_global":
-            from icon4py.model.testing.grid_utils import (
-                get_grid_manager_for_experiment,
-            )
-
-            grid_instance = get_grid_manager_for_experiment(
-                GLOBAL_EXPERIMENT, backend=selected_backend
-            ).grid
-            return grid_instance
-        case _:
-            return simple_grid.SimpleGrid(selected_backend)
-
-
 def pytest_collection_modifyitems(config, items):
     test_level = config.getoption("--level")
     if test_level == "any":
@@ -204,7 +200,7 @@ def pytest_runtest_setup(item):
     else:
         # use the default grid
         grid = simple_grid.SimpleGrid(backend)
-    apply_markers(
+    helpers.apply_markers(
         item.own_markers,
         grid,
         backend,

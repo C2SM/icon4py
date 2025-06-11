@@ -43,7 +43,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 )
 @pytest.mark.datatest
 def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, decomposition_info):
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(experiment, backend)
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
@@ -80,7 +80,7 @@ def _get_interpolation_factory(
     registry_key = "_".join((experiment, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+        geometry = gridtest_utils.get_grid_geometry(experiment, backend)
 
         factory = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,

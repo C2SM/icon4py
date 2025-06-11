@@ -65,7 +65,7 @@ def _run_grid_manager(file: str, backend: Optional[gtx_backend.Backend]) -> gm.G
 
 @pytest.fixture
 def global_grid_file():
-    return gridtest_utils.resolve_full_grid_file_name(dt_utils.R02B04_GLOBAL)
+    return gridtest_utils.get_grid_file_path(dt_utils.R02B04_GLOBAL)
 
 
 @pytest.mark.with_netcdf
@@ -92,7 +92,7 @@ def test_grid_file_dimension(global_grid_file):
     ],
 )
 def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
-    file = gridtest_utils.resolve_full_grid_file_name(grid_file)
+    file = gridtest_utils.get_grid_file_path(grid_file)
     parser = gm.GridFile(str(file))
     try:
         parser.open()

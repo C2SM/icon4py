@@ -57,7 +57,7 @@ def _get_or_initialize(experiment, backend, name):
     )
 
     if not grid_functionality[experiment].get(name):
-        geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+        geometry_ = grid_utils.get_grid_geometry(experiment, backend)
         grid = geometry_.grid
 
         cell_params = grid_states.CellParams.from_global_num_cells(

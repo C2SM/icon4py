@@ -17,7 +17,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 
 
-NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
+NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS__WIP
 
 
 @pytest.mark.parametrize(

@@ -18,6 +18,7 @@ def download_and_extract(
 
     Checks whether a given directory `destination_path` is empty and if so downloads a the tar
     file at `uri` and extracts it.
+
     Args:
         uri: download url for archived data
         base_path: the archive is extracted at this path it might be different from the final

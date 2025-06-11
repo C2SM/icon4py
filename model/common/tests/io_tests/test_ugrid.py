@@ -6,6 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
+import pathlib
+from collections.abc import Iterator
+
 import numpy as np
 import pytest
 import xarray as xa
@@ -20,14 +25,12 @@ from icon4py.model.common.io.ugrid import (
 from icon4py.model.testing import datatest_utils, definitions as test_definitions, grid_utils
 
 
-def grid_files():
-    files = [
-        (datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE),
-        (datatest_utils.REGIONAL_EXPERIMENT, grid_utils.REGIONAL_GRIDFILE),
-    ]
-
-    for ff in files:
-        yield test_definitions.GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
+def grid_files() -> Iterator[pathlib.Path]:
+    yield from (
+        grid_utils.get_grid_file_path(grid.file_name)
+        for grid in test_definitions.Grid
+        if grid.file_name
+    )
 
 
 @pytest.mark.parametrize("file", grid_files())

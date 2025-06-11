@@ -76,7 +76,7 @@ def _get_metrics_factory(
     factory = metrics_factories.get(registry_name)
 
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+        geometry = gridtest_utils.get_grid_geometry(experiment, backend)
         (
             lowest_layer_thickness,
             model_top_height,
