@@ -76,7 +76,7 @@ def test_compile_and_run_cffi_plugin_from_C():
                 [
                     "gcc",
                     "-o",
-                    build_path / "test_program",
+                    str(build_path / "test_program"),
                     str(main_program_path),
                     "-L" + str(build_path),
                     "-l" + shared_library,
