@@ -51,9 +51,9 @@ class GlobalGridParams:
                 case base.GeometryType.ICOSAHEDRON:
                     return compute_icosahedron_num_cells(self.root, self.level)
                 case base.GeometryType.TORUS:
-                    return compute_torus_num_cells(1000, 1000)
+                    raise NotImplementedError("TODO : lookup torus cell number computation")
                 case _:
-                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
         return self._num_cells
 
@@ -77,11 +77,6 @@ class GlobalGridParams:
 
 def compute_icosahedron_num_cells(root: int, level: int):
     return 20.0 * root**2 * 4.0**level
-
-
-def compute_torus_num_cells(x: int, y: int):
-    # TODO (@halungge) add implementation
-    raise NotImplementedError("TODO : lookup torus cell number computation")
 
 
 def compute_mean_cell_area_for_sphere(radius, num_cells):
