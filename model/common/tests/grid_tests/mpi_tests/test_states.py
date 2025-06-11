@@ -12,14 +12,16 @@ from icon4py.model.common.grid import icon
 
 
 @pytest.mark.parametrize(
-    "grid_root,grid_level,expected",
+    "grid_root,grid_level,num_cells,mean_cell_area,expected",
     [
-        (2, 4, 24907282236.708576),
-        (4, 9, 6080879.45232143),
+        (2, 4, None, None, 24907282236.708576),
+        (4, 9, None, None, 6080879.45232143),
+        (2, 4, 42, 123.456, 123.456),
+        (4, 9, None, 123.456, 123.456),
     ],
 )
-def test_mean_cell_area_calculation(grid_root, grid_level, expected):
-    params = icon.GlobalGridParams(grid_root, grid_level)
+def test_mean_cell_area_calculation(grid_root, grid_level, num_cells, mean_cell_area, expected):
+    params = icon.GlobalGridParams(grid_root, grid_level, num_cells, mean_cell_area)
     assert expected == params.mean_cell_area
 
 
@@ -29,6 +31,6 @@ def test_mean_cell_area_calculation(grid_root, grid_level, expected):
         (42, 123.456),
     ],
 )
-def test_mean_cell_area_explicit(num_cells, mean_cell_area):
+def test_mean_cell_area_from_cells(num_cells, mean_cell_area):
     params = icon.GlobalGridParams.from_cells(num_cells, mean_cell_area)
     assert mean_cell_area == params.mean_cell_area
