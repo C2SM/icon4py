@@ -63,7 +63,6 @@ __all__ = [
     "damping_height",
     "data_provider",
     "experiment_data_files",
-    "experiment__DELETE",
     "flat_height",
     "grid_savepoint",
     "htop_moist_proc",

@@ -38,7 +38,6 @@ __all__ = [
     "backend",
     "grid",
     "decomposition_info",
-    "experiment__DELETE",
     "connectivities_as_numpy",
 ]
 

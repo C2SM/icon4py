@@ -58,7 +58,6 @@ __all__ = [
     "damping_height",
     "data_provider",
     "experiment_data_files",
-    "experiment__DELETE",
     "grid_savepoint",
     "icon_grid",
     "interpolation_savepoint",
