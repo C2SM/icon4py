@@ -343,6 +343,9 @@ class NonHydrostaticConfig:
         if self.itime_scheme != dycore_states.TimeSteppingScheme.MOST_EFFICIENT:
             raise NotImplementedError("itime_scheme can only be 4")
 
+        if self.iadv_rhotheta != dycore_states.RhoThetaAdvectionType.MIURA:
+            raise NotImplementedError("iadv_rhotheta can only be 2 (Miura scheme)")
+
         if self.divdamp_order != dycore_states.DivergenceDampingOrder.COMBINED:
             raise NotImplementedError("divdamp_order can only be 24")
 
@@ -463,7 +466,6 @@ class SolveNonhydro:
             iau_wgt_dyn=[self._config.iau_wgt_dyn],
             is_iau_active=[self._config.is_iau_active],
             limited_area=[self._grid.limited_area],
-            iadv_rhotheta=[self._config.iadv_rhotheta],
             igradp_method=[self._config.igradp_method],
             nflatlev=[self._vertical_params.nflatlev],
             nflat_gradp=[self._vertical_params.nflat_gradp],
@@ -1031,29 +1033,6 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        # Compute rho and theta at edges for horizontal flux divergence term
-        if self._config.iadv_rhotheta == dycore_states.RhoThetaAdvectionType.SIMPLE:
-            self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-                p_cell_in=prognostic_states.current.rho,
-                c_intp=self._interpolation_state.c_intp,
-                p_vert_out=self.z_rho_v,
-                horizontal_start=self._start_vertex_lateral_boundary_level_2,
-                horizontal_end=self._end_vertex_halo,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,  # UBOUND(p_cell_in,2)
-                offset_provider=self._grid.connectivities,
-            )
-            self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-                p_cell_in=prognostic_states.current.theta_v,
-                c_intp=self._interpolation_state.c_intp,
-                p_vert_out=self.z_theta_v_v,
-                horizontal_start=self._start_vertex_lateral_boundary_level_2,
-                horizontal_end=self._end_vertex_halo,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.connectivities,
-            )
-
         log.debug(
             f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
         )
@@ -1076,6 +1055,8 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.connectivities,
             )
+
+            # TODO this reallocates in every timestep and `hydrostatic_correction_on_lowest_level` is undefined if not TAYLOR_HYDRO
             lowest_level = self._grid.num_levels - 1
             hydrostatic_correction_on_lowest_level = gtx.as_field(
                 (dims.EdgeDim,),
@@ -1118,14 +1099,9 @@ class SolveNonhydro:
             dtime=dtime,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
-            limited_area=self._grid.limited_area,
-            iadv_rhotheta=self._config.iadv_rhotheta,
             igradp_method=self._config.igradp_method,
             nflatlev=self._vertical_params.nflatlev,
             nflat_gradp=self._vertical_params.nflat_gradp,
-            start_edge_halo_level_2=self._start_edge_halo_level_2,
-            end_edge_halo_level_2=self._end_edge_halo_level_2,
-            start_edge_lateral_boundary=self._start_edge_lateral_boundary,
             end_edge_halo=self._end_edge_halo,
             start_edge_lateral_boundary_level_7=self._start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=self._start_edge_nudging_level_2,

@@ -63,12 +63,12 @@ from icon4py.model.common import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-rhotheta_avd_type: Final = dycore_states.RhoThetaAdvectionType()
 horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType()
 divergence_damp_order: Final = dycore_states.DivergenceDampingOrder()
 dycore_consts: Final = constants.PhysicsConstants()
 
 
+# TODO delete unused parameters
 @gtx.field_operator
 def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -106,14 +106,9 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
-    limited_area: bool,
-    iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
-    start_edge_halo_level_2: gtx.int32,
-    end_edge_halo_level_2: gtx.int32,
-    start_edge_lateral_boundary: gtx.int32,
     end_edge_halo: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
@@ -133,54 +128,45 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     #  - horizontal_pressure_gradient
     #  - next_vn
 
-    if iadv_rhotheta <= rhotheta_avd_type.MIURA:  # TODO: How can this be false?
-        (
-            ddx_perturbed_rho,
-            ddy_perturbed_rho,
-            ddx_perturbed_theta_v,
-            ddy_perturbed_theta_v,
-        ) = (
-            _mo_math_gradients_grad_green_gauss_cell_dsl(
-                p_ccpr1=perturbed_rho_at_cells_on_model_levels,
-                p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
-                geofac_grg_x=geofac_grg_x,
-                geofac_grg_y=geofac_grg_y,
-            )
-            if (iadv_rhotheta == rhotheta_avd_type.MIURA)
-            else (
-                broadcast(0.0, (dims.CellDim, dims.KDim)),
-                broadcast(0.0, (dims.CellDim, dims.KDim)),
-                broadcast(0.0, (dims.CellDim, dims.KDim)),
-                broadcast(0.0, (dims.CellDim, dims.KDim)),
-            )
-        )
+    # TODO absorb into `_compute_horizontal_advection_of_rho_and_theta`
+    (
+        ddx_perturbed_rho,
+        ddy_perturbed_rho,
+        ddx_perturbed_theta_v,
+        ddy_perturbed_theta_v,
+    ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
+        p_ccpr1=perturbed_rho_at_cells_on_model_levels,
+        p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
+    )
 
-        (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
-            (start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
-            _compute_horizontal_advection_of_rho_and_theta(
-                p_vn=current_vn,
-                p_vt=tangential_wind,
-                pos_on_tplane_e_1=pos_on_tplane_e_x,
-                pos_on_tplane_e_2=pos_on_tplane_e_y,
-                primal_normal_cell_1=primal_normal_cell_x,
-                dual_normal_cell_1=dual_normal_cell_x,
-                primal_normal_cell_2=primal_normal_cell_y,
-                dual_normal_cell_2=dual_normal_cell_y,
-                p_dthalf=wpfloat("0.5") * dtime,
-                rho_ref_me=reference_rho_at_edges_on_model_levels,
-                theta_ref_me=reference_theta_at_edges_on_model_levels,
-                z_grad_rth_1=ddx_perturbed_rho,
-                z_grad_rth_2=ddy_perturbed_rho,
-                z_grad_rth_3=ddx_perturbed_theta_v,
-                z_grad_rth_4=ddy_perturbed_theta_v,
-                z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
-                z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels,
-            ),
-            (
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-            ),
-        )
+    (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
+        (start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
+        _compute_horizontal_advection_of_rho_and_theta(
+            p_vn=current_vn,
+            p_vt=tangential_wind,
+            pos_on_tplane_e_1=pos_on_tplane_e_x,
+            pos_on_tplane_e_2=pos_on_tplane_e_y,
+            primal_normal_cell_1=primal_normal_cell_x,
+            dual_normal_cell_1=dual_normal_cell_x,
+            primal_normal_cell_2=primal_normal_cell_y,
+            dual_normal_cell_2=dual_normal_cell_y,
+            p_dthalf=wpfloat("0.5") * dtime,
+            rho_ref_me=reference_rho_at_edges_on_model_levels,
+            theta_ref_me=reference_theta_at_edges_on_model_levels,
+            z_grad_rth_1=ddx_perturbed_rho,
+            z_grad_rth_2=ddy_perturbed_rho,
+            z_grad_rth_3=ddx_perturbed_theta_v,
+            z_grad_rth_4=ddy_perturbed_theta_v,
+            z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
+            z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels,
+        ),
+        (
+            broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+        ),
+    )
 
     horizontal_pressure_gradient = concat_where(
         dims.KDim < nflatlev,
@@ -461,14 +447,9 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
-    limited_area: bool,
-    iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
-    start_edge_halo_level_2: gtx.int32,
-    end_edge_halo_level_2: gtx.int32,
-    start_edge_lateral_boundary: gtx.int32,
     end_edge_halo: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
@@ -575,14 +556,9 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         dtime=dtime,
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
-        limited_area=limited_area,
-        iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
-        start_edge_halo_level_2=start_edge_halo_level_2,
-        end_edge_halo_level_2=end_edge_halo_level_2,
-        start_edge_lateral_boundary=start_edge_lateral_boundary,
         end_edge_halo=end_edge_halo,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
