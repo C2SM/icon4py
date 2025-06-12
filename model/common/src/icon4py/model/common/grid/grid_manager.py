@@ -393,9 +393,9 @@ class GridManager:
         num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
         num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
         uuid = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
-        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
-        global_params = icon.GlobalGridParams(level=grid_level, root=grid_root)
+        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )

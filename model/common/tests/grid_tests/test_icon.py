@@ -216,25 +216,37 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(grid_file, di
 
 
 @pytest.mark.parametrize(
-    "grid_root,grid_level,num_cells,mean_cell_area,expected",
+    "grid_root,grid_level,num_cells,mean_cell_area,expected_num_cells,expected_mean_cell_area",
     [
-        (2, 4, None, None, 24907282236.708576),
-        (4, 9, None, None, 6080879.45232143),
-        (2, 4, 42, 123.456, 123.456),
-        (4, 9, None, 123.456, 123.456),
+        (2, 4, None, None, 20480, 24907282236.708576),
+        (4, 9, None, None, 83886080, 6080879.45232143),
+        (2, 4, 42, 123.456, 42, 123.456),
+        (4, 9, None, 123.456, 83886080, 123.456),
+        (4, 9, 42, None, 42, 12145265243042.658),
     ],
 )
-def test_mean_cell_area_calculation(grid_root, grid_level, num_cells, mean_cell_area, expected):
+def test_global_grid_params(
+    grid_root, grid_level, num_cells, mean_cell_area, expected_num_cells, expected_mean_cell_area
+):
     params = icon.GlobalGridParams(grid_root, grid_level, num_cells, mean_cell_area)
-    assert expected == params.mean_cell_area
+    assert expected_num_cells == params.num_cells
+    assert expected_mean_cell_area == params.mean_cell_area
 
 
 @pytest.mark.parametrize(
-    "num_cells,mean_cell_area",
+    "grid_root,grid_level,num_cells,mean_cell_area,expected_num_cells,expected_mean_cell_area",
     [
-        (42, 123.456),
+        (2, 4, 42, 123.456, 42, 123.456),
+        (4, 9, None, 123.456, 83886080, 123.456),
+        (0, 0, 42, 123.456, 42, 123.456),
+        (None, None, 42, 123.456, 42, 123.456),
     ],
 )
-def test_mean_cell_area_from_cells(num_cells, mean_cell_area):
-    params = icon.GlobalGridParams.from_cells(num_cells, mean_cell_area)
-    assert mean_cell_area == params.mean_cell_area
+def test_global_grid_params_from_mean_cell_area(
+    grid_root, grid_level, num_cells, mean_cell_area, expected_num_cells, expected_mean_cell_area
+):
+    params = icon.GlobalGridParams.from_mean_cell_area(
+        mean_cell_area, num_cells=num_cells, root=grid_root, level=grid_level
+    )
+    assert expected_num_cells == params.num_cells
+    assert expected_mean_cell_area == params.mean_cell_area

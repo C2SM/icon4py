@@ -44,14 +44,16 @@ class GlobalGridParams:
     radius: float = constants.EARTH_RADIUS
 
     @classmethod
-    def from_cells(
+    def from_mean_cell_area(
         cls,
-        num_cells: int,
         mean_cell_area: float,
+        root: Optional[int] = None,
+        level: Optional[int] = None,
+        num_cells: Optional[int] = None,
         geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
         radius: float = constants.EARTH_RADIUS,
     ):
-        return cls(None, None, num_cells, mean_cell_area, geometry_type)
+        return cls(root, level, num_cells, mean_cell_area, geometry_type)
 
     @functools.cached_property
     def num_cells(self):
