@@ -225,7 +225,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         # TODO(havogt): Check if the lower bound is needed (it might protect oob),
         # in case we the operator contains neighbor accesses.
         # An upper bound is not given as there should be enough halo left.
-        start_edge_nudging_level_2 < dims.EdgeDim,
+        start_edge_nudging_level_2 <= dims.EdgeDim,
         _compute_horizontal_pressure_gradient(
             temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
