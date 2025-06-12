@@ -70,9 +70,9 @@ dycore_consts: Final = constants.PhysicsConstants()
 
 @gtx.field_operator
 def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
-    rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat],
+    horizontal_pressure_gradient: fa.EdgeKField[
+        ta.vpfloat
+    ],  # TODO can we get rid of this field (or do we need to put 0 in the halo/lateral boundary?)
     next_vn: fa.EdgeKField[ta.wpfloat],
     current_vn: fa.EdgeKField[ta.wpfloat],
     tangential_wind: fa.EdgeKField[ta.vpfloat],
@@ -108,11 +108,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
-    end_edge_halo: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
-    end_edge_local: gtx.int32,
-    end_edge_end: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
@@ -140,8 +137,10 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         geofac_grg_y=geofac_grg_y,
     )
 
+    # TODO(havogt): it would be nice if we could shrink the compute domain to `start_edge_lateral_boundary_level_7 <= dims.EdgeDim`,
+    # but that requires either persisting the `0.0` values or put the correct lateral boundary condition where this is consumed.
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
-        (start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo),
+        (start_edge_lateral_boundary_level_7 <= dims.EdgeDim),
         _compute_horizontal_advection_of_rho_and_theta(
             p_vn=current_vn,
             p_vt=tangential_wind,
@@ -167,10 +166,13 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         ),
     )
 
+    # we are overcomputing `horizontal_pressure_gradient` here (it is only needed < end_edge_local)
+    # TODO(havogt): if we never consume `horizontal_pressure_gradient` in the lateral boundary region,
+    # we could further simplify this expression (i.e. remove the horizontal `concat_where` completely).
     horizontal_pressure_gradient = concat_where(
         dims.KDim < nflatlev,
         concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+            (start_edge_nudging_level_2 <= dims.EdgeDim),
             _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
                 inv_dual_edge_length=inv_dual_edge_length,
                 z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
@@ -185,7 +187,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             horizontal_pressure_gradient = concat_where(
                 (nflatlev <= dims.KDim) & (dims.KDim < (nflat_gradp + 1)),
                 concat_where(
-                    (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+                    (start_edge_nudging_level_2 <= dims.EdgeDim),
                     _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
                         inv_dual_edge_length=inv_dual_edge_length,
                         z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
@@ -201,7 +203,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         horizontal_pressure_gradient = concat_where(
             (nflat_gradp + 1) <= dims.KDim,
             concat_where(
-                (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+                (start_edge_nudging_level_2 <= dims.EdgeDim),
                 _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
                     inv_dual_edge_length=inv_dual_edge_length,
                     z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
@@ -215,10 +217,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             horizontal_pressure_gradient,
         )
 
-        # TODO what is `end_edge_end` and why do we apply everything else on a smaller domain?
         horizontal_pressure_gradient = concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim)
-            & (dims.EdgeDim < end_edge_halo),  # TODO check the list bounds
+            (start_edge_nudging_level_2 <= dims.EdgeDim),
             _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=ipeidx_dsl,
                 pg_exdist=pg_exdist,
@@ -228,8 +228,9 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             horizontal_pressure_gradient,
         )
 
+    # we are overcomputing `next_vn` here (it is only needed < end_edge_local)
     next_vn = concat_where(
-        (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+        (start_edge_nudging_level_2 <= dims.EdgeDim),
         _add_temporal_tendencies_to_vn(
             vn_nnow=current_vn,
             ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
@@ -243,7 +244,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
 
     if is_iau_active:
         next_vn = concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+            (start_edge_nudging_level_2 <= dims.EdgeDim),
             _add_analysis_increments_to_vn(
                 vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
             ),
@@ -450,11 +451,8 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
-    end_edge_halo: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
-    end_edge_local: gtx.int32,
-    end_edge_end: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -521,8 +519,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         - next_vn: normal wind to be updated [m s-1]
     """
     _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
-        rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
-        theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,
         next_vn=next_vn,
         current_vn=current_vn,
@@ -559,11 +555,8 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         igradp_method=igradp_method,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
-        end_edge_halo=end_edge_halo,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
-        end_edge_local=end_edge_local,
-        end_edge_end=end_edge_end,
         out=(
             rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels,
