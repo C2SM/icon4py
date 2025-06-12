@@ -11,7 +11,7 @@ from typing import Final
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.fbuiltins import broadcast, where, astype
 
 from icon4py.model.atmosphere.dycore.dycore_states import (
     DivergenceDampingOrder,
@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.dycore_states import (
     RhoThetaAdvectionType,
 )
 from icon4py.model.atmosphere.dycore.ibm import ImmersedBoundaryMethod
+from icon4py.model.atmosphere.dycore.ibm import set_bcs_cells as ibm_set_bcs_cells
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
 )
@@ -71,10 +72,10 @@ divergence_damp_order: Final = DivergenceDampingOrder()
 GRID_LEVEL = 0
 GRID_ROOT = 2
 GLOBAL_GRID_ID = uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba")
-savepoint_path = "../../../../testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
-grid_file_path = "Torus_Triangles_50000m_x_5000m_res500m.nc"
+savepoint_path = "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
+grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_50000m_x_5000m_res500m.nc"
 grid = read_icon_grid(
-        pathlib.Path(savepoint_path).resolve(),
+        pathlib.Path(savepoint_path),
         backend=model_backends.BACKENDS["gtfn_cpu"],
         rank=0,
         ser_type="serialbox",
@@ -87,6 +88,7 @@ ibm = ImmersedBoundaryMethod(
     savepoint_path=savepoint_path,
     grid_file_path=grid_file_path,
 )
+
 ibm_green_gauss_gradient_mask = ibm.calc_neigh_full_cell_mask
 
 @gtx.field_operator
@@ -167,12 +169,17 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         )
     )
 
-    # --> IBM
-    ddx_perturbed_rho = where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_rho)
-    ddy_perturbed_rho = where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_rho)
-    ddx_perturbed_theta_v = where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_theta_v)
-    ddy_perturbed_theta_v = where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_theta_v)
-    # <-- IBM
+    # # --> IBM
+    # ddx_perturbed_rho = where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_rho)
+    # ddy_perturbed_rho = where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_rho)
+    # ddx_perturbed_theta_v = where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_theta_v)
+    # ddy_perturbed_theta_v = where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_theta_v)
+    # # <-- IBM
+
+    ddx_perturbed_rho = ibm_set_bcs_cells(mask=astype(ddx_perturbed_rho, bool), dir_value=0.0, field=ddx_perturbed_rho)
+    #ddx_perturbed_rho = ibm_set_bcs_cells(mask=ibm_green_gauss_gradient_mask, dir_value=0.0, field=ddx_perturbed_rho)
+    #ddy_perturbed_rho = ibm_set_bcs_cells(mask=ibm_green_gauss_gradient_mask, dir_value=0.0, field=ddy_perturbed_rho)
+    #ddx_perturbed_rho, ddy_perturbed_rho = ibm.set_bcs_green_gauss_gradient(ddx_perturbed_rho, ddy_perturbed_rho)
 
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
         concat_where(

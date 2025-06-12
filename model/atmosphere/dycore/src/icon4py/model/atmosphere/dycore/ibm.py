@@ -26,6 +26,43 @@ log = logging.getLogger(__name__)
 DO_IBM = True
 DEBUG_LEVEL = 2
 
+
+@gtx.field_operator
+def set_bcs_cells(
+    mask: fa.CellKField[bool],
+    dir_value: float,
+    field: fa.CellKField[float],
+) -> fa.CellKField[float]:
+    """
+    Set boundary conditions for fields defined on cell centres.
+    """
+    field = where(mask, dir_value, field)
+    return field
+
+@gtx.field_operator
+def set_bcs_edges(
+    mask: fa.EdgeKField[bool],
+    dir_value: float,
+    field: fa.EdgeKField[float],
+) -> fa.EdgeKField[float]:
+    """
+    Set boundary conditions for fields defined on edges.
+    """
+    field = where(mask, dir_value, field)
+    return field
+
+@gtx.field_operator
+def set_bcs_vertices(
+    mask: fa.VertexKField[bool],
+    dir_value: float,
+    field: fa.VertexKField[float],
+) -> fa.VertexKField[float]:
+    """
+    Set boundary conditions for fields defined on vertices.
+    """
+    field = where(mask, dir_value, field)
+    return field
+
 class IBMBoundaryConditions(enum.IntEnum):
     #: No-slip boundary conditions: on all surfaces vn = w = 0
     NO_SLIP = 0
@@ -50,6 +87,10 @@ class ImmersedBoundaryMethod:
         """
         self.DO_IBM = DO_IBM
         self.DEBUG_LEVEL = DEBUG_LEVEL
+        
+        self.set_bcs_cells = set_bcs_cells
+        self.set_bcs_edges = set_bcs_edges
+        self.set_bcs_vertices = set_bcs_vertices
 
         self._make_masks(
             grid=grid,
@@ -432,40 +473,3 @@ class ImmersedBoundaryMethod:
             out=Kh_smag,
             offset_provider={},
         )
-
-
-    @gtx.field_operator
-    def set_bcs_cells(
-        mask: fa.CellKField[bool],
-        dir_value: float,
-        field: fa.CellKField[float],
-    ) -> fa.CellKField[float]:
-        """
-        Set boundary conditions for fields defined on cell centres.
-        """
-        field = where(mask, dir_value, field)
-        return field
-
-    @gtx.field_operator
-    def set_bcs_edges(
-        mask: fa.EdgeKField[bool],
-        dir_value: float,
-        field: fa.EdgeKField[float],
-    ) -> fa.EdgeKField[float]:
-        """
-        Set boundary conditions for fields defined on edges.
-        """
-        field = where(mask, dir_value, field)
-        return field
-
-    @gtx.field_operator
-    def set_bcs_vertices(
-        mask: fa.VertexKField[bool],
-        dir_value: float,
-        field: fa.VertexKField[float],
-    ) -> fa.VertexKField[float]:
-        """
-        Set boundary conditions for fields defined on vertices.
-        """
-        field = where(mask, dir_value, field)
-        return field
