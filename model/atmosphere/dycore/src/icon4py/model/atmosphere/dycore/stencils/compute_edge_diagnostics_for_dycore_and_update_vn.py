@@ -77,7 +77,7 @@ def level_switch(
     between_flat_and_flatgradp: fa.EdgeKField[ta.wpfloat],
     below_flatgradp: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    concat_where(
+    return concat_where(
         dims.KDim < nflatlev,
         on_flatlevels,
         concat_where(nflat_gradp + 1 <= dims.KDim, below_flatgradp, between_flat_and_flatgradp),
