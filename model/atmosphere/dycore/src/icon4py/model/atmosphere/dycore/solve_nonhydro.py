@@ -1058,9 +1058,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self.hydrostatic_correction_on_lowest_level[...] = (
-            self.hydrostatic_correction.ndarray[:, self._grid.num_levels - 1],
-        )
+        self.hydrostatic_correction_on_lowest_level[...] = self.hydrostatic_correction.ndarray[
+            :, self._grid.num_levels - 1
+        ]
 
         # MARK
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
