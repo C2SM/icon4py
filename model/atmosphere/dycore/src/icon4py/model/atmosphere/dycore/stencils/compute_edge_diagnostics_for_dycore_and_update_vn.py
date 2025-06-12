@@ -217,7 +217,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
 
         # TODO what is `end_edge_end` and why do we apply everything else on a smaller domain?
         horizontal_pressure_gradient = concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_end),
+            (start_edge_nudging_level_2 <= dims.EdgeDim)
+            & (dims.EdgeDim < end_edge_halo),  # TODO check the list bounds
             _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=ipeidx_dsl,
                 pg_exdist=pg_exdist,

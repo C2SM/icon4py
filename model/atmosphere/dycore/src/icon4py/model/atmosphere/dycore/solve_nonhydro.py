@@ -1063,6 +1063,8 @@ class SolveNonhydro:
                 self.hydrostatic_correction.ndarray[:, lowest_level],
                 allocator=self._backend.allocator,
             )
+
+        # MARK
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
@@ -1108,7 +1110,7 @@ class SolveNonhydro:
             end_edge_local=self._end_edge_local,
             end_edge_end=self._end_edge_end,
             horizontal_start=gtx.int32(0),
-            horizontal_end=gtx.int32(self._grid.num_edges),
+            horizontal_end=gtx.int32(self._end_edge_halo),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels),
             offset_provider=self._grid.connectivities,
