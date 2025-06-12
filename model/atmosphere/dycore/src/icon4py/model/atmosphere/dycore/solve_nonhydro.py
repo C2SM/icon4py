@@ -466,7 +466,7 @@ class SolveNonhydro:
         ).compile(
             iau_wgt_dyn=[self._config.iau_wgt_dyn],
             is_iau_active=[self._config.is_iau_active],
-            igradp_method=[self._config.igradp_method],
+            limited_area=[self._grid.limited_area],
             nflatlev=[self._vertical_params.nflatlev],
             nflat_gradp=[self._vertical_params.nflat_gradp],
             vertical_start=[gtx.int32(0)],
