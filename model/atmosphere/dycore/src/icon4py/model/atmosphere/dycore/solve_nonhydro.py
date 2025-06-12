@@ -742,13 +742,15 @@ class SolveNonhydro:
         self.k_field = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self.edge_field = data_alloc.index_field(self._grid, dims.EdgeDim, backend=self._backend)
         self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
         )
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
         """
+        self.hydrostatic_correction_on_lowest_level = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dtype=ta.vpfloat, backend=self._backend
+        )
         self.hydrostatic_correction = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
         )
@@ -1056,12 +1058,8 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        # TODO this reallocates in every timestep
-        lowest_level = self._grid.num_levels - 1
-        hydrostatic_correction_on_lowest_level = gtx.as_field(
-            (dims.EdgeDim,),
-            self.hydrostatic_correction.ndarray[:, lowest_level],
-            allocator=self._backend.allocator,
+        self.hydrostatic_correction_on_lowest_level[...] = (
+            self.hydrostatic_correction.ndarray[:, self._grid.num_levels - 1],
         )
 
         # MARK
@@ -1079,7 +1077,7 @@ class SolveNonhydro:
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
+            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level,
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
@@ -1116,18 +1114,6 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        # if self._grid.limited_area:
-        #     self._compute_vn_on_lateral_boundary(
-        #         grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
-        #         vn_now=prognostic_states.current.vn,
-        #         vn_new=prognostic_states.next.vn,
-        #         dtime=dtime,
-        #         horizontal_start=self._start_edge_lateral_boundary,
-        #         horizontal_end=self._end_edge_nudging,
-        #         vertical_start=0,
-        #         vertical_end=self._grid.num_levels,
-        #         offset_provider={},
-        #     )
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
         self._exchange.exchange_and_wait(
             dims.EdgeDim, prognostic_states.next.vn, z_fields.rho_at_edges_on_model_levels
