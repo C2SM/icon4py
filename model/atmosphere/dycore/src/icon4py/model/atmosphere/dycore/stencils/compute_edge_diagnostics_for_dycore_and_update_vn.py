@@ -51,6 +51,9 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
+from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
+    _compute_vn_on_lateral_boundary,
+)
 from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
@@ -149,6 +152,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increment: fa.EdgeKField[ta.vpfloat],
+    grf_tend_vn: fa.EdgeKField[ta.wpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     pos_on_tplane_e_x: gtx.Field[[dims.ECDim], ta.wpfloat],
@@ -167,11 +171,13 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
-    igradp_method: gtx.int32,
+    limited_area: bool,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
+    start_edge_lateral_boundary: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
+    end_edge_nudging: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
@@ -265,6 +271,17 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             (start_edge_nudging_level_2 <= dims.EdgeDim),
             _add_analysis_increments_to_vn(
                 vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
+            ),
+            next_vn,
+        )
+
+    if limited_area:
+        next_vn = concat_where(
+            (start_edge_lateral_boundary <= dims.EdgeDim) & (dims.EdgeDim < end_edge_nudging),
+            _compute_vn_on_lateral_boundary(
+                vn_now=current_vn,
+                grf_tend_vn=grf_tend_vn,
+                dtime=dtime,
             ),
             next_vn,
         )
@@ -448,6 +465,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     predictor_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increment: fa.EdgeKField[ta.vpfloat],
+    grf_tend_vn: fa.EdgeKField[ta.wpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     pos_on_tplane_e_x: gtx.Field[[dims.ECDim], ta.wpfloat],
@@ -466,11 +484,13 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
-    igradp_method: gtx.int32,
+    limited_area: bool,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
+    start_edge_lateral_boundary: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
+    end_edge_nudging: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -551,6 +571,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
         normal_wind_iau_increment=normal_wind_iau_increment,
+        grf_tend_vn=grf_tend_vn,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
         pos_on_tplane_e_x=pos_on_tplane_e_x,
@@ -569,11 +590,13 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         dtime=dtime,
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
-        igradp_method=igradp_method,
+        limited_area=limited_area,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
+        start_edge_lateral_boundary=start_edge_lateral_boundary,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
+        end_edge_nudging=end_edge_nudging,
         out=(
             rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels,

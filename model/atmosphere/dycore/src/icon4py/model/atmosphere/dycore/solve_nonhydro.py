@@ -1036,33 +1036,33 @@ class SolveNonhydro:
         log.debug(
             f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
         )
-        if (
+        assert (
             self._config.igradp_method
             == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-        ):
-            self._compute_hydrostatic_correction_term(
-                theta_v=prognostic_states.current.theta_v,
-                ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
-                zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,
-                theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-                inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-                inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
-                z_hydro_corr=self.hydrostatic_correction,
-                grav_o_cpd=constants.GRAV_O_CPD,
-                horizontal_start=self._start_edge_nudging_level_2,
-                horizontal_end=self._end_edge_local,
-                vertical_start=self._grid.num_levels - 1,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.connectivities,
-            )
+        )
+        self._compute_hydrostatic_correction_term(
+            theta_v=prognostic_states.current.theta_v,
+            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
+            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,
+            theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
+            inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
+            inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
+            z_hydro_corr=self.hydrostatic_correction,
+            grav_o_cpd=constants.GRAV_O_CPD,
+            horizontal_start=self._start_edge_nudging_level_2,
+            horizontal_end=self._end_edge_local,
+            vertical_start=self._grid.num_levels - 1,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.connectivities,
+        )
 
-            # TODO this reallocates in every timestep and `hydrostatic_correction_on_lowest_level` is undefined if not TAYLOR_HYDRO
-            lowest_level = self._grid.num_levels - 1
-            hydrostatic_correction_on_lowest_level = gtx.as_field(
-                (dims.EdgeDim,),
-                self.hydrostatic_correction.ndarray[:, lowest_level],
-                allocator=self._backend.allocator,
-            )
+        # TODO this reallocates in every timestep
+        lowest_level = self._grid.num_levels - 1
+        hydrostatic_correction_on_lowest_level = gtx.as_field(
+            (dims.EdgeDim,),
+            self.hydrostatic_correction.ndarray[:, lowest_level],
+            allocator=self._backend.allocator,
+        )
 
         # MARK
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
@@ -1083,6 +1083,7 @@ class SolveNonhydro:
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
+            grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
             geofac_grg_x=self._interpolation_state.geofac_grg_x,
             geofac_grg_y=self._interpolation_state.geofac_grg_y,
             pos_on_tplane_e_x=self._interpolation_state.pos_on_tplane_e_1,
@@ -1101,11 +1102,13 @@ class SolveNonhydro:
             dtime=dtime,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
-            igradp_method=self._config.igradp_method,
+            limited_area=self._grid.limited_area,
             nflatlev=self._vertical_params.nflatlev,
             nflat_gradp=self._vertical_params.nflat_gradp,
+            start_edge_lateral_boundary=self._start_edge_lateral_boundary,
             start_edge_lateral_boundary_level_7=self._start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=self._start_edge_nudging_level_2,
+            end_edge_nudging=self._end_edge_nudging,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(self._end_edge_halo),
             vertical_start=gtx.int32(0),
@@ -1113,18 +1116,18 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        if self._grid.limited_area:
-            self._compute_vn_on_lateral_boundary(
-                grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
-                vn_now=prognostic_states.current.vn,
-                vn_new=prognostic_states.next.vn,
-                dtime=dtime,
-                horizontal_start=self._start_edge_lateral_boundary,
-                horizontal_end=self._end_edge_nudging,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider={},
-            )
+        # if self._grid.limited_area:
+        #     self._compute_vn_on_lateral_boundary(
+        #         grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
+        #         vn_now=prognostic_states.current.vn,
+        #         vn_new=prognostic_states.next.vn,
+        #         dtime=dtime,
+        #         horizontal_start=self._start_edge_lateral_boundary,
+        #         horizontal_end=self._end_edge_nudging,
+        #         vertical_start=0,
+        #         vertical_end=self._grid.num_levels,
+        #         offset_provider={},
+        #     )
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
         self._exchange.exchange_and_wait(
             dims.EdgeDim, prognostic_states.next.vn, z_fields.rho_at_edges_on_model_levels
