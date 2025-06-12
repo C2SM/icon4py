@@ -10,12 +10,38 @@ import pytest
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.utils.data_allocation as data_alloc
 
-from . import data_handling as data, datatest_utils as dt_utils, definitions as test_definitions
+from . import data_handling as data, datatest_utils as dt_utils, definitions as testing_defs
+
+
+@pytest.fixture(params=[*testing_defs.Experiment], scope="session")
+def experiment(request):
+    """
+    Define the experiment to be used in the test.
+
+    By default this fixture is parametrized over all available experiments
+    defined in `testing.definitions.Experiment`, but most likely you will
+    want to override it in your test module or as a parameter of the test
+    to use a specific experiment.
+    """
+    return request.param
+
+
+@pytest.fixture(params=[*testing_defs.Grid], scope="session")
+def grid(request):
+    """
+    Define the grid to be used in the test.
+
+    By default this fixture is parametrized over all available grids
+    defined in `testing.definitions.Grid`, but most likely you will
+    want to override it in your test module or as a parameter of the test
+    to use a specific grid.
+    """
+    return request.param
 
 
 @pytest.fixture
-def experiment():
-    return dt_utils.REGIONAL_EXPERIMENT
+def experiment__DELETE():
+    return testing_defs.Experiment.MCH_CH_R04B09
 
 
 @pytest.fixture(params=[False], scope="session")
@@ -25,11 +51,11 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return dt_utils.get_ranked_data_path(test_definitions.SERIALIZED_DATA_PATH, processor_props)
+    return dt_utils.get_ranked_data_path(testing_defs.SERIALIZED_DATA_PATH, processor_props)
 
 
 @pytest.fixture
-def download_ser_data(request, processor_props, ranked_data_path, experiment, pytestconfig):
+def experiment_data_files(request, processor_props, ranked_data_path, experiment__DELETE, pytestconfig):
     """
     Get the binary ICON data from a remote server.
 
@@ -40,20 +66,20 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
         return
 
     try:
-        destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        if experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
+        destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment__DELETE)
+        if experiment__DELETE == dt_utils.GLOBAL_EXPERIMENT__WIP:
             uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
-        elif experiment == dt_utils.JABW_EXPERIMENT:
+        elif experiment__DELETE == dt_utils.JABW_EXPERIMENT:
             uri = dt_utils.DATA_URIS_JABW[processor_props.comm_size]
-        elif experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        elif experiment__DELETE == dt_utils.GAUSS3D_EXPERIMENT:
             uri = dt_utils.DATA_URIS_GAUSS3D[processor_props.comm_size]
-        elif experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
+        elif experiment__DELETE == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
             uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
         else:
             uri = dt_utils.DATA_URIS[processor_props.comm_size]
 
         data_file = ranked_data_path.joinpath(
-            f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
+            f"{experiment__DELETE}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
             data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
@@ -67,20 +93,20 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
 
 @pytest.fixture
-def data_provider(download_ser_data, ranked_data_path, experiment, processor_props, backend):
-    data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+def data_provider(experiment_data_files, ranked_data_path, experiment__DELETE, processor_props, backend):
+    data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment__DELETE)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
 
 @pytest.fixture
-def grid_savepoint(data_provider, experiment):
-    root, level = dt_utils.get_global_grid_params(experiment)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
+def grid_savepoint(data_provider, experiment__DELETE):
+    root, level = dt_utils.get_global_grid_params(experiment__DELETE)
+    grid_id = dt_utils.get_grid_id_for_experiment(experiment__DELETE)
     return data_provider.from_savepoint_grid(grid_id, root, level)
 
 
 def is_regional(experiment_name):
-    return experiment_name == dt_utils.REGIONAL_EXPERIMENT
+    return experiment_name == dt_utils.REGIONAL_EXPERIMENT__WIP
 
 
 @pytest.fixture
@@ -95,9 +121,9 @@ def icon_grid(grid_savepoint, backend):
 
 
 @pytest.fixture
-def decomposition_info(data_provider, experiment):
-    root, level = dt_utils.get_global_grid_params(experiment)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
+def decomposition_info(data_provider, experiment__DELETE):
+    root, level = dt_utils.get_global_grid_params(experiment__DELETE)
+    grid_id = dt_utils.get_grid_id_for_experiment(experiment__DELETE)
     return data_provider.from_savepoint_grid(
         grid_id=grid_id, grid_root=root, grid_level=level
     ).construct_decomposition_info()
@@ -470,18 +496,18 @@ def istep_exit():
 
 
 @pytest.fixture
-def lowest_layer_thickness(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+def lowest_layer_thickness(experiment__DELETE):
+    if experiment__DELETE == dt_utils.REGIONAL_EXPERIMENT__WIP:
         return 20.0
     else:
         return 50.0
 
 
 @pytest.fixture
-def model_top_height(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+def model_top_height(experiment__DELETE):
+    if experiment__DELETE == dt_utils.REGIONAL_EXPERIMENT__WIP:
         return 23000.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
+    elif experiment__DELETE == dt_utils.GLOBAL_EXPERIMENT__WIP:
         return 75000.0
     else:
         return 23500.0
@@ -493,20 +519,20 @@ def flat_height():
 
 
 @pytest.fixture
-def stretch_factor(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+def stretch_factor(experiment__DELETE):
+    if experiment__DELETE == dt_utils.REGIONAL_EXPERIMENT__WIP:
         return 0.65
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
+    elif experiment__DELETE == dt_utils.GLOBAL_EXPERIMENT__WIP:
         return 0.9
     else:
         return 1.0
 
 
 @pytest.fixture
-def damping_height(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+def damping_height(experiment__DELETE):
+    if experiment__DELETE == dt_utils.REGIONAL_EXPERIMENT__WIP:
         return 12500.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
+    elif experiment__DELETE == dt_utils.GLOBAL_EXPERIMENT__WIP:
         return 50000.0
     else:
         return 45000.0

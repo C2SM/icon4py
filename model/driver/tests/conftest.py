@@ -25,8 +25,7 @@ from icon4py.model.driver import icon4py_configuration as driver_config
 from icon4py.model.testing.datatest_fixtures import (
     damping_height,
     data_provider,
-    download_ser_data,
-    experiment,
+    experiment_data_files,
     flat_height,
     grid_savepoint,
     htop_moist_proc,
@@ -63,8 +62,8 @@ __all__ = [
     # imported fixtures:
     "damping_height",
     "data_provider",
-    "download_ser_data",
-    "experiment",
+    "experiment_data_files",
+    "experiment__DELETE",
     "flat_height",
     "grid_savepoint",
     "htop_moist_proc",

@@ -261,7 +261,7 @@ def solve_nh_init(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT__WIP,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -859,7 +859,7 @@ def test_dycore_wrapper_granule_inputs(
     "experiment,step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT__WIP,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -1033,7 +1033,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, vn_only, at_initial_timestep",
     [

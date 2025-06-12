@@ -18,7 +18,7 @@ from icon4py.model.common.grid import base as base_grid, simple as simple_grid
 #     GLOBAL_EXPERIMENT,
 #     REGIONAL_EXPERIMENT,
 # )
-from icon4py.model.testing import definitions as test_definitions, helpers
+from icon4py.model.testing import definitions as testing_defs, helpers
 
 
 TEST_LEVELS = ("any", "unit", "integration")
@@ -80,9 +80,9 @@ def grid(request, backend):
         request.config.getoption("grid") if request.config.hasoption("grid") else DEFAULT_GRID
     )
     try:
-        grid = test_definitions.Grid[grid_option]
+        grid = testing_defs.Grid[grid_option]
     except KeyError:
-        f"Invalid value for '--grid' option - possible names are {test_definitions.Grid.__members__.keys()}"
+        f"Invalid value for '--grid' option - possible names are {testing_defs.Grid.__members__.keys()}"
 
     grid = _get_grid(grid_option, backend)
     return grid

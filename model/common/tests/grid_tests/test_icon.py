@@ -30,7 +30,7 @@ from . import utils
 
 @functools.cache
 def grid_from_file() -> icon.IconGrid:
-    return from_file(dt_utils.REGIONAL_EXPERIMENT)
+    return from_file(dt_utils.REGIONAL_EXPERIMENT__WIP)
 
 
 @functools.cache
@@ -172,13 +172,13 @@ def test_grid_size(icon_grid):
     assert 31558 == icon_grid.size[dims.EdgeDim]
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.R02B04_GLOBAL))
 def test_has_skip_values(grid_file):
     grid = from_file(grid_file)
     assert grid.has_skip_values()
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT))
+@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT__WIP))
 @pytest.mark.parametrize("dim", utils.local_dims())
 def test_skip_values_on_connectivities(grid_file: str, dim: gtx.Dimension):
     grid = from_file(grid_file)

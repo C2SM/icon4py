@@ -31,16 +31,16 @@ from icon4py.model.common.io.io import (
 )
 from icon4py.model.common.states import data
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_definitions, grid_utils
+from icon4py.model.testing import definitions as testing_defs, grid_utils
 
 
 BACKEND: Final = None  # Setting backend to fieldview embedded here
 UNLIMITED: Final = None
 SIMPLE_GRID_INSTANCE: Final = simple.SimpleGrid()
 GRID: Final = grid_utils.get_grid_manager_for_experiment(
-    test_definitions.Experiment.EXCLAIM_APE, BACKEND
+    testing_defs.Experiment.EXCLAIM_APE, BACKEND
 ).grid
-GRID_FILE: Final = test_definitions.Experiment.EXCLAIM_APE.grid.file_name
+GRID_FILE: Final = testing_defs.Experiment.EXCLAIM_APE.grid.file_name
 
 assert GRID_FILE is not None
 
@@ -145,7 +145,7 @@ def test_io_monitor_create_output_path(tmp_io_tests_path):
         config,
         vertical_params,
         SIMPLE_GRID_INSTANCE.config.horizontal_config,
-        test_definitions.GRIDS_PATH / GRID_FILE,
+        grid_utils.get_grid_file_path(GRID_FILE),
         SIMPLE_GRID_INSTANCE.id,
     )
     assert monitor.path.exists()
@@ -168,7 +168,7 @@ def test_io_monitor_write_ugrid_file(tmp_io_tests_path):
         config,
         vertical_params,
         SIMPLE_GRID_INSTANCE.config.horizontal_config,
-        test_definitions.GRIDS_PATH / GRID_FILE,
+        testing_defs.GRIDS_PATH / GRID_FILE,
         SIMPLE_GRID_INSTANCE.id,
     )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
@@ -186,7 +186,7 @@ def test_io_monitor_write_ugrid_file(tmp_io_tests_path):
 def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: Sequence[str]):
     path_name = tmp_io_tests_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_grid_manager_for_experiment(
-        test_definitions.Experiment.EXCLAIM_APE, BACKEND
+        testing_defs.Experiment.EXCLAIM_APE, BACKEND
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -211,7 +211,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: S
         config,
         vertical_params,
         grid.config.horizontal_config,
-        test_definitions.GRIDS_PATH / GRID_FILE,
+        grid_utils.get_grid_file_path(GRID_FILE),
         grid.id,
     )
     start_time = dt.datetime.fromisoformat(configured_output_start)
@@ -238,7 +238,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: S
 
 def test_fieldgroup_monitor_write_dataset_file_roll(tmp_io_tests_path):
     grid = grid_utils.get_grid_manager_for_experiment(
-        test_definitions.Experiment.EXCLAIM_APE, BACKEND
+        testing_defs.Experiment.EXCLAIM_APE, BACKEND
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(

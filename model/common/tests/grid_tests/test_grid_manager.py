@@ -87,7 +87,7 @@ def test_grid_file_dimension(global_grid_file):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -143,7 +143,7 @@ def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -166,7 +166,7 @@ def test_grid_manager_eval_v2e(caplog, grid_savepoint, experiment, grid_file, ba
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -186,7 +186,7 @@ def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim, bac
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -239,7 +239,7 @@ def reset_invalid_index(index_array: np.ndarray):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -270,7 +270,7 @@ def invalid_index(ar: np.ndarray):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -291,7 +291,7 @@ def test_grid_manager_eval_e2c(caplog, grid_savepoint, grid_file, experiment, ba
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -315,7 +315,7 @@ def test_grid_manager_eval_c2e(caplog, grid_savepoint, grid_file, experiment, ba
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -333,7 +333,7 @@ def test_grid_manager_eval_c2e2c(caplog, grid_savepoint, grid_file, experiment, 
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -353,7 +353,7 @@ def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment,
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -383,7 +383,7 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -407,7 +407,7 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -468,7 +468,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
     "grid_file, global_num_cells",
     [
         (dt_utils.R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
-        (dt_utils.REGIONAL_EXPERIMENT, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )
 def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
@@ -498,7 +498,7 @@ def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
     "grid_file, experiment",
     [
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
     ],
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
@@ -538,7 +538,7 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -557,7 +557,7 @@ def test_read_geometry_fields(grid_savepoint, grid_file, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -574,7 +574,7 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -591,7 +591,7 @@ def test_tangent_orientation(grid_file, grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -608,7 +608,7 @@ def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -623,7 +623,7 @@ def test_dual_area(grid_file, grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -643,7 +643,7 @@ def test_edge_cell_distance(grid_file, grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -660,7 +660,7 @@ def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.REGIONAL_EXPERIMENT__WIP),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT__WIP),
     ],
 )
@@ -677,7 +677,7 @@ def test_edge_vertex_distance(grid_file, grid_savepoint, backend):
 
 
 @pytest.mark.parametrize(
-    "grid_file, expected", [(dt_utils.REGIONAL_EXPERIMENT, True), (dt_utils.R02B04_GLOBAL, False)]
+    "grid_file, expected", [(dt_utils.REGIONAL_EXPERIMENT__WIP, True), (dt_utils.R02B04_GLOBAL, False)]
 )
 def test_limited_area_on_grid(grid_file, expected):
     grid = _run_grid_manager(grid_file, backend=None).grid

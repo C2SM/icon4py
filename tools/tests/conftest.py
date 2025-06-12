@@ -15,8 +15,7 @@ import icon4py.model.common.type_alias as type_alias
 from icon4py.model.testing.datatest_fixtures import (  # F401
     damping_height,
     data_provider,
-    download_ser_data,
-    experiment,
+    experiment_data_files,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -58,8 +57,8 @@ __all__ = [
     # imported fixtures:
     "damping_height",
     "data_provider",
-    "download_ser_data",
-    "experiment",
+    "experiment_data_files",
+    "experiment__DELETE",
     "grid_savepoint",
     "icon_grid",
     "interpolation_savepoint",

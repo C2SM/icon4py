@@ -9,8 +9,7 @@
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
-    download_ser_data,
-    experiment,
+    experiment_data_files,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,

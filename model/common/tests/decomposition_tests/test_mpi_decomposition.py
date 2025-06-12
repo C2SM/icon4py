@@ -28,8 +28,7 @@ from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeEx
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
     decomposition_info,
-    download_ser_data,
-    experiment,
+    experiment_data_files,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
@@ -73,7 +72,7 @@ def test_decomposition_info_masked(
     owned,
     total,
     caplog,
-    download_ser_data,  # noqa: F811 # fixture
+    experiment_data_files,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
     processor_props,  # noqa: F811 # fixture
 ):
@@ -118,7 +117,7 @@ def test_decomposition_info_local_index(
     owned,
     total,
     caplog,
-    download_ser_data,  # noqa: F811 #fixture
+    experiment_data_files,  # noqa: F811 #fixture
     decomposition_info,  # noqa: F811 #fixture
     processor_props,  # noqa: F811 #fixture
 ):
@@ -173,7 +172,7 @@ def test_domain_descriptor_id_are_globally_unique(
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
     caplog,
-    download_ser_data,  # noqa: F811 #fixture
+    experiment_data_files,  # noqa: F811 #fixture
     decomposition_info,  # noqa: F811 #fixture
     icon_grid,  # noqa: F811 #fixture
     processor_props,  # noqa: F811 #fixture

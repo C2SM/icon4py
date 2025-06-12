@@ -12,8 +12,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
     decomposition_info,
-    download_ser_data,
-    experiment,
+    experiment_data_files,
     flat_height,
     grid_savepoint,
     htop_moist_proc,
@@ -29,9 +28,9 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
 )
-from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
+from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT__WIP
 
 
 @pytest.fixture
 def grid_file():
-    return REGIONAL_EXPERIMENT
+    return REGIONAL_EXPERIMENT__WIP

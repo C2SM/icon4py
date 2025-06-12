@@ -36,7 +36,7 @@ from .utils import (
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT__WIP,
             1,
             2,
             1,
@@ -50,7 +50,7 @@ from .utils import (
             False,
         ),
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT__WIP,
             1,
             2,
             1,

@@ -50,7 +50,7 @@ def create_vertical_params(vertical_config, grid_savepoint):
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000"),
     ],
 )
@@ -98,7 +98,7 @@ def test_verify_velocity_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000"),
     ],
 )
@@ -140,7 +140,7 @@ def test_scale_factors_by_dtime(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -317,7 +317,7 @@ def test_velocity_predictor_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -465,7 +465,7 @@ def test_velocity_corrector_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -595,7 +595,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -673,7 +673,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -772,7 +772,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -866,7 +866,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -1003,7 +1003,7 @@ def test_compute_advection_in_vertical_momentum_equation(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT__WIP, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT__WIP, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )

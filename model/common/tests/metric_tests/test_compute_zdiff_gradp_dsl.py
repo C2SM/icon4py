@@ -24,7 +24,7 @@ from icon4py.model.testing.helpers import (
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT__WIP]
+    "experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.GLOBAL_EXPERIMENT__WIP]
 )
 def test_compute_zdiff_gradp_dsl(
     icon_grid, metrics_savepoint, interpolation_savepoint, backend, experiment

@@ -6,14 +6,17 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
+import pathlib
 import random
 import shutil
+from collections.abc import Generator
 
 import pytest
 
 from icon4py.model.testing.datatest_fixtures import (
     decomposition_info,
-    experiment,
 )
 from icon4py.model.testing.helpers import connectivities_as_numpy
 
@@ -35,7 +38,7 @@ __all__ = [
     "backend",
     "grid",
     "decomposition_info",
-    "experiment",
+    "experiment__DELETE",
     "connectivities_as_numpy",
 ]
 
@@ -46,7 +49,7 @@ def random_name() -> str:
 
 
 @pytest.fixture
-def tmp_io_tests_path(tmp_path):
+def tmp_io_tests_path(tmp_path) -> Generator[pathlib.Path]:
     base_path = (tmp_path / "io_tests").resolve()
     base_path.mkdir(exist_ok=True, parents=True, mode=0o777)
 

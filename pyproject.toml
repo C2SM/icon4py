@@ -249,5 +249,13 @@ packages = []
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.testing.pytest_config', '--strict-markers']
 markers = [
-    "embedded_remap_error", "embedded_static_args", "uses_as_offset", "skip_value_error", "datatest", "embedded_only", "cpu_only", "infinite_concat_where"
+    "cpu_only",
+    "datatest",
+    "experiment",
+    "embedded_only",
+    "embedded_remap_error",
+    "embedded_static_args",
+    "infinite_concat_where",
+    "skip_value_error",
+    "uses_as_offset"
 ]

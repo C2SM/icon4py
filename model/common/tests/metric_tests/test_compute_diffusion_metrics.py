@@ -27,7 +27,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT__WIP]
+    "experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.GLOBAL_EXPERIMENT__WIP]
 )
 def test_compute_diffusion_metrics(
     metrics_savepoint,
