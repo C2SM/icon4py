@@ -53,7 +53,7 @@ def test_topography_smoothing_with_serialized_data(
 @pytest.mark.parametrize(
     "experiment",
     [
-        (dt_utils.GAUSS3D_EXPERIMENT),
+        dt_utils.GAUSS3D_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT,
     ],
 )
 def test_topography_smoothing_numpy_with_serialized_data(

@@ -841,7 +841,8 @@ def _check_and_correct_layer_thickness_numpy(
                 / (SLEVE_minimum_layer_thickness_2 - SLEVE_minimum_layer_thickness_1)
             ) ** 2
             minimum_layer_thickness = (
-                SLEVE_minimum_relative_layer_thickness_1 * layer_thickness_adjustment_factor
+                SLEVE_minimum_relative_layer_thickness_1
+                * layer_thickness_adjustment_factor
                 + SLEVE_minimum_relative_layer_thickness_2
                 * (1.0 - layer_thickness_adjustment_factor)
             ) * delta_vct_a
@@ -853,7 +854,9 @@ def _check_and_correct_layer_thickness_numpy(
                 * (delta_vct_a / SLEVE_minimum_layer_thickness_2) ** (1.0 / 3.0)
             )
 
-        minimum_layer_thickness = max(minimum_layer_thickness, min(50, lowest_layer_thickness))
+        minimum_layer_thickness = max(
+            minimum_layer_thickness, min(50, lowest_layer_thickness)
+        )
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
