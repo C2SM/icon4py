@@ -70,9 +70,6 @@ dycore_consts: Final = constants.PhysicsConstants()
 
 @gtx.field_operator
 def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
-    horizontal_pressure_gradient: fa.EdgeKField[
-        ta.vpfloat
-    ],  # TODO can we get rid of this field (or do we need to put 0 in the halo/lateral boundary?)
     next_vn: fa.EdgeKField[ta.wpfloat],
     current_vn: fa.EdgeKField[ta.wpfloat],
     tangential_wind: fa.EdgeKField[ta.vpfloat],
@@ -171,15 +168,12 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     # we could further simplify this expression (i.e. remove the horizontal `concat_where` completely).
     horizontal_pressure_gradient = concat_where(
         dims.KDim < nflatlev,
-        concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim),
-            _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
-                inv_dual_edge_length=inv_dual_edge_length,
-                z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
-            ),
-            horizontal_pressure_gradient,
+        _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
         ),
-        horizontal_pressure_gradient,
+        # horizontal_pressure_gradient,
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),  # this will go away with a k switch
     )
 
     if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
@@ -519,7 +513,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         - next_vn: normal wind to be updated [m s-1]
     """
     _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
-        horizontal_pressure_gradient=horizontal_pressure_gradient,
         next_vn=next_vn,
         current_vn=current_vn,
         tangential_wind=tangential_wind,
