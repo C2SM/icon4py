@@ -496,6 +496,10 @@ class SimpleGrid(BaseGrid):
     def id(self) -> uuid.UUID:
         return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
 
+    @property
+    def limited_area(self) -> bool:
+        return False
+
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         return False
 
