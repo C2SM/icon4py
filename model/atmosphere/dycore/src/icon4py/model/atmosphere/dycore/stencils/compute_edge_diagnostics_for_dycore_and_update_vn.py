@@ -80,7 +80,7 @@ def level_switch(
     concat_where(
         dims.KDim < nflatlev,
         on_flatlevels,
-        concat_where(nflat_gradp + 1 <= dims.KDIM, below_flatgradp, between_flat_and_flatgradp),
+        concat_where(nflat_gradp + 1 <= dims.KDim, below_flatgradp, between_flat_and_flatgradp),
     )
 
 
