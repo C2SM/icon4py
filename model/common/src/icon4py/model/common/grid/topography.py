@@ -13,6 +13,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.grid import base
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.utils import data_allocation as data_alloc
+import numpy as np
 
 
 @gtx.field_operator
@@ -44,6 +45,53 @@ def update_smoothed_topography(
             dims.CellDim: (horizontal_start, horizontal_end),
         },
     )
+
+
+def compute_nabla2_on_cell_numpy(
+    psi_c: data_alloc.NDArray,
+    geofac_n2s: data_alloc.NDArray,
+    c2e2co: data_alloc.NDArray,
+) -> np.ndarray:
+    """
+    Computes the Laplacian (nabla squared) of a scalar field defined on cell
+    centres. (Numpy version)
+    """
+    nabla2_psi_c = np.sum(psi_c[c2e2co] * geofac_n2s, axis=1)
+    return nabla2_psi_c
+
+
+def update_smoothed_topography_numpy(
+    smoothed_topography: np.ndarray,
+    nabla2_topo: np.ndarray,
+    cell_areas: np.ndarray,
+) -> np.ndarray:
+    """
+    Updates the smoothed topography field inside the loop. (Numpy version)
+    """
+    return smoothed_topography + 0.125 * nabla2_topo * cell_areas
+
+
+def smooth_topography_numpy(
+    topography: data_alloc.NDArray,
+    cell_areas: data_alloc.NDArray,
+    geofac_n2s: data_alloc.NDArray,
+    c2e2co: data_alloc.NDArray,
+    num_iterations: int = 25,
+) -> data_alloc.NDArray:
+    """
+    Computes the smoothed (laplacian-filtered) topography needed by the SLEVE
+    coordinate.
+    """
+
+    smoothed_topography = topography.copy()
+
+    for _ in range(num_iterations):
+        nabla2_topo = compute_nabla2_on_cell_numpy(smoothed_topography, geofac_n2s, c2e2co)
+        smoothed_topography = update_smoothed_topography_numpy(
+            smoothed_topography, nabla2_topo, cell_areas
+        )
+
+    return smoothed_topography
 
 
 def smooth_topography(
@@ -85,5 +133,4 @@ def smooth_topography(
             horizontal_end=grid.num_cells,
             offset_provider={},
         )
-
     return smoothed_topography

@@ -311,3 +311,20 @@ def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend,
 
     assert field.shape == (grid.num_vertices, 6)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+
+@pytest.mark.level("integration")
+@pytest.mark.parametrize(
+    "grid_file, experiment, rtol",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+    ],
+)
+@pytest.mark.datatest
+def test_nudgecoeffs(interpolation_savepoint, grid_file, experiment, backend, rtol):
+    field_ref = interpolation_savepoint.nudgecoeff_e()
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
+    # grid = factory.grid
+    field = factory.get(attrs.NUDGECOEFFS)
+
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)

@@ -23,7 +23,6 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
@@ -49,20 +48,21 @@ vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
 
+# TODO (Yilu): z_ifc should be registed to metrics_field
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
         grid: icon.IconGrid,
-        vertical_grid: VerticalGrid,
+        vertical_grid: v_grid.VerticalGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
+        topography: data_alloc.NDArray,
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
         interface_model_height: gtx.Field,
         e_refin_ctrl: gtx.Field,
         c_refin_ctrl: gtx.Field,
-        damping_height: float,
         rayleigh_type: int,
         rayleigh_coeff: float,
         exner_expol: float,
@@ -77,6 +77,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
+        self._topography = topography
         self._interpolation_source = interpolation_source
         log.info(
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -88,7 +89,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "divdamp_trans_start": 12500.0,
             "divdamp_trans_end": 17500.0,
             "divdamp_type": 3,
-            "damping_height": damping_height,
+            "damping_height": vertical_grid.config.rayleigh_damping_height,
             "rayleigh_type": rayleigh_type,
             "rayleigh_coeff": rayleigh_coeff,
             "exner_expol": exner_expol,
@@ -117,8 +118,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             factory.PrecomputedFieldProvider(
                 {
                     attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
-                    "z_ifc_sliced": z_ifc_sliced,
+                    #TODO (Yilu): noe let's check with z_fic_sliced and vtc_a
+                    "z_ifc_sliced": z_ifc_sliced,  # TODO (Yilu): z_ifc_sliced could be removed?
                     "vct_a": vct_a,
+                    "topography": self._topography,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -138,6 +141,40 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
 
     def _register_computed_fields(self):
+        vertical_coordinates_on_cell_khalf = factory.NumpyFieldsProvider(
+            func=functools.partial(
+                v_grid.compute_vertical_coordinate_numpy,
+                array_ns=self._xp,
+            ),
+            fields=(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,),
+            domain={
+                dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
+                dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
+            },
+            deps={
+                "vct_a": "vct_a",
+                "topography": "topography",
+                "cell_areas": geometry_attrs.CELL_AREA,
+                "geofac_n2s": interpolation_attributes.GEOFAC_N2S,
+            },
+            connectivities={"c2e2co": dims.C2E2CODim},
+            params={
+                "num_cells": self._grid.num_cells,
+                "num_levels": self._vertical_grid.num_levels,
+                "nflatlev": self._vertical_grid.nflatlev,
+                "model_top_height": self._vertical_grid.config.model_top_height,
+                "SLEVE_decay_scale_1": self.vertical_grid.config.SLEVE_decay_scale_1,
+                "SLEVE_decay_exponent": self._vertical_grid.config.SLEVE_decay_exponent,
+                "SLEVE_decay_scale_2": self._vertical_grid.config.SLEVE_decay_scale_2,
+                "SLEVE_minimum_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_layer_thickness_1,
+                "SLEVE_minimum_relative_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_1,
+                "SLEVE_minimum_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_layer_thickness_2,
+                "SLEVE_minimum_relative_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_2,
+                "lowest_layer_thickness": self._vertical_grid.config.lowest_layer_thickness,
+            },
+        )
+        self.register_provider(vertical_coordinates_on_cell_khalf)
+
         height = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
                 self._backend
