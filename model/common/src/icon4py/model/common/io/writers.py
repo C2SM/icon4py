@@ -19,7 +19,7 @@ import xarray as xr
 
 import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import  vertical as v_grid, base
+from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils
 
 
