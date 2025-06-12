@@ -68,7 +68,6 @@ divergence_damp_order: Final = dycore_states.DivergenceDampingOrder()
 dycore_consts: Final = constants.PhysicsConstants()
 
 
-# TODO delete unused parameters
 @gtx.field_operator
 def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
