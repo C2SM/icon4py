@@ -63,6 +63,8 @@ class ImmersedBoundaryMethod:
         self._dirichlet_value_rho     = 1.0
         self._dirichlet_value_exner   = 1.0
         self._dirichlet_value_theta_v = 301.0
+        cell_k_domain = {CellDim: (0, grid.num_cells), dims.KDim: (0, grid.num_levels)}
+        self.neigh_full_cell_mask = gtx.zeros(cell_k_domain,dtype=bool)
 
         log.info("IBM initialized")
 
@@ -114,6 +116,10 @@ class ImmersedBoundaryMethod:
         self.half_edge_mask = gtx.as_field((EdgeDim, KDim), half_edge_mask_np)
         self.full_vertex_mask = gtx.as_field((VertexDim, KDim), full_vertex_mask_np)
         self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np)
+
+    @property
+    def calc_neigh_full_cell_mask(self):
+        return self.neigh_full_cell_mask
 
     def _mask_test_cells(
         self,

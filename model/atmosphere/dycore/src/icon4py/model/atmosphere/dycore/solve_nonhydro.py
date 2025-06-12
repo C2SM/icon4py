@@ -1026,7 +1026,6 @@ class SolveNonhydro:
             ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
             pg_exdist=self._metric_state_nonhydro.pg_exdist,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
-            ibm_green_gauss_gradient_mask=self._ibm.neigh_full_cell_mask,
             dtime=dtime,
             cpd=constants.CPD,
             iau_wgt_dyn=self._config.iau_wgt_dyn,

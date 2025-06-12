@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import pathlib
 from typing import Final
 
 import gt4py.next as gtx
@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
     RhoThetaAdvectionType,
 )
+from icon4py.model.atmosphere.dycore.ibm import ImmersedBoundaryMethod
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
 )
@@ -58,14 +59,35 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta, model_backends
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
+from icon4py.model.driver.initialization_utils import read_icon_grid
+import uuid
 
 rhotheta_avd_type: Final = RhoThetaAdvectionType()
 horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
 divergence_damp_order: Final = DivergenceDampingOrder()
 
+GRID_LEVEL = 0
+GRID_ROOT = 2
+GLOBAL_GRID_ID = uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba")
+savepoint_path = "../../../../testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
+grid_file_path = "Torus_Triangles_50000m_x_5000m_res500m.nc"
+grid = read_icon_grid(
+        pathlib.Path(savepoint_path).resolve(),
+        backend=model_backends.BACKENDS["gtfn_cpu"],
+        rank=0,
+        ser_type="serialbox",
+        grid_id=GLOBAL_GRID_ID,
+        grid_root=GRID_ROOT,
+        grid_level=GRID_LEVEL,
+    )
+ibm = ImmersedBoundaryMethod(
+    grid=grid,
+    savepoint_path=savepoint_path,
+    grid_file_path=grid_file_path,
+)
+ibm_green_gauss_gradient_mask = ibm.calc_neigh_full_cell_mask
 
 @gtx.field_operator
 def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
@@ -101,7 +123,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
-    ibm_green_gauss_gradient_mask: fa.CellKField[bool],
     dtime: ta.wpfloat,
     cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -497,7 +518,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
-    ibm_green_gauss_gradient_mask: fa.CellKField[bool],
     dtime: ta.wpfloat,
     cpd: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -614,7 +634,6 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
-        ibm_green_gauss_gradient_mask=ibm_green_gauss_gradient_mask,
         dtime=dtime,
         cpd=cpd,
         iau_wgt_dyn=iau_wgt_dyn,
