@@ -9,22 +9,19 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
-import icon4py.model.testing.datatest_utils as dt_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.metrics.metric_fields import (
     compute_flat_idx,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import (
-    dallclose,
-)
+from icon4py.model.testing import cases, helpers
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.GLOBAL_EXPERIMENT__WIP]
+    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
 def test_compute_zdiff_gradp_dsl(
     icon_grid, metrics_savepoint, interpolation_savepoint, backend, experiment
@@ -75,7 +72,7 @@ def test_compute_zdiff_gradp_dsl(
         array_ns=xp,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         data_alloc.as_numpy(zdiff_gradp_full_field),
         zdiff_gradp_ref.asnumpy(),
         atol=1e-10,

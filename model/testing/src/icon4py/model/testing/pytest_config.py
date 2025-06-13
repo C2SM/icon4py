@@ -13,12 +13,11 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
+from icon4py.model.testing import cases, helpers
 
-# from icon4py.model.testing.datatest_utils import (
-#     GLOBAL_EXPERIMENT,
-#     REGIONAL_EXPERIMENT,
-# )
-from icon4py.model.testing import definitions as testing_defs, helpers
+
+REGIONAL_EXPERIMENT: Final[cases.Experiment] = cases.Experiment.MCH_CH_R04B09
+GLOBAL_EXPERIMENT: Final[cases.Experiment] = cases.Experiment.EXCLAIM_APE
 
 
 TEST_LEVELS = ("any", "unit", "integration")
@@ -80,9 +79,9 @@ def grid(request, backend):
         request.config.getoption("grid") if request.config.hasoption("grid") else DEFAULT_GRID
     )
     try:
-        grid = testing_defs.Grid[grid_option]
+        grid = cases.Grid[grid_option]
     except KeyError:
-        f"Invalid value for '--grid' option - possible names are {testing_defs.Grid.__members__.keys()}"
+        f"Invalid value for '--grid' option - possible names are {cases.Grid.__members__.keys()}"
 
     grid = _get_grid(grid_option, backend)
     return grid

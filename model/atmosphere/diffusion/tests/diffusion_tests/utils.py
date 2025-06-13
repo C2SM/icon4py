@@ -62,15 +62,6 @@ def diff_multfac_vn_numpy(shape, k4, substeps):
     return factor * np.ones(shape)
 
 
-# TODO: this code is replicated across the codebase currently. The configuration should be read from an external file.
-def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
-    if name.lower() in "mch_ch_r04b09_dsl":
-        return r04b09_diffusion_config(ndyn_substeps)
-    elif name.lower() in "exclaim_ape_r02b04":
-        return exclaim_ape_diffusion_config(ndyn_substeps)
-
-
-
 def compare_dace_orchestration_multiple_steps(
     non_orch_field: diffusion_states.DiffusionDiagnosticState | prognostics.PrognosticState,
     orch_field: diffusion_states.DiffusionDiagnosticState | prognostics.PrognosticState,

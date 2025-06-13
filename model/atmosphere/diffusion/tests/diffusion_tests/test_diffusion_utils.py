@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import configuration_builders, definitions as testing_defs
-from .utils import construct_diffusion_config, diff_multfac_vn_numpy, smag_limit_numpy
+from icon4py.model.testing import cases, configuration_builders
+
+from .utils import diff_multfac_vn_numpy, smag_limit_numpy
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
@@ -97,7 +98,7 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
-@pytest.mark.parametrize("experiment", [testing_defs.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):

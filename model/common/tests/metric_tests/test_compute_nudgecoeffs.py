@@ -14,7 +14,7 @@ from icon4py.model.common.grid import horizontal as h_grid, refinement
 from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing import cases
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     experiment_data_files,
@@ -28,7 +28,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.GLOBAL_EXPERIMENT__WIP]
+    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
 def test_compute_nudgecoeffs_e(
     grid_savepoint,  # noqa: F811 # fixture

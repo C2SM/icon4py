@@ -23,19 +23,17 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.testing import definitions as testing_defs, grid_utils
+from icon4py.model.testing import cases, grid_utils
 
 
 ALL_GRID_FILES: Final[Sequence[pathlib.Path]] = [
-    grid_utils.get_grid_file_path(grid.file_name)
-    for grid in testing_defs.Grid
-    if grid.file_name
+    grid_utils.get_grid_file_path(grid.file_name) for grid in cases.Grid if grid.file_name
 ]
 
 
-@pytest.mark.parametrize("file", ALL_GRID_FILES)
-def test_convert_to_ugrid(file: pathlib.Path):
-    with load_data_file(file) as ds:
+@pytest.mark.parametrize("grid_file", ALL_GRID_FILES)
+def test_convert_to_ugrid(grid_file: pathlib.Path):
+    with load_data_file(grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds, validate=True)
         assert uxds.attrs["title"] == "ICON grid description"

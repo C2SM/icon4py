@@ -13,14 +13,19 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import configuration_builders, datatest_utils, definitions as testing_defs, helpers, parallel_helpers
+from icon4py.model.testing import (
+    cases,
+    configuration_builders,
+    helpers,
+    parallel_helpers,
+)
 
 from .. import utils
 
 
 @pytest.skip("FIXME: Need updated test data yet", allow_module_level=True)
 @pytest.mark.mpi
-@pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT__WIP])
+@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
 @pytest.mark.parametrize("orchestration", [False, True])
@@ -50,7 +55,7 @@ def test_parallel_diffusion(
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{datatest_utils.REGIONAL_EXPERIMENT__WIP}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{cases.Experiment.MCH_CH_R04B09}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
@@ -158,7 +163,7 @@ def test_parallel_diffusion(
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT__WIP])
+@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True])
 def test_parallel_diffusion_multiple_steps(
@@ -189,7 +194,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{datatest_utils.REGIONAL_EXPERIMENT__WIP}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{cases.Experiment.MCH_CH_R04B09}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "

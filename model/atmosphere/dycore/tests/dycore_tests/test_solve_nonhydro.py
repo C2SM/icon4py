@@ -28,7 +28,7 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
+    cases,
     helpers,
 )
 
@@ -99,7 +99,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP])
+@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, step_date_init, substep_init, at_initial_timestep",
     [
@@ -139,12 +139,12 @@ def test_time_step_flags(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -505,12 +505,12 @@ def test_nonhydro_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -714,12 +714,12 @@ def test_nonhydro_corrector_step(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -846,7 +846,7 @@ def test_run_solve_nonhydro_single_step(
 # why is this not run for APE?
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP])
+@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit,  at_initial_timestep",
     [
@@ -1032,12 +1032,12 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1250,12 +1250,12 @@ def test_compute_perturbed_quantities_and_interpolation(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1393,12 +1393,12 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1617,12 +1617,12 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1749,12 +1749,12 @@ def test_apply_divergence_damping_and_update_vn(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1947,12 +1947,12 @@ def test_vertically_implicit_solver_at_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),

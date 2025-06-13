@@ -31,16 +31,14 @@ from icon4py.model.common.io.io import (
 )
 from icon4py.model.common.states import data
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as testing_defs, grid_utils
+from icon4py.model.testing import cases, grid_utils
 
 
 BACKEND: Final = None  # Setting backend to fieldview embedded here
 UNLIMITED: Final = None
 SIMPLE_GRID_INSTANCE: Final = simple.SimpleGrid()
-GRID: Final = grid_utils.get_grid_manager_for_experiment(
-    testing_defs.Experiment.EXCLAIM_APE, BACKEND
-).grid
-GRID_FILE: Final = testing_defs.Experiment.EXCLAIM_APE.grid.file_name
+GRID: Final = grid_utils.get_grid_manager_for_experiment(cases.Experiment.EXCLAIM_APE, BACKEND).grid
+GRID_FILE: Final = cases.Experiment.EXCLAIM_APE.grid.file_name
 
 assert GRID_FILE is not None
 
@@ -168,7 +166,7 @@ def test_io_monitor_write_ugrid_file(tmp_io_tests_path):
         config,
         vertical_params,
         SIMPLE_GRID_INSTANCE.config.horizontal_config,
-        testing_defs.GRIDS_PATH / GRID_FILE,
+        cases.GRIDS_PATH / GRID_FILE,
         SIMPLE_GRID_INSTANCE.id,
     )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
@@ -185,9 +183,7 @@ def test_io_monitor_write_ugrid_file(tmp_io_tests_path):
 )
 def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: Sequence[str]):
     path_name = tmp_io_tests_path.absolute().as_posix() + "/output"
-    grid = grid_utils.get_grid_manager_for_experiment(
-        testing_defs.Experiment.EXCLAIM_APE, BACKEND
-    ).grid
+    grid = grid_utils.get_grid_manager_for_experiment(cases.Experiment.EXCLAIM_APE, BACKEND).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -237,9 +233,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: S
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(tmp_io_tests_path):
-    grid = grid_utils.get_grid_manager_for_experiment(
-        testing_defs.Experiment.EXCLAIM_APE, BACKEND
-    ).grid
+    grid = grid_utils.get_grid_manager_for_experiment(cases.Experiment.EXCLAIM_APE, BACKEND).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -458,7 +452,6 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(tmp_io_tests_path):
         output_interval="1 HOUR",
         variables=["exner_function", "air_density", "foo"],
     )
-    vertical_size = SIMPLE_GRID_INSTANCE.config.vertical_size
     horizontal_size = SIMPLE_GRID_INSTANCE.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config,

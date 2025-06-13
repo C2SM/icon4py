@@ -8,6 +8,7 @@
 
 import pytest
 
+from icon4py.model.testing import cases, grid_utils
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
@@ -28,9 +29,10 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
 )
-from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT__WIP
 
 
 @pytest.fixture
 def grid_file():
-    return REGIONAL_EXPERIMENT__WIP
+    grid_file_path = cases.Experiment.MCH_CH_R04B09.grid.file_name
+    assert grid_file_path, "Grid file name must be defined in the experiment."
+    return grid_utils.get_grid_file_path(grid_file_path)

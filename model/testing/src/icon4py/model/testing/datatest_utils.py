@@ -16,7 +16,6 @@ from icon4py.model.common.decomposition import definitions as decomposition
 
 
 GLOBAL_EXPERIMENT__WIP = "exclaim_ape_R02B04"
-REGIONAL_EXPERIMENT__WIP = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
 R02B07_GLOBAL = "r02b07_global"
 ICON_CH2_SMALL = "mch_icon-ch2-small"

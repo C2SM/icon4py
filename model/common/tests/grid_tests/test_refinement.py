@@ -11,7 +11,7 @@ import pytest
 
 import icon4py.model.common.grid.refinement as refin
 import icon4py.model.common.utils.data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
+from icon4py.model.testing import cases, datatest_utils as dt_utils, grid_utils
 
 from . import utils
 
@@ -63,7 +63,7 @@ def test_valid_refinement_values(dim):
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize(
-    "grid_file, expected", [(dt_utils.R02B04_GLOBAL, False), (dt_utils.REGIONAL_EXPERIMENT__WIP, True)]
+    "grid_file, expected", [(dt_utils.R02B04_GLOBAL, False), (cases.Experiment.MCH_CH_R04B09, True)]
 )
 def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
     grid = grid_utils.get_grid_manager(grid_file, 1, backend).grid

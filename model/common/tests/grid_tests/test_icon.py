@@ -23,14 +23,14 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.base import MissingConnectivity
 from icon4py.model.common.grid.grid_manager import GridFile
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
+from icon4py.model.testing import cases, datatest_utils as dt_utils, grid_utils as gridtest_utils
 
 from . import utils
 
 
 @functools.cache
 def grid_from_file() -> icon.IconGrid:
-    return from_file(dt_utils.REGIONAL_EXPERIMENT__WIP)
+    return from_file(cases.Experiment.MCH_CH_R04B09)
 
 
 @functools.cache
@@ -172,13 +172,13 @@ def test_grid_size(icon_grid):
     assert 31558 == icon_grid.size[dims.EdgeDim]
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize("grid_file", (cases.Experiment.MCH_CH_R04B09, dt_utils.R02B04_GLOBAL))
 def test_has_skip_values(grid_file):
     grid = from_file(grid_file)
     assert grid.has_skip_values()
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, dt_utils.REGIONAL_EXPERIMENT__WIP))
+@pytest.mark.parametrize("grid_file", (dt_utils.R02B04_GLOBAL, cases.Experiment.MCH_CH_R04B09))
 @pytest.mark.parametrize("dim", utils.local_dims())
 def test_skip_values_on_connectivities(grid_file: str, dim: gtx.Dimension):
     grid = from_file(grid_file)

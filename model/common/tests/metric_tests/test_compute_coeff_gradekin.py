@@ -11,13 +11,13 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import cases, helpers
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.GLOBAL_EXPERIMENT__WIP]
+    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
 def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()

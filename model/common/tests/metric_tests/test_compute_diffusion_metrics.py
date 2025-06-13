@@ -20,14 +20,14 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import cases, helpers
 
 
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [dt_utils.REGIONAL_EXPERIMENT__WIP, dt_utils.GLOBAL_EXPERIMENT__WIP]
+    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
 def test_compute_diffusion_metrics(
     metrics_savepoint,
@@ -37,7 +37,7 @@ def test_compute_diffusion_metrics(
     grid_savepoint,
     backend,
 ):
-    if experiment == dt_utils.GLOBAL_EXPERIMENT__WIP:
+    if experiment == cases.Experiment.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
 
     maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)

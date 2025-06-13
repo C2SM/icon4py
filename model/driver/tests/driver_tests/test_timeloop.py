@@ -21,10 +21,9 @@ from icon4py.model.driver import (
     icon4py_driver,
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import cases, configuration_builders, datatest_utils as dt_utils, helpers
 
 from .utils import (
-    construct_diffusion_config,
     construct_icon4pyrun_config,
     construct_nonhydrostatic_config,
 )
@@ -36,7 +35,7 @@ from .utils import (
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -50,7 +49,7 @@ from .utils import (
             False,
         ),
         (
-            dt_utils.REGIONAL_EXPERIMENT__WIP,
+            cases.Experiment.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -64,7 +63,7 @@ from .utils import (
             True,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             1,
             2,
             1,
@@ -78,7 +77,7 @@ from .utils import (
             False,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT__WIP,
+            cases.Experiment.EXCLAIM_APE,
             1,
             2,
             1,
@@ -139,7 +138,9 @@ def test_run_timeloop_single_step(
         icon4pyrun_config = config.run_config
 
     else:
-        diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+        diffusion_config = configuration_builders.build_diffusion_config(
+            experiment, ndyn_substeps=ndyn_substeps
+        )
         nonhydro_config = construct_nonhydrostatic_config(experiment, ndyn_substeps=ndyn_substeps)
         icon4pyrun_config = construct_icon4pyrun_config(
             experiment,

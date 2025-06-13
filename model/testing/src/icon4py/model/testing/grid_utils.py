@@ -24,8 +24,8 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
+    cases,
     data_handling,
-    definitions as testing_defs,
 )
 
 
@@ -35,7 +35,7 @@ MCH_CH_R04B09_LEVELS__WIP = 65
 grid_geometries = {}
 
 
-def download_grid(grid: testing_defs.Grid) -> pathlib.Path:
+def download_grid(grid: cases.Grid) -> pathlib.Path:
     assert grid.file_name
     assert grid.uri
 
@@ -51,25 +51,25 @@ def download_grid(grid: testing_defs.Grid) -> pathlib.Path:
 
 
 def get_grid_manager_for_experiment(
-    experiment: testing_defs.Experiment, backend: Optional[gtx_backend.Backend] = None
+    experiment: cases.Experiment, backend: Optional[gtx_backend.Backend] = None
 ) -> gm.GridManager:
     return get_grid_manager(experiment.grid, experiment.num_levels, backend)
 
 
 def get_grid_manager(
-    grid: testing_defs.Grid, num_levels: int, backend: Optional[gtx_backend.Backend] = None
+    grid: cases.Grid, num_levels: int, backend: Optional[gtx_backend.Backend] = None
 ) -> gm.GridManager:
     grid_file_path = download_grid(grid)
     gm = _run_grid_manager_for_file(grid_file_path, num_levels, backend)
     return gm
 
 
-def get_grid_file_path(grid_file_str: str) -> pathlib.Path:
-    return testing_defs.GRIDS_PATH / grid_file_str
+def get_grid_file_path(grid_file_path: pathlib.Path | str) -> pathlib.Path:
+    return cases.GRIDS_PATH / grid_file_path
 
 
 def get_grid_geometry(
-    experiment: testing_defs.Experiment, backend: Optional[gtx_backend.Backend]
+    experiment: cases.Experiment, backend: Optional[gtx_backend.Backend]
 ) -> geometry.GridGeometry:
     register_name = f"{experiment.name}_{data_alloc.backend_name(backend)}"
     if register_name not in grid_geometries:
@@ -117,7 +117,7 @@ def _construct_dummy_decomposition_info(
 
 
 def _construct_grid_geometry(
-    experiment: testing_defs.Experiment, backend: Optional[gtx_backend.Backend]
+    experiment: cases.Experiment, backend: Optional[gtx_backend.Backend]
 ) -> geometry.GridGeometry:
     gm = get_grid_manager_for_experiment(experiment, backend=backend)
     grid = gm.grid
