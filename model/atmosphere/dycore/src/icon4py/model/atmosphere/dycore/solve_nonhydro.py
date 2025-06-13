@@ -460,7 +460,7 @@ class SolveNonhydro:
                 offset_provider=self._grid.connectivities,
             )
         )
-        # MARKER
+
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
             self._backend
         ).compile(
@@ -1062,7 +1062,6 @@ class SolveNonhydro:
             :, self._grid.num_levels - 1
         ]
 
-        # MARK
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,

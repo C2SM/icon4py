@@ -229,7 +229,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     # Note: we overcompute `horizontal_pressure_gradient`, which is only needed in the interior.
     horizontal_pressure_gradient = concat_where(
         # TODO(havogt): Check if the lower bound is needed (it might protect oob),
-        # in case we the operator contains neighbor accesses.
+        # in case the operator contains neighbor accesses.
         # An upper bound is not given as there should be enough halo left.
         start_edge_nudging_level_2 <= dims.EdgeDim,
         _compute_horizontal_pressure_gradient(
