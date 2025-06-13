@@ -18,7 +18,7 @@ from . import utils
 log = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize("dim", [dims.C2EDim, dims.C2E2C2EDim, dims.E2VDim, dims.V2EDim, dims.KDim])
+@pytest.mark.parametrize("dim", utils.non_horizontal_dims())
 def test_domain_raises_for_non_horizontal_dim(dim):
     with pytest.raises(AssertionError) as e:
         h_grid.domain(dim)
@@ -30,7 +30,7 @@ def zones():
         yield zone
 
 
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
 @pytest.mark.parametrize("zone", zones())
 def test_domain_raises_for_invalid_zones(dim, zone, caplog):
     caplog.set_level(logging.DEBUG)
@@ -46,7 +46,7 @@ def test_domain_raises_for_invalid_zones(dim, zone, caplog):
             e.match("not a valid zone")
 
 
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_zone_and_domain_index(dim, caplog):
     """test mostly used for documentation purposes"""
     caplog.set_level(logging.INFO)

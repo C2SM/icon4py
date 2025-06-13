@@ -25,8 +25,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @pytest.fixture(scope="session")
-def connectivities_as_numpy(grid, backend) -> dict[gtx.Dimension, np.ndarray]:
-    return {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
+def connectivities_as_numpy(grid) -> dict[gtx.Dimension, np.ndarray]:
+    return {dim: data_alloc.as_numpy(table) for dim, table in grid.neighbor_tables.items()}
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
@@ -60,7 +60,9 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
-def allocate_data(backend, input_data):
+def allocate_data(
+    backend: Optional[gtx_backend.Backend], input_data: dict[str, gtx.Field]
+) -> dict[str, gtx.Field]:
     _allocate_field = constructors.as_field.partial(allocator=backend)
     input_data = {
         k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
@@ -83,12 +85,14 @@ def apply_markers(
             case "embedded_remap_error" if is_embedded(backend):
                 # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")
+            case "embedded_static_args" if is_embedded(backend):
+                pytest.xfail(" gt4py _compiled_programs returns error when backend is None.")
             case "infinite_concat_where" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support infinite concat_where.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
             case "skip_value_error":
-                if grid.config.limited_area or grid.has_skip_values():
+                if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
                     pytest.skip(
                         "Stencil does not support domain containing skip values. Consider shrinking domain."
@@ -175,7 +179,7 @@ def _test_and_benchmark(
         functools.partial(
             self.PROGRAM.with_backend(backend),
             **input_data,
-            offset_provider=grid.offset_providers,
+            offset_provider=grid.connectivities,
         ),
         functools.partial(
             _verify_stencil_test,

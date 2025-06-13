@@ -288,7 +288,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
                 "grav": constants.GRAV,
                 "rd": constants.RD,
-                "p0sl_bg": constants.SEAL_LEVEL_PRESSURE,
+                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
                 "rd_o_cpd": constants.RD_O_CPD,
                 "p0ref": constants.REFERENCE_PRESSURE,
             },
