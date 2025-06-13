@@ -8,10 +8,12 @@
 
 import os
 import subprocess
+
 import pytest
 from click.testing import CliRunner
 
 from icon4py.tools.py2fgen._cli import main
+
 from . import utils
 
 

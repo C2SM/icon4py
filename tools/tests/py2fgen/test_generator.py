@@ -8,13 +8,14 @@
 
 import pathlib
 import subprocess
-from . import utils
 import tempfile
 
 import pytest
 
 from icon4py.tools.py2fgen._codegen import BindingsLibrary
 from icon4py.tools.py2fgen._generator import generate_and_compile_cffi_plugin, get_cffi_description
+
+from . import utils
 
 
 def test_parse_functions_on_wrapper():
