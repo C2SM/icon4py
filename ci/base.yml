@@ -89,5 +89,6 @@ build_image_aarch64:
     CUDAARCHS: "90"
     # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
     NUM_PROCESSES: 32
-    GT4PY_BUILD_JOBS: 2
+    GT4PY_BUILD_JOBS: 1
+    GT4PY_BUILD_CACHE_LIFETIME: session
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
