@@ -168,6 +168,10 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
+    ddx_perturbed_rho: fa.CellKField[ta.vpfloat],
+    ddy_perturbed_rho: fa.CellKField[ta.vpfloat],
+    ddx_perturbed_theta_v: fa.CellKField[ta.vpfloat],
+    ddy_perturbed_theta_v: fa.CellKField[ta.vpfloat],
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
@@ -185,17 +189,17 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     fa.EdgeKField[ta.wpfloat],
 ]:
     # TODO absorb into `_compute_horizontal_advection_of_rho_and_theta`
-    (
-        ddx_perturbed_rho,
-        ddy_perturbed_rho,
-        ddx_perturbed_theta_v,
-        ddy_perturbed_theta_v,
-    ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
-        p_ccpr1=perturbed_rho_at_cells_on_model_levels,
-        p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
-    )
+    # (
+    #     ddx_perturbed_rho,
+    #     ddy_perturbed_rho,
+    #     ddx_perturbed_theta_v,
+    #     ddy_perturbed_theta_v,
+    # ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
+    #     p_ccpr1=perturbed_rho_at_cells_on_model_levels,
+    #     p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
+    #     geofac_grg_x=geofac_grg_x,
+    #     geofac_grg_y=geofac_grg_y,
+    # )
 
     # TODO(havogt): it would be nice if we could shrink the compute domain to `start_edge_lateral_boundary_level_7 <= dims.EdgeDim`,
     # but that requires either persisting the `0.0` values or put the correct lateral boundary condition where this is consumed.
@@ -481,6 +485,10 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
+    ddx_perturbed_rho: fa.CellKField[ta.vpfloat],
+    ddy_perturbed_rho: fa.CellKField[ta.vpfloat],
+    ddx_perturbed_theta_v: fa.CellKField[ta.vpfloat],
+    ddy_perturbed_theta_v: fa.CellKField[ta.vpfloat],
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
@@ -587,6 +595,10 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
+        ddx_perturbed_rho=ddx_perturbed_rho,
+        ddy_perturbed_rho=ddy_perturbed_rho,
+        ddx_perturbed_theta_v=ddx_perturbed_theta_v,
+        ddy_perturbed_theta_v=ddy_perturbed_theta_v,
         dtime=dtime,
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
