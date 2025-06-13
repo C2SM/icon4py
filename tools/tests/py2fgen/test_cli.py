@@ -12,6 +12,7 @@ import subprocess
 import pytest
 from click.testing import CliRunner
 
+import icon4py.tools.py2fgen._utils as utils
 from icon4py.tools.py2fgen._cli import main
 
 
@@ -83,7 +84,9 @@ def run_test_case(
 
 
 def invoke_cli(cli, module, function, library_name):
-    cli_args = [module, function, library_name]
+    rpath = utils.get_prefix_lib_path()
+
+    cli_args = [module, function, library_name, "-r", rpath]
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 

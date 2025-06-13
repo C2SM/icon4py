@@ -30,15 +30,22 @@ logger = _utils.setup_logger("py2fgen")
     default=".",
     help="Specify the directory for generated code and compiled libraries.",
 )
+@click.option(
+    "--rpath",
+    "-r",
+    type=str,
+    default="",
+    help="Specify an rpath for the compiled library. If not set, no rpath is added.",
+)
 def main(
     module_import_path: str,
     functions: list[str],
     library_name: str,
     output_path: pathlib.Path,
+    rpath: str,
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
-
     plugin = _generator.get_cffi_description(module_import_path, functions, library_name)
 
     logger.info("Generating C header...")
@@ -52,7 +59,7 @@ def main(
 
     logger.info("Compiling CFFI dynamic library...")
     _generator.generate_and_compile_cffi_plugin(
-        plugin.library_name, c_header, python_wrapper, output_path
+        plugin.library_name, c_header, python_wrapper, output_path, rpath
     )
 
 

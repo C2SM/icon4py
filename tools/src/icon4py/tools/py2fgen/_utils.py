@@ -13,6 +13,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import sysconfig
 from typing import TYPE_CHECKING
 
 
@@ -57,3 +58,11 @@ def parse_comma_separated_list(_: click.Context, __: click.Parameter, value: str
     # Used as `click.argument` callback
     # Splits the input string by commas and strips any leading/trailing whitespace from the strings
     return [item.strip() for item in value.split(",")]
+
+
+def get_prefix_lib_path() -> str:
+    if path := sysconfig.get_config_vars().get("LIBDIR"):
+        rpath = f"{sys.base_prefix}/{path.split('/')[-1]}"
+    else:
+        rpath = ""
+    return rpath
