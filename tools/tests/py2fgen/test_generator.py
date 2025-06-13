@@ -8,7 +8,7 @@
 
 import pathlib
 import subprocess
-import sys
+from . import utils
 import tempfile
 
 import pytest
@@ -26,7 +26,8 @@ def test_parse_functions_on_wrapper():
 
 
 def test_compile_and_run_cffi_plugin_from_C():
-    rpath = f"{sys.base_prefix}/lib"
+    rpath = utils.get_prefix_lib_path()
+    print(rpath)
     library_name = "test_plugin"
     c_header = "int test_function();"
     c_source_code = f"""
