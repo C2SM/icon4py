@@ -48,7 +48,7 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     compute_reference_atmosphere_cell_fields.with_backend(backend)(
         z_height=z_mc,
         p0ref=constants.P0REF,
-        p0sl_bg=constants.SEAL_LEVEL_PRESSURE,
+        p0sl_bg=constants.SEA_LEVEL_PRESSURE,
         grav=constants.GRAVITATIONAL_ACCELERATION,
         cpd=constants.CPD,
         rd=constants.RD,
@@ -90,7 +90,7 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
     compute_reference_atmosphere_cell_fields.with_backend(backend=backend)(
         z_height=z_ifc,
         p0ref=constants.P0REF,
-        p0sl_bg=constants.SEAL_LEVEL_PRESSURE,
+        p0sl_bg=constants.SEA_LEVEL_PRESSURE,
         grav=constants.GRAVITATIONAL_ACCELERATION,
         cpd=constants.CPD,
         rd=constants.RD,
@@ -161,7 +161,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     compute_reference_atmosphere_edge_fields.with_backend(backend)(
         z_me=z_me,
         p0ref=constants.P0REF,
-        p0sl_bg=constants.SEAL_LEVEL_PRESSURE,
+        p0sl_bg=constants.SEA_LEVEL_PRESSURE,
         grav=constants.GRAVITATIONAL_ACCELERATION,
         cpd=constants.CPD,
         rd=constants.RD,
