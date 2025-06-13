@@ -1101,6 +1101,7 @@ class SolveNonhydro:
             horizontal_end=gtx.int32(self._end_edge_halo),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels),
+            offset_provider=self._grid.connectivities,
         )
 
         # self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
