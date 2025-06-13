@@ -15,9 +15,7 @@ jobs:
             matrix:
                 python-version: ["3.10", "3.11"]
                 backend: ["embedded", "gtfn_cpu"] # TODO add dace-cpu?
-                # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
-                #  The problem is that GTFN backend times out on the advection stencil tests.
-                component: ["diffusion", "dycore", "microphysics", "driver", "common"]
+                component: ["advection", "diffusion", "dycore", "microphysics", "driver", "common"]
         steps:
             - name: Checkout
               uses: actions/checkout@v4
