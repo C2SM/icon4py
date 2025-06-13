@@ -13,7 +13,7 @@ from typing import Callable
 
 import cffi
 
-from icon4py.tools.py2fgen import _codegen
+from icon4py.tools.py2fgen import _codegen, _utils
 
 
 def get_cffi_description(
@@ -37,7 +37,11 @@ def _get_function_descriptor(fun: Callable) -> _codegen.Func:
 
 
 def generate_and_compile_cffi_plugin(
-    library_name: str, c_header: str, python_wrapper: str, build_path: Path, rpath: str = ""
+    library_name: str,
+    c_header: str,
+    python_wrapper: str,
+    build_path: Path,
+    rpath: str = _utils.get_prefix_lib_path(),
 ) -> None:
     """
     Create and compile a CFFI plugin.

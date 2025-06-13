@@ -12,9 +12,8 @@ import subprocess
 import pytest
 from click.testing import CliRunner
 
+import icon4py.tools.py2fgen._utils as utils
 from icon4py.tools.py2fgen._cli import main
-
-from . import utils
 
 
 @pytest.fixture

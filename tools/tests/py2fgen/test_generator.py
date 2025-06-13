@@ -15,8 +15,6 @@ import pytest
 from icon4py.tools.py2fgen._codegen import BindingsLibrary
 from icon4py.tools.py2fgen._generator import generate_and_compile_cffi_plugin, get_cffi_description
 
-from . import utils
-
 
 def test_parse_functions_on_wrapper():
     # TODO make independent of `wrappers`
@@ -27,8 +25,6 @@ def test_parse_functions_on_wrapper():
 
 
 def test_compile_and_run_cffi_plugin_from_C():
-    rpath = utils.get_prefix_lib_path()
-    print(rpath)
     library_name = "test_plugin"
     c_header = "int test_function();"
     c_source_code = f"""
@@ -56,9 +52,7 @@ def test_compile_and_run_cffi_plugin_from_C():
             # Generate and compile the CFFI plugin, which creates lib{library_name}.so
             shared_library = f"{library_name}"
 
-            generate_and_compile_cffi_plugin(
-                library_name, c_header, python_wrapper, build_path, rpath
-            )
+            generate_and_compile_cffi_plugin(library_name, c_header, python_wrapper, build_path)
             compiled_library_path = build_path / f"lib{shared_library}.so"
 
             # Verify the shared library was created
