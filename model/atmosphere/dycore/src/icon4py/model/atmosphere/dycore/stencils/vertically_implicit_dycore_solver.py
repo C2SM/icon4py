@@ -286,17 +286,14 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         dtime=dtime,
     )
 
-    rho_explicit_term, exner_explicit_term = (
-        _add_analysis_increments_from_data_assimilation(
+    if is_iau_active:
+        rho_explicit_term, exner_explicit_term = _add_analysis_increments_from_data_assimilation(
             z_rho_expl=rho_explicit_term,
             z_exner_expl=exner_explicit_term,
             rho_incr=rho_iau_increment,
             exner_incr=exner_iau_increment,
             iau_wgt_dyn=iau_wgt_dyn,
         )
-        if is_iau_active
-        else (rho_explicit_term, exner_explicit_term)
-    )
 
     tridiagonal_intermediate_result, next_w = concat_where(
         dims.KDim > 0,
@@ -376,8 +373,8 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
 ]:
     # Because we do not support nesting, it is safe to assume w_1 is a zero field
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
-    next_w = (
-        concat_where(
+    if rayleigh_type == rayleigh_damping_options.KLEMP:
+        next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
@@ -386,9 +383,6 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
             ),
             next_w,
         )
-        if rayleigh_type == rayleigh_damping_options.KLEMP
-        else next_w
-    )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
@@ -407,8 +401,8 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     )
 
     # compute dw/dz for divergence damping term
-    dwdz_at_cells_on_model_levels = (
-        concat_where(
+    if divdamp_type >= 3:
+        dwdz_at_cells_on_model_levels = concat_where(
             (starting_vertical_index_for_3d_divdamp <= dims.KDim),
             _compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=inv_ddqz_z_full,
@@ -417,9 +411,6 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
             ),
             dwdz_at_cells_on_model_levels,
         )
-        if divdamp_type >= 3
-        else dwdz_at_cells_on_model_levels
-    )
 
     exner_dynamical_increment = (
         concat_where(
@@ -550,17 +541,14 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         dtime=dtime,
     )
 
-    rho_explicit_term, exner_explicit_term = (
-        _add_analysis_increments_from_data_assimilation(
+    if is_iau_active:
+        rho_explicit_term, exner_explicit_term = _add_analysis_increments_from_data_assimilation(
             z_rho_expl=rho_explicit_term,
             z_exner_expl=exner_explicit_term,
             rho_incr=rho_iau_increment,
             exner_incr=exner_iau_increment,
             iau_wgt_dyn=iau_wgt_dyn,
         )
-        if is_iau_active
-        else (rho_explicit_term, exner_explicit_term)
-    )
 
     tridiagonal_intermediate_result, next_w = concat_where(
         dims.KDim > 0,
@@ -646,8 +634,8 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
 ]:
     # Because we do not support nesting, it is safe to assume w_1 is a zero field
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
-    next_w = (
-        concat_where(
+    if rayleigh_type == rayleigh_damping_options.KLEMP:
+        next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
@@ -656,9 +644,6 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
             ),
             next_w,
         )
-        if rayleigh_type == rayleigh_damping_options.KLEMP
-        else next_w
-    )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
@@ -676,26 +661,20 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
         dtime=dtime,
     )
 
-    (
-        dynamical_vertical_mass_flux_at_cells_on_half_levels,
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
-    ) = (
+    if lprep_adv:
+        if at_first_substep:
+            (
+                dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+            ) = (
+                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            )
+
         (
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-        )
-        if (lprep_adv & at_first_substep)
-        else (
             dynamical_vertical_mass_flux_at_cells_on_half_levels,
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
-        )
-    )
-
-    (
-        dynamical_vertical_mass_flux_at_cells_on_half_levels,
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
-    ) = (
-        concat_where(
+        ) = concat_where(
             1 <= dims.KDim,
             _update_mass_volume_flux(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
@@ -711,12 +690,6 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
                 dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             ),
         )
-        if lprep_adv
-        else (
-            dynamical_vertical_mass_flux_at_cells_on_half_levels,
-            dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
-        )
-    )
 
     exner_dynamical_increment = (
         concat_where(
