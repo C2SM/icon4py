@@ -14,6 +14,10 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2EC
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
+    _mo_math_gradients_grad_green_gauss_cell_dsl,
+)
+
 
 @field_operator
 def _compute_btraj(
@@ -134,10 +138,8 @@ def _compute_horizontal_advection_of_rho_and_theta(
     p_dthalf: wpfloat,
     rho_ref_me: fa.EdgeKField[vpfloat],
     theta_ref_me: fa.EdgeKField[vpfloat],
-    z_grad_rth_1: fa.CellKField[vpfloat],
-    z_grad_rth_2: fa.CellKField[vpfloat],
-    z_grad_rth_3: fa.CellKField[vpfloat],
-    z_grad_rth_4: fa.CellKField[vpfloat],
+    geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
+    geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
     z_rth_pr_1: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
@@ -154,16 +156,28 @@ def _compute_horizontal_advection_of_rho_and_theta(
         p_dthalf,
     )
 
+    (
+        ddx_perturbed_rho,
+        ddy_perturbed_rho,
+        ddx_perturbed_theta_v,
+        ddy_perturbed_theta_v,
+    ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
+        p_ccpr1=z_rth_pr_1,
+        p_ccpr2=z_rth_pr_2,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
+    )
+
     z_rho_e, z_theta_v_e = _sten_16(
         p_vn,
         rho_ref_me,
         theta_ref_me,
         p_distv_bary_1,
         p_distv_bary_2,
-        z_grad_rth_1,
-        z_grad_rth_2,
-        z_grad_rth_3,
-        z_grad_rth_4,
+        ddx_perturbed_rho,
+        ddy_perturbed_rho,
+        ddx_perturbed_theta_v,
+        ddy_perturbed_theta_v,
         z_rth_pr_1,
         z_rth_pr_2,
     )

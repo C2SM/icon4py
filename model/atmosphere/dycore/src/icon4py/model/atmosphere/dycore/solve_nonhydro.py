@@ -1088,21 +1088,21 @@ class SolveNonhydro:
             self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
         )
 
-        self._mo_math_gradients_grad_green_gauss_cell_dsl(
-            p_grad_1_u=p_grad_1_u,
-            p_grad_1_v=p_grad_1_v,
-            p_grad_2_u=p_grad_2_u,
-            p_grad_2_v=p_grad_2_v,
-            p_ccpr1=self.perturbed_rho_at_cells_on_model_levels,
-            p_ccpr2=self.perturbed_theta_v_at_cells_on_model_levels,
-            geofac_grg_x=self._interpolation_state.geofac_grg_x,
-            geofac_grg_y=self._interpolation_state.geofac_grg_y,
-            horizontal_start=gtx.int32(0),
-            horizontal_end=gtx.int32(self._end_cell_halo),
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self._grid.num_levels),
-            offset_provider=self._grid.connectivities,
-        )
+        # self._mo_math_gradients_grad_green_gauss_cell_dsl(
+        #     p_grad_1_u=p_grad_1_u,
+        #     p_grad_1_v=p_grad_1_v,
+        #     p_grad_2_u=p_grad_2_u,
+        #     p_grad_2_v=p_grad_2_v,
+        #     p_ccpr1=self.perturbed_rho_at_cells_on_model_levels,
+        #     p_ccpr2=self.perturbed_theta_v_at_cells_on_model_levels,
+        #     geofac_grg_x=self._interpolation_state.geofac_grg_x,
+        #     geofac_grg_y=self._interpolation_state.geofac_grg_y,
+        #     horizontal_start=gtx.int32(0),
+        #     horizontal_end=gtx.int32(self._end_cell_halo),
+        #     vertical_start=gtx.int32(0),
+        #     vertical_end=gtx.int32(self._grid.num_levels),
+        #     offset_provider=self._grid.connectivities,
+        # )
 
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
@@ -1138,10 +1138,10 @@ class SolveNonhydro:
             ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
             pg_exdist=self._metric_state_nonhydro.pg_exdist,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
-            ddx_perturbed_rho=p_grad_1_u,
-            ddy_perturbed_rho=p_grad_1_v,
-            ddx_perturbed_theta_v=p_grad_2_u,
-            ddy_perturbed_theta_v=p_grad_2_v,
+            # ddx_perturbed_rho=p_grad_1_u,
+            # ddy_perturbed_rho=p_grad_1_v,
+            # ddx_perturbed_theta_v=p_grad_2_u,
+            # ddy_perturbed_theta_v=p_grad_2_v,
             dtime=dtime,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
