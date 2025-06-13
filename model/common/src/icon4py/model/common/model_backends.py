@@ -11,6 +11,8 @@ from typing import Final
 import gt4py.next.backend as gtx_backend
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
+from icon4py.model.common import dimension as dims
+
 
 DEFAULT_BACKEND: Final = "embedded"
 
@@ -31,6 +33,7 @@ try:
     #   between multiple calls to a gt4py program, therefore we can make temporary
     #   arrays persistent (thus, allocated at SDFG initialization) and we do not
     #   need to update the array shape and strides on each SDFG call.
+    # We also enable loop-blocking on the vertical dimension for gpu target.
     def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
         return make_dace_backend(
             auto_optimize=True,
@@ -38,7 +41,7 @@ try:
             gpu=gpu,
             async_sdfg_call=True,
             make_persistent=True,
-            blocking_dim=None,
+            blocking_dim=(dims.KDim if gpu else None),
             blocking_size=10,
         )
 
