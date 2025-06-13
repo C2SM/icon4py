@@ -1098,7 +1098,7 @@ class SolveNonhydro:
             geofac_grg_x=self._interpolation_state.geofac_grg_x,
             geofac_grg_y=self._interpolation_state.geofac_grg_y,
             horizontal_start=gtx.int32(0),
-            horizontal_end=gtx.int32(self._end_edge_halo),
+            horizontal_end=gtx.int32(self._end_cell_halo),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(self._grid.num_levels),
             offset_provider=self._grid.connectivities,
