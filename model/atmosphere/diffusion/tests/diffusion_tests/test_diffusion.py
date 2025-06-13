@@ -181,10 +181,12 @@ def smagorinski_factor_diffusion_type_5(experiment):
 
 @pytest.mark.infinite_concat_where
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
 def test_diffusion_init(
     savepoint_diffusion_init,
     interpolation_savepoint,
     metrics_savepoint,
+    experiment,
     step_date_init,
     lowest_layer_thickness,
     model_top_height,

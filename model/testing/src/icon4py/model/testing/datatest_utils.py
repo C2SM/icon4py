@@ -55,7 +55,7 @@ MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh
 
 
 GRID_URIS = {
-    REGIONAL_EXPERIMENT__WIP: MC_CH_R04B09_DSL_GRID_URI,
+    # REGIONAL_EXPERIMENT__WIP: MC_CH_R04B09_DSL_GRID_URI,
     R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
     R02B07_GLOBAL: R02B07_GLOBAL_GRID_URI,
     ICON_CH2_SMALL: MCH_OPR_R04B07_DOMAIN01_GRID_URI,
@@ -65,7 +65,7 @@ GRID_URIS = {
 
 GRID_IDS = {
     GLOBAL_EXPERIMENT__WIP: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-    REGIONAL_EXPERIMENT__WIP: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
+    # REGIONAL_EXPERIMENT__WIP: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
     JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
     WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
@@ -126,7 +126,7 @@ def get_ranked_data_path(base_path, processor_properties):
     return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
 
 
-def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT__WIP):
+def get_datapath_for_experiment(ranked_base_path, experiment):
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 

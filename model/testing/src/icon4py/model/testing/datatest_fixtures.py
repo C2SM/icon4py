@@ -10,7 +10,7 @@ import pytest
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.utils.data_allocation as data_alloc
 
-from . import cases, data_handling as data, datatest_utils as dt_utils
+from . import cases, data_utils as data, datatest_utils as dt_utils
 
 
 @pytest.fixture(params=[*cases.Experiment], scope="session")

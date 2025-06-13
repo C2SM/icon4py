@@ -25,7 +25,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     cases,
-    data_handling,
+    data_utils,
 )
 
 
@@ -41,7 +41,7 @@ def download_grid(grid: cases.Grid) -> pathlib.Path:
 
     grid_file_path = get_grid_file_path(grid.file_name)
     if not grid_file_path.exists():
-        data_handling.download_and_extract(
+        data_utils.download_and_extract(
             grid.uri,
             grid_file_path.parent,
             grid_file_path.parent,
