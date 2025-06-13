@@ -103,7 +103,7 @@ class IntermediateFields:
     """
     Declared as z_gradh_exner in ICON.
     """
-    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.EdgeKField[
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[
         ta.vpfloat
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     """
