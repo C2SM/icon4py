@@ -138,6 +138,7 @@ def grid_init(
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
+    grid.set_global_params(icon_grid.GlobalGridParams.from_mean_cell_area(mean_cell_area))
 
     # Edge geometry
     edge_params = grid_states.EdgeParams(
@@ -174,8 +175,6 @@ def grid_init(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
-        mean_cell_area=mean_cell_area,
-        length_rescale_factor=1.0,
     )
 
     if comm_id is None:
