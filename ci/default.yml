@@ -40,6 +40,7 @@ include:
   stage: test
   script:
     - /usr/bin/time --verbose numactl --membind=0,1,2,3 nox --add-timestamp -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL --durations=0 -vv --dist=worksteal
+    - du -d0 -h $GT4PY_BUILD_CACHE_DIR/.gt4py_cache
   parallel:
     matrix:
     # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
