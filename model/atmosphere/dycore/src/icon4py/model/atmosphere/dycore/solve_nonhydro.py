@@ -475,6 +475,14 @@ class SolveNonhydro:
             )
         )
 
+        self._compute_horizontal_advection_of_rho_and_theta = (
+            compute_horizontal_advection_of_rho_and_theta.with_backend(self._backend).compile(
+                vertical_start=[gtx.int32(0)],
+                vertical_end=[gtx.int32(self._grid.num_levels)],
+                offset_provider=self._grid.connectivities,
+            )
+        )
+
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
             self._backend
         ).compile(
@@ -1103,6 +1111,29 @@ class SolveNonhydro:
         #     vertical_end=gtx.int32(self._grid.num_levels),
         #     offset_provider=self._grid.connectivities,
         # )
+
+        self._compute_horizontal_advection_of_rho_and_theta(
+            p_vn=prognostic_states.current.vn,
+            p_vt=diagnostic_state_nh.tangential_wind,
+            pos_on_tplane_e_1=self._interpolation_state.pos_on_tplane_e_1,
+            pos_on_tplane_e_2=self._interpolation_state.pos_on_tplane_e_2,
+            primal_normal_cell_1=self._edge_geometry.primal_normal_cell[0],
+            dual_normal_cell_1=self._edge_geometry.dual_normal_cell[0],
+            primal_normal_cell_2=self._edge_geometry.primal_normal_cell[1],
+            dual_normal_cell_2=self._edge_geometry.dual_normal_cell[1],
+            p_dthalf=ta.wpfloat("0.5") * dtime,
+            rho_ref_me=self._metric_state_nonhydro.reference_rho_at_edges_on_model_levels,
+            theta_ref_me=self._metric_state_nonhydro.reference_theta_at_edges_on_model_levels,
+            geofac_grg_x=self._interpolation_state.geofac_grg_x,
+            geofac_grg_y=self._interpolation_state.geofac_grg_y,
+            z_rth_pr_1=self.perturbed_rho_at_cells_on_model_levels,
+            z_rth_pr_2=self.perturbed_theta_v_at_cells_on_model_levels,
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(self._end_edge_halo),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self._grid.num_levels),
+            offset_provider=self._grid.connectivities,
+        )
 
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
