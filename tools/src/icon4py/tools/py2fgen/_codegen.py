@@ -205,9 +205,10 @@ def {{ func.name }}_wrapper(
             if logger.isEnabledFor(logging.DEBUG):
                 {% for name, arg in func.args.items() %}
                 {% if is_array(arg) %}
-                msg = 'shape of {{ name }} after computation = %s' % str({{ name}}.shape if {{name}} is not None else "None")
+                {{name}}_arr = _conversion.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else None
+                msg = 'shape of {{ name }} after computation = %s' % str({{ name}}_arr.shape if {{name}} is not None else "None")
                 logger.debug(msg)
-                msg = '{{ name }} after computation: %s' % str(_conversion.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else "None")
+                msg = '{{ name }} after computation: %s' % str({{name}}_arr) if {{ name }} is not None else "None"
                 logger.debug(msg)
                 {% endif %}
                 {% endfor %}
