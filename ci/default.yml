@@ -43,11 +43,11 @@ test_tools_unittests_aarch64:
     - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
       BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
       LEVEL: [integration]
-    variables:
-      # we run the tests serially (NUM_PROCESSES=1), using parallel build and the persistent cache
-      NUM_PROCESSES: 1
-      GT4PY_BUILD_JOBS: 32
-      GT4PY_BUILD_CACHE_LIFETIME: persistent
+  variables:
+    # we run the tests serially (NUM_PROCESSES=1), using parallel build and the persistent cache
+    NUM_PROCESSES: 1
+    GT4PY_BUILD_JOBS: 32
+    GT4PY_BUILD_CACHE_LIFETIME: persistent
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
