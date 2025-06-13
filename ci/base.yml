@@ -62,7 +62,7 @@ build_image_aarch64:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
     SLURM_TIMELIMIT: '03:00:00'
-    CRAY_CUDA_MPS: 1
+    CSCS_CUDA_MPS: 1
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     TEST_DATA_PATH: "/icon4py/ci/testdata"
