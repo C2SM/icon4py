@@ -167,7 +167,8 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
     with session.chdir("tools"):
         session.run(
             *f"pytest -sv --benchmark-disable -n auto {'--datatest-only' if datatest else '--datatest-skip'}".split(),
-            *session.posargs
+            *session.posargs,
+            env={**os.environ}
         )
 
 # -- utils --
@@ -181,7 +182,7 @@ def _install_session_venv(
     #TODO(egparedes): remove this workaround once `backend` parameter is added to sessions
     if (env_extras := os.environ.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", "")):
         extras = [*extras, *re.split(r'\W+', env_extras)]
-    env = dict(os.environ.items()) | {"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
+    env = os.environ | {"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
     session.run_install(
         "uv",
         "sync",
