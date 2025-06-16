@@ -141,7 +141,9 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+            env={**os.environ}
         )
+
 
 # @nox.session(python=["3.10", "3.11"])
 # @nox.parametrize("selection", MODEL_TEST_SELECTION)
