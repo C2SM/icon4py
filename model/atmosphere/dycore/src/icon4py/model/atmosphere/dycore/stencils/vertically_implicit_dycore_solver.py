@@ -176,7 +176,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     current_w: fa.CellKField[ta.wpfloat],
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[ta.wpfloat],
-    rayleigh_damping_factor: fa.KField[ta.wpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
@@ -185,8 +184,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
-    rayleigh_type: gtx.int32,
-    index_of_damping_layer: gtx.int32,
     is_iau_active: bool,
     n_lev: gtx.int32,
 ) -> tuple[
@@ -307,22 +304,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
-    # Because we do not support nesting, it is safe to assume w_1 is a zero field
-    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
-    next_w = (
-        concat_where(
-            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
-            _apply_rayleigh_damping_mechanism(
-                z_raylfac=rayleigh_damping_factor,
-                w_1=w_1,
-                w=next_w,
-            ),
-            next_w,
-        )
-        if rayleigh_type == rayleigh_damping_options.KLEMP
-        else next_w
-    )
-
     return (
         vertical_mass_flux_at_cells_on_half_levels,
         tridiagonal_beta_coeff_at_cells_on_model_levels,
@@ -350,21 +331,40 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     current_theta_v: fa.CellKField[ta.wpfloat],
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[ta.wpfloat],
+    rayleigh_damping_factor: fa.KField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     rho_explicit_term: fa.CellKField[ta.wpfloat],
     exner_explicit_term: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
+    rayleigh_type: gtx.int32,
     divdamp_type: gtx.int32,
     at_first_substep: bool,
+    index_of_damping_layer: gtx.int32,
     starting_vertical_index_for_3d_divdamp: gtx.int32,
     kstart_moist: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
+    # Because we do not support nesting, it is safe to assume w_1 is a zero field
+    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
+    next_w = (
+        concat_where(
+            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
+            _apply_rayleigh_damping_mechanism(
+                z_raylfac=rayleigh_damping_factor,
+                w_1=w_1,
+                w=next_w,
+            ),
+            next_w,
+        )
+        if rayleigh_type == rayleigh_damping_options.KLEMP
+        else next_w
+    )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
@@ -408,6 +408,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     )
 
     return (
+        next_w,
         next_rho,
         next_exner,
         next_theta_v,
@@ -438,7 +439,6 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
-    rayleigh_damping_factor: fa.KField[ta.wpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
@@ -446,8 +446,6 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     advection_implicit_weight_parameter: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
-    rayleigh_type: gtx.int32,
-    index_of_damping_layer: gtx.int32,
     is_iau_active: bool,
     n_lev: gtx.int32,
 ) -> tuple[
@@ -575,22 +573,6 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
-    # Because we do not support nesting, it is safe to assume w_1 is a zero field
-    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
-    next_w = (
-        concat_where(
-            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
-            _apply_rayleigh_damping_mechanism(
-                z_raylfac=rayleigh_damping_factor,
-                w_1=w_1,
-                w=next_w,
-            ),
-            next_w,
-        )
-        if rayleigh_type == rayleigh_damping_options.KLEMP
-        else next_w
-    )
-
     return (
         vertical_mass_flux_at_cells_on_half_levels,
         tridiagonal_beta_coeff_at_cells_on_model_levels,
@@ -620,6 +602,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
+    rayleigh_damping_factor: fa.KField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     rho_explicit_term: fa.CellKField[ta.wpfloat],
     exner_explicit_term: fa.CellKField[ta.wpfloat],
@@ -627,6 +610,8 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     dtime: ta.wpfloat,
+    rayleigh_type: gtx.int32,
+    index_of_damping_layer: gtx.int32,
     kstart_moist: gtx.int32,
     at_first_substep: bool,
     at_last_substep: bool,
@@ -636,8 +621,25 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
+    # Because we do not support nesting, it is safe to assume w_1 is a zero field
+    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
+    next_w = (
+        concat_where(
+            (dims.KDim > 0) & (dims.KDim < index_of_damping_layer + 1),
+            _apply_rayleigh_damping_mechanism(
+                z_raylfac=rayleigh_damping_factor,
+                w_1=w_1,
+                w=next_w,
+            ),
+            next_w,
+        )
+        if rayleigh_type == rayleigh_damping_options.KLEMP
+        else next_w
+    )
+
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
         vwind_impl_wgt=exner_w_implicit_weight_parameter,
@@ -713,6 +715,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
     )
 
     return (
+        next_w,
         next_rho,
         next_exner,
         next_theta_v,
@@ -801,7 +804,6 @@ def vertically_implicit_solver_at_predictor_step(
         current_w=current_w,
         inv_ddqz_z_full=inv_ddqz_z_full,
         exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
-        rayleigh_damping_factor=rayleigh_damping_factor,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
@@ -810,8 +812,6 @@ def vertically_implicit_solver_at_predictor_step(
         ddqz_z_half=ddqz_z_half,
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
-        rayleigh_type=rayleigh_type,
-        index_of_damping_layer=index_of_damping_layer,
         is_iau_active=is_iau_active,
         n_lev=vertical_end - 1,
         out=(
@@ -843,15 +843,19 @@ def vertically_implicit_solver_at_predictor_step(
         current_theta_v=current_theta_v,
         inv_ddqz_z_full=inv_ddqz_z_full,
         exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
+        rayleigh_damping_factor=rayleigh_damping_factor,
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         rho_explicit_term=rho_explicit_term,
         exner_explicit_term=exner_explicit_term,
         dtime=dtime,
+        rayleigh_type=rayleigh_type,
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
+        index_of_damping_layer=index_of_damping_layer,
         starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         kstart_moist=kstart_moist,
         out=(
+            next_w,
             next_rho,
             next_exner,
             next_theta_v,
@@ -953,7 +957,6 @@ def vertically_implicit_solver_at_corrector_step(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
-        rayleigh_damping_factor=rayleigh_damping_factor,
         rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=ddqz_z_half,
@@ -961,8 +964,6 @@ def vertically_implicit_solver_at_corrector_step(
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
-        rayleigh_type=rayleigh_type,
-        index_of_damping_layer=index_of_damping_layer,
         is_iau_active=is_iau_active,
         n_lev=vertical_end - 1,
         out=(
@@ -997,6 +998,7 @@ def vertically_implicit_solver_at_corrector_step(
         inv_ddqz_z_full=inv_ddqz_z_full,
         exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
+        rayleigh_damping_factor=rayleigh_damping_factor,
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         rho_explicit_term=rho_explicit_term,
         exner_explicit_term=exner_explicit_term,
@@ -1004,10 +1006,13 @@ def vertically_implicit_solver_at_corrector_step(
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=ndyn_substeps_var,
         dtime=dtime,
+        rayleigh_type=rayleigh_type,
+        index_of_damping_layer=index_of_damping_layer,
         kstart_moist=kstart_moist,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
         out=(
+            next_w,
             next_rho,
             next_exner,
             next_theta_v,
