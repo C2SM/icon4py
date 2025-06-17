@@ -87,9 +87,9 @@ class ImmersedBoundaryMethod:
 
         if self.DO_IBM:
             # fill masks, otherwise False everywhere
-            #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
+            half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
             #half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
-            half_cell_mask_np = self._mask_blocks(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            #half_cell_mask_np = self._mask_blocks(grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
             full_cell_mask_np = half_cell_mask_np[:, :-1]
 
@@ -122,7 +122,7 @@ class ImmersedBoundaryMethod:
         """
         Create a test mask.
         """
-        half_cell_mask_np[[5,16], -3:] = True
+        half_cell_mask_np[[10,11], -3:] = True
         return half_cell_mask_np
 
     def _mask_gaussian_hill(
