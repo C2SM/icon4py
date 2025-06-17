@@ -114,6 +114,7 @@ from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common import field_type_aliases as fa
 
+from icon4py.model.common.io import plots
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -1282,6 +1283,27 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider={},
         )
+
+        #---> IBM
+        if self._ibm.DEBUG_LEVEL >= 4:
+            plots.pickle_data(
+                state={
+                    "vwind_impl_wgt": self._metric_state_nonhydro.vwind_impl_wgt.asnumpy(),
+                    "theta_v_ic": diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
+                    "ddqz_z_half": self._metric_state_nonhydro.ddqz_z_half.asnumpy(),
+                    "z_alpha": z_fields.z_alpha.asnumpy(),
+                    "z_beta": z_fields.z_beta.asnumpy(),
+                    "z_w_expl": z_fields.z_w_expl.asnumpy(),
+                    "z_exner_expl": z_fields.z_exner_expl.asnumpy(),
+                    "z_q": z_fields.z_q.asnumpy(),
+                    "w": prognostic_states.next.w.asnumpy(),
+                    "dtime": dtime,
+                    "cpd": constants.CPD,
+                },
+                label="w_matrix_c"
+            )
+            log.info(" ***IBM finished saving w matrix")
+        #<--- IBM
 
         if self._config.rayleigh_type == constants.RayleighType.KLEMP:
             self._apply_rayleigh_damping_mechanism(
