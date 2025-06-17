@@ -1,12 +1,17 @@
 import logging, os
 
 import gt4py.next as gtx
-from icon4py.model.testing import serialbox as sb
+
+from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
+
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
+
+from icon4py.model.testing import serialbox as sb
+
 import matplotlib as mpl
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
@@ -29,7 +34,7 @@ pil_logger.setLevel(logging.INFO)
 log = logging.getLogger(__name__)
 
 DO_PLOTS = True
-PLOT_IMGS_DIR = "run62_barray_4x4_nlev800_pert"
+PLOT_IMGS_DIR = "runxx_w_tests"
 
 
 @gtx.field_operator
@@ -57,18 +62,22 @@ def interpolate_from_half_to_full_levels(
     )
 
 def pickle_data(state, label: str = "") -> None:
-    if not os.path.isdir(PLOT_IMGS_DIR):
-        os.makedirs(PLOT_IMGS_DIR)
-    file_name = f"{PLOT_IMGS_DIR}/{label}.pkl"
-    with open(file_name, "wb") as f:
-        state_np = {
+    if type(state) is dict:
+        state_dict = state
+    else:
+        state_dict = {
             "vn": state.vn.asnumpy(),
             "w": state.w.asnumpy(),
             "rho": state.rho.asnumpy(),
             "exner": state.exner.asnumpy(),
             "theta_v": state.theta_v.asnumpy(),
         }
-        pickle.dump(state_np, f)
+
+    if not os.path.isdir(PLOT_IMGS_DIR):
+        os.makedirs(PLOT_IMGS_DIR)
+    file_name = f"{PLOT_IMGS_DIR}/{label}.pkl"
+    with open(file_name, "wb") as f:
+        pickle.dump(state_dict, f)
         log.debug(f"PLOTS: saved {file_name}")
 
 
