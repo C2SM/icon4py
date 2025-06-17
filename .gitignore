@@ -14,6 +14,7 @@ simple_mesh*.nc
 .profile
 imgs*
 run*
+ser_data
 *.log
 *.csv
 *.log
