@@ -410,7 +410,9 @@ def initialize(
     )
 
     #---> IBM
-    savepoint_path = "ser_data/exclaim_gauss3d.uniform800_flat/ser_data"
+    #savepoint_path = "ser_data/gauss3d_torus.CI/ser_data"
+    #grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_50000m_x_5000m_res500m.nc"
+    savepoint_path = "ser_data/exclaim_gauss3d.uniform100_flat/ser_data"
     grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
     _ibm = ibm.ImmersedBoundaryMethod(
         grid=icon_grid,
