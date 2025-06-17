@@ -17,12 +17,18 @@
 case $CLUSTER_NAME in
 balfrin)
 	export SCRATCH=/scratch/mch/jcanton
+	export PROJECTS_DIR=$SCRATCH
 	module load gcc-runtime
 	module load nvhpc
 	;;
 santis)
 	export SCRATCH=/capstor/scratch/cscs/jcanton
+	export PROJECTS_DIR=$SCRATCH
 	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-tsfur7lqj6njogdqafhpmj5dqltish7t/Linux_aarch64/25.1/compilers/lib
+	;;
+squirrel)
+	export SCRATCH=/scratch/l_jcanton/
+	export PROJECTS_DIR=/home/l_jcanton/projects/
 	;;
 *)
 	echo "cluster name not recognized: ${CLUSTER_NAME}"
@@ -35,11 +41,11 @@ export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1
 export GT4PY_BUILD_CACHE_LIFETIME=persistent
 export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
 
-source "$SCRATCH/icon4py/.venv/bin/activate"
+source "$PROJECTS_DIR/icon4py/.venv/bin/activate"
 
 python \
 	model/driver/src/icon4py/model/driver/icon4py_driver.py \
-	"${SCRATCH}/ser_data/exclaim_gauss3d.uniform800_flat/ser_data" \
-	--icon4py_driver_backend=gtfn_gpu \
+	ser_data/exclaim_gauss3d.uniform100_flat/ser_data \
+	--icon4py_driver_backend=gtfn_cpu \
 	--experiment_type=gauss3d_torus \
 	--grid_root=2 --grid_level=0 --enable_output
