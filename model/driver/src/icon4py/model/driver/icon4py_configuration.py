@@ -163,7 +163,8 @@ def read_config(
 
     def _gauss3d_vertical_config():
         return v_grid.VerticalGridConfig(
-            num_levels=800,
+            num_levels=100,
+            #rayleigh_damping_height=45000.0,
             rayleigh_damping_height=900.0,
             model_top_height=1000.0,
             flat_height=900.0,
@@ -173,16 +174,17 @@ def read_config(
 
     def _gauss3d_diffusion_config(n_substeps: int):
         return diffusion.DiffusionConfig(
-            hdiff_w=True, # (True)
-            hdiff_vn=True, # (True)
-            hdiff_temp=True, # (True)
-            zdiffu_t=True, # (True)
-            n_substeps=n_substeps,
+            #hdiff_w=True, # (True)
+            #hdiff_vn=True, # (True)
+            #hdiff_temp=True, # (True)
+            #zdiffu_t=True, # (True)
+            #n_substeps=n_substeps,
         )
 
     def _gauss3d_nonhydro_config(n_substeps: int):
         return solve_nh.NonHydrostaticConfig(
             rayleigh_coeff=0.10,
+            igradp_method=3,
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             fourth_order_divdamp_factor=0.0025,
@@ -191,7 +193,8 @@ def read_config(
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=0.1),
-            end_date = datetime.datetime(year=1, month=1, day=2, hour=0, minute=0, second=0, microsecond=0),
+            #end_date = datetime.datetime(year=1, month=1, day=1, hour=0, minute=0, second=4),
+            end_date = datetime.datetime(year=1, month=1, day=1, hour=0, minute=0, second=0, microsecond=100_000),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend_name=icon4py_driver_backend,
