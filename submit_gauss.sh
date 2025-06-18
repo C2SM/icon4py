@@ -2,7 +2,7 @@
 
 #=============================================================================
 
-#SBATCH --account=cwd01
+## #SBATCH --account=cwd01
 
 #SBATCH --nodes=1
 #SBATCH --uenv=icon/25.2:v3
