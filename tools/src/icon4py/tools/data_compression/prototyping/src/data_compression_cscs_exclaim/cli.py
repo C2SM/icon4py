@@ -8,6 +8,8 @@
 
 import inspect
 import click
+from tqdm import tqdm
+import itertools
 import numcodecs
 import numcodecs.zarr3
 from data_compression_cscs_exclaim import utils
@@ -113,7 +115,7 @@ def sz3_eb_compressors(netcdf_file: str, field_to_compress: str, parameters_file
 @click.argument("field_to_compress")
 @click.argument("parameters_file", type=click.Path(exists=True, dir_okay=False))
 def summarize_compression(netcdf_file: str, field_to_compress: str, parameters_file: str):
-    ## https://numcodecs.readthedocs.io/en/v0.15.0/zarr3.html
+    ## https://numcodecs.readthedocs.io/en/stable/zarr3.html#zarr-3-codecs
     
     ds = utils.open_netcdf(netcdf_file, field_to_compress)
     da = ds[field_to_compress]
@@ -124,15 +126,23 @@ def summarize_compression(netcdf_file: str, field_to_compress: str, parameters_f
     filters = utils.filter_space(da)
     serializers = utils.serializer_space(da)
     
-    for compressor in compressors:
-        for filter in filters:
-            for serializer in serializers:
-                d = utils.compress_with_zarr(da, netcdf_file, field_to_compress,
-                    filters=[filter,],
-                    compressors=[compressor,],
-                    serializer=serializer,
-                    echo=False
-                )
+    num_compressors = len(compressors)
+    num_filters = len(filters)
+    num_serializers = len(serializers)
+    num_loops = num_compressors * num_filters * num_serializers
+    click.echo(f"Number of loops: {num_loops} ({num_compressors} compressors, {num_filters} filters, {num_serializers} serializers)")
+    
+    for compressor, filter, serializer in tqdm(
+        itertools.product(compressors, filters, serializers),
+        total=num_loops,
+        desc="Executing compression combinations",
+    ):
+        d = utils.compress_with_zarr(da, netcdf_file, field_to_compress,
+            filters=[filter,],
+            compressors=[compressor,],
+            serializer=serializer,
+            echo=False
+        )
 
 
 @cli.command("models_evaluation")

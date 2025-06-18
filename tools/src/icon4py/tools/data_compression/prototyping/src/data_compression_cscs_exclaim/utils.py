@@ -135,6 +135,8 @@ def calc_dwt_dist(input_1, input_2, n_levels=4, wavelet="haar"):
 
 
 def compressor_space(da):
+    # https://numcodecs.readthedocs.io/en/stable/zarr3.html#compressors-bytes-to-bytes-codecs
+    
     # TODO: take care of integer data types
     compressor_space = []
     
@@ -142,14 +144,38 @@ def compressor_space(da):
     for compressor in _COMPRESSORS:
         if compressor == numcodecs.zarr3.Blosc:
             for cname in numcodecs.blosc.list_compressors():
-                for clevel in range(0, 10):
-                    for shuffle in range(-1,3):
+                for clevel in inclusive_range(1,9,4):
+                    for shuffle in inclusive_range(0,2):
                         compressor_space.append(numcodecs.zarr3.Blosc(cname=cname, clevel=clevel, shuffle=shuffle))
+        elif compressor == numcodecs.zarr3.LZ4:
+            # The larger the acceleration value, the faster the algorithm, but also the lesser the compression
+            for acceleration in inclusive_range(0, 16, 6):
+                compressor_space.append(numcodecs.zarr3.LZ4(acceleration=acceleration))
+        elif compressor == numcodecs.zarr3.Zstd:
+            for level in inclusive_range(-7, 22, 10):
+                compressor_space.append(numcodecs.zarr3.Zstd(level=level))
+        elif compressor == numcodecs.zarr3.Zlib:
+            for level in inclusive_range(1,9,4):
+                compressor_space.append(numcodecs.zarr3.Zlib(level=level))
+        elif compressor == numcodecs.zarr3.GZip:
+            for level in inclusive_range(1,9,4):
+                compressor_space.append(numcodecs.zarr3.GZip(level=level))
+        elif compressor == numcodecs.zarr3.BZ2:
+            for level in inclusive_range(1,9,4):
+                compressor_space.append(numcodecs.zarr3.BZ2(level=level))
+        elif compressor == numcodecs.zarr3.LZMA:
+            # https://docs.python.org/3/library/lzma.html
+            for preset in inclusive_range(1,9,4):
+                compressor_space.append(numcodecs.zarr3.LZMA(preset=preset))
+        elif compressor == numcodecs.zarr3.Shuffle:
+            compressor_space.append(numcodecs.zarr3.Shuffle(elementsize=da.dtype.itemsize))
 
     return compressor_space
 
 
 def filter_space(da):
+    # https://numcodecs.readthedocs.io/en/stable/zarr3.html#filters-array-to-array-codecs
+    
     # TODO: take care of integer data types
     filter_space = []
     
@@ -159,7 +185,7 @@ def filter_space(da):
             filter_space.append(numcodecs.zarr3.Delta(dtype=str(da.dtype)))
         elif filter == numcodecs.zarr3.BitRound:
             # If keepbits is equal to the maximum allowed for the data type, this is equivalent to no transform.
-            for keepbits in valid_keepbits_for_bitround(da):
+            for keepbits in valid_keepbits_for_bitround(da, step=9):
                 filter_space.append(numcodecs.zarr3.BitRound(keepbits=keepbits))
         elif filter == numcodecs.zarr3.FixedScaleOffset:
             # TODO: scale should be 1/current_scale (check for division by zero)
@@ -170,23 +196,25 @@ def filter_space(da):
                 numcodecs.zarr3.FixedScaleOffset(offset=da.min(skipna=True).compute().item(), scale=da.max(skipna=True).compute().item()-da.min(skipna=True).compute().item(), dtype=str(da.dtype)))
         elif filter == numcodecs.zarr3.Quantize:
             # Same as BitRound
-            for digits in valid_keepbits_for_bitround(da):
+            for digits in valid_keepbits_for_bitround(da, step=9):
                 filter_space.append(numcodecs.zarr3.Quantize(digits=digits, dtype=str(da.dtype)))
 
     return filter_space
 
 
 def serializer_space(da):
+    # https://numcodecs.readthedocs.io/en/stable/zarr3.html#serializers-array-to-bytes-codecs
+    
     # TODO: take care of integer data types
     serializer_space = []
     
     _SERIALIZERS = [numcodecs.zarr3.PCodec, numcodecs.zarr3.ZFPY]
     for serializer in _SERIALIZERS:
         if serializer == numcodecs.zarr3.PCodec:
-            for level in range(0, 13):  # where 12 take the longest and compresses the most
+            for level in inclusive_range(0, 12, 4):  # where 12 take the longest and compresses the most
                 for mode_spec in ["auto", "classic"]:
                     for delta_spec in ["auto", "none", "try_consecutive", "try_lookback"]:
-                        for delta_encoding_order in range(0,8):
+                        for delta_encoding_order in inclusive_range(0,7,4):
                             serializer_space.append(numcodecs.zarr3.PCodec(
                                     level=level,
                                     mode_spec=mode_spec,
@@ -216,12 +244,12 @@ def serializer_space(da):
     return serializer_space
 
 
-def valid_keepbits_for_bitround(xr_dataarray):
+def valid_keepbits_for_bitround(xr_dataarray, step=1):
     dtype = xr_dataarray.dtype
     if np.issubdtype(dtype, np.float64):
-        return range(1, 52+1)  # float64 mantissa is 52 bits
+        return inclusive_range(1, 52, step)  # float64 mantissa is 52 bits
     elif np.issubdtype(dtype, np.float32):
-        return range(1, 23+1)  # float32 mantissa is 23 bits
+        return inclusive_range(1, 23, step)  # float32 mantissa is 23 bits
     else:
         raise TypeError(f"Unsupported dtype '{dtype}'. BitRound only supports float32 and float64.")
 
@@ -237,6 +265,28 @@ def compute_fixed_rate_param(param: int) -> int:
 def compute_fixed_accuracy_param(param: int) -> float:
     # https://github.com/LLNL/zfp/tree/develop/tests/python
     return math.ldexp(1.0, -(1 << param))
+
+
+def inclusive_range(start, end, step=1):
+    if step == 0:
+        raise ValueError("step must not be zero")
+
+    values = []
+    i = start
+    if step > 0:
+        while i <= end:
+            values.append(i)
+            i += step
+        if values[-1] != end:
+            values.append(end)
+    else:
+        while i >= end:
+            values.append(i)
+            i += step
+        if values[-1] != end:
+            values.append(end)
+
+    return values
 
 
 def format_compression_metrics(
