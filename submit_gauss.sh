@@ -2,6 +2,8 @@
 
 #=============================================================================
 
+#SBATCH --account=cwd01
+
 #SBATCH --nodes=1
 #SBATCH --uenv=icon/25.2:v3
 #SBATCH --view=default
@@ -9,10 +11,10 @@
 #SBATCH --time=00:30:00
 #SBATCH --partition=debug
 
-#SBATCH --job-name=run62_barray_4x4_nlev800_pert
+#SBATCH --job-name=runxx_test_wiggles
 
-#SBATCH --output=logs/torus.run62_barray_4x4_nlev800_pert.log
-#SBATCH --error=logs/torus.run62_barray_4x4_nlev800_pert.log
+#SBATCH --output=logs/torus.runxx_test_wiggles.log
+#SBATCH --error=logs/torus.runxx_test_wiggles.log
 
 case $CLUSTER_NAME in
 balfrin)
