@@ -120,7 +120,10 @@ def summarize_compression(netcdf_file: str, field_to_compress: str, parameters_f
     ds = utils.open_netcdf(netcdf_file, field_to_compress)
     da = ds[field_to_compress]
     
-    gather_all = {}
+    results = []
+
+    # First gather all raw values to normalize later
+    raw_values = []
 
     compressors = utils.compressor_space(da)
     filters = utils.filter_space(da)
@@ -137,12 +140,43 @@ def summarize_compression(netcdf_file: str, field_to_compress: str, parameters_f
         total=num_loops,
         desc="Executing compression combinations",
     ):
-        d = utils.compress_with_zarr(da, netcdf_file, field_to_compress,
+        compression_ratio, errors, dwt_dist = utils.compress_with_zarr(da, netcdf_file, field_to_compress,
             filters=[filter,],
             compressors=[compressor,],
             serializer=serializer,
             echo=False
         )
+        total_error = 0.5 * errors["Relative_Error_L2"] + 0.25 * errors["Relative_Error_L1"] + 0.25 * errors["Relative_Error_Linf"]
+        raw_values.append((compression_ratio, total_error, dwt_dist))
+        results.append(((compressor, filter, serializer), compression_ratio, total_error, dwt_dist))
+
+    # Normalize and score
+    ratios, errors, dwts = zip(*raw_values)
+    min_ratio, max_ratio = min(ratios), max(ratios)
+    min_error, max_error = min(errors), max(errors)
+    min_dwt, max_dwt = min(dwts), max(dwts)
+
+    scored_results = []
+
+    for (cfg, ratio, error, dwt) in results:
+        norm_ratio = utils.normalize(ratio, min_ratio, max_ratio)
+        norm_error = utils.normalize(error, min_error, max_error)
+        norm_dwt = utils.normalize(dwt, min_dwt, max_dwt)
+
+        score = (
+            0.5 * norm_ratio -  # maximize
+            0.25 * norm_error -  # minimize
+            0.25 * norm_dwt      # minimize
+        )
+
+        scored_results.append((score, cfg, ratio, error, dwt))
+
+    # Sort and display best
+    scored_results.sort(key=lambda x: x[0], reverse=True)
+
+    click.echo("Top 5 configurations:")
+    for score, cfg, ratio, error, dwt in scored_results[:5]:
+        click.echo(f"Score: {score:.3f} | Ratio: {ratio:.3f} | Error: {error:.3e} | DWT: {dwt:.3e} | {cfg}")
 
 
 @cli.command("models_evaluation")

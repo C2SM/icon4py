@@ -74,7 +74,7 @@ def compress_with_zarr(data, netcdf_file, field_to_compress, filters, compressor
 
     store.close()
 
-    return info_array._compressors, info_array._filters, info_array._serializer, compression_ratio, errors, dwt_dist
+    return compression_ratio, errors, dwt_dist
 
 
 def ordered_yaml_loader():
@@ -123,9 +123,9 @@ def compute_relative_errors(da_compressed, da):
         "Relative_Error_L2": relative_error_L2,
         "Relative_Error_Linf": relative_error_Linf,
     }
-    errors = {k: f"{v:.3e}" for k, v in errors.items()}
+    errors_ = {k: f"{v:.3e}" for k, v in errors.items()}
 
-    return "\n".join(f"{k:20s}: {v}" for k, v in errors.items()), errors
+    return "\n".join(f"{k:20s}: {v}" for k, v in errors_.items()), errors
 
 
 def calc_dwt_dist(input_1, input_2, n_levels=4, wavelet="haar"):
@@ -142,7 +142,7 @@ def compressor_space(da):
     # TODO: take care of integer data types
     compressor_space = []
     
-    _COMPRESSORS = [numcodecs.zarr3.Blosc, numcodecs.zarr3.LZ4, numcodecs.zarr3.Zstd, numcodecs.zarr3.Zlib, numcodecs.zarr3.GZip, numcodecs.zarr3.BZ2, numcodecs.zarr3.LZMA, numcodecs.zarr3.Shuffle]
+    _COMPRESSORS = [numcodecs.zarr3.Blosc, numcodecs.zarr3.LZ4, numcodecs.zarr3.Zstd, numcodecs.zarr3.Zlib, numcodecs.zarr3.GZip, numcodecs.zarr3.BZ2, numcodecs.zarr3.LZMA]
     for compressor in _COMPRESSORS:
         if compressor == numcodecs.zarr3.Blosc:
             for cname in numcodecs.blosc.list_compressors():
@@ -169,8 +169,6 @@ def compressor_space(da):
             # https://docs.python.org/3/library/lzma.html
             for preset in inclusive_range(1,9,4):
                 compressor_space.append(numcodecs.zarr3.LZMA(preset=preset))
-        elif compressor == numcodecs.zarr3.Shuffle:
-            compressor_space.append(numcodecs.zarr3.Shuffle(elementsize=da.dtype.itemsize))
 
     return compressor_space
 
@@ -289,6 +287,12 @@ def inclusive_range(start, end, step=1):
             values.append(end)
 
     return values
+
+
+def normalize(val, min_val, max_val):
+    if max_val == min_val:
+        return 0.0  # avoid division by zero
+    return (val - min_val) / (max_val - min_val)
 
 
 def format_compression_metrics(
