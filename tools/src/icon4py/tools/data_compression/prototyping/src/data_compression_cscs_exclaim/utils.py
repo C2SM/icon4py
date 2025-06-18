@@ -63,12 +63,12 @@ def compress_with_zarr(data, netcdf_file, field_to_compress, filters, compressor
     click.echo(80* "-") if echo else None
     click.echo(info_array) if echo else None
     
-    pprint_, errors = compute_relative_errors(z, data)
+    pprint_, errors = compute_relative_errors(z[:], data)
     click.echo(80* "-") if echo else None
     click.echo(pprint_) if echo else None
     click.echo(80* "-") if echo else None
 
-    dwt_dist = calc_dwt_dist(z, data)
+    dwt_dist = calc_dwt_dist(z[:], data)
     click.echo("DWT Distance: ", dwt_dist) if echo else None
     click.echo(80* "-") if echo else None
 
