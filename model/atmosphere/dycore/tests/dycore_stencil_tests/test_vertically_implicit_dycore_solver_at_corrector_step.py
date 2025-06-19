@@ -142,13 +142,13 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         rayleigh_type: int,
         at_first_substep: bool,
         at_last_substep: bool,
-        index_of_damping_layer: int,
+        end_index_of_damping_layer: int,
         kstart_moist: int,
         **kwargs: Any,
     ) -> dict:
-        horizontal_start = kwargs["horizontal_start"]
-        horizontal_end = kwargs["horizontal_end"]
-        n_lev = kwargs["vertical_end"] - 1
+        horizontal_start = kwargs["start_cell_index_nudging"]
+        horizontal_end = kwargs["end_cell_index_local"]
+        n_lev = kwargs["vertical_end_index_model_surface"] - 1
         horz_idx = np.asarray(np.arange(exner_dynamical_increment.shape[0]))
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dynamical_increment.shape[1])
@@ -299,7 +299,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)
                 & (vert_idx >= 1)
-                & (vert_idx < (index_of_damping_layer + 1)),
+                & (vert_idx < (end_index_of_damping_layer + 1)),
                 apply_rayleigh_damping_mechanism_numpy(
                     connectivities=connectivities,
                     z_raylfac=rayleigh_damping_factor,
@@ -469,7 +469,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         is_iau_active = True
         at_first_substep = True
         rayleigh_type = 2
-        index_of_damping_layer = 3
+        end_index_of_damping_layer = 3
         at_last_substep = True
         kstart_moist = 1
         dtime = 0.001
@@ -530,10 +530,10 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             rayleigh_type=rayleigh_type,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
-            index_of_damping_layer=index_of_damping_layer,
+            end_index_of_damping_layer=end_index_of_damping_layer,
             kstart_moist=kstart_moist,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=0,
-            vertical_end=grid.num_levels + 1,
+            start_cell_index_nudging=start_cell_nudging,
+            end_cell_index_local=end_cell_local,
+            vertical_start_index_model_top=gtx.int32(0),
+            vertical_end_index_model_surface=gtx.int32(grid.num_levels + 1),
         )
