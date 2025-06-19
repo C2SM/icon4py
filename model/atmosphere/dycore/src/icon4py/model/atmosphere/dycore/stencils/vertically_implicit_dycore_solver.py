@@ -161,6 +161,7 @@ def _compute_solver_coefficients_matrix(
 @gtx.field_operator
 def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     next_w: fa.CellKField[ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -235,12 +236,16 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            vertical_mass_flux_at_cells_on_half_levels,
+        ),
     )
 
     (
         tridiagonal_beta_coeff_at_cells_on_model_levels,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels_n_lev,
     ) = _compute_solver_coefficients_matrix(
         current_exner=current_exner,
         current_rho=current_rho,
@@ -250,6 +255,11 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         dtime=dtime,
+    )
+    tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
+        dims.KDim < n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels_n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -420,6 +430,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
 @gtx.field_operator
 def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     next_w: fa.CellKField[ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -501,12 +512,16 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            vertical_mass_flux_at_cells_on_half_levels,
+        ),
     )
 
     (
         tridiagonal_beta_coeff_at_cells_on_model_levels,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels_n_lev,
     ) = _compute_solver_coefficients_matrix(
         current_exner=current_exner,
         current_rho=current_rho,
@@ -516,6 +531,11 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         dtime=dtime,
+    )
+    tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
+        dims.KDim < n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels_n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -789,6 +809,7 @@ def vertically_implicit_solver_at_predictor_step(
 
     _vertically_implicit_solver_at_predictor_step_before_solving_w(
         vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
         next_w=next_w,
         geofac_div=geofac_div,
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
@@ -938,6 +959,7 @@ def vertically_implicit_solver_at_corrector_step(
     )
     _vertically_implicit_solver_at_corrector_step_before_solving_w(
         vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
         next_w=next_w,
         geofac_div=geofac_div,
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
