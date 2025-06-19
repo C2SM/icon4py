@@ -87,9 +87,9 @@ class VerticalGridConfig:
     #: Defined as htop_thcknlimit in ICON namelist mo_sleve_nml. Height below which thickness of grid cells must not exceed maximal_layer_thickness.
     top_height_limit_for_maximal_layer_thickness: Final[float] = 15000.0
     #: Defined as min_lay_thckn in ICON namelist mo_sleve_nml. Thickness of lowest level grid cells.
-    lowest_layer_thickness: Final[float] = 50.0
+    lowest_layer_thickness: Final[float] = 20.0, #50.0
     #: Model top height.
-    model_top_height: Final[float] = 23500.0
+    model_top_height: Final[float] = 23000.0, #23500.0
     #: Defined in ICON namelist mo_sleve_nml. Height above which coordinate surfaces are flat
     flat_height: Final[float] = 16000.0
     #: Defined as stretch_fac in ICON namelist mo_sleve_nml. Scaling factor for stretching/squeezing the model layer distribution.

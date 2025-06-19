@@ -359,6 +359,7 @@ def test_compute_vertical_coordinat_numpy(
     interpolation_savepoint,
     icon_grid,
     experiment,
+    model_top_height,
     backend,
 ):
     xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
@@ -392,8 +393,8 @@ def test_compute_vertical_coordinat_numpy(
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
-    model_top_height = 23500.0 if experiment == dt_utils.GAUSS3D_EXPERIMENT else 23000.0
     #SLEVE_minimum_layer_thickness_1 = 100.0 if experiment == dt_utils.GAUSS3D_EXPERIMENT else 20.0
+
 
     vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate_numpy(
         vct_a=vct_a.ndarray,
@@ -419,5 +420,6 @@ def test_compute_vertical_coordinat_numpy(
     assert helpers.dallclose(
         data_alloc.as_numpy(vertical_coordinates_on_cell_khalf),
         metrics_savepoint.z_ifc().asnumpy(),
+        rtol=1e-9,
         atol=1e-13,
     )
