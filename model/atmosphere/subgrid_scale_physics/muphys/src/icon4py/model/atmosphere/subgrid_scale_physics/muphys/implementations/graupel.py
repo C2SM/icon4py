@@ -140,29 +140,32 @@ def _q_t_update(
     sx2x_c_s = _cloud_to_snow( t, qc, qs, n_snow, l_snow )
     sx2x_c_g = _cloud_to_graupel( t, rho, qc, qg )
 
-    n_ice    = where( t < t_d.tmelt, _ice_number( t, rho ), 0.0 )
-    m_ice    = where( t < t_d.tmelt, _ice_mass( qi, n_ice ), 0.0 )
-    x_ice    = where( t < t_d.tmelt, _ice_sticking( t ), 0.0 )
+    t_below_tmelt = (t < t_d.tmelt)
+    t_at_least_tmelt = not t_below_tmelt
 
-    eta      = where( (t < t_d.tmelt) & is_sig_present, _deposition_factor( t, qvsi ), 0.0 )
-    sx2x_v_i = where( (t < t_d.tmelt) & is_sig_present, _vapor_x_ice( qi, m_ice, eta, dvsi, rho, dt ), 0.0 )
-    sx2x_i_v = where( (t < t_d.tmelt) & is_sig_present, -minimum( sx2x_v_i, 0.0 ) , 0.0 )
-    sx2x_v_i = where( (t < t_d.tmelt) & is_sig_present, maximum( sx2x_v_i, 0.0 ) , sx2x_i_v )
+    n_ice    = where( t_below_tmelt, _ice_number( t, rho ), 0.0 )
+    m_ice    = where( t_below_tmelt, _ice_mass( qi, n_ice ), 0.0 )
+    x_ice    = where( t_below_tmelt, _ice_sticking( t ), 0.0 )
 
-    ice_dep  = where( (t < t_d.tmelt) & is_sig_present, minimum( sx2x_v_i, dvsi / dt), 0.0 )
+    eta      = where( t_below_tmelt & is_sig_present, _deposition_factor( t, qvsi ), 0.0 )
+    sx2x_v_i = where( t_below_tmelt & is_sig_present, _vapor_x_ice( qi, m_ice, eta, dvsi, rho, dt ), 0.0 )
+    sx2x_i_v = where( t_below_tmelt & is_sig_present, -minimum( sx2x_v_i, 0.0 ) , 0.0 )
+    sx2x_v_i = where( t_below_tmelt & is_sig_present, maximum( sx2x_v_i, 0.0 ) , sx2x_i_v )
+
+    ice_dep  = where( t_below_tmelt & is_sig_present, minimum( sx2x_v_i, dvsi / dt), 0.0 )
     # TODO: _deposition_auto_conversion yields roundoff differences in sx2x_i_s
-    sx2x_i_s = where( (t < t_d.tmelt) & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep ) + \
+    sx2x_i_s = where( t_below_tmelt & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep ) + \
                       _ice_to_snow( qi, n_snow, l_snow, x_ice ), 0.0 )
-    sx2x_i_g = where( (t < t_d.tmelt) & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, x_ice ), 0.0 )
-    sx2x_s_g = where( (t < t_d.tmelt) & is_sig_present, _snow_to_graupel( t, rho, qc, qs ), 0.0 )
-    sx2x_r_g = where( (t < t_d.tmelt) & is_sig_present, _rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt ), 0.0 )
+    sx2x_i_g = where( t_below_tmelt & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, x_ice ), 0.0 )
+    sx2x_s_g = where( t_below_tmelt & is_sig_present, _snow_to_graupel( t, rho, qc, qs ), 0.0 )
+    sx2x_r_g = where( t_below_tmelt & is_sig_present, _rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt ), 0.0 )
 
-    sx2x_v_i = where( t < t_d.tmelt, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt ), 0.0 ) # 0.0 or sx2x_v_i both OK
-    sx2x_c_r = where( t >= t_d.tmelt, sx2x_c_r + sx2x_c_s + sx2x_c_g, sx2x_c_r )
-    sx2x_c_s = where( t >= t_d.tmelt, 0.0, sx2x_c_s )
-    sx2x_c_g = where( t >= t_d.tmelt, 0.0, sx2x_c_g )
-    ice_dep  = where( t >= t_d.tmelt, 0.0, ice_dep )
-    eta      = where( t >= t_d.tmelt, 0.0, eta )
+    sx2x_v_i = where( t_below_tmelt, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt ), 0.0 ) # 0.0 or sx2x_v_i both OK
+    sx2x_c_r = where( t_at_least_tmelt, sx2x_c_r + sx2x_c_s + sx2x_c_g, sx2x_c_r )
+    sx2x_c_s = where( t_at_least_tmelt, 0.0, sx2x_c_s )
+    sx2x_c_g = where( t_at_least_tmelt, 0.0, sx2x_c_g )
+    ice_dep  = where( t_at_least_tmelt, 0.0, ice_dep )
+    eta      = where( t_at_least_tmelt, 0.0, eta )
 
     dvsw0    = where( is_sig_present, qv - _qsat_rho_tmelt( rho ), 0.0 )
     sx2x_v_s = where( is_sig_present, _vapor_x_snow( t, p, rho, qs, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt ), 0.0 )
@@ -193,41 +196,46 @@ def _q_t_update(
 
     #  if ((sink[qx_ind[ix]] > stot) && (q[qx_ind[ix]].x[oned_vec_index] > qmin))
     stot     = qv / dt
-    sx2x_v_s = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_s * stot / sink_v, sx2x_v_s )
-    sx2x_v_i = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_i * stot / sink_v, sx2x_v_i )
-    sx2x_v_g = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_g * stot / sink_v, sx2x_v_g )
-    sink_v   = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_s + sx2x_v_i + sx2x_v_g, sink_v) # Missing: sx2x_v_c + sx2x_v_r
+    sink_v_saturated = (sink_v > stot) & (qv > g_ct.qmin)
+    sx2x_v_s = where( sink_v_saturated, sx2x_v_s * stot / sink_v, sx2x_v_s )
+    sx2x_v_i = where( sink_v_saturated, sx2x_v_i * stot / sink_v, sx2x_v_i )
+    sx2x_v_g = where( sink_v_saturated, sx2x_v_g * stot / sink_v, sx2x_v_g )
+    sink_v   = where( sink_v_saturated, sx2x_v_s + sx2x_v_i + sx2x_v_g, sink_v) # Missing: sx2x_v_c + sx2x_v_r
 
     stot     = qc / dt
-    sx2x_c_r = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_r * stot / sink_c, sx2x_c_r )
-    sx2x_c_s = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_s * stot / sink_c, sx2x_c_s )
-    sx2x_c_i = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_i * stot / sink_c, sx2x_c_i )
-    sx2x_c_g = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_g * stot / sink_c, sx2x_c_g )
-    sink_c   = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g, sink_c) # Missing: sx2x_c_v
+    sink_c_saturated = (sink_c > stot) & (qc > g_ct.qmin)
+    sx2x_c_r = where( sink_c_saturated, sx2x_c_r * stot / sink_c, sx2x_c_r )
+    sx2x_c_s = where( sink_c_saturated, sx2x_c_s * stot / sink_c, sx2x_c_s )
+    sx2x_c_i = where( sink_c_saturated, sx2x_c_i * stot / sink_c, sx2x_c_i )
+    sx2x_c_g = where( sink_c_saturated, sx2x_c_g * stot / sink_c, sx2x_c_g )
+    sink_c   = where( sink_c_saturated, sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g, sink_c) # Missing: sx2x_c_v
 
     stot     = qr / dt
-    sx2x_r_v = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_v * stot / sink_r, sx2x_r_v )
-    sx2x_r_g = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_g * stot / sink_r, sx2x_r_g )
-    sink_r   = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_v + sx2x_r_g, sink_r) # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
+    sink_r_saturated = (sink_r > stot) & (qr > g_ct.qmin)
+    sx2x_r_v = where( sink_r_saturated, sx2x_r_v * stot / sink_r, sx2x_r_v )
+    sx2x_r_g = where( sink_r_saturated, sx2x_r_g * stot / sink_r, sx2x_r_g )
+    sink_r   = where( sink_r_saturated, sx2x_r_v + sx2x_r_g, sink_r) # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
 
     stot     = qs / dt
-    sx2x_s_v = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_v * stot / sink_s, sx2x_s_v )
-    sx2x_s_r = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_r * stot / sink_s, sx2x_s_r )
-    sx2x_s_g = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_g * stot / sink_s, sx2x_s_g )
-    sink_s   = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_v + sx2x_s_r + sx2x_s_g, sink_s) # Missing: sx2x_s_c + sx2x_s_i
-
+    sink_s_saturated = (sink_s > stot) & (qs > g_ct.qmin)
+    sx2x_s_v = where( sink_s_saturated, sx2x_s_v * stot / sink_s, sx2x_s_v )
+    sx2x_s_r = where( sink_s_saturated, sx2x_s_r * stot / sink_s, sx2x_s_r )
+    sx2x_s_g = where( sink_s_saturated, sx2x_s_g * stot / sink_s, sx2x_s_g )
+    sink_s   = where( sink_s_saturated, sx2x_s_v + sx2x_s_r + sx2x_s_g, sink_s) # Missing: sx2x_s_c + sx2x_s_i
 
     stot     = qi / dt
-    sx2x_i_v = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_v * stot / sink_i, sx2x_i_v )
-    sx2x_i_c = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_c * stot / sink_i, sx2x_i_c )
-    sx2x_i_s = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_s * stot / sink_i, sx2x_i_s )
-    sx2x_i_g = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_g * stot / sink_i, sx2x_i_g )
-    sink_i   = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g, sink_i) # Missing: sx2x_i_r
+    sink_i_saturated = (sink_i > stot) & (qi > g_ct.qmin)
+    sx2x_i_v = where( sink_i_saturated, sx2x_i_v * stot / sink_i, sx2x_i_v )
+    sx2x_i_c = where( sink_i_saturated, sx2x_i_c * stot / sink_i, sx2x_i_c )
+    sx2x_i_s = where( sink_i_saturated, sx2x_i_s * stot / sink_i, sx2x_i_s )
+    sx2x_i_g = where( sink_i_saturated, sx2x_i_g * stot / sink_i, sx2x_i_g )
+    sink_i   = where( sink_i_saturated, sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g, sink_i) # Missing: sx2x_i_r
 
     stot     = qg / dt
-    sx2x_g_v = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v * stot / sink_g, sx2x_g_v )
-    sx2x_g_r = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_r * stot / sink_g, sx2x_g_r )
-    sink_g   = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v + sx2x_g_r, sink_g) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
+    sink_g_saturated = (sink_g > stot) & (qg > g_ct.qmin)
+    sx2x_g_v = where( sink_g_saturated, sx2x_g_v * stot / sink_g, sx2x_g_v )
+    sx2x_g_r = where( sink_g_saturated, sx2x_g_r * stot / sink_g, sx2x_g_r )
+    sink_g   = where( sink_g_saturated, sx2x_g_v + sx2x_g_r, sink_g) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
 
 
     # water content updates:
