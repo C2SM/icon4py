@@ -203,7 +203,7 @@ saturation_adjustment( te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpo
     qve_out  = qv_out,                       # Specific humidity
     qce_out  = qc_out,                       # Specific cloud water content
     mask_out = mask_out,                     # Mask of interest
-    offset_provider={"Koff": K} )
+    offset_provider={"Koff": dims.KDim} )
 '''
 
 # grpl.run(
