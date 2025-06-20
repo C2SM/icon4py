@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 
 def set_lib_path(lib_dir):
     sys.path.append(lib_dir)
