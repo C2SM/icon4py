@@ -292,7 +292,7 @@ for x in range(int(args.itime)):
              pi     = pi_out,
              pg     = pg_out,
              pre    = pre_out,
-             offset_provider={"Koff": K}
+             offset_provider={"Koff": dims.KDim}
              )
 end_time = time.time()
 elapsed_time = end_time - start_time
