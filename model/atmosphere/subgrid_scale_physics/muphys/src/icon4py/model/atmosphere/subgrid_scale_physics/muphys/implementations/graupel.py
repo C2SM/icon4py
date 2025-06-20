@@ -98,7 +98,7 @@ def _graupel_mask(
 ) -> tuple[fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool]]:
 
     mask = where( (maximum( qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > g_ct.qmin) | ((t < g_ct.tfrz_het2) & (qv > _qsat_ice_rho(t, rho) ) ), True, False )
-    is_sig_present = where( maximum( qg, maximum(qi, qs)) > g_ct.qmin, True, False )
+    is_sig_present = (maximum( qg, maximum(qi, qs)) > g_ct.qmin)
     kmin_r = where( qr > g_ct.qmin, True, False )
     kmin_i = where( qi > g_ct.qmin, True, False )
     kmin_s = where( qs > g_ct.qmin, True, False )
