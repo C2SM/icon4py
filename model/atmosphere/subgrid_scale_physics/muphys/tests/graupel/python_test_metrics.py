@@ -94,7 +94,7 @@ class Data:
 def calc_dz(
     ksize,
     z
-):
+) -> np.ndarray:
     dz = np.zeros(z.shape,np.float64)
     zh = 1.5*z[ksize-1,:] - 0.5*z[ksize-2,:]
     for k in range(ksize-1,-1,-1):
