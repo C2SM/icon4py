@@ -52,11 +52,11 @@ def deposition_factor(
     qvsi:         fa.CellKField[ta.wpfloat],             
     deposition_rate: fa.CellKField[ta.wpfloat],          
 ):
-  """
+    """
       t: Temperature
       qvsi: Saturation (ice) specific vapor mass
       deposition_rate: output
-  """
+    """
     _deposition_factor(t, qvsi, out=deposition_rate)
 
 @gtx.field_operator
