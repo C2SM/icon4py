@@ -18,8 +18,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @scan_operator(axis=dims.KDim, forward=True, init=(vpfloat("0.0"), 0.0))
 def _w(
     state: tuple[vpfloat, float],
-    # w_prev: wpfloat,  # only accessed at the first k-level
-    # z_q_prev: vpfloat,
     z_a: vpfloat,
     z_b: vpfloat,
     z_c: vpfloat,
@@ -42,8 +40,6 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     z_beta: fa.CellKField[vpfloat],
     z_w_expl: fa.CellKField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
-    # z_q: fa.CellKField[vpfloat],
-    # w: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
@@ -56,8 +52,6 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (z_beta(Koff[-1]) + z_beta)
     z_gamma_wp = astype(z_gamma_vp, wpfloat)
     w_prep = z_w_expl - z_gamma_wp * (z_exner_expl(Koff[-1]) - z_exner_expl)
-    # w_prev = w(Koff[-1])
-    # z_q_prev = z_q(Koff[-1])
     z_q_res, w_res = _w(z_a, z_b, z_c, w_prep)
     return z_q_res, w_res
 
@@ -88,8 +82,6 @@ def solve_tridiagonal_matrix_for_w_forward_sweep(
         z_beta,
         z_w_expl,
         z_exner_expl,
-        # z_q,
-        # w,
         dtime,
         cpd,
         out=(z_q, w),
