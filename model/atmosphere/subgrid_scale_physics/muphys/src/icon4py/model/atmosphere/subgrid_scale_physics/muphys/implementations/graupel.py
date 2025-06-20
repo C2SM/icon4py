@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
 
 
 #@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))   <=== this should work now
-@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, 0.0, False))
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))
 def _precip(
     state:     tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool],
     prefactor: ta.wpfloat,             # param[0] of fall_speed
