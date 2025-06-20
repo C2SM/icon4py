@@ -161,6 +161,7 @@ def _compute_solver_coefficients_matrix(
 @gtx.field_operator
 def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     next_w: fa.CellKField[ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -200,9 +201,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
-    w_explicit_term = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
-    tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
-
     w_explicit_term = concat_where(
         1 <= dims.KDim,
         _compute_w_explicit_term_with_predictor_advective_tendency(
@@ -214,15 +212,6 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
-    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
-        dims.KDim == 0,
-        (
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-        ),
-        (next_w, vertical_mass_flux_at_cells_on_half_levels),
-    )
-
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
@@ -231,12 +220,16 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        vertical_mass_flux_at_cells_on_half_levels,
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            vertical_mass_flux_at_cells_on_half_levels,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
+        ),
     )
 
     (
         tridiagonal_beta_coeff_at_cells_on_model_levels,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels_n_lev,
     ) = _compute_solver_coefficients_matrix(
         current_exner=current_exner,
         current_rho=current_rho,
@@ -246,6 +239,11 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         dtime=dtime,
+    )
+    tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
+        dims.KDim < n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels_n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -273,29 +271,16 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         else (rho_explicit_term, exner_explicit_term)
     )
 
-    tridiagonal_intermediate_result, next_w = concat_where(
-        dims.KDim > 0,
-        _solve_tridiagonal_matrix_for_w_forward_sweep(
-            vwind_impl_wgt=exner_w_implicit_weight_parameter,
-            theta_v_ic=theta_v_at_cells_on_half_levels,
-            ddqz_z_half=ddqz_z_half,
-            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            z_w_expl=w_explicit_term,
-            z_exner_expl=exner_explicit_term,
-            z_q=tridiagonal_intermediate_result,
-            w=next_w,
-            dtime=dtime,
-            cpd=dycore_consts.cpd,
-        ),
-        (tridiagonal_intermediate_result, next_w),
-    )
-
-    # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
-    tridiagonal_intermediate_result = concat_where(
-        dims.KDim == n_lev - 1,
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-        tridiagonal_intermediate_result,
+    tridiagonal_intermediate_result, next_w = _solve_tridiagonal_matrix_for_w_forward_sweep(
+        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        theta_v_ic=theta_v_at_cells_on_half_levels,
+        ddqz_z_half=ddqz_z_half,
+        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        z_w_expl=w_explicit_term,
+        z_exner_expl=exner_explicit_term,
+        dtime=dtime,
+        cpd=dycore_consts.cpd,
     )
 
     next_w = concat_where(
@@ -303,7 +288,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         _solve_tridiagonal_matrix_for_w_back_substitution_scan(
             z_q=tridiagonal_intermediate_result, w=next_w
         ),
-        next_w,
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
     return (
@@ -422,6 +407,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
 @gtx.field_operator
 def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     next_w: fa.CellKField[ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -465,8 +451,6 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
 
-    tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
-
     w_explicit_term = concat_where(
         1 <= dims.KDim,
         _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
@@ -481,15 +465,6 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
-    (next_w, vertical_mass_flux_at_cells_on_half_levels) = concat_where(
-        dims.KDim == 0,
-        (
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-        ),
-        (next_w, vertical_mass_flux_at_cells_on_half_levels),
-    )
-
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
@@ -498,12 +473,16 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        vertical_mass_flux_at_cells_on_half_levels,
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            vertical_mass_flux_at_cells_on_half_levels,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
+        ),
     )
 
     (
         tridiagonal_beta_coeff_at_cells_on_model_levels,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels_n_lev,
     ) = _compute_solver_coefficients_matrix(
         current_exner=current_exner,
         current_rho=current_rho,
@@ -513,6 +492,11 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         dtime=dtime,
+    )
+    tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
+        dims.KDim < n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels_n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -540,29 +524,16 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         else (rho_explicit_term, exner_explicit_term)
     )
 
-    tridiagonal_intermediate_result, next_w = concat_where(
-        dims.KDim > 0,
-        _solve_tridiagonal_matrix_for_w_forward_sweep(
-            vwind_impl_wgt=exner_w_implicit_weight_parameter,
-            theta_v_ic=theta_v_at_cells_on_half_levels,
-            ddqz_z_half=ddqz_z_half,
-            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            z_w_expl=w_explicit_term,
-            z_exner_expl=exner_explicit_term,
-            z_q=tridiagonal_intermediate_result,
-            w=next_w,
-            dtime=dtime,
-            cpd=dycore_consts.cpd,
-        ),
-        (tridiagonal_intermediate_result, next_w),
-    )
-
-    # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
-    tridiagonal_intermediate_result = concat_where(
-        dims.KDim == n_lev - 1,
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-        tridiagonal_intermediate_result,
+    tridiagonal_intermediate_result, next_w = _solve_tridiagonal_matrix_for_w_forward_sweep(
+        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        theta_v_ic=theta_v_at_cells_on_half_levels,
+        ddqz_z_half=ddqz_z_half,
+        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        z_w_expl=w_explicit_term,
+        z_exner_expl=exner_explicit_term,
+        dtime=dtime,
+        cpd=dycore_consts.cpd,
     )
 
     next_w = concat_where(
@@ -571,7 +542,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
             z_q=tridiagonal_intermediate_result,
             w=next_w,
         ),
-        next_w,
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
     return (
@@ -790,6 +761,7 @@ def vertically_implicit_solver_at_predictor_step(
 
     _vertically_implicit_solver_at_predictor_step_before_solving_w(
         vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
         next_w=next_w,
         geofac_div=geofac_div,
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
@@ -939,6 +911,7 @@ def vertically_implicit_solver_at_corrector_step(
     )
     _vertically_implicit_solver_at_corrector_step_before_solving_w(
         vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
         next_w=next_w,
         geofac_div=geofac_div,
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
