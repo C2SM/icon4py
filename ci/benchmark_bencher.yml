@@ -12,8 +12,6 @@ include:
     - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
     - |
       echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
-    - rustup default stable
-    - cargo install --git https://github.com/kotsaloscv/bencher --branch main --locked --force bencher_cli --root /root/.cargo # Specific version of bencher that supports --github-actions: TODO(kotsaloscv) Continue updating my fork with upstream Bencher?
 
 .benchmark_model_stencils:
   stage: benchmark
