@@ -48,10 +48,15 @@ def _deposition_factor(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def deposition_factor(
-    t:            fa.CellKField[ta.wpfloat],             # Temperature
-    qvsi:         fa.CellKField[ta.wpfloat],             # Saturation (ice) specific vapor mass
-    deposition_rate: fa.CellKField[ta.wpfloat],          # output
+    t:            fa.CellKField[ta.wpfloat],             
+    qvsi:         fa.CellKField[ta.wpfloat],             
+    deposition_rate: fa.CellKField[ta.wpfloat],          
 ):
+  """
+      t: Temperature
+      qvsi: Saturation (ice) specific vapor mass
+      deposition_rate: output
+  """
     _deposition_factor(t, qvsi, out=deposition_rate)
 
 @gtx.field_operator
