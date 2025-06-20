@@ -31,5 +31,5 @@ class TestSnowLambda(StencilTest):
             rho             = data_alloc.constant_field(grid, 1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
             qs              = data_alloc.constant_field(grid, graupel_ct.qmin, dims.CellDim, dims.KDim, dtype=wpfloat),
             ns              = data_alloc.constant_field(grid, 1.76669e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate= data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate= data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

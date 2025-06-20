@@ -28,9 +28,9 @@ class TestFallSpeed(StencilTest):
     def input_data(self, grid):
 
         return dict(
-            density         = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            density         = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             prefactor       = idx.prefactor_r,
             offset          = idx.offset_r,
             exponent        = idx.exponent_r,
-            speed           = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
+            speed           = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -28,5 +28,5 @@ class TestVelScaleFactorIce(StencilTest):
 
         return dict(
             xrho            = data_alloc.constant_field(grid, 1.17873, dims.CellDim, dims.KDim, dtype=wpfloat),
-            scale_factor    = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            scale_factor    = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

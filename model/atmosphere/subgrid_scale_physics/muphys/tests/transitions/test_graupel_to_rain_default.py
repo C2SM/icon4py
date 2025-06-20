@@ -30,6 +30,6 @@ class TestGraupelToRainDefault(StencilTest):
             rho     = data_alloc.constant_field(grid, 1.22804, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw0   = data_alloc.constant_field(grid, -0.00167867, dims.CellDim, dims.KDim, dtype=wpfloat),
             qg      = data_alloc.constant_field(grid, 1.53968e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rain_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            rain_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

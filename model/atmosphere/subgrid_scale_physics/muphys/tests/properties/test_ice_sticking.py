@@ -28,5 +28,5 @@ class TestIceSticking(StencilTest):
 
         return dict(
             t               = data_alloc.constant_field(grid, 271.6, dims.CellDim, dims.KDim, dtype=wpfloat),
-            sticking_factor = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            sticking_factor = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

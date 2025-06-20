@@ -31,5 +31,5 @@ class TestIceToSnow(StencilTest):
             ns              = data_alloc.constant_field(grid, 1.93157e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
             lam             = data_alloc.constant_field(grid, 10576.8, dims.CellDim, dims.KDim, dtype=wpfloat),
             sticking_eff    = data_alloc.constant_field(grid, 0.511825, dims.CellDim, dims.KDim, dtype=wpfloat),
-            conversion_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            conversion_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )

@@ -27,8 +27,8 @@ class TestCloudXIce(StencilTest):
 
         return dict(
             t             = data_alloc.constant_field(grid, 274.15, dims.CellDim, dims.KDim, dtype=wpfloat), # tmelt + 1.0
-            qc            = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc            = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             qi            = data_alloc.constant_field(grid, 4.50245e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt            = 30.0,
-            freezing_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            freezing_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )

@@ -34,6 +34,6 @@ class TestVaporXGraupel(StencilTest):
             dvsi             = data_alloc.constant_field(grid, -0.00261576, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw0            = data_alloc.constant_field(grid, -0.00076851, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt               = 30.0,
-            exchange_rate    = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            exchange_rate    = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

@@ -32,12 +32,12 @@ class TestVaporXSnow(StencilTest):
             qs               = data_alloc.constant_field(grid, 1.25653e-10, dims.CellDim, dims.KDim, dtype=wpfloat),
             ns               = data_alloc.constant_field(grid, 800000.0, dims.CellDim, dims.KDim, dtype=wpfloat),
             lam              = data_alloc.constant_field(grid, 1.0e10, dims.CellDim, dims.KDim, dtype=wpfloat),
-            eta              = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ice_dep          = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            eta              = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ice_dep          = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw             = data_alloc.constant_field(grid, -0.00196781, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsi             = data_alloc.constant_field(grid, -0.00229367, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw0            = data_alloc.constant_field(grid, -0.000110022, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt               = 30.0,
-            vapor_deposition_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            vapor_deposition_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

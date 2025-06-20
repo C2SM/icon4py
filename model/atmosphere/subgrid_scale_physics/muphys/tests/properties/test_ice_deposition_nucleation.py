@@ -33,5 +33,5 @@ class TestIceDepositionNucleation(StencilTest):
             ni              = data_alloc.constant_field(grid, 5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsi            = data_alloc.constant_field(grid, 0.0001, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt              = 30.0,
-            vapor_deposition_rate = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            vapor_deposition_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

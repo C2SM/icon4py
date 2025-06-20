@@ -29,5 +29,5 @@ class TestIceNumber(StencilTest):
         return dict(
             t               = data_alloc.constant_field(grid, 272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho             = data_alloc.constant_field(grid, 1.12442, dims.CellDim, dims.KDim, dtype=wpfloat),
-            number          = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            number          = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

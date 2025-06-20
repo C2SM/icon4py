@@ -32,5 +32,5 @@ class TestVaporXIceDefault(StencilTest):
             dvsi             = data_alloc.constant_field(grid, 0.000120375, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho              = data_alloc.constant_field(grid, 1.19691, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt               = 30.0,
-            vapor_deposition_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            vapor_deposition_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )

@@ -32,8 +32,8 @@ class TestSaturationAdjustment(StencilTest):
             qre         = data_alloc.constant_field(grid, 2.5939378002267028E-004, dims.CellDim, dims.KDim, dtype=wpfloat),
             qti         = data_alloc.constant_field(grid, 1.0746937601645517E-005, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho         = data_alloc.constant_field(grid, 1.1371657035251757, dims.CellDim, dims.KDim, dtype=wpfloat),
-            te_out      = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
-            qve_out     = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
-            qce_out     = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
+            te_out      = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qve_out     = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qce_out     = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             mask_out    = data_alloc.constant_field(grid, True, dims.CellDim, dims.KDim, dtype=bool),
         )

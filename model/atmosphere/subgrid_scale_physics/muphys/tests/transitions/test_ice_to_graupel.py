@@ -32,5 +32,5 @@ class TestIceToGraupel(StencilTest):
             qg           = data_alloc.constant_field(grid, 1.19022e-18, dims.CellDim, dims.KDim, dtype=wpfloat),
             qi           = data_alloc.constant_field(grid, 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
             sticking_eff = data_alloc.constant_field(grid, 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
-            aggregation  = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            aggregation  = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )

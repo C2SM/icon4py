@@ -32,6 +32,6 @@ class TestCloudToSnow(StencilTest):
             qs               = data_alloc.constant_field(grid, 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
             ns               = data_alloc.constant_field(grid, 3.37707e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
             lam              = data_alloc.constant_field(grid, 8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            riming_snow_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

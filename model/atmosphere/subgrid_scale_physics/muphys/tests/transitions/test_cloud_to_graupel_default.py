@@ -28,8 +28,8 @@ class TestCloudToGraupelDefault(StencilTest):
         return dict(
             t                   = data_alloc.constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho                 = data_alloc.constant_field(grid, 1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc                  = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc                  = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             qg                  = data_alloc.constant_field(grid, 1.03636e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_graupel_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            riming_graupel_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

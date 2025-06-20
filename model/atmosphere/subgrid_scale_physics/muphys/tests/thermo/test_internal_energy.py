@@ -32,5 +32,5 @@ class TestInternalEnergy(StencilTest):
             qice      = data_alloc.constant_field(grid, 1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho       = data_alloc.constant_field(grid, 0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
             dz        = data_alloc.constant_field(grid, 249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
-            energy    = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            energy    = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )

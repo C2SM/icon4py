@@ -32,6 +32,6 @@ class TestSnowToRainDefault(StencilTest):
             rho              = data_alloc.constant_field(grid, 1.04892, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw0            = data_alloc.constant_field(grid, 0.00258631, dims.CellDim, dims.KDim, dtype=wpfloat),
             qs               = data_alloc.constant_field(grid, 1.47687e-6, dims.CellDim, dims.KDim, dtype=wpfloat),
-            conversion_rate  = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            conversion_rate  = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

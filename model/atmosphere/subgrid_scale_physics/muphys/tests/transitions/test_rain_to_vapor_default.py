@@ -29,7 +29,7 @@ class TestRainToVaporDefault(StencilTest):
             rho     = data_alloc.constant_field(grid, 0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),
             qc      = data_alloc.constant_field(grid, 8.6157e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
             qr      = data_alloc.constant_field(grid, 3.01332e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw    = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw    = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt      = 30.0,
-            conversion_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            conversion_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )
