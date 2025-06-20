@@ -259,7 +259,7 @@ graupel_run( k = k,
              pi     = pi_out,
              pg     = pg_out,
              pre    = pre_out,
-             offset_provider={"Koff": K}
+             offset_provider={"Koff": dims.KDim}
              )
 
 metrics.summary()
