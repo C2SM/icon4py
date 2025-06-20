@@ -53,7 +53,7 @@ def _precip(
         update2  = 0.0
     return update0, update1, update2, is_level_activated
 
-@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, False))
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, False))
 def _temperature_update(
     state:     tuple[ta.wpfloat, ta.wpfloat,bool],
     t:         ta.wpfloat,
