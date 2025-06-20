@@ -1,0 +1,17 @@
+%=======================================================================================================================
+\clearpage
+\subsection{Miura scheme}
+\label{sub:miura}
+%=======================================================================================================================
+
+\begin{align}
+  &\density{\n}{\e}{\k} = \densityref{\e}{\k} + \densityprime{\n}{\c 0/1}{\k} + \Delta^{\hat{x}}_{\c - \text{btrj}} \densityprimedx{\n}{\c}{\k} + \Delta^{\hat{y}}_{\c - \text{btrj}} \densityprimedy{\n}{\c}{\k} \\
+  &\vpotemp{\n}{\e}{\k} = \vpotempref{\e}{\k} + \vpotempprime{\n}{\c 0/1}{\k} + \Delta^{\hat{x}}_{\c - \text{btrj}} \vpotempprimedx{\n}{\c}{\k} + \Delta^{\hat{y}}_{\c - \text{btrj}} \vpotempprimedy{\n}{\c}{\k}
+\end{align}
+
+\begin{align}
+  & \densityprimedx{\n}{\c}{\k} = \sum_{\offProv{c2e2co}} \geofacgrgx\ \densityprime{\n}{\c}{\k} \\
+  & \densityprimedy{\n}{\c}{\k} = \sum_{\offProv{c2e2co}} \geofacgrgy\ \densityprime{\n}{\c}{\k} \\
+  & \vpotempprimedx{\n}{\c}{\k} = \sum_{\offProv{c2e2co}} \geofacgrgx\ \vpotempprime{\n}{\c}{\k} \\
+  & \vpotempprimedy{\n}{\c}{\k} = \sum_{\offProv{c2e2co}} \geofacgrgy\ \vpotempprime{\n}{\c}{\k}
+\end{align}

@@ -1,0 +1,42 @@
+\documentclass[fleqn]{article}
+
+\usepackage[a4paper,margin=1cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,xfrac}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{underscore}
+
+
+\input{macros.tex}
+
+\setlength{\parindent}{0pt}
+
+
+\title{ICON4Py and IBM documentation}
+\author{Jacopo Canton}
+\date{\today}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Work in progress documentation of the immersed boundary method implementation in ICON.
+\end{abstract}
+
+\section{Equations}
+
+\input{normal_wind.tex}
+\input{vertical_wind.tex}
+\input{exner.tex}
+\input{density.tex}
+\input{virtual_potential_temperature.tex}
+\input{miura_scheme.tex}
+\input{diffusion.tex}
+\input{misc.tex}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}

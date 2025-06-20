@@ -1,0 +1,195 @@
+% ICON4Py - ICON inspired code in Python and GT4Py
+%
+% Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+% All rights reserved.
+%
+% Please, refer to the LICENSE file in the root directory.
+% SPDX-License-Identifier: BSD-3-Clause
+
+%===============================================================================
+% This file contains macro definitions that can be used in docstrings and are
+% parsed by the MathJax processor within Sphinx.
+% These macros are loaded into `mathjax3_config` in conf.py
+
+% The predefined color names are defined on this page
+% https://en.wikibooks.org/wiki/LaTeX/Colors
+% both the standard as well as the dvipsnames can be used
+
+%===============================================================================
+% Aesthetic macros
+
+% Glyph sizes
+\newcommand{\superscriptsize}{\scriptscriptstyle}
+\newcommand{\subscriptsize}{\scriptscriptstyle}
+
+% Colors
+\newcommand{\timecolor}[1]{\color{teal}{#1}}
+\newcommand{\vertcolor}[1]{\color{YellowOrange}{#1}}
+\newcommand{\horicolor}[1]{\color{RedViolet}{#1}}
+
+%\renewcommand{\sum}{{\horicolor{\Large{\Sigma}}}} % move sub/superscripts of sum symbol
+\renewcommand{\sum}{{\horicolor{\text{\Large{$\Sigma$}}}}} % move sub/superscripts of sum symbol
+
+%===============================================================================
+% Numerics
+
+% Discretization points
+\newcommand{\timestep}[1]{{\subscriptsize{\timecolor{#1}}}}
+\newcommand{\vertlevel}[1]{{\subscriptsize{\vertcolor{#1}}}}
+\newcommand{\horipoint}[1]{{\subscriptsize{\horicolor{#1}}}}
+
+% Vectors
+\newcommand{\vect}[1]{\overrightarrow{#1}}
+\newcommand{\vers}[1]{\hat{#1}}
+
+% Differentials and deltas
+\newcommand{\dif}{\mathrm{d}}
+\newcommand{\Dt}{{\Delta t}}
+\newcommand{\Dz}[1]{{\Delta z}_\vertlevel{#1}}
+\newcommand{\divhori}[1]{\vec{\nabla}\!_h\cdot\left(#1\right)}
+%\newcommand{\Gradn}{{\horicolor{\Large{\Delta}}}}
+\newcommand{\Gradn}{{\horicolor{\text{\Large{$\Delta$}}}}}
+
+% Derivatives
+\newcommand{\ddt}[1]{\frac{\dif #1}{\dif t}}
+\newcommand{\ddx}[1]{\frac{\dif #1}{\dif x}}
+\newcommand{\ddy}[1]{\frac{\dif #1}{\dif y}}
+\newcommand{\ddz}[1]{\frac{\dif #1}{\dif z}}
+\newcommand{\ddxn}[1]{\frac{\dif #1}{\dif n}}
+\newcommand{\ddxt}[1]{\frac{\dif #1}{\dif t}}
+\newcommand{\pdt}[1]{\frac{\partial #1}{\partial t}}
+\newcommand{\pdx}[1]{\frac{\partial #1}{\partial x}}
+\newcommand{\pdy}[1]{\frac{\partial #1}{\partial y}}
+\newcommand{\pdz}[1]{\frac{\partial #1}{\partial z}}
+\newcommand{\pdzz}[1]{\frac{\partial^2 #1}{\partial z^2}}
+\newcommand{\pdxn}[1]{\frac{\partial #1}{\partial n}}
+\newcommand{\pdxt}[1]{\frac{\partial #1}{\partial t}}
+\newcommand{\lapl}[1]{\nabla^2\!\left(#1\right)}
+\newcommand{\lapllapl}[1]{\nabla^4\!\left(#1\right)}
+
+% Variables with helper macros for formatting superscript and subscript
+%
+% temporal, horizontal and vertical
+\newcommand{\variable}[4]{{{#1}_{ \horipoint{#3}\,\vertlevel{#4}}^{\timestep{#2}}}}
+\newcommand{\temparray}[3]{       \variable{t_a                                  }{#1}{#2}{#3}}
+\newcommand{\windu}[3]{           \variable{u                                    }{#1}{#2}{#3}}
+\newcommand{\windv}[3]{           \variable{v                                    }{#1}{#2}{#3}}
+\newcommand{\vn}[3]{              \variable{v_n                                  }{#1}{#2}{#3}}
+\newcommand{\vnlapl}[3]{          \variable{\lapl{\vn{#1}{}{}}                   }{  }{#2}{#3}}
+\newcommand{\vnlapllapl}[3]{      \variable{\lapllapl{\vn{#1}{}{}}               }{  }{#2}{#3}}
+\newcommand{\vt}[3]{              \variable{v_t                                  }{#1}{#2}{#3}}
+\newcommand{\vh}[3]{              \variable{\vec{v_h}                            }{#1}{#2}{#3}}
+\newcommand{\w}[3]{               \variable{w                                    }{#1}{#2}{#3}}
+\newcommand{\wlapl}[3]{           \variable{\lapl{\w{#1}{}{}}                    }{  }{#2}{#3}}
+\newcommand{\wcc}[3]{             \variable{w_{\text{cc}}                        }{#1}{#2}{#3}}
+\newcommand{\kinehori}[3]{        \variable{K_h                                  }{#1}{#2}{#3}}
+\newcommand{\advvn}[3]{           \variable{\text{adv}(v_n)                      }{#1}{#2}{#3}}
+\newcommand{\vortvert}[3]{        \variable{\zeta                                }{#1}{#2}{#3}}
+\newcommand{\density}[3]{         \variable{\rho                                 }{#1}{#2}{#3}}
+\newcommand{\densityprime}[3]{    \variable{\rho'                                }{#1}{#2}{#3}}
+\newcommand{\densityprimedx}[3]{  \variable{\pdx{\densityprime{#1}{}{}}          }{  }{#2}{#3}}
+\newcommand{\densityprimedy}[3]{  \variable{\pdy{\densityprime{#1}{}{}}          }{  }{#2}{#3}}
+\newcommand{\pres}[3]{            \variable{P                                    }{#1}{#2}{#3}}
+\newcommand{\vtemp}[3]{           \variable{T_v                                  }{#1}{#2}{#3}}
+\newcommand{\vtempprime}[3]{      \variable{T_v'                                 }{#1}{#2}{#3}}
+\newcommand{\vpotemp}[3]{         \variable{\theta_v                             }{#1}{#2}{#3}}
+\newcommand{\vpotempprime}[3]{    \variable{\theta_v'                            }{#1}{#2}{#3}}
+\newcommand{\vpotempprimedx}[3]{  \variable{\pdx{\vpotempprime{#1}{}{}}          }{  }{#2}{#3}}
+\newcommand{\vpotempprimedy}[3]{  \variable{\pdy{\vpotempprime{#1}{}{}}          }{  }{#2}{#3}}
+\newcommand{\vpotempprimelapl}[3]{\variable{\lapl{\vpotempprime{#1}{}{}}         }{  }{#2}{#3}}
+\newcommand{\exner}[3]{           \variable{\pi                                  }{#1}{#2}{#3}}
+\newcommand{\exnerprime}[3]{      \variable{\pi'                                 }{#1}{#2}{#3}}
+\newcommand{\exnerprimegradh}[3]{ \variable{\pdxn{\exnerprime{#1}{}{}}           }{  }{#2}{#3}}
+\newcommand{\exnerprimedz}[3]{    \variable{\pdz{\exnerprime{#1}{}{}}            }{  }{#2}{#3}}
+\newcommand{\exnerprimedzz}[3]{   \variable{\frac{1}{2}\pdzz{\exnerprime{#1}{}{}}}{  }{#2}{#3}}
+\newcommand{\Khsmag}[3]{          \variable{{K_h^\text{smag}}                    }{#1}{#2}{#3}}
+%
+% horizontal and vertical
+\newcommand{\variableXK}[3]{{{#1}_{\horipoint{#2}\,\vertlevel{#3}}}}
+\newcommand{\densityref}[2]{\variableXK{\rho                                                           }{#1}{#2}}
+\newcommand{\presref}[2]{   \variableXK{P_0                                                            }{#1}{#2}}
+\newcommand{\vpotempref}[2]{\variableXK{\theta_{v0}                                                    }{#1}{#2}}
+\newcommand{\exnerref}[2]{  \variableXK{\pi_0                                                          }{#1}{#2}}
+\newcommand{\dexrefdz}[2]{  \variableXK{\frac{1}{\Dz{}\vpotempref{}{}}\ddz{\exnerref{}{}}              }{#1}{#2}}
+\newcommand{\ddexrefdzz}[2]{\variableXK{\ddz{}\left(\frac{1}{\vpotempref{}{}}\ddz{\exnerref{}{}}\right)}{#1}{#2}}
+%
+% horizontal
+\newcommand{\variableX}[2]{{{#1}_{\horipoint{#2}}}}
+\newcommand{\coriolis}[1]{       \variableX{f                                                                 }{#1}}
+\newcommand{\exnhydrocorr}[1]{   \variableX{\frac{g}{\cpd \vpotemp{\color{black}{2}}{}{}}\pdxn{\vpotemp{}{}{}}}{#1}}
+\newcommand{\orientationnorm}[1]{\variableX{\vers{n}}{#1}}
+\newcommand{\orientationnormx}[1]{\variableX{\vers{n_x}}{#1}}
+\newcommand{\orientationnormy}[1]{\variableX{\vers{n_y}}{#1}}
+\newcommand{\orientationtang}[1]{\variableX{\vers{t}}{#1}}
+\newcommand{\orientationtangx}[1]{\variableX{\vers{t_x}}{#1}}
+\newcommand{\orientationtangy}[1]{\variableX{\vers{t_y}}{#1}}
+
+% Physical constants
+\newcommand{\Rd}{R_{d}}
+\newcommand{\cpd}{c_{pd}}
+\newcommand{\cvd}{c_{vd}}
+
+% Numerical constants
+\newcommand{\nlev}{\mathtt{num\_lev}}
+\newcommand{\nflatlev}{\mathtt{flat\_lev}}
+\newcommand{\nflatgradp}{\mathtt{flat\_gradp\_lev}}
+\newcommand{\smaglimit}{\mathtt{smag\_limit}}
+\newcommand{\smagoffset}{\mathtt{smag\_offset}}
+
+% Temporal steps
+\newcommand{\n}{{\timecolor{\text{n}}}}
+\newcommand{\ntilde}{{\timecolor{\tilde{\n}}}}
+
+% Vertical levels
+\renewcommand{\k}{{\vertcolor{\text{k}}}}
+
+% Horizontal discretization
+\renewcommand{\c}{{\horicolor{\text{c}}}}
+\newcommand{\e}{{\horicolor{\text{e}}}}
+\renewcommand{\v}{{\horicolor{\text{v}}}}
+
+% Horizontal offsets
+\newcommand{\offProv}[1]{\horicolor{#1}}
+
+% Inter/extrapolation and derivative weights
+\newcommand{\cellarea}{a_c}
+\newcommand{\edgearea}{a_e}
+\newcommand{\Wrbf}{\overset{\scriptscriptstyle{\text{rbf}}}{\chi}}
+\newcommand{\Wlev}{\overset{\scriptscriptstyle{\text{lev}}}{\chi}}
+\newcommand{\Whor}{\overset{\scriptscriptstyle{\text{hor}}}{\chi}}
+\newcommand{\Wedge}{\frac{1}{d_{12}}}
+\newcommand{\Cgrad}{\overset{\scriptscriptstyle{\text{grad}}}{\chi}}
+\newcommand{\Crot}{\overset{\scriptscriptstyle{\text{rot}}}{\chi}}
+\newcommand{\Cdiv}{\overset{\scriptscriptstyle{\text{div}}}{\chi}}
+\newcommand{\dzgradp}{(h^* - h_k)}
+\newcommand{\WtimeExner}{\gamma}
+\newcommand{\WtimeVWind}{\eta}
+\newcommand{\Ledge}{\ell_{\text{e}}}
+\newcommand{\Lvertvert}{\ell_{\text{vv}}}
+
+% Indexes
+\newcommand{\IDXpg}{\overset{\scriptstyle{\partial \pi / \partial n}}{\text{IDX}}}
+
+% Code variables
+\newcommand{\Zdensityexpl}{Z^{\density{}{}{}\text{expl}}}
+\newcommand{\Zexnerexpl}{Z^{\exner{}{}{}\text{expl}}}
+\newcommand{\zflxdivmass}{\mathtt{z\_flxdiv\_mass}}
+\newcommand{\zflxdivtheta}{\mathtt{z\_flxdiv\_theta}}
+\newcommand{\zcontrwfll}{\mathtt{z\_contr\_w\_fl\_l}}
+\newcommand{\massfle}{\mathtt{mass\_fl\_e}}
+\newcommand{\zthetave}{\mathtt{z\_theta\_v\_e}}
+\newcommand{\zthetavfle}{\mathtt{z\_theta\_v\_fl\_e}}
+\newcommand{\zvnavg}{\mathtt{z\_vn\_avg}}
+\newcommand{\ddtexnerphy}{\mathtt{ddt\_exner\_phy}}
+\newcommand{\geofacgrgx}{\mathtt{geofac\_grg\_x}}
+\newcommand{\geofacgrgy}{\mathtt{geofac\_grg\_y}}
+%
+\newcommand{\diffmultfacsmag}{\mathtt{diff\_multfac\_smag}}
+\newcommand{\diffmultfacvn}{\mathtt{diff\_multfac\_vn}}
+\newcommand{\diffmultfacw}{\mathtt{diff\_multfac\_w}}
+\newcommand{\khsmagone}{\mathtt{kh\_smag\_1}}
+\newcommand{\khsmagtwo}{\mathtt{kh\_smag\_2}}
+\newcommand{\dvtnorm}{\mathtt{dvt\_norm}}
+\newcommand{\dvttang}{\mathtt{dvt\_tang}}
+\newcommand{\nabvtang}{\mathtt{nabv\_tang}}
+\newcommand{\nabvnorm}{\mathtt{nabv\_norm}}
