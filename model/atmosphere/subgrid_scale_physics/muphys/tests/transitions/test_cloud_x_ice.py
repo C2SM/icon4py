@@ -19,7 +19,7 @@ class TestCloudXIce(StencilTest):
     OUTPUTS = ("freezing_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, qc: np.array, qi: np.array, dt: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, qc: np.ndarray, qi: np.ndarray, dt: wpfloat, **kwargs) -> dict:
         return dict(freezing_rate=np.full(t.shape, -1.5008166666666666e-08))
 
     @pytest.fixture

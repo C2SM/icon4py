@@ -20,7 +20,7 @@ class TestVelScaleFactorIce(StencilTest):
     OUTPUTS = ("scale_factor",)
 
     @staticmethod
-    def reference(grid, xrho: np.array, **kwargs) -> dict:
+    def reference(grid, xrho: np.ndarray, **kwargs) -> dict:
         return dict(scale_factor=np.full(xrho.shape, 1.1158596098981044))
 
     @pytest.fixture

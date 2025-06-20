@@ -19,7 +19,7 @@ class TestQsatRho(StencilTest):
     OUTPUTS = ("derivative",)
 
     @staticmethod
-    def reference(grid, qs: np.array, t: np.array, **kwargs) -> dict:
+    def reference(grid, qs: np.ndarray, t: np.ndarray, **kwargs) -> dict:
         return dict(derivative=np.full(t.shape, 0.00030825070286492049))
 
     @pytest.fixture

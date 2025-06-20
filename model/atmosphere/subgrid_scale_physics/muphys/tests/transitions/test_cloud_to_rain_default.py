@@ -19,7 +19,7 @@ class TestCloudToRainDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, qc: np.array, qr: np.array, nc: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, qc: np.ndarray, qr: np.ndarray, nc: np.ndarray, **kwargs) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture

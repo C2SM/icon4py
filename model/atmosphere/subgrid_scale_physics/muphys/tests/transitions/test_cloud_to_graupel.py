@@ -19,7 +19,7 @@ class TestCloudToGraupel(StencilTest):
     OUTPUTS = ("riming_graupel_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, rho: np.array, qc: np.array, qg: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qg: np.ndarray, **kwargs) -> dict:
         return dict(riming_graupel_rate=np.full(t.shape, 2.7054723496793982e-10))
 
     @pytest.fixture

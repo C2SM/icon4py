@@ -20,7 +20,7 @@ class TestIceToSnow(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, qi: np.array, ns: np.array, lam: np.array, sticking_eff: np.array, **kwargs) -> dict:
+    def reference(grid, qi: np.ndarray, ns: np.ndarray, lam: np.ndarray, sticking_eff: np.ndarray, **kwargs) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 3.3262745200740486e-11))
 
     @pytest.fixture

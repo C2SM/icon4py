@@ -19,7 +19,7 @@ class TestVaporXGraupelDefault(StencilTest):
     OUTPUTS = ("exchange_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, p: np.array, rho: np.array, qg: np.array, dvsw: np.array, dvsi: np.array, dvsw0: np.array, dt: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, p: np.ndarray, rho: np.ndarray, qg: np.ndarray, dvsw: np.ndarray, dvsi: np.ndarray, dvsw0: np.ndarray, dt: wpfloat, **kwargs) -> dict:
         return dict(exchange_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture

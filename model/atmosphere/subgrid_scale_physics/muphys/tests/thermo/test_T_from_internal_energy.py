@@ -19,7 +19,7 @@ class TestTFromInternalEnergy(StencilTest):
     OUTPUTS = ("temperature",)
 
     @staticmethod
-    def reference(grid, u: np.array, qv: np.array, qliq: np.array, qice: np.array, rho: np.array, dz: np.array, **kwargs) -> dict:
+    def reference(grid, u: np.ndarray, qv: np.ndarray, qliq: np.ndarray, qice: np.ndarray, rho: np.ndarray, dz: np.ndarray, **kwargs) -> dict:
         return dict(temperature=np.full(u.shape, 255.75599999999997))
 
     @pytest.fixture

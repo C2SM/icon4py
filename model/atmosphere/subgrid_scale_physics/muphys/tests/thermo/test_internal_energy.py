@@ -19,7 +19,7 @@ class TestInternalEnergy(StencilTest):
     OUTPUTS = ("energy",)
 
     @staticmethod
-    def reference(grid, t: np.array, qv: np.array, qliq: np.array, qice: np.array, rho: np.array, dz: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, qv: np.ndarray, qliq: np.ndarray, qice: np.ndarray, rho: np.ndarray, dz: np.ndarray, **kwargs) -> dict:
         return dict(energy=np.full(t.shape, 38265357.270336017))
 
     @pytest.fixture

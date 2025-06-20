@@ -19,7 +19,7 @@ class TestRainToGraupel1(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, rho: np.array, qc: np.array, qr: np.array, qi: np.array, qs: np.array, mi: np.array, dvsw: np.array, dt: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qr: np.ndarray, qi: np.ndarray, qs: np.ndarray, mi: np.ndarray, dvsw: np.ndarray, dt: wpfloat, **kwargs) -> dict:
         return dict(conversion_rate=np.full(t.shape, 1.0044914238516472e-12))
 
     @pytest.fixture

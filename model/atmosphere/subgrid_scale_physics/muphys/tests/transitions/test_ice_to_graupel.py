@@ -20,7 +20,7 @@ class TestIceToGraupel(StencilTest):
     OUTPUTS = ("aggregation",)
 
     @staticmethod
-    def reference(grid, rho: np.array, qr: np.array, qg: np.array, qi: np.array, sticking_eff: np.array, **kwargs) -> dict:
+    def reference(grid, rho: np.ndarray, qr: np.ndarray, qg: np.ndarray, qi: np.ndarray, sticking_eff: np.ndarray, **kwargs) -> dict:
         return dict(aggregation=np.full(rho.shape, 7.1049436957697864e-19))
 
     @pytest.fixture

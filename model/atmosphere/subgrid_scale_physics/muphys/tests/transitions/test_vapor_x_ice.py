@@ -19,7 +19,7 @@ class TestVaporXIceDefault(StencilTest):
     OUTPUTS = ("vapor_deposition_rate",)
 
     @staticmethod
-    def reference(grid, qi: np.array, mi: np.array, eta: np.array, dvsi: np.array, rho: np.array, dt: wpfloat, **kwargs) -> dict:
+    def reference(grid, qi: np.ndarray, mi: np.ndarray, eta: np.ndarray, dvsi: np.ndarray, rho: np.ndarray, dt: wpfloat, **kwargs) -> dict:
         return dict(vapor_deposition_rate=np.full(qi.shape, 2.2106162342610385e-09))
 
     @pytest.fixture

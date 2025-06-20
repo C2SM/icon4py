@@ -19,7 +19,7 @@ class TestSatPresWater(StencilTest):
     OUTPUTS = ("pressure",)
 
     @staticmethod
-    def reference(grid, t: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, **kwargs) -> dict:
         return dict(pressure=np.full(t.shape, 1120.1604149806028))
 
     @pytest.fixture

@@ -19,7 +19,7 @@ class TestSaturationAdjustment(StencilTest):
     OUTPUTS = ("te_out", "qve_out", "qce_out")
 
     @staticmethod
-    def reference(grid, te: np.array, qve: np.array, qce: np.array, qre: np.array, qti: np.array, cvc: np.array, ue: np.array, Tx_hold: np.array, Tx: np.array, rho: np.array, **kwargs) -> dict:
+    def reference(grid, te: np.ndarray, qve: np.ndarray, qce: np.ndarray, qre: np.ndarray, qti: np.ndarray, cvc: np.ndarray, ue: np.ndarray, Tx_hold: np.ndarray, Tx: np.ndarray, rho: np.ndarray, **kwargs) -> dict:
         return dict(te_out=np.full(te.shape, 273.91226488486984), qve_out=np.full(te.shape, 4.4903852062454690E-003), qce_out=np.full(te.shape, 9.5724552280369163E-007))
 
     @pytest.fixture

@@ -20,7 +20,7 @@ class TestIceDepositionNucleation(StencilTest):
     OUTPUTS = ("vapor_deposition_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, qc: np.array, qi: np.array, ni: np.array, dvsi: np.array, dt: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, qc: np.ndarray, qi: np.ndarray, ni: np.ndarray, dvsi: np.ndarray, dt: wpfloat, **kwargs) -> dict:
         return dict(vapor_deposition_rate=np.full(t.shape, 1.6836299999999999e-13))
 
     @pytest.fixture

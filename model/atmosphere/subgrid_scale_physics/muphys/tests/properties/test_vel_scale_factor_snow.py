@@ -20,7 +20,7 @@ class TestVelScaleFactorSnow(StencilTest):
     OUTPUTS = ("scale_factor",)
 
     @staticmethod
-    def reference(grid, xrho: np.array, rho: np.array, t: np.array, qs: np.array, **kwargs) -> dict:
+    def reference(grid, xrho: np.ndarray, rho: np.ndarray, t: np.ndarray, qs: np.ndarray, **kwargs) -> dict:
         return dict(scale_factor=np.full(xrho.shape, 0.06633230453931642 ))
 
     @pytest.fixture

@@ -21,7 +21,7 @@ class TestFallSpeed(StencilTest):
     OUTPUTS = ("speed",)
 
     @staticmethod
-    def reference(grid, density: np.array, prefactor: wpfloat, offset: wpfloat, exponent: wpfloat, **kwargs) -> dict:
+    def reference(grid, density: np.ndarray, prefactor: wpfloat, offset: wpfloat, exponent: wpfloat, **kwargs) -> dict:
         return dict(speed=np.full(density.shape, 0.67882452435647411))
 
     @pytest.fixture

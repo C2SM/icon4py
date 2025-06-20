@@ -19,7 +19,7 @@ class TestSatPresIce(StencilTest):
     OUTPUTS = ("pressure",)
 
     @staticmethod
-    def reference(grid, t: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, **kwargs) -> dict:
         return dict(pressure=np.full(t.shape, 1216.7746246067475))
 
     @pytest.fixture

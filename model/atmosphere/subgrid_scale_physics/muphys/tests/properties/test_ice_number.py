@@ -20,7 +20,7 @@ class TestIceNumber(StencilTest):
     OUTPUTS = ("number",)
 
     @staticmethod
-    def reference(grid, t: np.array, rho: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, rho: np.ndarray, **kwargs) -> dict:
         return dict(number=np.full(t.shape, 5.0507995893464388))
 
     @pytest.fixture

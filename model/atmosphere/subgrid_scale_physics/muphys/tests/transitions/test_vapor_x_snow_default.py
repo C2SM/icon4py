@@ -19,7 +19,7 @@ class TestVaporXSnowDefault(StencilTest):
     OUTPUTS = ("vapor_deposition_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, p: np.array, rho: np.array, qs: np.array, ns: np.array, lam: np.array, eta: np.array, ice_dep: np.array, dvsw: np.array, dvsi: np.array, dvsw0: np.array, dt: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, p: np.ndarray, rho: np.ndarray, qs: np.ndarray, ns: np.ndarray, lam: np.ndarray, eta: np.ndarray, ice_dep: np.ndarray, dvsw: np.ndarray, dvsi: np.ndarray, dvsw0: np.ndarray, dt: wpfloat, **kwargs) -> dict:
         return dict(vapor_deposition_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture

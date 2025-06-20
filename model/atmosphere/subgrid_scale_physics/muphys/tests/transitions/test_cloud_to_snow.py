@@ -20,7 +20,7 @@ class TestCloudToSnow(StencilTest):
     OUTPUTS = ("riming_snow_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, qc: np.array, qs: np.array, ns: np.array, lam: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, qc: np.ndarray, qs: np.ndarray, ns: np.ndarray, lam: np.ndarray, **kwargs) -> dict:
         return dict(riming_snow_rate=np.full(t.shape, 9.5431874564438999e-10))
 
     @pytest.fixture

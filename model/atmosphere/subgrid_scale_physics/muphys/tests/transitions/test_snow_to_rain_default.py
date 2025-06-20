@@ -20,7 +20,7 @@ class TestSnowToRainDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, p: np.array, rho: np.array, dvsw0: np.array, qs: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, p: np.ndarray, rho: np.ndarray, dvsw0: np.ndarray, qs: np.ndarray, **kwargs) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture

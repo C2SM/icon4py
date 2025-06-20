@@ -20,7 +20,7 @@ class TestGraupelToRain(StencilTest):
     OUTPUTS = ("rain_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, p: np.array, rho: np.array, dvsw0: np.array, qg: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, p: np.ndarray, rho: np.ndarray, dvsw0: np.ndarray, qg: np.ndarray, **kwargs) -> dict:
         return dict(rain_rate=np.full(t.shape, 5.9748142538569357e-13))
 
     @pytest.fixture
