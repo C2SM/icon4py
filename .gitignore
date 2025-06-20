@@ -19,6 +19,13 @@ ser_data
 *.csv
 *.log
 
+### LaTeX documentation ###
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+
 ### Sphinx ###
 **/docs/_source/*.rst
 
