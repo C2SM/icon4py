@@ -10,6 +10,7 @@ stages:
 variables:
   PYVERSION_PREFIX: py310
   PYVERSION: 3.10.9
+  FF_TIMESTAMPS: true
 
 # Base image build step with SHA256 checksum for caching
 .build_baseimage:

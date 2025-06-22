@@ -18,7 +18,7 @@ test_model_stencils_aarch64:
 .test_model_datatests:
   stage: test
   script:
-    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
+    - nox --add-timestamp -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
     - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
@@ -28,3 +28,7 @@ test_model_stencils_aarch64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
+  variables:
+    NUM_PROCESSES: 4
+    GT4PY_BUILD_CACHE_LIFETIME: persistent
+    GT4PY_BUILD_JOBS: 4
