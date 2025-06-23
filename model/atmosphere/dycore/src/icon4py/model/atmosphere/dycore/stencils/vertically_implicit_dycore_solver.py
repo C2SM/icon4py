@@ -769,8 +769,8 @@ def vertically_implicit_solver_at_predictor_step(
     flat_level_index_plus1: gtx.int32,
     start_cell_index_nudging: gtx.int32,
     end_cell_index_local: gtx.int32,
-    start_cell_index_lateral_lvl_3_for_contravariant_correction: gtx.int32,
-    end_cell_index_halo_lvl1_for_contravariant_correction: gtx.int32,
+    start_cell_index_lateral_lvl3: gtx.int32,
+    end_cell_index_halo_lvl1: gtx.int32,
     vertical_start_index_model_top: gtx.int32,
     vertical_end_index_model_surface: gtx.int32,
 ):
@@ -783,8 +783,8 @@ def vertically_implicit_solver_at_predictor_step(
         out=contravariant_correction_at_cells_on_half_levels,
         domain={
             dims.CellDim: (
-                start_cell_index_lateral_lvl_3_for_contravariant_correction,
-                end_cell_index_halo_lvl1_for_contravariant_correction,
+                start_cell_index_lateral_lvl3,
+                end_cell_index_halo_lvl1,
             ),
             dims.KDim: (flat_level_index_plus1, vertical_end_index_model_surface),
         },
