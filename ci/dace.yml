@@ -18,7 +18,7 @@ test_model_stencils_aarch64:
 .test_model_datatests:
   stage: test
   script:
-    - nox --add-timestamp -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
+    - nox --add-timestamp -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL --durations=0 -vv
   parallel:
     matrix:
     - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
