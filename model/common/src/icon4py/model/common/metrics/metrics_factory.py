@@ -117,7 +117,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
-                    attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
+                    # attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
                     #TODO (Yilu): noe let's check with z_fic_sliced and vtc_a
                     "z_ifc_sliced": z_ifc_sliced,  # TODO (Yilu): z_ifc_sliced could be removed?
                     "vct_a": vct_a,
@@ -141,6 +141,39 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
 
     def _register_computed_fields(self):
+        vertical_coordinates_on_cell_khalf = factory.NumpyFieldsProvider(
+            func=functools.partial(
+                v_grid.compute_vertical_coordinate_numpy,
+                array_ns=self._xp,
+            ),
+            fields=(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,),
+            domain={
+                dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
+                dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
+            },
+            deps={
+                "vct_a": "vct_a",
+                "topography": "topography",
+                "cell_areas": geometry_attrs.CELL_AREA,
+                "geofac_n2s": interpolation_attributes.GEOFAC_N2S,
+            },
+            connectivities={"c2e2co": dims.C2E2CODim},
+            params={
+                "num_cells": self._grid.num_cells,
+                "num_levels": self._vertical_grid.num_levels,
+                "nflatlev": self._vertical_grid.nflatlev,
+                "model_top_height": self._vertical_grid.config.model_top_height,
+                "SLEVE_decay_scale_1": self.vertical_grid.config.SLEVE_decay_scale_1,
+                "SLEVE_decay_exponent": self._vertical_grid.config.SLEVE_decay_exponent,
+                "SLEVE_decay_scale_2": self._vertical_grid.config.SLEVE_decay_scale_2,
+                "SLEVE_minimum_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_layer_thickness_1,
+                "SLEVE_minimum_relative_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_1,
+                "SLEVE_minimum_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_layer_thickness_2,
+                "SLEVE_minimum_relative_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_2,
+                "lowest_layer_thickness": self._vertical_grid.config.lowest_layer_thickness,
+            },
+        )
+        self.register_provider(vertical_coordinates_on_cell_khalf)
 
         height = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(

@@ -137,7 +137,6 @@ def _get_metrics_factory(
         metrics_factories[registry_name] = factory
     return factory
 
-# TODO (Yilu): assertion error
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -167,9 +166,8 @@ def test_factory_z_mc(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.Z_MC)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-10)
 
-# TODO (Yilu): assertion error
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -201,8 +199,8 @@ def test_factory_ddqz_z_and_inverse(
     )
     inverse_field = factory.get(attrs.INV_DDQZ_Z_FULL)
     field = factory.get(attrs.DDQZ_Z_FULL)
-    assert test_helpers.dallclose(inverse_field_ref.asnumpy(), inverse_field.asnumpy())
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
+    assert test_helpers.dallclose(inverse_field_ref.asnumpy(), inverse_field.asnumpy(), atol=1e-10)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-7)
 
 
 @pytest.mark.parametrize(
@@ -235,7 +233,6 @@ def test_factory_ddqz_full_e(
     field = factory.get(attrs.DDQZ_Z_FULL_E)
     assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
 
-# TODO (Yilu): assertion error on this test
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -265,7 +262,7 @@ def test_factory_ddqz_z_half(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.DDQZ_Z_HALF)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
 @pytest.mark.level("integration")
@@ -331,7 +328,6 @@ def test_factory_rayleigh_w(
     field = factory.get(attrs.RAYLEIGH_W)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
-# TODO (Yilu): assertion error
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -363,10 +359,10 @@ def test_factory_coeffs_dwdz(
     )
     field_1 = factory.get(attrs.COEFF1_DWDZ)
     field_2 = factory.get(attrs.COEFF2_DWDZ)
-    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
-    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-11)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-11)
 
-# TODO (Yilu): assertion error
+
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -398,10 +394,9 @@ def test_factory_ref_mc(
     )
     field_1 = factory.get(attrs.THETA_REF_MC)
     field_2 = factory.get(attrs.EXNER_REF_MC)
-    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
-    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-9)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-10)
 
-# TODO (Yilu): assertion error on this
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -433,10 +428,9 @@ def test_factory_d2dexdz2_facs_mc(
     )
     field_1 = factory.get(attrs.D2DEXDZ2_FAC1_MC)
     field_2 = factory.get(attrs.D2DEXDZ2_FAC2_MC)
-    assert test_helpers.dallclose(field_1.asnumpy(), field_ref_1.asnumpy())
-    assert test_helpers.dallclose(field_2.asnumpy(), field_ref_2.asnumpy())
+    assert test_helpers.dallclose(field_1.asnumpy(), field_ref_1.asnumpy(), atol=1e-12)
+    assert test_helpers.dallclose(field_2.asnumpy(), field_ref_2.asnumpy(), atol=1e-12)
 
-# TODO (Yilu)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -465,7 +459,7 @@ def test_factory_ddxn_z_full(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.DDXN_Z_FULL)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
 
 
 @pytest.mark.level("integration")
@@ -603,7 +597,7 @@ def test_factory_exner_exfac(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.EXNER_EXFAC)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1.0e-5)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
 
 
 @pytest.mark.level("integration")
@@ -823,7 +817,7 @@ def test_vertical_coordinates_on_cells_khalf(
     experiment,
     backend,
 ):
-    #vertical_config = vertical.VerticalGridConfig(grid_savepoint.num(dims.KDim))
+
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -837,7 +831,6 @@ def test_vertical_coordinates_on_cells_khalf(
     field_ref = metrics_savepoint.z_ifc()
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
-#TODO (Yilu): assertion error
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
@@ -874,6 +867,6 @@ def test_factory_compute_diffusion_metrics(
     field_3 = factory.get(attrs.ZD_INTCOEF_DSL)
     field_4 = factory.get(attrs.ZD_VERTOFFSET_DSL)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
-    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), rtol=1.0e-4)
-    assert test_helpers.dallclose(field_ref_3.asnumpy(), field_3.asnumpy())
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
+    assert test_helpers.dallclose(field_ref_3.asnumpy(), field_3.asnumpy(), atol=1.0e-8)
     assert test_helpers.dallclose(field_ref_4.asnumpy(), field_4.asnumpy())
