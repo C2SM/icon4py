@@ -7,10 +7,7 @@ include:
     - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-    # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
-    #  No problem was observed in this pipeline, the tests are skipped because the GT4Py programs are
-    #  missing updates for 'concat_where'.
-    - COMPONENT: [diffusion, dycore, microphysics, common, driver]
+    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
       BACKEND: [dace_cpu, dace_gpu]
       GRID: [simple_grid, icon_grid]
 # test_model_stencils_x86_64:
@@ -24,9 +21,7 @@ test_model_stencils_aarch64:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-    # TODO: advection tests are skipped, re-enable them by adding 'advection' to the 'COMPONENT' list.
-    #  The problem is that DaCe backend times out on one advection datatest.
-    - COMPONENT: [diffusion, dycore, microphysics, common, driver]
+    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
       BACKEND: [dace_cpu, dace_gpu]
       LEVEL: [integration]
 # test_model_datatests_x86_64:

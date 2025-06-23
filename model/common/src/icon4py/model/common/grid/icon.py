@@ -8,8 +8,9 @@
 import dataclasses
 import functools
 import logging
+import math
 import uuid
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -35,29 +36,74 @@ CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
-    root: int
-    level: int
+    root: Optional[int] = None
+    level: Optional[int] = None
+    _num_cells: Optional[int] = None
+    _mean_cell_area: Optional[float] = None
     geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
-    radius = constants.EARTH_RADIUS
+    radius: float = constants.EARTH_RADIUS
+
+    @classmethod
+    def from_mean_cell_area(
+        cls,
+        mean_cell_area: float,
+        root: Optional[int] = None,
+        level: Optional[int] = None,
+        num_cells: Optional[int] = None,
+        geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
+        radius: float = constants.EARTH_RADIUS,
+    ):
+        return cls(root, level, num_cells, mean_cell_area, geometry_type)
 
     @functools.cached_property
     def num_cells(self):
-        match self.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                return compute_icosahedron_num_cells(self.root, self.level)
-            case base.GeometryType.TORUS:
-                return compute_torus_num_cells(1000, 1000)
-            case _:
-                NotImplementedError(f"Unknown gemoetry type {self.geometry_type}")
+        if self._num_cells is None:
+            match self.geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    assert self.root is not None and self.level is not None
+                    return compute_icosahedron_num_cells(self.root, self.level)
+                case base.GeometryType.TORUS:
+                    raise NotImplementedError("TODO : lookup torus cell number computation")
+                case _:
+                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+
+        return self._num_cells
+
+    @functools.cached_property
+    def characteristic_length(self):
+        return math.sqrt(self.mean_cell_area)
+
+    @functools.cached_property
+    def mean_cell_area(self):
+        if self._mean_cell_area is None:
+            match self.geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
+                case base.GeometryType.TORUS:
+                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+                case _:
+                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+
+        return self._mean_cell_area
 
 
 def compute_icosahedron_num_cells(root: int, level: int):
     return 20.0 * root**2 * 4.0**level
 
 
-def compute_torus_num_cells(x: int, y: int):
-    # TODO (@halungge) add implementation
-    raise NotImplementedError("TODO : lookup torus cell number computation")
+def compute_mean_cell_area_for_sphere(radius, num_cells):
+    """
+    Compute the mean cell area.
+
+    Computes the mean cell area by dividing the sphere by the number of cells in the
+    global grid.
+
+    Args:
+        radius: average earth radius, might be rescaled by a scaling parameter
+        num_cells: number of cells on the global grid
+    Returns: mean area of one cell [m^2]
+    """
+    return 4.0 * math.pi * radius**2 / num_cells
 
 
 class IconGrid(base.BaseGrid):
