@@ -11,7 +11,6 @@ import math
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
-from xarray.plot import surface
 
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
@@ -113,7 +112,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
-                    #TODO (Yilu): noe let's check with z_fic_sliced and vtc_a
+                    # TODO (Yilu): noe let's check with z_fic_sliced and vtc_a
                     "vct_a": vct_a,
                     "topography": self._topography,
                     "c_refin_ctrl": c_refin_ctrl,
@@ -174,7 +173,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 v_grid.compute_surface_elevation,
             ),
             fields=(attrs.SURFACE_ELEVATION,),
-            domain = {
+            domain={
                 dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
             },
             deps={
@@ -182,7 +181,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             params={
                 "num_levels": self._vertical_grid.num_levels,
-            }
+            },
         )
         self.register_provider(surface_elevation)
 

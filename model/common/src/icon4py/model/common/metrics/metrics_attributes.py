@@ -424,7 +424,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=SURFACE_ELEVATION,
         long_name="surface_elevation",
         units="m",
-        dims=(dims.CellDim, ),
+        dims=(dims.CellDim,),
         icon_var_name="",
         dtype=ta.wpfloat,
     ),

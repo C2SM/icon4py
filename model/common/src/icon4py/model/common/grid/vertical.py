@@ -80,6 +80,7 @@ class VerticalGridConfig:
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
+
     #: Number of full levels.
     num_levels: int
     #: Defined as max_lay_thckn in ICON namelist mo_sleve_nml. Maximum thickness of grid cells below top_height_limit_for_maximal_layer_thickness.
@@ -117,6 +118,7 @@ class VerticalGridConfig:
     SLEVE_minimum_relative_layer_thickness_1: Final[float] = 1.0 / 3.0
     #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
     SLEVE_minimum_relative_layer_thickness_2: Final[float] = 0.5
+
 
 @dataclasses.dataclass(frozen=True)
 class VerticalGrid:
@@ -744,8 +746,8 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography_numpy(
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
-    num_cells:int,
-    num_levels:int,
+    num_cells: int,
+    num_levels: int,
     nflatlev: int,
     model_top_height: ta.wpfloat,
     SLEVE_decay_scale_1: ta.wpfloat,
@@ -790,7 +792,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography_numpy(
     k = range(nflatlev + 1)
     vertical_coordinate[:, k] = vct_a[k]
 
-    k = range(nflatlev+ 1, num_levels)
+    k = range(nflatlev + 1, num_levels)
     # Scaling factors for large-scale and small-scale topography
     z_fac1 = _decay_func(
         vct_a[k],
@@ -816,8 +818,8 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography_numpy(
 def _check_and_correct_layer_thickness_numpy(
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
-    num_cells:int,
-    num_levels:int,
+    num_cells: int,
+    num_levels: int,
     SLEVE_minimum_layer_thickness_1: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
@@ -825,7 +827,6 @@ def _check_and_correct_layer_thickness_numpy(
     lowest_layer_thickness: ta.wpfloat,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-
     ktop_thicklimit = array_ns.asarray(num_cells * [num_levels], dtype=int)
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
@@ -841,8 +842,7 @@ def _check_and_correct_layer_thickness_numpy(
                 / (SLEVE_minimum_layer_thickness_2 - SLEVE_minimum_layer_thickness_1)
             ) ** 2
             minimum_layer_thickness = (
-                SLEVE_minimum_relative_layer_thickness_1
-                * layer_thickness_adjustment_factor
+                SLEVE_minimum_relative_layer_thickness_1 * layer_thickness_adjustment_factor
                 + SLEVE_minimum_relative_layer_thickness_2
                 * (1.0 - layer_thickness_adjustment_factor)
             ) * delta_vct_a
@@ -854,9 +854,7 @@ def _check_and_correct_layer_thickness_numpy(
                 * (delta_vct_a / SLEVE_minimum_layer_thickness_2) ** (1.0 / 3.0)
             )
 
-        minimum_layer_thickness = max(
-            minimum_layer_thickness, min(50, lowest_layer_thickness)
-        )
+        minimum_layer_thickness = max(minimum_layer_thickness, min(50, lowest_layer_thickness))
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
@@ -917,6 +915,7 @@ def _check_flatness_of_flat_level_numpy(
     # Check if level nflatlev is still flat
     if not array_ns.all(vertical_coordinate[:, nflatlev - 1] == vct_a[nflatlev - 1]):
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
+
 
 def compute_vertical_coordinate(
     vct_a: data_alloc.NDArray,
@@ -1035,7 +1034,6 @@ def compute_vertical_coordinate_numpy(
         array_ns=array_ns,
     )
 
-
     vertical_coordinate = _check_and_correct_layer_thickness_numpy(
         vertical_coordinate=vertical_coordinate,
         vct_a=vct_a,
@@ -1058,6 +1056,7 @@ def compute_vertical_coordinate_numpy(
 
     return vertical_coordinate
 
+
 def compute_surface_elevation(
     vertical_coordinate: data_alloc.NDArray,
     num_levels: int,
@@ -1073,4 +1072,4 @@ def compute_surface_elevation(
     Returns:
         The surface elevation field.
     """
-    return vertical_coordinate[:,num_levels]
+    return vertical_coordinate[:, num_levels]

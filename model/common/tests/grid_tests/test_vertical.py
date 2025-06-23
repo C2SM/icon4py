@@ -15,7 +15,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
-from icon4py.model.testing.datatest_fixtures import stretch_factor
+
 
 NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
 
@@ -349,6 +349,7 @@ def test_compute_vertical_coordinate(
         atol=1e-13,
     )
 
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT])
@@ -373,7 +374,7 @@ def test_compute_vertical_coordinat_numpy(
         rayleigh_damping_height=12500.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 45000.0,
         htop_moist_proc=22500.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 22500.0,
         maximal_layer_thickness=25000.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 25000.0,
-        stretch_factor = 0.65 if experiment == dt_utils.REGIONAL_EXPERIMENT else 1.0,
+        stretch_factor=0.65 if experiment == dt_utils.REGIONAL_EXPERIMENT else 1.0,
         lowest_layer_thickness=20.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 50.0,
     )
     vertical_geometry = v_grid.VerticalGrid(
@@ -393,9 +394,6 @@ def test_compute_vertical_coordinat_numpy(
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
-    #SLEVE_minimum_layer_thickness_1 = 100.0 if experiment == dt_utils.GAUSS3D_EXPERIMENT else 20.0
-
-
     vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate_numpy(
         vct_a=vct_a.ndarray,
         topography=topography.ndarray,
@@ -409,8 +407,8 @@ def test_compute_vertical_coordinat_numpy(
         SLEVE_decay_scale_1=4000.0,
         SLEVE_decay_exponent=1.2,
         SLEVE_decay_scale_2=2500.0,
-        SLEVE_minimum_layer_thickness_1= 100.0,
-        SLEVE_minimum_relative_layer_thickness_1=1.0/3.0,
+        SLEVE_minimum_layer_thickness_1=100.0,
+        SLEVE_minimum_relative_layer_thickness_1=1.0 / 3.0,
         SLEVE_minimum_layer_thickness_2=500.0,
         SLEVE_minimum_relative_layer_thickness_2=0.5,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,

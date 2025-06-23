@@ -11,7 +11,7 @@ from typing import Optional
 import pytest
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import (
@@ -24,14 +24,6 @@ from icon4py.model.testing import (
     grid_utils as gridtest_utils,
     helpers as test_helpers,
     serialbox,
-)
-from icon4py.model.testing.datatest_fixtures import (
-    data_provider,
-    download_ser_data,
-    experiment,
-    processor_props,
-    ranked_data_path,
-    topography_savepoint, maximal_layer_thickness,
 )
 
 
@@ -136,6 +128,7 @@ def _get_metrics_factory(
         metrics_factories[registry_name] = factory
     return factory
 
+
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -152,7 +145,7 @@ def test_factory_z_mc(
     grid_file,
     icon_grid,
     experiment,
-    backend
+    backend,
 ):
     field_ref = metrics_savepoint.z_mc()
     factory = _get_metrics_factory(
@@ -166,6 +159,7 @@ def test_factory_z_mc(
     )
     field = factory.get(attrs.Z_MC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-10)
+
 
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
@@ -217,7 +211,7 @@ def test_factory_ddqz_full_e(
     grid_file,
     icon_grid,
     experiment,
-    backend
+    backend,
 ):
     field_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
     factory = _get_metrics_factory(
@@ -231,6 +225,7 @@ def test_factory_ddqz_full_e(
     )
     field = factory.get(attrs.DDQZ_Z_FULL_E)
     assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
+
 
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
@@ -248,7 +243,7 @@ def test_factory_ddqz_z_half(
     grid_file,
     icon_grid,
     experiment,
-    backend
+    backend,
 ):
     field_ref = metrics_savepoint.ddqz_z_half()
     factory = _get_metrics_factory(
@@ -327,6 +322,7 @@ def test_factory_rayleigh_w(
     field = factory.get(attrs.RAYLEIGH_W)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
+
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -396,6 +392,7 @@ def test_factory_ref_mc(
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-9)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-10)
 
+
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -429,6 +426,7 @@ def test_factory_d2dexdz2_facs_mc(
     field_2 = factory.get(attrs.D2DEXDZ2_FAC2_MC)
     assert test_helpers.dallclose(field_1.asnumpy(), field_ref_1.asnumpy(), atol=1e-12)
     assert test_helpers.dallclose(field_2.asnumpy(), field_ref_2.asnumpy(), atol=1e-12)
+
 
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -515,7 +513,7 @@ def test_factory_exner_w_implicit_weight_parameter(
     grid_file,
     icon_grid,
     experiment,
-    backend
+    backend,
 ):
     field_ref = metrics_savepoint.vwind_impl_wgt()
     factory = _get_metrics_factory(
@@ -550,7 +548,7 @@ def test_factory_exner_w_explicit_weight_parameter(
     grid_file,
     icon_grid,
     experiment,
-    backend
+    backend,
 ):
     field_ref = metrics_savepoint.vwind_expl_wgt()
     factory = _get_metrics_factory(
@@ -616,7 +614,7 @@ def test_factory_pressure_gradient_fields(
     grid_file,
     icon_grid,
     experiment,
-    backend
+    backend,
 ):
     field_1_ref = metrics_savepoint.pg_exdist()
     field_2_ref = metrics_savepoint.pg_edgeidx_dsl()
@@ -751,7 +749,8 @@ def test_factory_coeff_gradekin(
     grid_file,
     icon_grid,
     experiment,
-    backend):
+    backend,
+):
     field_ref = metrics_savepoint.coeff_gradekin()
     factory = _get_metrics_factory(
         backend=backend,
@@ -782,7 +781,7 @@ def test_factory_wgtfacq_e(
     grid_file,
     icon_grid,
     experiment,
-    backend
+    backend,
 ):
     factory = _get_metrics_factory(
         backend=backend,
@@ -816,7 +815,6 @@ def test_vertical_coordinates_on_cells_khalf(
     experiment,
     backend,
 ):
-
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -830,7 +828,10 @@ def test_vertical_coordinates_on_cells_khalf(
     field_2 = factory.get(attrs.SURFACE_ELEVATION)
     field_ref = metrics_savepoint.z_ifc()
     assert test_helpers.dallclose(field_ref.asnumpy(), field_1.asnumpy(), rtol=1e-9)
-    assert test_helpers.dallclose(field_ref.asnumpy()[:,icon_grid.num_levels], field_2.asnumpy(), rtol=1e-9)
+    assert test_helpers.dallclose(
+        field_ref.asnumpy()[:, icon_grid.num_levels], field_2.asnumpy(), rtol=1e-9
+    )
+
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
@@ -848,7 +849,7 @@ def test_factory_compute_diffusion_metrics(
     grid_file,
     icon_grid,
     experiment,
-    backend
+    backend,
 ):
     field_ref_1 = metrics_savepoint.mask_hdiff()
     field_ref_2 = metrics_savepoint.zd_diffcoef()

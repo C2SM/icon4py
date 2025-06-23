@@ -48,12 +48,14 @@ def test_topography_smoothing_with_serialized_data(
         topography_smoothed_verif_np, topography_smoothed.asnumpy(), atol=1.0e-14
     )
 
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
     [
-        dt_utils.GAUSS3D_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT,
+        dt_utils.GAUSS3D_EXPERIMENT,
+        dt_utils.REGIONAL_EXPERIMENT,
     ],
 )
 def test_topography_smoothing_numpy_with_serialized_data(
@@ -79,6 +81,4 @@ def test_topography_smoothing_numpy_with_serialized_data(
         num_iterations=num_iterations,
     )
 
-    assert helpers.dallclose(
-        topography_smoothed_verif_np, topography_smoothed, atol=1.0e-14
-    )
+    assert helpers.dallclose(topography_smoothed_verif_np, topography_smoothed, atol=1.0e-14)
