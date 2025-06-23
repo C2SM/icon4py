@@ -13,6 +13,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
+    topography_savepoint,
     metrics_savepoint,
     processor_props,
     ranked_data_path,
