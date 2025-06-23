@@ -26,6 +26,14 @@ from icon4py.model.testing import (
     serialbox,
 )
 
+from icon4py.model.testing.datatest_fixtures import (
+    data_provider,
+    download_ser_data,
+    experiment,
+    processor_props,
+    ranked_data_path,
+    topography_savepoint, maximal_layer_thickness,
+)
 
 metrics_factories = {}
 
