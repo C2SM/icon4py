@@ -3,6 +3,8 @@
 \subsection{Miura scheme}
 \label{sub:miura}
 %=======================================================================================================================
+%
+No artificial diffusion term is needed for the scalar quantities because the advection of $\density{}{}{}$ and $\vpotemp{}{}{}$ is discretized with an upwind-biased second-order accurate scheme following \cite{miuraUpwindBiasedConservativeAdvection2007}.
 
 \begin{align}
   &\density{\n}{\e}{\k} = \densityref{\e}{\k} + \densityprime{\n}{\c 0/1}{\k} + \Delta^{\hat{x}}_{\c - \text{btrj}} \densityprimedx{\n}{\c}{\k} + \Delta^{\hat{y}}_{\c - \text{btrj}} \densityprimedy{\n}{\c}{\k} \\
@@ -15,3 +17,16 @@
   & \vpotempprimedx{\n}{\c}{\k} = \sum_{\offProv{c2e2co}} \geofacgrgx\ \vpotempprime{\n}{\c}{\k} \\
   & \vpotempprimedy{\n}{\c}{\k} = \sum_{\offProv{c2e2co}} \geofacgrgy\ \vpotempprime{\n}{\c}{\k}
 \end{align}
+
+The \ibm\ (\IBM) handles these operations by zeroing the gradient computation in cells adiacent to masked cells (\ie those indicated with a grid pattern)
+
+\begin{figure}[h!]
+  \begin{center}
+    \includesvg[height=150pt]{imgs/miura} \hspace{10pt}
+    \includegraphics[height=150pt]{imgs/offsetProvider_c2e2co} \hspace{10pt}
+    \includesvg[height=150pt]{imgs/ibm_masked_01}
+  \end{center}
+  \caption{Miura scheme definition and offset provider used for the horizontal derivative computations}
+  \label{fig:miura}
+\end{figure}
+
