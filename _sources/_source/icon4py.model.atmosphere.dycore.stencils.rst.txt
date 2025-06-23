@@ -460,14 +460,6 @@ icon4py.model.atmosphere.dycore.stencils.extrapolate\_temporally\_exner\_pressur
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.fused\_solve\_nonhydro\_stencil\_39\_40 module
----------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.init\_cell\_kdim\_field\_with\_zero\_vp module
 ---------------------------------------------------------------------------------------
 
