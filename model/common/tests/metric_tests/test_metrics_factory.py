@@ -126,7 +126,6 @@ def _get_metrics_factory(
             interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
-            interface_model_height=metrics_savepoint.z_ifc(),
             e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),
             c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),
             rayleigh_type=rayleigh_type,
@@ -827,9 +826,11 @@ def test_vertical_coordinates_on_cells_khalf(
         metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field = factory.get(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL)
+    field_1 = factory.get(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL)
+    field_2 = factory.get(attrs.SURFACE_ELEVATION)
     field_ref = metrics_savepoint.z_ifc()
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field_1.asnumpy(), rtol=1e-9)
+    assert test_helpers.dallclose(field_ref.asnumpy()[:,icon_grid.num_levels], field_2.asnumpy(), rtol=1e-9)
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error

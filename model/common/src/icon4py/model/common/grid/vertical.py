@@ -1057,3 +1057,20 @@ def compute_vertical_coordinate_numpy(
     )
 
     return vertical_coordinate
+
+def compute_surface_elevation(
+    vertical_coordinate: data_alloc.NDArray,
+    num_levels: int,
+) -> data_alloc.NDArray:
+    """
+    Compute the surface elevation from the vertical coordinate field.
+
+    Args:
+        vertical_coordinate: The (Cell, K) vertical coordinate field.
+        vertical_geometry: Vertical grid object.
+        array_ns: NumPy module for array operations.
+
+    Returns:
+        The surface elevation field.
+    """
+    return vertical_coordinate[:,num_levels]

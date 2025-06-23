@@ -11,6 +11,7 @@ import math
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
+from xarray.plot import surface
 
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
@@ -48,7 +49,6 @@ vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
 
-# TODO (Yilu): z_ifc should be registed to metrics_field
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
@@ -60,7 +60,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
-        interface_model_height: gtx.Field,
         e_refin_ctrl: gtx.Field,
         c_refin_ctrl: gtx.Field,
         rayleigh_type: int,
@@ -100,9 +99,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
         }
-        z_ifc_sliced = gtx.as_field(
-            (dims.CellDim,), interface_model_height.ndarray[:, self._grid.num_levels]
-        )
         k_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
@@ -117,9 +113,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
-                    # attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
                     #TODO (Yilu): noe let's check with z_fic_sliced and vtc_a
-                    "z_ifc_sliced": z_ifc_sliced,  # TODO (Yilu): z_ifc_sliced could be removed?
                     "vct_a": vct_a,
                     "topography": self._topography,
                     "c_refin_ctrl": c_refin_ctrl,
@@ -174,6 +168,23 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(vertical_coordinates_on_cell_khalf)
+
+        surface_elevation = factory.NumpyFieldsProvider(
+            func=functools.partial(
+                v_grid.compute_surface_elevation,
+            ),
+            fields=(attrs.SURFACE_ELEVATION,),
+            domain = {
+                dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
+            },
+            deps={
+                "vertical_coordinate": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
+            },
+            params={
+                "num_levels": self._vertical_grid.num_levels,
+            }
+        )
+        self.register_provider(surface_elevation)
 
         height = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
@@ -604,7 +615,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
-                "z_ifc_sliced": "z_ifc_sliced",
+                "z_ifc_sliced": attrs.SURFACE_ELEVATION,
                 "e_owner_mask": "e_owner_mask",
                 "flat_idx_max": attrs.FLAT_IDX_MAX,
                 "e_lev": "e_lev",
@@ -674,7 +685,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "flat_idx": attrs.FLAT_IDX_MAX,
-                "z_ifc_sliced": "z_ifc_sliced",
+                "z_ifc_sliced": attrs.SURFACE_ELEVATION,
             },
             connectivities={"e2c": dims.E2CDim},
             domain=(dims.EdgeDim, dims.KDim),
