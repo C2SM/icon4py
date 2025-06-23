@@ -613,7 +613,6 @@ if dace:
             **{
                 "CellDim_sym": grid.connectivities["C2E"].ndarray.shape[0],
                 "EdgeDim_sym": grid.connectivities["E2C"].ndarray.shape[0],
-                "VertexDim_sym": grid.offset_providers["V2E"].ndarray.shape[0],
                 "KDim_sym": grid.num_levels,
             },
             **concretize_symbols_for_dace_structure,
