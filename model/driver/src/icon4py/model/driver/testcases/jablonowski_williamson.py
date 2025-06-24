@@ -27,7 +27,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver.test_cases import utils as testcases_utils
+from icon4py.model.driver.testcases import utils as testcases_utils
 from icon4py.model.testing import serialbox as sb
 
 
@@ -229,7 +229,7 @@ def model_initialization_jabw(
         end_edge_end,
         0,
         num_levels,
-        offset_provider=grid.offset_providers,
+        offset_provider=grid.connectivities,
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
@@ -304,7 +304,7 @@ def model_initialization_jabw(
         end_cell_end,
         0,
         num_levels,
-        offset_provider=grid.offset_providers,
+        offset_provider=grid.connectivities,
     )
 
     log.info("U, V computation completed.")

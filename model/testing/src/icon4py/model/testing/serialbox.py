@@ -149,7 +149,9 @@ class IconGridSavepoint(IconSavepoint):
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(root, level)
+        self.global_grid_params = icon.GlobalGridParams.from_mean_cell_area(
+            self.mean_cell_area(), root=root, level=level
+        )
 
     def verts_vertex_lat(self):
         """vertex latituted"""
@@ -456,7 +458,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, on_gpu: bool) -> icon.IconGrid:
+    def construct_icon_grid(self, on_gpu: bool, keep_skip_values: bool = True) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -473,6 +475,7 @@ class IconGridSavepoint(IconSavepoint):
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             on_gpu=on_gpu,
+            keep_skip_values=keep_skip_values,
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
@@ -481,12 +484,12 @@ class IconGridSavepoint(IconSavepoint):
         xp = data_alloc.array_ns(on_gpu)
         grid = (
             icon.IconGrid(self._grid_id)
-            .with_config(config)
-            .with_global_params(self.global_grid_params)
-            .with_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
-            .with_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
-            .with_start_end_indices(dims.CellDim, cell_starts, cell_ends)
-            .with_connectivities(
+            .set_config(config)
+            .set_global_params(self.global_grid_params)
+            .set_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
+            .set_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
+            .set_start_end_indices(dims.CellDim, cell_starts, cell_ends)
+            .set_neighbor_tables(
                 {
                     dims.C2EDim: xp.asarray(self.c2e()),
                     dims.E2CDim: xp.asarray(self.e2c()),
@@ -497,7 +500,7 @@ class IconGridSavepoint(IconSavepoint):
                     dims.E2C2EODim: xp.asarray(e2c2e0),
                 }
             )
-            .with_connectivities(
+            .set_neighbor_tables(
                 {
                     dims.E2VDim: xp.asarray(self.e2v()),
                     dims.V2EDim: xp.asarray(self.v2e()),
@@ -565,12 +568,10 @@ class IconGridSavepoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> grid_states.CellParams:
-        return grid_states.CellParams.from_global_num_cells(
+        return grid_states.CellParams(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
-            global_num_cells=self.global_grid_params.num_cells,
-            length_rescale_factor=1.0,
         )
 
 
@@ -635,17 +636,21 @@ class InterpolationSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)
@@ -781,9 +786,7 @@ class MetricSavepoint(IconSavepoint):
     def wgtfac_e(self):
         return self._get_field("wgtfac_e", dims.EdgeDim, dims.KDim)
 
-    def wgtfacq_e_dsl(
-        self, k_level
-    ):  # TODO: @abishekg7 Simplify this after serialized data is fixed
+    def wgtfacq_e_dsl(self, k_level):
         ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
         k = k_level - 3
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
@@ -1043,15 +1046,19 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def rho_ic(self):
         return self._get_field("rho_ic", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def rho_incr(self):
         return self._get_field("rho_incr", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def exner_incr(self):
         return self._get_field("exner_incr", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def vn_incr(self):
         return self._get_field("vn_incr", dims.EdgeDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered()
     def exner_dyn_incr(self):
         return self._get_field("exner_dyn_incr", dims.CellDim, dims.KDim)
 
@@ -1162,7 +1169,7 @@ class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
     def ddt_vn_phy(self):
         return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim)
 
-    def vn_incr(self):  # TODO should be vn_incr
+    def vn_incr(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
     def bdy_divdamp(self):
@@ -1188,6 +1195,107 @@ class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
 
     def z_graddiv_vn(self):
         return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
+
+class NonHydroInitVerticallyImplicitSolverSavepoint(IconSavepoint):
+    def mass_fl_e(self):
+        return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_fl_e(self):
+        return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
+
+    def z_flxdiv_mass(self):
+        return self._get_field("z_flxdiv_mass", dims.CellDim, dims.KDim)
+
+    def z_flxdiv_theta(self):
+        return self._get_field("z_flxdiv_theta", dims.CellDim, dims.KDim)
+
+    def z_w_expl(self):
+        return self._get_field("z_w_expl", dims.CellDim, dims.KDim)
+
+    def ddt_w_adv_pc(self, ntnd: TimeIndex):
+        return self._get_field_component("ddt_w_adv_pc", ntnd, (dims.CellDim, dims.KDim))
+
+    def z_th_ddz_exner_c(self):
+        return self._get_field("z_th_ddz_exner_c", dims.CellDim, dims.KDim)
+
+    def z_contr_w_fl_l(self):
+        return self._get_field("z_contr_w_fl_l", dims.CellDim, dims.KDim)
+
+    def rho_ic(self):
+        return self._get_field("rho_ic", dims.CellDim, dims.KDim)
+
+    def w_concorr_c(self):
+        return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
+
+    def exner_nnow(self):
+        return self._get_field("exner_now", dims.CellDim, dims.KDim)
+
+    def rho_nnow(self):
+        return self._get_field("rho_now", dims.CellDim, dims.KDim)
+
+    def theta_v_nnow(self):
+        return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def z_alpha(self):
+        return self._get_field("z_alpha", dims.CellDim, dims.KDim)
+
+    def z_beta(self):
+        return self._get_field("z_beta", dims.CellDim, dims.KDim)
+
+    def theta_v_ic(self):
+        return self._get_field("theta_v_ic", dims.CellDim, dims.KDim)
+
+    def z_q(self):
+        return self._get_field("z_q", dims.CellDim, dims.KDim)
+
+    def w(self):
+        return self._get_field("w_now", dims.CellDim, dims.KDim)
+
+    def z_rho_expl(self):
+        return self._get_field("z_rho_expl", dims.CellDim, dims.KDim)
+
+    def z_exner_expl(self):
+        return self._get_field("z_exner_expl", dims.CellDim, dims.KDim)
+
+    def exner_pr(self):
+        return self._get_field("exner_pr", dims.CellDim, dims.KDim)
+
+    def ddt_exner_phy(self):
+        return self._get_field("ddt_exner_phy", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered()
+    def rho_incr(self):
+        return self._get_field("rho_now", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered()
+    def exner_incr(self):
+        return self._get_field("exner_now", dims.CellDim, dims.KDim)
+
+    def z_raylfac(self):
+        return self._get_field("z_raylfac", dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho_now", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("exner_now", dims.CellDim, dims.KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def z_dwdz_dd(self):
+        return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered()
+    def exner_dyn_incr(self):
+        return self._get_field("exner_dyn_incr", dims.CellDim, dims.KDim)
+
+    def mass_flx_ic(self):
+        return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
+
+    def vol_flx_ic(self):
+        return self._get_field("vol_flx_ic", dims.CellDim, dims.KDim)
 
 
 class IconNonHydroExitSavepoint(IconSavepoint):
@@ -1250,6 +1358,12 @@ class IconNonHydroExitSavepoint(IconSavepoint):
 
     def mass_fl_e(self):
         return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
+
+    def mass_flx_ic(self):
+        return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
+
+    def vol_flx_ic(self):
+        return self._get_field("vol_flx_ic", dims.CellDim, dims.KDim)
 
     def mass_flx_me(self):
         return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
@@ -1735,6 +1849,14 @@ class IconSatadInitSavepoint(IconSatadExitSavepoint):
         return self._get_field("rho", dims.CellDim, dims.KDim)
 
 
+class TopographySavepoint(IconSavepoint):
+    def topo_c(self):
+        return self._get_field("topography", dims.CellDim)
+
+    def topo_smt_c(self):
+        return self._get_field("smooth_topography", dims.CellDim)
+
+
 class IconSerialDataProvider:
     def __init__(
         self,
@@ -1890,6 +2012,20 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
+    def from_savepoint_vertically_implicit_dycore_solver_init(
+        self, istep: int, date: str, substep: int
+    ) -> NonHydroInitVerticallyImplicitSolverSavepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-41to60-init"]
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return NonHydroInitVerticallyImplicitSolverSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation-state"].as_savepoint()
         return InterpolationSavepoint(
@@ -1899,6 +2035,12 @@ class IconSerialDataProvider:
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric-state"].as_savepoint()
         return MetricSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_topography_savepoint(self) -> TopographySavepoint:
+        savepoint = self.serializer.savepoint["smooth-topo-savepoint"].as_savepoint()
+        return TopographySavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
@@ -2006,7 +2148,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep: int
     ) -> NonHydroExitEdgeDiagnosticsUpdateVnSavepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-14to28-exit"]  # TODO
+            self.serializer.savepoint["solve-nonhydro-14to28-exit"]
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]

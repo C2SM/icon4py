@@ -354,7 +354,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 horizontal_offsets = {
                     k: v
-                    for k, v in grid.offset_providers.items()
+                    for k, v in grid.connectivities.items()
                     if isinstance(v, gtx.Connectivity)
                     and v.domain.dims[0].kind == gtx.DimensionKind.HORIZONTAL
                 }
@@ -362,7 +362,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             if dim.kind == gtx.DimensionKind.VERTICAL:
                 vertical_offsets = {
                     k: v
-                    for k, v in grid.offset_providers.items()
+                    for k, v in grid.connectivities.items()
                     if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
                 }
                 offset_providers.update(vertical_offsets)
@@ -474,7 +474,7 @@ class ProgramFieldProvider(FieldProvider):
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 horizontal_offsets = {
                     k: v
-                    for k, v in grid.offset_providers.items()
+                    for k, v in grid.connectivities.items()
                     # TODO(halungge): review this workaround, as the fix should be available in the gt4py baseline
                     if isinstance(v, gtx.Connectivity)
                     and v.domain.dims[0].kind == gtx.DimensionKind.HORIZONTAL
@@ -483,7 +483,7 @@ class ProgramFieldProvider(FieldProvider):
             if dim.kind == gtx.DimensionKind.VERTICAL:
                 vertical_offsets = {
                     k: v
-                    for k, v in grid.offset_providers.items()
+                    for k, v in grid.connectivities.items()
                     if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
                 }
                 offset_providers.update(vertical_offsets)
@@ -608,7 +608,10 @@ class NumpyFieldsProvider(FieldProvider):
     ) -> None:
         self._validate_dependencies()
         args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
-        offsets = {k: grid_provider.grid.connectivities[v] for k, v in self._connectivities.items()}
+        offsets = {
+            k: grid_provider.grid.get_connectivity(v.value).ndarray
+            for k, v in self._connectivities.items()
+        }
         args.update(offsets)
         args.update(self._params)
         results = self._func(**args)
@@ -686,22 +689,6 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.func.__name__
     else:
         return callable_.__name__
-
-
-def _provider_on_backend(
-    provider: gtx.NeighborTableOffsetProvider, backend: Optional[gtx_backend.Backend]
-) -> gtx.NeighborTableOffsetProvider:
-    table = data_alloc.to_backend(provider.table, backend)
-    log.debug(
-        f"transferring offset provider {provider} to compute backend: {data_alloc.backend_name(backend)}"
-    )
-    return gtx.NeighborTableOffsetProvider(
-        table=table,
-        neighbor_axis=provider.neighbor_axis,
-        has_skip_values=provider.has_skip_values,
-        max_neighbors=provider.max_neighbors,
-        origin_axis=provider.origin_axis,
-    )
 
 
 def dtype_or_default(

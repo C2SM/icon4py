@@ -91,7 +91,7 @@ def icon_grid(grid_savepoint, backend):
     Uses the special grid_savepoint that contains data from p_patch
     """
     on_gpu = True if data_alloc.is_cupy_device(backend) else False
-    return grid_savepoint.construct_icon_grid(on_gpu=on_gpu)
+    return grid_savepoint.construct_icon_grid(on_gpu=on_gpu, keep_skip_values=False)
 
 
 @pytest.fixture
@@ -170,6 +170,12 @@ def metrics_savepoint(data_provider):  # F811
 def metrics_nonhydro_savepoint(data_provider):  # F811
     """Load data from ICON metric state nonhydro savepoint."""
     return data_provider.from_metrics_nonhydro_savepoint()
+
+
+@pytest.fixture
+def topography_savepoint(data_provider):  # F811
+    """Load data from ICON external parameters savepoint."""
+    return data_provider.from_topography_savepoint()
 
 
 @pytest.fixture
@@ -267,6 +273,23 @@ def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_vertically_implicit_dycore_solver_init(
+    data_provider, istep_init, step_date_init, substep_init
+):
+    """
+    Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
+
+     metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_vertically_implicit_dycore_solver_init(
         istep=istep_init, date=step_date_init, substep=substep_init
     )
 

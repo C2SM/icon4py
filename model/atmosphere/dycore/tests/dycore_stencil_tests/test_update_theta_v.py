@@ -5,19 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from typing import Any, Final
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, random_mask
 from icon4py.model.testing.helpers import StencilTest
+
+
+dycore_consts: Final = constants.PhysicsConstants()
 
 
 class TestUpdateThetaV(StencilTest):
@@ -34,14 +37,16 @@ class TestUpdateThetaV(StencilTest):
         exner_now: np.ndarray,
         rho_new: np.ndarray,
         theta_v_new: np.ndarray,
-        cvd_o_rd: float,
         **kwargs: Any,
     ) -> dict:
         mask_prog_halo_c = np.expand_dims(mask_prog_halo_c, axis=-1)
 
         theta_v_new = np.where(
             mask_prog_halo_c,
-            rho_now * theta_v_now * ((exner_new / exner_now - 1) * cvd_o_rd + 1.0) / rho_new,
+            rho_now
+            * theta_v_now
+            * ((exner_new / exner_now - 1) * dycore_consts.cvd_o_rd + 1.0)
+            / rho_new,
             theta_v_new,
         )
         return dict(theta_v_new=theta_v_new)
@@ -55,7 +60,6 @@ class TestUpdateThetaV(StencilTest):
         exner_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         rho_new = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         theta_v_new = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        cvd_o_rd = wpfloat("10.0")
 
         return dict(
             mask_prog_halo_c=mask_prog_halo_c,
@@ -65,7 +69,6 @@ class TestUpdateThetaV(StencilTest):
             exner_now=exner_now,
             rho_new=rho_new,
             theta_v_new=theta_v_new,
-            cvd_o_rd=cvd_o_rd,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

@@ -45,6 +45,7 @@ def create_vertical_params(vertical_config, grid_savepoint):
     )
 
 
+@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
@@ -92,7 +93,7 @@ def test_verify_velocity_init_against_savepoint(
     assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
 
 
-@pytest.mark.datatest
+@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
@@ -101,13 +102,30 @@ def test_verify_velocity_init_against_savepoint(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
+def test_scale_factors_by_dtime(
+    savepoint_velocity_init,
+    icon_grid,
+    grid_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    backend,
+):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=None,
         interpolation_state=None,
-        vertical_params=None,
+        vertical_params=vertical_params,
         edge_params=None,
         owner_mask=None,
         backend=backend,
@@ -159,11 +177,11 @@ def test_velocity_predictor_step(
         theta_v_at_cells_on_half_levels=None,
         perturbed_exner_at_cells_on_model_levels=None,
         rho_at_cells_on_half_levels=None,
-        ddt_exner_phy=None,
+        exner_tendency_due_to_slow_physics=None,
         grf_tend_rho=None,
         grf_tend_thv=None,
         grf_tend_w=None,
-        mass_fl_e=None,
+        mass_flux_at_edges_on_model_levels=None,
         normal_wind_tendency_due_to_slow_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
@@ -172,10 +190,10 @@ def test_velocity_predictor_step(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,
-        normal_wind_iau_increments=None,
-        exner_incr=None,
-        exner_dyn_incr=None,
+        rho_iau_increment=None,
+        normal_wind_iau_increment=None,
+        exner_iau_increment=None,
+        exner_dynamical_increment=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
@@ -334,11 +352,11 @@ def test_velocity_corrector_step(
         theta_v_at_cells_on_half_levels=None,
         perturbed_exner_at_cells_on_model_levels=None,
         rho_at_cells_on_half_levels=None,
-        ddt_exner_phy=None,
+        exner_tendency_due_to_slow_physics=None,
         grf_tend_rho=None,
         grf_tend_thv=None,
         grf_tend_w=None,
-        mass_fl_e=None,
+        mass_flux_at_edges_on_model_levels=None,
         normal_wind_tendency_due_to_slow_physics_process=None,
         grf_tend_vn=None,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
@@ -347,10 +365,10 @@ def test_velocity_corrector_step(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,
-        normal_wind_iau_increments=None,
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=None,
+        rho_iau_increment=None,
+        normal_wind_iau_increment=None,
+        exner_iau_increment=None,  # sp.exner_incr(),
+        exner_dynamical_increment=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
@@ -532,10 +550,10 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels + 1),
         offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2V": icon_grid.get_offset_provider("E2V"),
-            "V2C": icon_grid.get_offset_provider("V2C"),
-            "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "V2C": icon_grid.get_connectivity("V2C"),
+            "E2C2E": icon_grid.get_connectivity("E2C2E"),
             "Koff": dims.KDim,
         },
     )
@@ -632,10 +650,10 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2V": icon_grid.get_offset_provider("E2V"),
-            "V2C": icon_grid.get_offset_provider("V2C"),
-            "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "V2C": icon_grid.get_connectivity("V2C"),
+            "E2C2E": icon_grid.get_connectivity("E2C2E"),
             "Koff": dims.KDim,
         },
     )
@@ -723,8 +741,8 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "C2E": icon_grid.get_connectivity("C2E"),
+            "C2CE": icon_grid.get_connectivity("C2CE"),
             "Koff": dims.KDim,
         },
     )
@@ -817,8 +835,8 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "C2E": icon_grid.get_connectivity("C2E"),
+            "C2CE": icon_grid.get_connectivity("C2CE"),
             "Koff": dims.KDim,
         },
     )
@@ -953,9 +971,9 @@ def test_compute_advection_in_vertical_momentum_equation(
         vertical_start=vertical_start,
         vertical_end=vertical_end,
         offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "C2CE": icon_grid.get_offset_provider("C2CE"),
-            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "C2E": icon_grid.get_connectivity("C2E"),
+            "C2CE": icon_grid.get_connectivity("C2CE"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
             "Koff": dims.KDim,
         },
     )
@@ -1075,11 +1093,11 @@ def test_compute_advection_in_horizontal_momentum_equation(
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "V2E": icon_grid.get_offset_provider("V2E"),
-            "E2EC": icon_grid.get_offset_provider("E2EC"),
-            "E2V": icon_grid.get_offset_provider("E2V"),
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "V2E": icon_grid.get_connectivity("V2E"),
+            "E2EC": icon_grid.get_connectivity("E2EC"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "Koff": dims.KDim,
         },
     )
