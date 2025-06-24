@@ -55,7 +55,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_grid: v_grid.VerticalGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        topography: data_alloc.NDArray,
+        topography: gtx.Field,
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
@@ -75,7 +75,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
-        self._topography = topography
         self._interpolation_source = interpolation_source
         log.info(
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -98,6 +97,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
         }
+
         k_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
@@ -112,9 +112,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
-                    # TODO (Yilu): noe let's check with z_fic_sliced and vtc_a
+                    "topography": topography,
                     "vct_a": vct_a,
-                    "topography": self._topography,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -167,23 +166,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(vertical_coordinates_on_cell_khalf)
-
-        surface_elevation = factory.NumpyFieldsProvider(
-            func=functools.partial(
-                v_grid.compute_surface_elevation,
-            ),
-            fields=(attrs.SURFACE_ELEVATION,),
-            domain={
-                dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
-            },
-            deps={
-                "vertical_coordinate": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
-            },
-            params={
-                "num_levels": self._vertical_grid.num_levels,
-            },
-        )
-        self.register_provider(surface_elevation)
 
         height = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
@@ -614,7 +596,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
-                "z_ifc_sliced": attrs.SURFACE_ELEVATION,
+                "topography": "topography",
                 "e_owner_mask": "e_owner_mask",
                 "flat_idx_max": attrs.FLAT_IDX_MAX,
                 "e_lev": "e_lev",
@@ -684,7 +666,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "flat_idx": attrs.FLAT_IDX_MAX,
-                "z_ifc_sliced": attrs.SURFACE_ELEVATION,
+                "topography": "topography",
             },
             connectivities={"e2c": dims.E2CDim},
             domain=(dims.EdgeDim, dims.KDim),
@@ -832,40 +814,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self.register_provider(compute_diffusion_metrics_np)
-
-        vertical_coordinates_on_cell_khalf = factory.NumpyFieldsProvider(
-            func=functools.partial(
-                v_grid.compute_vertical_coordinate_numpy,
-                array_ns=self._xp,
-            ),
-            fields=(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL,),
-            domain={
-                dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
-                dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
-            },
-            deps={
-                "vct_a": "vct_a",
-                "topography": "topography",
-                "cell_areas": geometry_attrs.CELL_AREA,
-                "geofac_n2s": interpolation_attributes.GEOFAC_N2S,
-            },
-            connectivities={"c2e2co": dims.C2E2CODim},
-            params={
-                "num_cells": self._grid.num_cells,
-                "num_levels": self._vertical_grid.num_levels,
-                "nflatlev": self._vertical_grid.nflatlev,
-                "model_top_height": self._vertical_grid.config.model_top_height,
-                "SLEVE_decay_scale_1": self.vertical_grid.config.SLEVE_decay_scale_1,
-                "SLEVE_decay_exponent": self._vertical_grid.config.SLEVE_decay_exponent,
-                "SLEVE_decay_scale_2": self._vertical_grid.config.SLEVE_decay_scale_2,
-                "SLEVE_minimum_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_layer_thickness_1,
-                "SLEVE_minimum_relative_layer_thickness_1": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_1,
-                "SLEVE_minimum_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_layer_thickness_2,
-                "SLEVE_minimum_relative_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_2,
-                "lowest_layer_thickness": self._vertical_grid.config.lowest_layer_thickness,
-            },
-        )
-        self.register_provider(vertical_coordinates_on_cell_khalf)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

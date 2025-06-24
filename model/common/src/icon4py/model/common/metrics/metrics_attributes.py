@@ -64,7 +64,6 @@ ZD_DIFFCOEF_DSL: Final[str] = "zd_diffcoef_dsl"
 ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
 ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
 CELL_HEIGHT_ON_INTERFACE_LEVEL: Final[str] = "vertical_coordinates_on_cell_khalf"
-SURFACE_ELEVATION: Final[str] = "surface_elevation"
 
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -419,13 +418,5 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="z_ifc",
         dtype=ta.wpfloat,
-    ),
-    SURFACE_ELEVATION: dict(
-        standard_name=SURFACE_ELEVATION,
-        long_name="surface_elevation",
-        units="m",
-        dims=(dims.CellDim,),
-        icon_var_name="",
-        dtype=ta.wpfloat,
-    ),
+    )
 }

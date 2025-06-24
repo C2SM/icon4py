@@ -825,12 +825,8 @@ def test_vertical_coordinates_on_cells_khalf(
         topography_savepoint=topography_savepoint,
     )
     field_1 = factory.get(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL)
-    field_2 = factory.get(attrs.SURFACE_ELEVATION)
     field_ref = metrics_savepoint.z_ifc()
     assert test_helpers.dallclose(field_ref.asnumpy(), field_1.asnumpy(), rtol=1e-9)
-    assert test_helpers.dallclose(
-        field_ref.asnumpy()[:, icon_grid.num_levels], field_2.asnumpy(), rtol=1e-9
-    )
 
 
 @pytest.mark.level("integration")
