@@ -169,7 +169,7 @@ class TimeLoop:
                 do_prep_adv,
             )
             timer.capture()
-            if time_step % 10 == 0:
+            if time_step % 1 == 0:
                 plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:06d}")
 
             self._is_first_step_in_simulation = False
