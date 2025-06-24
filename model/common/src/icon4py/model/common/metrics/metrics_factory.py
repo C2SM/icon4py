@@ -56,7 +56,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_grid: VerticalGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        topography: ta.CellField, # TODO
+        topography: ta.CellField,  # TODO
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
@@ -137,12 +137,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     @property
     def _sources(self) -> factory.FieldSource:
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
+
     # TODO
     def _register_computed_fields(self):
-        CELL_HEIGHT_ON_INTERFACE_LEVEL =factory.NumpyFieldsProvider(
-            func = v_grid.compute_vertical_coordinate.with_backend(
-
-            )
+        CELL_HEIGHT_ON_INTERFACE_LEVEL = factory.NumpyFieldsProvider(
+            func=v_grid.compute_vertical_coordinate.with_backend()
         )
 
         height = factory.ProgramFieldProvider(
