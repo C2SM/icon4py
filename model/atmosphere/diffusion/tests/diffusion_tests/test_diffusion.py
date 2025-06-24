@@ -415,7 +415,7 @@ def test_verify_diffusion_init_against_savepoint(
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
-# TODO: Enable dace orchestration, currently broken by pre-compiled programs
+# TODO: Enable dace orchestration, currently broken by precompiled programs
 @pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
@@ -686,7 +686,7 @@ def test_run_diffusion_multiple_steps(
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("linit", [True])
-# TODO: Enable dace orchestration, currently broken by pre-compiled programs
+# TODO: Enable dace orchestration, currently broken by precompiled programs
 @pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_initial_step(
     experiment,
