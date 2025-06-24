@@ -418,5 +418,5 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="z_ifc",
         dtype=ta.wpfloat,
-    )
+    ),
 }
