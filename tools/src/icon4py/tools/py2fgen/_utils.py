@@ -61,8 +61,8 @@ def parse_comma_separated_list(_: click.Context, __: click.Parameter, value: str
 
 
 def get_prefix_lib_path() -> str:
-    if path := sysconfig.get_config_vars().get("LIBDIR"):
-        rpath = f"{sys.base_prefix}/{path.split('/')[-1]}"
+    if lib_dir := sysconfig.get_config_vars().get("LIBDIR"):
+        rpath = f"{sys.base_prefix}/{lib_dir.split('/')[-1]}"
     else:
         rpath = ""
     return rpath
