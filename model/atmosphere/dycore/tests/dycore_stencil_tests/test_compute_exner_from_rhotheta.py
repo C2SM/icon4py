@@ -37,7 +37,7 @@ class TestComputeExnerFromRhotheta(StencilTest):
     ) -> dict:
         theta_v = np.copy(exner)
         exner = np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * theta_v))
-        return dict(theta_v=theta_v, exner=exner)
+        return dict(out=(theta_v, exner))
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:

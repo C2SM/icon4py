@@ -64,13 +64,13 @@ def allocate_data(
     backend: Optional[gtx_backend.Backend], input_data: dict[str, gtx.Field]
 ) -> dict[str, gtx.Field]:
     _allocate_field = constructors.as_field.partial(allocator=backend)
-    domain_input = input_data.pop("domain")
-    out_input = input_data.pop("out")
     input_data = {
-        k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
+        k: _allocate_field(domain=v.domain, data=v.ndarray)
+        if (not is_scalar_type(v) and (k not in ["domain", "out"]))
+        else v
         for k, v in input_data.items()
     }
-    return input_data, domain_input, out_input
+    return input_data
 
 
 def apply_markers(
@@ -136,20 +136,22 @@ def _verify_stencil_test(
     input_data: dict[str, gtx.Field],
     reference_outputs: dict[str, np.ndarray],
 ) -> None:
-    for out in self.OUTPUTS:
+    for i_out, out in enumerate(self.OUTPUTS):
         name, refslice, gtslice = (
             (out.name, out.refslice, out.gtslice)
             if isinstance(out, Output)
             else (out, (slice(None),), (slice(None),))
         )
         if isinstance(self.PROGRAM, FieldOperator):
-            output_field = input_data["out"][list(reference_outputs.keys()).index(name)]
+            output_field = input_data["out"][i_out]
+            reference_output = reference_outputs["out"][i_out]
         else:
             output_field = input_data[name]
+            reference_output = reference_outputs[name]
 
         np.testing.assert_allclose(
             output_field.asnumpy()[gtslice],
-            reference_outputs[name][refslice],
+            reference_output[refslice],
             equal_nan=True,
             err_msg=f"Verification failed for '{name}'",
         )
@@ -172,11 +174,7 @@ def _test_and_benchmark(
         **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
     )
 
-    input_data, domain_input, out_input = allocate_data(backend, input_data)
-
-    if isinstance(self.PROGRAM, FieldOperator):
-        input_data.update(out=out_input)
-        input_data.update(domain=domain_input)
+    input_data = allocate_data(backend, input_data)
 
     run_verify_and_benchmark(
         functools.partial(
