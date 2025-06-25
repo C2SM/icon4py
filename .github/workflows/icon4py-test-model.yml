@@ -36,7 +36,7 @@ jobs:
             - name: cache key
               id: cache-key
               run: |
-                 echo "key=$(.github/validation_grid_utils.py --option=cache-key)" >> $GITHUB_OUTPUT
+                 echo "key=$(.github/validation_grid_utils.py cache-key)" >> $GITHUB_OUTPUT
 
             - name: gridfile cache
               id: grid-cache
@@ -48,7 +48,7 @@ jobs:
             - name: download grids
               if: steps.grid-cache.outputs.cache-hit != 'true'
               run: |
-                .github/validation_grid_utils.py --option=download
+                .github/validation_grid_utils.py download
 
             - name: run nox session - unit tests
               shell: bash
