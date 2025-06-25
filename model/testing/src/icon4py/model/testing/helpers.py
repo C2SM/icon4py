@@ -64,11 +64,13 @@ def allocate_data(
     backend: Optional[gtx_backend.Backend], input_data: dict[str, gtx.Field]
 ) -> dict[str, gtx.Field]:
     _allocate_field = constructors.as_field.partial(allocator=backend)
+    domain_input = input_data.pop("domain")
+    out_input = input_data.pop("out")
     input_data = {
         k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
         for k, v in input_data.items()
     }
-    return input_data
+    return input_data, domain_input, out_input
 
 
 def apply_markers(
@@ -170,10 +172,11 @@ def _test_and_benchmark(
         **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
     )
 
-    input_data = allocate_data(backend, input_data)
+    input_data, domain_input, out_input = allocate_data(backend, input_data)
 
     if isinstance(self.PROGRAM, FieldOperator):
-        input_data, reference_outputs = _refactor_field_operator(input_data, reference_outputs)
+        input_data.update(out=out_input)
+        input_data.update(domain=domain_input)
 
     run_verify_and_benchmark(
         functools.partial(
@@ -229,46 +232,3 @@ def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
 def as_1d_connectivity(connectivity: np.ndarray) -> np.ndarray:
     old_shape = connectivity.shape
     return np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)
-
-
-def _refactor_field_operator(input_data: dict, reference_outputs: dict) -> tuple[dict, dict]:
-    ref_vals = list(reference_outputs.values())
-    size = ref_vals[0].shape
-    full_field_idx = [
-        i_dt_val
-        for i_dt_val, dt_val in enumerate(list(input_data.values()))
-        if (isinstance(dt_val, gtx.Field) and dt_val.shape == size)
-    ]
-    input_data.update(
-        out=tuple(
-            gtx.as_field((input_data[list(input_data)[full_field_idx[0]]]._domain), ref_val)
-            for ref_val in ref_vals
-        )
-    )
-    input_data.update(domain={})
-    if "horizontal_start" in input_data.keys():
-        input_data["domain"].update(
-            {
-                input_data["out"][0].domain.dims[0]: (
-                    input_data["horizontal_start"],
-                    input_data["horizontal_end"],
-                )
-            }
-        )
-
-    if "vertical_start" in input_data.keys():
-        input_data["domain"].update(
-            {
-                input_data["out"][0].domain.dims[1]: (
-                    input_data["vertical_start"],
-                    input_data["vertical_end"],
-                )
-            }
-        )
-
-    input_data.pop("horizontal_start")
-    input_data.pop("horizontal_end")
-    input_data.pop("vertical_start")
-    input_data.pop("vertical_end")
-
-    return input_data, reference_outputs

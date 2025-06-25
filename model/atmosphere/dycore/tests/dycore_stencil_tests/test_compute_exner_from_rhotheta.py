@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -45,14 +45,16 @@ class TestComputeExnerFromRhotheta(StencilTest):
         rd_o_p0ref = wpfloat("20.0")
         rho = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
         exner = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
+        theta_v = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             rho=rho,
             exner=exner,
             rd_o_cvd=rd_o_cvd,
             rd_o_p0ref=rd_o_p0ref,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_cells),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+            out=(theta_v, exner),
         )
