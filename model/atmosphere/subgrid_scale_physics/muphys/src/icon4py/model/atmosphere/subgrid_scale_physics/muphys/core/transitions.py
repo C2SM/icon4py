@@ -247,8 +247,8 @@ def _rain_to_graupel(
     C3 = 1.0  # coefficient for immersion raindrop freezing: a_if
     C4 = 0.1  # coefficient for immersion raindrop freezing: a_if
     A2 = 1.24e-3  # (PI/24)*EIR*V0R*Gamma(6.5)*AR**(-5/8)
-    B2 = 1.625  # TBD
-    QS_CRIT = 1.0e-7  # TBD
+    B2 = 1.625  # exponent for rho*qr
+    QS_CRIT = 1.0e-7  # critical humidity of snow
 
     maskinner = (dvsw + qc <= 0.0) | (qr > C4 * qc)
     mask = (qr > g_ct.qmin) & (t < TFRZ_RAIN)
@@ -292,13 +292,13 @@ def _rain_to_vapor(
     dt: ta.wpfloat,  # time step
 ) -> fa.CellKField[ta.wpfloat]:  # Conversion rate from graupel to rain
     B1_RV = 0.16667  # exponent in power-law relation for mass density
-    B2_RV = 0.55555  # TBD
-    C1_RV = 0.61  # TBD
-    C2_RV = -0.0163  # TBD
-    C3_RV = 1.111e-4  # TBD
-    A1_RV = 1.536e-3  # TBD
-    A2_RV = 1.0e0  # TBD
-    A3_RV = 19.0621e0  # TBD
+    B2_RV = 0.55555  # exponent for qr*rho
+    C1_RV = 0.61  # coefficient for tc^0 in quadratic expansion 
+    C2_RV = -0.0163  # coefficient of tc^1 in quadratic expansion
+    C3_RV = 1.111e-4  # coefficient of tc^2 in quadratic expansion
+    A1_RV = 1.536e-3  # coefficient 1 in qr reconstruction
+    A2_RV = 1.0e0  # coefficient 2 in qr reconstruction
+    A3_RV = 19.0621e0  # coefficient 3 in qr reconstruction
 
     # TO-DO: move as much as possible into WHERE statement
     tc = t - t_d.tmelt
@@ -440,7 +440,7 @@ def _vapor_x_ice(
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     dt: ta.wpfloat,  # time step
 ) -> fa.CellKField[ta.wpfloat]:  # Rate of vapor deposition to ice
-    AMI = 130.0  # Formfactor for mass-size relation of cold ice
+    AMI = 130.0  # Form factor for mass-size relation of cold ice
     B_EXP = -0.67  # exp. for conv. (-1 + 0.33) of ice mass to sfc area
     A_FACT = 4.0 * AMI ** (-1.0 / 3.0)
     #   A_FACT = (1.0/5.065797019100886) * 4.0
