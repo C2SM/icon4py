@@ -98,7 +98,7 @@ def _grad_fd_tang(
     return grad_tang_psi_e
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def geographical_to_cartesian_on_cells(
     lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat]
 ) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
@@ -121,7 +121,7 @@ def geographical_to_cartesian_on_cells(
     return x, y, z
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def geographical_to_cartesian_on_edges(
     lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat]
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
@@ -144,8 +144,8 @@ def geographical_to_cartesian_on_edges(
     return x, y, z
 
 
-@gtx.field_operator
-def geographical_to_cartesian_on_vertex(
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def geographical_to_cartesian_on_vertices(
     lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat]
 ) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
     """
@@ -189,6 +189,19 @@ def dot_product_on_cells(
     z1: fa.CellField[ta.wpfloat],
     z2: fa.CellField[ta.wpfloat],
 ) -> fa.CellField[ta.wpfloat]:
+    """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
+    return x1 * x2 + y1 * y2 + z1 * z2
+
+
+@gtx.field_operator
+def dot_product_on_vertices(
+    x1: fa.VertexField[ta.wpfloat],
+    x2: fa.VertexField[ta.wpfloat],
+    y1: fa.VertexField[ta.wpfloat],
+    y2: fa.VertexField[ta.wpfloat],
+    z1: fa.VertexField[ta.wpfloat],
+    z2: fa.VertexField[ta.wpfloat],
+) -> fa.VertexField[ta.wpfloat]:
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
     return x1 * x2 + y1 * y2 + z1 * z2
 
@@ -243,6 +256,24 @@ def norm2_on_cells(
 
     """
     return sqrt(dot_product_on_cells(x, x, y, y, z, z))
+
+
+@gtx.field_operator
+def norm2_on_vertices(
+    x: fa.VertexField[ta.wpfloat], y: fa.VertexField[ta.wpfloat], z: fa.VertexField[ta.wpfloat]
+) -> fa.VertexField[ta.wpfloat]:
+    """
+    Compute 2 norm of a cartesian vector (x, y, z)
+    Args:
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    Returns:
+        norma
+
+    """
+    return sqrt(dot_product_on_vertices(x, x, y, y, z, z))
 
 
 @gtx.field_operator
@@ -373,7 +404,7 @@ def compute_zonal_and_meridional_components_on_edges(
     )
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     lat: fa.EdgeField[ta.wpfloat],
     lon: fa.EdgeField[ta.wpfloat],
@@ -381,7 +412,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     v: fa.EdgeField[ta.wpfloat],
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     """
-    Compute cartesian coordinates form zonal an meridonal components at position (lat, lon)
+    Compute cartesian coordinates from zonal an meridional components at position (lat, lon)
     Args:
         lat: latitude
         lon: longitude
@@ -405,7 +436,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     return x / norm, y / norm, z / norm
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
@@ -427,7 +458,7 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     )
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     lat: fa.CellField[ta.wpfloat],
     lon: fa.CellField[ta.wpfloat],
@@ -459,7 +490,7 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     return x / norm, y / norm, z / norm
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
@@ -482,7 +513,7 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
 
 
 @gtx.field_operator
-def arc_length(
+def arc_length_on_edges(
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
     y0: fa.EdgeField[ta.wpfloat],

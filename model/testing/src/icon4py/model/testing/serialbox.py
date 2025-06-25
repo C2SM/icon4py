@@ -149,7 +149,9 @@ class IconGridSavepoint(IconSavepoint):
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(root, level)
+        self.global_grid_params = icon.GlobalGridParams.from_mean_cell_area(
+            self.mean_cell_area(), root=root, level=level
+        )
 
     def verts_vertex_lat(self):
         """vertex latituted"""
@@ -566,12 +568,10 @@ class IconGridSavepoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> grid_states.CellParams:
-        return grid_states.CellParams.from_global_num_cells(
+        return grid_states.CellParams(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
-            global_num_cells=self.global_grid_params.num_cells,
-            length_rescale_factor=1.0,
         )
 
 
@@ -636,17 +636,21 @@ class InterpolationSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)
