@@ -297,63 +297,13 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
 
 
-@pytest.mark.embedded_remap_error
+@pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "experiment",
+    [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT],
+)
 def test_compute_vertical_coordinate(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    interpolation_savepoint,
-    icon_grid,
-    experiment,
-    backend,
-):
-    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
-    vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
-    vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(dims.KDim),
-    )
-    vertical_geometry = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=vct_a,
-        vct_b=vct_b,
-    )
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
-        topography = topography_savepoint.topo_c()
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
-        topography = data_alloc.zero_field(
-            icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
-        )
-    else:
-        raise ValueError(f"Unsupported experiment: {experiment}")
-
-    geofac_n2s = interpolation_savepoint.geofac_n2s()
-
-    vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate(
-        vct_a=vct_a.ndarray,
-        topography=topography.ndarray,
-        geofac_n2s=geofac_n2s.ndarray,
-        cell_areas=cell_geometry.area.ndarray,
-        grid=icon_grid,
-        vertical_geometry=vertical_geometry,
-        backend=backend,
-        array_ns=xp,
-    )
-
-    assert helpers.dallclose(
-        data_alloc.as_numpy(vertical_coordinates_on_cell_khalf),
-        metrics_savepoint.z_ifc().asnumpy(),
-        atol=1e-13,
-    )
-
-
-@pytest.mark.embedded_remap_error
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT])
-def test_compute_vertical_coordinat_numpy(
     grid_savepoint,
     metrics_savepoint,
     topography_savepoint,
@@ -368,40 +318,46 @@ def test_compute_vertical_coordinat_numpy(
     vct_b = grid_savepoint.vct_b()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
+    specific_values = (
+        {"rayleigh_damping_height": 12500.0, "stretch_factor": 0.65, "lowest_layer_thickness": 20.0}
+        if experiment == dt_utils.REGIONAL_EXPERIMENT
+        else {
+            "rayleigh_damping_height": 45000.0,
+            "stretch_factor": 1.0,
+            "lowest_layer_thickness": 50.0,
+        }
+    )
+
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim),
-        flat_height=16000.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 16000.0,
-        rayleigh_damping_height=12500.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 45000.0,
-        htop_moist_proc=22500.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 22500.0,
-        maximal_layer_thickness=25000.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 25000.0,
-        stretch_factor=0.65 if experiment == dt_utils.REGIONAL_EXPERIMENT else 1.0,
-        lowest_layer_thickness=20.0 if experiment == dt_utils.REGIONAL_EXPERIMENT else 50.0,
+        flat_height=16000.0,
+        htop_moist_proc=22500.0,
+        maximal_layer_thickness=25000.0,
+        **specific_values,
     )
+
     vertical_geometry = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
     )
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
-    if experiment == dt_utils.REGIONAL_EXPERIMENT or experiment == dt_utils.GAUSS3D_EXPERIMENT:
+
+    if experiment in (dt_utils.REGIONAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT):
         topography = topography_savepoint.topo_c()
     elif experiment == dt_utils.GLOBAL_EXPERIMENT:
         topography = data_alloc.zero_field(
             icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
         )
-    else:
-        raise ValueError(f"Unsupported experiment: {experiment}")
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
-    vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate_numpy(
+    vertical_coordinates_on_half_levels = v_grid.compute_vertical_coordinate(
         vct_a=vct_a.ndarray,
         topography=topography.ndarray,
         cell_areas=cell_geometry.area.ndarray,
         geofac_n2s=geofac_n2s.ndarray,
         c2e2co=icon_grid.get_connectivity("C2E2CO").asnumpy(),
-        num_cells=icon_grid.num_cells,
-        num_levels=vertical_config.num_levels,
         nflatlev=vertical_geometry.nflatlev,
         model_top_height=model_top_height,
         SLEVE_decay_scale_1=4000.0,
@@ -416,7 +372,7 @@ def test_compute_vertical_coordinat_numpy(
     )
 
     assert helpers.dallclose(
-        data_alloc.as_numpy(vertical_coordinates_on_cell_khalf),
+        data_alloc.as_numpy(vertical_coordinates_on_half_levels),
         metrics_savepoint.z_ifc().asnumpy(),
         rtol=1e-9,
         atol=1e-13,

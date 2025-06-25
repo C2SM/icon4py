@@ -806,7 +806,7 @@ def test_factory_wgtfacq_e(
     ],
 )
 @pytest.mark.datatest
-def test_vertical_coordinates_on_cells_khalf(
+def test_vertical_coordinates_on_half_levels(
     grid_savepoint,
     metrics_savepoint,
     topography_savepoint,
@@ -824,9 +824,9 @@ def test_vertical_coordinates_on_cells_khalf(
         metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field_1 = factory.get(attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL)
+    field = factory.get(attrs.CELL_HEIGHT_ON_HALF_LEVEL)
     field_ref = metrics_savepoint.z_ifc()
-    assert test_helpers.dallclose(field_ref.asnumpy(), field_1.asnumpy(), rtol=1e-9)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
 @pytest.mark.level("integration")

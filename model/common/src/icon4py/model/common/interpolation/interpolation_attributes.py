@@ -25,7 +25,7 @@ E_FLX_AVG: Final[str] = "e_flux_average"
 POS_ON_TPLANE_E_X: Final[str] = "pos_on_tplane_e_x"
 POS_ON_TPLANE_E_Y: Final[str] = "pos_on_tplane_e_y"
 CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
-NUDGECOEFFS: Final[str] = "nudgecoeffs_e"
+NUDGECOEFFS_E: Final[str] = "nudging_coefficients_for_edges"
 RBF_VEC_COEFF_C1: Final[str] = "rbf_interpolation_coefficient_cell_1"
 RBF_VEC_COEFF_C2: Final[str] = "rbf_interpolation_coefficient_cell_2"
 RBF_VEC_COEFF_E: Final[str] = "rbf_interpolation_coefficient_edge"
@@ -41,9 +41,9 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="c_lin_e",
         dtype=ta.wpfloat,
     ),
-    NUDGECOEFFS: dict(
-        standard_name=NUDGECOEFFS,
-        long_name="nudgecoeffs_e",
+    NUDGECOEFFS_E: dict(
+        standard_name=NUDGECOEFFS_E,
+        long_name="nudging_coefficients_for_edges",
         units="",  # TODO (Yilu) : need to check unit
         dims=(dims.EdgeDim,),
         icon_var_name="nudgecoeffs_e",

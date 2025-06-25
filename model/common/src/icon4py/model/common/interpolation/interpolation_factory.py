@@ -99,7 +99,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry,))
 
     def _register_computed_fields(self):
-        nudgecoeffs_e = factory.ProgramFieldProvider(
+        nudging_coefficients_for_edges = factory.ProgramFieldProvider(
             func=common_metrics.compute_nudgecoeffs.with_backend(None),
             domain={
                 dims.EdgeDim: (
@@ -107,7 +107,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.END),
                 )
             },
-            fields={attrs.NUDGECOEFFS: attrs.NUDGECOEFFS},
+            fields={attrs.NUDGECOEFFS_E: attrs.NUDGECOEFFS_E},
             deps={
                 "refin_ctrl": "refinement_control_at_edges",
             },
@@ -120,7 +120,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "nudge_zone_width": self._config["nudge_zone_width"],
             },
         )
-        self.register_provider(nudgecoeffs_e)
+        self.register_provider(nudging_coefficients_for_edges)
 
         geofac_div = factory.EmbeddedFieldOperatorProvider(
             # needs to be computed on fieldview-embedded backend

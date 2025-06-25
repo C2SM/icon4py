@@ -328,7 +328,7 @@ def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend,
 def test_nudgecoeffs(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.nudgecoeff_e()
     factory = _get_interpolation_factory(backend, experiment, grid_file)
-    field = factory.get(attrs.NUDGECOEFFS)
+    field = factory.get(attrs.NUDGECOEFFS_E)
 
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
