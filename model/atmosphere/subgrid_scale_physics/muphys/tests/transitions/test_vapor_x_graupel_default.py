@@ -14,26 +14,44 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
+
 class TestVaporXGraupelDefault(StencilTest):
     PROGRAM = vapor_x_graupel
     OUTPUTS = ("exchange_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, p: np.ndarray, rho: np.ndarray, qg: np.ndarray, dvsw: np.ndarray, dvsi: np.ndarray, dvsw0: np.ndarray, dt: wpfloat, **kwargs) -> dict:
+    def reference(
+        grid,
+        t: np.ndarray,
+        p: np.ndarray,
+        rho: np.ndarray,
+        qg: np.ndarray,
+        dvsw: np.ndarray,
+        dvsi: np.ndarray,
+        dvsw0: np.ndarray,
+        dt: wpfloat,
+        **kwargs,
+    ) -> dict:
         return dict(exchange_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
     def input_data(self, grid):
-
         return dict(
-            t                = data_alloc.constant_field(grid, 278.026, dims.CellDim, dims.KDim, dtype=wpfloat),
-            p                = data_alloc.constant_field(grid, 95987.1, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho              = data_alloc.constant_field(grid, 1.20041, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg               = data_alloc.constant_field(grid, 2.056496e-16, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw             = data_alloc.constant_field(grid, -0.00234674, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsi             = data_alloc.constant_field(grid, -0.00261576, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw0            = data_alloc.constant_field(grid, -0.00076851, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dt               = 30.0,
-            exchange_rate    = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 278.026, dims.CellDim, dims.KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(grid, 95987.1, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.20041, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qg=data_alloc.constant_field(
+                grid, 2.056496e-16, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            dvsw=data_alloc.constant_field(
+                grid, -0.00234674, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            dvsi=data_alloc.constant_field(
+                grid, -0.00261576, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            dvsw0=data_alloc.constant_field(
+                grid, -0.00076851, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            dt=30.0,
+            exchange_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
-

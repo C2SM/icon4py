@@ -14,23 +14,38 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
+
 class TestTFromInternalEnergy(StencilTest):
     PROGRAM = T_from_internal_energy
     OUTPUTS = ("temperature",)
 
     @staticmethod
-    def reference(grid, u: np.ndarray, qv: np.ndarray, qliq: np.ndarray, qice: np.ndarray, rho: np.ndarray, dz: np.ndarray, **kwargs) -> dict:
+    def reference(
+        grid,
+        u: np.ndarray,
+        qv: np.ndarray,
+        qliq: np.ndarray,
+        qice: np.ndarray,
+        rho: np.ndarray,
+        dz: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(temperature=np.full(u.shape, 255.75599999999997))
 
     @pytest.fixture
     def input_data(self, grid):
-
         return dict(
-            u                = data_alloc.constant_field(grid, 38265357.270336017, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qv               = data_alloc.constant_field(grid, 0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qliq             = data_alloc.constant_field(grid, 1.63837e-20, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qice             = data_alloc.constant_field(grid, 1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho              = data_alloc.constant_field(grid, 0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dz               = data_alloc.constant_field(grid, 249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
-            temperature      = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            u=data_alloc.constant_field(
+                grid, 38265357.270336017, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qv=data_alloc.constant_field(grid, 0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qliq=data_alloc.constant_field(
+                grid, 1.63837e-20, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qice=data_alloc.constant_field(
+                grid, 1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            rho=data_alloc.constant_field(grid, 0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dz=data_alloc.constant_field(grid, 249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
+            temperature=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

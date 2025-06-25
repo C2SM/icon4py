@@ -14,6 +14,7 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
+
 class TestQsatIceRho(StencilTest):
     PROGRAM = qsat_ice_rho
     OUTPUTS = ("pressure",)
@@ -24,9 +25,8 @@ class TestQsatIceRho(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-
         return dict(
-            t                = data_alloc.constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho              = data_alloc.constant_field(grid, 1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
-            pressure         = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
+            pressure=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

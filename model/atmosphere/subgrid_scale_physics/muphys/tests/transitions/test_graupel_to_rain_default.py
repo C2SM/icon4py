@@ -14,22 +14,32 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
+
 class TestGraupelToRainDefault(StencilTest):
     PROGRAM = graupel_to_rain
     OUTPUTS = ("rain_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, p: np.ndarray, rho: np.ndarray, dvsw0: np.ndarray, qg: np.ndarray, **kwargs) -> dict:
+    def reference(
+        grid,
+        t: np.ndarray,
+        p: np.ndarray,
+        rho: np.ndarray,
+        dvsw0: np.ndarray,
+        qg: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(rain_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t       = data_alloc.constant_field(grid, 280.156, dims.CellDim, dims.KDim, dtype=wpfloat),
-            p       = data_alloc.constant_field(grid, 98889.4, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho     = data_alloc.constant_field(grid, 1.22804, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw0   = data_alloc.constant_field(grid, -0.00167867, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg      = data_alloc.constant_field(grid, 1.53968e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rain_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 280.156, dims.CellDim, dims.KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(grid, 98889.4, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.22804, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw0=data_alloc.constant_field(
+                grid, -0.00167867, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qg=data_alloc.constant_field(grid, 1.53968e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rain_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
-

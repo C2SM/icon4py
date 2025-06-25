@@ -20,18 +20,24 @@ class TestCloudToSnow(StencilTest):
     OUTPUTS = ("riming_snow_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, qc: np.ndarray, qs: np.ndarray, ns: np.ndarray, lam: np.ndarray, **kwargs) -> dict:
+    def reference(
+        grid,
+        t: np.ndarray,
+        qc: np.ndarray,
+        qs: np.ndarray,
+        ns: np.ndarray,
+        lam: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(riming_snow_rate=np.full(t.shape, 9.5431874564438999e-10))
 
     @pytest.fixture
     def input_data(self, grid):
-
         return dict(
-            t                = data_alloc.constant_field(grid, 256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc               = data_alloc.constant_field(grid, 3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs               = data_alloc.constant_field(grid, 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ns               = data_alloc.constant_field(grid, 3.37707e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            lam              = data_alloc.constant_field(grid, 8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.constant_field(grid, 3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(grid, 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=data_alloc.constant_field(grid, 3.37707e07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            lam=data_alloc.constant_field(grid, 8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
-

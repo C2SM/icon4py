@@ -14,21 +14,23 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
+
 class TestCloudToRain(StencilTest):
     PROGRAM = cloud_to_rain
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, qc: np.ndarray, qr: np.ndarray, nc: np.ndarray, **kwargs) -> dict:
+    def reference(
+        grid, t: np.ndarray, qc: np.ndarray, qr: np.ndarray, nc: np.ndarray, **kwargs
+    ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0045484481075162512))
 
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t                   = data_alloc.constant_field(grid, 267.25, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc                  = data_alloc.constant_field(grid, 5.52921e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr                  = data_alloc.constant_field(grid, 2.01511e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
-            nc                  = 100.0, 
-            conversion_rate     = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 267.25, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.constant_field(grid, 5.52921e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=data_alloc.constant_field(grid, 2.01511e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
+            nc=100.0,
+            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
-

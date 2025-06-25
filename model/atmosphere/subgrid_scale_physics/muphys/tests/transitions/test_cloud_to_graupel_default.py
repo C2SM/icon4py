@@ -20,16 +20,17 @@ class TestCloudToGraupelDefault(StencilTest):
     OUTPUTS = ("riming_graupel_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qg: np.ndarray, **kwargs) -> dict:
+    def reference(
+        grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qg: np.ndarray, **kwargs
+    ) -> dict:
         return dict(riming_graupel_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t                   = data_alloc.constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho                 = data_alloc.constant_field(grid, 1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc                  = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg                  = data_alloc.constant_field(grid, 1.03636e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_graupel_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qg=data_alloc.constant_field(grid, 1.03636e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_graupel_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
-

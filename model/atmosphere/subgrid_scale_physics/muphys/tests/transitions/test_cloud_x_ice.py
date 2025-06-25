@@ -14,21 +14,25 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
+
 class TestCloudXIce(StencilTest):
     PROGRAM = cloud_x_ice
     OUTPUTS = ("freezing_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, qc: np.ndarray, qi: np.ndarray, dt: wpfloat, **kwargs) -> dict:
+    def reference(
+        grid, t: np.ndarray, qc: np.ndarray, qi: np.ndarray, dt: wpfloat, **kwargs
+    ) -> dict:
         return dict(freezing_rate=np.full(t.shape, -1.5008166666666666e-08))
 
     @pytest.fixture
     def input_data(self, grid):
-
         return dict(
-            t             = data_alloc.constant_field(grid, 274.15, dims.CellDim, dims.KDim, dtype=wpfloat), # tmelt + 1.0
-            qc            = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi            = data_alloc.constant_field(grid, 4.50245e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dt            = 30.0,
-            freezing_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(
+                grid, 274.15, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),  # tmelt + 1.0
+            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(grid, 4.50245e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dt=30.0,
+            freezing_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

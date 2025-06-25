@@ -14,21 +14,23 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
+
 class TestCloudToGraupel(StencilTest):
     PROGRAM = cloud_to_graupel
     OUTPUTS = ("riming_graupel_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qg: np.ndarray, **kwargs) -> dict:
+    def reference(
+        grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qg: np.ndarray, **kwargs
+    ) -> dict:
         return dict(riming_graupel_rate=np.full(t.shape, 2.7054723496793982e-10))
 
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t                   = data_alloc.constant_field(grid, 256.983, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho                 = data_alloc.constant_field(grid, 0.909677, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc                  = data_alloc.constant_field(grid, 8.60101e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg                  = data_alloc.constant_field(grid, 4.11575e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_graupel_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 256.983, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 0.909677, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.constant_field(grid, 8.60101e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qg=data_alloc.constant_field(grid, 4.11575e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_graupel_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
-

@@ -14,22 +14,32 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
+
 class TestRainToVapor(StencilTest):
     PROGRAM = rain_to_vapor
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, rho: np.ndarray, qc: np.ndarray, qr: np.ndarray, dvsw: np.ndarray, dt: wpfloat, **kwargs) -> dict:
+    def reference(
+        grid,
+        t: np.ndarray,
+        rho: np.ndarray,
+        qc: np.ndarray,
+        qr: np.ndarray,
+        dvsw: np.ndarray,
+        dt: wpfloat,
+        **kwargs,
+    ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 2.8556697055499901e-19))
 
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t       = data_alloc.constant_field(grid, 258.542, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho     = data_alloc.constant_field(grid, 0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc      = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr      = data_alloc.constant_field(grid, 3.01332e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw    = data_alloc.constant_field(grid, -1.0e-10, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dt      = 30.0,
-            conversion_rate = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 258.542, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=data_alloc.constant_field(grid, 3.01332e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw=data_alloc.constant_field(grid, -1.0e-10, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dt=30.0,
+            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

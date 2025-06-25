@@ -20,18 +20,26 @@ class TestSnowToRainDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, p: np.ndarray, rho: np.ndarray, dvsw0: np.ndarray, qs: np.ndarray, **kwargs) -> dict:
+    def reference(
+        grid,
+        t: np.ndarray,
+        p: np.ndarray,
+        rho: np.ndarray,
+        dvsw0: np.ndarray,
+        qs: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 3.7268547760462804e-07))
 
     @pytest.fixture
     def input_data(self, grid):
-
         return dict(
-            t                = data_alloc.constant_field(grid, 275.83, dims.CellDim, dims.KDim, dtype=wpfloat),
-            p                = data_alloc.constant_field(grid, 80134.5, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho              = data_alloc.constant_field(grid, 1.04892, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw0            = data_alloc.constant_field(grid, 0.00258631, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs               = data_alloc.constant_field(grid, 1.47687e-6, dims.CellDim, dims.KDim, dtype=wpfloat),
-            conversion_rate  = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            t=data_alloc.constant_field(grid, 275.83, dims.CellDim, dims.KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(grid, 80134.5, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.04892, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw0=data_alloc.constant_field(
+                grid, 0.00258631, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qs=data_alloc.constant_field(grid, 1.47687e-6, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
-
