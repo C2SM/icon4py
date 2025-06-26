@@ -55,11 +55,11 @@ jobs:
               env:
                 NUM_PROCESSES: auto
               run: |
-                uv run nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
+                uvx nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
 
             - name: run nox session - stencil tests
               shell: bash
               env:
                   NUM_PROCESSES: auto
               run: |
-                uv run nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid
+                uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid
