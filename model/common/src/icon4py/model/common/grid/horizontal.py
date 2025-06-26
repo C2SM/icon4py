@@ -33,7 +33,6 @@
 
 
 """
-import dataclasses
 import enum
 import functools
 from abc import abstractmethod
@@ -455,10 +454,3 @@ class CellDomain(Domain):
             Zone.LATERAL_BOUNDARY_LEVEL_4,
             Zone.NUDGING,
         )
-
-
-@dataclasses.dataclass(frozen=True)
-class HorizontalGridSize:
-    num_vertices: int
-    num_edges: int
-    num_cells: int
