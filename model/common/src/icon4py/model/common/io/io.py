@@ -19,7 +19,7 @@ from typing_extensions import Required
 
 import icon4py.model.common.exceptions as exceptions
 from icon4py.model.common.components import monitor
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils, ugrid, writers
 
 
@@ -149,7 +149,7 @@ class IOMonitor(monitor.Monitor):
         self,
         config: IOConfig,
         vertical_size: v_grid.VerticalGrid,
-        horizontal_size: h_grid.HorizontalGridSize,
+        horizontal_size: base.HorizontalGridSize,
         grid_file_name: str,
         grid_id: uuid.UUID,
     ):
@@ -258,7 +258,7 @@ class FieldGroupMonitor(monitor.Monitor):
         self,
         config: FieldGroupIOConfig,
         vertical: int,
-        horizontal: h_grid.HorizontalGridSize,
+        horizontal: base.HorizontalGridSize,
         grid_id: uuid.UUID,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
         calendar: str = cf_utils.DEFAULT_CALENDAR,
@@ -302,7 +302,7 @@ class FieldGroupMonitor(monitor.Monitor):
     def _init_dataset(
         self,
         vertical_params: v_grid.VerticalGrid,
-        horizontal_size: h_grid.HorizontalGridSize,
+        horizontal_size: base.HorizontalGridSize,
     ) -> None:
         """Initialise the dataset with global attributes and dimensions.
 
