@@ -10,7 +10,6 @@ import pathlib
 import subprocess
 import tempfile
 
-import cffi
 import pytest
 
 from icon4py.tools.py2fgen._codegen import BindingsLibrary
@@ -23,11 +22,6 @@ def test_parse_functions_on_wrapper():
     functions = ["diffusion_init", "diffusion_run"]
     plugin = get_cffi_description(module_path, functions, "diffusion_plugin")
     assert isinstance(plugin, BindingsLibrary)
-
-
-@pytest.fixture
-def ffi():
-    return cffi.iFFI()
 
 
 def test_compile_and_run_cffi_plugin_from_C():
@@ -57,6 +51,7 @@ def test_compile_and_run_cffi_plugin_from_C():
         try:
             # Generate and compile the CFFI plugin, which creates lib{library_name}.so
             shared_library = f"{library_name}"
+
             generate_and_compile_cffi_plugin(library_name, c_header, python_wrapper, build_path)
             compiled_library_path = build_path / f"lib{shared_library}.so"
 
@@ -76,13 +71,14 @@ def test_compile_and_run_cffi_plugin_from_C():
                 [
                     "gcc",
                     "-o",
-                    build_path / "test_program",
+                    str(build_path / "test_program"),
                     str(main_program_path),
                     "-L" + str(build_path),
                     "-l" + shared_library,
                     "-Wl,-rpath=" + str(build_path),
                 ],
                 check=True,
+                capture_output=True,
             )
 
             # Execute the compiled program and capture its output
@@ -93,7 +89,8 @@ def test_compile_and_run_cffi_plugin_from_C():
 
             # Assert the output of test_function called within the C program
             assert output == "42", f"Expected '42', got '{output}'"
-
+        except subprocess.CalledProcessError as e:
+            pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
         except Exception as e:
             pytest.fail(
                 f"Unexpected error during plugin generation, compilation, or execution: {e}"
