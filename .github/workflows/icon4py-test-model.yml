@@ -62,4 +62,4 @@ jobs:
               env:
                   NUM_PROCESSES: auto
               run: |
-                uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=simple_grid
+                uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid
