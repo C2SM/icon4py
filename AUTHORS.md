@@ -21,6 +21,7 @@
 - Ong, Chia Rui. ETH Zurich - EXCLAIM
 - Paone, Edoardo. ETH Zurich - CSCS
 - Röthlin, Matthias. MeteoSwiss
+- Sawyer, William. ETH Zurich - CSCS
 - Stellio, Mikael. MeteoSwiss
 - Strassmann, David. ETH Zurich - EXCLAIM
 - Vogt, Hannes. ETH Zurich - CSCS
