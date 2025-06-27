@@ -27,14 +27,28 @@ BACKENDS: dict[str, gtx_backend.Backend | None] = {
 try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
-    # In icon4py we want to make an asynchronous SDFG call on gpu to allow overlapping
-    #   of gpu kernel execution with the Python driver code (same behavior as in GTFN).
-    # Besides, it is safe to assume that the field layout does not change
-    #   between multiple calls to a gt4py program, therefore we can make temporary
-    #   arrays persistent (thus, allocated at SDFG initialization) and we do not
-    #   need to update the array shape and strides on each SDFG call.
-    # We also enable loop-blocking on the vertical dimension for gpu target.
     def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
+        """Customize the dace backend with the following configuration.
+
+        async_sdfg_call:
+            In icon4py we want to make an asynchronous SDFG call on gpu to allow
+            overlapping of gpu kernel execution with the Python driver code.
+        make_persistent:
+            It is safe to assume that the field layout does not change between
+            multiple calls to a gt4py program, therefore we can make temporary
+            arrays persistent -- thus, allocated at SDFG initialization.
+        blocking_dim:
+            We enable loop-blocking on the vertical dimension for gpu target.
+        use_zero_origin:
+            The current design of icon4py relies on programs as entry points to
+            gt4py, and the fields that are passed as program arguments have
+            zero-based domain. Therefore, we can avoiding generating the start
+            symbol of the field range. This might change in the future, if field
+            operators will be used as entry point.
+
+        Returns:
+            A dace backend with custom configuration for the target device.
+        """
         return make_dace_backend(
             auto_optimize=True,
             cached=True,
@@ -43,6 +57,7 @@ try:
             make_persistent=True,
             blocking_dim=(dims.KDim if gpu else None),
             blocking_size=10,
+            use_zero_origin=True,
         )
 
     BACKENDS.update(
