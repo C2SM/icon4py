@@ -22,7 +22,7 @@ jobs:
       - name: Build documentation
         run: |
             cd model/atmosphere/dycore/docs/
-            uv run --project ../../../../ --only-dev make html
+            uv run --project ../../../../ make html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
