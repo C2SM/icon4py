@@ -105,7 +105,6 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
 ]:
     exner_at_cells_on_half_levels = (
         concat_where(
@@ -160,7 +159,6 @@ def _compute_perturbed_quantities_and_interpolation(
     return (
         perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels,
-        temporal_extrapolation_of_perturbed_exner,
         perturbed_exner_at_cells_on_model_levels,
         rho_at_cells_on_half_levels,
         exner_at_cells_on_half_levels,
@@ -174,12 +172,18 @@ def _compute_perturbed_quantities_and_interpolation(
 def _surface_computations(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
+    n_lev: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    temporal_extrapolation_of_perturbed_exner = _init_cell_kdim_field_with_zero_wp()
+    temporal_extrapolation_of_perturbed_exner = concat_where(
+        dims.KDim == n_lev,
+        _init_cell_kdim_field_with_zero_wp(),
+        temporal_extrapolation_of_perturbed_exner,
+    )
 
     exner_at_cells_on_half_levels = (
         _interpolate_to_surface(
@@ -398,7 +402,9 @@ def compute_perturbed_quantities_and_interpolation(
     _surface_computations(
         wgtfacq_c=wgtfacq_c,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         igradp_method=igradp_method,
+        n_lev = vertical_end - 1,
         out=(
             temporal_extrapolation_of_perturbed_exner,
             exner_at_cells_on_half_levels,
@@ -429,7 +435,6 @@ def compute_perturbed_quantities_and_interpolation(
         out=(
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels,
-            temporal_extrapolation_of_perturbed_exner,
             perturbed_exner_at_cells_on_model_levels,
             rho_at_cells_on_half_levels,
             exner_at_cells_on_half_levels,
