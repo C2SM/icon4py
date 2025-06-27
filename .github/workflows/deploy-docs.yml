@@ -23,7 +23,8 @@ jobs:
               python-version: "3.10"
       - name: Build documentation
         run: |
-            uv run --directory model/atmosphere/dycore/docs/ --only-dev  make html
+            cd model/atmosphere/dycore/docs/
+            uv run --project ../../../../ --only-dev make html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
