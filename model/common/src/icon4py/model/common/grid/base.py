@@ -179,7 +179,7 @@ class BaseGrid(ABC):
             _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
             skip_value = None
             neighbor_table = replace_skip_values(
-                dim, self._neighbor_tables[dim], array_ns=data_alloc.array_ns(self.config.on_gpu)
+                dim, self._neighbor_tables[dim], array_ns=data_alloc.array_ns(self.config.on_gpu), max_index=self.size[to_dim]
             )
         else:
             neighbor_table = self._neighbor_tables[dim]
@@ -251,7 +251,7 @@ class BaseGrid(ABC):
 
 
 def replace_skip_values(
-    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, array_ns: ModuleType = np
+    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, max_index: int, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.
@@ -288,6 +288,16 @@ def replace_skip_values(
     # TODO @halungge: neighbour tables are copied, when constructing the Connectivity: should the original be discarded from the grid?
     #   Would that work for the wrapper?
 
+    max_neighbor = neighbor_table.max()
+    if not max_neighbor < max_index:
+        neighbor_table[:] = array_ns.where(neighbor_table >= max_index, 0, neighbor_table)
+        _log.warning(f"{domain} contains index {max_neighbor} greater than the maximum {max_index}. Fixing...")
+        assert neighbor_table.max() < max_index
+    min_neighbor = neighbor_table.min()
+    _log.warning(f"{domain} contains smallest index {min_neighbor}.")
+    if not min_neighbor >= -1:
+        neighbor_table[:] = array_ns.where(neighbor_table < -1, 0, neighbor_table)
+        assert neighbor_table.min() >= -1
     if _has_skip_values_in_table(neighbor_table, array_ns):
         _log.info(f"Found invalid indices in {domain}. Replacing...")
         max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
