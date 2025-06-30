@@ -73,7 +73,7 @@ def test_topography_smoothing_numpy_with_serialized_data(
     topography = topography_savepoint.topo_c()
     topography_smoothed_verif_np = topography_savepoint.topo_smt_c().asnumpy()
 
-    topography_smoothed = topo.smooth_topography_numpy(
+    topography_smoothed = topo.smooth_topography(
         topography=topography.asnumpy(),
         cell_areas=cell_geometry.area.asnumpy(),
         geofac_n2s=geofac_n2s.asnumpy(),
