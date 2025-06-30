@@ -242,7 +242,7 @@ def _rain_to_graupel(
     TFRZ_RAIN = t_d.tmelt - 2.0
     A1 = 9.95e-5  # coefficient for immersion raindrop freezing: alpha_if
     B1 = 1.75  # coefficient for immersion raindrop freezing: a_if
-    C1 = 1.68  # coefficient for raindrop freezing
+    #  C1 assigned to 1.68 in original but not used there; coefficient for raindrop freezing
     C2 = 0.66  # coefficient for immersion raindrop freezing: a_if
     C3 = 1.0  # coefficient for immersion raindrop freezing: a_if
     C4 = 0.1  # coefficient for immersion raindrop freezing: a_if
@@ -442,8 +442,7 @@ def _vapor_x_ice(
 ) -> fa.CellKField[ta.wpfloat]:  # Rate of vapor deposition to ice
     AMI = 130.0  # Form factor for mass-size relation of cold ice
     B_EXP = -0.67  # exp. for conv. (-1 + 0.33) of ice mass to sfc area
-    A_FACT = 4.0 * AMI ** (-1.0 / 3.0)
-    #   A_FACT = (1.0/5.065797019100886) * 4.0
+    A_FACT = 4.0 * AMI ** (-1.0 / 3.0)  #  Is (1.0/5.065797019100886) * 4.0
     # TO-DO: see if this can be folded into the WHERE statement
     result = (A_FACT * eta) * rho * qi * power(mi, B_EXP) * dvsi
     result = where(

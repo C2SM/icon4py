@@ -67,13 +67,13 @@ def _precip(
     is_level_activated = is_level_activated | mask
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0 * flx
-    #    flx_partial = minimum(rho_x * vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent), flx_eff)
+    #   Inlined:  minimum(rho_x * vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent), flx_eff)
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
     if is_level_activated:
         update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
         update1 = (update0 * rho * vt + flx_partial) * 0.5  # flux
         rho_x = (update0 + q_kp1) * 0.5 * rho
-        #    update2 = vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent)           # vt
+        # Inlined:  vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent)
         update2 = vc * prefactor * power((rho_x + offset), exponent)  # vt
     else:
         update0 = q
@@ -109,8 +109,8 @@ def _temperature_update(
         )
         e_int = e_int - eflx
 
-        #   t       = T_from_internal_energy_scalar( min_k, e_int, qv, qliq, qice, rho, dz )
-        #   inlined in order to avoid scan_operator -> field_operator
+        #  Inlined:  T_from_internal_energy_scalar( min_k, e_int, qv, qliq, qice, rho, dz )
+        #  in order to avoid scan_operator -> field_operator
         qtot = qliq + qice + qv  # total water specific mass
         cv = (
             (t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
