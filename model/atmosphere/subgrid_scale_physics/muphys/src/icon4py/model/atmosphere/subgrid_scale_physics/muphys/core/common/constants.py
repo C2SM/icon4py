@@ -86,8 +86,8 @@ class idx:
     lqc = 4  # index for cloud
     lqv = 5  # index for vapor
 
-    qx_ind = [lqv, lqc, lqr, lqs, lqi, lqg]
-    qp_ind = [lqr, lqi, lqs, lqg]
+    qx_ind: list = [lqv, lqc, lqr, lqs, lqi, lqg]
+    qp_ind: list = [lqr, lqi, lqs, lqg]
 
     lrain = True  # switch for disabling rain
     lcold = True  # switch for disabling freezing processes
@@ -105,7 +105,7 @@ class idx:
     exponent_g = 0.217
     offset_g = 1.0e-08
 
-    params = [
+    params: list = [
         [14.58, 0.111, 1.0e-12],
         [1.25, 0.160, 1.0e-12],
         [57.80, 0.5 / 3.0, 1.0e-12],

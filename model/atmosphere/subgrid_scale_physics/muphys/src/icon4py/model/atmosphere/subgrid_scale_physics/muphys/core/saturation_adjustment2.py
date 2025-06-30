@@ -5,6 +5,18 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""
+This is an alternative implementation of saturation adjustment, attempting to
+bypass compilation limitations of the gtfn backend.  This implementation is less
+elegant than the main implementation in thermo.py.  Neither is currently used
+in the test code run_graupel_only -- the only implementation which has passed
+validation -- and the run_full_muphys (currently untested) uses the standard
+thermo.py implementation, in the hope that the gtfn compilation problems will
+disappear soon.
+"""
+
+
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import maximum, where
 
