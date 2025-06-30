@@ -351,7 +351,6 @@ graupel_run(
     offset_provider={"Koff": dims.KDim},
 )
 start_time = time.time()
-# noqa: B007
 for _x in range(int(args.itime)):
     graupel_run(
         k=k,
