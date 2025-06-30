@@ -65,8 +65,10 @@ def allocate_data(
 ) -> dict[str, gtx.Field]:
     _allocate_field = constructors.as_field.partial(allocator=backend)
     input_data = {
-        k: _allocate_field(domain=v.domain, data=v.ndarray)
-        if (not is_scalar_type(v) and (k not in ["domain", "out"]))
+        k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
+        if k == "out"
+        else _allocate_field(domain=v.domain, data=v.ndarray)
+        if not is_scalar_type(v) and k != "domain"
         else v
         for k, v in input_data.items()
     }
