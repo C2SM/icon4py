@@ -13,7 +13,7 @@ from typing import Callable
 
 import cffi
 
-from icon4py.tools.py2fgen import _codegen
+from icon4py.tools.py2fgen import _codegen, _utils
 
 
 def get_cffi_description(
@@ -37,7 +37,11 @@ def _get_function_descriptor(fun: Callable) -> _codegen.Func:
 
 
 def generate_and_compile_cffi_plugin(
-    library_name: str, c_header: str, python_wrapper: str, build_path: Path
+    library_name: str,
+    c_header: str,
+    python_wrapper: str,
+    build_path: Path,
+    rpath: str = _utils.get_prefix_lib_path(),
 ) -> None:
     """
     Create and compile a CFFI plugin.
@@ -56,7 +60,7 @@ def generate_and_compile_cffi_plugin(
     try:
         header_file_path = write_c_header(build_path, library_name, c_header)
         compile_cffi_plugin(
-            builder=configure_cffi_builder(c_header, library_name, header_file_path),
+            builder=configure_cffi_builder(c_header, library_name, header_file_path, rpath),
             python_wrapper=python_wrapper,
             build_path=str(build_path),
             library_name=library_name,
@@ -75,11 +79,16 @@ def write_c_header(build_path: Path, library_name: str, c_header: str) -> Path:
     return header_file_path
 
 
-def configure_cffi_builder(c_header: str, library_name: str, header_file_path: Path) -> cffi.FFI:
+def configure_cffi_builder(
+    c_header: str, library_name: str, header_file_path: Path, rpath: str = ""
+) -> cffi.FFI:
     """Configure and returns a CFFI FFI builder instance."""
     builder = cffi.FFI()
+    extra_link_args = [f"-Wl,-rpath={rpath}"] if rpath else []
     builder.embedding_api(c_header)
-    builder.set_source(library_name, f'#include "{header_file_path.name}"')
+    builder.set_source(
+        library_name, f'#include "{header_file_path.name}"', extra_link_args=extra_link_args
+    )
     return builder
 
 
