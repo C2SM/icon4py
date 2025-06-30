@@ -84,7 +84,7 @@ def deposition_factor(
 
 @gtx.field_operator
 def _fall_speed_scalar(
-    density: ta.wpfloat,  # Density of species
+    density: ta.wpfloat,
     prefactor: ta.wpfloat,
     offset: ta.wpfloat,
     exponent: ta.wpfloat,
@@ -105,7 +105,7 @@ def _fall_speed_scalar(
 
 @gtx.field_operator
 def _fall_speed(
-    density: fa.CellKField[ta.wpfloat],  # Density of species
+    density: fa.CellKField[ta.wpfloat],
     prefactor: ta.wpfloat,
     offset: ta.wpfloat,
     exponent: ta.wpfloat,
@@ -114,7 +114,7 @@ def _fall_speed(
     Compute the fall speed
 
     Args:
-        density:       Density of species                                                                                       
+        density:       Density of species 
         prefactor:     Multiplicative factor
         offset:        Linear offset to density
         exponent:      Exponent of power function

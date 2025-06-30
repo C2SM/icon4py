@@ -1,3 +1,4 @@
+
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -14,13 +15,26 @@ from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 @gtx.field_operator
 def _T_from_internal_energy(
-    u: fa.CellKField[ta.wpfloat],  # Internal energy (extensive)
-    qv: fa.CellKField[ta.wpfloat],  # Water vapor specific humidity
-    qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
-    qice: fa.CellKField[ta.wpfloat],  # Specific mass of solid phases
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
-) -> fa.CellKField[ta.wpfloat]:  # Temperature
+    u: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    qliq: fa.CellKField[ta.wpfloat],
+    qice: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    dz: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the temperature from the internal energy
+
+    Args:
+        u:                  Internal energy (extensive)
+        qv:                 Water vapor specific humidity
+        qliq:               Specific mass of liquid phases
+        qice:               Specific mass of solid phases
+        rho:                Ambient density
+        dz:                 Extent of grid cell
+
+    Return:                 Temperature
+    """
     qtot = qliq + qice + qv  # total water specific mass
     cv = (
         (t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
@@ -44,13 +58,26 @@ def T_from_internal_energy(
 
 @gtx.field_operator
 def _T_from_internal_energy_scalar(
-    u: ta.wpfloat,  # Internal energy (extensive)
-    qv: ta.wpfloat,  # Water vapor specific humidity
-    qliq: ta.wpfloat,  # Specific mass of liquid phases
-    qice: ta.wpfloat,  # Specific mass of solid phases
-    rho: ta.wpfloat,  # Ambient density
-    dz: ta.wpfloat,  # Extent of grid cell
-) -> ta.wpfloat:  # Temperature
+    u: ta.wpfloat,
+    qv: ta.wpfloat,
+    qliq: ta.wpfloat,
+    qice: ta.wpfloat,
+    rho: ta.wpfloat,
+    dz: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Compute the temperature from the internal energy (scalar version callable from scan_operator)
+
+    Args:
+        u:                  Internal energy (extensive)
+        qv:                 Water vapor specific humidity
+        qliq:               Specific mass of liquid phases
+        qice:               Specific mass of solid phases
+        rho:                Ambient density
+        dz:                 Extent of grid cell
+
+    Return:                 Temperature
+    """
     qtot = qliq + qice + qv  # total water specific mass
     cv = (
         (t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
@@ -74,13 +101,26 @@ def T_from_internal_energy_scalar(
 
 @gtx.field_operator
 def _internal_energy(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    qv: fa.CellKField[ta.wpfloat],  # Specific mass of vapor
-    qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
-    qice: fa.CellKField[ta.wpfloat],  # Specific mass of solid phases
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
-) -> fa.CellKField[ta.wpfloat]:  # Internal energy
+    t: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    qliq: fa.CellKField[ta.wpfloat],
+    qice: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    dz: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the internal energy from the temperature
+
+    Args:
+        t:                 Temperature
+        qv:                Specific mass of vapor
+        qliq:              Specific mass of liquid phases
+        qice:              Specific mass of solid phases
+        rho:               Ambient density
+        dz:                Extent of grid cell
+
+    Result:                Internal energy
+    """
     qtot = qliq + qice + qv
     cv = t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice
 
@@ -102,9 +142,18 @@ def internal_energy(
 
 @gtx.field_operator
 def _qsat_ice_rho(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Density
-) -> fa.CellKField[ta.wpfloat]:  # Pressure
+    t: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the Qsat pressure due to ice
+
+    Args:
+        t:                  Temperature
+        rho:                Density
+
+    Result:                 Pressure
+    """
     C1ES = 610.78
     C3IES = 21.875
     C4IES = 7.66
@@ -123,9 +172,18 @@ def qsat_ice_rho(
 
 @gtx.field_operator
 def _qsat_rho(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Density
-) -> fa.CellKField[ta.wpfloat]:  # Pressure
+    t: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the standard Qsat pressure
+
+    Args:
+        t:                  Temperature
+        rho:                Density
+
+    Result:                 Pressure
+    """
     C1ES = 610.78
     C3LES = 17.269
     C4LES = 35.86
@@ -144,8 +202,16 @@ def qsat_rho(
 
 @gtx.field_operator
 def _qsat_rho_tmelt(
-    rho: fa.CellKField[ta.wpfloat],  # Density
-) -> fa.CellKField[ta.wpfloat]:  # Pressure
+    rho: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the Qsat pressure at t.melt
+
+    Args:
+        rho:                Density
+
+    Result:                 Pressure
+    """
     C1ES = 610.78
 
     return C1ES / (rho * t_d.rv * t_d.tmelt)
@@ -161,9 +227,18 @@ def qsat_rho_tmelt(
 
 @gtx.field_operator
 def _dqsatdT_rho(
-    qs: fa.CellKField[ta.wpfloat],  # Saturation vapor pressure (over liquid)
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-) -> fa.CellKField[ta.wpfloat]:  # derivative d(qsat_rho)/dT
+    qs: fa.CellKField[ta.wpfloat],
+    t: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the derivative of saturation vapor pressure (over liquid)
+
+    Args:
+        qs:                 Saturation vapor pressure (over liquid)
+        t:                  Temperature
+
+    Result:                 Derivative d(qsat_rho)/dT
+    """
     C3LES = 17.269
     C4LES = 35.86
     C5LES = C3LES * (t_d.tmelt - C4LES)
@@ -182,8 +257,16 @@ def dqsatdT_rho(
 
 @gtx.field_operator
 def _sat_pres_ice(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-) -> fa.CellKField[ta.wpfloat]:  # Pressure
+    t: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the saturation pressure over ice
+
+    Args:
+        t:                    Temperature
+
+    Result:                   Saturation pressure
+    """
     C1ES = 610.78
     C3IES = 21.875
     C4IES = 7.66
@@ -201,8 +284,16 @@ def sat_pres_ice(
 
 @gtx.field_operator
 def _sat_pres_water(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-) -> fa.CellKField[ta.wpfloat]:  # Pressure
+    t: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the saturation pressure over water
+
+    Args:
+        t:                    Temperature
+
+    Result:                   Saturation pressure
+    """
     C1ES = 610.78
     C3LES = 17.269
     C4LES = 35.86
@@ -227,6 +318,19 @@ def _newton_raphson(
     cvc: fa.CellKField[ta.wpfloat],
     ue: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute a Newton-Raphson iteration on the temperature
+
+    Args:
+        Tx:                    Temperature
+        rho:                   Density containing dry air and water constituents
+        qve:                   Specific humidity
+        qre:                   Specific rain water
+        cvc:                   Constant volume precalculation
+        ue:                    Energy
+
+    Result:                    Revised temperature
+    """
     qx = _qsat_rho(Tx, rho)
     dqx = _dqsatdT_rho(qx, Tx)
     qcx = qve + qce - qx
@@ -239,18 +343,35 @@ def _newton_raphson(
 
 @gtx.field_operator
 def _saturation_adjustment(
-    te: fa.CellKField[ta.wpfloat],  # Temperature
-    qve: fa.CellKField[ta.wpfloat],  # Specific humidity
-    qce: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-    qre: fa.CellKField[ta.wpfloat],  # Specific rain water
-    qti: fa.CellKField[ta.wpfloat],  # Specific mass of all ice species (total-ice)
-    rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
+    te: fa.CellKField[ta.wpfloat],
+    qve: fa.CellKField[ta.wpfloat],
+    qce: fa.CellKField[ta.wpfloat],
+    qre: fa.CellKField[ta.wpfloat],
+    qti: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[bool],
-]:  # Internal energy
+]:
+    """
+    Compute the saturation adjustment which revises internal energy and water contents
+
+    Args:
+        Tx:                    Temperature
+        qve:                   Specific humidity
+        qce:                   Specific cloud water content
+        qre:                   Specific rain water
+        qti:                   Specific mass of all ice species (total-ice)
+        rho:                   Density containing dry air and water constituents
+
+    Result:                    Tuple containing
+                               - Revised temperature
+                               - Revised specific cloud water content
+                               - Revised specific vapor content
+                               - Mask specifying where qce+qve less than holding capacity
+    """
     qt = qve + qce + qre + qti
     cvc = t_d.cvd * (1.0 - qt) + t_d.clw * qre + g_ct.ci * qti
     cv = cvc + t_d.cvv * qve + t_d.clw * qce
