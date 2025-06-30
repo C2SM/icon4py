@@ -63,6 +63,7 @@ MASK_HDIFF: Final[str] = "mask_hdiff"
 ZD_DIFFCOEF_DSL: Final[str] = "zd_diffcoef_dsl"
 ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
 ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
+CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
 
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -410,5 +411,12 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="zd_vertoffset_dsl",
         dtype=ta.wpfloat,
     ),
+    CELL_HEIGHT_ON_HALF_LEVEL: dict(
+        standard_name=CELL_HEIGHT_ON_HALF_LEVEL,
+        long_name="vertical_coordinates_on_half_levels",
+        units="m",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="z_ifc",
+        dtype=ta.wpfloat,
+    ),
 }
-CELL_HEIGHT_ON_INTERFACE_LEVEL = "height_on_interface_levels"

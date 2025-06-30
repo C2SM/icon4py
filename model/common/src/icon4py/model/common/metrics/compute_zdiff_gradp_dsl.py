@@ -19,7 +19,7 @@ def compute_zdiff_gradp_dsl(
     c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     flat_idx: data_alloc.NDArray,
-    z_ifc_sliced: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
@@ -27,7 +27,7 @@ def compute_zdiff_gradp_dsl(
 ) -> data_alloc.NDArray:
     nedges = e2c.shape[0]
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
-    z_aux1 = array_ns.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
     zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (

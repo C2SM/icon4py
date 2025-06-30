@@ -652,7 +652,7 @@ def _compute_downward_extrapolation_distance(
 def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     z_mc: fa.CellKField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_ifc_sliced: fa.CellField[wpfloat],
+    topography: fa.CellField[wpfloat],
     e_owner_mask: fa.EdgeField[bool],
     flat_idx_max: fa.EdgeField[gtx.int32],
     e_lev: fa.EdgeField[gtx.int32],
@@ -668,7 +668,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     Args:
         z_mc: height of cells [m]
         c_lin_e:  interpolation coefficient from cells to edges
-        z_ifc_sliced: ground level height of cells [m]
+        topography: ground level height of cells [m]
         e_owner_mask: mask edges owned by PE.
         flat_idx_max: level from where edge levels start to become flat
         e_lev: edge indices
@@ -685,7 +685,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
-    downward_distance = _compute_downward_extrapolation_distance(z_ifc_sliced)
+    downward_distance = _compute_downward_extrapolation_distance(topography)
     extrapolation_distance = concat_where(
         (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
         downward_distance,
@@ -708,7 +708,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
 def compute_pressure_gradient_downward_extrapolation_mask_distance(
     z_mc: fa.CellKField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
-    z_ifc_sliced: fa.CellField[wpfloat],
+    topography: fa.CellField[wpfloat],
     e_owner_mask: fa.EdgeField[bool],
     flat_idx_max: fa.EdgeField[gtx.int32],
     e_lev: fa.EdgeField[gtx.int32],
@@ -725,7 +725,7 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
     _compute_pressure_gradient_downward_extrapolation_mask_distance(
         z_mc=z_mc,
         c_lin_e=c_lin_e,
-        z_ifc_sliced=z_ifc_sliced,
+        topography=topography,
         flat_idx_max=flat_idx_max,
         e_owner_mask=e_owner_mask,
         e_lev=e_lev,
