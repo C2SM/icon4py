@@ -10,14 +10,14 @@ include:
   rules:
     - if: $COMPONENT == 'dycore' || $COMPONENT == 'diffusion'
       variables:
-        SLURM_TIMELIMIT: '01:30:00'
+        SLURM_TIMELIMIT: '00:20:00'
+    - when: on_success
   parallel:
     matrix:
     - COMPONENT: [diffusion, dycore, microphysics, common, driver]
       BACKEND: [gtfn_gpu]
       GRID: [simple_grid, icon_grid]
-  rules:
-    - when: on_success
+
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
