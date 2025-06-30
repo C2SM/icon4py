@@ -6,8 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 class graupel_ct:
     qmin = 1.0e-15  # threshold for computation
+
 
 class idx:
     prefactor_r = 14.58
