@@ -288,6 +288,7 @@ def test_diffusion_wrapper_granule_inputs(
         assert captured_kwargs["dtime"] == expected_dtime
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
