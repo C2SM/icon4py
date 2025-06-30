@@ -88,14 +88,8 @@ class Data:
         self.prs_gsp = np.zeros(self.ncells, np.float64)
         self.prg_gsp = np.zeros(self.ncells, np.float64)
         self.pre_gsp = np.zeros(self.ncells, np.float64)
-        # allocate dz:
-        #        self.dz        = np.zeros((self.ncells, self.nlev), np.float64)
-        # calc dz:
         self.dz = calc_dz(self.nlev, self.z)
         self.mask_out = np.full((self.ncells, self.nlev), True)
-
-
-#        py_graupel.calc_dz(z=self.z, dz=self.dz, ncells=self.ncells, nlev=self.nlev)
 
 
 def calc_dz(ksize, z):
@@ -127,9 +121,6 @@ def write_fields(
     pre_gsp,
 ):
     ncfile = netCDF4.Dataset(output_filename, mode="w")
-    ncells_dim = ncfile.createDimension("ncells", ncells)
-    height_dim = ncfile.createDimension("height", nlev)
-    height1_dim = ncfile.createDimension("height1", 1)
     ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
     hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
     clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
@@ -165,13 +156,7 @@ args = get_args()
 set_lib_path(args.ldir)
 sys.setrecursionlimit(10**4)
 
-# import py_graupel
-
 data = Data(args)
-
-
-# grpl = py_graupel.Graupel()
-# grpl.initialize()
 
 t_out = gtx.as_field(
     (
@@ -366,6 +351,7 @@ graupel_run(
     offset_provider={"Koff": dims.KDim},
 )
 start_time = time.time()
+# noqa: B007
 for x in range(int(args.itime)):
     graupel_run(
         k=k,
@@ -466,20 +452,6 @@ data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
 data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
 data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
 data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
-
-# if args.with_sat_adj:
-#     py_graupel.saturation_adjustment(
-#         ncells=data.ncells,
-#         nlev=data.nlev,
-#         ta=data.t,
-#         qv=data.qv,
-#         qc=data.qc,
-#         qr=data.qr,
-#         total_ice=data.qg + data.qs + data.qi,
-#         rho=data.rho,
-#     )
-
-# grpl.finalize()
 
 write_fields(
     args.output_file,
