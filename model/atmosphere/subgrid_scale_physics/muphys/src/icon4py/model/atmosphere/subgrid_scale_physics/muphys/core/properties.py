@@ -14,10 +14,20 @@ from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 @gtx.field_operator
 def _deposition_auto_conversion(
-    qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
-    m_ice: fa.CellKField[ta.wpfloat],  # Ice crystal mass
-    ice_dep: fa.CellKField[ta.wpfloat],  # Rate of ice deposition (some to snow)
-) -> fa.CellKField[ta.wpfloat]:  # Conversion rate
+    qi: fa.CellKField[ta.wpfloat],
+    m_ice: fa.CellKField[ta.wpfloat],
+    ice_dep: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Perform the automatic conversion of deposition
+
+    Args:
+        qi:       Ice specific mass
+        m_ice:    Ice crystal mass
+        ice_dep:  Rate of ice deposition (some to snow)
+
+    Result:       Conversion rate
+    """
     M0_S = 3.0e-9  # Initial mass of snow crystals
     B_DEP = 0.666666666666666667  # Exponent
     XCRIT = 1.0  # Critical threshold parameter
