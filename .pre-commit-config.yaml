@@ -9,7 +9,8 @@ minimum_pre_commit_version: 3.8.0
 files: |
   (?x)^(
       model/.*|
-      tools/.*
+      tools/.*|
+      .github/.*.py
   )$
 
 repos:
