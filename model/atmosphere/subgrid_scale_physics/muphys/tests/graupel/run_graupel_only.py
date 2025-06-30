@@ -352,7 +352,7 @@ graupel_run(
 )
 start_time = time.time()
 # noqa: B007
-for x in range(int(args.itime)):
+for _x in range(int(args.itime)):
     graupel_run(
         k=k,
         last_lev=ksize - 1,

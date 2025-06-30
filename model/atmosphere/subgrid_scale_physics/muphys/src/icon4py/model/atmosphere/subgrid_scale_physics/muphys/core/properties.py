@@ -63,7 +63,7 @@ def _deposition_factor(
 
     Result:      Deposition factor
     """
-    
+
     KAPPA = 2.40e-2  # Thermal conductivity of dry air
     B = 1.94  # Exponent
     A = t_d.als * t_d.als / (KAPPA * t_d.rv)  # TBD
@@ -93,7 +93,7 @@ def _fall_speed_scalar(
     Compute the scalar fall speed (can be used in scan operator)
 
     Args:
-        density:       Density of species                                                                                       
+        density:       Density of species
         prefactor:     Multiplicative factor
         offset:        Linear offset to density
         exponent:      Exponent of power function
@@ -114,7 +114,7 @@ def _fall_speed(
     Compute the fall speed
 
     Args:
-        density:       Density of species 
+        density:       Density of species
         prefactor:     Multiplicative factor
         offset:        Linear offset to density
         exponent:      Exponent of power function

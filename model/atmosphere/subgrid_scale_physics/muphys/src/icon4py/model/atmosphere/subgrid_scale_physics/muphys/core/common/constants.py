@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+# noqa: RUF012
 
 class thermodyn:
     # Thermodynamic constants for the dry and moist atmosphere

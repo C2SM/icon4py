@@ -293,7 +293,7 @@ def _rain_to_vapor(
 ) -> fa.CellKField[ta.wpfloat]:  # Conversion rate from graupel to rain
     B1_RV = 0.16667  # exponent in power-law relation for mass density
     B2_RV = 0.55555  # exponent for qr*rho
-    C1_RV = 0.61  # coefficient for tc^0 in quadratic expansion 
+    C1_RV = 0.61  # coefficient for tc^0 in quadratic expansion
     C2_RV = -0.0163  # coefficient of tc^1 in quadratic expansion
     C3_RV = 1.111e-4  # coefficient of tc^2 in quadratic expansion
     A1_RV = 1.536e-3  # coefficient 1 in qr reconstruction

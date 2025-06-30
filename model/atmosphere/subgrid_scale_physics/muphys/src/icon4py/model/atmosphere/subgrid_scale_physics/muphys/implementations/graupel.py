@@ -67,13 +67,13 @@ def _precip(
     is_level_activated = is_level_activated | mask
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0 * flx
-    #   Inlined:  minimum(rho_x * vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent), flx_eff)
+    #   Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
     if is_level_activated:
         update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
         update1 = (update0 * rho * vt + flx_partial) * 0.5  # flux
         rho_x = (update0 + q_kp1) * 0.5 * rho
-        # Inlined:  vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent)
+        # Inlined calculation using _fall_speed_scalar
         update2 = vc * prefactor * power((rho_x + offset), exponent)  # vt
     else:
         update0 = q
@@ -109,7 +109,7 @@ def _temperature_update(
         )
         e_int = e_int - eflx
 
-        #  Inlined:  T_from_internal_energy_scalar( min_k, e_int, qv, qliq, qice, rho, dz )
+        #  Inlined calculation using T_from_internal_energy_scalar
         #  in order to avoid scan_operator -> field_operator
         qtot = qliq + qice + qv  # total water specific mass
         cv = (
