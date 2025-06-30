@@ -38,7 +38,7 @@ try:
             multiple calls to a gt4py program, therefore we can make temporary
             arrays persistent -- thus, allocated at SDFG initialization.
         blocking_dim:
-            We enable loop-blocking on the vertical dimension for gpu target.
+            TODO(edopao): enable loop-blocking on the vertical dimension for gpu target.
         use_zero_origin:
             The current design of icon4py relies on programs as entry points to
             gt4py, and the fields that are passed as program arguments have
@@ -55,7 +55,7 @@ try:
             gpu=gpu,
             async_sdfg_call=True,
             make_persistent=True,
-            blocking_dim=(dims.KDim if gpu else None),
+            blocking_dim=None,
             blocking_size=10,
             use_zero_origin=True,
         )
