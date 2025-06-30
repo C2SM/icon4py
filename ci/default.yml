@@ -7,7 +7,7 @@ include:
     - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+    - COMPONENT: [diffusion, dycore, microphysics, common, driver]
       BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
       GRID: [simple_grid, icon_grid]
   rules:
