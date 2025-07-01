@@ -14,11 +14,22 @@ from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 @gtx.field_operator
 def _cloud_to_graupel(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
-    qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
-) -> fa.CellKField[ta.wpfloat]:  # Return: Riming graupel rate
+    t: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qg: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from cloud to graupel
+
+    Args:
+        t:                  Temperature
+        rho:                Ambient density
+        qc:                 Cloud specific mass
+        qg:                 Graupel specific mass
+
+    Return:                 Conversion rate
+    """
     A_RIM = 4.43
     B_RIM = 0.94878
     return where(
@@ -41,11 +52,22 @@ def cloud_to_graupel(
 
 @gtx.field_operator
 def _cloud_to_rain(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
-    qr: fa.CellKField[ta.wpfloat],  # Rain water specific mass
-    nc: ta.wpfloat,  # Cloud water number concentration
-) -> fa.CellKField[ta.wpfloat]:  # Return: Riming graupel rate
+    t: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qr: fa.CellKField[ta.wpfloat],
+    nc: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from cloud to rain
+
+    Args:
+        t:                  Temperature
+        qc:                 Cloud specific mass
+        qr:                 Rain water specific mass
+        nc:                 Cloud water number concentration
+
+    Return:                 Conversion rate
+    """
     QMIN_AC = 1.0e-6  # threshold for auto conversion
     TAU_MAX = 0.90e0  # maximum allowed value of tau
     TAU_MIN = 1.0e-30  # minimum allowed value of tau
@@ -80,12 +102,24 @@ def cloud_to_rain(
 
 @gtx.field_operator
 def _cloud_to_snow(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
-    qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
-    ns: fa.CellKField[ta.wpfloat],  # Snow number
-    lam: fa.CellKField[ta.wpfloat],  # Snow slope parameter (lambda)
-) -> fa.CellKField[ta.wpfloat]:  # Return: Riming snow rate
+    t: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+    ns: fa.CellKField[ta.wpfloat],
+    lam: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from cloud to snow
+
+    Args:
+        t:                  Temperature
+        qc:                 Cloud specific mass
+        qs:                 Snow specific mass
+        ns:                 Snow number
+        lam:                Snow slope parameter (lambda)
+
+    Return:                 Conversion rate
+    """
     ECS = 0.9
     B_RIM = -(g_ct.v1s + 3.0)
     C_RIM = 2.61 * ECS * g_ct.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
@@ -110,11 +144,22 @@ def cloud_to_snow(
 
 @gtx.field_operator
 def _cloud_x_ice(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
-    qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
-    dt: ta.wpfloat,  # time step
-) -> fa.CellKField[ta.wpfloat]:  # Homogeneous freezing rate
+    t: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qi: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from cloud to ice
+
+    Args:
+        t:                  Temperature
+        qc:                 Cloud specific mass
+        qi:                 Ice specific mass
+        dt:                 Time step
+
+    Return:                 Freezing rate
+    """
     result = where((qc > g_ct.qmin) & (t < g_ct.tfrz_hom), qc / dt, 0.0)
     result = where((qi > g_ct.qmin) & (t > t_d.tmelt), -qi / dt, result)
     return result
@@ -133,12 +178,24 @@ def cloud_x_ice(
 
 @gtx.field_operator
 def _graupel_to_rain(
-    t: fa.CellKField[ta.wpfloat],  # Ambient temperature
-    p: fa.CellKField[ta.wpfloat],  # Ambient pressure
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
-    qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
-) -> fa.CellKField[ta.wpfloat]:  # Return: rain rate
+    t: fa.CellKField[ta.wpfloat],
+    p: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    dvsw0: fa.CellKField[ta.wpfloat],
+    qg: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from graupel to rain
+
+    Args:
+        t:                  Temperature
+        p:                  Ambient pressure
+        rho:                Ambient density
+        dvsw0:              qv-qsat_water(T0)
+        qg:                 Graupel specific mass 
+
+    Return:                 Conversion rate
+    """
     A_MELT = g_ct.tx - 389.5  # melting prefactor
     B_MELT = 0.6  # melting exponent
     C1_MELT = 12.31698  # Constants in melting formula
@@ -164,12 +221,24 @@ def graupel_to_rain(
 
 @gtx.field_operator
 def _ice_to_graupel(
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    qr: fa.CellKField[ta.wpfloat],  # Rain specific mass
-    qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
-    qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
-    sticking_eff: fa.CellKField[ta.wpfloat],  # Sticking efficiency
-) -> fa.CellKField[ta.wpfloat]:  # Aggregation of ice by graupel
+    rho: fa.CellKField[ta.wpfloat],
+    qr: fa.CellKField[ta.wpfloat],
+    qg: fa.CellKField[ta.wpfloat],
+    qi: fa.CellKField[ta.wpfloat],
+    sticking_eff: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from ice to graupel
+
+    Args:
+        rho:                Ambient density
+        qr:                 Rain specific mass 
+        qg:                 Graupel specific mass 
+        qi:                 Ice specific mass 
+        sticking_eff:       Sticking efficiency
+
+    Return:                 Conversion rate
+    """
     A_CT = 1.72  # (15/32)*(PI**0.5)*(EIR/RHOW)*V0R*AR**(1/8)
     B_CT = 0.875  # Exponent = 7/8
     C_AGG_CT = 2.46
@@ -199,11 +268,22 @@ def ice_to_graupel(
 
 @gtx.field_operator
 def _ice_to_snow(
-    qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
-    ns: fa.CellKField[ta.wpfloat],  # Snow number
-    lam: fa.CellKField[ta.wpfloat],  # Snow intercept parameter
-    sticking_eff: fa.CellKField[ta.wpfloat],  # Sticking efficiency
-) -> fa.CellKField[ta.wpfloat]:  # Conversion rate of ice to snow
+    qi: fa.CellKField[ta.wpfloat],
+    ns: fa.CellKField[ta.wpfloat],
+    lam: fa.CellKField[ta.wpfloat],
+    sticking_eff: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from ice to snow
+
+    Args:
+        qi:                 Ice specific mass 
+        ns:                 Snow number
+        lam:                Snow intercept parameter
+        sticking_eff:       Sticking efficiency
+
+    Return:                 Conversion rate
+    """
     QI0 = 0.0  # Critical ice required for autoconversion
     C_IAU = 1.0e-3  # Coefficient of auto conversion
     C_AGG = 2.61 * g_ct.v0s  # Coeff of aggregation (2.610 = pi*gam(v1s+3)/4)
@@ -229,16 +309,32 @@ def ice_to_snow(
 
 @gtx.field_operator
 def _rain_to_graupel(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
-    qr: fa.CellKField[ta.wpfloat],  # Specific humidity of rain
-    qi: fa.CellKField[ta.wpfloat],  # Ice specific mass
-    qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
-    mi: fa.CellKField[ta.wpfloat],  # Ice crystal mass
-    dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water (T)
-    dt: ta.wpfloat,  # time step
-) -> fa.CellKField[ta.wpfloat]:  # Conversion rate from graupel to rain
+    t: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qr: fa.CellKField[ta.wpfloat],
+    qi: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+    mi: fa.CellKField[ta.wpfloat],
+    dvsw: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from rain to graupel
+
+    Args:
+        t:                  Temperature
+        rho:                Ambient density
+        qc:                 Cloud specific mass
+        qr:                 Rain specific mass
+        qi:                 Ice specific mass
+        qs:                 Snow specific mass
+        mi:                 Ice crystal mass
+        dvsw:               qv-qsat_water (T)
+        dt:                 Time step
+
+    Return:                 Conversion rate
+    """
     TFRZ_RAIN = t_d.tmelt - 2.0
     A1 = 9.95e-5  # coefficient for immersion raindrop freezing: alpha_if
     B1 = 1.75  # coefficient for immersion raindrop freezing: a_if
@@ -284,13 +380,26 @@ def rain_to_graupel(
 
 @gtx.field_operator
 def _rain_to_vapor(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    qc: fa.CellKField[ta.wpfloat],  # Cloud-specific humidity
-    qr: fa.CellKField[ta.wpfloat],  # Rain-specific humidity
-    dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water (T)
-    dt: ta.wpfloat,  # time step
-) -> fa.CellKField[ta.wpfloat]:  # Conversion rate from graupel to rain
+    t: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qr: fa.CellKField[ta.wpfloat],
+    dvsw: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from rain to vapor
+
+    Args:
+        t:                  Temperature
+        rho:                Ambient density
+        qc:                 Cloud specific mass
+        qr:                 Rain specific mass
+        dvsw:               qv-qsat_water (T)
+        dt:                 Time step
+
+    Return:                 Conversion rate
+    """
     B1_RV = 0.16667  # exponent in power-law relation for mass density
     B2_RV = 0.55555  # exponent for qr*rho
     C1_RV = 0.61  # coefficient for tc^0 in quadratic expansion
@@ -328,11 +437,22 @@ def rain_to_vapor(
 
 @gtx.field_operator
 def _snow_to_graupel(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
-    qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
-) -> fa.CellKField[ta.wpfloat]:  # Return: Riming snow rate
+    t: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from snow to graupel
+
+    Args:
+        t:                  Temperature
+        rho:                Ambient density
+        qc:                 Cloud specific mass
+        qs:                 Snow specific mass
+
+    Return:                 Conversion rate
+    """
     A_RIM_CT = 0.5  # Constants in riming formula
     B_RIM_CT = 0.75
     return where(
@@ -355,12 +475,24 @@ def snow_to_graupel(
 
 @gtx.field_operator
 def _snow_to_rain(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    p: fa.CellKField[ta.wpfloat],  # Ambient pressure
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
-    qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
-) -> fa.CellKField[ta.wpfloat]:  # Return: Riming snow rate
+    t: fa.CellKField[ta.wpfloat],
+    p: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    dvsw0: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from snow to rain
+
+    Args:
+        t:                  Temperature
+        p:                  Ambient pressure
+        rho:                Ambient density
+        dvsw0:              qv-qsat_water (T0)
+        qs:                 Snow specific mass
+
+    Return:                 Conversion rate
+    """
     C1_SR = 79.6863  # Constants in melting formula
     C2_SR = 0.612654e-3  # Constants in melting formula
     A_SR = g_ct.tx - 389.5  # Melting prefactor
@@ -386,15 +518,30 @@ def snow_to_rain(
 
 @gtx.field_operator
 def _vapor_x_graupel(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    p: fa.CellKField[ta.wpfloat],  # Ambient pressure
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    qg: fa.CellKField[ta.wpfloat],  # Graupel specific mass
-    dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T)
-    dvsi: fa.CellKField[ta.wpfloat],  # qv-qsat_ice(T)
-    dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
-    dt: ta.wpfloat,  # time step
-) -> fa.CellKField[ta.wpfloat]:  # Homogeneous freezing rate
+    t: fa.CellKField[ta.wpfloat],
+    p: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    qg: fa.CellKField[ta.wpfloat],
+    dvsw: fa.CellKField[ta.wpfloat],
+    dvsi: fa.CellKField[ta.wpfloat],
+    dvsw0: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from vapor to graupel
+
+    Args:
+        t:                  Temperature
+        p:                  Ambient pressure
+        rho:                Ambient density
+        qg:                 Graupel specific mass
+        dvsw:               qv-qsat_water (T)
+        dvsi:               qv-qsat_ice (T)
+        dvsw0:              qv-qsat_water (T0)
+        dt:                 Time step
+
+    Return:                 Conversion rate
+    """
     A1_VG = 0.398561
     A2_VG = -0.00152398
     A3 = 2554.99
@@ -433,13 +580,26 @@ def vapor_x_graupel(
 
 @gtx.field_operator
 def _vapor_x_ice(
-    qi: fa.CellKField[ta.wpfloat],  # Specific humidity of ice
-    mi: fa.CellKField[ta.wpfloat],  # Ice crystal mass
-    eta: fa.CellKField[ta.wpfloat],  # Deposition factor
-    dvsi: fa.CellKField[ta.wpfloat],  # Vapor excess qv-qsat_ice(T)
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    dt: ta.wpfloat,  # time step
-) -> fa.CellKField[ta.wpfloat]:  # Rate of vapor deposition to ice
+    qi: fa.CellKField[ta.wpfloat],
+    mi: fa.CellKField[ta.wpfloat],
+    eta: fa.CellKField[ta.wpfloat],
+    dvsi: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from vapor to ice
+
+    Args:
+        qi:                 Ice specific mass
+        mi:                 Ice crystal mass
+        eta:                Deposition factor
+        dvsi:               Vapor excess qv-qsat_ice(T)
+        rho:                Ambient density
+        dt:                 Time step
+
+    Return:                 Conversion rate
+    """
     AMI = 130.0  # Form factor for mass-size relation of cold ice
     B_EXP = -0.67  # exp. for conv. (-1 + 0.33) of ice mass to sfc area
     A_FACT = 4.0 * AMI ** (-1.0 / 3.0)  #  Is (1.0/5.065797019100886) * 4.0
@@ -466,19 +626,38 @@ def vapor_x_ice(
 
 @gtx.field_operator
 def _vapor_x_snow(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    p: fa.CellKField[ta.wpfloat],  # Ambient pressure
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
-    ns: fa.CellKField[ta.wpfloat],  # Snow number
-    lam: fa.CellKField[ta.wpfloat],  # Slope parameter (lambda) snow
-    eta: fa.CellKField[ta.wpfloat],  # Deposition factor
-    ice_dep: fa.CellKField[ta.wpfloat],  # Limiter for vapor dep on snow
-    dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T)
-    dvsi: fa.CellKField[ta.wpfloat],  # qv-qsat_ice(T)
-    dvsw0: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T0)
-    dt: ta.wpfloat,  # time step
-) -> fa.CellKField[ta.wpfloat]:  # Rate of vapor deposition to snow
+    t: fa.CellKField[ta.wpfloat],
+    p: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+    ns: fa.CellKField[ta.wpfloat],
+    lam: fa.CellKField[ta.wpfloat],
+    eta: fa.CellKField[ta.wpfloat],
+    ice_dep: fa.CellKField[ta.wpfloat],
+    dvsw: fa.CellKField[ta.wpfloat],
+    dvsi: fa.CellKField[ta.wpfloat],
+    dvsw0: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the conversion rate from vapor to snow
+
+    Args:
+        t:                  Temperature
+        p:                  Ambient pressure
+        rho:                Ambient density
+        qs:                 Snow specific mass
+        ns:                 Snow number
+        lam:                Slope parameter (lambda) snow
+        eta:                Deposition factor
+        ice_dep:            Limiter for vapor dep on snow
+        dvsw:               qv-qsat_water (T)
+        dvsi:               qv-qsat_ice(T)
+        dvsw0:              qv-qsat_water(T0)
+        dt:                 Time step
+
+    Return:                 Conversion rate
+    """
     NU = 1.75e-5  # kinematic viscosity of air
     A0_VS = 1.0
     A1_VS = 0.4182 * sqrt(g_ct.v0s / NU)
