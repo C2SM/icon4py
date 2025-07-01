@@ -28,14 +28,15 @@ def test_topography_smoothing_with_serialized_data(
     topography_savepoint,
     backend,
     experiment,
-    data_alloc=None):
+    data_alloc=None,
+):
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     num_iterations = 25
     topography = topography_savepoint.topo_c()
     xp = data_alloc.import_array_ns(backend)
-    topography_smoothed_ref= topography_savepoint.topo_smt_c().asnumpy()
+    topography_smoothed_ref = topography_savepoint.topo_smt_c().asnumpy()
 
     topography_smoothed = topo.smooth_topography(
         topography=topography.ndarray,
