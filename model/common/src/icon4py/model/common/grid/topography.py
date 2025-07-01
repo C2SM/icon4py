@@ -44,6 +44,7 @@ def smooth_topography(
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
     num_iterations: int = 25,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Computes the smoothed (laplacian-filtered) topography needed by the SLEVE
@@ -53,7 +54,7 @@ def smooth_topography(
     smoothed_topography = topography.copy()
 
     for _ in range(num_iterations):
-        nabla2_topo = compute_nabla2_on_cell(smoothed_topography, geofac_n2s, c2e2co)
+        nabla2_topo = compute_nabla2_on_cell(smoothed_topography, geofac_n2s, c2e2co, array_ns)
         smoothed_topography = update_smoothed_topography(
             smoothed_topography, nabla2_topo, cell_areas
         )
