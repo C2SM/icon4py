@@ -73,6 +73,8 @@ def _file_name(grid_file: str):
             return REGIONAL_GRIDFILE
         case dt_utils.R02B04_GLOBAL:
             return GLOBAL_GRIDFILE
+        case dt_utils.GLOBAL_EXPERIMENT:
+            return GLOBAL_GRIDFILE
         case dt_utils.R02B07_GLOBAL:
             return "icon_grid_0023_R02B07_G.nc"
         case dt_utils.ICON_CH2_SMALL:
@@ -126,14 +128,14 @@ def get_num_levels(experiment: str):
 
 
 def get_grid_geometry(
-    backend: Optional[gtx_backend.Backend], grid_file: str, num_levels
+    backend: Optional[gtx_backend.Backend], grid_file: str,  experiment: str
 ) -> geometry.GridGeometry:
     on_gpu = data_alloc.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
-    # num_levels = get_num_levels(experiment)
+    num_levels = get_num_levels(experiment)
     # TODO: cache key
 
-    register_name = "_".join((grid_file, data_alloc.backend_name(backend)))
+    register_name = "_".join((experiment, data_alloc.backend_name(backend)))
 
     def _construct_dummy_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):
