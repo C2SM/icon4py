@@ -25,6 +25,9 @@ ser_data
 *.fls
 *.log
 *.synctex.gz
+*.bbl
+*.blg
+svg-inkscape
 
 ### Sphinx ###
 **/docs/_source/*.rst
