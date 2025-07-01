@@ -16,4 +16,5 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     metrics_savepoint,
     processor_props,
     ranked_data_path,
+    topography_savepoint,
 )
