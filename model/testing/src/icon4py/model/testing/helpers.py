@@ -66,7 +66,7 @@ def allocate_data(
     _allocate_field = constructors.as_field.partial(allocator=backend)
     input_data = {
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
-        if k == "out"
+        if isinstance(v, tuple)
         else _allocate_field(domain=v.domain, data=v.ndarray)
         if not is_scalar_type(v) and k != "domain"
         else v
