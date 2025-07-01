@@ -635,7 +635,7 @@ def _check_and_correct_layer_thickness(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     num_cells = vertical_coordinate.shape[0]
-    num_levels = vct_a.shape[0] - 1
+    num_levels = vertical_coordinate.shape[1] - 1
     ktop_thicklimit = array_ns.asarray(num_cells * [num_levels], dtype=int)
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
