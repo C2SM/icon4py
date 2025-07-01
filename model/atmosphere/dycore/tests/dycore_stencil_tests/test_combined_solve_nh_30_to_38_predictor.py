@@ -47,7 +47,6 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     wgtfac_e: np.ndarray,
     wgtfacq_e: np.ndarray,
-    skip_compute_predictor_vertical_advection: bool,
     nlevp1: int,
 ) -> tuple[np.ndarray, ...]:
     k = np.arange(nlevp1)
@@ -63,12 +62,11 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
         (vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels),
     )
 
-    if not skip_compute_predictor_vertical_advection:
-        tangential_wind_on_half_levels = np.where(
-            condition1,
-            interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
-            tangential_wind_on_half_levels,
-        )
+    tangential_wind_on_half_levels = np.where(
+        condition1,
+        interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
+        tangential_wind_on_half_levels,
+    )
 
     condition2 = k_nlev == 0
     (
@@ -129,7 +127,6 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
         wgtfac_e: np.ndarray,
         wgtfacq_e: np.ndarray,
         nflatlev: gtx.int32,
-        skip_compute_predictor_vertical_advection: bool,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
@@ -174,7 +171,6 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
             horizontal_kinetic_energy_at_edges_on_model_levels,
             wgtfac_e,
             wgtfacq_e,
-            skip_compute_predictor_vertical_advection,
             vertical_end,
         )
 
@@ -217,7 +213,6 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
 
         nflatlev = 5
 
-        skip_compute_predictor_vertical_advection = True
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
@@ -245,7 +240,6 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
             wgtfac_e=wgtfac_e,
             wgtfacq_e=wgtfacq_e,
             nflatlev=nflatlev,
-            skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,

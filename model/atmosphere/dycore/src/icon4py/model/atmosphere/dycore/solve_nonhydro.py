@@ -1211,7 +1211,6 @@ class SolveNonhydro:
             wgtfac_e=self._metric_state_nonhydro.wgtfac_e,
             wgtfacq_e=self._metric_state_nonhydro.wgtfacq_e,
             nflatlev=self._vertical_params.nflatlev,
-            skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,

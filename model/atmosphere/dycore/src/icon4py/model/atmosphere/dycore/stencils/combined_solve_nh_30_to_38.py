@@ -38,7 +38,6 @@ def _compute_vt_vn_on_half_levels_and_kinetic_energy(
     vn: fa.EdgeKField[ta.wpfloat],
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     wgtfac_e: fa.EdgeKField[ta.vpfloat],
-    skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
@@ -46,20 +45,14 @@ def _compute_vt_vn_on_half_levels_and_kinetic_energy(
 ]:
     vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels = concat_where(
         dims.KDim >= 1,
-        _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
-            wgtfac_e, vn, tangential_wind
-        ),
+        _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(wgtfac_e, vn, tangential_wind),
         (vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels),
     )
 
-    tangential_wind_on_half_levels = (
-        concat_where(
-            dims.KDim >= 1,
-            _interpolate_edge_field_to_half_levels_vp(wgtfac_e, tangential_wind),
-            tangential_wind_on_half_levels,
-        )
-        if not skip_compute_predictor_vertical_advection
-        else tangential_wind_on_half_levels
+    tangential_wind_on_half_levels = concat_where(
+        dims.KDim >= 1,
+        _interpolate_edge_field_to_half_levels_vp(wgtfac_e, tangential_wind),
+        tangential_wind_on_half_levels,
     )
 
     (
@@ -99,7 +92,6 @@ def _combined_solve_nh_30_to_38_predictor(
     ddxt_z_full: fa.EdgeKField[ta.vpfloat],
     wgtfac_e: fa.EdgeKField[ta.vpfloat],
     nflatlev: gtx.int32,
-    skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
@@ -142,7 +134,6 @@ def _combined_solve_nh_30_to_38_predictor(
         vn,
         tangential_wind,
         wgtfac_e,
-        skip_compute_predictor_vertical_advection,
     )
 
     return (
@@ -180,7 +171,6 @@ def combined_solve_nh_30_to_38_predictor(
     wgtfac_e: fa.EdgeKField[ta.vpfloat],
     wgtfacq_e: fa.EdgeKField[ta.vpfloat],
     nflatlev: gtx.int32,
-    skip_compute_predictor_vertical_advection: bool,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -202,7 +192,6 @@ def combined_solve_nh_30_to_38_predictor(
         ddxt_z_full,
         wgtfac_e,
         nflatlev,
-        skip_compute_predictor_vertical_advection,
         out=(
             z_vn_avg,
             horizontal_gradient_of_normal_wind_divergence,

@@ -811,7 +811,6 @@ def test_combined_solve_nh_30_to_38_in_predictor_step(
         wgtfac_e=wgtfac_e,
         wgtfacq_e=wgtfacq_e,
         nflatlev=nflatlev,
-        skip_compute_predictor_vertical_advection=True,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         vertical_start=gtx.int32(0),
