@@ -17,7 +17,6 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.utils.data_allocation import zero_field
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
@@ -25,16 +24,6 @@ from icon4py.model.testing import (
     reference_funcs as ref_funcs,
     serialbox as sb,
 )
-
-from icon4py.model.common.interpolation import (
-    interpolation_attributes,
-    interpolation_factory
-)
-from icon4py.model.common.metrics import (
-    metrics_attributes,
-    metrics_factory,
-)
-from icon4py.model.testing.datatest_fixtures import grid_savepoint
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,
@@ -68,7 +57,7 @@ def _get_or_initialize(experiment, backend, name):
     )
 
     if not grid_functionality[experiment].get(name):
-        geometry_ = grid_utils.get_grid_geometry(backend, grid_file, num_levels)
+        geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
         grid = geometry_.grid
 
         cell_params = grid_states.CellParams(
@@ -121,39 +110,6 @@ def _get_or_initialize(experiment, backend, name):
         grid_functionality[experiment]["cell_geometry"] = cell_params
     return grid_functionality[experiment].get(name)
 
-def metrics_config(experiment: str) -> tuple:
-    rayleigh_coeff = 5.0
-    lowest_layer_thickness = 50.0
-    exner_expol = 0.333
-    vwind_offctr = 0.2
-    rayleigh_type = 2
-    model_top_height = 23500.0
-    stretch_factor = 1.0
-    damping_height = 45000.0
-    match experiment:
-        case dt_utils.REGIONAL_EXPERIMENT:
-            lowest_layer_thickness = 20.0
-            model_top_height = 23000.0
-            stretch_factor = 0.65
-            damping_height = 12500.0
-        case dt_utils.GLOBAL_EXPERIMENT:
-            model_top_height = 75000.0
-            stretch_factor = 0.9
-            damping_height = 50000.0
-            rayleigh_coeff = 0.1
-            exner_expol = 0.3333333333333
-            vwind_offctr = 0.15
-
-    return (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-    )
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
     config = construct_diffusion_config(experiment, ndyn_substeps=5)
@@ -224,7 +180,6 @@ def test_diffusion_init(
     metrics_savepoint,
     experiment,
     step_date_init,
-    interface_model_height,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -232,29 +187,12 @@ def test_diffusion_init(
     ndyn_substeps,
     backend,
 ):
-    # TODO: grid file can be put as input?
-    grid_file = (
-        dt_utils.REGIONAL_EXPERIMENT
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else dt_utils.R02B04_GLOBAL
-    )
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
-
-    (lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type) = metrics_config(experiment)
 
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
-
-    geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -263,8 +201,6 @@ def test_diffusion_init(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-
-
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -277,52 +213,30 @@ def test_diffusion_init(
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
-    interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid=grid,
-        decomposition_info=geometry._decomposition_info,
-        geometry_source=geometry,
-        backend=backend,
-        metadata=interpolation_attributes.attrs,
-    )
-
-    metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid= grid,
-        vertical_grid=vertical_config,
-        decomposition_info=geometry._decomposition_info,
-        geometry_source = geometry,
-        interpolation_source = interpolation_field_source,
-        backend = backend,
-        metadata = metrics_attributes.attrs,
-        interface_model_height = interface_model_height,
-        e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim), # TODO (Yilu): refin_ctrl should be moved from refin_ctrl
-        c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim), # TODO:
-        damping_height=damping_height,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-    )
-
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s = interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        # TODO (Yilu) : wait for rbf
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-        geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
-        geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
-        geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
-        # TODO (Yilu):
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim,
+            field=interpolation_savepoint.e_bln_c_s(),
+            backend=backend,
+        ),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
 
     metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
-        theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
-        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
 
     diffusion_granule = diffusion.Diffusion(
@@ -429,26 +343,10 @@ def test_verify_diffusion_init_against_savepoint(
     damping_height,
     ndyn_substeps,
     backend,
-    interface_model_height,
 ):
-    # TODO: or the grid file can be passed
-    grid_file = (
-        dt_utils.REGIONAL_EXPERIMENT
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else dt_utils.R02B04_GLOBAL
-    )
-    (lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type) = metrics_config(experiment)
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
-    geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
     vertical_config = v_grid.VerticalGridConfig(
@@ -464,53 +362,31 @@ def test_verify_diffusion_init_against_savepoint(
         vct_a=vct_a,
         vct_b=vct_b,
     )
-
-    interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid = grid,
-        decomposition_info=geometry._decomposition_info,
-        geometry_source = geometry,
-        backend = backend,
-        metadata=interpolation_attributes.attrs,
-    )
-
-    metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid= grid,
-        vertical_grid=vertical_config,
-        decomposition_info=geometry._decomposition_info,
-        geometry_source = geometry,
-        interpolation_source = interpolation_field_source,
-        backend = backend,
-        metadata = metrics_attributes.attrs,
-        interface_model_height = interface_model_height,
-        e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim), # TODO (Yilu): refin_ctrl should be moved from refin_ctrl
-        c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim), # TODO:
-        damping_height=damping_height,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-    )
-
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s = interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        # TODO (Yilu) : wait for rbf
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim,
+            field=interpolation_savepoint.e_bln_c_s(),
+            backend=backend,
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-        geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
-        geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
-        geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
-        # TODO (Yilu):
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim,
+            field=interpolation_savepoint.geofac_div(),
+            backend=backend,
+        ),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-
     metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
-        theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
-        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
 
     diffusion_granule = diffusion.Diffusion(
@@ -532,16 +408,21 @@ def test_verify_diffusion_init_against_savepoint(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "grid_file",
-    [   # TODO: ingnore regional
+    "experiment, step_date_init, step_date_exit",
+    [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", [2]) # TODO: the default value is 5
+@pytest.mark.parametrize("ndyn_substeps", [2])
+@pytest.mark.parametrize("orchestration", [False, True])
 def test_run_diffusion_single_step(
-    grid_file,
-    interface_model_height,
+    savepoint_diffusion_init,
+    savepoint_diffusion_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    experiment,
+    lowest_layer_thickness,
     model_top_height,
     stretch_factor,
     damping_height,
@@ -550,27 +431,55 @@ def test_run_diffusion_single_step(
     orchestration,
     benchmark,
 ):
-    # TODO: focus on the global, pass the grid_file
+    if orchestration and not helpers.is_dace(backend):
+        pytest.skip("Orchestration test requires a dace backend.")
+    if orchestration and data_alloc.is_cupy_device(backend):
+        pytest.xfail("GPU compilation fails.")
 
-    grid_file = (
-        dt_utils.REGIONAL_EXPERIMENT
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else dt_utils.R02B04_GLOBAL
-    )
-
-    (lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type) = metrics_config(experiment)
+    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+        # Skip benchmarks for this experiment
+        benchmark = None
 
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
-    geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+
+    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim,
+            field=interpolation_savepoint.e_bln_c_s(),
+            backend=backend,
+        ),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim,
+            field=interpolation_savepoint.geofac_div(),
+            backend=backend,
+        ),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+    )
+    metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
+
+    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=savepoint_diffusion_init.hdef_ic(),
+        div_ic=savepoint_diffusion_init.div_ic(),
+        dwdx=savepoint_diffusion_init.dwdx(),
+        dwdy=savepoint_diffusion_init.dwdy(),
+    )
+    prognostic_state = savepoint_diffusion_init.construct_prognostics()
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -579,7 +488,6 @@ def test_run_diffusion_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -587,70 +495,8 @@ def test_run_diffusion_single_step(
         vct_b=vct_b,
     )
 
-    #TODO: manually set the config
     config = construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
-
-    # TODO (yilu): set as default value
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-
-    interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid=grid,
-        decomposition_info=geometry._decomposition_info,
-        geometry_source=geometry,
-        backend=backend,
-        metadata=interpolation_attributes.attrs,
-    )
-
-    metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid=grid,
-        vertical_grid=vertical_config,
-        decomposition_info=geometry._decomposition_info,
-        geometry_source=geometry,
-        topography= , # TODO: add topography as the input to the metrics field factory
-        interpolation_source=interpolation_field_source,
-        backend=backend,
-        metadata=metrics_attributes.attrs,
-        interface_model_height=interface_model_height,
-        e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim), # TODO: this goes to grid, should be removed from metrics_factory
-        c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),  # TODO (Yilu): refin_ctrl should be moved from refin_ctrl
-        damping_height=damping_height,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
-    )
-
-    interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s = interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        # TODO (Yilu) : wait for rbf (random values for now)
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-        geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
-        geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
-        geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
-        # TODO (Yilu): the compute function should also be registered in interpolationfieldfactory
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(), # TODO: compute_nudgeco: programprofield
-    )
-
-    metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
-        theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
-        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
-    )
-    # TODO: we should compute mannually the diagnostic states
-    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=zero_field(),
-        div_ic=zero_field(),
-        dwdx=zero_field(),
-        dwdy=zero_field(),
-    )
-    # TODO: initialize random values
-    prognostic_state = savepoint_diffusion_init.construct_prognostics()
 
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
@@ -665,10 +511,7 @@ def test_run_diffusion_single_step(
         orchestration=orchestration,
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
-    # assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
-
-    diffusion_granule.run
-    verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
+    assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
     helpers.run_verify_and_benchmark(
         functools.partial(
@@ -684,7 +527,7 @@ def test_run_diffusion_single_step(
             prognostic_state=prognostic_state,
             diffusion_savepoint=savepoint_diffusion_exit,
         ),
-        benchmark, # TODO: in the old, delete benchmark, but keep benchmark as input argument in the new test
+        benchmark,
     )
 
 
