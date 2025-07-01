@@ -192,7 +192,7 @@ def _graupel_to_rain(
         p:                  Ambient pressure
         rho:                Ambient density
         dvsw0:              qv-qsat_water(T0)
-        qg:                 Graupel specific mass 
+        qg:                 Graupel specific mass
 
     Return:                 Conversion rate
     """
@@ -232,9 +232,9 @@ def _ice_to_graupel(
 
     Args:
         rho:                Ambient density
-        qr:                 Rain specific mass 
-        qg:                 Graupel specific mass 
-        qi:                 Ice specific mass 
+        qr:                 Rain specific mass
+        qg:                 Graupel specific mass
+        qi:                 Ice specific mass
         sticking_eff:       Sticking efficiency
 
     Return:                 Conversion rate
@@ -277,7 +277,7 @@ def _ice_to_snow(
     Compute the conversion rate from ice to snow
 
     Args:
-        qi:                 Ice specific mass 
+        qi:                 Ice specific mass
         ns:                 Snow number
         lam:                Snow intercept parameter
         sticking_eff:       Sticking efficiency
