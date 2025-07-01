@@ -18,7 +18,9 @@ No artificial diffusion term is needed for the scalar quantities because the adv
   & \vpotempprimedy{\n}{\c}{\k} = \sum_{\offProv{c2e2co}} \geofacgrgy\ \vpotempprime{\n}{\c}{\k}
 \end{align}
 
-The \ibm\ (\IBM) handles these operations by zeroing the gradient computation in cells adiacent to masked cells (\ie those indicated with a grid pattern)
+The \ibm\ (\IBM) handles these operations by zeroing the gradient computation in cells adiacent to masked cells---those indicated with a dotted pattern in figure~\ref{fig:miura}.
+This reduces the order of the scheme from second to first for those edge points that pick upwind values in dotted cells.
+
 
 \begin{figure}[h!]
   \begin{center}

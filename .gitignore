@@ -12,7 +12,6 @@ testdata
 simple_mesh*.nc
 /prof
 .profile
-imgs*
 run*
 ser_data
 *.log
