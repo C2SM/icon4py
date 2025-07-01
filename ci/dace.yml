@@ -21,9 +21,7 @@ test_model_stencils_aarch64:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-    # TODO(edopao): We skip the advection module tests because dace gpu codegen
-    # has an issue that appears in advection datatest (in 'init_constant_cell_kdim_field')
-    - COMPONENT: [diffusion, dycore, microphysics, common, driver]
+    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
       BACKEND: [dace_cpu, dace_gpu]
       LEVEL: [integration]
 # test_model_datatests_x86_64:
