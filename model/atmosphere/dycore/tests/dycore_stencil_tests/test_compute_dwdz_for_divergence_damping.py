@@ -35,7 +35,7 @@ def compute_dwdz_for_divergence_damping_numpy(
 
 class TestComputeDwdzForDivergenceDamping(StencilTest):
     PROGRAM = _compute_dwdz_for_divergence_damping
-    OUTPUTS = ("z_dwdz_dd",)
+    OUTPUTS = ("out",)
 
     @staticmethod
     def reference(

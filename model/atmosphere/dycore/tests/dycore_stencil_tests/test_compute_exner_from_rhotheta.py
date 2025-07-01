@@ -23,7 +23,7 @@ from icon4py.model.testing.helpers import StencilTest
 
 class TestComputeExnerFromRhotheta(StencilTest):
     PROGRAM = _compute_exner_from_rhotheta
-    OUTPUTS = ("theta_v", "exner")
+    OUTPUTS = ("out",)
 
     @staticmethod
     def reference(

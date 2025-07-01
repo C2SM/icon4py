@@ -138,25 +138,20 @@ def _verify_stencil_test(
     input_data: dict[str, gtx.Field],
     reference_outputs: dict[str, np.ndarray],
 ) -> None:
-    for i_out, out in enumerate(self.OUTPUTS):
+    for out in self.OUTPUTS:
         name, refslice, gtslice = (
             (out.name, out.refslice, out.gtslice)
             if isinstance(out, Output)
             else (out, (slice(None),), (slice(None),))
         )
-        if isinstance(self.PROGRAM, FieldOperator):
-            output_field = input_data["out"][i_out]
-            reference_output = reference_outputs["out"][i_out]
-        else:
-            output_field = input_data[name]
-            reference_output = reference_outputs[name]
 
-        np.testing.assert_allclose(
-            output_field.asnumpy()[gtslice],
-            reference_output[refslice],
-            equal_nan=True,
-            err_msg=f"Verification failed for '{name}'",
-        )
+        for i_out_field, out_field in enumerate(input_data[name]):
+            np.testing.assert_allclose(
+                out_field.asnumpy()[gtslice],
+                reference_outputs[name][i_out_field][refslice],
+                equal_nan=True,
+                err_msg=f"Verification failed for '{name}'",
+            )
 
 
 def _test_and_benchmark(
