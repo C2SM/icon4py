@@ -18,6 +18,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestSaturationAdjustment(StencilTest):
     PROGRAM = saturation_adjustment
     OUTPUTS = ("te_out", "qve_out", "qce_out", "mask_out")
+    MARKERS = (pytest.mark.embedded_only,)
 
     @staticmethod
     def reference(
