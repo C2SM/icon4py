@@ -841,6 +841,269 @@ def vertically_implicit_solver_at_predictor_step(
         },
     )
 
+@gtx.field_operator
+def _vertically_implicit_solver_at_corrector_step(
+    vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    next_w: fa.CellKField[ta.wpfloat],
+    rho_explicit_term: fa.CellKField[ta.wpfloat],
+    exner_explicit_term: fa.CellKField[ta.wpfloat],
+    next_rho: fa.CellKField[ta.wpfloat],
+    next_exner: fa.CellKField[ta.wpfloat],
+    next_theta_v: fa.CellKField[ta.wpfloat],
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
+    theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
+    predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
+    corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
+    current_exner: fa.CellKField[ta.wpfloat],
+    current_rho: fa.CellKField[ta.wpfloat],
+    current_theta_v: fa.CellKField[ta.wpfloat],
+    current_w: fa.CellKField[ta.wpfloat],
+    inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
+    exner_w_implicit_weight_parameter: fa.CellField[ta.wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
+    rho_iau_increment: fa.CellKField[ta.vpfloat],
+    exner_iau_increment: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    rayleigh_damping_factor: fa.KField[ta.wpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    advection_explicit_weight_parameter: ta.wpfloat,
+    advection_implicit_weight_parameter: ta.wpfloat,
+    lprep_adv: bool,
+    r_nsubsteps: ta.wpfloat,
+    ndyn_substeps_var: ta.wpfloat,
+    iau_wgt_dyn: ta.wpfloat,
+    dtime: ta.wpfloat,
+    is_iau_active: bool,
+    rayleigh_type: gtx.int32,
+    at_first_substep: bool,
+    at_last_substep: bool,
+    end_index_of_damping_layer: gtx.int32,
+    kstart_moist: gtx.int32,
+    n_lev: gtx.int32,
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    ]:
+    # _vertically_implicit_solver_at_corrector_step_before_solving_w below
+    divergence_of_mass, divergence_of_theta_v = _compute_divergence_of_fluxes_of_rho_and_theta(
+        geofac_div=geofac_div,
+        mass_fl_e=mass_flux_at_edges_on_model_levels,
+        z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
+    )
+    w_explicit_term = concat_where(
+        1 <= dims.KDim,
+        _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
+            current_w=current_w,
+            predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
+            corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
+            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            dtime=dtime,
+            advection_explicit_weight_parameter=advection_explicit_weight_parameter,
+            advection_implicit_weight_parameter=advection_implicit_weight_parameter,
+        ),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+    )
+    vertical_mass_flux_at_cells_on_half_levels = concat_where(
+        # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
+        (1 <= dims.KDim) & (dims.KDim < n_lev),
+        rho_at_cells_on_half_levels
+        * (
+            -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
+            + exner_w_explicit_weight_parameter * current_w
+        ),
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
+    )
+    (
+        tridiagonal_beta_coeff_at_cells_on_model_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+    ) = _compute_solver_coefficients_matrix(
+        current_exner=current_exner,
+        current_rho=current_rho,
+        current_theta_v=current_theta_v,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+        dtime=dtime,
+    )
+    tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
+        dims.KDim < n_lev,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        broadcast(vpfloat("0.0"), (dims.CellDim,)),
+    )
+    (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
+        rho_nnow=current_rho,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        z_flxdiv_mass=divergence_of_mass,
+        z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
+        exner_pr=perturbed_exner_at_cells_on_model_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        z_flxdiv_theta=divergence_of_theta_v,
+        theta_v_ic=theta_v_at_cells_on_half_levels,
+        ddt_exner_phy=exner_tendency_due_to_slow_physics,
+        dtime=dtime,
+    )
+    if is_iau_active:
+        rho_explicit_term, exner_explicit_term = _add_analysis_increments_from_data_assimilation(
+            z_rho_expl=rho_explicit_term,
+            z_exner_expl=exner_explicit_term,
+            rho_incr=rho_iau_increment,
+            exner_incr=exner_iau_increment,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )
+
+    tridiagonal_intermediate_result, next_w = concat_where(
+        dims.KDim > 0,
+        _solve_tridiagonal_matrix_for_w_forward_sweep(
+            vwind_impl_wgt=exner_w_implicit_weight_parameter,
+            theta_v_ic=theta_v_at_cells_on_half_levels,
+            ddqz_z_half=ddqz_z_half,
+            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            z_w_expl=w_explicit_term,
+            z_exner_expl=exner_explicit_term,
+            dtime=dtime,
+            cpd=dycore_consts.cpd,
+        ),
+        (
+            broadcast(vpfloat("0.0"), (dims.CellDim,)),
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        ),
+    )
+    tridiagonal_intermediate_result = concat_where(
+        dims.KDim == n_lev,
+        broadcast(vpfloat("0.0"), (dims.CellDim,)),
+        tridiagonal_intermediate_result,
+    )
+    next_w = concat_where(
+        dims.KDim == n_lev,
+        astype(
+            contravariant_correction_at_cells_on_half_levels,
+            wpfloat,
+        ),
+        next_w,
+    )
+
+    next_w = concat_where(
+        dims.KDim > 0,
+        _solve_tridiagonal_matrix_for_w_back_substitution_scan(
+            z_q=tridiagonal_intermediate_result,
+            w=next_w,
+        ),
+        next_w,
+    )
+
+    # _vertically_implicit_solver_at_corrector_step_after_solving_w below
+
+    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
+
+    if rayleigh_type == rayleigh_damping_options.KLEMP:
+        next_w = concat_where(
+            (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
+            _apply_rayleigh_damping_mechanism(
+                z_raylfac=rayleigh_damping_factor,
+                w_1=w_1,
+                w=next_w,
+            ),
+            next_w,
+        )
+
+    next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
+        z_rho_expl=rho_explicit_term,
+        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        rho_ic=rho_at_cells_on_half_levels,
+        w=next_w,
+        z_exner_expl=exner_explicit_term,
+        exner_ref_mc=reference_exner_at_cells_on_model_levels,
+        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        rho_now=current_rho,
+        theta_v_now=current_theta_v,
+        exner_now=current_exner,
+        dtime=dtime,
+    )
+
+    if lprep_adv:
+        if at_first_substep:
+            (
+                dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+            ) = (
+                    broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+                    broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+                )
+
+        (
+            dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+        ) = concat_where(
+            1 <= dims.KDim,
+            _update_mass_volume_flux(
+                z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
+                rho_ic=rho_at_cells_on_half_levels,
+                vwind_impl_wgt=exner_w_implicit_weight_parameter,
+                w=next_w,
+                mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+                r_nsubsteps=r_nsubsteps,
+            ),
+            (
+                dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+            ),
+        )
+
+    if at_last_substep:
+        exner_dynamical_increment = concat_where(
+            dims.KDim >= kstart_moist,
+            _update_dynamical_exner_time_increment(
+                exner=next_exner,
+                ddt_exner_phy=exner_tendency_due_to_slow_physics,
+                exner_dyn_incr=exner_dynamical_increment,
+                ndyn_substeps_var=ndyn_substeps_var,
+                dtime=dtime,
+            ),
+            exner_dynamical_increment,
+        )
+
+    return (
+        vertical_mass_flux_at_cells_on_half_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels,
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        next_w,
+        rho_explicit_term,
+        exner_explicit_term,
+        next_rho,
+        next_exner,
+        next_theta_v,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+        exner_dynamical_increment,
+    )
+
 
 @gtx.program
 def vertically_implicit_solver_at_corrector_step(
@@ -890,29 +1153,26 @@ def vertically_implicit_solver_at_corrector_step(
     rayleigh_type: gtx.int32,
     at_first_substep: bool,
     at_last_substep: bool,
-    index_of_damping_layer: gtx.int32,
+    end_index_of_damping_layer: gtx.int32,
     kstart_moist: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
+    start_cell_index_nudging: gtx.int32,
+    end_cell_index_local: gtx.int32,
+    vertical_start_index_model_top: gtx.int32,
+    vertical_end_index_model_surface: gtx.int32,
 ):
-    _set_surface_boundary_condtion_for_computation_of_w(
-        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-        out=(
-            tridiagonal_alpha_coeff_at_cells_on_half_levels,
-            next_w,
-            vertical_mass_flux_at_cells_on_half_levels,
-        ),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end - 1, vertical_end),
-        },
-    )
-    _vertically_implicit_solver_at_corrector_step_before_solving_w(
+    _vertically_implicit_solver_at_corrector_step(
         vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
+        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
         tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
         next_w=next_w,
+        rho_explicit_term=rho_explicit_term,
+        exner_explicit_term=exner_explicit_term,
+        next_rho=next_rho,
+        next_exner=next_exner,
+        next_theta_v=next_theta_v,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+        exner_dynamical_increment=exner_dynamical_increment,
         geofac_div=geofac_div,
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
@@ -934,12 +1194,22 @@ def vertically_implicit_solver_at_corrector_step(
         rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=ddqz_z_half,
+        rayleigh_damping_factor=rayleigh_damping_factor,
+        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
+        lprep_adv=lprep_adv,
+        r_nsubsteps=r_nsubsteps,
+        ndyn_substeps_var=ndyn_substeps_var,
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
         is_iau_active=is_iau_active,
-        n_lev=vertical_end - 1,
+        rayleigh_type=rayleigh_type,
+        at_first_substep=at_first_substep,
+        at_last_substep=at_last_substep,
+        end_index_of_damping_layer=end_index_of_damping_layer,
+        kstart_moist=kstart_moist,
+        n_lev=vertical_end_index_model_surface - 1,
         out=(
             vertical_mass_flux_at_cells_on_half_levels,
             tridiagonal_beta_coeff_at_cells_on_model_levels,
@@ -947,46 +1217,6 @@ def vertically_implicit_solver_at_corrector_step(
             next_w,
             rho_explicit_term,
             exner_explicit_term,
-        ),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
-        },
-    )
-
-    _vertically_implicit_solver_at_corrector_step_after_solving_w(
-        vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
-        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        next_w=next_w,
-        next_rho=next_rho,
-        next_exner=next_exner,
-        next_theta_v=next_theta_v,
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
-        exner_dynamical_increment=exner_dynamical_increment,
-        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-        current_exner=current_exner,
-        current_rho=current_rho,
-        current_theta_v=current_theta_v,
-        inv_ddqz_z_full=inv_ddqz_z_full,
-        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
-        exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
-        rayleigh_damping_factor=rayleigh_damping_factor,
-        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-        rho_explicit_term=rho_explicit_term,
-        exner_explicit_term=exner_explicit_term,
-        lprep_adv=lprep_adv,
-        r_nsubsteps=r_nsubsteps,
-        ndyn_substeps_var=ndyn_substeps_var,
-        dtime=dtime,
-        rayleigh_type=rayleigh_type,
-        index_of_damping_layer=index_of_damping_layer,
-        kstart_moist=kstart_moist,
-        at_first_substep=at_first_substep,
-        at_last_substep=at_last_substep,
-        out=(
-            next_w,
             next_rho,
             next_exner,
             next_theta_v,
@@ -995,7 +1225,7 @@ def vertically_implicit_solver_at_corrector_step(
             exner_dynamical_increment,
         ),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+            dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
         },
     )
