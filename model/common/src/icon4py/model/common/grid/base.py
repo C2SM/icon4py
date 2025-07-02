@@ -183,6 +183,14 @@ class BaseGrid(ABC):
             )
         else:
             neighbor_table = self._neighbor_tables[dim]
+
+        if (dimension_size := self.size[to_dim]) <= neighbor_table.shape[0]:
+            # In Fortran, all connectivities have `nproma` size.
+            # Here we are restricting the connectivity to the actual size as this is currently used
+            # for sizing GT4Py temporaries.
+            _log.info(f"Restricting connectivity for {dim} to size of {to_dim} ({dimension_size}).")
+            neighbor_table = neighbor_table[:dimension_size, :]
+
         connectivity = gtx.as_connectivity(
             [from_dim, dim],
             to_dim,
