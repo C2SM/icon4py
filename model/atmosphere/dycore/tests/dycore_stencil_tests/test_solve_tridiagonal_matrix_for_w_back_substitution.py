@@ -27,10 +27,11 @@ def solve_tridiagonal_matrix_for_w_back_substitution_numpy(
     z_q: np.ndarray,
     w: np.ndarray,
 ) -> np.ndarray:
-    w_new = np.random.random(w.shape).astype(w.dtype)
+    rng = np.random.default_rng()
+    w_new = rng.random(w.shape, dtype=w.dtype)
     last_k_level = w.shape[1] - 1
 
-    w_new[:, last_k_level] = w[:, last_k_level] + z_q[:, last_k_level]
+    w_new[:, last_k_level] = w[:, last_k_level]
     for k in reversed(range(1, last_k_level)):
         w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
     w_new[:, 0] = w[:, 0]
