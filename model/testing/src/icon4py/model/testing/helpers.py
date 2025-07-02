@@ -145,10 +145,18 @@ def _verify_stencil_test(
             else (out, (slice(None),), (slice(None),))
         )
 
-        for i_out_field, out_field in enumerate(input_data[name]):
+        if isinstance(input_data[name], tuple):
+            for i_out_field, out_field in enumerate(input_data[name]):
+                np.testing.assert_allclose(
+                    out_field.asnumpy()[gtslice],
+                    reference_outputs[name][i_out_field][refslice],
+                    equal_nan=True,
+                    err_msg=f"Verification failed for '{name}'",
+                )
+        else:
             np.testing.assert_allclose(
-                out_field.asnumpy()[gtslice],
-                reference_outputs[name][i_out_field][refslice],
+                input_data[name].asnumpy()[gtslice],
+                reference_outputs[name][refslice],
                 equal_nan=True,
                 err_msg=f"Verification failed for '{name}'",
             )
