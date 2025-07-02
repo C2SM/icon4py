@@ -34,6 +34,8 @@ test_tools_datatests_aarch64:
 
 .test_model_datatests:
   stage: test
+  variables:
+    SLURM_TIMELIMIT: '00:30:00'
   script:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
