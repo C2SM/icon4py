@@ -33,7 +33,7 @@ def _compute_nudgecoeffs(
 # TODO (@halungge) not registered in factory
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
-    nudgecoeffs_e: fa.EdgeField[wpfloat],
+    nudging_coefficients_for_edges: fa.EdgeField[wpfloat],
     refin_ctrl: fa.EdgeField[gtx.int32],
     grf_nudge_start_e: gtx.int32,
     nudge_max_coeffs: wpfloat,
@@ -49,6 +49,6 @@ def compute_nudgecoeffs(
         nudge_max_coeffs,
         nudge_efold_width,
         nudge_zone_width,
-        out=nudgecoeffs_e,
+        out=nudging_coefficients_for_edges,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
