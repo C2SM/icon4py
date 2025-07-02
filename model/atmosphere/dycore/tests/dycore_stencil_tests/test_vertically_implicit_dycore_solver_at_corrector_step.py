@@ -534,6 +534,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
             kstart_moist=kstart_moist,
             start_cell_index_nudging=start_cell_nudging,
             end_cell_index_local=end_cell_local,
-            vertical_start_index_model_top=0,
-            vertical_end_index_model_surface=grid.num_levels + 1,
+            vertical_start_index_model_top=gtx.int32(0),
+            vertical_end_index_model_surface=gtx.int32(grid.num_levels + 1),
         )
