@@ -22,6 +22,7 @@ class TestSaturationAdjustment(StencilTest):
     OUTPUTS = ("te_out", "qve_out", "qce_out")
     MARKERS = (pytest.mark.embedded_only,)
  
+
     @staticmethod
     def reference(
         grid,
