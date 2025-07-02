@@ -2111,12 +2111,12 @@ def test_vertically_implicit_solver_at_corrector_step(
         rayleigh_type=config.rayleigh_type,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
-        index_of_damping_layer=grid_savepoint.nrdmax(),
+        end_index_of_damping_layer=grid_savepoint.nrdmax(),
         kstart_moist=kstart_moist,
-        horizontal_start=start_cell_nudging,
-        horizontal_end=end_cell_local,
-        vertical_start=0,
-        vertical_end=icon_grid.num_levels + 1,
+        start_cell_index_nudging=start_cell_nudging,
+        end_cell_index_local=end_cell_local,
+        vertical_start_index_model_top=0,
+        vertical_end_index_model_surface=icon_grid.num_levels + 1,
         offset_provider=offset_provider,
     )
 
