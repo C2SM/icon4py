@@ -683,7 +683,7 @@ def _vertically_implicit_solver_at_corrector_step(
 
     # necessary to set the boundaries for the tridiagonal solver as well
     tridiagonal_intermediate_result, next_w = concat_where(
-        (dims.KDim > 0) & (dims.KDim < n_lev),
+        dims.KDim > 0,
         _solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=exner_w_implicit_weight_parameter,
             theta_v_ic=theta_v_at_cells_on_half_levels,
@@ -695,16 +695,20 @@ def _vertically_implicit_solver_at_corrector_step(
             dtime=dtime,
             cpd=dycore_consts.cpd,
         ),
-        concat_where(
-            dims.KDim == 0,
-            (
-                broadcast(vpfloat("0.0"), (dims.CellDim,)),
-                broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            ),
-            (
-                broadcast(vpfloat("0.0"), (dims.CellDim,)),
-                astype(contravariant_correction_at_cells_on_half_levels, wpfloat),
-            ),
+        (
+            broadcast(vpfloat("0.0"), (dims.CellDim,)),
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        ),
+    )
+    tridiagonal_intermediate_result, next_w = concat_where(
+        dims.KDim == n_lev,
+        (
+            broadcast(vpfloat("0.0"), (dims.CellDim,)),
+            astype(contravariant_correction_at_cells_on_half_levels, wpfloat),
+        ),
+        (
+            tridiagonal_intermediate_result,
+            next_w,
         ),
     )
 
