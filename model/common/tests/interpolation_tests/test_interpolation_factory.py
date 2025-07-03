@@ -15,6 +15,7 @@ from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
+    rbf_interpolation as rbf,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
@@ -32,6 +33,8 @@ E2C_SIZE = 2
 
 interpolation_factories = {}
 
+cell_domain = h_grid.domain(dims.CellDim)
+edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
 
 
@@ -129,16 +132,16 @@ def test_get_geofac_grdiv(interpolation_savepoint, grid_file, experiment, backen
     field = factory.get(attrs.GEOFAC_GRDIV)
     assert field.shape == (grid.num_edges, 5)
     # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
-    assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol)
+    assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
 
 
-def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
+def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs):
     assert val.shape == ref.shape, f"arrays do not have the same shape: {val.shape} vs {ref.shape}"
     s_val = np.argsort(val)
     s_ref = np.argsort(ref)
     for i in range(val.shape[0]):
         assert test_helpers.dallclose(
-            val[i, s_val[i, :]], ref[i, s_ref[i, :]], rtol=rtol
+            val[i, s_val[i, :]], ref[i, s_ref[i, :]], **kwargs
         ), f"assertion failed for row {i}"
 
 
@@ -252,7 +255,7 @@ def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol
     factory = _get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG)
-    assert field.shape == (grid.num_edges, grid.connectivities[dims.E2C2EODim].shape[1])
+    assert field.shape == (grid.num_edges, grid.neighbor_tables[dims.E2C2EODim].shape[1])
     # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
     assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=5e-2)
 
@@ -311,3 +314,105 @@ def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend,
 
     assert field.shape == (grid.num_vertices, 6)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.parametrize(
+    "grid_file, experiment, rtol",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+    ],
+)
+@pytest.mark.datatest
+def test_nudgecoeffs(interpolation_savepoint, grid_file, experiment, backend, rtol):
+    field_ref = interpolation_savepoint.nudgecoeff_e()
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
+    field = factory.get(attrs.NUDGECOEFFS_E)
+
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.parametrize(
+    "grid_file, experiment, atol",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-9),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-2),
+    ],
+)
+@pytest.mark.datatest
+def test_rbf_interpolation_coeffs_cell(
+    interpolation_savepoint, grid_file, experiment, backend, atol
+):
+    field_ref_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
+    field_ref_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
+    grid = factory.grid
+    field_c1 = factory.get(attrs.RBF_VEC_COEFF_C1)
+    field_c2 = factory.get(attrs.RBF_VEC_COEFF_C2)
+    horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+
+    assert field_c1.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
+    assert field_c2.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
+    assert test_helpers.dallclose(
+        field_ref_c1.asnumpy()[horizontal_start:], field_c1.asnumpy()[horizontal_start:], atol=atol
+    )
+    assert test_helpers.dallclose(
+        field_ref_c2.asnumpy()[horizontal_start:], field_c2.asnumpy()[horizontal_start:], atol=atol
+    )
+
+
+@pytest.mark.level("integration")
+@pytest.mark.parametrize(
+    "grid_file, experiment, atol",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 8e-14),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 2e-9),
+    ],
+)
+@pytest.mark.datatest
+def test_rbf_interpolation_coeffs_edge(
+    interpolation_savepoint, grid_file, experiment, backend, atol
+):
+    field_ref_e = interpolation_savepoint.rbf_vec_coeff_e()
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
+    grid = factory.grid
+    field_e = factory.get(attrs.RBF_VEC_COEFF_E)
+    horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+
+    assert field_e.shape == (grid.num_edges, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE])
+    # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
+    assert_reordered(
+        field_ref_e.asnumpy()[horizontal_start:], field_e.asnumpy()[horizontal_start:], atol=atol
+    )
+
+
+@pytest.mark.level("integration")
+@pytest.mark.parametrize(
+    "grid_file, experiment, atol",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-10),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-3),
+    ],
+)
+@pytest.mark.datatest
+def test_rbf_interpolation_coeffs_vertex(
+    interpolation_savepoint, grid_file, experiment, backend, atol
+):
+    field_ref_v1 = interpolation_savepoint.rbf_vec_coeff_v1()
+    field_ref_v2 = interpolation_savepoint.rbf_vec_coeff_v2()
+    factory = _get_interpolation_factory(backend, experiment, grid_file)
+    grid = factory.grid
+    field_v1 = factory.get(attrs.RBF_VEC_COEFF_V1)
+    field_v2 = factory.get(attrs.RBF_VEC_COEFF_V2)
+    horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+
+    assert field_v1.shape == (grid.num_vertices, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
+    assert field_v2.shape == (grid.num_vertices, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
+    assert test_helpers.dallclose(
+        field_ref_v1.asnumpy()[horizontal_start:], field_v1.asnumpy()[horizontal_start:], atol=atol
+    )
+    assert test_helpers.dallclose(
+        field_ref_v2.asnumpy()[horizontal_start:], field_v2.asnumpy()[horizontal_start:], atol=atol
+    )

@@ -105,7 +105,9 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=savepoint_nonhydro_init.vn_traj(),
         mass_flx_me=savepoint_nonhydro_init.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=savepoint_nonhydro_init.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, backend=backend
+        ),
     )
 
     second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()

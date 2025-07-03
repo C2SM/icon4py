@@ -566,386 +566,549 @@ def solve_nh_run_wrapper(
         if __debug__:
             if logger.isEnabledFor(logging.DEBUG):
 
+                rho_now_arr = (
+                    _conversion.as_array(ffi, rho_now, _definitions.FLOAT64)
+                    if rho_now is not None
+                    else None
+                )
                 msg = "shape of rho_now after computation = %s" % str(
-                    rho_now.shape if rho_now is not None else "None"
+                    rho_now_arr.shape if rho_now is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rho_now after computation: %s" % str(
-                    _conversion.as_array(ffi, rho_now, _definitions.FLOAT64)
+                msg = (
+                    "rho_now after computation: %s" % str(rho_now_arr)
                     if rho_now is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rho_new_arr = (
+                    _conversion.as_array(ffi, rho_new, _definitions.FLOAT64)
+                    if rho_new is not None
+                    else None
+                )
                 msg = "shape of rho_new after computation = %s" % str(
-                    rho_new.shape if rho_new is not None else "None"
+                    rho_new_arr.shape if rho_new is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rho_new after computation: %s" % str(
-                    _conversion.as_array(ffi, rho_new, _definitions.FLOAT64)
+                msg = (
+                    "rho_new after computation: %s" % str(rho_new_arr)
                     if rho_new is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                exner_now_arr = (
+                    _conversion.as_array(ffi, exner_now, _definitions.FLOAT64)
+                    if exner_now is not None
+                    else None
+                )
                 msg = "shape of exner_now after computation = %s" % str(
-                    exner_now.shape if exner_now is not None else "None"
+                    exner_now_arr.shape if exner_now is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "exner_now after computation: %s" % str(
-                    _conversion.as_array(ffi, exner_now, _definitions.FLOAT64)
+                msg = (
+                    "exner_now after computation: %s" % str(exner_now_arr)
                     if exner_now is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                exner_new_arr = (
+                    _conversion.as_array(ffi, exner_new, _definitions.FLOAT64)
+                    if exner_new is not None
+                    else None
+                )
                 msg = "shape of exner_new after computation = %s" % str(
-                    exner_new.shape if exner_new is not None else "None"
+                    exner_new_arr.shape if exner_new is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "exner_new after computation: %s" % str(
-                    _conversion.as_array(ffi, exner_new, _definitions.FLOAT64)
+                msg = (
+                    "exner_new after computation: %s" % str(exner_new_arr)
                     if exner_new is not None
                     else "None"
                 )
                 logger.debug(msg)
 
-                msg = "shape of w_now after computation = %s" % str(
-                    w_now.shape if w_now is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "w_now after computation: %s" % str(
+                w_now_arr = (
                     _conversion.as_array(ffi, w_now, _definitions.FLOAT64)
                     if w_now is not None
-                    else "None"
+                    else None
+                )
+                msg = "shape of w_now after computation = %s" % str(
+                    w_now_arr.shape if w_now is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "w_now after computation: %s" % str(w_now_arr) if w_now is not None else "None"
                 )
                 logger.debug(msg)
 
-                msg = "shape of w_new after computation = %s" % str(
-                    w_new.shape if w_new is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "w_new after computation: %s" % str(
+                w_new_arr = (
                     _conversion.as_array(ffi, w_new, _definitions.FLOAT64)
                     if w_new is not None
-                    else "None"
+                    else None
+                )
+                msg = "shape of w_new after computation = %s" % str(
+                    w_new_arr.shape if w_new is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "w_new after computation: %s" % str(w_new_arr) if w_new is not None else "None"
                 )
                 logger.debug(msg)
 
+                theta_v_now_arr = (
+                    _conversion.as_array(ffi, theta_v_now, _definitions.FLOAT64)
+                    if theta_v_now is not None
+                    else None
+                )
                 msg = "shape of theta_v_now after computation = %s" % str(
-                    theta_v_now.shape if theta_v_now is not None else "None"
+                    theta_v_now_arr.shape if theta_v_now is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "theta_v_now after computation: %s" % str(
-                    _conversion.as_array(ffi, theta_v_now, _definitions.FLOAT64)
+                msg = (
+                    "theta_v_now after computation: %s" % str(theta_v_now_arr)
                     if theta_v_now is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                theta_v_new_arr = (
+                    _conversion.as_array(ffi, theta_v_new, _definitions.FLOAT64)
+                    if theta_v_new is not None
+                    else None
+                )
                 msg = "shape of theta_v_new after computation = %s" % str(
-                    theta_v_new.shape if theta_v_new is not None else "None"
+                    theta_v_new_arr.shape if theta_v_new is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "theta_v_new after computation: %s" % str(
-                    _conversion.as_array(ffi, theta_v_new, _definitions.FLOAT64)
+                msg = (
+                    "theta_v_new after computation: %s" % str(theta_v_new_arr)
                     if theta_v_new is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vn_now_arr = (
+                    _conversion.as_array(ffi, vn_now, _definitions.FLOAT64)
+                    if vn_now is not None
+                    else None
+                )
                 msg = "shape of vn_now after computation = %s" % str(
-                    vn_now.shape if vn_now is not None else "None"
+                    vn_now_arr.shape if vn_now is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vn_now after computation: %s" % str(
-                    _conversion.as_array(ffi, vn_now, _definitions.FLOAT64)
+                msg = (
+                    "vn_now after computation: %s" % str(vn_now_arr)
                     if vn_now is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vn_new_arr = (
+                    _conversion.as_array(ffi, vn_new, _definitions.FLOAT64)
+                    if vn_new is not None
+                    else None
+                )
                 msg = "shape of vn_new after computation = %s" % str(
-                    vn_new.shape if vn_new is not None else "None"
+                    vn_new_arr.shape if vn_new is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vn_new after computation: %s" % str(
-                    _conversion.as_array(ffi, vn_new, _definitions.FLOAT64)
+                msg = (
+                    "vn_new after computation: %s" % str(vn_new_arr)
                     if vn_new is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                w_concorr_c_arr = (
+                    _conversion.as_array(ffi, w_concorr_c, _definitions.FLOAT64)
+                    if w_concorr_c is not None
+                    else None
+                )
                 msg = "shape of w_concorr_c after computation = %s" % str(
-                    w_concorr_c.shape if w_concorr_c is not None else "None"
+                    w_concorr_c_arr.shape if w_concorr_c is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "w_concorr_c after computation: %s" % str(
-                    _conversion.as_array(ffi, w_concorr_c, _definitions.FLOAT64)
+                msg = (
+                    "w_concorr_c after computation: %s" % str(w_concorr_c_arr)
                     if w_concorr_c is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddt_vn_apc_ntl1_arr = (
+                    _conversion.as_array(ffi, ddt_vn_apc_ntl1, _definitions.FLOAT64)
+                    if ddt_vn_apc_ntl1 is not None
+                    else None
+                )
                 msg = "shape of ddt_vn_apc_ntl1 after computation = %s" % str(
-                    ddt_vn_apc_ntl1.shape if ddt_vn_apc_ntl1 is not None else "None"
+                    ddt_vn_apc_ntl1_arr.shape if ddt_vn_apc_ntl1 is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddt_vn_apc_ntl1 after computation: %s" % str(
-                    _conversion.as_array(ffi, ddt_vn_apc_ntl1, _definitions.FLOAT64)
+                msg = (
+                    "ddt_vn_apc_ntl1 after computation: %s" % str(ddt_vn_apc_ntl1_arr)
                     if ddt_vn_apc_ntl1 is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddt_vn_apc_ntl2_arr = (
+                    _conversion.as_array(ffi, ddt_vn_apc_ntl2, _definitions.FLOAT64)
+                    if ddt_vn_apc_ntl2 is not None
+                    else None
+                )
                 msg = "shape of ddt_vn_apc_ntl2 after computation = %s" % str(
-                    ddt_vn_apc_ntl2.shape if ddt_vn_apc_ntl2 is not None else "None"
+                    ddt_vn_apc_ntl2_arr.shape if ddt_vn_apc_ntl2 is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddt_vn_apc_ntl2 after computation: %s" % str(
-                    _conversion.as_array(ffi, ddt_vn_apc_ntl2, _definitions.FLOAT64)
+                msg = (
+                    "ddt_vn_apc_ntl2 after computation: %s" % str(ddt_vn_apc_ntl2_arr)
                     if ddt_vn_apc_ntl2 is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddt_w_adv_ntl1_arr = (
+                    _conversion.as_array(ffi, ddt_w_adv_ntl1, _definitions.FLOAT64)
+                    if ddt_w_adv_ntl1 is not None
+                    else None
+                )
                 msg = "shape of ddt_w_adv_ntl1 after computation = %s" % str(
-                    ddt_w_adv_ntl1.shape if ddt_w_adv_ntl1 is not None else "None"
+                    ddt_w_adv_ntl1_arr.shape if ddt_w_adv_ntl1 is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddt_w_adv_ntl1 after computation: %s" % str(
-                    _conversion.as_array(ffi, ddt_w_adv_ntl1, _definitions.FLOAT64)
+                msg = (
+                    "ddt_w_adv_ntl1 after computation: %s" % str(ddt_w_adv_ntl1_arr)
                     if ddt_w_adv_ntl1 is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddt_w_adv_ntl2_arr = (
+                    _conversion.as_array(ffi, ddt_w_adv_ntl2, _definitions.FLOAT64)
+                    if ddt_w_adv_ntl2 is not None
+                    else None
+                )
                 msg = "shape of ddt_w_adv_ntl2 after computation = %s" % str(
-                    ddt_w_adv_ntl2.shape if ddt_w_adv_ntl2 is not None else "None"
+                    ddt_w_adv_ntl2_arr.shape if ddt_w_adv_ntl2 is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddt_w_adv_ntl2 after computation: %s" % str(
-                    _conversion.as_array(ffi, ddt_w_adv_ntl2, _definitions.FLOAT64)
+                msg = (
+                    "ddt_w_adv_ntl2 after computation: %s" % str(ddt_w_adv_ntl2_arr)
                     if ddt_w_adv_ntl2 is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                theta_v_ic_arr = (
+                    _conversion.as_array(ffi, theta_v_ic, _definitions.FLOAT64)
+                    if theta_v_ic is not None
+                    else None
+                )
                 msg = "shape of theta_v_ic after computation = %s" % str(
-                    theta_v_ic.shape if theta_v_ic is not None else "None"
+                    theta_v_ic_arr.shape if theta_v_ic is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "theta_v_ic after computation: %s" % str(
-                    _conversion.as_array(ffi, theta_v_ic, _definitions.FLOAT64)
+                msg = (
+                    "theta_v_ic after computation: %s" % str(theta_v_ic_arr)
                     if theta_v_ic is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rho_ic_arr = (
+                    _conversion.as_array(ffi, rho_ic, _definitions.FLOAT64)
+                    if rho_ic is not None
+                    else None
+                )
                 msg = "shape of rho_ic after computation = %s" % str(
-                    rho_ic.shape if rho_ic is not None else "None"
+                    rho_ic_arr.shape if rho_ic is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rho_ic after computation: %s" % str(
-                    _conversion.as_array(ffi, rho_ic, _definitions.FLOAT64)
+                msg = (
+                    "rho_ic after computation: %s" % str(rho_ic_arr)
                     if rho_ic is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                exner_pr_arr = (
+                    _conversion.as_array(ffi, exner_pr, _definitions.FLOAT64)
+                    if exner_pr is not None
+                    else None
+                )
                 msg = "shape of exner_pr after computation = %s" % str(
-                    exner_pr.shape if exner_pr is not None else "None"
+                    exner_pr_arr.shape if exner_pr is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "exner_pr after computation: %s" % str(
-                    _conversion.as_array(ffi, exner_pr, _definitions.FLOAT64)
+                msg = (
+                    "exner_pr after computation: %s" % str(exner_pr_arr)
                     if exner_pr is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                exner_dyn_incr_arr = (
+                    _conversion.as_array(ffi, exner_dyn_incr, _definitions.FLOAT64)
+                    if exner_dyn_incr is not None
+                    else None
+                )
                 msg = "shape of exner_dyn_incr after computation = %s" % str(
-                    exner_dyn_incr.shape if exner_dyn_incr is not None else "None"
+                    exner_dyn_incr_arr.shape if exner_dyn_incr is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "exner_dyn_incr after computation: %s" % str(
-                    _conversion.as_array(ffi, exner_dyn_incr, _definitions.FLOAT64)
+                msg = (
+                    "exner_dyn_incr after computation: %s" % str(exner_dyn_incr_arr)
                     if exner_dyn_incr is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddt_exner_phy_arr = (
+                    _conversion.as_array(ffi, ddt_exner_phy, _definitions.FLOAT64)
+                    if ddt_exner_phy is not None
+                    else None
+                )
                 msg = "shape of ddt_exner_phy after computation = %s" % str(
-                    ddt_exner_phy.shape if ddt_exner_phy is not None else "None"
+                    ddt_exner_phy_arr.shape if ddt_exner_phy is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddt_exner_phy after computation: %s" % str(
-                    _conversion.as_array(ffi, ddt_exner_phy, _definitions.FLOAT64)
+                msg = (
+                    "ddt_exner_phy after computation: %s" % str(ddt_exner_phy_arr)
                     if ddt_exner_phy is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                grf_tend_rho_arr = (
+                    _conversion.as_array(ffi, grf_tend_rho, _definitions.FLOAT64)
+                    if grf_tend_rho is not None
+                    else None
+                )
                 msg = "shape of grf_tend_rho after computation = %s" % str(
-                    grf_tend_rho.shape if grf_tend_rho is not None else "None"
+                    grf_tend_rho_arr.shape if grf_tend_rho is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "grf_tend_rho after computation: %s" % str(
-                    _conversion.as_array(ffi, grf_tend_rho, _definitions.FLOAT64)
+                msg = (
+                    "grf_tend_rho after computation: %s" % str(grf_tend_rho_arr)
                     if grf_tend_rho is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                grf_tend_thv_arr = (
+                    _conversion.as_array(ffi, grf_tend_thv, _definitions.FLOAT64)
+                    if grf_tend_thv is not None
+                    else None
+                )
                 msg = "shape of grf_tend_thv after computation = %s" % str(
-                    grf_tend_thv.shape if grf_tend_thv is not None else "None"
+                    grf_tend_thv_arr.shape if grf_tend_thv is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "grf_tend_thv after computation: %s" % str(
-                    _conversion.as_array(ffi, grf_tend_thv, _definitions.FLOAT64)
+                msg = (
+                    "grf_tend_thv after computation: %s" % str(grf_tend_thv_arr)
                     if grf_tend_thv is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                grf_tend_w_arr = (
+                    _conversion.as_array(ffi, grf_tend_w, _definitions.FLOAT64)
+                    if grf_tend_w is not None
+                    else None
+                )
                 msg = "shape of grf_tend_w after computation = %s" % str(
-                    grf_tend_w.shape if grf_tend_w is not None else "None"
+                    grf_tend_w_arr.shape if grf_tend_w is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "grf_tend_w after computation: %s" % str(
-                    _conversion.as_array(ffi, grf_tend_w, _definitions.FLOAT64)
+                msg = (
+                    "grf_tend_w after computation: %s" % str(grf_tend_w_arr)
                     if grf_tend_w is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                mass_fl_e_arr = (
+                    _conversion.as_array(ffi, mass_fl_e, _definitions.FLOAT64)
+                    if mass_fl_e is not None
+                    else None
+                )
                 msg = "shape of mass_fl_e after computation = %s" % str(
-                    mass_fl_e.shape if mass_fl_e is not None else "None"
+                    mass_fl_e_arr.shape if mass_fl_e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "mass_fl_e after computation: %s" % str(
-                    _conversion.as_array(ffi, mass_fl_e, _definitions.FLOAT64)
+                msg = (
+                    "mass_fl_e after computation: %s" % str(mass_fl_e_arr)
                     if mass_fl_e is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddt_vn_phy_arr = (
+                    _conversion.as_array(ffi, ddt_vn_phy, _definitions.FLOAT64)
+                    if ddt_vn_phy is not None
+                    else None
+                )
                 msg = "shape of ddt_vn_phy after computation = %s" % str(
-                    ddt_vn_phy.shape if ddt_vn_phy is not None else "None"
+                    ddt_vn_phy_arr.shape if ddt_vn_phy is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddt_vn_phy after computation: %s" % str(
-                    _conversion.as_array(ffi, ddt_vn_phy, _definitions.FLOAT64)
+                msg = (
+                    "ddt_vn_phy after computation: %s" % str(ddt_vn_phy_arr)
                     if ddt_vn_phy is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                grf_tend_vn_arr = (
+                    _conversion.as_array(ffi, grf_tend_vn, _definitions.FLOAT64)
+                    if grf_tend_vn is not None
+                    else None
+                )
                 msg = "shape of grf_tend_vn after computation = %s" % str(
-                    grf_tend_vn.shape if grf_tend_vn is not None else "None"
+                    grf_tend_vn_arr.shape if grf_tend_vn is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "grf_tend_vn after computation: %s" % str(
-                    _conversion.as_array(ffi, grf_tend_vn, _definitions.FLOAT64)
+                msg = (
+                    "grf_tend_vn after computation: %s" % str(grf_tend_vn_arr)
                     if grf_tend_vn is not None
                     else "None"
                 )
                 logger.debug(msg)
 
-                msg = "shape of vn_ie after computation = %s" % str(
-                    vn_ie.shape if vn_ie is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "vn_ie after computation: %s" % str(
+                vn_ie_arr = (
                     _conversion.as_array(ffi, vn_ie, _definitions.FLOAT64)
                     if vn_ie is not None
-                    else "None"
+                    else None
+                )
+                msg = "shape of vn_ie after computation = %s" % str(
+                    vn_ie_arr.shape if vn_ie is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "vn_ie after computation: %s" % str(vn_ie_arr) if vn_ie is not None else "None"
                 )
                 logger.debug(msg)
 
+                vt_arr = (
+                    _conversion.as_array(ffi, vt, _definitions.FLOAT64) if vt is not None else None
+                )
                 msg = "shape of vt after computation = %s" % str(
-                    vt.shape if vt is not None else "None"
+                    vt_arr.shape if vt is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vt after computation: %s" % str(
-                    _conversion.as_array(ffi, vt, _definitions.FLOAT64)
-                    if vt is not None
-                    else "None"
-                )
+                msg = "vt after computation: %s" % str(vt_arr) if vt is not None else "None"
                 logger.debug(msg)
 
+                vn_incr_arr = (
+                    _conversion.as_array(ffi, vn_incr, _definitions.FLOAT64)
+                    if vn_incr is not None
+                    else None
+                )
                 msg = "shape of vn_incr after computation = %s" % str(
-                    vn_incr.shape if vn_incr is not None else "None"
+                    vn_incr_arr.shape if vn_incr is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vn_incr after computation: %s" % str(
-                    _conversion.as_array(ffi, vn_incr, _definitions.FLOAT64)
+                msg = (
+                    "vn_incr after computation: %s" % str(vn_incr_arr)
                     if vn_incr is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rho_incr_arr = (
+                    _conversion.as_array(ffi, rho_incr, _definitions.FLOAT64)
+                    if rho_incr is not None
+                    else None
+                )
                 msg = "shape of rho_incr after computation = %s" % str(
-                    rho_incr.shape if rho_incr is not None else "None"
+                    rho_incr_arr.shape if rho_incr is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rho_incr after computation: %s" % str(
-                    _conversion.as_array(ffi, rho_incr, _definitions.FLOAT64)
+                msg = (
+                    "rho_incr after computation: %s" % str(rho_incr_arr)
                     if rho_incr is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                exner_incr_arr = (
+                    _conversion.as_array(ffi, exner_incr, _definitions.FLOAT64)
+                    if exner_incr is not None
+                    else None
+                )
                 msg = "shape of exner_incr after computation = %s" % str(
-                    exner_incr.shape if exner_incr is not None else "None"
+                    exner_incr_arr.shape if exner_incr is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "exner_incr after computation: %s" % str(
-                    _conversion.as_array(ffi, exner_incr, _definitions.FLOAT64)
+                msg = (
+                    "exner_incr after computation: %s" % str(exner_incr_arr)
                     if exner_incr is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                mass_flx_me_arr = (
+                    _conversion.as_array(ffi, mass_flx_me, _definitions.FLOAT64)
+                    if mass_flx_me is not None
+                    else None
+                )
                 msg = "shape of mass_flx_me after computation = %s" % str(
-                    mass_flx_me.shape if mass_flx_me is not None else "None"
+                    mass_flx_me_arr.shape if mass_flx_me is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "mass_flx_me after computation: %s" % str(
-                    _conversion.as_array(ffi, mass_flx_me, _definitions.FLOAT64)
+                msg = (
+                    "mass_flx_me after computation: %s" % str(mass_flx_me_arr)
                     if mass_flx_me is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                mass_flx_ic_arr = (
+                    _conversion.as_array(ffi, mass_flx_ic, _definitions.FLOAT64)
+                    if mass_flx_ic is not None
+                    else None
+                )
                 msg = "shape of mass_flx_ic after computation = %s" % str(
-                    mass_flx_ic.shape if mass_flx_ic is not None else "None"
+                    mass_flx_ic_arr.shape if mass_flx_ic is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "mass_flx_ic after computation: %s" % str(
-                    _conversion.as_array(ffi, mass_flx_ic, _definitions.FLOAT64)
+                msg = (
+                    "mass_flx_ic after computation: %s" % str(mass_flx_ic_arr)
                     if mass_flx_ic is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vol_flx_ic_arr = (
+                    _conversion.as_array(ffi, vol_flx_ic, _definitions.FLOAT64)
+                    if vol_flx_ic is not None
+                    else None
+                )
                 msg = "shape of vol_flx_ic after computation = %s" % str(
-                    vol_flx_ic.shape if vol_flx_ic is not None else "None"
+                    vol_flx_ic_arr.shape if vol_flx_ic is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vol_flx_ic after computation: %s" % str(
-                    _conversion.as_array(ffi, vol_flx_ic, _definitions.FLOAT64)
+                msg = (
+                    "vol_flx_ic after computation: %s" % str(vol_flx_ic_arr)
                     if vol_flx_ic is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vn_traj_arr = (
+                    _conversion.as_array(ffi, vn_traj, _definitions.FLOAT64)
+                    if vn_traj is not None
+                    else None
+                )
                 msg = "shape of vn_traj after computation = %s" % str(
-                    vn_traj.shape if vn_traj is not None else "None"
+                    vn_traj_arr.shape if vn_traj is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vn_traj after computation: %s" % str(
-                    _conversion.as_array(ffi, vn_traj, _definitions.FLOAT64)
+                msg = (
+                    "vn_traj after computation: %s" % str(vn_traj_arr)
                     if vn_traj is not None
                     else "None"
                 )
@@ -1703,573 +1866,829 @@ def solve_nh_init_wrapper(
         if __debug__:
             if logger.isEnabledFor(logging.DEBUG):
 
-                msg = "shape of vct_a after computation = %s" % str(
-                    vct_a.shape if vct_a is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "vct_a after computation: %s" % str(
+                vct_a_arr = (
                     _conversion.as_array(ffi, vct_a, _definitions.FLOAT64)
                     if vct_a is not None
-                    else "None"
+                    else None
+                )
+                msg = "shape of vct_a after computation = %s" % str(
+                    vct_a_arr.shape if vct_a is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "vct_a after computation: %s" % str(vct_a_arr) if vct_a is not None else "None"
                 )
                 logger.debug(msg)
 
-                msg = "shape of vct_b after computation = %s" % str(
-                    vct_b.shape if vct_b is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "vct_b after computation: %s" % str(
+                vct_b_arr = (
                     _conversion.as_array(ffi, vct_b, _definitions.FLOAT64)
                     if vct_b is not None
-                    else "None"
+                    else None
+                )
+                msg = "shape of vct_b after computation = %s" % str(
+                    vct_b_arr.shape if vct_b is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "vct_b after computation: %s" % str(vct_b_arr) if vct_b is not None else "None"
                 )
                 logger.debug(msg)
 
+                c_lin_e_arr = (
+                    _conversion.as_array(ffi, c_lin_e, _definitions.FLOAT64)
+                    if c_lin_e is not None
+                    else None
+                )
                 msg = "shape of c_lin_e after computation = %s" % str(
-                    c_lin_e.shape if c_lin_e is not None else "None"
+                    c_lin_e_arr.shape if c_lin_e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "c_lin_e after computation: %s" % str(
-                    _conversion.as_array(ffi, c_lin_e, _definitions.FLOAT64)
+                msg = (
+                    "c_lin_e after computation: %s" % str(c_lin_e_arr)
                     if c_lin_e is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                c_intp_arr = (
+                    _conversion.as_array(ffi, c_intp, _definitions.FLOAT64)
+                    if c_intp is not None
+                    else None
+                )
                 msg = "shape of c_intp after computation = %s" % str(
-                    c_intp.shape if c_intp is not None else "None"
+                    c_intp_arr.shape if c_intp is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "c_intp after computation: %s" % str(
-                    _conversion.as_array(ffi, c_intp, _definitions.FLOAT64)
+                msg = (
+                    "c_intp after computation: %s" % str(c_intp_arr)
                     if c_intp is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                e_flx_avg_arr = (
+                    _conversion.as_array(ffi, e_flx_avg, _definitions.FLOAT64)
+                    if e_flx_avg is not None
+                    else None
+                )
                 msg = "shape of e_flx_avg after computation = %s" % str(
-                    e_flx_avg.shape if e_flx_avg is not None else "None"
+                    e_flx_avg_arr.shape if e_flx_avg is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "e_flx_avg after computation: %s" % str(
-                    _conversion.as_array(ffi, e_flx_avg, _definitions.FLOAT64)
+                msg = (
+                    "e_flx_avg after computation: %s" % str(e_flx_avg_arr)
                     if e_flx_avg is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                geofac_grdiv_arr = (
+                    _conversion.as_array(ffi, geofac_grdiv, _definitions.FLOAT64)
+                    if geofac_grdiv is not None
+                    else None
+                )
                 msg = "shape of geofac_grdiv after computation = %s" % str(
-                    geofac_grdiv.shape if geofac_grdiv is not None else "None"
+                    geofac_grdiv_arr.shape if geofac_grdiv is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "geofac_grdiv after computation: %s" % str(
-                    _conversion.as_array(ffi, geofac_grdiv, _definitions.FLOAT64)
+                msg = (
+                    "geofac_grdiv after computation: %s" % str(geofac_grdiv_arr)
                     if geofac_grdiv is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                geofac_rot_arr = (
+                    _conversion.as_array(ffi, geofac_rot, _definitions.FLOAT64)
+                    if geofac_rot is not None
+                    else None
+                )
                 msg = "shape of geofac_rot after computation = %s" % str(
-                    geofac_rot.shape if geofac_rot is not None else "None"
+                    geofac_rot_arr.shape if geofac_rot is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "geofac_rot after computation: %s" % str(
-                    _conversion.as_array(ffi, geofac_rot, _definitions.FLOAT64)
+                msg = (
+                    "geofac_rot after computation: %s" % str(geofac_rot_arr)
                     if geofac_rot is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                pos_on_tplane_e_1_arr = (
+                    _conversion.as_array(ffi, pos_on_tplane_e_1, _definitions.FLOAT64)
+                    if pos_on_tplane_e_1 is not None
+                    else None
+                )
                 msg = "shape of pos_on_tplane_e_1 after computation = %s" % str(
-                    pos_on_tplane_e_1.shape if pos_on_tplane_e_1 is not None else "None"
+                    pos_on_tplane_e_1_arr.shape if pos_on_tplane_e_1 is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "pos_on_tplane_e_1 after computation: %s" % str(
-                    _conversion.as_array(ffi, pos_on_tplane_e_1, _definitions.FLOAT64)
+                msg = (
+                    "pos_on_tplane_e_1 after computation: %s" % str(pos_on_tplane_e_1_arr)
                     if pos_on_tplane_e_1 is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                pos_on_tplane_e_2_arr = (
+                    _conversion.as_array(ffi, pos_on_tplane_e_2, _definitions.FLOAT64)
+                    if pos_on_tplane_e_2 is not None
+                    else None
+                )
                 msg = "shape of pos_on_tplane_e_2 after computation = %s" % str(
-                    pos_on_tplane_e_2.shape if pos_on_tplane_e_2 is not None else "None"
+                    pos_on_tplane_e_2_arr.shape if pos_on_tplane_e_2 is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "pos_on_tplane_e_2 after computation: %s" % str(
-                    _conversion.as_array(ffi, pos_on_tplane_e_2, _definitions.FLOAT64)
+                msg = (
+                    "pos_on_tplane_e_2 after computation: %s" % str(pos_on_tplane_e_2_arr)
                     if pos_on_tplane_e_2 is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rbf_vec_coeff_e_arr = (
+                    _conversion.as_array(ffi, rbf_vec_coeff_e, _definitions.FLOAT64)
+                    if rbf_vec_coeff_e is not None
+                    else None
+                )
                 msg = "shape of rbf_vec_coeff_e after computation = %s" % str(
-                    rbf_vec_coeff_e.shape if rbf_vec_coeff_e is not None else "None"
+                    rbf_vec_coeff_e_arr.shape if rbf_vec_coeff_e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rbf_vec_coeff_e after computation: %s" % str(
-                    _conversion.as_array(ffi, rbf_vec_coeff_e, _definitions.FLOAT64)
+                msg = (
+                    "rbf_vec_coeff_e after computation: %s" % str(rbf_vec_coeff_e_arr)
                     if rbf_vec_coeff_e is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                e_bln_c_s_arr = (
+                    _conversion.as_array(ffi, e_bln_c_s, _definitions.FLOAT64)
+                    if e_bln_c_s is not None
+                    else None
+                )
                 msg = "shape of e_bln_c_s after computation = %s" % str(
-                    e_bln_c_s.shape if e_bln_c_s is not None else "None"
+                    e_bln_c_s_arr.shape if e_bln_c_s is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "e_bln_c_s after computation: %s" % str(
-                    _conversion.as_array(ffi, e_bln_c_s, _definitions.FLOAT64)
+                msg = (
+                    "e_bln_c_s after computation: %s" % str(e_bln_c_s_arr)
                     if e_bln_c_s is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rbf_coeff_1_arr = (
+                    _conversion.as_array(ffi, rbf_coeff_1, _definitions.FLOAT64)
+                    if rbf_coeff_1 is not None
+                    else None
+                )
                 msg = "shape of rbf_coeff_1 after computation = %s" % str(
-                    rbf_coeff_1.shape if rbf_coeff_1 is not None else "None"
+                    rbf_coeff_1_arr.shape if rbf_coeff_1 is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rbf_coeff_1 after computation: %s" % str(
-                    _conversion.as_array(ffi, rbf_coeff_1, _definitions.FLOAT64)
+                msg = (
+                    "rbf_coeff_1 after computation: %s" % str(rbf_coeff_1_arr)
                     if rbf_coeff_1 is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rbf_coeff_2_arr = (
+                    _conversion.as_array(ffi, rbf_coeff_2, _definitions.FLOAT64)
+                    if rbf_coeff_2 is not None
+                    else None
+                )
                 msg = "shape of rbf_coeff_2 after computation = %s" % str(
-                    rbf_coeff_2.shape if rbf_coeff_2 is not None else "None"
+                    rbf_coeff_2_arr.shape if rbf_coeff_2 is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rbf_coeff_2 after computation: %s" % str(
-                    _conversion.as_array(ffi, rbf_coeff_2, _definitions.FLOAT64)
+                msg = (
+                    "rbf_coeff_2 after computation: %s" % str(rbf_coeff_2_arr)
                     if rbf_coeff_2 is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                geofac_div_arr = (
+                    _conversion.as_array(ffi, geofac_div, _definitions.FLOAT64)
+                    if geofac_div is not None
+                    else None
+                )
                 msg = "shape of geofac_div after computation = %s" % str(
-                    geofac_div.shape if geofac_div is not None else "None"
+                    geofac_div_arr.shape if geofac_div is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "geofac_div after computation: %s" % str(
-                    _conversion.as_array(ffi, geofac_div, _definitions.FLOAT64)
+                msg = (
+                    "geofac_div after computation: %s" % str(geofac_div_arr)
                     if geofac_div is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                geofac_n2s_arr = (
+                    _conversion.as_array(ffi, geofac_n2s, _definitions.FLOAT64)
+                    if geofac_n2s is not None
+                    else None
+                )
                 msg = "shape of geofac_n2s after computation = %s" % str(
-                    geofac_n2s.shape if geofac_n2s is not None else "None"
+                    geofac_n2s_arr.shape if geofac_n2s is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "geofac_n2s after computation: %s" % str(
-                    _conversion.as_array(ffi, geofac_n2s, _definitions.FLOAT64)
+                msg = (
+                    "geofac_n2s after computation: %s" % str(geofac_n2s_arr)
                     if geofac_n2s is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                geofac_grg_x_arr = (
+                    _conversion.as_array(ffi, geofac_grg_x, _definitions.FLOAT64)
+                    if geofac_grg_x is not None
+                    else None
+                )
                 msg = "shape of geofac_grg_x after computation = %s" % str(
-                    geofac_grg_x.shape if geofac_grg_x is not None else "None"
+                    geofac_grg_x_arr.shape if geofac_grg_x is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "geofac_grg_x after computation: %s" % str(
-                    _conversion.as_array(ffi, geofac_grg_x, _definitions.FLOAT64)
+                msg = (
+                    "geofac_grg_x after computation: %s" % str(geofac_grg_x_arr)
                     if geofac_grg_x is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                geofac_grg_y_arr = (
+                    _conversion.as_array(ffi, geofac_grg_y, _definitions.FLOAT64)
+                    if geofac_grg_y is not None
+                    else None
+                )
                 msg = "shape of geofac_grg_y after computation = %s" % str(
-                    geofac_grg_y.shape if geofac_grg_y is not None else "None"
+                    geofac_grg_y_arr.shape if geofac_grg_y is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "geofac_grg_y after computation: %s" % str(
-                    _conversion.as_array(ffi, geofac_grg_y, _definitions.FLOAT64)
+                msg = (
+                    "geofac_grg_y after computation: %s" % str(geofac_grg_y_arr)
                     if geofac_grg_y is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                nudgecoeff_e_arr = (
+                    _conversion.as_array(ffi, nudgecoeff_e, _definitions.FLOAT64)
+                    if nudgecoeff_e is not None
+                    else None
+                )
                 msg = "shape of nudgecoeff_e after computation = %s" % str(
-                    nudgecoeff_e.shape if nudgecoeff_e is not None else "None"
+                    nudgecoeff_e_arr.shape if nudgecoeff_e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "nudgecoeff_e after computation: %s" % str(
-                    _conversion.as_array(ffi, nudgecoeff_e, _definitions.FLOAT64)
+                msg = (
+                    "nudgecoeff_e after computation: %s" % str(nudgecoeff_e_arr)
                     if nudgecoeff_e is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                bdy_halo_c_arr = (
+                    _conversion.as_array(ffi, bdy_halo_c, _definitions.BOOL)
+                    if bdy_halo_c is not None
+                    else None
+                )
                 msg = "shape of bdy_halo_c after computation = %s" % str(
-                    bdy_halo_c.shape if bdy_halo_c is not None else "None"
+                    bdy_halo_c_arr.shape if bdy_halo_c is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "bdy_halo_c after computation: %s" % str(
-                    _conversion.as_array(ffi, bdy_halo_c, _definitions.BOOL)
+                msg = (
+                    "bdy_halo_c after computation: %s" % str(bdy_halo_c_arr)
                     if bdy_halo_c is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                mask_prog_halo_c_arr = (
+                    _conversion.as_array(ffi, mask_prog_halo_c, _definitions.BOOL)
+                    if mask_prog_halo_c is not None
+                    else None
+                )
                 msg = "shape of mask_prog_halo_c after computation = %s" % str(
-                    mask_prog_halo_c.shape if mask_prog_halo_c is not None else "None"
+                    mask_prog_halo_c_arr.shape if mask_prog_halo_c is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "mask_prog_halo_c after computation: %s" % str(
-                    _conversion.as_array(ffi, mask_prog_halo_c, _definitions.BOOL)
+                msg = (
+                    "mask_prog_halo_c after computation: %s" % str(mask_prog_halo_c_arr)
                     if mask_prog_halo_c is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rayleigh_w_arr = (
+                    _conversion.as_array(ffi, rayleigh_w, _definitions.FLOAT64)
+                    if rayleigh_w is not None
+                    else None
+                )
                 msg = "shape of rayleigh_w after computation = %s" % str(
-                    rayleigh_w.shape if rayleigh_w is not None else "None"
+                    rayleigh_w_arr.shape if rayleigh_w is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rayleigh_w after computation: %s" % str(
-                    _conversion.as_array(ffi, rayleigh_w, _definitions.FLOAT64)
+                msg = (
+                    "rayleigh_w after computation: %s" % str(rayleigh_w_arr)
                     if rayleigh_w is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                exner_exfac_arr = (
+                    _conversion.as_array(ffi, exner_exfac, _definitions.FLOAT64)
+                    if exner_exfac is not None
+                    else None
+                )
                 msg = "shape of exner_exfac after computation = %s" % str(
-                    exner_exfac.shape if exner_exfac is not None else "None"
+                    exner_exfac_arr.shape if exner_exfac is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "exner_exfac after computation: %s" % str(
-                    _conversion.as_array(ffi, exner_exfac, _definitions.FLOAT64)
+                msg = (
+                    "exner_exfac after computation: %s" % str(exner_exfac_arr)
                     if exner_exfac is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                exner_ref_mc_arr = (
+                    _conversion.as_array(ffi, exner_ref_mc, _definitions.FLOAT64)
+                    if exner_ref_mc is not None
+                    else None
+                )
                 msg = "shape of exner_ref_mc after computation = %s" % str(
-                    exner_ref_mc.shape if exner_ref_mc is not None else "None"
+                    exner_ref_mc_arr.shape if exner_ref_mc is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "exner_ref_mc after computation: %s" % str(
-                    _conversion.as_array(ffi, exner_ref_mc, _definitions.FLOAT64)
+                msg = (
+                    "exner_ref_mc after computation: %s" % str(exner_ref_mc_arr)
                     if exner_ref_mc is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                wgtfac_c_arr = (
+                    _conversion.as_array(ffi, wgtfac_c, _definitions.FLOAT64)
+                    if wgtfac_c is not None
+                    else None
+                )
                 msg = "shape of wgtfac_c after computation = %s" % str(
-                    wgtfac_c.shape if wgtfac_c is not None else "None"
+                    wgtfac_c_arr.shape if wgtfac_c is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "wgtfac_c after computation: %s" % str(
-                    _conversion.as_array(ffi, wgtfac_c, _definitions.FLOAT64)
+                msg = (
+                    "wgtfac_c after computation: %s" % str(wgtfac_c_arr)
                     if wgtfac_c is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                wgtfacq_c_arr = (
+                    _conversion.as_array(ffi, wgtfacq_c, _definitions.FLOAT64)
+                    if wgtfacq_c is not None
+                    else None
+                )
                 msg = "shape of wgtfacq_c after computation = %s" % str(
-                    wgtfacq_c.shape if wgtfacq_c is not None else "None"
+                    wgtfacq_c_arr.shape if wgtfacq_c is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "wgtfacq_c after computation: %s" % str(
-                    _conversion.as_array(ffi, wgtfacq_c, _definitions.FLOAT64)
+                msg = (
+                    "wgtfacq_c after computation: %s" % str(wgtfacq_c_arr)
                     if wgtfacq_c is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                inv_ddqz_z_full_arr = (
+                    _conversion.as_array(ffi, inv_ddqz_z_full, _definitions.FLOAT64)
+                    if inv_ddqz_z_full is not None
+                    else None
+                )
                 msg = "shape of inv_ddqz_z_full after computation = %s" % str(
-                    inv_ddqz_z_full.shape if inv_ddqz_z_full is not None else "None"
+                    inv_ddqz_z_full_arr.shape if inv_ddqz_z_full is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "inv_ddqz_z_full after computation: %s" % str(
-                    _conversion.as_array(ffi, inv_ddqz_z_full, _definitions.FLOAT64)
+                msg = (
+                    "inv_ddqz_z_full after computation: %s" % str(inv_ddqz_z_full_arr)
                     if inv_ddqz_z_full is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rho_ref_mc_arr = (
+                    _conversion.as_array(ffi, rho_ref_mc, _definitions.FLOAT64)
+                    if rho_ref_mc is not None
+                    else None
+                )
                 msg = "shape of rho_ref_mc after computation = %s" % str(
-                    rho_ref_mc.shape if rho_ref_mc is not None else "None"
+                    rho_ref_mc_arr.shape if rho_ref_mc is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rho_ref_mc after computation: %s" % str(
-                    _conversion.as_array(ffi, rho_ref_mc, _definitions.FLOAT64)
+                msg = (
+                    "rho_ref_mc after computation: %s" % str(rho_ref_mc_arr)
                     if rho_ref_mc is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                theta_ref_mc_arr = (
+                    _conversion.as_array(ffi, theta_ref_mc, _definitions.FLOAT64)
+                    if theta_ref_mc is not None
+                    else None
+                )
                 msg = "shape of theta_ref_mc after computation = %s" % str(
-                    theta_ref_mc.shape if theta_ref_mc is not None else "None"
+                    theta_ref_mc_arr.shape if theta_ref_mc is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "theta_ref_mc after computation: %s" % str(
-                    _conversion.as_array(ffi, theta_ref_mc, _definitions.FLOAT64)
+                msg = (
+                    "theta_ref_mc after computation: %s" % str(theta_ref_mc_arr)
                     if theta_ref_mc is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vwind_expl_wgt_arr = (
+                    _conversion.as_array(ffi, vwind_expl_wgt, _definitions.FLOAT64)
+                    if vwind_expl_wgt is not None
+                    else None
+                )
                 msg = "shape of vwind_expl_wgt after computation = %s" % str(
-                    vwind_expl_wgt.shape if vwind_expl_wgt is not None else "None"
+                    vwind_expl_wgt_arr.shape if vwind_expl_wgt is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vwind_expl_wgt after computation: %s" % str(
-                    _conversion.as_array(ffi, vwind_expl_wgt, _definitions.FLOAT64)
+                msg = (
+                    "vwind_expl_wgt after computation: %s" % str(vwind_expl_wgt_arr)
                     if vwind_expl_wgt is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                d_exner_dz_ref_ic_arr = (
+                    _conversion.as_array(ffi, d_exner_dz_ref_ic, _definitions.FLOAT64)
+                    if d_exner_dz_ref_ic is not None
+                    else None
+                )
                 msg = "shape of d_exner_dz_ref_ic after computation = %s" % str(
-                    d_exner_dz_ref_ic.shape if d_exner_dz_ref_ic is not None else "None"
+                    d_exner_dz_ref_ic_arr.shape if d_exner_dz_ref_ic is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "d_exner_dz_ref_ic after computation: %s" % str(
-                    _conversion.as_array(ffi, d_exner_dz_ref_ic, _definitions.FLOAT64)
+                msg = (
+                    "d_exner_dz_ref_ic after computation: %s" % str(d_exner_dz_ref_ic_arr)
                     if d_exner_dz_ref_ic is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddqz_z_half_arr = (
+                    _conversion.as_array(ffi, ddqz_z_half, _definitions.FLOAT64)
+                    if ddqz_z_half is not None
+                    else None
+                )
                 msg = "shape of ddqz_z_half after computation = %s" % str(
-                    ddqz_z_half.shape if ddqz_z_half is not None else "None"
+                    ddqz_z_half_arr.shape if ddqz_z_half is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddqz_z_half after computation: %s" % str(
-                    _conversion.as_array(ffi, ddqz_z_half, _definitions.FLOAT64)
+                msg = (
+                    "ddqz_z_half after computation: %s" % str(ddqz_z_half_arr)
                     if ddqz_z_half is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                theta_ref_ic_arr = (
+                    _conversion.as_array(ffi, theta_ref_ic, _definitions.FLOAT64)
+                    if theta_ref_ic is not None
+                    else None
+                )
                 msg = "shape of theta_ref_ic after computation = %s" % str(
-                    theta_ref_ic.shape if theta_ref_ic is not None else "None"
+                    theta_ref_ic_arr.shape if theta_ref_ic is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "theta_ref_ic after computation: %s" % str(
-                    _conversion.as_array(ffi, theta_ref_ic, _definitions.FLOAT64)
+                msg = (
+                    "theta_ref_ic after computation: %s" % str(theta_ref_ic_arr)
                     if theta_ref_ic is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                d2dexdz2_fac1_mc_arr = (
+                    _conversion.as_array(ffi, d2dexdz2_fac1_mc, _definitions.FLOAT64)
+                    if d2dexdz2_fac1_mc is not None
+                    else None
+                )
                 msg = "shape of d2dexdz2_fac1_mc after computation = %s" % str(
-                    d2dexdz2_fac1_mc.shape if d2dexdz2_fac1_mc is not None else "None"
+                    d2dexdz2_fac1_mc_arr.shape if d2dexdz2_fac1_mc is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "d2dexdz2_fac1_mc after computation: %s" % str(
-                    _conversion.as_array(ffi, d2dexdz2_fac1_mc, _definitions.FLOAT64)
+                msg = (
+                    "d2dexdz2_fac1_mc after computation: %s" % str(d2dexdz2_fac1_mc_arr)
                     if d2dexdz2_fac1_mc is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                d2dexdz2_fac2_mc_arr = (
+                    _conversion.as_array(ffi, d2dexdz2_fac2_mc, _definitions.FLOAT64)
+                    if d2dexdz2_fac2_mc is not None
+                    else None
+                )
                 msg = "shape of d2dexdz2_fac2_mc after computation = %s" % str(
-                    d2dexdz2_fac2_mc.shape if d2dexdz2_fac2_mc is not None else "None"
+                    d2dexdz2_fac2_mc_arr.shape if d2dexdz2_fac2_mc is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "d2dexdz2_fac2_mc after computation: %s" % str(
-                    _conversion.as_array(ffi, d2dexdz2_fac2_mc, _definitions.FLOAT64)
+                msg = (
+                    "d2dexdz2_fac2_mc after computation: %s" % str(d2dexdz2_fac2_mc_arr)
                     if d2dexdz2_fac2_mc is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                rho_ref_me_arr = (
+                    _conversion.as_array(ffi, rho_ref_me, _definitions.FLOAT64)
+                    if rho_ref_me is not None
+                    else None
+                )
                 msg = "shape of rho_ref_me after computation = %s" % str(
-                    rho_ref_me.shape if rho_ref_me is not None else "None"
+                    rho_ref_me_arr.shape if rho_ref_me is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "rho_ref_me after computation: %s" % str(
-                    _conversion.as_array(ffi, rho_ref_me, _definitions.FLOAT64)
+                msg = (
+                    "rho_ref_me after computation: %s" % str(rho_ref_me_arr)
                     if rho_ref_me is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                theta_ref_me_arr = (
+                    _conversion.as_array(ffi, theta_ref_me, _definitions.FLOAT64)
+                    if theta_ref_me is not None
+                    else None
+                )
                 msg = "shape of theta_ref_me after computation = %s" % str(
-                    theta_ref_me.shape if theta_ref_me is not None else "None"
+                    theta_ref_me_arr.shape if theta_ref_me is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "theta_ref_me after computation: %s" % str(
-                    _conversion.as_array(ffi, theta_ref_me, _definitions.FLOAT64)
+                msg = (
+                    "theta_ref_me after computation: %s" % str(theta_ref_me_arr)
                     if theta_ref_me is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddxn_z_full_arr = (
+                    _conversion.as_array(ffi, ddxn_z_full, _definitions.FLOAT64)
+                    if ddxn_z_full is not None
+                    else None
+                )
                 msg = "shape of ddxn_z_full after computation = %s" % str(
-                    ddxn_z_full.shape if ddxn_z_full is not None else "None"
+                    ddxn_z_full_arr.shape if ddxn_z_full is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddxn_z_full after computation: %s" % str(
-                    _conversion.as_array(ffi, ddxn_z_full, _definitions.FLOAT64)
+                msg = (
+                    "ddxn_z_full after computation: %s" % str(ddxn_z_full_arr)
                     if ddxn_z_full is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                zdiff_gradp_arr = (
+                    _conversion.as_array(ffi, zdiff_gradp, _definitions.FLOAT64)
+                    if zdiff_gradp is not None
+                    else None
+                )
                 msg = "shape of zdiff_gradp after computation = %s" % str(
-                    zdiff_gradp.shape if zdiff_gradp is not None else "None"
+                    zdiff_gradp_arr.shape if zdiff_gradp is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "zdiff_gradp after computation: %s" % str(
-                    _conversion.as_array(ffi, zdiff_gradp, _definitions.FLOAT64)
+                msg = (
+                    "zdiff_gradp after computation: %s" % str(zdiff_gradp_arr)
                     if zdiff_gradp is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vertoffset_gradp_arr = (
+                    _conversion.as_array(ffi, vertoffset_gradp, _definitions.INT32)
+                    if vertoffset_gradp is not None
+                    else None
+                )
                 msg = "shape of vertoffset_gradp after computation = %s" % str(
-                    vertoffset_gradp.shape if vertoffset_gradp is not None else "None"
+                    vertoffset_gradp_arr.shape if vertoffset_gradp is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vertoffset_gradp after computation: %s" % str(
-                    _conversion.as_array(ffi, vertoffset_gradp, _definitions.INT32)
+                msg = (
+                    "vertoffset_gradp after computation: %s" % str(vertoffset_gradp_arr)
                     if vertoffset_gradp is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ipeidx_dsl_arr = (
+                    _conversion.as_array(ffi, ipeidx_dsl, _definitions.BOOL)
+                    if ipeidx_dsl is not None
+                    else None
+                )
                 msg = "shape of ipeidx_dsl after computation = %s" % str(
-                    ipeidx_dsl.shape if ipeidx_dsl is not None else "None"
+                    ipeidx_dsl_arr.shape if ipeidx_dsl is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ipeidx_dsl after computation: %s" % str(
-                    _conversion.as_array(ffi, ipeidx_dsl, _definitions.BOOL)
+                msg = (
+                    "ipeidx_dsl after computation: %s" % str(ipeidx_dsl_arr)
                     if ipeidx_dsl is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                pg_exdist_arr = (
+                    _conversion.as_array(ffi, pg_exdist, _definitions.FLOAT64)
+                    if pg_exdist is not None
+                    else None
+                )
                 msg = "shape of pg_exdist after computation = %s" % str(
-                    pg_exdist.shape if pg_exdist is not None else "None"
+                    pg_exdist_arr.shape if pg_exdist is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "pg_exdist after computation: %s" % str(
-                    _conversion.as_array(ffi, pg_exdist, _definitions.FLOAT64)
+                msg = (
+                    "pg_exdist after computation: %s" % str(pg_exdist_arr)
                     if pg_exdist is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddqz_z_full_e_arr = (
+                    _conversion.as_array(ffi, ddqz_z_full_e, _definitions.FLOAT64)
+                    if ddqz_z_full_e is not None
+                    else None
+                )
                 msg = "shape of ddqz_z_full_e after computation = %s" % str(
-                    ddqz_z_full_e.shape if ddqz_z_full_e is not None else "None"
+                    ddqz_z_full_e_arr.shape if ddqz_z_full_e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddqz_z_full_e after computation: %s" % str(
-                    _conversion.as_array(ffi, ddqz_z_full_e, _definitions.FLOAT64)
+                msg = (
+                    "ddqz_z_full_e after computation: %s" % str(ddqz_z_full_e_arr)
                     if ddqz_z_full_e is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                ddxt_z_full_arr = (
+                    _conversion.as_array(ffi, ddxt_z_full, _definitions.FLOAT64)
+                    if ddxt_z_full is not None
+                    else None
+                )
                 msg = "shape of ddxt_z_full after computation = %s" % str(
-                    ddxt_z_full.shape if ddxt_z_full is not None else "None"
+                    ddxt_z_full_arr.shape if ddxt_z_full is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "ddxt_z_full after computation: %s" % str(
-                    _conversion.as_array(ffi, ddxt_z_full, _definitions.FLOAT64)
+                msg = (
+                    "ddxt_z_full after computation: %s" % str(ddxt_z_full_arr)
                     if ddxt_z_full is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                wgtfac_e_arr = (
+                    _conversion.as_array(ffi, wgtfac_e, _definitions.FLOAT64)
+                    if wgtfac_e is not None
+                    else None
+                )
                 msg = "shape of wgtfac_e after computation = %s" % str(
-                    wgtfac_e.shape if wgtfac_e is not None else "None"
+                    wgtfac_e_arr.shape if wgtfac_e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "wgtfac_e after computation: %s" % str(
-                    _conversion.as_array(ffi, wgtfac_e, _definitions.FLOAT64)
+                msg = (
+                    "wgtfac_e after computation: %s" % str(wgtfac_e_arr)
                     if wgtfac_e is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                wgtfacq_e_arr = (
+                    _conversion.as_array(ffi, wgtfacq_e, _definitions.FLOAT64)
+                    if wgtfacq_e is not None
+                    else None
+                )
                 msg = "shape of wgtfacq_e after computation = %s" % str(
-                    wgtfacq_e.shape if wgtfacq_e is not None else "None"
+                    wgtfacq_e_arr.shape if wgtfacq_e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "wgtfacq_e after computation: %s" % str(
-                    _conversion.as_array(ffi, wgtfacq_e, _definitions.FLOAT64)
+                msg = (
+                    "wgtfacq_e after computation: %s" % str(wgtfacq_e_arr)
                     if wgtfacq_e is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vwind_impl_wgt_arr = (
+                    _conversion.as_array(ffi, vwind_impl_wgt, _definitions.FLOAT64)
+                    if vwind_impl_wgt is not None
+                    else None
+                )
                 msg = "shape of vwind_impl_wgt after computation = %s" % str(
-                    vwind_impl_wgt.shape if vwind_impl_wgt is not None else "None"
+                    vwind_impl_wgt_arr.shape if vwind_impl_wgt is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vwind_impl_wgt after computation: %s" % str(
-                    _conversion.as_array(ffi, vwind_impl_wgt, _definitions.FLOAT64)
+                msg = (
+                    "vwind_impl_wgt after computation: %s" % str(vwind_impl_wgt_arr)
                     if vwind_impl_wgt is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                hmask_dd3d_arr = (
+                    _conversion.as_array(ffi, hmask_dd3d, _definitions.FLOAT64)
+                    if hmask_dd3d is not None
+                    else None
+                )
                 msg = "shape of hmask_dd3d after computation = %s" % str(
-                    hmask_dd3d.shape if hmask_dd3d is not None else "None"
+                    hmask_dd3d_arr.shape if hmask_dd3d is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "hmask_dd3d after computation: %s" % str(
-                    _conversion.as_array(ffi, hmask_dd3d, _definitions.FLOAT64)
+                msg = (
+                    "hmask_dd3d after computation: %s" % str(hmask_dd3d_arr)
                     if hmask_dd3d is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                scalfac_dd3d_arr = (
+                    _conversion.as_array(ffi, scalfac_dd3d, _definitions.FLOAT64)
+                    if scalfac_dd3d is not None
+                    else None
+                )
                 msg = "shape of scalfac_dd3d after computation = %s" % str(
-                    scalfac_dd3d.shape if scalfac_dd3d is not None else "None"
+                    scalfac_dd3d_arr.shape if scalfac_dd3d is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "scalfac_dd3d after computation: %s" % str(
-                    _conversion.as_array(ffi, scalfac_dd3d, _definitions.FLOAT64)
+                msg = (
+                    "scalfac_dd3d after computation: %s" % str(scalfac_dd3d_arr)
                     if scalfac_dd3d is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                coeff1_dwdz_arr = (
+                    _conversion.as_array(ffi, coeff1_dwdz, _definitions.FLOAT64)
+                    if coeff1_dwdz is not None
+                    else None
+                )
                 msg = "shape of coeff1_dwdz after computation = %s" % str(
-                    coeff1_dwdz.shape if coeff1_dwdz is not None else "None"
+                    coeff1_dwdz_arr.shape if coeff1_dwdz is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "coeff1_dwdz after computation: %s" % str(
-                    _conversion.as_array(ffi, coeff1_dwdz, _definitions.FLOAT64)
+                msg = (
+                    "coeff1_dwdz after computation: %s" % str(coeff1_dwdz_arr)
                     if coeff1_dwdz is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                coeff2_dwdz_arr = (
+                    _conversion.as_array(ffi, coeff2_dwdz, _definitions.FLOAT64)
+                    if coeff2_dwdz is not None
+                    else None
+                )
                 msg = "shape of coeff2_dwdz after computation = %s" % str(
-                    coeff2_dwdz.shape if coeff2_dwdz is not None else "None"
+                    coeff2_dwdz_arr.shape if coeff2_dwdz is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "coeff2_dwdz after computation: %s" % str(
-                    _conversion.as_array(ffi, coeff2_dwdz, _definitions.FLOAT64)
+                msg = (
+                    "coeff2_dwdz after computation: %s" % str(coeff2_dwdz_arr)
                     if coeff2_dwdz is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                coeff_gradekin_arr = (
+                    _conversion.as_array(ffi, coeff_gradekin, _definitions.FLOAT64)
+                    if coeff_gradekin is not None
+                    else None
+                )
                 msg = "shape of coeff_gradekin after computation = %s" % str(
-                    coeff_gradekin.shape if coeff_gradekin is not None else "None"
+                    coeff_gradekin_arr.shape if coeff_gradekin is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "coeff_gradekin after computation: %s" % str(
-                    _conversion.as_array(ffi, coeff_gradekin, _definitions.FLOAT64)
+                msg = (
+                    "coeff_gradekin after computation: %s" % str(coeff_gradekin_arr)
                     if coeff_gradekin is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                c_owner_mask_arr = (
+                    _conversion.as_array(ffi, c_owner_mask, _definitions.BOOL)
+                    if c_owner_mask is not None
+                    else None
+                )
                 msg = "shape of c_owner_mask after computation = %s" % str(
-                    c_owner_mask.shape if c_owner_mask is not None else "None"
+                    c_owner_mask_arr.shape if c_owner_mask is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "c_owner_mask after computation: %s" % str(
-                    _conversion.as_array(ffi, c_owner_mask, _definitions.BOOL)
+                msg = (
+                    "c_owner_mask after computation: %s" % str(c_owner_mask_arr)
                     if c_owner_mask is not None
                     else "None"
                 )

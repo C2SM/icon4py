@@ -147,7 +147,7 @@ def add_halo_tasklet(
         # DaCe strides: number of elements to jump
         fields_desc += f"""
         if ({len(arg.shape)} > 2u) throw std::runtime_error("field has too many dimensions");
-        
+
         if ({arg.shape[0]} != {exchange._domain_descriptors[dim].size()}) throw std::runtime_error("field's first dimension must match the size of the domain");
 
         levels_first = true;
@@ -188,7 +188,7 @@ def add_halo_tasklet(
         # Here, they are initialized at the first encounter of the halo exchange node
         __pattern = ""
         __domain_descriptor = ""
-        for dim_ in dims.global_dimensions.values():
+        for dim_ in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
             __pattern += f"__pattern_{dim_.value}Dim_ptr_{unique_id} = IN___pattern_{dim_.value}Dim_ptr;\n"  # IN_XXX comes from the DaCe connector
             __domain_descriptor += f"__domain_descriptor_{dim_.value}Dim_ptr_{unique_id} = IN___domain_descriptor_{dim_.value}Dim_ptr;\n"
 
@@ -201,7 +201,7 @@ def add_halo_tasklet(
 
     code += f"""
             ghex::context* m = reinterpret_cast<ghex::context*>(__context_ptr_{unique_id});
-            
+
             {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(__pattern_{dim.value}Dim_ptr_{unique_id});
             {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(__domain_descriptor_{dim.value}Dim_ptr_{unique_id});
             {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(__comm_ptr_{unique_id});
@@ -220,7 +220,7 @@ def add_halo_tasklet(
         # Set global variables
         __pattern = ""
         __domain_descriptor = ""
-        for dim_ in dims.global_dimensions.values():
+        for dim_ in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
             __pattern += f"{dace.uintp.dtype} __pattern_{dim_.value}Dim_ptr_{unique_id};\n"
             __domain_descriptor += (
                 f"{dace.uintp.dtype} __domain_descriptor_{dim_.value}Dim_ptr_{unique_id};\n"

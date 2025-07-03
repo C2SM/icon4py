@@ -19,7 +19,7 @@ import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base, horizontal, icon
+from icon4py.model.common.grid import base, icon
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -149,7 +149,9 @@ class IconGridSavepoint(IconSavepoint):
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(root, level)
+        self.global_grid_params = icon.GlobalGridParams.from_mean_cell_area(
+            self.mean_cell_area(), root=root, level=level
+        )
 
     def verts_vertex_lat(self):
         """vertex latituted"""
@@ -456,7 +458,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, on_gpu: bool) -> icon.IconGrid:
+    def construct_icon_grid(self, on_gpu: bool, keep_skip_values: bool = True) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -465,7 +467,7 @@ class IconGridSavepoint(IconSavepoint):
         edge_ends = self.edge_end_index()
 
         config = base.GridConfig(
-            horizontal_config=horizontal.HorizontalGridSize(
+            horizontal_config=base.HorizontalGridSize(
                 num_vertices=self.num(dims.VertexDim),
                 num_cells=self.num(dims.CellDim),
                 num_edges=self.num(dims.EdgeDim),
@@ -473,6 +475,7 @@ class IconGridSavepoint(IconSavepoint):
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             on_gpu=on_gpu,
+            keep_skip_values=keep_skip_values,
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
@@ -481,12 +484,12 @@ class IconGridSavepoint(IconSavepoint):
         xp = data_alloc.array_ns(on_gpu)
         grid = (
             icon.IconGrid(self._grid_id)
-            .with_config(config)
-            .with_global_params(self.global_grid_params)
-            .with_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
-            .with_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
-            .with_start_end_indices(dims.CellDim, cell_starts, cell_ends)
-            .with_connectivities(
+            .set_config(config)
+            .set_global_params(self.global_grid_params)
+            .set_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
+            .set_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
+            .set_start_end_indices(dims.CellDim, cell_starts, cell_ends)
+            .set_neighbor_tables(
                 {
                     dims.C2EDim: xp.asarray(self.c2e()),
                     dims.E2CDim: xp.asarray(self.e2c()),
@@ -497,7 +500,7 @@ class IconGridSavepoint(IconSavepoint):
                     dims.E2C2EODim: xp.asarray(e2c2e0),
                 }
             )
-            .with_connectivities(
+            .set_neighbor_tables(
                 {
                     dims.E2VDim: xp.asarray(self.e2v()),
                     dims.V2EDim: xp.asarray(self.v2e()),
@@ -565,12 +568,10 @@ class IconGridSavepoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> grid_states.CellParams:
-        return grid_states.CellParams.from_global_num_cells(
+        return grid_states.CellParams(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
-            global_num_cells=self.global_grid_params.num_cells,
-            length_rescale_factor=1.0,
         )
 
 
@@ -635,17 +636,21 @@ class InterpolationSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)

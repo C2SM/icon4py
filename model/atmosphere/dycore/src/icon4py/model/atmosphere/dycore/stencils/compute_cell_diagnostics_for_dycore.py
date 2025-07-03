@@ -100,7 +100,7 @@ def _compute_perturbed_quantities_and_interpolation(
 ]:
     (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
         concat_where(
-            (start_cell_lateral_boundary <= dims.CellDim < end_cell_end),
+            (start_cell_lateral_boundary <= dims.CellDim) & (dims.CellDim < end_cell_end),
             _init_two_cell_kdim_fields_with_zero_vp(),
             (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
         )
@@ -111,7 +111,8 @@ def _compute_perturbed_quantities_and_interpolation(
     exner_at_cells_on_half_levels = (
         concat_where(
             (
-                (start_cell_lateral_boundary_level_3 <= dims.CellDim < end_cell_halo)
+                (start_cell_lateral_boundary_level_3 <= dims.CellDim)
+                & (dims.CellDim < end_cell_halo)
                 & (maximum(1, nflatlev) <= dims.KDim)
             ),
             _interpolate_cell_field_to_half_levels_vp(
@@ -131,7 +132,7 @@ def _compute_perturbed_quantities_and_interpolation(
         theta_v_at_cells_on_half_levels,
         pressure_buoyancy_acceleration_at_cells_on_half_levels,
     ) = concat_where(
-        (start_cell_lateral_boundary_level_3 <= dims.CellDim < end_cell_halo),
+        (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo),
         _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
             rho=current_rho,
             z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
@@ -169,7 +170,7 @@ def _compute_perturbed_quantities_and_interpolation(
         perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels,
     ) = concat_where(
-        (start_cell_halo_level_2 <= dims.CellDim < end_cell_halo_level_2),
+        (start_cell_halo_level_2 <= dims.CellDim) & (dims.CellDim < end_cell_halo_level_2),
         _compute_perturbation_of_rho_and_theta(
             rho=current_rho,
             rho_ref_mc=reference_rho_at_cells_on_model_levels,
@@ -205,14 +206,14 @@ def _surface_computations(
     fa.CellKField[ta.vpfloat],
 ]:
     temporal_extrapolation_of_perturbed_exner = concat_where(
-        (start_cell_lateral_boundary_level_3 <= dims.CellDim < end_cell_halo),
+        (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo),
         _init_cell_kdim_field_with_zero_wp(),
         temporal_extrapolation_of_perturbed_exner,
     )
 
     exner_at_cells_on_half_levels = (
         concat_where(
-            (start_cell_lateral_boundary_level_3 <= dims.CellDim < end_cell_halo),
+            (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo),
             _interpolate_to_surface(
                 wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
             ),

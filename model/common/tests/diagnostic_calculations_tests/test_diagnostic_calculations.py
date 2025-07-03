@@ -135,7 +135,7 @@ def test_diagnose_meridional_and_zonal_winds(
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "C2E2C2E": icon_grid.get_offset_provider("C2E2C2E"),
+            "C2E2C2E": icon_grid.get_connectivity("C2E2C2E"),
         },
     )
 
@@ -251,6 +251,7 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 @pytest.mark.parametrize("location", [("interface-nwp")])
+@pytest.mark.datatest
 def test_diagnostic_update_after_saturation_adjustement(
     experiment,
     location,

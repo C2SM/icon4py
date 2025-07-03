@@ -23,7 +23,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.common.grid import base, horizontal, icon
+from icon4py.model.common.grid import base, icon
 
 
 try:
@@ -182,7 +182,7 @@ def construct_icon_grid(
     e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
 
     config = base.GridConfig(
-        horizontal_config=horizontal.HorizontalGridSize(
+        horizontal_config=base.HorizontalGridSize(
             num_vertices=num_vertices,
             num_cells=num_cells,
             num_edges=num_edges,
@@ -190,15 +190,16 @@ def construct_icon_grid(
         vertical_size=vertical_size,
         limited_area=limited_area,
         on_gpu=on_gpu,
+        keep_skip_values=False,
     )
 
     grid = (
         icon.IconGrid(id_=grid_id)
-        .with_config(config)
-        .with_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
-        .with_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)
-        .with_start_end_indices(dims.CellDim, cells_start_index, cells_end_index)
-        .with_connectivities(
+        .set_config(config)
+        .set_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
+        .set_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)
+        .set_start_end_indices(dims.CellDim, cells_start_index, cells_end_index)
+        .set_neighbor_tables(
             {
                 dims.C2EDim: c2e,
                 dims.C2VDim: c2v,
@@ -209,7 +210,7 @@ def construct_icon_grid(
                 dims.E2C2EODim: e2c2e0,
             }
         )
-        .with_connectivities(
+        .set_neighbor_tables(
             {
                 dims.V2EDim: v2e,
                 dims.E2VDim: e2v,
