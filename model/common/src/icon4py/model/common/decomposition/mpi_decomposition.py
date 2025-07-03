@@ -110,7 +110,8 @@ def get_multinode_properties(
     return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
-@dataclass(frozen=True)
+# TODO (@halungge) changed for dev/testing set back to frozen
+@dataclass(frozen=False)
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
 

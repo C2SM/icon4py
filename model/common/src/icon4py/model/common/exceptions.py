@@ -22,3 +22,7 @@ class IncompleteStateError(Exception):
 
 class IconGridError(RuntimeError):
     pass
+
+
+class MissingConnectivity(ValueError):
+    pass

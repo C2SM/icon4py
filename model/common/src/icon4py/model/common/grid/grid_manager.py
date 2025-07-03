@@ -5,19 +5,21 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import enum
 import functools
 import logging
 import pathlib
 from types import ModuleType
-from typing import Literal, Optional, Protocol, TypeAlias, Union
+from typing import Callable, Literal, Optional, Protocol, TypeAlias, Union
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import numpy as np
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, type_alias as ta, utils
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
+    halo,
 )
 from icon4py.model.common.grid import (
     base,
@@ -30,6 +32,12 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _log = logging.getLogger(__name__)
+_single_node_properties = decomposition.SingleNodeProcessProperties()
+
+
+class ReadType(enum.IntEnum):
+    FLOAT = 0
+    INT = 1
 
 
 class IconGridError(RuntimeError):
@@ -87,9 +95,13 @@ class GridManager:
         transformation: IndexTransformation,
         grid_file: Union[pathlib.Path, str],
         config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove to separate vertical and horizontal grid
+        decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
+        run_properties: decomposition.ProcessProperties = _single_node_properties,
     ):
+        self._run_properties = run_properties
         self._transformation = transformation
         self._file_name = str(grid_file)
+        self._decompose = decomposer
         self._vertical_config = config
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
@@ -118,6 +130,16 @@ class GridManager:
             )
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
+
+    # TODO # add args to __call__?
+    @utils.chainable
+    def with_decomposer(
+        self,
+        decomposer: Callable[[np.ndarray, int], np.ndarray],
+        run_properties: decomposition.ProcessProperties,
+    ):
+        self._run_properties = run_properties
+        self._decompose = decomposer
 
     def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool):
         if not self._reader:
@@ -633,3 +655,53 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
         axis=0,
     )
     return patched_ar
+
+
+def construct_local_connectivity(
+    field_offset: gtx.FieldOffset,
+    decomposition_info: decomposition.DecompositionInfo,
+    connectivity: np.ndarray,
+) -> np.ndarray:
+    """
+    Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
+
+    Starting from the connectivity table on the global grid
+    - we reduce it to the lines for the locally present entries of the the target dimension
+    - the reduced connectivity then still maps to global source dimension indices:
+        we replace those source dimension indices not present on the node to SKIP_VALUE and replace the rest with the local indices
+
+    Args:
+        field_offset: FieldOffset for which we want to construct the local connectivity table
+        decomposition_info: DecompositionInfo for the current rank.
+        connectivity:
+
+    Returns:
+        connectivity are for the same FieldOffset but mapping from local target dimension indices to local source dimension indices.
+    """
+    source_dim = field_offset.source
+    target_dim = field_offset.target[0]
+    sliced_connectivity = connectivity[
+        decomposition_info.global_index(target_dim, decomposition.DecompositionInfo.EntryType.ALL)
+    ]
+
+    global_idx = decomposition_info.global_index(
+        source_dim, decomposition.DecompositionInfo.EntryType.ALL
+    )
+
+    # replace indices in the connectivity that do not exist on the local node by the SKIP_VALUE (those are for example neighbors of the outermost halo points)
+    local_connectivity = np.where(
+        np.isin(sliced_connectivity, global_idx),
+        sliced_connectivity,
+        gridfile.GridFile.INVALID_INDEX,
+    )
+
+    # map to local source indices
+    sorted_index_of_global_idx = np.argsort(global_idx)
+    global_idx_sorted = global_idx[sorted_index_of_global_idx]
+    for i in np.arange(local_connectivity.shape[0]):
+        valid_neighbor_mask = local_connectivity[i, :] != gridfile.GridFile.INVALID_INDEX
+        positions = np.searchsorted(global_idx_sorted, local_connectivity[i, valid_neighbor_mask])
+        indices = sorted_index_of_global_idx[positions]
+        local_connectivity[i, valid_neighbor_mask] = indices
+    # _log.debug(f"rank {self._props.rank} has local connectivity f: {local_connectivity}")
+    return local_connectivity
