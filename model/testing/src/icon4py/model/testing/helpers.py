@@ -151,7 +151,7 @@ def _verify_stencil_test(
                     out_field.asnumpy()[gtslice],
                     reference_outputs[name][i_out_field][refslice],
                     equal_nan=True,
-                    err_msg=f"Verification failed for '{name}'",
+                    err_msg=f"Verification failed for '{name}[{i_out_field}]'",
                 )
         else:
             np.testing.assert_allclose(
