@@ -75,10 +75,9 @@ def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
     }
 
 
-def state_values() -> xr.DataArray:
+def state_values() -> list[xr.DataArray]:
     state = model_state(simple_grid)
-    for v in state.values():
-        yield v
+    return list(state.values())
 
 
 @pytest.mark.parametrize("num", range(1, 6))
