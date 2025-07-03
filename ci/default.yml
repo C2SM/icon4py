@@ -42,7 +42,7 @@ test_tools_datatests_aarch64:
     - if: $COMPONENT == 'diffusion' || $COMPONENT == 'dycore' || $COMPONENT == 'driver'
       variables:
         # disable JIT in order to verify that all stencil variants are precompiled
-        DEFAULT_ENABLE_JIT: False
+        GT4PY_ENABLE_JIT_DEFAULT: False
     - if: $COMPONENT == 'common' && $BACKEND == 'gtfn_gpu' && $LEVEL == 'integration'
       variables:
         SLURM_TIMELIMIT: '01:30:00'
