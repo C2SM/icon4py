@@ -63,13 +63,14 @@ build_distributed_cpu:
   variables:
     SLURM_TIMELIMIT: '03:00:00'
     SLURM_JOB_NUM_NODES: 1
+    SLURM_CPU_BIND: 'verbose'
     SLURM_NTASKS: 1
     ICON4PY_MPI_TASKS: 4
-    USE_MPI: "YES"
+    USE_MPI: "NO"
     TEST_DATA_PATH: "/icon4py/ci/testdata"
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_003:$TEST_DATA_PATH"]'
-    ICON4PY_MPI_PREFIX: "mpirun -n ${ICON4PY_MPI_TASKS}"
+    ICON4PY_MPI_PREFIX: "env -i mpirun -n ${ICON4PY_MPI_TASKS}"
     #ICON4PY_MPI_PREFIX: ""
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     #CUDAARCHS: "90"
