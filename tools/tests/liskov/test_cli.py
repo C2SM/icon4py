@@ -10,8 +10,8 @@ import itertools
 
 import pytest
 
-from icon4pytools.liskov.cli import main
-from icon4pytools.liskov.external.exceptions import MissingCommandError
+from icon4py.tools.liskov.cli import main
+from icon4py.tools.liskov.external.exceptions import MissingCommandError
 
 from .fortran_samples import (
     CONSECUTIVE_STENCIL,

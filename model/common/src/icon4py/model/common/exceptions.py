@@ -7,6 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+class InvalidComputationError(Exception):
+    pass
+
+
 class InvalidConfigError(Exception):
     pass
 

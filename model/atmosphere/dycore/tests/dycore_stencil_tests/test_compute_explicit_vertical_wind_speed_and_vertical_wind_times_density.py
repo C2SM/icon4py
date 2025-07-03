@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,9 +15,28 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_spe
     compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
+
+
+def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    w_nnow: np.ndarray,
+    ddt_w_adv_ntl1: np.ndarray,
+    z_th_ddz_exner_c: np.ndarray,
+    rho_ic: np.ndarray,
+    w_concorr_c: np.ndarray,
+    vwind_expl_wgt: np.ndarray,
+    dtime: float,
+    cpd: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, -1)
+    z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    return (z_w_expl, z_contr_w_fl_l)
 
 
 class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTest):
@@ -24,24 +45,35 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
 
     @staticmethod
     def reference(
-        grid,
-        w_nnow: np.array,
-        ddt_w_adv_ntl1: np.array,
-        z_th_ddz_exner_c: np.array,
-        rho_ic: np.array,
-        w_concorr_c: np.array,
-        vwind_expl_wgt: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        w_nnow: np.ndarray,
+        ddt_w_adv_ntl1: np.ndarray,
+        z_th_ddz_exner_c: np.ndarray,
+        rho_ic: np.ndarray,
+        w_concorr_c: np.ndarray,
+        vwind_expl_wgt: np.ndarray,
         dtime: float,
         cpd: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, -1)
-        z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
-        z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+        (
+            z_w_expl,
+            z_contr_w_fl_l,
+        ) = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
+            connectivities,
+            w_nnow=w_nnow,
+            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            rho_ic=rho_ic,
+            w_concorr_c=w_concorr_c,
+            vwind_expl_wgt=vwind_expl_wgt,
+            dtime=dtime,
+            cpd=cpd,
+        )
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_th_ddz_exner_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

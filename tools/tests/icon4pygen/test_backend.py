@@ -16,8 +16,8 @@ from gt4py.next.iterator import ir as itir
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import E2V
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4pytools.icon4pygen import backend
-from icon4pytools.icon4pygen.backend import generate_gtheader, get_missing_domain_params
+from icon4py.tools.icon4pygen import backend
+from icon4py.tools.icon4pygen.backend import generate_gtheader, get_missing_domain_params
 
 
 @pytest.mark.parametrize(
@@ -59,8 +59,8 @@ def test_grid_size_param_generation(temporaries, imperative):
         testee_op(a, out=out)
 
     grid = SimpleGrid()
-    offset_provider = {"E2V": grid.get_offset_provider("E2V")}
-    fencil = testee_prog.itir
+    offset_provider = {"E2V": grid.get_connectivity("E2V")}
+    fencil = testee_prog.gtir
 
     # validate the grid sizes appear in the generated code
     gtheader = generate_gtheader(fencil, offset_provider, temporaries, imperative)

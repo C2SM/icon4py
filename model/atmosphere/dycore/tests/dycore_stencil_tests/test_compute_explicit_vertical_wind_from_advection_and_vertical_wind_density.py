@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -12,10 +14,33 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
     compute_explicit_vertical_wind_from_advection_and_vertical_wind_density,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
+
+
+def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    w_nnow: np.ndarray,
+    ddt_w_adv_ntl1: np.ndarray,
+    ddt_w_adv_ntl2: np.ndarray,
+    z_th_ddz_exner_c: np.ndarray,
+    rho_ic: np.ndarray,
+    w_concorr_c: np.ndarray,
+    vwind_expl_wgt: np.ndarray,
+    dtime: float,
+    wgt_nnow_vel: float,
+    wgt_nnew_vel: float,
+    cpd: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    z_w_expl = w_nnow + dtime * (
+        wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+    )
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    return (z_w_expl, z_contr_w_fl_l)
 
 
 class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(StencilTest):
@@ -24,42 +49,54 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
 
     @staticmethod
     def reference(
-        grid,
-        w_nnow: np.array,
-        ddt_w_adv_ntl1: np.array,
-        ddt_w_adv_ntl2: np.array,
-        z_th_ddz_exner_c: np.array,
-        rho_ic: np.array,
-        w_concorr_c: np.array,
-        vwind_expl_wgt: np.array,
-        dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        cpd,
-        **kwargs,
-    ) -> tuple[np.array]:
-        z_w_expl = w_nnow + dtime * (
-            wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        w_nnow: np.ndarray,
+        ddt_w_adv_ntl1: np.ndarray,
+        ddt_w_adv_ntl2: np.ndarray,
+        z_th_ddz_exner_c: np.ndarray,
+        rho_ic: np.ndarray,
+        w_concorr_c: np.ndarray,
+        vwind_expl_wgt: np.ndarray,
+        dtime: float,
+        wgt_nnow_vel: float,
+        wgt_nnew_vel: float,
+        cpd: float,
+        **kwargs: Any,
+    ) -> dict:
+        (
+            z_w_expl,
+            z_contr_w_fl_l,
+        ) = compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
+            connectivities=connectivities,
+            w_nnow=w_nnow,
+            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            rho_ic=rho_ic,
+            w_concorr_c=w_concorr_c,
+            vwind_expl_wgt=vwind_expl_wgt,
+            dtime=dtime,
+            wgt_nnow_vel=wgt_nnow_vel,
+            wgt_nnew_vel=wgt_nnew_vel,
+            cpd=cpd,
         )
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-        z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture
-    def input_data(self, grid):
-        w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddt_w_adv_ntl2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_th_ddz_exner_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_w_expl = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        dtime = wpfloat("5.0")
-        wgt_nnow_vel = wpfloat("8.0")
-        wgt_nnew_vel = wpfloat("9.0")
-        cpd = wpfloat("10.0")
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        w_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        ddt_w_adv_ntl1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_w_adv_ntl2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_w_expl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
+        z_contr_w_fl_l = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        dtime = ta.wpfloat("5.0")
+        wgt_nnow_vel = ta.wpfloat("8.0")
+        wgt_nnew_vel = ta.wpfloat("9.0")
+        cpd = ta.wpfloat("10.0")
 
         return dict(
             z_w_expl=z_w_expl,

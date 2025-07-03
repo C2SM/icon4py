@@ -33,7 +33,6 @@
 
 
 """
-import dataclasses
 import enum
 import functools
 from abc import abstractmethod
@@ -297,6 +296,9 @@ class Zone(str, enum.Enum):
     #: 2nd nudging level in LAM model
     NUDGING_LEVEL_2 = "nudging_level_2"
 
+    def is_halo(self) -> bool:
+        return self in (Zone.HALO, Zone.HALO_LEVEL_2)
+
 
 def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
     match marker:
@@ -452,10 +454,3 @@ class CellDomain(Domain):
             Zone.LATERAL_BOUNDARY_LEVEL_4,
             Zone.NUDGING,
         )
-
-
-@dataclasses.dataclass(frozen=True)
-class HorizontalGridSize:
-    num_vertices: int
-    num_edges: int
-    num_cells: int

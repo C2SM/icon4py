@@ -11,8 +11,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 
 
@@ -131,7 +132,7 @@ def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_leve
 def test_interface_physical_height(grid_savepoint):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     assert helpers.dallclose(
-        grid_savepoint.vct_a().ndarray, vertical_grid.interface_physical_height.ndarray
+        grid_savepoint.vct_a().asnumpy(), vertical_grid.interface_physical_height.asnumpy()
     )
 
 
@@ -277,6 +278,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     stretch_factor,
     damping_height,
     htop_moist_proc,
+    backend,
 ):
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim),
@@ -289,7 +291,89 @@ def test_vct_a_vct_b_calculation_from_icon_input(
         rayleigh_damping_height=damping_height,
         htop_moist_proc=htop_moist_proc,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
-    assert helpers.dallclose(vct_a.ndarray, grid_savepoint.vct_a().ndarray)
-    assert helpers.dallclose(vct_b.ndarray, grid_savepoint.vct_b().ndarray)
+    assert helpers.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
+    assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
+
+
+@pytest.mark.level("unit")
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment",
+    [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT],
+)
+def test_compute_vertical_coordinate(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    interpolation_savepoint,
+    icon_grid,
+    experiment,
+    model_top_height,
+    backend,
+):
+    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
+    vct_a = grid_savepoint.vct_a()
+    vct_b = grid_savepoint.vct_b()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+
+    specific_values = (
+        {"rayleigh_damping_height": 12500.0, "stretch_factor": 0.65, "lowest_layer_thickness": 20.0}
+        if experiment == dt_utils.REGIONAL_EXPERIMENT
+        else {
+            "rayleigh_damping_height": 45000.0,
+            "stretch_factor": 1.0,
+            "lowest_layer_thickness": 50.0,
+        }
+    )
+
+    vertical_config = v_grid.VerticalGridConfig(
+        num_levels=grid_savepoint.num(dims.KDim),
+        flat_height=16000.0,
+        htop_moist_proc=22500.0,
+        maximal_layer_thickness=25000.0,
+        **specific_values,
+    )
+
+    vertical_geometry = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=vct_a,
+        vct_b=vct_b,
+    )
+    assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
+
+    if experiment in (dt_utils.REGIONAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT):
+        topography = topography_savepoint.topo_c()
+    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+        topography = data_alloc.zero_field(
+            icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
+        )
+
+    geofac_n2s = interpolation_savepoint.geofac_n2s()
+
+    vertical_coordinates_on_half_levels = v_grid.compute_vertical_coordinate(
+        vct_a=vct_a.ndarray,
+        topography=topography.ndarray,
+        cell_areas=cell_geometry.area.ndarray,
+        geofac_n2s=geofac_n2s.ndarray,
+        c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
+        nflatlev=vertical_geometry.nflatlev,
+        model_top_height=model_top_height,
+        SLEVE_decay_scale_1=4000.0,
+        SLEVE_decay_exponent=1.2,
+        SLEVE_decay_scale_2=2500.0,
+        SLEVE_minimum_layer_thickness_1=100.0,
+        SLEVE_minimum_relative_layer_thickness_1=1.0 / 3.0,
+        SLEVE_minimum_layer_thickness_2=500.0,
+        SLEVE_minimum_relative_layer_thickness_2=0.5,
+        lowest_layer_thickness=vertical_config.lowest_layer_thickness,
+        array_ns=xp,
+    )
+
+    assert helpers.dallclose(
+        data_alloc.as_numpy(vertical_coordinates_on_half_levels),
+        metrics_savepoint.z_ifc().asnumpy(),
+        rtol=1e-9,
+        atol=1e-13,
+    )

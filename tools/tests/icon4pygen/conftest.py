@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
+from icon4py.tools.common import ICON4PY_MODEL_QUALIFIED_NAME
 
 
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:

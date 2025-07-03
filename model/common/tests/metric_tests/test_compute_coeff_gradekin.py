@@ -14,6 +14,7 @@ from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gr
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
+@pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
@@ -28,4 +29,4 @@ def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
     coeff_gradekin_full = compute_coeff_gradekin(
         edge_cell_length, inv_dual_edge_length, horizontal_start, horizontal_end
     )
-    assert helpers.dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full.asnumpy())
+    assert helpers.dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full)

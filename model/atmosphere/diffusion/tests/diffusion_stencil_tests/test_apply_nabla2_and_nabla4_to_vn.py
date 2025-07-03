@@ -19,7 +19,6 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def apply_nabla2_and_nabla4_to_vn_numpy(
-    grid,
     area_edge,
     kh_smag_e,
     z_nabla2_e,
@@ -71,19 +70,18 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        nudgecoeff_e,
-        vn,
-        nudgezone_diff,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        area_edge: np.ndarray,
+        kh_smag_e: np.ndarray,
+        z_nabla2_e: np.ndarray,
+        z_nabla4_e2: np.ndarray,
+        diff_multfac_vn: np.ndarray,
+        nudgecoeff_e: np.ndarray,
+        vn: np.ndarray,
+        nudgezone_diff: np.ndarray,
         **kwargs,
-    ):
+    ) -> dict:
         vn = apply_nabla2_and_nabla4_to_vn_numpy(
-            grid,
             area_edge,
             kh_smag_e,
             z_nabla2_e,

@@ -6,14 +6,21 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
+import logging
+from typing import (
+    Any,
+    Callable,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    TypeAlias,
+    TypeVar,
+)
 
-# TODO (@halungge ) test on GPU (NEP 18 ?)
-import numpy as np
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.grid.geometry_attributes as attrs
 import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import (
     constants,
@@ -23,15 +30,21 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
+    base,
+    geometry_attributes as attrs,
     geometry_stencils as stencils,
     grid_manager as gm,
+    gridfile,
     horizontal as h_grid,
     icon,
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
+
+log = logging.getLogger(__name__)
 
 
 class GridGeometry(factory.FieldSource):
@@ -76,7 +89,7 @@ class GridGeometry(factory.FieldSource):
         self,
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         coordinates: gm.CoordinateDict,
         extra_fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],
@@ -98,8 +111,11 @@ class GridGeometry(factory.FieldSource):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: icon.GeometryType = grid.global_properties.geometry_type
+        self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
+        log.info(
+            f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
+        )
 
         (
             edge_orientation0_lat,
@@ -112,6 +128,7 @@ class GridGeometry(factory.FieldSource):
             coordinates[dims.CellDim]["lon"],
             coordinates[dims.EdgeDim]["lat"],
             coordinates[dims.EdgeDim]["lon"],
+            self._backend,
         )
         coordinates_ = {
             attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
@@ -131,24 +148,36 @@ class GridGeometry(factory.FieldSource):
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
                 # TODO (@magdalena) rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
-                attrs.EDGE_CELL_DISTANCE: extra_fields[gm.GeometryName.EDGE_CELL_DISTANCE],
-                attrs.CELL_AREA: extra_fields[gm.GeometryName.CELL_AREA],
-                attrs.DUAL_AREA: extra_fields[gm.GeometryName.DUAL_AREA],
-                attrs.TANGENT_ORIENTATION: extra_fields[gm.GeometryName.TANGENT_ORIENTATION],
+                attrs.EDGE_CELL_DISTANCE: extra_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE],
+                attrs.EDGE_VERTEX_DISTANCE: extra_fields[
+                    gridfile.GeometryName.EDGE_VERTEX_DISTANCE
+                ],
+                attrs.CELL_AREA: extra_fields[gridfile.GeometryName.CELL_AREA],
+                attrs.DUAL_AREA: extra_fields[gridfile.GeometryName.DUAL_AREA],
+                attrs.TANGENT_ORIENTATION: extra_fields[gridfile.GeometryName.TANGENT_ORIENTATION],
                 "edge_owner_mask": gtx.as_field(
-                    (dims.EdgeDim,), decomposition_info.owner_mask(dims.EdgeDim), dtype=bool
+                    (dims.EdgeDim,),
+                    decomposition_info.owner_mask(dims.EdgeDim),
+                    dtype=bool,
+                    allocator=self._backend,
                 ),
                 attrs.CELL_NORMAL_ORIENTATION: extra_fields[
-                    gm.GeometryName.CELL_NORMAL_ORIENTATION
+                    gridfile.GeometryName.CELL_NORMAL_ORIENTATION
                 ],
                 attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
-                    gm.GeometryName.EDGE_ORIENTATION_ON_VERTEX
+                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
                 ],
                 "vertex_owner_mask": gtx.as_field(
-                    (dims.VertexDim,), decomposition_info.owner_mask(dims.VertexDim)
+                    (dims.VertexDim,),
+                    decomposition_info.owner_mask(dims.VertexDim),
+                    allocator=self._backend,
+                    dtype=bool,
                 ),
                 "cell_owner_mask": gtx.as_field(
-                    (dims.VertexDim,), decomposition_info.owner_mask(dims.CellDim)
+                    (dims.CellDim,),
+                    decomposition_info.owner_mask(dims.CellDim),
+                    allocator=self._backend,
+                    dtype=bool,
                 ),
             }
         )
@@ -256,7 +285,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(coriolis_params)
 
         # normals:
-        # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal
+        # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal)
         tangent_normal_coordinates = factory.ProgramFieldProvider(
             func=stencils.compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
@@ -282,6 +311,7 @@ class GridGeometry(factory.FieldSource):
             },
         )
         self.register_provider(tangent_normal_coordinates)
+
         # 2. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
         normal_uv = factory.ProgramFieldProvider(
             func=math_helpers.compute_zonal_and_meridional_components_on_edges,
@@ -304,6 +334,28 @@ class GridGeometry(factory.FieldSource):
             },
         )
         self.register_provider(normal_uv)
+
+        dual_uv = factory.ProgramFieldProvider(
+            func=math_helpers.compute_zonal_and_meridional_components_on_edges,
+            deps={
+                "lat": attrs.EDGE_LAT,
+                "lon": attrs.EDGE_LON,
+                "x": attrs.EDGE_TANGENT_X,
+                "y": attrs.EDGE_TANGENT_Y,
+                "z": attrs.EDGE_TANGENT_Z,
+            },
+            fields={
+                "u": attrs.EDGE_DUAL_U,
+                "v": attrs.EDGE_DUAL_V,
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        self.register_provider(dual_uv)
 
         # 3. primal_normal_vert, primal_normal_cell
         normal_vert = factory.ProgramFieldProvider(
@@ -437,6 +489,48 @@ class GridGeometry(factory.FieldSource):
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
         )
         self.register_provider(tangent_cell_wrapper)
+        cartesian_vertices = factory.EmbeddedFieldOperatorProvider(
+            func=math_helpers.geographical_to_cartesian_on_vertices.with_backend(self.backend),
+            domain=(dims.VertexDim,),
+            fields={
+                attrs.VERTEX_X: attrs.VERTEX_X,
+                attrs.VERTEX_Y: attrs.VERTEX_Y,
+                attrs.VERTEX_Z: attrs.VERTEX_Z,
+            },
+            deps={
+                "lat": attrs.VERTEX_LAT,
+                "lon": attrs.VERTEX_LON,
+            },
+        )
+        self.register_provider(cartesian_vertices)
+        cartesian_edge_centers = factory.EmbeddedFieldOperatorProvider(
+            func=math_helpers.geographical_to_cartesian_on_edges.with_backend(self.backend),
+            domain=(dims.EdgeDim,),
+            fields={
+                attrs.EDGE_CENTER_X: attrs.EDGE_CENTER_X,
+                attrs.EDGE_CENTER_Y: attrs.EDGE_CENTER_Y,
+                attrs.EDGE_CENTER_Z: attrs.EDGE_CENTER_Z,
+            },
+            deps={
+                "lat": attrs.EDGE_LAT,
+                "lon": attrs.EDGE_LON,
+            },
+        )
+        self.register_provider(cartesian_edge_centers)
+        cartesian_cell_centers = factory.EmbeddedFieldOperatorProvider(
+            func=math_helpers.geographical_to_cartesian_on_cells.with_backend(self.backend),
+            domain=(dims.CellDim,),
+            fields={
+                attrs.CELL_CENTER_X: attrs.CELL_CENTER_X,
+                attrs.CELL_CENTER_Y: attrs.CELL_CENTER_Y,
+                attrs.CELL_CENTER_Z: attrs.CELL_CENTER_Z,
+            },
+            deps={
+                "lat": attrs.CELL_LAT,
+                "lon": attrs.CELL_LON,
+            },
+        )
+        self.register_provider(cartesian_cell_centers)
 
     def _inverse_field_provider(self, field_name: str):
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
@@ -506,7 +600,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
             for p in self._pairs:
                 t = tuple([self._wrapped_provider(name, field_src, backend, grid) for name in p])
                 input_fields.append(t)
-            sparse_fields = self.func(input_fields)
+            sparse_fields = self.func(input_fields, backend=backend)
             self._fields = {k: sparse_fields[i] for i, k in enumerate(self.fields)}
         return self._fields[field_name]
 
@@ -526,14 +620,19 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
 def as_sparse_field(
     target_dims: tuple[HorizontalD, SparseD],
     data: Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]],
+    backend: Optional[gtx_backend.Backend] = None,
 ):
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL
+    on_gpu = data_alloc.is_cupy_device(backend)
+    xp = data_alloc.array_ns(on_gpu)
     fields = []
     for t in data:
         buffers = list(b.ndarray for b in t)
-        field = gtx.as_field(target_dims, data=(np.vstack(buffers).T), dtype=buffers[0].dtype)
+        field = gtx.as_field(
+            target_dims, data=(xp.vstack(buffers).T), dtype=buffers[0].dtype, allocator=backend
+        )
         fields.append(field)
     return fields
 
@@ -544,6 +643,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
+    backend: Optional[gtx_backend.Backend],
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],
@@ -570,17 +670,18 @@ def create_auxiliary_coordinate_arrays_for_orientation(
         latitude of second neighbor
         longitude of second neighbor
     """
-    e2c_table = grid.connectivities[dims.E2CDim]
+    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
+    e2c_table = grid.neighbor_tables[dims.E2CDim]
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):
-        boundary_edges = np.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
+        boundary_edges = xp.where(e2c_table[:, i] == gridfile.GridFile.INVALID_INDEX)
         lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
         lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
 
     return (
-        gtx.as_field((dims.EdgeDim,), lat[:, 0]),
-        gtx.as_field((dims.EdgeDim,), lon[:, 0]),
-        gtx.as_field((dims.EdgeDim,), lat[:, 1]),
-        gtx.as_field((dims.EdgeDim,), lon[:, 1]),
+        gtx.as_field((dims.EdgeDim,), lat[:, 0], allocator=backend),
+        gtx.as_field((dims.EdgeDim,), lon[:, 0], allocator=backend),
+        gtx.as_field((dims.EdgeDim,), lat[:, 1], allocator=backend),
+        gtx.as_field((dims.EdgeDim,), lon[:, 1], allocator=backend),
     )

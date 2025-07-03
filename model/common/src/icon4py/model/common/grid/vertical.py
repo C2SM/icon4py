@@ -11,13 +11,17 @@ import functools
 import logging
 import math
 import pathlib
-from typing import Final
+from types import ModuleType
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import numpy as np
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.states.metadata as data
+import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -96,7 +100,24 @@ class VerticalGridConfig:
     #: Defined in ICON namelist nonhydrostatic_nml. Height [m] above which moist physics and advection of cloud and precipitation variables are turned off.
     htop_moist_proc: Final[float] = 22500.0
     #: file name containing vct_a and vct_b table
-    file_path: pathlib.Path = None
+    file_path: Optional[pathlib.Path] = None
+
+    # Parameters for setting up the decay function of the topographic signal for
+    # SLEVE. Default values from mo_sleve_nml.
+    #: Decay scale for large-scale topography component
+    SLEVE_decay_scale_1: Final[float] = 4000.0
+    #: Decay scale for small-scale topography component
+    SLEVE_decay_scale_2: Final[float] = 2500.0
+    #: Exponent for decay function
+    SLEVE_decay_exponent: Final[float] = 1.2
+    #: minimum absolute layer thickness 1 for SLEVE coordinates
+    SLEVE_minimum_layer_thickness_1: Final[float] = 100.0
+    #: minimum absolute layer thickness 2 for SLEVE coordinates
+    SLEVE_minimum_layer_thickness_2: Final[float] = 500.0
+    #: minimum relative layer thickness for nominal thicknesses <= SLEVE_minimum_layer_thickness_1
+    SLEVE_minimum_relative_layer_thickness_1: Final[float] = 1.0 / 3.0
+    #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
+    SLEVE_minimum_relative_layer_thickness_2: Final[float] = 0.5
 
 
 @dataclasses.dataclass(frozen=True)
@@ -132,7 +153,7 @@ class VerticalGrid:
             "_vct_b",
             vct_b,
         )
-        vct_a_array = self._vct_a.ndarray
+        vct_a_array = self._vct_a.asnumpy()
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
@@ -149,7 +170,7 @@ class VerticalGrid:
             self._determine_end_index_of_flat_layers(vct_a_array, self.config.flat_height),
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
-        log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
+        log.info(f"end index of Rayleigh damping layer for w: {self.end_index_of_damping_layer} ")
 
     def __str__(self) -> str:
         vertical_params_properties = ["Model interface height properties:"]
@@ -214,13 +235,8 @@ class VerticalGrid:
         return gtx.int32(self.index(Domain(dims.KDim, Zone.FLAT)))
 
     @functools.cached_property
-    def nrdmax(self) -> gtx.int32:
-        """Vertical index where damping starts."""
-        return self.end_index_of_damping_layer
-
-    @functools.cached_property
     def end_index_of_damping_layer(self) -> gtx.int32:
-        """Vertical index where damping starts."""
+        """Vertical index where damping ends."""
         return self.index(Domain(dims.KDim, Zone.DAMPING))
 
     @property
@@ -247,16 +263,14 @@ class VerticalGrid:
 
     @classmethod
     def _determine_start_level_of_moist_physics(
-        cls, vct_a: data_alloc.NDArray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: np.ndarray, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
         return gtx.int32(np.min(np.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(
-        cls, vct_a: data_alloc.NDArray, damping_height: float
-    ) -> gtx.int32:
+    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
         return (
             0
@@ -266,7 +280,7 @@ class VerticalGrid:
 
     @classmethod
     def _determine_end_index_of_flat_layers(
-        cls, vct_a: data_alloc.NDArray, flat_height: float
+        cls, vct_a: np.ndarray, flat_height: float
     ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
@@ -277,7 +291,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int
+    file_path: pathlib.Path, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -293,6 +307,7 @@ def _read_vct_a_and_vct_b_from_file(
     Args:
         file_path: Path to the vertical grid file
         num_levels: number of cell levels
+        backend: GT4Py backend
     Returns:  one dimensional vct_a and vct_b arrays.
     """
     num_levels_plus_one = num_levels + 1
@@ -316,10 +331,14 @@ def _read_vct_a_and_vct_b_from_file(
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
+    return gtx.as_field((dims.KDim,), vct_a, allocator=backend), gtx.as_field(
+        (dims.KDim,), vct_b, allocator=backend
+    )
 
 
-def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField, fa.KField]:
+def _compute_vct_a_and_vct_b(
+    vertical_config: VerticalGridConfig, backend: Optional[gtx_backend.Backend]
+) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
 
@@ -357,6 +376,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
 
     Args:
         vertical_config: Vertical grid configuration
+        backend: GT4Py backend
     Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
     """
     num_levels_plus_one = vertical_config.num_levels + 1
@@ -497,26 +517,284 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
 
-    return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
+    return gtx.as_field((dims.KDim,), vct_a, allocator=backend), gtx.as_field(
+        (dims.KDim,), vct_b, allocator=backend
+    )
 
 
-def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField, fa.KField]:
+def get_vct_a_and_vct_b(
+    vertical_config: VerticalGridConfig, backend: Optional[gtx_backend.Backend]
+) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.
     vct_b is an array that is used to initialize vertical wind speed above surface by a prescribed vertical profile when the surface vertical wind is given.
-    It is also used to modify the initial vertical wind speed above surface according to a prescribed vertical profile by linearly merging the surface vertica wind with the existing vertical wind.
+    It is also used to modify the initial vertical wind speed above surface according to a prescribed vertical profile by linearly merging the surface vertical wind with the existing vertical wind.
     See init_w and adjust_w in mo_nh_init_utils.f90.
 
     When file_name is given in vertical_config, it will read both vct_a and vct_b from that file. Otherwise, they are analytically derived based on vertical configuration.
 
     Args:
         vertical_config: Vertical grid configuration
+        backend: GT4Py backend
     Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
     """
 
     return (
-        _read_vct_a_and_vct_b_from_file(vertical_config.file_path, vertical_config.num_levels)
+        _read_vct_a_and_vct_b_from_file(
+            vertical_config.file_path, vertical_config.num_levels, backend
+        )
         if vertical_config.file_path
-        else _compute_vct_a_and_vct_b(vertical_config)
+        else _compute_vct_a_and_vct_b(vertical_config, backend)
     )
+
+
+def _compute_SLEVE_coordinate_from_vcta_and_topography(
+    vct_a: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
+    cell_areas: data_alloc.NDArray,
+    geofac_n2s: data_alloc.NDArray,
+    c2e2co: data_alloc.NDArray,
+    nflatlev: int,
+    model_top_height: ta.wpfloat,
+    SLEVE_decay_scale_1: ta.wpfloat,
+    SLEVE_decay_exponent: ta.wpfloat,
+    SLEVE_decay_scale_2: ta.wpfloat,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    """
+    Compute the 3D vertical coordinate field using the SLEVE coordinate
+    https://doi.org/10.1175/1520-0493(2002)130%3C2459:ANTFVC%3E2.0.CO;2
+
+    This is the same as vct_a in the flat levels (above nflatlev).
+    Below it is vct_a corrected by smothed and decaying topography such that it
+    blends smothly into the surface layer at num_lev + 1 which is the
+    topography.
+    """
+    num_cells = cell_areas.shape[0]
+    num_levels = vct_a.shape[0] - 1
+
+    def _decay_func(
+        vct_a: data_alloc.NDArray,
+        model_top_height: ta.wpfloat,
+        decay_scale: ta.wpfloat,
+        decay_exponent: ta.wpfloat,
+    ) -> data_alloc.NDArray:
+        return array_ns.sinh(
+            (model_top_height / decay_scale) ** decay_exponent
+            - (vct_a / decay_scale) ** decay_exponent
+        ) / array_ns.sinh((model_top_height / decay_scale) ** decay_exponent)
+
+    smoothed_topography = topo.smooth_topography(
+        topography=topography,
+        cell_areas=cell_areas,
+        geofac_n2s=geofac_n2s,
+        c2e2co=c2e2co,
+    )
+
+    vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=float)
+    vertical_coordinate[:, num_levels] = topography
+
+    # Small-scale topography (i.e. full topo - smooth topo)
+    small_scale_topography = topography - smoothed_topography
+
+    k = range(nflatlev + 1)
+    vertical_coordinate[:, k] = vct_a[k]
+
+    k = range(nflatlev + 1, num_levels)
+    # Scaling factors for large-scale and small-scale topography
+    z_fac1 = _decay_func(
+        vct_a[k],
+        model_top_height,
+        SLEVE_decay_scale_1,
+        SLEVE_decay_exponent,
+    )
+    z_fac2 = _decay_func(
+        vct_a[k],
+        model_top_height,
+        SLEVE_decay_scale_2,
+        SLEVE_decay_exponent,
+    )
+    vertical_coordinate[:, k] = (
+        vct_a[k][array_ns.newaxis, :]
+        + smoothed_topography[:, array_ns.newaxis] * z_fac1
+        + small_scale_topography[:, array_ns.newaxis] * z_fac2
+    )
+
+    return vertical_coordinate
+
+
+def _check_and_correct_layer_thickness(
+    vertical_coordinate: data_alloc.NDArray,
+    vct_a: data_alloc.NDArray,
+    SLEVE_minimum_layer_thickness_1: ta.wpfloat,
+    SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
+    SLEVE_minimum_layer_thickness_2: ta.wpfloat,
+    SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
+    lowest_layer_thickness: ta.wpfloat,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    num_cells = vertical_coordinate.shape[0]
+    num_levels = vertical_coordinate.shape[1] - 1
+    ktop_thicklimit = array_ns.asarray(num_cells * [num_levels], dtype=int)
+    # Ensure that layer thicknesses are not too small; this would potentially
+    # cause instabilities in vertical advection
+    for k in reversed(range(num_levels)):
+        delta_vct_a = vct_a[k] - vct_a[k + 1]
+        if delta_vct_a < SLEVE_minimum_layer_thickness_1:
+            # limit layer thickness to SLEVE_minimum_relative_layer_thickness_1 times its nominal value
+            minimum_layer_thickness = SLEVE_minimum_relative_layer_thickness_1 * delta_vct_a
+        elif delta_vct_a < SLEVE_minimum_layer_thickness_2:
+            # limitation factor changes from SLEVE_minimum_relative_layer_thickness_1 to SLEVE_minimum_relative_layer_thickness_2
+            layer_thickness_adjustment_factor = (
+                (SLEVE_minimum_layer_thickness_2 - delta_vct_a)
+                / (SLEVE_minimum_layer_thickness_2 - SLEVE_minimum_layer_thickness_1)
+            ) ** 2
+            minimum_layer_thickness = (
+                SLEVE_minimum_relative_layer_thickness_1 * layer_thickness_adjustment_factor
+                + SLEVE_minimum_relative_layer_thickness_2
+                * (1.0 - layer_thickness_adjustment_factor)
+            ) * delta_vct_a
+        else:
+            # limitation factor decreases again
+            minimum_layer_thickness = (
+                SLEVE_minimum_relative_layer_thickness_2
+                * SLEVE_minimum_layer_thickness_2
+                * (delta_vct_a / SLEVE_minimum_layer_thickness_2) ** (1.0 / 3.0)
+            )
+
+        minimum_layer_thickness = max(minimum_layer_thickness, min(50, lowest_layer_thickness))
+
+        # Ensure that the layer thickness is not too small, if so fix it and
+        # save the layer index
+        cell_ids = array_ns.argwhere(
+            vertical_coordinate[:, k + 1] + minimum_layer_thickness > vertical_coordinate[:, k]
+        )
+        vertical_coordinate[cell_ids, k] = (
+            vertical_coordinate[cell_ids, k + 1] + minimum_layer_thickness
+        )
+        ktop_thicklimit[cell_ids] = k
+
+    # Smooth layer thickness ratios in the transition layer of columns where the
+    # thickness limiter has been active (exclude lowest and highest layers)
+    cell_ids = array_ns.argwhere((ktop_thicklimit <= num_levels - 3) & (ktop_thicklimit >= 3))
+    if cell_ids.size > 0:
+        delta_z1 = (
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
+            - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 2]
+        )
+        delta_z2 = (
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 3]
+            - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 2]
+        )
+        stretching_factor = (delta_z2 / delta_z1) ** 0.25
+        delta_z3 = (
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 2]
+            - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
+        ) / (stretching_factor * (1.0 + stretching_factor * (1.0 + stretching_factor)))
+        vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]] = array_ns.maximum(
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]],
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
+            + delta_z3 * stretching_factor,
+        )
+        vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1] = array_ns.maximum(
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1],
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]]
+            + delta_z3 * stretching_factor**2,
+        )
+
+    # Check if ktop_thicklimit is sufficiently far away from the model top
+    if not array_ns.all(ktop_thicklimit > 2):
+        if num_levels > 6:
+            raise exceptions.InvalidConfigError(
+                f"Model top is too low and num_levels, {num_levels}, > 6."
+            )
+        else:
+            log.warning(f"Model top is too low. But num_levels, {num_levels}, <= 6. ")
+
+    return vertical_coordinate
+
+
+def _check_flatness_of_flat_level(
+    vertical_coordinate: data_alloc.NDArray,
+    vct_a: data_alloc.NDArray,
+    nflatlev: int,
+    array_ns: ModuleType = np,
+) -> None:
+    # Check if level nflatlev is still flat
+    if not array_ns.all(vertical_coordinate[:, nflatlev - 1] == vct_a[nflatlev - 1]):
+        raise exceptions.InvalidComputationError("Level nflatlev is not flat")
+
+
+def compute_vertical_coordinate(
+    vct_a: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
+    cell_areas: data_alloc.NDArray,
+    geofac_n2s: data_alloc.NDArray,
+    c2e2co: data_alloc.NDArray,
+    nflatlev: int,
+    model_top_height: ta.wpfloat,
+    SLEVE_decay_scale_1: ta.wpfloat,
+    SLEVE_decay_exponent: ta.wpfloat,
+    SLEVE_decay_scale_2: ta.wpfloat,
+    SLEVE_minimum_layer_thickness_1: ta.wpfloat,
+    SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
+    SLEVE_minimum_layer_thickness_2: ta.wpfloat,
+    SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
+    lowest_layer_thickness: ta.wpfloat,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    """
+    Compute the (Cell, K) vertical coordinate field starting from the
+    "flat/uniform/aquaplanet" vertical coordinate.
+
+    Args:
+        vct_a: Vertical coordinate with flat topography.
+        topography: Topography field.
+        cell_areas: Cell areas field.
+        geofac_n2s: Coefficients for nabla2 computation.
+        grid: Grid object.
+        vertical_geometry: Vertical grid object.
+        backend: Backend to use for computations.
+
+    Returns:
+        The (Cell, K) vertical coordinate field.
+
+    Raises:
+        exceptions.InvalidComputationError: If level nflatlev is not flat.
+        exceptions.InvalidConfigError: If model top is too low and num_levels > 6.
+    """
+
+    vertical_coordinates_on_half_levels = _compute_SLEVE_coordinate_from_vcta_and_topography(
+        vct_a=vct_a,
+        topography=topography,
+        cell_areas=cell_areas,
+        geofac_n2s=geofac_n2s,
+        c2e2co=c2e2co,
+        nflatlev=nflatlev,
+        model_top_height=model_top_height,
+        SLEVE_decay_scale_1=SLEVE_decay_scale_1,
+        SLEVE_decay_exponent=SLEVE_decay_exponent,
+        SLEVE_decay_scale_2=SLEVE_decay_scale_2,
+        array_ns=array_ns,
+    )
+
+    vertical_coordinate = _check_and_correct_layer_thickness(
+        vertical_coordinate=vertical_coordinates_on_half_levels,
+        vct_a=vct_a,
+        SLEVE_minimum_layer_thickness_1=SLEVE_minimum_layer_thickness_1,
+        SLEVE_minimum_relative_layer_thickness_1=SLEVE_minimum_relative_layer_thickness_1,
+        SLEVE_minimum_layer_thickness_2=SLEVE_minimum_layer_thickness_2,
+        SLEVE_minimum_relative_layer_thickness_2=SLEVE_minimum_relative_layer_thickness_2,
+        lowest_layer_thickness=lowest_layer_thickness,
+        array_ns=array_ns,
+    )
+
+    _check_flatness_of_flat_level(
+        vertical_coordinate=vertical_coordinates_on_half_levels,
+        vct_a=vct_a,
+        nflatlev=nflatlev,
+        array_ns=array_ns,
+    )
+
+    return vertical_coordinate

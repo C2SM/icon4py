@@ -24,19 +24,19 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_vn: np.array,
-        p_vt: np.array,
-        pos_on_tplane_e_1: np.array,
-        pos_on_tplane_e_2: np.array,
-        primal_normal_cell_1: np.array,
-        dual_normal_cell_1: np.array,
-        primal_normal_cell_2: np.array,
-        dual_normal_cell_2: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_vn: np.ndarray,
+        p_vt: np.ndarray,
+        pos_on_tplane_e_1: np.ndarray,
+        pos_on_tplane_e_2: np.ndarray,
+        primal_normal_cell_1: np.ndarray,
+        dual_normal_cell_1: np.ndarray,
+        primal_normal_cell_2: np.ndarray,
+        dual_normal_cell_2: np.ndarray,
         p_dthalf: float,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
         pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
         primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
@@ -84,18 +84,12 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_1_new = data_alloc.as_1D_sparse_field(pos_on_tplane_e_1, dims.ECDim)
-        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_2_new = data_alloc.as_1D_sparse_field(pos_on_tplane_e_2, dims.ECDim)
-        primal_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_1_new = data_alloc.as_1D_sparse_field(primal_normal_cell_1, dims.ECDim)
-        dual_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_1_new = data_alloc.as_1D_sparse_field(dual_normal_cell_1, dims.ECDim)
-        primal_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_2_new = data_alloc.as_1D_sparse_field(primal_normal_cell_2, dims.ECDim)
-        dual_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_2_new = data_alloc.as_1D_sparse_field(dual_normal_cell_2, dims.ECDim)
+        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.ECDim)
+        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.ECDim)
+        primal_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim)
+        dual_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim)
+        primal_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim)
+        dual_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim)
         p_distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0
@@ -103,12 +97,12 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
         return dict(
             p_vn=p_vn,
             p_vt=p_vt,
-            pos_on_tplane_e_1=pos_on_tplane_e_1_new,
-            pos_on_tplane_e_2=pos_on_tplane_e_2_new,
-            primal_normal_cell_1=primal_normal_cell_1_new,
-            dual_normal_cell_1=dual_normal_cell_1_new,
-            primal_normal_cell_2=primal_normal_cell_2_new,
-            dual_normal_cell_2=dual_normal_cell_2_new,
+            pos_on_tplane_e_1=pos_on_tplane_e_1,
+            pos_on_tplane_e_2=pos_on_tplane_e_2,
+            primal_normal_cell_1=primal_normal_cell_1,
+            dual_normal_cell_1=dual_normal_cell_1,
+            primal_normal_cell_2=primal_normal_cell_2,
+            dual_normal_cell_2=dual_normal_cell_2,
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,
             p_dthalf=p_dthalf,

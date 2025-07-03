@@ -24,13 +24,21 @@ EDGE_LON: Final[str] = "grid_longitude_of_edge_midpoint"
 EDGE_LAT: Final[str] = "grid_latitude_of_edge_midpoint"
 VERTEX_LON: Final[str] = "grid_longitude_of_vertex"
 VERTEX_LAT: Final[str] = "grid_latitude_of_vertex"
+VERTEX_X: Final[str] = "x_component_of_vertex"
+VERTEX_Y: Final[str] = "y_component_of_vertex"
+VERTEX_Z: Final[str] = "z_component_of_vertex"
 
 CELL_LON: Final[str] = "grid_longitude_of_cell_center"
 CELL_LAT: Final[str] = "grid_latitude_of_cell_center"
+CELL_CENTER_X: Final[str] = "x_component_of_cell_center"
+CELL_CENTER_Y: Final[str] = "y_component_of_cell_center"
+CELL_CENTER_Z: Final[str] = "z_component_of_cell_center"
+
 CELL_AREA: Final[str] = "cell_area"
 EDGE_AREA: Final[str] = "edge_area"
 DUAL_AREA: Final[str] = "dual_area"
 EDGE_CELL_DISTANCE: Final[str] = "edge_midpoint_to_cell_center_distance"
+EDGE_VERTEX_DISTANCE: Final[str] = "edge_midpoint_to_vertex_distance"
 TANGENT_ORIENTATION: Final[str] = "edge_orientation"
 CELL_NORMAL_ORIENTATION: Final[str] = "orientation_of_normal_to_cell_edges"
 VERTEX_EDGE_ORIENTATION: Final[str] = "orientation_of_edges_around_vertex"
@@ -55,10 +63,16 @@ EDGE_NORMAL_Y: Final[str] = "y_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Z: Final[str] = "z_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_U: Final[str] = "eastward_component_of_edge_normal"
 EDGE_NORMAL_V: Final[str] = "northward_component_of_edge_normal"
+EDGE_DUAL_U: Final[str] = "eastward_component_of_edge_tangent"
+EDGE_DUAL_V: Final[str] = "northward_component_of_edge_tangent"
 EDGE_NORMAL_VERTEX_U: Final[str] = "eastward_component_of_edge_normal_on_vertex"
 EDGE_NORMAL_VERTEX_V: Final[str] = "northward_component_of_edge_normal_on_vertex"
 EDGE_NORMAL_CELL_U: Final[str] = "eastward_component_of_edge_normal_on_cell"
 EDGE_NORMAL_CELL_V: Final[str] = "northward_component_of_edge_normal_on_cell"
+EDGE_CENTER_X: Final[str] = "x_coordinate_of_edge_center"
+EDGE_CENTER_Y: Final[str] = "y_coordinate_of_edge_center"
+EDGE_CENTER_Z: Final[str] = "z_coordinate_of_edge_center"
+
 
 attrs: dict[str, model.FieldMetaData] = {
     CELL_LAT: dict(
@@ -87,6 +101,30 @@ attrs: dict[str, model.FieldMetaData] = {
         units="radian",
         dims=(dims.VertexDim,),
         icon_var_name="t_grid_vertices%vertex%lon",
+        dtype=ta.wpfloat,
+    ),
+    VERTEX_X: dict(
+        standard_name=VERTEX_X,
+        long_name="x component of cartesian coordinates of vertex",
+        units="1",
+        dims=(dims.VertexDim,),
+        icon_var_name="t_grid_vertices%vertex%x(1)",
+        dtype=ta.wpfloat,
+    ),
+    VERTEX_Y: dict(
+        standard_name=VERTEX_Y,
+        long_name="y component of cartesian coordinates of vertex",
+        units="1",
+        dims=(dims.VertexDim,),
+        icon_var_name="t_grid_vertices%vertex%x(2)",
+        dtype=ta.wpfloat,
+    ),
+    VERTEX_Z: dict(
+        standard_name=VERTEX_Z,
+        long_name="z component of cartesian coordinates of vertex",
+        units="1",
+        dims=(dims.VertexDim,),
+        icon_var_name="t_grid_vertices%vertex%x(3)",
         dtype=ta.wpfloat,
     ),
     EDGE_LAT: dict(
@@ -126,6 +164,14 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%edge_cell_length",
         dtype=ta.wpfloat,
     ),
+    EDGE_VERTEX_DISTANCE: dict(
+        standard_name=EDGE_VERTEX_DISTANCE,
+        long_name="distances between edge midpoint and adjacent vertices",
+        units="m",
+        dims=(dims.EdgeDim, dims.E2VDim),
+        icon_var_name="t_grid_edges%edge_vert_length",
+        dtype=ta.wpfloat,
+    ),
     DUAL_EDGE_LENGTH: dict(
         standard_name=DUAL_EDGE_LENGTH,
         long_name="length of the dual edge",
@@ -156,6 +202,30 @@ attrs: dict[str, model.FieldMetaData] = {
         units="m2",
         dims=(dims.CellDim,),
         icon_var_name="t_grid_cells%area",
+        dtype=ta.wpfloat,
+    ),
+    CELL_CENTER_X: dict(
+        standard_name=CELL_CENTER_X,
+        long_name="x component of cartesian coordinates of cell center",
+        units="",
+        dims=(dims.CellDim,),
+        icon_var_name="t_grid_cells%%cartesian_center%x(1)",
+        dtype=ta.wpfloat,
+    ),
+    CELL_CENTER_Y: dict(
+        standard_name=CELL_CENTER_Y,
+        long_name="y component of cartesian coordinates of cell center",
+        units="",
+        dims=(dims.CellDim,),
+        icon_var_name="t_grid_cells%%cartesian_center%x(2)",
+        dtype=ta.wpfloat,
+    ),
+    CELL_CENTER_Z: dict(
+        standard_name=CELL_CENTER_Z,
+        long_name="z component of cartesian coordinates of cell center",
+        units="",
+        dims=(dims.CellDim,),
+        icon_var_name="t_grid_cells%%cartesian_center%x(3)",
         dtype=ta.wpfloat,
     ),
     DUAL_AREA: dict(
@@ -316,6 +386,46 @@ attrs: dict[str, model.FieldMetaData] = {
         units="1",
         dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="t_grid_vertex%edge_orientation",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_DUAL_U: dict(
+        standard_name=EDGE_DUAL_U,
+        long_name="eastward component of the dual edge (edge tangent)",
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="ptr_patch%edges%dual_normal%v1",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_DUAL_V: dict(
+        standard_name="northward component of the dual edge (edge tangent)",
+        long_name="ptr_patch%edges%dual_normal_vert_y",
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="ptr_patch%edges%dual_normal%v2",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_CENTER_X: dict(
+        standard_name=EDGE_CENTER_X,
+        long_name="x component of cartesian coordinates of edge centers",
+        units="1",
+        dims=(dims.EdgeDim,),
+        icon_var_name="t_grid_edges%cartesian_center%x(1)",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_CENTER_Y: dict(
+        standard_name=EDGE_CENTER_Y,
+        long_name="y component of cartesian coordinates of edge centers",
+        units="1",
+        dims=(dims.EdgeDim,),
+        icon_var_name="t_grid_edges%cartesian_center%x(2)",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_CENTER_Z: dict(
+        standard_name=EDGE_CENTER_Z,
+        long_name="z component of cartesian coordinates of edge centers",
+        units="1",
+        dims=(dims.EdgeDim,),
+        icon_var_name="t_grid_edges%cartesian_center%x(3)",
         dtype=ta.wpfloat,
     ),
 }

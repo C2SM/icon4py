@@ -5,28 +5,24 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-
 import logging
 import typing
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as defs, halo
 from icon4py.model.common.grid import (
     grid_manager as gm,
+    gridfile,
     horizontal as h_grid,
     refinement as refin,
     vertical as v_grid,
 )
-from icon4py.model.common.grid.grid_manager import GeometryName
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    grid_utils as gridtest_utils,
     helpers,
 )
 
@@ -43,95 +39,11 @@ except ImportError:
 from . import utils
 
 
-R02B04_GLOBAL_NUM_CELLS = 20480
-R02B04_GLOBAL_NUM_EDGES = 30720
-R02B04_GLOBAL_NUM_VERTEX = 10242
-
-
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
 ZERO_BASE = gm.ToZeroBasedIndexTransformation()
 vertical = v_grid.VerticalGridConfig(num_levels=80)
-
-managers = {}
-
-
-def _run_grid_manager(file: str, backend: gtx_backend.Backend) -> gm.GridManager:
-    if not managers.get(file):
-        manager = gridtest_utils.get_grid_manager(file, num_levels=1, backend=backend)
-        managers[file] = manager
-    return managers.get(file)
-
-
-@pytest.fixture
-def global_grid_file():
-    return gridtest_utils.resolve_full_grid_file_name(dt_utils.R02B04_GLOBAL)
-
-
-@pytest.mark.with_netcdf
-def test_grid_file_dimension(global_grid_file):
-    parser = gm.GridFile(str(global_grid_file))
-    try:
-        parser.open()
-        assert parser.dimension(gm.DimensionName.CELL_NAME) == R02B04_GLOBAL_NUM_CELLS
-        assert parser.dimension(gm.DimensionName.VERTEX_NAME) == R02B04_GLOBAL_NUM_VERTEX
-        assert parser.dimension(gm.DimensionName.EDGE_NAME) == R02B04_GLOBAL_NUM_EDGES
-    except Exception:
-        pytest.fail()
-    finally:
-        parser.close()
-
-
-@pytest.mark.datatest
-@pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
-def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
-    file = gridtest_utils.resolve_full_grid_file_name(grid_file)
-    parser = gm.GridFile(str(file))
-    try:
-        parser.open()
-        assert parser.dimension(gm.DimensionName.CELL_NAME) == grid_savepoint.num(dims.CellDim)
-        assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid_savepoint.num(dims.VertexDim)
-        assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid_savepoint.num(dims.EdgeDim)
-    except Exception as error:
-        pytest.fail(f"reading of dimension from netcdf failed: {error}")
-    finally:
-        parser.close()
-
-
-# TODO is this useful?
-@pytest.mark.skip
-@pytest.mark.with_netcdf
-@pytest.mark.parametrize("experiment", (dt_utils.GLOBAL_EXPERIMENT,))
-def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
-    caplog.set_level(logging.DEBUG)
-    parser = gm.GridFile(str(global_grid_file))
-    try:
-        parser.open()
-        assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.C2E), icon_grid.connectivities[dims.C2EDim] + 1
-        )
-        assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.E2C), icon_grid.connectivities[dims.E2CDim] + 1
-        )
-        assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.V2E), icon_grid.connectivities[dims.V2EDim] + 1
-        )
-        assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.V2C), icon_grid.connectivities[dims.V2CDim] + 1
-        )
-    except Exception as e:
-        logging.error(e)
-        pytest.fail()
-    finally:
-        parser.close()
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -150,15 +62,15 @@ def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
 )
 def test_grid_manager_eval_v2e(caplog, grid_savepoint, experiment, grid_file, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     seralized_v2e = grid_savepoint.v2e()
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
-    v2e_table = grid.get_offset_provider("V2E").table
+    v2e_table = grid.get_connectivity("V2E").asnumpy()
     assert has_invalid_index(v2e_table)
-    reset_invalid_index(seralized_v2e)
+    _reset_invalid_index(seralized_v2e)
     assert np.allclose(v2e_table, seralized_v2e)
 
 
@@ -173,11 +85,13 @@ def test_grid_manager_eval_v2e(caplog, grid_savepoint, experiment, grid_file, ba
 )
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim, backend):
-    refin_ctrl = _run_grid_manager(grid_file, backend).refinement
+    refin_ctrl = utils.run_grid_manager(
+        grid_file, keep_skip_values=True, backend=backend
+    ).grid.refinement_control
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
     assert np.all(
         refin_ctrl_serialized.ndarray
-        == refin.convert_to_unnested_refinement_values(refin_ctrl[dim], dim)
+        == refin.convert_to_unnested_refinement_values(refin_ctrl[dim].ndarray, dim)
     )
 
 
@@ -193,20 +107,21 @@ def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim, bac
 )
 def test_grid_manager_eval_v2c(caplog, grid_savepoint, experiment, grid_file, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     serialized_v2c = grid_savepoint.v2c()
+    v2c_table = grid.get_connectivity("V2C").asnumpy()
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
     # hence in the grid file there are "missing values"
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(serialized_v2c)
-    assert has_invalid_index(grid.get_offset_provider("V2C").table)
-    reset_invalid_index(serialized_v2c)
+    assert has_invalid_index(v2c_table)
+    _reset_invalid_index(serialized_v2c)
 
-    assert np.allclose(grid.get_offset_provider("V2C").table, serialized_v2c)
+    assert np.allclose(v2c_table, serialized_v2c)
 
 
-def reset_invalid_index(index_array: np.ndarray):
+def _reset_invalid_index(index_array: np.ndarray):
     """
     Revert changes from mo_model_domimp_patches.
 
@@ -230,7 +145,7 @@ def reset_invalid_index(index_array: np.ndarray):
     """
     for i in range(0, index_array.shape[0]):
         uq, index = np.unique(index_array[i, :], return_index=True)
-        index_array[i, max(index) + 1 :] = gm.GridFile.INVALID_INDEX
+        index_array[i, max(index) + 1 :] = gridfile.GridFile.INVALID_INDEX
 
 
 # e2v: exists in serial, simple, grid
@@ -245,14 +160,15 @@ def reset_invalid_index(index_array: np.ndarray):
 )
 def test_grid_manager_eval_e2v(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
 
     serialized_e2v = grid_savepoint.e2v()
+    e2v_table = grid.get_connectivity("E2V").asnumpy()
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)
-    assert not has_invalid_index(grid.get_offset_provider("E2V").table)
-    assert np.allclose(grid.get_offset_provider("E2V").table, serialized_e2v)
+    assert not has_invalid_index(e2v_table)
+    assert np.allclose(e2v_table, serialized_e2v)
 
 
 def has_invalid_index(ar: np.ndarray):
@@ -260,28 +176,7 @@ def has_invalid_index(ar: np.ndarray):
 
 
 def invalid_index(ar: np.ndarray):
-    return np.where(ar == gm.GridFile.INVALID_INDEX)
-
-
-def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
-    """
-    Assert invalid indices for E2C connectivity.
-
-    Local grids: there are edges at the boundary that have only one
-    neighboring cell, there are "missing values" in the grid file
-    and for E2C they do not get substituted in the ICON preprocessing.
-
-    Global grids have no "missing values" indices since all edges always have 2 neighboring cells.
-
-    Args:
-        e2c_table: E2C connectivity
-        grid_file: name of grid file used
-
-    """
-    if gridtest_utils.is_regional(grid_file):
-        assert has_invalid_index(e2c_table)
-    else:
-        assert not has_invalid_index(e2c_table)
+    return np.where(ar == gridfile.GridFile.INVALID_INDEX)
 
 
 # e2c : exists in serial, simple, grid
@@ -297,11 +192,11 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
 def test_grid_manager_eval_e2c(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
 
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     serialized_e2c = grid_savepoint.e2c()
-    e2c_table = grid.get_offset_provider("E2C").table
-    assert_invalid_indices(serialized_e2c, grid_file)
-    assert_invalid_indices(e2c_table, grid_file)
+    e2c_table = grid.get_connectivity("E2C").asnumpy()
+    assert has_invalid_index(serialized_e2c) == grid.limited_area
+    assert has_invalid_index(e2c_table) == grid.limited_area
     assert np.allclose(e2c_table, serialized_e2c)
 
 
@@ -317,15 +212,16 @@ def test_grid_manager_eval_e2c(caplog, grid_savepoint, grid_file, experiment, ba
 )
 def test_grid_manager_eval_c2e(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
 
     serialized_c2e = grid_savepoint.c2e()
+    c2e_table = grid.get_connectivity("C2E").asnumpy()
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
     # first place
     # hence there are no "missing values" in the grid file
     assert not has_invalid_index(serialized_c2e)
-    assert not has_invalid_index(grid.get_offset_provider("C2E").table)
-    assert np.allclose(grid.get_offset_provider("C2E").table, serialized_c2e)
+    assert not has_invalid_index(c2e_table)
+    assert np.allclose(c2e_table, serialized_c2e)
 
 
 # c2e2c: exists in  serial, simple_mesh, grid
@@ -340,9 +236,9 @@ def test_grid_manager_eval_c2e(caplog, grid_savepoint, grid_file, experiment, ba
 )
 def test_grid_manager_eval_c2e2c(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     assert np.allclose(
-        grid.get_offset_provider("C2E2C").table,
+        grid.get_connectivity("C2E2C").asnumpy(),
         grid_savepoint.c2e2c(),
     )
 
@@ -358,11 +254,11 @@ def test_grid_manager_eval_c2e2c(caplog, grid_savepoint, grid_file, experiment, 
 )
 def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
-        grid.get_offset_provider("C2E2CO").table,
-        serialized_grid.get_offset_provider("C2E2CO").table,
+        grid.get_connectivity("C2E2CO").asnumpy(),
+        serialized_grid.get_connectivity("C2E2CO").asnumpy(),
     )
 
 
@@ -378,16 +274,15 @@ def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment,
 )
 def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
-    serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").table
-    serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").table
-    assert_invalid_indices(serialized_e2c2e, grid_file)
+    serialized_e2c2e = serialized_grid.get_connectivity("E2C2E").asnumpy()
+    serialized_e2c2eO = serialized_grid.get_connectivity("E2C2EO").asnumpy()
+    assert has_invalid_index(serialized_e2c2e) == grid.limited_area
 
-    e2c2e_table = grid.get_offset_provider("E2C2E").table
-    e2c2eO_table = grid.get_offset_provider("E2C2EO").table
-
-    assert_invalid_indices(e2c2e_table, grid_file)
+    e2c2e_table = grid.get_connectivity("E2C2E").asnumpy()
+    e2c2eO_table = grid.get_connectivity("E2C2EO").asnumpy()
+    assert has_invalid_index(e2c2e_table) == grid.limited_area
     # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(dims.EdgeDim) + 1 for
     # boundaries all values are INVALID even though the half diamond exists (see mo_model_domimp_setup.f90 ll 163ff.)
     start_index = grid.start_index(
@@ -409,17 +304,17 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
 )
 def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     serialized_ref = grid_savepoint.e2c2v()
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(dims.EdgeDim) + 1) to end(dims.EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
-    table = grid.get_offset_provider("E2C2V").table
+    table = grid.get_connectivity("E2C2V").asnumpy()
     start_index = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     # e2c2e in ICON (quad_idx) has a different neighbor ordering than the e2c2e constructed in grid_manager.py
     assert_up_to_order(table, serialized_ref, start_index)
-    assert np.allclose(table[:, :2], grid.get_offset_provider("E2V").table)
+    assert np.allclose(table[:, :2], grid.get_connectivity("E2V").asnumpy())
 
 
 @pytest.mark.datatest
@@ -433,22 +328,24 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
 )
 def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
-    c2v = grid.get_offset_provider("C2V").table
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
+    c2v = grid.get_connectivity("C2V").asnumpy()
     assert np.allclose(c2v, grid_savepoint.c2v())
 
 
 @pytest.mark.parametrize(
     "dim, size",
     [
-        (dims.CellDim, R02B04_GLOBAL_NUM_CELLS),
-        (dims.EdgeDim, R02B04_GLOBAL_NUM_EDGES),
-        (dims.VertexDim, R02B04_GLOBAL_NUM_VERTEX),
+        (dims.CellDim, utils.R02B04_GLOBAL_NUM_CELLS),
+        (dims.EdgeDim, utils.R02B04_GLOBAL_NUM_EDGES),
+        (dims.VertexDim, utils.R02B04_GLOBAL_NUM_VERTEX),
     ],
 )
 @pytest.mark.with_netcdf
 def test_grid_manager_grid_size(dim, size, backend):
-    grid = _run_grid_manager(dt_utils.R02B04_GLOBAL, backend=backend).grid
+    grid = utils.run_grid_manager(
+        dt_utils.R02B04_GLOBAL, keep_skip_values=True, backend=backend
+    ).grid
     assert size == grid.size[dim]
 
 
@@ -469,7 +366,7 @@ def test_gridmanager_given_file_not_found_then_abort():
         manager = gm.GridManager(
             gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
         )
-        manager(None)
+        manager(backend=None, keep_skip_values=True)
         assert error.value == 1
 
 
@@ -487,12 +384,17 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
 @pytest.mark.parametrize(
     "grid_file, global_num_cells",
     [
-        (dt_utils.R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
+        (dt_utils.R02B04_GLOBAL, utils.R02B04_GLOBAL_NUM_CELLS),
         (dt_utils.REGIONAL_EXPERIMENT, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )
 def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
-    assert global_num_cells == _run_grid_manager(grid_file, backend=backend).grid.global_num_cells
+    assert (
+        global_num_cells
+        == utils.run_grid_manager(
+            grid_file, keep_skip_values=True, backend=backend
+        ).grid.global_num_cells
+    )
 
 
 @pytest.mark.datatest
@@ -503,13 +405,13 @@ def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
 )
 def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
     caplog.set_level(logging.DEBUG)
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
-        grid.get_offset_provider("C2E2C2E").table,
-        serialized_grid.get_offset_provider("C2E2C2E").table,
+        grid.get_connectivity("C2E2C2E").asnumpy(),
+        serialized_grid.get_connectivity("C2E2C2E").asnumpy(),
     )
-    assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)
+    assert grid.get_connectivity("C2E2C2E").asnumpy().shape == (grid.num_cells, 9)
 
 
 @pytest.mark.datatest
@@ -521,12 +423,20 @@ def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
-@pytest.mark.parametrize("dim", utils.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_grid, backend):
     caplog.set_level(logging.INFO)
     serialized_grid = icon_grid
-    grid = _run_grid_manager(grid_file, backend).grid
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     for domain in utils.global_grid_domains(dim):
+        if (
+            dim == dims.EdgeDim
+            and domain.zone == h_grid.Zone.END
+            and experiment == dt_utils.GLOBAL_EXPERIMENT
+        ):
+            pytest.xfail(
+                "FIXME: start_index in serialized data changed to 0 with unknown consequences, see also icon-exclaim output"
+            )
         assert grid.start_index(domain) == serialized_grid.start_index(
             domain
         ), f"start index wrong for domain {domain}"
@@ -535,7 +445,7 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
         ), f"end index wrong for domain {domain}"
 
     for domain in utils.valid_boundary_zones_for_dim(dim):
-        if not gridtest_utils.is_regional(grid_file):
+        if not grid.limited_area:
             assert grid.start_index(domain) == 0
             assert grid.end_index(domain) == 0
         assert grid.start_index(domain) == serialized_grid.start_index(
@@ -555,9 +465,9 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
     ],
 )
 def test_read_geometry_fields(grid_savepoint, grid_file, backend):
-    manager = _run_grid_manager(grid_file, backend=backend)
-    cell_area = manager.geometry[gm.GeometryName.CELL_AREA.value]
-    tangent_orientation = manager.geometry[gm.GeometryName.TANGENT_ORIENTATION.value]
+    manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
+    cell_area = manager.geometry[gridfile.GeometryName.CELL_AREA.value]
+    tangent_orientation = manager.geometry[gridfile.GeometryName.TANGENT_ORIENTATION.value]
 
     assert helpers.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
     assert helpers.dallclose(
@@ -575,7 +485,7 @@ def test_read_geometry_fields(grid_savepoint, grid_file, backend):
 )
 @pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_coordinates(grid_savepoint, grid_file, experiment, dim, backend):
-    manager = _run_grid_manager(grid_file, backend=backend)
+    manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     lat = manager.coordinates[dim]["lat"]
     lon = manager.coordinates[dim]["lon"]
     assert helpers.dallclose(lat.asnumpy(), grid_savepoint.lat(dim).asnumpy())
@@ -592,27 +502,10 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim, backend):
 )
 def test_tangent_orientation(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.tangent_orientation()
-    manager = _run_grid_manager(grid_file, backend=backend)
+    manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
     assert helpers.dallclose(
-        geometry_fields[gm.GeometryName.TANGENT_ORIENTATION].asnumpy(), expected.asnumpy()
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
-def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
-    expected = grid_savepoint.edge_orientation()
-    manager = _run_grid_manager(grid_file, backend=backend)
-    geometry_fields = manager.geometry
-    assert helpers.dallclose(
-        geometry_fields[GeometryName.CELL_NORMAL_ORIENTATION].ndarray, expected.ndarray
+        geometry_fields[gridfile.GeometryName.TANGENT_ORIENTATION].asnumpy(), expected.asnumpy()
     )
 
 
@@ -626,10 +519,11 @@ def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
 )
 def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.vertex_edge_orientation()
-    manager = _run_grid_manager(grid_file, backend=backend)
+    manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
     assert helpers.dallclose(
-        geometry_fields[GeometryName.EDGE_ORIENTATION_ON_VERTEX].ndarray, expected.ndarray
+        geometry_fields[gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX].asnumpy(),
+        expected.asnumpy(),
     )
 
 
@@ -643,9 +537,11 @@ def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
 )
 def test_dual_area(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.vertex_dual_area()
-    manager = _run_grid_manager(grid_file, backend=backend)
+    manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
-    assert helpers.dallclose(geometry_fields[GeometryName.DUAL_AREA].ndarray, expected.ndarray)
+    assert helpers.dallclose(
+        geometry_fields[gridfile.GeometryName.DUAL_AREA].asnumpy(), expected.asnumpy()
+    )
 
 
 @pytest.mark.datatest
@@ -658,14 +554,59 @@ def test_dual_area(grid_file, grid_savepoint, backend):
 )
 def test_edge_cell_distance(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.edge_cell_length()
-    manager = _run_grid_manager(grid_file, backend=backend)
+    manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
 
     assert helpers.dallclose(
-        geometry_fields[GeometryName.EDGE_CELL_DISTANCE].asnumpy(),
+        geometry_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE].asnumpy(),
         expected.asnumpy(),
         equal_nan=True,
     )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
+    expected = grid_savepoint.edge_orientation()
+    manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
+    geometry_fields = manager.geometry
+    assert helpers.dallclose(
+        geometry_fields[gridfile.GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(), expected.asnumpy()
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_edge_vertex_distance(grid_file, grid_savepoint, backend):
+    expected = grid_savepoint.edge_vert_length()
+    manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
+    geometry_fields = manager.geometry
+
+    assert helpers.dallclose(
+        geometry_fields[gridfile.GeometryName.EDGE_VERTEX_DISTANCE].asnumpy(),
+        expected.asnumpy(),
+        equal_nan=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "grid_file, expected", [(dt_utils.REGIONAL_EXPERIMENT, True), (dt_utils.R02B04_GLOBAL, False)]
+)
+def test_limited_area_on_grid(grid_file, expected):
+    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=None).grid
+    assert expected == grid.limited_area
 
 
 # TODO move to mpi_tests folder
@@ -676,13 +617,12 @@ def test_edge_cell_distance(grid_file, grid_savepoint, backend):
 )
 def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     caplog.set_level(logging.INFO)
-    file = utils.resolve_file_from_gridfile_name(utils.R02B04_GLOBAL)
-    grid = _run_grid_manager(file, backend=None).grid
+    grid = utils.run_grid_manager(dt_utils.R02B04_GLOBAL, backend=None).grid
     partitioner = halo.SimpleMetisDecomposer()
     face_face_connectivity = grid.connectivities[dims.C2E2CDim]
     labels = partitioner(face_face_connectivity, n_part=processor_props.comm_size)
     halo_generator = halo.HaloGenerator(
-        connectivities=grid.connectivities,
+        connectivities=grid.neighbor_tables,
         run_properties=processor_props,
         rank_mapping=labels,
         num_levels=1,
@@ -691,7 +631,7 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     decomposition_info = halo_generator()
 
     connectivity = gm.construct_local_connectivity(
-        field_offset, decomposition_info, connectivity=grid.connectivities[field_offset.target[1]]
+        field_offset, decomposition_info, connectivity=grid.neighbor_tables[field_offset.target[1]]
     )
     # there is an neighbor list for each index of the target dimension on the node
     assert (

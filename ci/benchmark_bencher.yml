@@ -1,0 +1,27 @@
+include:
+  - local: 'ci/base.yml'
+
+.bencher_setup_env:
+  setup:
+    - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
+    - export FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
+    - export GITHUB_ACTIONS=true
+    - export GITHUB_EVENT_NAME=pull_request
+    - export GITHUB_STEP_SUMMARY=$CI_PROJECT_DIR/step_summary.log
+    - export GITHUB_SHA=$CI_COMMIT_SHA
+    - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
+    - |
+      echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
+
+.benchmark_model_stencils:
+  stage: benchmark
+  script:
+    - !reference [.bencher_setup_env, setup]
+    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
+  parallel:
+    matrix:
+      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        GRID: [icon_grid, icon_grid_global]
+
+benchmark_bencher_aarch64:
+  extends: [.benchmark_model_stencils, .test_template_aarch64]

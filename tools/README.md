@@ -1,4 +1,4 @@
-# ICON4PyTools
+# ICON4Py Tools
 
 ## Description
 
@@ -6,11 +6,11 @@ Tools and utilities for integrating icon4py code into the ICON model.
 
 ## Installation instructions
 
-Until development reaches a stable state, we recommend that you follow the general instructions in the [../README.md](../README.md) root folder to install `icon4pytools` and all of its dependencies in a virtual environment.
+Until development reaches a stable state, we recommend that you follow the general instructions in the [../README.md](../README.md) root folder to install `icon4py.tools` and all of its dependencies in a virtual environment.
 
 ## Command-line tools
 
-A variety of command-line tools are available in the shell after installation of `icon4pytools`.
+A variety of command-line tools are available in the shell after installation of `icon4py.tools`.
 
 ### `icon4pygen`
 
@@ -119,7 +119,7 @@ Furthermore, this directive also takes two optional keyword arguments. `type` ta
 
 #### `!$DSL START STENCIL()`
 
-This directive denotes the start of a stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. For each stencil, an ACC DATA region will be created. This ACC DATA region contains the before fileds of the according stencil. An example call looks like this:
+This directive denotes the start of a stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. For each stencil, an ACC DATA region will be created. This ACC DATA region contains the before fields of the according stencil. An example call looks like this:
 
 ```fortran
 !$DSL START STENCIL(name=mo_nh_diffusion_stencil_06; &

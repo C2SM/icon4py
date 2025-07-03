@@ -36,28 +36,28 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_vn: np.array,
-        p_vt: np.array,
-        cell_idx: np.array,
-        cell_blk: np.array,
-        edge_verts_1_x: np.array,
-        edge_verts_2_x: np.array,
-        edge_verts_1_y: np.array,
-        edge_verts_2_y: np.array,
-        pos_on_tplane_e_1_x: np.array,
-        pos_on_tplane_e_2_x: np.array,
-        pos_on_tplane_e_1_y: np.array,
-        pos_on_tplane_e_2_y: np.array,
-        primal_normal_cell_x: np.array,
-        primal_normal_cell_y: np.array,
-        dual_normal_cell_x: np.array,
-        dual_normal_cell_y: np.array,
-        lvn_sys_pos: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_vn: np.ndarray,
+        p_vt: np.ndarray,
+        cell_idx: np.ndarray,
+        cell_blk: np.ndarray,
+        edge_verts_1_x: np.ndarray,
+        edge_verts_2_x: np.ndarray,
+        edge_verts_1_y: np.ndarray,
+        edge_verts_2_y: np.ndarray,
+        pos_on_tplane_e_1_x: np.ndarray,
+        pos_on_tplane_e_2_x: np.ndarray,
+        pos_on_tplane_e_1_y: np.ndarray,
+        pos_on_tplane_e_2_y: np.ndarray,
+        primal_normal_cell_x: np.ndarray,
+        primal_normal_cell_y: np.ndarray,
+        dual_normal_cell_x: np.ndarray,
+        dual_normal_cell_y: np.ndarray,
+        lvn_sys_pos: np.ndarray,
         p_dt: float,
         **kwargs,
     ) -> dict:
-        e2c_shape = grid.connectivities[dims.E2CDim].shape
+        e2c_shape = connectivities[dims.E2CDim].shape
         cell_idx = helpers.reshape(cell_idx, e2c_shape)
         cell_blk = helpers.reshape(cell_blk, e2c_shape)
         primal_normal_cell_x = helpers.reshape(primal_normal_cell_x, e2c_shape)
@@ -157,10 +157,10 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = np.asarray(grid.connectivities[dims.E2CDim], dtype=gtx.int32)
-        cell_idx_new = data_alloc.numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
-        cell_blk = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
-        cell_blk_new = data_alloc.as_1D_sparse_field(cell_blk, dims.ECDim)
+        cell_idx = data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=grid.get_connectivity("E2C").ndarray
+        )
+        cell_blk = data_alloc.constant_field(grid, 1, dims.ECDim, dtype=gtx.int32)
 
         edge_verts_1_x = data_alloc.random_field(grid, dims.EdgeDim)
         edge_verts_2_x = data_alloc.random_field(grid, dims.EdgeDim)
@@ -170,14 +170,10 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
         pos_on_tplane_e_2_x = data_alloc.random_field(grid, dims.EdgeDim)
         pos_on_tplane_e_1_y = data_alloc.random_field(grid, dims.EdgeDim)
         pos_on_tplane_e_2_y = data_alloc.random_field(grid, dims.EdgeDim)
-        primal_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_x_new = data_alloc.as_1D_sparse_field(primal_normal_cell_x, dims.ECDim)
-        dual_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_x_new = data_alloc.as_1D_sparse_field(dual_normal_cell_x, dims.ECDim)
-        primal_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_y_new = data_alloc.as_1D_sparse_field(primal_normal_cell_y, dims.ECDim)
-        dual_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_y_new = data_alloc.as_1D_sparse_field(dual_normal_cell_y, dims.ECDim)
+        primal_normal_cell_x = data_alloc.random_field(grid, dims.ECDim)
+        dual_normal_cell_x = data_alloc.random_field(grid, dims.ECDim)
+        primal_normal_cell_y = data_alloc.random_field(grid, dims.ECDim)
+        dual_normal_cell_y = data_alloc.random_field(grid, dims.ECDim)
         lvn_sys_pos = data_alloc.constant_field(grid, True, dims.EdgeDim, dims.KDim, dtype=bool)
         p_dt = 2.0
         p_cell_idx = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
@@ -197,8 +193,8 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
         return dict(
             p_vn=p_vn,
             p_vt=p_vt,
-            cell_idx=cell_idx_new,
-            cell_blk=cell_blk_new,
+            cell_idx=cell_idx,
+            cell_blk=cell_blk,
             edge_verts_1_x=edge_verts_1_x,
             edge_verts_2_x=edge_verts_2_x,
             edge_verts_1_y=edge_verts_1_y,
@@ -207,10 +203,10 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
             pos_on_tplane_e_2_x=pos_on_tplane_e_2_x,
             pos_on_tplane_e_1_y=pos_on_tplane_e_1_y,
             pos_on_tplane_e_2_y=pos_on_tplane_e_2_y,
-            primal_normal_cell_x=primal_normal_cell_x_new,
-            primal_normal_cell_y=primal_normal_cell_y_new,
-            dual_normal_cell_x=dual_normal_cell_x_new,
-            dual_normal_cell_y=dual_normal_cell_y_new,
+            primal_normal_cell_x=primal_normal_cell_x,
+            primal_normal_cell_y=primal_normal_cell_y,
+            dual_normal_cell_x=dual_normal_cell_x,
+            dual_normal_cell_y=dual_normal_cell_y,
             lvn_sys_pos=lvn_sys_pos,
             p_cell_idx=p_cell_idx,
             p_cell_rel_idx_dsl=p_cell_rel_idx_dsl,

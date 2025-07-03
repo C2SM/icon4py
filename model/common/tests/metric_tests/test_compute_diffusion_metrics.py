@@ -18,46 +18,37 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_max_nbhgt,
     compute_maxslp_maxhgtd,
     compute_weighted_cell_neighbor_sum,
-    compute_z_mc,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
-# TODO (halungge) fails in embedded
+@pytest.mark.level("unit")
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
-    metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
+    metrics_savepoint,
+    experiment,
+    interpolation_savepoint,
+    icon_grid,
+    grid_savepoint,
+    backend,
 ):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
-
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")
 
-    mask_hdiff = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=bool).asnumpy()
-    zd_vertoffset_dsl = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim
-    ).asnumpy()
-    z_vintcoeff = data_alloc.zero_field(icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim).asnumpy()
-    zd_intcoef_dsl = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim
-    ).asnumpy()
-    z_maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    z_maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    zd_diffcoef_dsl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).asnumpy()
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim)
+    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
 
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
-    nbidx = data_alloc.constant_field(
-        icon_grid, 1, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=int
-    ).asnumpy()
+    c2e2c = data_alloc.as_numpy(icon_grid.neighbor_tables[dims.C2E2CDim])
     c_bln_avg = interpolation_savepoint.c_bln_avg()
+    z_mc = metrics_savepoint.z_mc()
     thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125
+    thhgtd_zdiffu = 125.0
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
 
     cell_lateral = icon_grid.start_index(
@@ -69,84 +60,53 @@ def test_compute_diffusion_metrics(
     compute_maxslp_maxhgtd.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
-        z_maxslp=maxslp,
-        z_maxhgtd=maxhgtd,
+        maxslp=maxslp,
+        maxhgtd=maxhgtd,
         horizontal_start=cell_lateral,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlev,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
-    )
-
-    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-    compute_z_mc.with_backend(backend)(
-        metrics_savepoint.z_ifc(),
-        z_mc,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
 
     compute_weighted_cell_neighbor_sum.with_backend(backend)(
         maxslp=maxslp,
         maxhgtd=maxhgtd,
         c_bln_avg=c_bln_avg,
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
         horizontal_start=cell_lateral,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlev,
         offset_provider={
-            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
         },
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1]),
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
+        offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
     )
 
     mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_metrics(
+        c2e2c=c2e2c,
         z_mc=z_mc.asnumpy(),
-        z_mc_off=z_mc.asnumpy()[c2e2c],
         max_nbhgt=max_nbhgt.asnumpy(),
         c_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        nbidx=nbidx,
-        z_vintcoeff=z_vintcoeff,
-        z_maxslp_avg=z_maxslp_avg.asnumpy(),
-        z_maxhgtd_avg=z_maxhgtd_avg.asnumpy(),
-        mask_hdiff=mask_hdiff,
-        zd_diffcoef_dsl=zd_diffcoef_dsl,
-        zd_intcoef_dsl=zd_intcoef_dsl,
-        zd_vertoffset_dsl=zd_vertoffset_dsl,
+        maxslp_avg=maxslp_avg.asnumpy(),
+        maxhgtd_avg=maxhgtd_avg.asnumpy(),
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         cell_nudging=cell_nudging,
-        n_cells=icon_grid.num_cells,
         nlev=nlev,
     )
-    zd_intcoef_dsl = data_alloc.flatten_first_two_dims(
-        dims.CECDim,
-        dims.KDim,
-        field=gtx.as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_intcoef_dsl),
-    )
-    zd_vertoffset_dsl = data_alloc.flatten_first_two_dims(
-        dims.CECDim,
-        dims.KDim,
-        field=gtx.as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_vertoffset_dsl),
-    )
-
     assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
     assert helpers.dallclose(
         zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
     )
-    assert helpers.dallclose(
-        zd_vertoffset_dsl.asnumpy(), metrics_savepoint.zd_vertoffset().asnumpy()
-    )
-    assert helpers.dallclose(zd_intcoef_dsl.asnumpy(), metrics_savepoint.zd_intcoef().asnumpy())
+    assert helpers.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
+    assert helpers.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())

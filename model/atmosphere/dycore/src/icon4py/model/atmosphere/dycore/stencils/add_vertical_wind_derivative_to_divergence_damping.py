@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype, broadcast
 
 from icon4py.model.common import field_type_aliases as fa
@@ -15,7 +14,7 @@ from icon4py.model.common.dimension import E2C, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _add_vertical_wind_derivative_to_divergence_damping(
     hmask_dd3d: fa.EdgeField[wpfloat],
     scalfac_dd3d: fa.KField[wpfloat],
@@ -36,7 +35,7 @@ def _add_vertical_wind_derivative_to_divergence_damping(
     return astype(z_graddiv_vn_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=GridType.UNSTRUCTURED)
 def add_vertical_wind_derivative_to_divergence_damping(
     hmask_dd3d: fa.EdgeField[wpfloat],
     scalfac_dd3d: fa.KField[wpfloat],

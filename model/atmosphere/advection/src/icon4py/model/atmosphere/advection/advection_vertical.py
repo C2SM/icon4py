@@ -8,10 +8,11 @@
 
 from abc import ABC, abstractmethod
 import logging
+from typing import Optional
 
 import icon4py.model.common.grid.states as grid_states
 import gt4py.next as gtx
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.advection import advection_states
 
@@ -105,7 +106,7 @@ class BoundaryConditions(ABC):
 class NoFluxCondition(BoundaryConditions):
     """Class that sets the upper and lower boundary fluxes to zero."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: backend.Backend):
+    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
         # input arguments
         self._grid = grid
         self._backend = backend
@@ -132,7 +133,7 @@ class NoFluxCondition(BoundaryConditions):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
@@ -145,7 +146,7 @@ class NoFluxCondition(BoundaryConditions):
             horizontal_end=horizontal_end,
             vertical_start=self._grid.num_levels,
             vertical_end=self._grid.num_levels + 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
@@ -186,14 +187,14 @@ class VerticalLimiter(ABC):
 class NoLimiter(VerticalLimiter):
     """Class that implements no vertical parabola limiter."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: backend.Backend):
+    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
         # input arguments
         self._grid = grid
         self._backend = backend
 
         # fields
-        self._l_limit = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._l_limit = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
         # stencils
@@ -229,7 +230,7 @@ class NoLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -241,7 +242,7 @@ class NoLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field_koff_plus1 - end")
 
@@ -256,17 +257,17 @@ class NoLimiter(VerticalLimiter):
 class SemiMonotonicLimiter(VerticalLimiter):
     """Class that implements a semi-monotonic vertical parabola limiter."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: backend.Backend):
+    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
         # input arguments
         self._grid = grid
         self._backend = backend
 
         # fields
-        self._k_field = data_alloc.allocate_indices(
-            dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
+        self._k_field = data_alloc.index_field(
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._l_limit = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, dtype=gtx.int32, backend=self._backend
+        self._l_limit = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, backend=self._backend
         )
 
         # stencils
@@ -297,7 +298,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil limit_vertical_slope_semi_monotonically - end")
 
@@ -320,7 +321,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_vertical_parabola_limiter_condition - end")
 
@@ -336,7 +337,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil limit_vertical_parabola_semi_monotonically - end")
 
@@ -389,7 +390,7 @@ class VerticalAdvection(ABC):
 class NoAdvection(VerticalAdvection):
     """Class that implements disabled vertical advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: backend.Backend):
+    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
         log.debug("vertical advection class init - start")
 
         # input arguments
@@ -445,7 +446,7 @@ class NoAdvection(VerticalAdvection):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -523,7 +524,7 @@ class FirstOrderUpwind(FiniteVolume):
         boundary_conditions: BoundaryConditions,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend=backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         log.debug("vertical advection class init - start")
 
@@ -543,8 +544,13 @@ class FirstOrderUpwind(FiniteVolume):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # fields
-        self._k_field = data_alloc.allocate_indices(
-            dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
+        self._k_field = data_alloc.index_field(
+            self._grid,
+            dims.KDim,
+            grid=self._grid,
+            extend={dims.KDim: 1},
+            dtype=gtx.int32,
+            backend=self._backend,
         )  # TODO (dastrm): should be KHalfDim
 
         # stencils
@@ -596,7 +602,7 @@ class FirstOrderUpwind(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_vertical_tracer_flux_upwind - end")
 
@@ -643,7 +649,7 @@ class FirstOrderUpwind(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil integrate_tracer_vertically - end")
 
@@ -659,7 +665,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         vertical_limiter: VerticalLimiter,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend=backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         log.debug("vertical advection class init - start")
 
@@ -680,29 +686,29 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # fields
-        self._k_field = data_alloc.allocate_indices(
-            dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
+        self._k_field = data_alloc.index_field(
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_cfl = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
+        self._z_cfl = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_slope = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_slope = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._z_face = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
+        self._z_face = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_face_up = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_face_up = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._z_face_low = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_face_low = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._z_delta_q = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_delta_q = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._z_a1 = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_a1 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
         # stencils
@@ -779,7 +785,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels + 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
@@ -797,7 +803,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm4gpu_courant_number - end")
 
@@ -808,14 +814,13 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._compute_ppm_slope(
             p_cc=p_tracer_now,
             p_cellhgt_mc_now=self._metric_state.ddqz_z_full,
-            k=self._k_field,
             z_slope=self._z_slope,
             elev=self._elev,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm_slope - end")
 
@@ -837,7 +842,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=2,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm_quadratic_face_values - end")
 
@@ -851,7 +856,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=self._grid.num_levels - 1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm_quadratic_face_values - end")
 
@@ -864,7 +869,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -877,7 +882,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=self._grid.num_levels,
             vertical_end=self._grid.num_levels + 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field_koff_minus1 - end")
 
@@ -892,7 +897,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=2,
             vertical_end=self._grid.num_levels - 1,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm_quartic_face_values - end")
 
@@ -920,7 +925,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm4gpu_parabola_coefficients - end")
 
@@ -939,7 +944,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm4gpu_fractional_flux - end")
 
@@ -958,7 +963,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=1,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_ppm4gpu_integer_flux - end")
 
@@ -1012,7 +1017,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
+            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil integrate_tracer_vertically - end")
 

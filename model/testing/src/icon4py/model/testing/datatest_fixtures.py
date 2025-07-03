@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
+import icon4py.model.common.utils.data_allocation as data_alloc
 
 from . import data_handling as data, datatest_utils as dt_utils
 
@@ -33,17 +33,14 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
     """
     Get the binary ICON data from a remote server.
 
-    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
+    Fixture which is a prerequisite of all the other fixtures in this file.
     """
-    try:
-        if not request.config.getoption("datatest"):
-            pytest.skip("not running datatest marked test")
-    except ValueError:
-        pass
+    # we don't want to run this ever if we are not running datatests
+    if "not datatest" in request.config.getoption("-k", ""):
+        return
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        advection_uri = None
         if experiment == dt_utils.GLOBAL_EXPERIMENT:
             uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
         elif experiment == dt_utils.JABW_EXPERIMENT:
@@ -54,20 +51,13 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
         else:
             uri = dt_utils.DATA_URIS[processor_props.comm_size]
-            advection_uri = dt_utils.DATA_URIS_ADVECTION.get(processor_props.comm_size)
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
             data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
-            if advection_uri:
-                advection_path = dt_utils.get_datapath_for_experiment(
-                    ranked_data_path, f"{experiment}/advection"
-                )
-                data.download_and_extract(
-                    advection_uri, ranked_data_path, advection_path, f"advection_{data_file}"
-                )
+
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError as err:
@@ -77,15 +67,9 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
 
 @pytest.fixture
-def data_provider(download_ser_data, ranked_data_path, experiment, processor_props):
+def data_provider(download_ser_data, ranked_data_path, experiment, processor_props, backend):
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider(data_path, processor_props)
-
-
-@pytest.fixture
-def data_provider_advection(download_ser_data, ranked_data_path, experiment, processor_props):
-    data_path = dt_utils.get_datapath_for_experiment_advection(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props)
+    return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
 
 @pytest.fixture
@@ -100,13 +84,14 @@ def is_regional(experiment_name):
 
 
 @pytest.fixture
-def icon_grid(grid_savepoint):
+def icon_grid(grid_savepoint, backend):
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.construct_icon_grid(on_gpu=False)
+    on_gpu = True if data_alloc.is_cupy_device(backend) else False
+    return grid_savepoint.construct_icon_grid(on_gpu=on_gpu, keep_skip_values=False)
 
 
 @pytest.fixture
@@ -150,6 +135,16 @@ def step_date_init():
 
 
 @pytest.fixture
+def substep_init():
+    return 1
+
+
+@pytest.fixture
+def substep_exit():
+    return 1
+
+
+@pytest.fixture
 def step_date_exit():
     """
     Set the step date for the loaded ICON time stamp at the end of module.
@@ -178,73 +173,264 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
-    """
-    Load data from ICON savepoint at start of velocity_advection module.
+def topography_savepoint(data_provider):  # F811
+    """Load data from ICON external parameters savepoint."""
+    return data_provider.from_topography_savepoint()
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+
+@pytest.fixture
+def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_init):  # F811
+    """
+    Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_init(
-        istep=istep_init, vn_only=vn_only, date=step_date_init, jstep=jstep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
 @pytest.fixture
-def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init):
+def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
+    data_provider, step_date_init, istep_init, substep_init
+):  # F811
     """
-    Load data from ICON savepoint at exist of solve_nonhydro module.
+    Load data from ICON savepoint at start of velocity_advection module for cell diagnostics computations.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_compute_advection_in_vertical_momentum_equation_init(
+    data_provider, step_date_init, istep_init, substep_init
+):  # F811
+    """
+    Load data from ICON savepoint at start of velocity_advection module for vertical momentum equation.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_compute_advection_in_horizontal_momentum_equation_init(
+    data_provider, step_date_init, istep_init, substep_init
+):  # F811
+    """
+    Load data from ICON savepoint at start of velocity_advection module for horizontal momentum equation.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_init):
+    """
+    Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
+
+     metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_init(
-        istep=istep_init, date=step_date_init, jstep=jstep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):  # F811
+def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
+    data_provider, istep_init, step_date_init, substep_init
+):
     """
-    Load data from ICON savepoint at exist of solve_nonhydro module.
+    Load data from ICON savepoint before edge diagnostics computations and update of new vn
+    (formally known as stencils 15 to 28) in mo_solve_nonhydro.f90 of solve_nonhydro module.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+     metadata to select a unique savepoint:
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_vertically_implicit_dycore_solver_init(
+    data_provider, istep_init, step_date_init, substep_init
+):
+    """
+    Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
+
+     metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_vertically_implicit_dycore_solver_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_exit):  # F811
+    """
+    Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_exit(
-        istep=istep_exit, vn_only=vn_only, date=step_date_exit, jstep=jstep_exit
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
 @pytest.fixture
-def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit):
+def savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
+    data_provider, step_date_exit, istep_exit, substep_exit
+):  # F811
     """
-    Load data from ICON savepoint at exist of solve_nonhydro module.
+    Load data from ICON savepoint at exist of velocity_advection module for edge diagnostics computations.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
+    )
+
+
+@pytest.fixture
+def savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
+    data_provider, step_date_exit, istep_exit, substep_exit
+):  # F811
+    """
+    Load data from ICON savepoint at exit of velocity_advection module for cell diagnostics computations.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
+    )
+
+
+@pytest.fixture
+def savepoint_compute_advection_in_vertical_momentum_equation_exit(
+    data_provider, step_date_exit, istep_exit, substep_exit
+):  # F811
+    """
+    Load data from ICON savepoint at exit of velocity_advection module for vertical momentum equation.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
+    )
+
+
+@pytest.fixture
+def savepoint_compute_advection_in_horizontal_momentum_equation_exit(
+    data_provider, step_date_exit, istep_exit, substep_exit
+):  # F811
+    """
+    Load data from ICON savepoint at exit of velocity_advection module for horizontal momentum equation.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_exit):
+    """
+    Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
+    subroutine nh_solve in mo_solve_nonhydro.f90.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
-        istep=istep_exit, date=step_date_exit, jstep=jstep_exit
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
 @pytest.fixture
-def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit):
+def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
+    data_provider, istep_exit, step_date_exit, substep_exit
+):
     """
-    Load data from ICON savepoint at final exit (after predictor and corrector, and 3 final stencils) of solve_nonhydro module.
+    Load data from ICON savepoint at the end of edge diagnostics computations and update of new vn
+    (formally known as stencils 15 to 28) in mo_solve_nonhydro.f90.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    metadata to select a unique savepoint:
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
+    - substep: dynamical substep
     """
-    return data_provider.from_savepoint_nonhydro_step_exit(date=step_date_exit, jstep=jstep_exit)
+    return data_provider.from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_step_final(data_provider, step_date_exit, substep_exit):
+    """
+    Load data from ICON savepoint at final exit of subroutine nh_solve in mo_solve_nonhydro.f90.
+    (after predictor and corrector and 3 final stencils have run).
+
+     metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_nonhydro_step_final(
+        date=step_date_exit, substep=substep_exit
+    )
 
 
 @pytest.fixture
 def savepoint_diffusion_init(
-    data_provider,  # imported fixtures data_provider
-    linit,  # imported fixtures linit
-    step_date_init,  # imported fixtures data_provider
+    data_provider,
+    linit,
+    step_date_init,
 ):
     """
     Load data from ICON savepoint at start of diffusion module.
@@ -281,26 +467,6 @@ def istep_init():
 @pytest.fixture
 def istep_exit():
     return 1
-
-
-@pytest.fixture
-def jstep_init():
-    return 0
-
-
-@pytest.fixture
-def jstep_exit():
-    return 0
-
-
-@pytest.fixture
-def ntnd(savepoint_velocity_init):
-    return savepoint_velocity_init.get_metadata("ntnd").get("ntnd")
-
-
-@pytest.fixture
-def vn_only():
-    return False
 
 
 @pytest.fixture

@@ -13,8 +13,9 @@ import uuid
 from typing import Callable, NamedTuple
 
 import click
+import numpy as np
 from devtools import Timer
-from gt4py.next import gtfn_cpu
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
@@ -22,6 +23,7 @@ from icon4py.model.atmosphere.diffusion import (
     diffusion_states,
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -111,11 +113,9 @@ class TimeLoop:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
-        # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
         log.info(
@@ -148,13 +148,13 @@ class TimeLoop:
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.info(
-                f" MAX VN: {prognostic_states.current.vn.asnumpy().max():.15e} , MAX W: {prognostic_states.current.w.asnumpy().max():.15e}"
+            log.debug(
+                f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
             )
-            log.info(
-                f" MAX RHO: {prognostic_states.current.rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_states.current.theta_v.asnumpy().max():.15e}"
+            log.debug(
+                f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
             )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
+            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
@@ -166,7 +166,7 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                initial_divdamp_fac_o2,
+                second_order_divdamp_factor,
                 do_prep_adv,
             )
             timer.capture()
@@ -187,16 +187,16 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
+        # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
             prep_adv,
-            initial_divdamp_fac_o2,
+            second_order_divdamp_factor,
             do_prep_adv,
         )
 
@@ -209,14 +209,53 @@ class TimeLoop:
 
         prognostic_states.swap()
 
-        # TODO (Chia Rui): add tracer advection here
+    # TODO (Chia Rui): add tracer advection here
+
+    def _update_time_levels_for_velocity_tendencies(
+        self,
+        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        at_first_substep: bool,
+        at_initial_timestep: bool,
+    ):
+        """
+        Set time levels of advective tendency fields for call to velocity_tendencies.
+
+        When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
+        `vertical_wind_advective_tendency.predictor` (advection term in vertical momentum equation in
+        predictor step) is not computed in the predictor step of each substep.
+        Instead, the advection term computed in the corrector step during the
+        previous substep is reused for efficiency (except, of course, in the
+        very first substep of the initial time step).
+        `normal_wind_advective_tendency.predictor` (advection term in horizontal momentum equation in
+        predictor step) is only computed in the predictor step of the first
+        substep and the advection term in the corrector step during the previous
+        substep is reused for `normal_wind_advective_tendency.predictor` from the second substep onwards.
+        Additionally, in this scheme the predictor and corrector outputs are kept
+        in separate elements of the pair (.predictor for the predictor step and
+        .corrector for the corrector step) and interpoolated at the end of the
+        corrector step to get the final output.
+
+        No other time stepping schemes are currently supported.
+
+        Args:
+            diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)
+            at_first_substep: Flag indicating if this is the first substep of the time step.
+            at_initial_timestep: Flag indicating if this is the first time step.
+
+        Returns:
+            The index of the pair element to be used for the corrector output.
+        """
+        if not (at_initial_timestep and at_first_substep):
+            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+        if not at_first_substep:
+            diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
     def _do_dyn_substepping(
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
@@ -226,11 +265,18 @@ class TimeLoop:
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
+
+            self._update_time_levels_for_velocity_tendencies(
+                solve_nonhydro_diagnostic_state,
+                at_first_substep=self._is_first_substep(dyn_substep),
+                at_initial_timestep=self._is_first_step_in_simulation,
+            )
+
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv=prep_adv,
-                divdamp_fac_o2=initial_divdamp_fac_o2,
+                second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
@@ -268,10 +314,10 @@ class DriverParams(NamedTuple):
     Parameters for the driver run.
 
     Attributes:
-        divdamp_fac_o2: Second order divergence damping factor.
+        second_order_divdamp_factor: Second order divergence damping factor.
     """
 
-    divdamp_fac_o2: float
+    second_order_divdamp_factor: float
 
 
 def initialize(
@@ -282,6 +328,7 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
+    backend: gtx_backend.Backend,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
     Initialize the driver run.
@@ -309,15 +356,22 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type)
+    config = driver_config.read_config(backend, experiment_type)
 
     decomp_info = driver_init.read_decomp_info(
-        file_path, props, serialization_type, grid_id, grid_root, grid_level
+        file_path,
+        props,
+        backend,
+        serialization_type,
+        grid_id,
+        grid_root,
+        grid_level,
     )
 
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = driver_init.read_icon_grid(
         file_path,
+        backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -333,6 +387,7 @@ def initialize(
     ) = driver_init.read_geometry_fields(
         file_path,
         vertical_grid_config=config.vertical_grid_config,
+        backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -348,6 +403,7 @@ def initialize(
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,
+        backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -365,14 +421,14 @@ def initialize(
         edge_geometry,
         cell_geometry,
         exchange=exchange,
-        backend=gtfn_cpu,
+        backend=backend,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=icon_grid,
-        backend=gtfn_cpu,
+        backend=backend,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
@@ -387,7 +443,7 @@ def initialize(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prep_adv,
-        initial_divdamp_fac_o2,
+        second_order_divdamp_factor,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
@@ -396,6 +452,7 @@ def initialize(
         cell_geometry,
         edge_geometry,
         file_path,
+        backend=backend,
         rank=props.rank,
         experiment_type=experiment_type,
     )
@@ -416,7 +473,7 @@ def initialize(
             prognostics=prognostics_states,
             diagnostic=diagnostic_state,
         ),
-        DriverParams(divdamp_fac_o2=initial_divdamp_fac_o2),
+        DriverParams(second_order_divdamp_factor=second_order_divdamp_factor),
     )
 
 
@@ -435,13 +492,13 @@ def initialize(
 )
 @click.option(
     "--serialization_type",
-    default="serialbox",
+    default=driver_init.SerializationType.SB.value,
     show_default=True,
     help="Serialization type for grid info and static fields. This is currently the only possible way to load the grid info and static fields.",
 )
 @click.option(
     "--experiment_type",
-    default="any",
+    default=driver_init.ExperimentType.ANY.value,
     show_default=True,
     help="Option for configuration and how the initial state is generated. "
     "Setting it to the default value will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data. "
@@ -464,8 +521,28 @@ def initialize(
     default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
     help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
 )
+@click.option(
+    "--enable_output",
+    is_flag=True,
+    help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
+)
+@click.option(
+    "--icon4py_driver_backend",
+    "-b",
+    required=True,
+    help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_cpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
+)
 def icon4py_driver(
-    input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
+    input_path,
+    run_path,
+    mpi,
+    serialization_type,
+    experiment_type,
+    grid_id,
+    grid_root,
+    grid_level,
+    enable_output,
+    icon4py_driver_backend,
 ) -> None:
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -487,9 +564,17 @@ def icon4py_driver(
 
     2. run time loop
     """
+
+    if icon4py_driver_backend not in model_backends.BACKENDS:
+        raise ValueError(
+            f"Invalid driver backend: {icon4py_driver_backend}. \n"
+            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
+        )
+    backend = model_backends.BACKENDS[icon4py_driver_backend]
+
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     grid_id = uuid.UUID(grid_id)
-    driver_init.configure_logging(run_path, experiment_type, parallel_props)
+    driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
 
     time_loop: TimeLoop
     ds: DriverStates
@@ -502,6 +587,7 @@ def icon4py_driver(
         grid_id,
         grid_root,
         grid_level,
+        backend,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
     log.info(
@@ -518,7 +604,7 @@ def icon4py_driver(
         ds.solve_nonhydro_diagnostic,
         ds.prognostics,
         ds.prep_advection_prognostic,
-        dp.divdamp_fac_o2,
+        dp.second_order_divdamp_factor,
         do_prep_adv=False,
     )
 

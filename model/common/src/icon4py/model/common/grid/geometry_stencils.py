@@ -6,19 +6,23 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from types import ModuleType
+
+import numpy as np
 from gt4py import next as gtx
 from gt4py.next import sin, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
 from icon4py.model.common.math.helpers import (
-    arc_length,
+    arc_length_on_edges,
     cross_product_on_edges,
     geographical_to_cartesian_on_edges,
-    geographical_to_cartesian_on_vertex,
+    geographical_to_cartesian_on_vertices,
     normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
 )
+from icon4py.model.common.utils import data_allocation as alloc
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -43,7 +47,7 @@ def cartesian_coordinates_of_edge_tangent(
           y: y coordinate of normalized tangent vector
           z: z coordinate of normalized tangent vector
     """
-    vertex_x, vertex_y, vertex_z = geographical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
+    vertex_x, vertex_y, vertex_z = geographical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
 
     x = edge_orientation * (vertex_x(E2V[1]) - vertex_x(E2V[0]))
     y = edge_orientation * (vertex_y(E2V[1]) - vertex_y(E2V[0]))
@@ -358,7 +362,7 @@ def cell_center_arc_distance(
     x0, y0, z0 = geographical_to_cartesian_on_edges(lat_neighbor_0, lon_neighbor_0)
     x1, y1, z1 = geographical_to_cartesian_on_edges(lat_neighbor_1, lon_neighbor_1)
     # (xi, yi, zi) are normalized by construction
-    arc = arc_length(x0, x1, y0, y1, z0, z1, radius)
+    arc = arc_length_on_edges(x0, x1, y0, y1, z0, z1, radius)
     return arc
 
 
@@ -393,7 +397,7 @@ def arc_distance_of_far_edges_in_diamond(
         arc length between the "far" vertices in the diamond.
 
     """
-    x, y, z = geographical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
+    x, y, z = geographical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
     x2 = x(E2C2V[2])
     x3 = x(E2C2V[3])
     y2 = y(E2C2V[2])
@@ -402,7 +406,7 @@ def arc_distance_of_far_edges_in_diamond(
     z3 = z(E2C2V[3])
     # (xi, yi, zi) are normalized by construction
 
-    far_vertex_vertex_length = arc_length(x2, x3, y2, y3, z2, z3, radius)
+    far_vertex_vertex_length = arc_length_on_edges(x2, x3, y2, y3, z2, z3, radius)
     return far_vertex_vertex_length
 
 
@@ -427,7 +431,7 @@ def edge_length(
     Returns:
         edge length
     """
-    x, y, z = geographical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
+    x, y, z = geographical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
     x0 = x(E2V[0])
     x1 = x(E2V[1])
     y0 = y(E2V[0])
@@ -436,7 +440,7 @@ def edge_length(
     z1 = z(E2V[1])
     # (xi, yi, zi) are normalized by construction
 
-    length = arc_length(x0, x1, y0, y1, z0, z1, radius)
+    length = arc_length_on_edges(x0, x1, y0, y1, z0, z1, radius)
     return length
 
 
@@ -567,3 +571,21 @@ def compute_coriolis_parameter_on_edges(
         out=coriolis_parameter,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
+
+
+def compute_primal_cart_normal(
+    primal_cart_normal_x: alloc.NDArray,
+    primal_cart_normal_y: alloc.NDArray,
+    primal_cart_normal_z: alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> alloc.NDArray:
+    primal_cart_normal = array_ns.transpose(
+        array_ns.stack(
+            (
+                primal_cart_normal_x,
+                primal_cart_normal_y,
+                primal_cart_normal_z,
+            )
+        )
+    )
+    return primal_cart_normal

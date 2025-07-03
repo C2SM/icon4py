@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.average_horizontal_flux_subcycl
     average_horizontal_flux_subcycling_3,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -24,17 +26,17 @@ class TestAverageHorizontalFluxSubcycling3(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_tracer_mflx_1_dsl: np.array,
-        z_tracer_mflx_2_dsl: np.array,
-        z_tracer_mflx_3_dsl: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_tracer_mflx_1_dsl: np.ndarray,
+        z_tracer_mflx_2_dsl: np.ndarray,
+        z_tracer_mflx_3_dsl: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(3)
         return dict(p_out_e=p_out_e)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_tracer_mflx_1_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_tracer_mflx_2_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_tracer_mflx_3_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

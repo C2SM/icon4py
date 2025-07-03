@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,28 +15,29 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_horizontal_advection_term_for_vertical_velocity_numpy(
-    grid,
-    vn_ie: np.array,
-    inv_dual_edge_length: np.array,
-    w: np.array,
-    z_vt_ie: np.array,
-    inv_primal_edge_length: np.array,
-    tangent_orientation: np.array,
-    z_w_v: np.array,
-) -> np.array:
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    vn_ie: np.ndarray,
+    inv_dual_edge_length: np.ndarray,
+    w: np.ndarray,
+    z_vt_ie: np.ndarray,
+    inv_primal_edge_length: np.ndarray,
+    tangent_orientation: np.ndarray,
+    z_w_v: np.ndarray,
+) -> np.ndarray:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
-    w_e2c = w[grid.connectivities[dims.E2CDim]]
-    z_w_v_e2v = z_w_v[grid.connectivities[dims.E2VDim]]
+    w_e2c = w[connectivities[dims.E2CDim]]
+    z_w_v_e2v = z_w_v[connectivities[dims.E2VDim]]
 
     red_w = w_e2c[:, 0] - w_e2c[:, 1]
     red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]
@@ -52,22 +55,22 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        vn_ie: np.array,
-        inv_dual_edge_length: np.array,
-        w: np.array,
-        z_vt_ie: np.array,
-        inv_primal_edge_length: np.array,
-        tangent_orientation: np.array,
-        z_w_v: np.array,
-        z_v_grad_w: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        vn_ie: np.ndarray,
+        inv_dual_edge_length: np.ndarray,
+        w: np.ndarray,
+        z_vt_ie: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        tangent_orientation: np.ndarray,
+        z_w_v: np.ndarray,
+        z_v_grad_w: np.ndarray,
         horizontal_start: int,
         horizontal_end: int,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_v_grad_w[horizontal_start:horizontal_end, :] = (
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
-                grid,
+                connectivities,
                 vn_ie,
                 inv_dual_edge_length,
                 w,
@@ -80,7 +83,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         return dict(z_v_grad_w=z_v_grad_w)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
@@ -91,16 +94,8 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-            if hasattr(grid, "start_index")
-            else 0
-        )
-        horizontal_end = (
-            grid.end_index(edge_domain(h_grid.Zone.HALO))
-            if hasattr(grid, "end_index")
-            else gtx.int32(grid.num_edges)
-        )
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         return dict(
             vn_ie=vn_ie,
