@@ -88,7 +88,7 @@ build_distributed_cpu:
     - echo "slurm ntasks from outer environment SLURM_NTASKS=${SLURM_NTASKS}"
     - echo "resetting SLURM_NTASKS"
     - export SLURM_NTASKS=${ICON4PY_MPI_TASKS}
-    - echo "using SLURM_NTASKS=${SLURM_NTASKS}
+    - echo "using SLURM_NTASKS=${SLURM_NTASKS}"
     - echo "running with $(python --version)"
     - echo "using MPI_PREFIX ${ICON4PY_MPI_PREFIX}"
   script:
