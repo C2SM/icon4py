@@ -28,27 +28,33 @@ try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
     def make_custom_dace_backend(
-        gpu: bool, enable_loop_blocking: bool = False
+        gpu: bool,
+        enable_loop_blocking: bool = False,
+        make_temporaries_persistent: bool = False,
     ) -> gtx_backend.Backend:
         """Customize the dace backend with the following configuration.
 
         async_sdfg_call:
             In icon4py we want to make an asynchronous SDFG call on gpu to allow
             overlapping of gpu kernel execution with the Python driver code.
+        make_persistent:
+            If `make_arrays_persistent=True` it is safe to assume that the field
+            layout does not change between multiple calls to a gt4py program,
+            therefore we can make temporary arrays persistent -- thus, allocated
+            at SDFG initialization.
         blocking_dim:
             Apply loop-blocking on the vertical dimension `KDim`, if the input
             argument `enable_loop_blocking` is `True`.
         use_zero_origin:
-            The current design of icon4py relies on programs as entry points to
-            gt4py, and the fields that are passed as program arguments have
-            zero-based domain. Therefore, we can avoiding generating the start
-            symbol of the field range. This might change in the future, if field
-            operators will be used as entry point.
+            When set to `True`, the SDFG lowering will not generate the start symbol
+            of the field range. Select this option if all fields have zero origin.
 
         Args:
             gpu: Specify if the target device is GPU.
             enable_loop_blocking: Flag to enable loop-blocking transformation on
                 the vertical dimension, default `False`.
+            make_temporaries_persistent: Flag to make temporary arrays persistent,
+                see details above, default `False`.
 
         Returns:
             A dace backend with custom configuration for the target device.
@@ -58,10 +64,10 @@ try:
             cached=True,
             gpu=gpu,
             async_sdfg_call=True,
-            make_persistent=False,
+            make_persistent=make_temporaries_persistent,
             blocking_dim=(dims.KDim if enable_loop_blocking else None),
             blocking_size=10,
-            use_zero_origin=True,
+            use_zero_origin=False,
         )
 
     BACKENDS.update(

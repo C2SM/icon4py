@@ -67,8 +67,12 @@ _BACKEND_MAP = {
 }
 if dace:
     _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(gpu=False),
-        BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(gpu=True),
+        BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(
+            gpu=False, make_temporaries_persistent=True
+        ),
+        BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(
+            gpu=True, make_temporaries_persistent=True
+        ),
     }
 
 
