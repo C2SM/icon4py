@@ -15,7 +15,7 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@field_operator(grid_type=GridType.UNSTRUCTURED)
 def _compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],

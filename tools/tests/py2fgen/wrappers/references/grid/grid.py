@@ -443,465 +443,630 @@ def grid_init_wrapper(
         if __debug__:
             if logger.isEnabledFor(logging.DEBUG):
 
+                cell_starts_arr = (
+                    _conversion.as_array(ffi, cell_starts, _definitions.INT32)
+                    if cell_starts is not None
+                    else None
+                )
                 msg = "shape of cell_starts after computation = %s" % str(
-                    cell_starts.shape if cell_starts is not None else "None"
+                    cell_starts_arr.shape if cell_starts is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "cell_starts after computation: %s" % str(
-                    _conversion.as_array(ffi, cell_starts, _definitions.INT32)
+                msg = (
+                    "cell_starts after computation: %s" % str(cell_starts_arr)
                     if cell_starts is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                cell_ends_arr = (
+                    _conversion.as_array(ffi, cell_ends, _definitions.INT32)
+                    if cell_ends is not None
+                    else None
+                )
                 msg = "shape of cell_ends after computation = %s" % str(
-                    cell_ends.shape if cell_ends is not None else "None"
+                    cell_ends_arr.shape if cell_ends is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "cell_ends after computation: %s" % str(
-                    _conversion.as_array(ffi, cell_ends, _definitions.INT32)
+                msg = (
+                    "cell_ends after computation: %s" % str(cell_ends_arr)
                     if cell_ends is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vertex_starts_arr = (
+                    _conversion.as_array(ffi, vertex_starts, _definitions.INT32)
+                    if vertex_starts is not None
+                    else None
+                )
                 msg = "shape of vertex_starts after computation = %s" % str(
-                    vertex_starts.shape if vertex_starts is not None else "None"
+                    vertex_starts_arr.shape if vertex_starts is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vertex_starts after computation: %s" % str(
-                    _conversion.as_array(ffi, vertex_starts, _definitions.INT32)
+                msg = (
+                    "vertex_starts after computation: %s" % str(vertex_starts_arr)
                     if vertex_starts is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                vertex_ends_arr = (
+                    _conversion.as_array(ffi, vertex_ends, _definitions.INT32)
+                    if vertex_ends is not None
+                    else None
+                )
                 msg = "shape of vertex_ends after computation = %s" % str(
-                    vertex_ends.shape if vertex_ends is not None else "None"
+                    vertex_ends_arr.shape if vertex_ends is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "vertex_ends after computation: %s" % str(
-                    _conversion.as_array(ffi, vertex_ends, _definitions.INT32)
+                msg = (
+                    "vertex_ends after computation: %s" % str(vertex_ends_arr)
                     if vertex_ends is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                edge_starts_arr = (
+                    _conversion.as_array(ffi, edge_starts, _definitions.INT32)
+                    if edge_starts is not None
+                    else None
+                )
                 msg = "shape of edge_starts after computation = %s" % str(
-                    edge_starts.shape if edge_starts is not None else "None"
+                    edge_starts_arr.shape if edge_starts is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "edge_starts after computation: %s" % str(
-                    _conversion.as_array(ffi, edge_starts, _definitions.INT32)
+                msg = (
+                    "edge_starts after computation: %s" % str(edge_starts_arr)
                     if edge_starts is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                edge_ends_arr = (
+                    _conversion.as_array(ffi, edge_ends, _definitions.INT32)
+                    if edge_ends is not None
+                    else None
+                )
                 msg = "shape of edge_ends after computation = %s" % str(
-                    edge_ends.shape if edge_ends is not None else "None"
+                    edge_ends_arr.shape if edge_ends is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "edge_ends after computation: %s" % str(
-                    _conversion.as_array(ffi, edge_ends, _definitions.INT32)
+                msg = (
+                    "edge_ends after computation: %s" % str(edge_ends_arr)
                     if edge_ends is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                c2e_arr = (
+                    _conversion.as_array(ffi, c2e, _definitions.INT32) if c2e is not None else None
+                )
                 msg = "shape of c2e after computation = %s" % str(
-                    c2e.shape if c2e is not None else "None"
+                    c2e_arr.shape if c2e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "c2e after computation: %s" % str(
-                    _conversion.as_array(ffi, c2e, _definitions.INT32)
-                    if c2e is not None
-                    else "None"
-                )
+                msg = "c2e after computation: %s" % str(c2e_arr) if c2e is not None else "None"
                 logger.debug(msg)
 
+                e2c_arr = (
+                    _conversion.as_array(ffi, e2c, _definitions.INT32) if e2c is not None else None
+                )
                 msg = "shape of e2c after computation = %s" % str(
-                    e2c.shape if e2c is not None else "None"
+                    e2c_arr.shape if e2c is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "e2c after computation: %s" % str(
-                    _conversion.as_array(ffi, e2c, _definitions.INT32)
-                    if e2c is not None
-                    else "None"
-                )
+                msg = "e2c after computation: %s" % str(e2c_arr) if e2c is not None else "None"
                 logger.debug(msg)
 
-                msg = "shape of c2e2c after computation = %s" % str(
-                    c2e2c.shape if c2e2c is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "c2e2c after computation: %s" % str(
+                c2e2c_arr = (
                     _conversion.as_array(ffi, c2e2c, _definitions.INT32)
                     if c2e2c is not None
-                    else "None"
+                    else None
+                )
+                msg = "shape of c2e2c after computation = %s" % str(
+                    c2e2c_arr.shape if c2e2c is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "c2e2c after computation: %s" % str(c2e2c_arr) if c2e2c is not None else "None"
                 )
                 logger.debug(msg)
 
-                msg = "shape of e2c2e after computation = %s" % str(
-                    e2c2e.shape if e2c2e is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "e2c2e after computation: %s" % str(
+                e2c2e_arr = (
                     _conversion.as_array(ffi, e2c2e, _definitions.INT32)
                     if e2c2e is not None
-                    else "None"
+                    else None
+                )
+                msg = "shape of e2c2e after computation = %s" % str(
+                    e2c2e_arr.shape if e2c2e is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "e2c2e after computation: %s" % str(e2c2e_arr) if e2c2e is not None else "None"
                 )
                 logger.debug(msg)
 
+                e2v_arr = (
+                    _conversion.as_array(ffi, e2v, _definitions.INT32) if e2v is not None else None
+                )
                 msg = "shape of e2v after computation = %s" % str(
-                    e2v.shape if e2v is not None else "None"
+                    e2v_arr.shape if e2v is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "e2v after computation: %s" % str(
-                    _conversion.as_array(ffi, e2v, _definitions.INT32)
-                    if e2v is not None
-                    else "None"
-                )
+                msg = "e2v after computation: %s" % str(e2v_arr) if e2v is not None else "None"
                 logger.debug(msg)
 
+                v2e_arr = (
+                    _conversion.as_array(ffi, v2e, _definitions.INT32) if v2e is not None else None
+                )
                 msg = "shape of v2e after computation = %s" % str(
-                    v2e.shape if v2e is not None else "None"
+                    v2e_arr.shape if v2e is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "v2e after computation: %s" % str(
-                    _conversion.as_array(ffi, v2e, _definitions.INT32)
-                    if v2e is not None
-                    else "None"
-                )
+                msg = "v2e after computation: %s" % str(v2e_arr) if v2e is not None else "None"
                 logger.debug(msg)
 
+                v2c_arr = (
+                    _conversion.as_array(ffi, v2c, _definitions.INT32) if v2c is not None else None
+                )
                 msg = "shape of v2c after computation = %s" % str(
-                    v2c.shape if v2c is not None else "None"
+                    v2c_arr.shape if v2c is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "v2c after computation: %s" % str(
-                    _conversion.as_array(ffi, v2c, _definitions.INT32)
-                    if v2c is not None
-                    else "None"
-                )
+                msg = "v2c after computation: %s" % str(v2c_arr) if v2c is not None else "None"
                 logger.debug(msg)
 
-                msg = "shape of e2c2v after computation = %s" % str(
-                    e2c2v.shape if e2c2v is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "e2c2v after computation: %s" % str(
+                e2c2v_arr = (
                     _conversion.as_array(ffi, e2c2v, _definitions.INT32)
                     if e2c2v is not None
-                    else "None"
+                    else None
+                )
+                msg = "shape of e2c2v after computation = %s" % str(
+                    e2c2v_arr.shape if e2c2v is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "e2c2v after computation: %s" % str(e2c2v_arr) if e2c2v is not None else "None"
                 )
                 logger.debug(msg)
 
+                c2v_arr = (
+                    _conversion.as_array(ffi, c2v, _definitions.INT32) if c2v is not None else None
+                )
                 msg = "shape of c2v after computation = %s" % str(
-                    c2v.shape if c2v is not None else "None"
+                    c2v_arr.shape if c2v is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "c2v after computation: %s" % str(
-                    _conversion.as_array(ffi, c2v, _definitions.INT32)
-                    if c2v is not None
-                    else "None"
-                )
+                msg = "c2v after computation: %s" % str(c2v_arr) if c2v is not None else "None"
                 logger.debug(msg)
 
+                c_owner_mask_arr = (
+                    _conversion.as_array(ffi, c_owner_mask, _definitions.BOOL)
+                    if c_owner_mask is not None
+                    else None
+                )
                 msg = "shape of c_owner_mask after computation = %s" % str(
-                    c_owner_mask.shape if c_owner_mask is not None else "None"
+                    c_owner_mask_arr.shape if c_owner_mask is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "c_owner_mask after computation: %s" % str(
-                    _conversion.as_array(ffi, c_owner_mask, _definitions.BOOL)
+                msg = (
+                    "c_owner_mask after computation: %s" % str(c_owner_mask_arr)
                     if c_owner_mask is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                e_owner_mask_arr = (
+                    _conversion.as_array(ffi, e_owner_mask, _definitions.BOOL)
+                    if e_owner_mask is not None
+                    else None
+                )
                 msg = "shape of e_owner_mask after computation = %s" % str(
-                    e_owner_mask.shape if e_owner_mask is not None else "None"
+                    e_owner_mask_arr.shape if e_owner_mask is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "e_owner_mask after computation: %s" % str(
-                    _conversion.as_array(ffi, e_owner_mask, _definitions.BOOL)
+                msg = (
+                    "e_owner_mask after computation: %s" % str(e_owner_mask_arr)
                     if e_owner_mask is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                v_owner_mask_arr = (
+                    _conversion.as_array(ffi, v_owner_mask, _definitions.BOOL)
+                    if v_owner_mask is not None
+                    else None
+                )
                 msg = "shape of v_owner_mask after computation = %s" % str(
-                    v_owner_mask.shape if v_owner_mask is not None else "None"
+                    v_owner_mask_arr.shape if v_owner_mask is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "v_owner_mask after computation: %s" % str(
-                    _conversion.as_array(ffi, v_owner_mask, _definitions.BOOL)
+                msg = (
+                    "v_owner_mask after computation: %s" % str(v_owner_mask_arr)
                     if v_owner_mask is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                c_glb_index_arr = (
+                    _conversion.as_array(ffi, c_glb_index, _definitions.INT32)
+                    if c_glb_index is not None
+                    else None
+                )
                 msg = "shape of c_glb_index after computation = %s" % str(
-                    c_glb_index.shape if c_glb_index is not None else "None"
+                    c_glb_index_arr.shape if c_glb_index is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "c_glb_index after computation: %s" % str(
-                    _conversion.as_array(ffi, c_glb_index, _definitions.INT32)
+                msg = (
+                    "c_glb_index after computation: %s" % str(c_glb_index_arr)
                     if c_glb_index is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                e_glb_index_arr = (
+                    _conversion.as_array(ffi, e_glb_index, _definitions.INT32)
+                    if e_glb_index is not None
+                    else None
+                )
                 msg = "shape of e_glb_index after computation = %s" % str(
-                    e_glb_index.shape if e_glb_index is not None else "None"
+                    e_glb_index_arr.shape if e_glb_index is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "e_glb_index after computation: %s" % str(
-                    _conversion.as_array(ffi, e_glb_index, _definitions.INT32)
+                msg = (
+                    "e_glb_index after computation: %s" % str(e_glb_index_arr)
                     if e_glb_index is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                v_glb_index_arr = (
+                    _conversion.as_array(ffi, v_glb_index, _definitions.INT32)
+                    if v_glb_index is not None
+                    else None
+                )
                 msg = "shape of v_glb_index after computation = %s" % str(
-                    v_glb_index.shape if v_glb_index is not None else "None"
+                    v_glb_index_arr.shape if v_glb_index is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "v_glb_index after computation: %s" % str(
-                    _conversion.as_array(ffi, v_glb_index, _definitions.INT32)
+                msg = (
+                    "v_glb_index after computation: %s" % str(v_glb_index_arr)
                     if v_glb_index is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                tangent_orientation_arr = (
+                    _conversion.as_array(ffi, tangent_orientation, _definitions.FLOAT64)
+                    if tangent_orientation is not None
+                    else None
+                )
                 msg = "shape of tangent_orientation after computation = %s" % str(
-                    tangent_orientation.shape if tangent_orientation is not None else "None"
+                    tangent_orientation_arr.shape if tangent_orientation is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "tangent_orientation after computation: %s" % str(
-                    _conversion.as_array(ffi, tangent_orientation, _definitions.FLOAT64)
+                msg = (
+                    "tangent_orientation after computation: %s" % str(tangent_orientation_arr)
                     if tangent_orientation is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                inverse_primal_edge_lengths_arr = (
+                    _conversion.as_array(ffi, inverse_primal_edge_lengths, _definitions.FLOAT64)
+                    if inverse_primal_edge_lengths is not None
+                    else None
+                )
                 msg = "shape of inverse_primal_edge_lengths after computation = %s" % str(
-                    inverse_primal_edge_lengths.shape
+                    inverse_primal_edge_lengths_arr.shape
                     if inverse_primal_edge_lengths is not None
                     else "None"
                 )
                 logger.debug(msg)
-                msg = "inverse_primal_edge_lengths after computation: %s" % str(
-                    _conversion.as_array(ffi, inverse_primal_edge_lengths, _definitions.FLOAT64)
+                msg = (
+                    "inverse_primal_edge_lengths after computation: %s"
+                    % str(inverse_primal_edge_lengths_arr)
                     if inverse_primal_edge_lengths is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                inv_dual_edge_length_arr = (
+                    _conversion.as_array(ffi, inv_dual_edge_length, _definitions.FLOAT64)
+                    if inv_dual_edge_length is not None
+                    else None
+                )
                 msg = "shape of inv_dual_edge_length after computation = %s" % str(
-                    inv_dual_edge_length.shape if inv_dual_edge_length is not None else "None"
+                    inv_dual_edge_length_arr.shape if inv_dual_edge_length is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "inv_dual_edge_length after computation: %s" % str(
-                    _conversion.as_array(ffi, inv_dual_edge_length, _definitions.FLOAT64)
+                msg = (
+                    "inv_dual_edge_length after computation: %s" % str(inv_dual_edge_length_arr)
                     if inv_dual_edge_length is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                inv_vert_vert_length_arr = (
+                    _conversion.as_array(ffi, inv_vert_vert_length, _definitions.FLOAT64)
+                    if inv_vert_vert_length is not None
+                    else None
+                )
                 msg = "shape of inv_vert_vert_length after computation = %s" % str(
-                    inv_vert_vert_length.shape if inv_vert_vert_length is not None else "None"
+                    inv_vert_vert_length_arr.shape if inv_vert_vert_length is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "inv_vert_vert_length after computation: %s" % str(
-                    _conversion.as_array(ffi, inv_vert_vert_length, _definitions.FLOAT64)
+                msg = (
+                    "inv_vert_vert_length after computation: %s" % str(inv_vert_vert_length_arr)
                     if inv_vert_vert_length is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                edge_areas_arr = (
+                    _conversion.as_array(ffi, edge_areas, _definitions.FLOAT64)
+                    if edge_areas is not None
+                    else None
+                )
                 msg = "shape of edge_areas after computation = %s" % str(
-                    edge_areas.shape if edge_areas is not None else "None"
+                    edge_areas_arr.shape if edge_areas is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "edge_areas after computation: %s" % str(
-                    _conversion.as_array(ffi, edge_areas, _definitions.FLOAT64)
+                msg = (
+                    "edge_areas after computation: %s" % str(edge_areas_arr)
                     if edge_areas is not None
                     else "None"
                 )
                 logger.debug(msg)
 
-                msg = "shape of f_e after computation = %s" % str(
-                    f_e.shape if f_e is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "f_e after computation: %s" % str(
+                f_e_arr = (
                     _conversion.as_array(ffi, f_e, _definitions.FLOAT64)
                     if f_e is not None
-                    else "None"
+                    else None
                 )
+                msg = "shape of f_e after computation = %s" % str(
+                    f_e_arr.shape if f_e is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "f_e after computation: %s" % str(f_e_arr) if f_e is not None else "None"
                 logger.debug(msg)
 
+                cell_center_lat_arr = (
+                    _conversion.as_array(ffi, cell_center_lat, _definitions.FLOAT64)
+                    if cell_center_lat is not None
+                    else None
+                )
                 msg = "shape of cell_center_lat after computation = %s" % str(
-                    cell_center_lat.shape if cell_center_lat is not None else "None"
+                    cell_center_lat_arr.shape if cell_center_lat is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "cell_center_lat after computation: %s" % str(
-                    _conversion.as_array(ffi, cell_center_lat, _definitions.FLOAT64)
+                msg = (
+                    "cell_center_lat after computation: %s" % str(cell_center_lat_arr)
                     if cell_center_lat is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                cell_center_lon_arr = (
+                    _conversion.as_array(ffi, cell_center_lon, _definitions.FLOAT64)
+                    if cell_center_lon is not None
+                    else None
+                )
                 msg = "shape of cell_center_lon after computation = %s" % str(
-                    cell_center_lon.shape if cell_center_lon is not None else "None"
+                    cell_center_lon_arr.shape if cell_center_lon is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "cell_center_lon after computation: %s" % str(
-                    _conversion.as_array(ffi, cell_center_lon, _definitions.FLOAT64)
+                msg = (
+                    "cell_center_lon after computation: %s" % str(cell_center_lon_arr)
                     if cell_center_lon is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                cell_areas_arr = (
+                    _conversion.as_array(ffi, cell_areas, _definitions.FLOAT64)
+                    if cell_areas is not None
+                    else None
+                )
                 msg = "shape of cell_areas after computation = %s" % str(
-                    cell_areas.shape if cell_areas is not None else "None"
+                    cell_areas_arr.shape if cell_areas is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "cell_areas after computation: %s" % str(
-                    _conversion.as_array(ffi, cell_areas, _definitions.FLOAT64)
+                msg = (
+                    "cell_areas after computation: %s" % str(cell_areas_arr)
                     if cell_areas is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                primal_normal_vert_x_arr = (
+                    _conversion.as_array(ffi, primal_normal_vert_x, _definitions.FLOAT64)
+                    if primal_normal_vert_x is not None
+                    else None
+                )
                 msg = "shape of primal_normal_vert_x after computation = %s" % str(
-                    primal_normal_vert_x.shape if primal_normal_vert_x is not None else "None"
+                    primal_normal_vert_x_arr.shape if primal_normal_vert_x is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "primal_normal_vert_x after computation: %s" % str(
-                    _conversion.as_array(ffi, primal_normal_vert_x, _definitions.FLOAT64)
+                msg = (
+                    "primal_normal_vert_x after computation: %s" % str(primal_normal_vert_x_arr)
                     if primal_normal_vert_x is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                primal_normal_vert_y_arr = (
+                    _conversion.as_array(ffi, primal_normal_vert_y, _definitions.FLOAT64)
+                    if primal_normal_vert_y is not None
+                    else None
+                )
                 msg = "shape of primal_normal_vert_y after computation = %s" % str(
-                    primal_normal_vert_y.shape if primal_normal_vert_y is not None else "None"
+                    primal_normal_vert_y_arr.shape if primal_normal_vert_y is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "primal_normal_vert_y after computation: %s" % str(
-                    _conversion.as_array(ffi, primal_normal_vert_y, _definitions.FLOAT64)
+                msg = (
+                    "primal_normal_vert_y after computation: %s" % str(primal_normal_vert_y_arr)
                     if primal_normal_vert_y is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                dual_normal_vert_x_arr = (
+                    _conversion.as_array(ffi, dual_normal_vert_x, _definitions.FLOAT64)
+                    if dual_normal_vert_x is not None
+                    else None
+                )
                 msg = "shape of dual_normal_vert_x after computation = %s" % str(
-                    dual_normal_vert_x.shape if dual_normal_vert_x is not None else "None"
+                    dual_normal_vert_x_arr.shape if dual_normal_vert_x is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "dual_normal_vert_x after computation: %s" % str(
-                    _conversion.as_array(ffi, dual_normal_vert_x, _definitions.FLOAT64)
+                msg = (
+                    "dual_normal_vert_x after computation: %s" % str(dual_normal_vert_x_arr)
                     if dual_normal_vert_x is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                dual_normal_vert_y_arr = (
+                    _conversion.as_array(ffi, dual_normal_vert_y, _definitions.FLOAT64)
+                    if dual_normal_vert_y is not None
+                    else None
+                )
                 msg = "shape of dual_normal_vert_y after computation = %s" % str(
-                    dual_normal_vert_y.shape if dual_normal_vert_y is not None else "None"
+                    dual_normal_vert_y_arr.shape if dual_normal_vert_y is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "dual_normal_vert_y after computation: %s" % str(
-                    _conversion.as_array(ffi, dual_normal_vert_y, _definitions.FLOAT64)
+                msg = (
+                    "dual_normal_vert_y after computation: %s" % str(dual_normal_vert_y_arr)
                     if dual_normal_vert_y is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                primal_normal_cell_x_arr = (
+                    _conversion.as_array(ffi, primal_normal_cell_x, _definitions.FLOAT64)
+                    if primal_normal_cell_x is not None
+                    else None
+                )
                 msg = "shape of primal_normal_cell_x after computation = %s" % str(
-                    primal_normal_cell_x.shape if primal_normal_cell_x is not None else "None"
+                    primal_normal_cell_x_arr.shape if primal_normal_cell_x is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "primal_normal_cell_x after computation: %s" % str(
-                    _conversion.as_array(ffi, primal_normal_cell_x, _definitions.FLOAT64)
+                msg = (
+                    "primal_normal_cell_x after computation: %s" % str(primal_normal_cell_x_arr)
                     if primal_normal_cell_x is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                primal_normal_cell_y_arr = (
+                    _conversion.as_array(ffi, primal_normal_cell_y, _definitions.FLOAT64)
+                    if primal_normal_cell_y is not None
+                    else None
+                )
                 msg = "shape of primal_normal_cell_y after computation = %s" % str(
-                    primal_normal_cell_y.shape if primal_normal_cell_y is not None else "None"
+                    primal_normal_cell_y_arr.shape if primal_normal_cell_y is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "primal_normal_cell_y after computation: %s" % str(
-                    _conversion.as_array(ffi, primal_normal_cell_y, _definitions.FLOAT64)
+                msg = (
+                    "primal_normal_cell_y after computation: %s" % str(primal_normal_cell_y_arr)
                     if primal_normal_cell_y is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                dual_normal_cell_x_arr = (
+                    _conversion.as_array(ffi, dual_normal_cell_x, _definitions.FLOAT64)
+                    if dual_normal_cell_x is not None
+                    else None
+                )
                 msg = "shape of dual_normal_cell_x after computation = %s" % str(
-                    dual_normal_cell_x.shape if dual_normal_cell_x is not None else "None"
+                    dual_normal_cell_x_arr.shape if dual_normal_cell_x is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "dual_normal_cell_x after computation: %s" % str(
-                    _conversion.as_array(ffi, dual_normal_cell_x, _definitions.FLOAT64)
+                msg = (
+                    "dual_normal_cell_x after computation: %s" % str(dual_normal_cell_x_arr)
                     if dual_normal_cell_x is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                dual_normal_cell_y_arr = (
+                    _conversion.as_array(ffi, dual_normal_cell_y, _definitions.FLOAT64)
+                    if dual_normal_cell_y is not None
+                    else None
+                )
                 msg = "shape of dual_normal_cell_y after computation = %s" % str(
-                    dual_normal_cell_y.shape if dual_normal_cell_y is not None else "None"
+                    dual_normal_cell_y_arr.shape if dual_normal_cell_y is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "dual_normal_cell_y after computation: %s" % str(
-                    _conversion.as_array(ffi, dual_normal_cell_y, _definitions.FLOAT64)
+                msg = (
+                    "dual_normal_cell_y after computation: %s" % str(dual_normal_cell_y_arr)
                     if dual_normal_cell_y is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                edge_center_lat_arr = (
+                    _conversion.as_array(ffi, edge_center_lat, _definitions.FLOAT64)
+                    if edge_center_lat is not None
+                    else None
+                )
                 msg = "shape of edge_center_lat after computation = %s" % str(
-                    edge_center_lat.shape if edge_center_lat is not None else "None"
+                    edge_center_lat_arr.shape if edge_center_lat is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "edge_center_lat after computation: %s" % str(
-                    _conversion.as_array(ffi, edge_center_lat, _definitions.FLOAT64)
+                msg = (
+                    "edge_center_lat after computation: %s" % str(edge_center_lat_arr)
                     if edge_center_lat is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                edge_center_lon_arr = (
+                    _conversion.as_array(ffi, edge_center_lon, _definitions.FLOAT64)
+                    if edge_center_lon is not None
+                    else None
+                )
                 msg = "shape of edge_center_lon after computation = %s" % str(
-                    edge_center_lon.shape if edge_center_lon is not None else "None"
+                    edge_center_lon_arr.shape if edge_center_lon is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "edge_center_lon after computation: %s" % str(
-                    _conversion.as_array(ffi, edge_center_lon, _definitions.FLOAT64)
+                msg = (
+                    "edge_center_lon after computation: %s" % str(edge_center_lon_arr)
                     if edge_center_lon is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                primal_normal_x_arr = (
+                    _conversion.as_array(ffi, primal_normal_x, _definitions.FLOAT64)
+                    if primal_normal_x is not None
+                    else None
+                )
                 msg = "shape of primal_normal_x after computation = %s" % str(
-                    primal_normal_x.shape if primal_normal_x is not None else "None"
+                    primal_normal_x_arr.shape if primal_normal_x is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "primal_normal_x after computation: %s" % str(
-                    _conversion.as_array(ffi, primal_normal_x, _definitions.FLOAT64)
+                msg = (
+                    "primal_normal_x after computation: %s" % str(primal_normal_x_arr)
                     if primal_normal_x is not None
                     else "None"
                 )
                 logger.debug(msg)
 
+                primal_normal_y_arr = (
+                    _conversion.as_array(ffi, primal_normal_y, _definitions.FLOAT64)
+                    if primal_normal_y is not None
+                    else None
+                )
                 msg = "shape of primal_normal_y after computation = %s" % str(
-                    primal_normal_y.shape if primal_normal_y is not None else "None"
+                    primal_normal_y_arr.shape if primal_normal_y is not None else "None"
                 )
                 logger.debug(msg)
-                msg = "primal_normal_y after computation: %s" % str(
-                    _conversion.as_array(ffi, primal_normal_y, _definitions.FLOAT64)
+                msg = (
+                    "primal_normal_y after computation: %s" % str(primal_normal_y_arr)
                     if primal_normal_y is not None
                     else "None"
                 )
