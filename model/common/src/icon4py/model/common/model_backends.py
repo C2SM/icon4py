@@ -28,20 +28,13 @@ try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
     def make_custom_dace_backend(
-        gpu: bool,
-        enable_loop_blocking: bool = False,
-        make_temporaries_persistent: bool = False,
+        gpu: bool, enable_loop_blocking: bool = False
     ) -> gtx_backend.Backend:
         """Customize the dace backend with the following configuration.
 
         async_sdfg_call:
             In icon4py we want to make an asynchronous SDFG call on gpu to allow
             overlapping of gpu kernel execution with the Python driver code.
-        make_persistent:
-            If `make_arrays_persistent=True` it is safe to assume that the field
-            layout does not change between multiple calls to a gt4py program,
-            therefore we can make temporary arrays persistent -- thus, allocated
-            at SDFG initialization.
         blocking_dim:
             Apply loop-blocking on the vertical dimension `KDim`, if the input
             argument `enable_loop_blocking` is `True`.
@@ -53,8 +46,6 @@ try:
             gpu: Specify if the target device is GPU.
             enable_loop_blocking: Flag to enable loop-blocking transformation on
                 the vertical dimension, default `False`.
-            make_temporaries_persistent: Flag to make temporary arrays persistent,
-                see details above, default `False`.
 
         Returns:
             A dace backend with custom configuration for the target device.
@@ -64,7 +55,7 @@ try:
             cached=True,
             gpu=gpu,
             async_sdfg_call=True,
-            make_persistent=make_temporaries_persistent,
+            make_persistent=False,
             blocking_dim=(dims.KDim if enable_loop_blocking else None),
             blocking_size=10,
             use_zero_origin=False,
