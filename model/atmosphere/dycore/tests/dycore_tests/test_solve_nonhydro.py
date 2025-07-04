@@ -176,9 +176,7 @@ def test_nonhydro_predictor_step(
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
-    nonhydro_params = solve_nh.NonHydrostaticParams(
-        config, metrics_savepoint.scalfac_dd3d().asnumpy()
-    )
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -543,9 +541,7 @@ def test_nonhydro_corrector_step(
     caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     init_savepoint = savepoint_nonhydro_init
-    nonhydro_params = solve_nh.NonHydrostaticParams(
-        config, metrics_savepoint.scalfac_dd3d().asnumpy()
-    )
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -758,9 +754,7 @@ def test_run_solve_nonhydro_single_step(
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
-    nonhydro_params = solve_nh.NonHydrostaticParams(
-        config, metrics_savepoint.scalfac_dd3d().asnumpy()
-    )
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -882,9 +876,7 @@ def test_run_solve_nonhydro_multi_step(
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
-    nonhydro_params = solve_nh.NonHydrostaticParams(
-        config, metrics_savepoint.scalfac_dd3d().asnumpy()
-    )
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -1023,9 +1015,9 @@ def test_run_solve_nonhydro_multi_step(
 
 
 @pytest.mark.datatest
-def test_non_hydrostatic_params(savepoint_nonhydro_init, metrics_savepoint):
+def test_non_hydrostatic_params(savepoint_nonhydro_init):
     config = solve_nh.NonHydrostaticConfig()
-    params = solve_nh.NonHydrostaticParams(config, metrics_savepoint.scalfac_dd3d().asnumpy())
+    params = solve_nh.NonHydrostaticParams(config)
 
     assert params.advection_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_vel()
     assert params.advection_explicit_weight_parameter == savepoint_nonhydro_init.wgt_nnow_vel()
@@ -1684,8 +1676,11 @@ def test_apply_divergence_damping_and_update_vn(
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    nonhydro_params = solve_nh.NonHydrostaticParams(
-        config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    xp = data_alloc.import_array_ns(backend)
+    starting_vertical_index_for_3d_divdamp = (
+        xp.min(xp.where(metrics_savepoint.scaling_factor_for_3d_divdamp().ndarray > 0.0))[0]
+        if config.divdamp_type == 32
+        else 0
     )
 
     iau_wgt_dyn = config.iau_wgt_dyn
@@ -1727,7 +1722,7 @@ def test_apply_divergence_damping_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
-        starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
+        starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
@@ -1796,8 +1791,11 @@ def test_vertically_implicit_solver_at_predictor_step(
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    nonhydro_params = solve_nh.NonHydrostaticParams(
-        config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    xp = data_alloc.import_array_ns(backend)
+    starting_vertical_index_for_3d_divdamp = (
+        xp.min(xp.where(metrics_savepoint.scaling_factor_for_3d_divdamp().ndarray > 0.0))[0]
+        if config.divdamp_type == 32
+        else 0
     )
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -1923,7 +1921,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         end_index_of_damping_layer=grid_savepoint.nrdmax(),
-        starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
+        starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         kstart_moist=vertical_params.kstart_moist,
         flat_level_index_plus1=gtx.int32(vertical_params.nflatlev + 1),
         start_cell_index_nudging=start_cell_nudging,

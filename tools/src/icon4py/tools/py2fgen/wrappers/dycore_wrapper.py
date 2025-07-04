@@ -186,7 +186,7 @@ def solve_nh_init(
         fourth_order_divdamp_z3=divdamp_z3,
         fourth_order_divdamp_z4=divdamp_z4,
     )
-    nonhydro_params = solve_nonhydro.NonHydrostaticParams(config, scalfac_dd3d.asnumpy())
+    nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
 
     interpolation_state = dycore_states.InterpolationState(
         c_lin_e=c_lin_e,
