@@ -35,13 +35,9 @@ try:
         async_sdfg_call:
             In icon4py we want to make an asynchronous SDFG call on gpu to allow
             overlapping of gpu kernel execution with the Python driver code.
-        make_persistent:
-            It is safe to assume that the field layout does not change between
-            multiple calls to a gt4py program, therefore we can make temporary
-            arrays persistent -- thus, allocated at SDFG initialization.
         blocking_dim:
             Apply loop-blocking on the vertical dimension `KDim`, if the input
-                argument `enable_loop_blocking` is `True`.
+            argument `enable_loop_blocking` is `True`.
         use_zero_origin:
             The current design of icon4py relies on programs as entry points to
             gt4py, and the fields that are passed as program arguments have
@@ -62,7 +58,7 @@ try:
             cached=True,
             gpu=gpu,
             async_sdfg_call=True,
-            make_persistent=True,
+            make_persistent=False,
             blocking_dim=(dims.KDim if enable_loop_blocking else None),
             blocking_size=10,
             use_zero_origin=True,
