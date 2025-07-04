@@ -424,7 +424,10 @@ def initialize(
         backend=backend,
     )
 
-    nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(
+        config.solve_nonhydro_config,
+        solve_nonhydro_metric_state.scaling_factor_for_3d_divdamp.asnumpy(),
+    )
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=icon_grid,

@@ -176,7 +176,9 @@ def test_nonhydro_predictor_step(
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(
+        config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    )
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -541,7 +543,9 @@ def test_nonhydro_corrector_step(
     caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     init_savepoint = savepoint_nonhydro_init
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(
+        config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    )
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -754,7 +758,9 @@ def test_run_solve_nonhydro_single_step(
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(
+        config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    )
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -876,7 +882,9 @@ def test_run_solve_nonhydro_multi_step(
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(
+        config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    )
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -1015,9 +1023,9 @@ def test_run_solve_nonhydro_multi_step(
 
 
 @pytest.mark.datatest
-def test_non_hydrostatic_params(savepoint_nonhydro_init):
+def test_non_hydrostatic_params(savepoint_nonhydro_init, metrics_savepoint):
     config = solve_nh.NonHydrostaticConfig()
-    params = solve_nh.NonHydrostaticParams(config)
+    params = solve_nh.NonHydrostaticParams(config, metrics_savepoint.scalfac_dd3d().asnumpy())
 
     assert params.advection_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_vel()
     assert params.advection_explicit_weight_parameter == savepoint_nonhydro_init.wgt_nnow_vel()
@@ -1676,7 +1684,9 @@ def test_apply_divergence_damping_and_update_vn(
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(
+        config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    )
 
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
@@ -1786,7 +1796,9 @@ def test_vertically_implicit_solver_at_predictor_step(
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(
+        config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -1841,6 +1853,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     rho_ref = sp_nh_exit.rho_new()
     exner_ref = sp_nh_exit.exner_new()
     theta_v_ref = sp_nh_exit.theta_v_new()
+    z_dwdz_dd_ref = sp_nh_exit.z_dwdz_dd()
     exner_dyn_incr_ref = sp_nh_exit.exner_dyn_incr()
 
     geofac_div = data_alloc.flatten_first_two_dims(
@@ -1861,9 +1874,6 @@ def test_vertically_implicit_solver_at_predictor_step(
         "Koff": dims.KDim,
     }
 
-    print("DEBUG, DEBUG")
-    print(metrics_savepoint.wgtfacq_c_dsl().asnumpy().shape)
-    print("DEBUG, DEBUG")
     vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step.with_backend(
         backend
     )(
@@ -1958,6 +1968,11 @@ def test_vertically_implicit_solver_at_predictor_step(
         next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
+    assert helpers.dallclose(
+        dwdz_at_cells_on_model_levels.asnumpy()[start_cell_nudging:, :],
+        z_dwdz_dd_ref.asnumpy()[start_cell_nudging:, :],
+        atol=1.0e-16,
+    )
     assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
 
 

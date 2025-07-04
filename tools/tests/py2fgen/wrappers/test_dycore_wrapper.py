@@ -550,7 +550,9 @@ def test_dycore_wrapper_granule_inputs(
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     expected_config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
+    expected_additional_parameters = solve_nh.NonHydrostaticParams(
+        expected_config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    )
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(

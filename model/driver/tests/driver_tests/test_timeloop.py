@@ -186,7 +186,9 @@ def test_run_timeloop_single_step(
     )
 
     sp = savepoint_nonhydro_init
-    nonhydro_params = solve_nh.NonHydrostaticParams(nonhydro_config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(
+        nonhydro_config, metrics_savepoint.scalfac_dd3d().asnumpy()
+    )
     sp_v = savepoint_velocity_init
     do_prep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 

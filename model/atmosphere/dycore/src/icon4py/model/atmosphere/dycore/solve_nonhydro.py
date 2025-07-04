@@ -12,6 +12,7 @@ import dataclasses
 from typing import Final, Optional
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -352,10 +353,14 @@ class NonHydrostaticConfig:
 class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
 
-    def __init__(self, config: NonHydrostaticConfig):
+    def __init__(self, config: NonHydrostaticConfig, scaling_factor_for_3d_divdamp: np.ndarray):
         #:  start level for 3D divergence damping terms
         #: this is only different from 0 if divdamp_type == 32: calculation done in mo_vertical_grid.f90
-        self.starting_vertical_index_for_3d_divdamp: Final[int] = 0
+        self.starting_vertical_index_for_3d_divdamp: Final[int] = (
+            np.min(np.where(scaling_factor_for_3d_divdamp > 0.0))
+            if config.divdamp_type == 32
+            else 0
+        )
         """
         Declared as kstart_dd3d in ICON.
         """
@@ -609,11 +614,6 @@ class SolveNonhydro:
         self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(
             self._backend
         ).compile(offset_provider={})
-        if self._config.divdamp_type == 32:
-            xp = data_alloc.import_array_ns(self._backend)
-            self.starting_vertical_index_for_3d_divdamp = xp.min(
-                xp.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.ndarray > 0.0)[0]
-            )
 
         self.velocity_advection = VelocityAdvection(
             grid,
