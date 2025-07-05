@@ -18,6 +18,7 @@ from icon4py.model.common.grid import (
     simple as simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
+from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 
@@ -308,6 +309,72 @@ def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
     assert helpers.dallclose(dual_normal_vert_v.asnumpy(), dual_normal_vert_v_ref, atol=1e-12)
 
 
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_cartesian_centers_edge(backend, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+    grid = grid_geometry.grid
+    x = grid_geometry.get(attrs.EDGE_CENTER_X)
+    y = grid_geometry.get(attrs.EDGE_CENTER_Y)
+    z = grid_geometry.get(attrs.EDGE_CENTER_Z)
+    assert x.ndarray.shape == (grid.num_edges,)
+    assert y.ndarray.shape == (grid.num_edges,)
+    assert z.ndarray.shape == (grid.num_edges,)
+    # those are coordinates on the unit sphere: hence norm should be 1
+    norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
+    math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
+    assert helpers.dallclose(norm.asnumpy(), 1.0)
+
+
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_cartesian_centers_cell(backend, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+    grid = grid_geometry.grid
+    x = grid_geometry.get(attrs.CELL_CENTER_X)
+    y = grid_geometry.get(attrs.CELL_CENTER_Y)
+    z = grid_geometry.get(attrs.CELL_CENTER_Z)
+    assert x.ndarray.shape == (grid.num_cells,)
+    assert y.ndarray.shape == (grid.num_cells,)
+    assert z.ndarray.shape == (grid.num_cells,)
+    # those are coordinates on the unit sphere: hence norm should be 1
+    norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
+    math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
+    assert helpers.dallclose(norm.asnumpy(), 1.0)
+
+
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_vertex(backend, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+    grid = grid_geometry.grid
+    x = grid_geometry.get(attrs.VERTEX_X)
+    y = grid_geometry.get(attrs.VERTEX_Y)
+    z = grid_geometry.get(attrs.VERTEX_Z)
+    assert x.ndarray.shape == (grid.num_vertices,)
+    assert y.ndarray.shape == (grid.num_vertices,)
+    assert z.ndarray.shape == (grid.num_vertices,)
+    # those are coordinates on the unit sphere: hence norm should be 1
+    norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
+    math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
+    assert helpers.dallclose(norm.asnumpy(), 1.0)
+
+
 def test_sparse_fields_creator():
     grid = simple.SimpleGrid()
     f1 = data_alloc.random_field(grid, dims.EdgeDim)
@@ -332,7 +399,12 @@ def test_sparse_fields_creator():
     ],
 )
 def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):
-    gm = grid_utils.get_grid_manager(grid_file, backend=backend, num_levels=1)
+    gm = grid_utils.get_grid_manager(
+        grid_file=grid_file,
+        num_levels=1,
+        keep_skip_values=True,
+        backend=backend,
+    )
     grid = gm.grid
     coordinates = gm.coordinates
 

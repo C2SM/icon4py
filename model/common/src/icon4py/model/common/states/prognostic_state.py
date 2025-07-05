@@ -6,13 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from dataclasses import dataclass
+import dataclasses
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-@dataclass
+@dataclasses.dataclass
 class PrognosticState:
     """Class that contains the prognostic state.
 
@@ -29,4 +28,4 @@ class PrognosticState:
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
-        return self.w[KDim(0)]
+        return self.w[dims.KDim(0)]

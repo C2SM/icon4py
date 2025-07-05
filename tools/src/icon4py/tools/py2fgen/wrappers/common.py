@@ -23,7 +23,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.common.grid import base, horizontal, icon
+from icon4py.model.common.grid import base, icon
 
 
 try:
@@ -182,7 +182,7 @@ def construct_icon_grid(
     e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
 
     config = base.GridConfig(
-        horizontal_config=horizontal.HorizontalGridSize(
+        horizontal_config=base.HorizontalGridSize(
             num_vertices=num_vertices,
             num_cells=num_cells,
             num_edges=num_edges,
@@ -190,6 +190,7 @@ def construct_icon_grid(
         vertical_size=vertical_size,
         limited_area=limited_area,
         on_gpu=on_gpu,
+        keep_skip_values=False,
     )
 
     grid = (
