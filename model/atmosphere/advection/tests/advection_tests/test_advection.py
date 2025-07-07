@@ -80,7 +80,7 @@ from .utils import (
     ],
 )
 def test_advection_run_single_step(
-    grid_savepoint,
+    icon_grid_savepoint,
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
@@ -112,8 +112,8 @@ def test_advection_run_single_step(
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     least_squares_state = construct_least_squares_state(interpolation_savepoint, backend=backend)
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
-    edge_geometry = grid_savepoint.construct_edge_geometry()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = icon_grid_savepoint.construct_edge_geometry()
+    cell_geometry = icon_grid_savepoint.construct_cell_geometry()
 
     advection_granule = advection.convert_config_to_advection(
         config=config,

@@ -34,7 +34,7 @@ def test_compute_diffusion_metrics(
     experiment,
     interpolation_savepoint,
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     backend,
 ):
     if experiment == cases.Experiment.EXCLAIM_APE:
@@ -61,7 +61,7 @@ def test_compute_diffusion_metrics(
 
     compute_maxslp_maxhgtd.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
-        dual_edge_length=grid_savepoint.dual_edge_length(),
+        dual_edge_length=icon_grid_savepoint.dual_edge_length(),
         maxslp=maxslp,
         maxhgtd=maxhgtd,
         horizontal_start=cell_lateral,
@@ -98,7 +98,7 @@ def test_compute_diffusion_metrics(
         c2e2c=c2e2c,
         z_mc=z_mc.asnumpy(),
         max_nbhgt=max_nbhgt.asnumpy(),
-        c_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
+        c_owner_mask=icon_grid_savepoint.c_owner_mask().asnumpy(),
         maxslp_avg=maxslp_avg.asnumpy(),
         maxhgtd_avg=maxhgtd_avg.asnumpy(),
         thslp_zdiffu=thslp_zdiffu,

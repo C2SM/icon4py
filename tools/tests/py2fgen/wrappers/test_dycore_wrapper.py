@@ -39,7 +39,7 @@ logging.basicConfig(level=logging.INFO)
 
 @pytest.fixture
 def solve_nh_init(
-    grid_savepoint,
+    icon_grid_savepoint,
     interpolation_savepoint,
     metrics_savepoint,
     ndyn_substeps,
@@ -77,10 +77,10 @@ def solve_nh_init(
     rayleigh_damping_height = 12500.0
 
     # vertical params
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+    vct_a = test_utils.array_to_array_info(icon_grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(icon_grid_savepoint.vct_b().ndarray)
     nflat_gradp = gtx.int32(
-        grid_savepoint.nflat_gradp() + 1
+        icon_grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
 
     # metric state parameters
@@ -161,7 +161,7 @@ def solve_nh_init(
     nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
 
     # other params
-    c_owner_mask = test_utils.array_to_array_info(grid_savepoint.c_owner_mask().ndarray)
+    c_owner_mask = test_utils.array_to_array_info(icon_grid_savepoint.c_owner_mask().ndarray)
 
     ffi = cffi.FFI()
     dycore_wrapper.solve_nh_init(
@@ -283,7 +283,7 @@ def test_dycore_wrapper_granule_inputs(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     caplog,
@@ -332,10 +332,10 @@ def test_dycore_wrapper_granule_inputs(
     rayleigh_damping_height = 12500.0
 
     # vertical params
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+    vct_a = test_utils.array_to_array_info(icon_grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(icon_grid_savepoint.vct_b().ndarray)
     nflat_gradp = gtx.int32(
-        grid_savepoint.nflat_gradp() + 1
+        icon_grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
 
     # other params
@@ -420,7 +420,7 @@ def test_dycore_wrapper_granule_inputs(
     nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
 
     # other params
-    c_owner_mask = test_utils.array_to_array_info(grid_savepoint.c_owner_mask().ndarray)
+    c_owner_mask = test_utils.array_to_array_info(icon_grid_savepoint.c_owner_mask().ndarray)
 
     # --- Granule input parameters for dycore run
     second_order_divdamp_factor = sp.divdamp_fac_o2()
@@ -477,8 +477,8 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Expected objects that form inputs into init function ---
     expected_icon_grid = icon_grid
-    expected_edge_geometry = grid_savepoint.construct_edge_geometry()
-    expected_cell_geometry = grid_savepoint.construct_cell_geometry()
+    expected_edge_geometry = icon_grid_savepoint.construct_edge_geometry()
+    expected_cell_geometry = icon_grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
@@ -545,9 +545,9 @@ def test_dycore_wrapper_granule_inputs(
     )
     expected_vertical_params = v_grid.VerticalGrid(
         config=expected_vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=icon_grid_savepoint.vct_a(),
+        vct_b=icon_grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=icon_grid_savepoint.nflat_gradp(),
     )
     expected_config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
@@ -755,7 +755,7 @@ def test_dycore_wrapper_granule_inputs(
         assert result, f"Cell Geometry comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
-            captured_kwargs["owner_mask"], grid_savepoint.c_owner_mask()
+            captured_kwargs["owner_mask"], icon_grid_savepoint.c_owner_mask()
         )
         assert result, f"Owner Mask comparison failed: {error_message}"
 

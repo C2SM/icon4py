@@ -14,8 +14,8 @@ from icon4py.model.common.decomposition.definitions import (
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fixtures form test_utils
     data_provider,
     experiment_data_files,
-    grid_savepoint,
     icon_grid,
+    icon_grid_savepoint,
     processor_props,
     ranked_data_path,
 )

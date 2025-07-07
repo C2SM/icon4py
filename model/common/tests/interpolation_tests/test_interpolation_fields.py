@@ -46,12 +46,14 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):  # fixture
+def test_compute_c_lin_e(
+    icon_grid_savepoint, interpolation_savepoint, icon_grid, backend
+):  # fixture
     xp = data_alloc.import_array_ns(backend)
     func = functools.partial(compute_c_lin_e, array_ns=xp)
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    edge_cell_length = grid_savepoint.edge_cell_length()
-    edge_owner_mask = grid_savepoint.e_owner_mask()
+    inv_dual_edge_length = icon_grid_savepoint.inv_dual_edge_length()
+    edge_cell_length = icon_grid_savepoint.edge_cell_length()
+    edge_owner_mask = icon_grid_savepoint.e_owner_mask()
     c_lin_e_ref = interpolation_savepoint.c_lin_e()
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -80,11 +82,11 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_div(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     mesh = icon_grid
-    primal_edge_length = grid_savepoint.primal_edge_length()
-    edge_orientation = grid_savepoint.edge_orientation()
-    area = grid_savepoint.cell_areas()
+    primal_edge_length = icon_grid_savepoint.primal_edge_length()
+    edge_orientation = icon_grid_savepoint.edge_orientation()
+    area = icon_grid_savepoint.cell_areas()
     geofac_div_ref = interpolation_savepoint.geofac_div()
     geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
     compute_geofac_div.with_backend(backend)(
@@ -103,12 +105,12 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_rot(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     mesh = icon_grid
-    dual_edge_length = grid_savepoint.dual_edge_length()
-    edge_orientation = grid_savepoint.vertex_edge_orientation()
-    dual_area = grid_savepoint.vertex_dual_area()
-    owner_mask = grid_savepoint.v_owner_mask()
+    dual_edge_length = icon_grid_savepoint.dual_edge_length()
+    edge_orientation = icon_grid_savepoint.vertex_edge_orientation()
+    dual_area = icon_grid_savepoint.vertex_dual_area()
+    owner_mask = icon_grid_savepoint.v_owner_mask()
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
     geofac_rot = data_alloc.zero_field(mesh, dims.VertexDim, dims.V2EDim)
     horizontal_start = icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -130,9 +132,9 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_n2s(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
-    dual_edge_length = grid_savepoint.dual_edge_length()
+    dual_edge_length = icon_grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
     c2e = icon_grid.neighbor_tables[dims.C2EDim]
@@ -155,14 +157,14 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_grg(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
-    primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().ndarray
-    primal_normal_cell_y = grid_savepoint.primal_normal_cell_y().ndarray
+    primal_normal_cell_x = icon_grid_savepoint.primal_normal_cell_x().ndarray
+    primal_normal_cell_y = icon_grid_savepoint.primal_normal_cell_y().ndarray
     geofac_div = interpolation_savepoint.geofac_div().ndarray
     c_lin_e = interpolation_savepoint.c_lin_e().ndarray
     geofac_grg_ref = interpolation_savepoint.geofac_grg()
-    owner_mask = grid_savepoint.c_owner_mask().ndarray
+    owner_mask = icon_grid_savepoint.c_owner_mask().ndarray
     c2e = icon_grid.neighbor_tables[dims.C2EDim]
     e2c = icon_grid.neighbor_tables[dims.E2CDim]
     c2e2c = icon_grid.neighbor_tables[dims.C2E2CDim]
@@ -198,12 +200,12 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_grdiv(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
     geofac_div = interpolation_savepoint.geofac_div()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    inv_dual_edge_length = icon_grid_savepoint.inv_dual_edge_length()
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
-    owner_mask = grid_savepoint.e_owner_mask()
+    owner_mask = icon_grid_savepoint.e_owner_mask()
     c2e = icon_grid.neighbor_tables[dims.C2EDim]
     e2c = icon_grid.neighbor_tables[dims.E2CDim]
     e2c2e = icon_grid.neighbor_tables[dims.E2C2EDim]
@@ -226,18 +228,18 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     "experiment, atol",
     [(cases.Experiment.MCH_CH_R04B09, 1e-10), (cases.Experiment.EXCLAIM_APE, 1e-10)],
 )
-def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, atol, backend):
+def test_compute_c_bln_avg(icon_grid_savepoint, interpolation_savepoint, icon_grid, atol, backend):
     xp = data_alloc.import_array_ns(backend)
-    cell_areas = grid_savepoint.cell_areas().ndarray
+    cell_areas = icon_grid_savepoint.cell_areas().ndarray
     # both experiment use the default value
     divavg_cntrwgt = 0.5
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     horizontal_start_p2 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
 
-    lat = grid_savepoint.cell_center_lat().ndarray
-    lon = grid_savepoint.cell_center_lon().ndarray
-    cell_owner_mask = grid_savepoint.c_owner_mask().ndarray
+    lat = icon_grid_savepoint.cell_center_lat().ndarray
+    lon = icon_grid_savepoint.cell_center_lon().ndarray
+    cell_owner_mask = icon_grid_savepoint.c_owner_mask().ndarray
 
     c2e2c0 = icon_grid.neighbor_tables[dims.C2E2CODim]
 
@@ -261,15 +263,15 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, a
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_e_flx_avg(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg().ndarray
     geofac_div = interpolation_savepoint.geofac_div().ndarray
-    owner_mask = grid_savepoint.e_owner_mask().ndarray
-    primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().ndarray
-    primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().ndarray
-    primal_cart_normal_z = grid_savepoint.primal_cart_normal_z().ndarray
+    owner_mask = icon_grid_savepoint.e_owner_mask().ndarray
+    primal_cart_normal_x = icon_grid_savepoint.primal_cart_normal_x().ndarray
+    primal_cart_normal_y = icon_grid_savepoint.primal_cart_normal_y().ndarray
+    primal_cart_normal_z = icon_grid_savepoint.primal_cart_normal_z().ndarray
     e2c = icon_grid.neighbor_tables[dims.E2CDim]
     c2e = icon_grid.neighbor_tables[dims.C2EDim]
     c2e2c = icon_grid.neighbor_tables[dims.C2E2CDim]
@@ -299,12 +301,12 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_cells_aw_verts(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
-    dual_area = grid_savepoint.vertex_dual_area().ndarray
-    edge_vert_length = grid_savepoint.edge_vert_length().ndarray
-    edge_cell_length = grid_savepoint.edge_cell_length().ndarray
+    dual_area = icon_grid_savepoint.vertex_dual_area().ndarray
+    edge_vert_length = icon_grid_savepoint.edge_vert_length().ndarray
+    edge_cell_length = icon_grid_savepoint.edge_cell_length().ndarray
     e2c = icon_grid.neighbor_tables[dims.E2CDim]
     v2c = icon_grid.neighbor_tables[dims.V2CDim]
     v2e = icon_grid.neighbor_tables[dims.V2EDim]
@@ -331,13 +333,13 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_e_bln_c_s(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s()
     c2e = icon_grid.neighbor_tables[dims.C2EDim]
-    cells_lat = grid_savepoint.cell_center_lat().ndarray
-    cells_lon = grid_savepoint.cell_center_lon().ndarray
-    edges_lat = grid_savepoint.edges_center_lat().ndarray
-    edges_lon = grid_savepoint.edges_center_lon().ndarray
+    cells_lat = icon_grid_savepoint.cell_center_lat().ndarray
+    cells_lon = icon_grid_savepoint.cell_center_lon().ndarray
+    edges_lat = icon_grid_savepoint.edges_center_lat().ndarray
+    edges_lon = icon_grid_savepoint.edges_center_lon().ndarray
     xp = data_alloc.import_array_ns(backend)
 
     e_bln_c_s = functools.partial(compute_e_bln_c_s, array_ns=xp)(
@@ -353,22 +355,22 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid, b
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_pos_on_tplane_e(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
     pos_on_tplane_e_y_ref = interpolation_savepoint.pos_on_tplane_e_y().asnumpy()
     sphere_radius = constants.EARTH_RADIUS
-    primal_normal_v1 = grid_savepoint.primal_normal_v1().ndarray
-    primal_normal_v2 = grid_savepoint.primal_normal_v2().ndarray
-    dual_normal_v1 = grid_savepoint.dual_normal_v1().ndarray
-    dual_normal_v2 = grid_savepoint.dual_normal_v2().ndarray
-    owner_mask = grid_savepoint.e_owner_mask().ndarray
-    cells_lon = grid_savepoint.cell_center_lon().ndarray
-    cells_lat = grid_savepoint.cell_center_lat().ndarray
-    edges_lon = grid_savepoint.edges_center_lon().ndarray
-    edges_lat = grid_savepoint.edges_center_lat().ndarray
-    verts_lon = grid_savepoint.verts_vertex_lon().ndarray
-    verts_lat = grid_savepoint.verts_vertex_lat().ndarray
+    primal_normal_v1 = icon_grid_savepoint.primal_normal_v1().ndarray
+    primal_normal_v2 = icon_grid_savepoint.primal_normal_v2().ndarray
+    dual_normal_v1 = icon_grid_savepoint.dual_normal_v1().ndarray
+    dual_normal_v2 = icon_grid_savepoint.dual_normal_v2().ndarray
+    owner_mask = icon_grid_savepoint.e_owner_mask().ndarray
+    cells_lon = icon_grid_savepoint.cell_center_lon().ndarray
+    cells_lat = icon_grid_savepoint.cell_center_lat().ndarray
+    edges_lon = icon_grid_savepoint.edges_center_lon().ndarray
+    edges_lat = icon_grid_savepoint.edges_center_lat().ndarray
+    verts_lon = icon_grid_savepoint.verts_vertex_lon().ndarray
+    verts_lat = icon_grid_savepoint.verts_vertex_lat().ndarray
     e2c = icon_grid.neighbor_tables[dims.E2CDim]
     e2v = icon_grid.neighbor_tables[dims.E2VDim]
     e2c2e = icon_grid.neighbor_tables[dims.E2C2EDim]

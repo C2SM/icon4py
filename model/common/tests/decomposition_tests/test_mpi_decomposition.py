@@ -29,8 +29,8 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fix
     data_provider,
     decomposition_info,
     experiment_data_files,
-    grid_savepoint,
     icon_grid,
+    icon_grid_savepoint,
     metrics_savepoint,
     ranked_data_path,
 )
@@ -224,12 +224,12 @@ def test_create_single_node_runtime_without_mpi(
 def test_exchange_on_dummy_data(
     processor_props,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
-    grid_savepoint,  # noqa: F811 # fixture
+    icon_grid_savepoint,  # noqa: F811 # fixture
     metrics_savepoint,  # noqa: F811 # fixture
     dimension,
 ):
     exchange = create_exchange(processor_props, decomposition_info)
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    grid = icon_grid_savepoint.construct_icon_grid(on_gpu=False)
 
     number = processor_props.rank + 10.0
     input_field = constant_field(

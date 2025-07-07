@@ -5,16 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+import pathlib
+
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.model.testing import cases, data_utils, serialbox as ser
 
-from . import cases, data_utils as data, datatest_utils as dt_utils
 
-
-@pytest.fixture(params=[*cases.Experiment], scope="session")
-def experiment(request):
+@pytest.fixture(params=[*cases.Experiment])
+def experiment(request) -> cases.Experiment:
     """
     Define the experiment to be used in the test.
 
@@ -26,8 +29,8 @@ def experiment(request):
     return request.param
 
 
-@pytest.fixture(params=[*cases.Grid], scope="session")
-def grid(request):
+@pytest.fixture(params=[*cases.Grid])
+def grid(request) -> cases.Grid:
     """
     Define the grid to be used in the test.
 
@@ -39,48 +42,48 @@ def grid(request):
     return request.param
 
 
+@pytest.fixture
+def downloaded_grid_file(grid: cases.Grid) -> pathlib.Path:
+    assert grid.file_name
+    return data_utils.download_grid(grid)
+
+
 @pytest.fixture(params=[False], scope="session")
 def processor_props(request):
-    return dt_utils.get_processor_properties_for_run(decomposition.SingleNodeRun())
+    return data_utils.get_processor_properties_for_run(decomposition.SingleNodeRun())
 
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return dt_utils.get_ranked_data_path(cases.SERIALIZED_DATA_PATH, processor_props)
+    return data_utils.get_ranked_data_path(cases.SERIALIZED_DATA_PATH, processor_props)
 
 
 @pytest.fixture
-def experiment_data_files(request, processor_props, ranked_data_path, experiment):
+def experiment_data_files(request, processor_props, ranked_data_path, experiment: cases.Experiment):
     """
     Get the binary ICON data from a remote server.
 
     Fixture which is a prerequisite of all the other fixtures in this file.
     """
-    # we don't want to run this ever if we are not running datatests
-    if "not datatest" in request.config.getoption("-k", ""):
-        return
+    # # we don't want to run this ever if we are not running datatests
+    # if "not datatest" in request.config.getoption("-k", ""):
+    #     return
 
     try:
-        destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        if experiment == cases.Experiment.EXCLAIM_APE:
-            uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
-        elif experiment == dt_utils.JABW_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_JABW[processor_props.comm_size]
-        elif experiment == dt_utils.GAUSS3D_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_GAUSS3D[processor_props.comm_size]
-        elif experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
-        else:
-            uri = dt_utils.DATA_URIS[processor_props.comm_size]
+        destination_path = data_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+
+        assert experiment.partitioned_data is not None
+        uri = experiment.partitioned_data[processor_props.comm_size]
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
-            data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
+            data_utils.download_and_extract(uri, ranked_data_path, destination_path, data_file)
 
         if processor_props.comm:
             processor_props.comm.barrier()
+
     except KeyError as err:
         raise AssertionError(
             f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
@@ -89,36 +92,40 @@ def experiment_data_files(request, processor_props, ranked_data_path, experiment
 
 @pytest.fixture
 def data_provider(experiment_data_files, ranked_data_path, experiment, processor_props, backend):
-    data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
+    data_path = data_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+    return data_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
 
 @pytest.fixture
-def grid_savepoint(data_provider, experiment):
-    root, level = dt_utils.get_global_grid_params(experiment)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
+def icon_grid_savepoint(
+    data_provider: ser.IconSerialDataProvider, experiment: cases.Experiment
+) -> ser.IconGridSavepoint:
+    assert experiment.grid.R_B_numbers, f"Grid {experiment.grid.name} used in experiment {experiment.name} does not have R_B_numbers defined."
+    assert experiment.grid.uuid, f"Grid {experiment.grid.name} used in experiment {experiment.name} does not have a grid uuid defined."
+    root, level = experiment.grid.R_B_numbers
+    grid_id = experiment.grid.uuid
+
     return data_provider.from_savepoint_grid(grid_id, root, level)
 
 
-def is_regional(experiment_name):
-    return experiment_name == cases.Experiment.MCH_CH_R04B09
-
-
 @pytest.fixture
-def icon_grid(grid_savepoint, backend):
+def icon_grid(icon_grid_savepoint, backend):
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the special grid_savepoint that contains data from p_patch
     """
     on_gpu = True if data_alloc.is_cupy_device(backend) else False
-    return grid_savepoint.construct_icon_grid(on_gpu=on_gpu)
+    return icon_grid_savepoint.construct_icon_grid(on_gpu=on_gpu)
 
 
 @pytest.fixture
 def decomposition_info(data_provider, experiment):
-    root, level = dt_utils.get_global_grid_params(experiment)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
+    assert experiment.grid.R_B_numbers, f"Grid {experiment.grid.name} used in experiment {experiment.name} does not have R_B_numbers defined."
+    assert experiment.grid.uuid, f"Grid {experiment.grid.name} used in experiment {experiment.name} does not have a grid uuid defined."
+    root, level = experiment.grid.R_B_numbers
+    grid_id = experiment.grid.uuid
+
     return data_provider.from_savepoint_grid(
         grid_id=grid_id, grid_root=root, grid_level=level
     ).construct_decomposition_info()

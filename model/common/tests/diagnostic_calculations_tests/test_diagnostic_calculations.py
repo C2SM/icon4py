@@ -259,7 +259,7 @@ def test_diagnostic_update_after_saturation_adjustement(
     stretch_factor,
     date,
     data_provider,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     icon_grid,
     backend,
@@ -272,9 +272,9 @@ def test_diagnostic_update_after_saturation_adjustement(
     vertical_config = v_grid.VerticalGridConfig(icon_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=icon_grid_savepoint.vct_a(),
+        vct_b=icon_grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=icon_grid_savepoint.nflat_gradp(),
     )
     virtual_temperature_tendency = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, backend=backend

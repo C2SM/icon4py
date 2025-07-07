@@ -25,10 +25,10 @@ def test_gauss3d_initial_condition(
     backend,
     rank,
     data_provider,
-    grid_savepoint,
+    icon_grid_savepoint,
     icon_grid,
 ):
-    edge_geometry = grid_savepoint.construct_edge_geometry()
+    edge_geometry = icon_grid_savepoint.construct_edge_geometry()
 
     (
         diffusion_diagnostic_state,

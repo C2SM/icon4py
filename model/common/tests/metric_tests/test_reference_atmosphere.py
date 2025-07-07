@@ -193,7 +193,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
+def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, icon_grid_savepoint, backend):
     z_mc = metrics_savepoint.z_mc()
     d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()

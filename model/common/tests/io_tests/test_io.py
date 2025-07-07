@@ -5,22 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import datetime as dt
 import pathlib
 import re
-from collections.abc import Iterator, Sequence
-from typing import Final, Union
+from collections.abc import Sequence
+from typing import Union
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 import uxarray as ux
-import xarray as xr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.io import ugrid, utils
+from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.io import ugrid
 from icon4py.model.common.io.io import (
     FieldGroupIOConfig,
     FieldGroupMonitor,
@@ -29,53 +29,9 @@ from icon4py.model.common.io.io import (
     generate_name,
     to_delta,
 )
-from icon4py.model.common.states import data
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import cases, grid_utils
 
-
-BACKEND: Final = None  # Setting backend to fieldview embedded here
-UNLIMITED: Final = None
-SIMPLE_GRID_INSTANCE: Final = simple.SimpleGrid()
-GRID: Final = grid_utils.get_grid_manager_for_experiment(cases.Experiment.EXCLAIM_APE, BACKEND).grid
-GRID_FILE: Final = cases.Experiment.EXCLAIM_APE.grid.file_name
-
-assert GRID_FILE is not None
-
-
-def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
-    rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    w = data_alloc.random_field(
-        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=np.float32
-    )
-    vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=np.float32)
-    return {
-        "air_density": utils.to_data_array(rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
-        "exner_function": utils.to_data_array(
-            exner, data.PROGNOSTIC_CF_ATTRIBUTES["exner_function"]
-        ),
-        "theta_v": utils.to_data_array(
-            theta_v,
-            data.PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"],
-            is_on_interface=False,
-        ),
-        "upward_air_velocity": utils.to_data_array(
-            w,
-            data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"],
-            is_on_interface=True,
-        ),
-        "normal_velocity": utils.to_data_array(
-            vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"], is_on_interface=False
-        ),
-    }
-
-
-def state_values() -> Iterator[xr.DataArray]:
-    state = model_state(SIMPLE_GRID_INSTANCE)
-    for v in state.values():
-        yield v
+from . import definitions
 
 
 @pytest.mark.parametrize("num", range(1, 6))
@@ -130,11 +86,13 @@ def is_valid_uxgrid(file: Union[pathlib.Path, str]) -> bool:
 
 def test_io_monitor_create_output_path(tmp_io_tests_path):
     path_name = tmp_io_tests_path.absolute().as_posix() + "/output"
-    vertical_config = v_grid.VerticalGridConfig(num_levels=SIMPLE_GRID_INSTANCE.num_levels)
+    vertical_config = v_grid.VerticalGridConfig(
+        num_levels=definitions.SIMPLE_GRID_INSTANCE.num_levels
+    )
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,), np.linspace(12000.0, 0.0, SIMPLE_GRID_INSTANCE.num_levels + 1)
+            (dims.KDim,), np.linspace(12000.0, 0.0, definitions.SIMPLE_GRID_INSTANCE.num_levels + 1)
         ),
         vct_b=None,
     )
@@ -142,9 +100,9 @@ def test_io_monitor_create_output_path(tmp_io_tests_path):
     monitor = IOMonitor(
         config,
         vertical_params,
-        SIMPLE_GRID_INSTANCE.config.horizontal_config,
-        grid_utils.get_grid_file_path(GRID_FILE),
-        SIMPLE_GRID_INSTANCE.id,
+        definitions.SIMPLE_GRID_INSTANCE.config.horizontal_config,
+        grid_utils.get_grid_file_path(definitions.GRID_FILE),
+        definitions.SIMPLE_GRID_INSTANCE.id,
     )
     assert monitor.path.exists()
     assert monitor.path.is_dir()
@@ -152,11 +110,13 @@ def test_io_monitor_create_output_path(tmp_io_tests_path):
 
 def test_io_monitor_write_ugrid_file(tmp_io_tests_path):
     path_name = tmp_io_tests_path.absolute().as_posix() + "/output"
-    vertical_config = v_grid.VerticalGridConfig(num_levels=SIMPLE_GRID_INSTANCE.num_levels)
+    vertical_config = v_grid.VerticalGridConfig(
+        num_levels=definitions.SIMPLE_GRID_INSTANCE.num_levels
+    )
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,), np.linspace(12000.0, 0.0, SIMPLE_GRID_INSTANCE.num_levels + 1)
+            (dims.KDim,), np.linspace(12000.0, 0.0, definitions.SIMPLE_GRID_INSTANCE.num_levels + 1)
         ),
         vct_b=None,
     )
@@ -165,9 +125,9 @@ def test_io_monitor_write_ugrid_file(tmp_io_tests_path):
     monitor = IOMonitor(
         config,
         vertical_params,
-        SIMPLE_GRID_INSTANCE.config.horizontal_config,
-        cases.GRIDS_PATH / GRID_FILE,
-        SIMPLE_GRID_INSTANCE.id,
+        definitions.SIMPLE_GRID_INSTANCE.config.horizontal_config,
+        cases.GRIDS_PATH / definitions.GRID_FILE,
+        definitions.SIMPLE_GRID_INSTANCE.id,
     )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
@@ -183,7 +143,9 @@ def test_io_monitor_write_ugrid_file(tmp_io_tests_path):
 )
 def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: Sequence[str]):
     path_name = tmp_io_tests_path.absolute().as_posix() + "/output"
-    grid = grid_utils.get_grid_manager_for_experiment(cases.Experiment.EXCLAIM_APE, BACKEND).grid
+    grid = grid_utils.get_grid_manager_for_experiment(
+        cases.Experiment.EXCLAIM_APE, definitions.BACKEND
+    ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -191,7 +153,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: S
         vct_b=None,
     )
 
-    state = model_state(grid)
+    state = definitions.model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     field_configs = [
         FieldGroupIOConfig(
@@ -207,7 +169,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: S
         config,
         vertical_params,
         grid.config.horizontal_config,
-        grid_utils.get_grid_file_path(GRID_FILE),
+        grid_utils.get_grid_file_path(definitions.GRID_FILE),
         grid.id,
     )
     start_time = dt.datetime.fromisoformat(configured_output_start)
@@ -233,7 +195,9 @@ def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: S
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(tmp_io_tests_path):
-    grid = grid_utils.get_grid_manager_for_experiment(cases.Experiment.EXCLAIM_APE, BACKEND).grid
+    grid = grid_utils.get_grid_manager_for_experiment(
+        cases.Experiment.EXCLAIM_APE, definitions.BACKEND
+    ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -241,7 +205,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(tmp_io_tests_path):
         vct_b=None,
     )
 
-    state = model_state(grid)
+    state = definitions.model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     filename_stub = "icon4py_dummy_output"
     config = FieldGroupIOConfig(
@@ -304,10 +268,12 @@ def read_back_as_uxarray(path: pathlib.Path):
 
 
 def test_fieldgroup_monitor_output_time_updates_upon_store(tmp_io_tests_path):
-    config, group_monitor = create_field_group_monitor(tmp_io_tests_path, SIMPLE_GRID_INSTANCE)
+    config, group_monitor = create_field_group_monitor(
+        tmp_io_tests_path, definitions.SIMPLE_GRID_INSTANCE
+    )
     configured_start_time = dt.datetime.fromisoformat(config.start_time)
     step_time = configured_start_time
-    state = model_state(SIMPLE_GRID_INSTANCE)
+    state = definitions.model_state(definitions.SIMPLE_GRID_INSTANCE)
     group_monitor.store(state, step_time)
     assert group_monitor.next_output_time > configured_start_time
     one_hour_later = step_time + dt.timedelta(hours=1)
@@ -317,11 +283,11 @@ def test_fieldgroup_monitor_output_time_updates_upon_store(tmp_io_tests_path):
 def test_fieldgroup_monitor_no_output_on_not_matching_time(tmp_io_tests_path):
     start_time_str = "2024-01-01T00:00:00"
     config, group_monitor = create_field_group_monitor(
-        tmp_io_tests_path, SIMPLE_GRID_INSTANCE, start_time_str
+        tmp_io_tests_path, definitions.SIMPLE_GRID_INSTANCE, start_time_str
     )
     start_time = dt.datetime.fromisoformat(config.start_time)
     step_time = start_time
-    state = model_state(SIMPLE_GRID_INSTANCE)
+    state = definitions.model_state(definitions.SIMPLE_GRID_INSTANCE)
     group_monitor.store(state, step_time)
     assert group_monitor.next_output_time > start_time
     one_hour_later = step_time + dt.timedelta(hours=1)
@@ -334,7 +300,7 @@ def test_fieldgroup_monitor_no_output_on_not_matching_time(tmp_io_tests_path):
 def test_fieldgroup_monitor_output_time_initialized_from_config(tmp_io_tests_path):
     configured_start_time = "2024-01-01T00:00:00"
     config, group_monitor = create_field_group_monitor(
-        tmp_io_tests_path, SIMPLE_GRID_INSTANCE, configured_start_time
+        tmp_io_tests_path, definitions.SIMPLE_GRID_INSTANCE, configured_start_time
     )
     assert group_monitor.next_output_time == dt.datetime.fromisoformat(configured_start_time)
 
@@ -343,11 +309,11 @@ def test_fieldgroup_monitor_no_output_before_start_time(tmp_io_tests_path):
     configured_start_time = "2024-01-01T00:00:00"
     start_time = dt.datetime.fromisoformat(configured_start_time)
     config, group_monitor = create_field_group_monitor(
-        tmp_io_tests_path, SIMPLE_GRID_INSTANCE, configured_start_time
+        tmp_io_tests_path, definitions.SIMPLE_GRID_INSTANCE, configured_start_time
     )
     step_time = dt.datetime.fromisoformat("2023-12-12T00:12:00")
     assert start_time > step_time
-    group_monitor.store(model_state(SIMPLE_GRID_INSTANCE), step_time)
+    group_monitor.store(definitions.model_state(definitions.SIMPLE_GRID_INSTANCE), step_time)
     assert group_monitor.next_output_time == start_time
     group_monitor.close()
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 0
@@ -360,11 +326,13 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
         output_interval="1 HOUR",
         variables=["exner_function", "air_density"],
     )
-    vertical_config = v_grid.VerticalGridConfig(num_levels=SIMPLE_GRID_INSTANCE.num_levels)
+    vertical_config = v_grid.VerticalGridConfig(
+        num_levels=definitions.SIMPLE_GRID_INSTANCE.num_levels
+    )
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,), np.linspace(12000.0, 0.0, SIMPLE_GRID_INSTANCE.num_levels + 1)
+            (dims.KDim,), np.linspace(12000.0, 0.0, definitions.SIMPLE_GRID_INSTANCE.num_levels + 1)
         ),
         vct_b=None,
     )
@@ -431,12 +399,12 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(tmp_io_tests_
         variables=["exner_function", "air_density"],
     )
 
-    horizontal_size = SIMPLE_GRID_INSTANCE.config.horizontal_config
+    horizontal_size = definitions.SIMPLE_GRID_INSTANCE.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config,
         vertical=None,
         horizontal=horizontal_size,
-        grid_id=SIMPLE_GRID_INSTANCE.id,
+        grid_id=definitions.SIMPLE_GRID_INSTANCE.id,
         output_path=tmp_io_tests_path,
     )
     assert group_monitor.output_path == tmp_io_tests_path.joinpath("vars")
@@ -452,15 +420,16 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(tmp_io_tests_path):
         output_interval="1 HOUR",
         variables=["exner_function", "air_density", "foo"],
     )
-    horizontal_size = SIMPLE_GRID_INSTANCE.config.horizontal_config
+    horizontal_size = definitions.SIMPLE_GRID_INSTANCE.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config,
         vertical=None,
         horizontal=horizontal_size,
-        grid_id=SIMPLE_GRID_INSTANCE.id,
+        grid_id=definitions.SIMPLE_GRID_INSTANCE.id,
         output_path=tmp_io_tests_path,
     )
     with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
-            model_state(SIMPLE_GRID_INSTANCE), dt.datetime.fromisoformat("2023-04-04T11:00:00")
+            definitions.model_state(definitions.SIMPLE_GRID_INSTANCE),
+            dt.datetime.fromisoformat("2023-04-04T11:00:00"),
         )

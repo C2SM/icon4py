@@ -77,11 +77,11 @@ class SimpleFieldSource(factory.FieldSource):
 
 
 @pytest.fixture(scope="function")
-def cell_coordinate_source(grid_savepoint, backend):
+def cell_coordinate_source(icon_grid_savepoint, backend):
     on_gpu = data_alloc.is_cupy_device(backend)
-    grid = grid_savepoint.construct_icon_grid(on_gpu)
-    lat = grid_savepoint.lat(dims.CellDim)
-    lon = grid_savepoint.lon(dims.CellDim)
+    grid = icon_grid_savepoint.construct_icon_grid(on_gpu)
+    lat = icon_grid_savepoint.lat(dims.CellDim)
+    lon = icon_grid_savepoint.lon(dims.CellDim)
     data = {
         "lat": (lat, {"standard_name": "lat", "units": ""}),
         "lon": (lon, {"standard_name": "lon", "units": ""}),
@@ -105,12 +105,12 @@ def cell_coordinate_source(grid_savepoint, backend):
 
 
 @pytest.fixture(scope="function")
-def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
+def height_coordinate_source(metrics_savepoint, icon_grid_savepoint, backend):
     on_gpu = data_alloc.is_cupy_device(backend)
-    grid = grid_savepoint.construct_icon_grid(on_gpu)
+    grid = icon_grid_savepoint.construct_icon_grid(on_gpu)
     z_ifc = metrics_savepoint.z_ifc()
-    vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
+    vct_a = icon_grid_savepoint.vct_a()
+    vct_b = icon_grid_savepoint.vct_b()
     data = {"height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})}
     vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels=10), vct_a, vct_b)
     field_source = SimpleFieldSource(

@@ -57,7 +57,7 @@ def create_vertical_params(vertical_config, grid_savepoint):
 def test_verify_velocity_init_against_savepoint(
     interpolation_savepoint,
     step_date_init,
-    grid_savepoint,
+    icon_grid_savepoint,
     icon_grid,
     metrics_savepoint,
     lowest_layer_thickness,
@@ -76,15 +76,15 @@ def test_verify_velocity_init_against_savepoint(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = create_vertical_params(vertical_config, icon_grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
-        edge_params=grid_savepoint.construct_edge_geometry(),
-        owner_mask=grid_savepoint.c_owner_mask(),
+        edge_params=icon_grid_savepoint.construct_edge_geometry(),
+        owner_mask=icon_grid_savepoint.c_owner_mask(),
         backend=backend,
     )
     assert velocity_advection.cfl_w_limit == 0.65
@@ -105,7 +105,7 @@ def test_verify_velocity_init_against_savepoint(
 def test_scale_factors_by_dtime(
     savepoint_velocity_init,
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -120,7 +120,7 @@ def test_scale_factors_by_dtime(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = create_vertical_params(vertical_config, icon_grid_savepoint)
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=None,
@@ -157,7 +157,7 @@ def test_velocity_predictor_step(
     stretch_factor,
     damping_height,
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_velocity_init,
     metrics_savepoint,
     interpolation_savepoint,
@@ -205,8 +205,8 @@ def test_velocity_predictor_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -215,7 +215,7 @@ def test_velocity_predictor_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = create_vertical_params(vertical_config, icon_grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -223,7 +223,7 @@ def test_velocity_predictor_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=edge_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
+        owner_mask=icon_grid_savepoint.c_owner_mask(),
         backend=backend,
     )
 
@@ -332,7 +332,7 @@ def test_velocity_corrector_step(
     stretch_factor,
     damping_height,
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
     interpolation_savepoint,
@@ -382,8 +382,8 @@ def test_velocity_corrector_step(
 
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -392,7 +392,7 @@ def test_velocity_corrector_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = create_vertical_params(vertical_config, icon_grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -400,7 +400,7 @@ def test_velocity_corrector_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=edge_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
+        owner_mask=icon_grid_savepoint.c_owner_mask(),
         backend=backend,
     )
 
@@ -471,7 +471,7 @@ def test_velocity_corrector_step(
 )
 def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
@@ -502,11 +502,11 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     contravariant_correction_at_edges_on_model_levels = savepoint_velocity_init.z_w_concorr_me()
     wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
-    nflatlev = grid_savepoint.nflatlev()
+    nflatlev = icon_grid_savepoint.nflatlev()
     c_intp = interpolation_savepoint.c_intp()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    tangent_orientation = grid_savepoint.tangent_orientation()
+    inv_dual_edge_length = icon_grid_savepoint.inv_dual_edge_length()
+    inv_primal_edge_length = icon_grid_savepoint.inverse_primal_edge_lengths()
+    tangent_orientation = icon_grid_savepoint.tangent_orientation()
 
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.vn_only()
     # TODO(havogt): we need a test where skip_compute_predictor_vertical_advection is True!
@@ -602,7 +602,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
@@ -625,9 +625,9 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     w = savepoint_velocity_init.w()
 
     c_intp = interpolation_savepoint.c_intp()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    tangent_orientation = grid_savepoint.tangent_orientation()
+    inv_dual_edge_length = icon_grid_savepoint.inv_dual_edge_length()
+    inv_primal_edge_length = icon_grid_savepoint.inverse_primal_edge_lengths()
+    tangent_orientation = icon_grid_savepoint.tangent_orientation()
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
@@ -679,7 +679,7 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
 )
 def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_compute_cell_diagnostics_for_velocity_advection_init,
     savepoint_compute_cell_diagnostics_for_velocity_advection_exit,
     metrics_savepoint,
@@ -719,7 +719,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
 
-    nflatlev = grid_savepoint.nflatlev()
+    nflatlev = icon_grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
@@ -779,7 +779,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_compute_cell_diagnostics_for_velocity_advection_init,
     savepoint_compute_cell_diagnostics_for_velocity_advection_exit,
     metrics_savepoint,
@@ -814,7 +814,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     e_bln_c_s = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
-    nflatlev = grid_savepoint.nflatlev()
+    nflatlev = icon_grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
@@ -873,7 +873,7 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_vertical_momentum_equation(
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_compute_advection_in_vertical_momentum_equation_init,
     savepoint_compute_advection_in_vertical_momentum_equation_exit,
     savepoint_compute_cell_diagnostics_for_velocity_advection_exit,
@@ -921,8 +921,8 @@ def test_compute_advection_in_vertical_momentum_equation(
     e_bln_c_s = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
     )
-    owner_mask = grid_savepoint.c_owner_mask()
-    area = grid_savepoint.cell_areas()
+    owner_mask = icon_grid_savepoint.c_owner_mask()
+    area = icon_grid_savepoint.cell_areas()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     z_w_con_c_full_ref = (
@@ -930,7 +930,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     ddt_w_adv_ref = savepoint_compute_advection_in_vertical_momentum_equation_exit.ddt_w_adv()
 
-    end_index_of_damping_layer = grid_savepoint.nrdmax()
+    end_index_of_damping_layer = icon_grid_savepoint.nrdmax()
 
     dtime = 5.0
     cell_domain = h_grid.domain(dims.CellDim)
@@ -1010,7 +1010,7 @@ def test_compute_advection_in_vertical_momentum_equation(
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_horizontal_momentum_equation(
     icon_grid,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_compute_advection_in_horizontal_momentum_equation_init,
     savepoint_compute_advection_in_horizontal_momentum_equation_exit,
     interpolation_savepoint,
@@ -1042,12 +1042,12 @@ def test_compute_advection_in_horizontal_momentum_equation(
 
     geofac_rot = interpolation_savepoint.geofac_rot()
     coeff_gradekin = metrics_savepoint.coeff_gradekin()
-    coriolis_frequency = grid_savepoint.f_e()
+    coriolis_frequency = icon_grid_savepoint.f_e()
     c_lin_e = interpolation_savepoint.c_lin_e()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
-    area_edge = grid_savepoint.edge_areas()
-    tangent_orientation = grid_savepoint.tangent_orientation()
-    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
+    area_edge = icon_grid_savepoint.edge_areas()
+    tangent_orientation = icon_grid_savepoint.tangent_orientation()
+    inv_primal_edge_length = icon_grid_savepoint.inverse_primal_edge_lengths()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
 
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1056,7 +1056,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
     d_time = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    end_index_of_damping_layer = grid_savepoint.nrdmax()
+    end_index_of_damping_layer = icon_grid_savepoint.nrdmax()
 
     ddt_vn_apc_ref = savepoint_compute_advection_in_horizontal_momentum_equation_exit.ddt_vn_apc()
 

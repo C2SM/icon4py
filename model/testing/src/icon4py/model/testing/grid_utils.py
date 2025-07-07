@@ -41,11 +41,7 @@ def download_grid(grid: cases.Grid) -> pathlib.Path:
 
     grid_file_path = get_grid_file_path(grid.file_name)
     if not grid_file_path.exists():
-        data_utils.download_and_extract(
-            grid.uri,
-            grid_file_path.parent,
-            grid_file_path.parent,
-        )
+        data_utils.download_and_extract(grid.uri, grid_file_path)
 
     return grid_file_path
 

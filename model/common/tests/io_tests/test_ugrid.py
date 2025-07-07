@@ -23,17 +23,13 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.testing import cases, grid_utils
+from icon4py.model.testing import cases
+from icon4py.model.testing.datatest_fixtures import grid, downloaded_grid_file
 
 
-ALL_GRID_FILES: Final[Sequence[pathlib.Path]] = [
-    grid_utils.get_grid_file_path(grid.file_name) for grid in cases.Grid if grid.file_name
-]
-
-
-@pytest.mark.parametrize("grid_file", ALL_GRID_FILES)
-def test_convert_to_ugrid(grid_file: pathlib.Path):
-    with load_data_file(grid_file) as ds:
+@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
+def test_convert_to_ugrid(downloaded_grid_file: pathlib.Path):
+    with load_data_file(downloaded_grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds, validate=True)
         assert uxds.attrs["title"] == "ICON grid description"
@@ -47,19 +43,19 @@ def test_convert_to_ugrid(grid_file: pathlib.Path):
         assert uxds["mesh"].attrs["face_node_connectivity"] == "vertex_of_cell"
 
 
-@pytest.mark.parametrize("file", ALL_GRID_FILES)
-def test_icon_ugrid_writer_writes_ugrid_file(file: pathlib.Path, tmp_io_tests_path: pathlib.Path):
+@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
+def test_icon_ugrid_writer_writes_ugrid_file(downloaded_grid_file: pathlib.Path, tmp_io_tests_path: pathlib.Path):
     output_dir = tmp_io_tests_path.joinpath("output")
     output_dir.mkdir(0o755, exist_ok=True)
-    writer = IconUGridWriter(file, output_dir)
+    writer = IconUGridWriter(downloaded_grid_file, output_dir)
     writer(validate=False)
     fname = output_dir.iterdir().__next__().name
-    assert fname == file.stem + "_ugrid.nc"
+    assert fname == downloaded_grid_file.stem + "_ugrid.nc"
 
 
-@pytest.mark.parametrize("file", ALL_GRID_FILES)
-def test_icon_ugrid_patch_index_transformation(file: pathlib.Path):
-    with load_data_file(file) as ds:
+@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
+def test_icon_ugrid_patch_index_transformation(downloaded_grid_file: pathlib.Path):
+    with load_data_file(downloaded_grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
         for name in patch.index_lists:
@@ -67,9 +63,9 @@ def test_icon_ugrid_patch_index_transformation(file: pathlib.Path):
             assert uxds[name].dtype == "int32"
 
 
-@pytest.mark.parametrize("file", ALL_GRID_FILES)
-def test_icon_ugrid_patch_transposed_index_lists(file):
-    with load_data_file(file) as ds:
+@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
+def test_icon_ugrid_patch_transposed_index_lists(downloaded_grid_file: pathlib.Path):
+    with load_data_file(downloaded_grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
         horizontal_dims = ("cell", "edge", "vertex")
@@ -81,9 +77,9 @@ def test_icon_ugrid_patch_transposed_index_lists(file):
             assert uxds[name].shape[0] in horizontal_sizes
 
 
-@pytest.mark.parametrize("file", ALL_GRID_FILES)
-def test_icon_ugrid_patch_fill_value(file):
-    with load_data_file(file) as ds:
+@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
+def test_icon_ugrid_patch_fill_value(downloaded_grid_file: pathlib.Path):
+    with load_data_file(downloaded_grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
         patch._set_fill_value(uxds)
@@ -96,9 +92,9 @@ def assert_start_index(uxds: xa.Dataset, name: str):
     assert np.min(np.where(uxds[name].data > FILL_VALUE)) == 0
 
 
-@pytest.mark.parametrize("file", ALL_GRID_FILES)
-def test_extract_horizontal_coordinates(file):
-    with load_data_file(file) as ds:
+@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
+def test_extract_horizontal_coordinates(downloaded_grid_file: pathlib.Path):
+    with load_data_file(downloaded_grid_file) as ds:
         dim_sizes = ds.sizes
         coords = extract_horizontal_coordinates(ds)
         # TODO (halungge) fix:

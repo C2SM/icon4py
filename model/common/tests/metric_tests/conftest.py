@@ -9,8 +9,8 @@
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     experiment_data_files,
-    grid_savepoint,
     icon_grid,
+    icon_grid_savepoint,
     interpolation_savepoint,
     metrics_savepoint,
     processor_props,

@@ -18,8 +18,8 @@ from icon4py.model.testing import cases
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     experiment_data_files,
-    grid_savepoint,
     icon_grid,
+    icon_grid_savepoint,
     interpolation_savepoint,
     processor_props,
     ranked_data_path,
@@ -31,14 +31,14 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
 def test_compute_nudgecoeffs_e(
-    grid_savepoint,  # noqa: F811 # fixture
+    icon_grid_savepoint,  # noqa: F811 # fixture
     interpolation_savepoint,  # noqa: F811 # fixture
     icon_grid,  # noqa: F811  # fixture
     backend,  # fixture
 ):
     nudgecoeff_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat, backend=backend)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
-    refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
+    refin_ctrl = icon_grid_savepoint.refin_ctrl(dims.EdgeDim)
     grf_nudge_start_e = refinement.refine_control_value(dims.EdgeDim, h_grid.Zone.NUDGING).value
     nudge_max_coeff = wpfloat(0.375)
     nudge_efold_width = wpfloat(2.0)

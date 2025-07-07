@@ -27,11 +27,11 @@ def test_jabw_initial_condition(
     backend,
     rank,
     data_provider,
-    grid_savepoint,
+    icon_grid_savepoint,
     icon_grid,
 ):
-    edge_geometry = grid_savepoint.construct_edge_geometry()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = icon_grid_savepoint.construct_edge_geometry()
+    cell_geometry = icon_grid_savepoint.construct_cell_geometry()
     default_surface_pressure = data_alloc.constant_field(icon_grid, 1e5, dims.CellDim)
 
     (

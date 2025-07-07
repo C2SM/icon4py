@@ -39,7 +39,7 @@ def test_parallel_diffusion(
     icon_grid,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     lowest_layer_thickness,
@@ -106,8 +106,8 @@ def test_parallel_diffusion(
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    cell_geometry = grid_savepoint.construct_cell_geometry()
-    edge_geometry = grid_savepoint.construct_edge_geometry()
+    cell_geometry = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry = icon_grid_savepoint.construct_edge_geometry()
     exchange = definitions.create_exchange(processor_props, decomposition_info)
     diffusion = diffusion_.Diffusion(
         grid=icon_grid,
@@ -115,8 +115,8 @@ def test_parallel_diffusion(
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
             vertical_config,
-            grid_savepoint.vct_a(),
-            grid_savepoint.vct_b(),
+            icon_grid_savepoint.vct_a(),
+            icon_grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -176,7 +176,7 @@ def test_parallel_diffusion_multiple_steps(
     icon_grid,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     lowest_layer_thickness,
@@ -217,8 +217,8 @@ def test_parallel_diffusion_multiple_steps(
         zd_vertoffset=metrics_savepoint.zd_vertoffset(),
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
-    cell_geometry = grid_savepoint.construct_cell_geometry()
-    edge_geometry = grid_savepoint.construct_edge_geometry()
+    cell_geometry = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry = icon_grid_savepoint.construct_edge_geometry()
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=data_alloc.flatten_first_two_dims(
@@ -260,8 +260,8 @@ def test_parallel_diffusion_multiple_steps(
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
             vertical_config,
-            grid_savepoint.vct_a(),
-            grid_savepoint.vct_b(),
+            icon_grid_savepoint.vct_a(),
+            icon_grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -312,8 +312,8 @@ def test_parallel_diffusion_multiple_steps(
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
             vertical_config,
-            grid_savepoint.vct_a(),
-            grid_savepoint.vct_b(),
+            icon_grid_savepoint.vct_a(),
+            icon_grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,

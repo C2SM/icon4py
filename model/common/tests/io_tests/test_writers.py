@@ -22,29 +22,29 @@ from icon4py.model.common.io.writers import (
 from icon4py.model.common.states import data, metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-from . import test_io
+from . import definitions
 
 
 @pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])
 def test_filter_by_standard_name(value):
-    state = test_io.model_state(test_io.SIMPLE_GRID_INSTANCE)
+    state = definitions.model_state(definitions.SIMPLE_GRID_INSTANCE)
     assert filter_by_standard_name(state, value) == {value: state[value]}
 
 
 def test_filter_by_standard_name_key_differs_from_name():
-    state = test_io.model_state(test_io.SIMPLE_GRID_INSTANCE)
+    state = definitions.model_state(definitions.SIMPLE_GRID_INSTANCE)
     assert filter_by_standard_name(state, "virtual_potential_temperature") == {
         "theta_v": state["theta_v"]
     }
 
 
 def test_filter_by_standard_name_non_existing_name():
-    state = test_io.model_state(test_io.SIMPLE_GRID_INSTANCE)
+    state = definitions.model_state(definitions.SIMPLE_GRID_INSTANCE)
     assert filter_by_standard_name(state, "does_not_exist") == {}
 
 
 def initialized_writer(
-    test_path, random_name, grid=test_io.SIMPLE_GRID_INSTANCE
+    test_path, random_name, grid=definitions.SIMPLE_GRID_INSTANCE
 ) -> tuple[NETCDFWriter, grid_def.BaseGrid]:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
@@ -140,7 +140,7 @@ def test_writer_append_timeslice_create_new_var(tmp_io_tests_path, random_name):
     assert len(dataset.variables[writers.TIME]) == 0
     assert "air_density" not in dataset.variables
 
-    state = dict(air_density=test_io.model_state(grid)["air_density"])
+    state = dict(air_density=definitions.model_state(grid)["air_density"])
     dataset.append(state, time)
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
@@ -160,7 +160,7 @@ def test_writer_append_timeslice_create_new_var(tmp_io_tests_path, random_name):
 def test_writer_append_timeslice_to_existing_var(tmp_io_tests_path, random_name):
     dataset, grid = initialized_writer(tmp_io_tests_path, random_name)
     time = datetime.now()
-    state = dict(air_density=test_io.model_state(grid)["air_density"])
+    state = dict(air_density=definitions.model_state(grid)["air_density"])
     dataset.append(state, time)
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables

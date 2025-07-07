@@ -41,7 +41,7 @@ def test_diffusion_wrapper_granule_inputs(
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    grid_savepoint,
+    icon_grid_savepoint,
     grid_init,  # noqa: F811  # initializes the grid as side-effect
     icon_grid,
     experiment,
@@ -69,11 +69,11 @@ def test_diffusion_wrapper_granule_inputs(
     itype_sher = (
         diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
-    nflat_gradp = grid_savepoint.nflat_gradp()
+    nflat_gradp = icon_grid_savepoint.nflat_gradp()
 
     # --- Extract Metric State Parameters ---
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+    vct_a = test_utils.array_to_array_info(icon_grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(icon_grid_savepoint.vct_b().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
@@ -120,8 +120,8 @@ def test_diffusion_wrapper_granule_inputs(
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
     expected_dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    expected_edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
-    expected_cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    expected_edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
+    expected_cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=data_alloc.flatten_first_two_dims(
             dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
@@ -160,9 +160,9 @@ def test_diffusion_wrapper_granule_inputs(
     )
     expected_vertical_params = v_grid.VerticalGrid(
         config=expected_vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=icon_grid_savepoint.vct_a(),
+        vct_b=icon_grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=icon_grid_savepoint.nflat_gradp(),
     )
     expected_config = utils.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
@@ -300,7 +300,7 @@ def test_diffusion_wrapper_single_step(
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    grid_savepoint,
+    icon_grid_savepoint,
     grid_init,  # noqa: F811  # initializes the grid as side-effect
     experiment,
     lowest_layer_thickness,
@@ -331,11 +331,11 @@ def test_diffusion_wrapper_single_step(
     itype_sher = (
         diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
-    nflat_gradp = grid_savepoint.nflat_gradp()
+    nflat_gradp = icon_grid_savepoint.nflat_gradp()
 
     # Metric state parameters
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+    vct_a = test_utils.array_to_array_info(icon_grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(icon_grid_savepoint.vct_b().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)

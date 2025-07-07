@@ -74,9 +74,9 @@ def backend(request):
 
 
 @pytest.fixture(scope="session")
-def grid(request, backend):
+def validation_grid(request, backend):
     grid_option = (
-        request.config.getoption("grid") if request.config.hasoption("grid") else DEFAULT_GRID
+         request.config.getoption("grid", DEFAULT_GRID)
     )
     try:
         grid = cases.Grid[grid_option]

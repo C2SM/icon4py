@@ -40,7 +40,7 @@ def test_run_solve_nonhydro_single_step(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     savepoint_velocity_init,
     metrics_savepoint,
     interpolation_savepoint,
@@ -87,9 +87,9 @@ def test_run_solve_nonhydro_single_step(
     )
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=icon_grid_savepoint.vct_a(),
+        vct_b=icon_grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=icon_grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -136,8 +136,8 @@ def test_run_solve_nonhydro_single_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
 
     prognostic_states = utils.create_prognostic_states(sp)
 
@@ -152,7 +152,7 @@ def test_run_solve_nonhydro_single_step(
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
+        owner_mask=icon_grid_savepoint.c_owner_mask(),
         backend=backend,
         exchange=exchange,
     )

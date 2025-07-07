@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import os
 import pathlib
-import re
 import tarfile
-import uuid
 from typing import Final, Optional
 
-from icon4py.model.testing import serialbox as icon4py_serialbox
+import wget
+
+from icon4py.model.testing import cases, serialbox as testing_ser
 
 
 ICON4PY_MODEL_TESTING_PKG_SRC_PATH: Final = pathlib.Path(__file__).parent.resolve()
@@ -23,86 +23,61 @@ REPO_ROOT_PATH: Final = (
     ICON4PY_MODEL_TESTING_PKG_SRC_PATH / ".." / ".." / ".." / ".." / ".." / ".."
 ).resolve()
 
-ICON4PY_TEST_DATA_PATH: Final[pathlib.Path] = pathlib.Path(
-    os.getenv("TEST_DATA_PATH") or (REPO_ROOT_PATH / "testdata")
+TEST_DATA_PATH: Final[pathlib.Path] = pathlib.Path(
+    os.getenv("ICON4PY_TEST_DATA_PATH", REPO_ROOT_PATH / "testdata")
 ).resolve()
-GRIDS_PATH: Final[pathlib.Path] = (ICON4PY_TEST_DATA_PATH / "grids").resolve()
-SERIALIZED_DATA_PATH: Final[pathlib.Path] = (ICON4PY_TEST_DATA_PATH / "icon_serialbox").resolve()
+GRIDS_PATH: Final[pathlib.Path] = (TEST_DATA_PATH / "grids").resolve()
+SERIALIZED_DATA_PATH: Final[pathlib.Path] = (TEST_DATA_PATH / "icon_serialbox").resolve()
 
 
 def download_and_extract(
     uri: str,
-    base_path: pathlib.Path,
-    destination_path: pathlib.Path,
-    data_file: str = "downloaded.tar.gz",
+    target_path: pathlib.Path,
+    *,
+    temp_filename: str = "downloaded.tar.gz",
 ) -> None:
     """
-    "Download data archive from remote server.
+    Download data archive from remote server.
 
-    Check whether a given directory `destination_path` is empty and, if so,
-    download a tar file at `uri` and extract it.
+    Check whether a given data content already exists and otherwise
+    create it from a tar archive at `uri` and extract it.
 
     Args:
-        uri: download url for archived data
-        base_path: the archive is extracted at this path it might be different from the final
-            destination to account for directories in the archive
-        destination_path: final expected location of the extracted data
-        data_file: local final of the archive is removed after download
+        uri: URL for data archive (`tar` format only).
+        target_path: Expected final location of the extracted data.
+        temp_filename: temporaty name of the downloaded archive (removed after extraction).
     """
-    destination_path.mkdir(parents=True, exist_ok=True)
-    if not any(destination_path.iterdir()):
-        try:
-            import wget
+    
+    if not target_path.exists() or (target_path.is_dir() and not any(target_path.iterdir())):
+        print(f"Downloading and extracting '{target_path}' data from '{uri}'")
+        wget.download(uri, out=temp_filename)
+        if not tarfile.is_tarfile(temp_filename):
+            raise RuntimeError(f"{temp_filename} needs to be a valid tar file")
 
-            print(
-                f"directory {destination_path} is empty: downloading data from {uri} and extracting"
-            )
-            wget.download(uri, out=data_file)
-            # extract downloaded file
-            if not tarfile.is_tarfile(data_file):
-                raise NotImplementedError(f"{data_file} needs to be a valid tar file")
-            with tarfile.open(data_file, mode="r:*") as tf:
-                tf.extractall(path=base_path)
-            pathlib.Path(data_file).unlink(missing_ok=True)
-        except ImportError as err:
-            raise FileNotFoundError(
-                f" To download data file from {uri}, please install `wget`"
-            ) from err
+        base_path = target_path.parent    
+        with tarfile.open(temp_filename, mode="r:*") as tf:
+            tf.extractall(path=base_path)
+        if not target_path.exists():
+            raise RuntimeError(f"{target_path} does not exist after extraction!!")
+        pathlib.Path(temp_filename).unlink(missing_ok=True)
+        print("")
 
 
-def get_global_grid_params(experiment: str) -> tuple[int, int]:
-    """Get the grid root and level from the experiment name.
-
-    Reads the level and root parameters from a string in the canonical ICON gridfile format
-        RxyBab where 'xy' and 'ab' are numbers and denote the root and level of the icosahedron grid construction.
-
-        Args: experiment: str: The experiment name.
-        Returns: tuple[int, int]: The grid root and level.
-    """
-    if "torus" in experiment:
-        # these magic values seem to mark a torus: they are set in all torus grid files.
-        return 0, 2
-
-    try:
-        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
-        return root, level
-    except AttributeError as err:
-        raise ValueError(
-            f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
-        ) from err
 
 
-def get_grid_id_for_experiment(experiment) -> uuid.UUID:
-    """Get the unique id of the grid used in the experiment.
+def get_grid_file_path(grid_file_path: pathlib.Path | str) -> pathlib.Path:
+    return cases.GRIDS_PATH / grid_file_path
 
-    These ids are encoded in the original grid file that was used to run the simulation, but not serialized when generating the test data. So we duplicate the information here.
 
-    TODO (@halungge): this becomes obsolete once we get the connectivities from the grid files.
-    """
-    try:
-        return GRID_IDS[experiment]
-    except KeyError as err:
-        raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
+def download_grid(grid: cases.Grid) -> pathlib.Path:
+    assert grid.file_name
+    assert grid.uri
+
+    grid_file_path = get_grid_file_path(grid.file_name)
+    if not grid_file_path.exists():
+        download_and_extract(grid.uri, grid_file_path)
+
+    return grid_file_path
 
 
 def get_processor_properties_for_run(run_instance):
@@ -120,7 +95,7 @@ def get_datapath_for_experiment(ranked_base_path, experiment):
 def create_icon_serial_data_provider(
     datapath, processor_props, backend: Optional["gtx_backend.Backend"]
 ):
-    return icon4py_serialbox.IconSerialDataProvider(
+    return testing_ser.IconSerialDataProvider(
         backend=backend,
         fname_prefix="icon_pydycore",
         path=str(datapath),

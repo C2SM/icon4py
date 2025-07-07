@@ -13,7 +13,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     decomposition_info,
     experiment_data_files,
     flat_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     htop_moist_proc,
     icon_grid,
     interpolation_savepoint,

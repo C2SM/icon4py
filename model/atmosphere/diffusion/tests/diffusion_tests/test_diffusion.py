@@ -552,7 +552,7 @@ def test_run_diffusion_multiple_steps(
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    grid_savepoint,
+    icon_grid_savepoint,
     experiment,
     lowest_layer_thickness,
     model_top_height,
@@ -570,8 +570,8 @@ def test_run_diffusion_multiple_steps(
     # Diffusion initialization
     ######################################################################
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=data_alloc.flatten_first_two_dims(
             dims.CEDim,
@@ -609,9 +609,9 @@ def test_run_diffusion_multiple_steps(
 
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=icon_grid_savepoint.vct_a(),
+        vct_b=icon_grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=icon_grid_savepoint.nflat_gradp(),
     )
 
     config = configuration_builders.build_diffusion_config(experiment, ndyn_substeps)

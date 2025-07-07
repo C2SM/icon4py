@@ -49,13 +49,13 @@ def test_damping_layer_calculation(max_h, damping_height, delta, flat_height):
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
 def test_damping_layer_calculation_from_icon_input(
-    grid_savepoint, experiment, damping_height, flat_height
+    icon_grid_savepoint, experiment, damping_height, flat_height
 ):
-    a = grid_savepoint.vct_a()
-    b = grid_savepoint.vct_b()
-    nrdmax = grid_savepoint.nrdmax()
+    a = icon_grid_savepoint.vct_a()
+    b = icon_grid_savepoint.vct_b()
+    nrdmax = icon_grid_savepoint.nrdmax()
     vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(dims.KDim),
+        num_levels=icon_grid_savepoint.num(dims.KDim),
         flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
@@ -63,7 +63,7 @@ def test_damping_layer_calculation_from_icon_input(
         config=vertical_config,
         vct_a=a,
         vct_b=b,
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
+        _min_index_flat_horizontal_grad_pressure=icon_grid_savepoint.nflat_gradp,
     )
     assert nrdmax == vertical_grid.end_index_of_damping_layer
     a_array = a.ndarray
@@ -73,13 +73,13 @@ def test_damping_layer_calculation_from_icon_input(
 
 
 @pytest.mark.datatest
-def test_grid_size(grid_savepoint):
-    config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
+def test_grid_size(icon_grid_savepoint):
+    config = v_grid.VerticalGridConfig(num_levels=icon_grid_savepoint.num(dims.KDim))
     vertical_grid = v_grid.VerticalGrid(
         config=config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
+        vct_a=icon_grid_savepoint.vct_a(),
+        vct_b=icon_grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=icon_grid_savepoint.nflat_gradp,
     )
 
     assert NUM_LEVELS == vertical_grid.size(dims.KDim)
@@ -90,15 +90,15 @@ def test_grid_size(grid_savepoint):
     "dim", (dims.CellDim, dims.VertexDim, dims.EdgeDim, dims.C2EDim, dims.C2VDim, dims.E2VDim)
 )
 @pytest.mark.datatest
-def test_grid_size_raises_for_non_vertical_dim(grid_savepoint, dim):
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+def test_grid_size_raises_for_non_vertical_dim(icon_grid_savepoint, dim):
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     with pytest.raises(AssertionError):
         vertical_grid.size(dim)
 
 
 @pytest.mark.datatest
-def test_grid_size_raises_for_unknown_vertical_dim(grid_savepoint):
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+def test_grid_size_raises_for_unknown_vertical_dim(icon_grid_savepoint):
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     j_dim = gtx.Dimension("J", kind=gtx.DimensionKind.VERTICAL)
     with pytest.raises(ValueError):
         vertical_grid.size(j_dim)
@@ -123,18 +123,18 @@ def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
     "experiment, expected_moist_level",
     [(cases.Experiment.MCH_CH_R04B09, 0), (cases.Experiment.EXCLAIM_APE, 25)],
 )
-def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_level):
+def test_moist_level_calculation(icon_grid_savepoint, experiment, expected_moist_level):
     threshold = 22500.0
-    vertical_grid = configure_vertical_grid(grid_savepoint, top_moist_threshold=threshold)
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint, top_moist_threshold=threshold)
     assert expected_moist_level == vertical_grid.kstart_moist
     assert expected_moist_level == vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.MOIST))
 
 
 @pytest.mark.datatest
-def test_interface_physical_height(grid_savepoint):
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+def test_interface_physical_height(icon_grid_savepoint):
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     assert helpers.dallclose(
-        grid_savepoint.vct_a().asnumpy(), vertical_grid.interface_physical_height.asnumpy()
+        icon_grid_savepoint.vct_a().asnumpy(), vertical_grid.interface_physical_height.asnumpy()
     )
 
 
@@ -142,11 +142,11 @@ def test_interface_physical_height(grid_savepoint):
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_flat_level_calculation(grid_savepoint, experiment, flat_height):
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+def test_flat_level_calculation(icon_grid_savepoint, experiment, flat_height):
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
 
-    assert grid_savepoint.nflatlev() == vertical_grid.nflatlev
-    assert grid_savepoint.nflatlev() == vertical_grid.index(
+    assert icon_grid_savepoint.nflatlev() == vertical_grid.nflatlev
+    assert icon_grid_savepoint.nflatlev() == vertical_grid.index(
         v_grid.Domain(dims.KDim, v_grid.Zone.FLAT)
     )
 
@@ -172,8 +172,8 @@ def test_domain_raises_for_non_vertical_dim(zone, kind):
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_top(grid_savepoint, dim, offset):
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+def test_grid_index_top(icon_grid_savepoint, dim, offset):
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     assert offset == vertical_grid.index(v_grid.Domain(dim, v_grid.Zone.TOP, offset))
 
 
@@ -181,8 +181,8 @@ def test_grid_index_top(grid_savepoint, dim, offset):
 @pytest.mark.parametrize("experiment, levels", [(cases.Experiment.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_damping(grid_savepoint, experiment, levels, dim, offset):
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+def test_grid_index_damping(icon_grid_savepoint, experiment, levels, dim, offset):
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     upwards = -offset
     downwards = offset
     zone = v_grid.Zone.DAMPING
@@ -196,8 +196,8 @@ def test_grid_index_damping(grid_savepoint, experiment, levels, dim, offset):
 @pytest.mark.parametrize("experiment, levels", [(cases.Experiment.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_moist(grid_savepoint, experiment, levels, dim, offset):
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+def test_grid_index_moist(icon_grid_savepoint, experiment, levels, dim, offset):
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     upwards = -offset
     downwards = offset
     zone = v_grid.Zone.MOIST
@@ -211,8 +211,8 @@ def test_grid_index_moist(grid_savepoint, experiment, levels, dim, offset):
 @pytest.mark.parametrize("experiment, levels", [(cases.Experiment.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_flat(grid_savepoint, experiment, levels, dim, offset):
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+def test_grid_index_flat(icon_grid_savepoint, experiment, levels, dim, offset):
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     upwards = -offset
     downwards = offset
     zone = v_grid.Zone.FLAT
@@ -229,9 +229,9 @@ def test_grid_index_flat(grid_savepoint, experiment, levels, dim, offset):
 )
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_bottom(grid_savepoint, experiment, levels, dim, offset):
+def test_grid_index_bottom(icon_grid_savepoint, experiment, levels, dim, offset):
     valid_offset = -offset
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     num_levels = levels if dim == dims.KDim else levels + 1
     domain = v_grid.Domain(dim, v_grid.Zone.BOTTOM, valid_offset)
     assert num_levels + valid_offset == vertical_grid.index(domain)
@@ -243,11 +243,11 @@ def test_grid_index_bottom(grid_savepoint, experiment, levels, dim, offset):
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_above_num_levels(
-    grid_savepoint, experiment, levels, zone, dim, offset
+    icon_grid_savepoint, experiment, levels, zone, dim, offset
 ):
     vertical_size = levels if dim == dims.KDim else levels + 1
     invalid_offset = vertical_size + 1 + offset
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     domain = v_grid.Domain(dim, zone, invalid_offset)
     with pytest.raises(expected_exception=AssertionError):
         vertical_grid.index(domain)
@@ -259,11 +259,11 @@ def test_grid_index_raises_if_index_above_num_levels(
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_below_zero(
-    grid_savepoint, experiment, levels, zone, dim, offset
+    icon_grid_savepoint, experiment, levels, zone, dim, offset
 ):
     vertical_size = levels if dim == dims.KDim else levels + 1
     invalid_offset = -(vertical_size + 1 + offset)
-    vertical_grid = configure_vertical_grid(grid_savepoint)
+    vertical_grid = configure_vertical_grid(icon_grid_savepoint)
     with pytest.raises(expected_exception=AssertionError):
         domain = v_grid.Domain(dim, zone, invalid_offset)
         vertical_grid.index(domain)
@@ -274,7 +274,7 @@ def test_grid_index_raises_if_index_below_zero(
     "experiment", (cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE)
 )
 def test_vct_a_vct_b_calculation_from_icon_input(
-    grid_savepoint,
+    icon_grid_savepoint,
     experiment,
     maximal_layer_thickness,
     top_height_limit_for_maximal_layer_thickness,
@@ -287,7 +287,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     backend,
 ):
     vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(dims.KDim),
+        num_levels=icon_grid_savepoint.num(dims.KDim),
         maximal_layer_thickness=maximal_layer_thickness,
         top_height_limit_for_maximal_layer_thickness=top_height_limit_for_maximal_layer_thickness,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -299,15 +299,15 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
-    assert helpers.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
-    assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
+    assert helpers.dallclose(vct_a.asnumpy(), icon_grid_savepoint.vct_a().asnumpy())
+    assert helpers.dallclose(vct_b.asnumpy(), icon_grid_savepoint.vct_b().asnumpy())
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, cases.Experiment.EXCLAIM_APE])
 def test_compute_vertical_coordinate(
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     topography_savepoint,
     interpolation_savepoint,
@@ -316,11 +316,11 @@ def test_compute_vertical_coordinate(
     backend,
 ):
     xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
-    vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
+    vct_a = icon_grid_savepoint.vct_a()
+    vct_b = icon_grid_savepoint.vct_b()
+    cell_geometry = icon_grid_savepoint.construct_cell_geometry()
     vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(dims.KDim),
+        num_levels=icon_grid_savepoint.num(dims.KDim),
     )
     vertical_geometry = v_grid.VerticalGrid(
         config=vertical_config,

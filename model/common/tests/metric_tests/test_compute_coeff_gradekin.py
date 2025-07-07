@@ -19,9 +19,9 @@ from icon4py.model.testing import cases, helpers
 @pytest.mark.parametrize(
     "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
 )
-def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
-    edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()
+def test_compute_coeff_gradekin(icon_grid, icon_grid_savepoint, metrics_savepoint):
+    edge_cell_length = icon_grid_savepoint.edge_cell_length().asnumpy()
+    inv_dual_edge_length = icon_grid_savepoint.inv_dual_edge_length().asnumpy()
     coeff_gradekin_ref = metrics_savepoint.coeff_gradekin()
     horizontal_start = icon_grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)

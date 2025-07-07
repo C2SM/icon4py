@@ -37,11 +37,11 @@ from . import utils
 
 @pytest.mark.datatest
 def test_validate_divdamp_fields_against_savepoint_values(
-    grid_savepoint, savepoint_nonhydro_init, icon_grid, backend
+    icon_grid_savepoint, savepoint_nonhydro_init, icon_grid, backend
 ):
     config = solve_nh.NonHydrostaticConfig()
     second_order_divdamp_factor = 0.032
-    mean_cell_area = grid_savepoint.mean_cell_area()
+    mean_cell_area = icon_grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
@@ -58,7 +58,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         backend=backend,
     )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
-        grid_savepoint.vct_a(),
+        icon_grid_savepoint.vct_a(),
         config.fourth_order_divdamp_factor,
         config.fourth_order_divdamp_factor2,
         config.fourth_order_divdamp_factor3,
@@ -162,7 +162,7 @@ def test_nonhydro_predictor_step(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -184,7 +184,7 @@ def test_nonhydro_predictor_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, icon_grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
 
     diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
@@ -192,8 +192,8 @@ def test_nonhydro_predictor_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -204,7 +204,7 @@ def test_nonhydro_predictor_step(
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
+        owner_mask=icon_grid_savepoint.c_owner_mask(),
         backend=backend,
     )
     nlev = icon_grid.num_levels
@@ -528,7 +528,7 @@ def test_nonhydro_corrector_step(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -549,7 +549,7 @@ def test_nonhydro_corrector_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, icon_grid_savepoint)
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
     lprep_adv = init_savepoint.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
@@ -583,8 +583,8 @@ def test_nonhydro_corrector_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -595,7 +595,7 @@ def test_nonhydro_corrector_step(
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
+        owner_mask=icon_grid_savepoint.c_owner_mask(),
         backend=backend,
     )
     at_first_substep = substep_init == 1
@@ -740,7 +740,7 @@ def test_run_solve_nonhydro_single_step(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -762,7 +762,7 @@ def test_run_solve_nonhydro_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, icon_grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
@@ -779,8 +779,8 @@ def test_run_solve_nonhydro_single_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -791,7 +791,7 @@ def test_run_solve_nonhydro_single_step(
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
+        owner_mask=icon_grid_savepoint.c_owner_mask(),
         backend=backend,
     )
 
@@ -863,7 +863,7 @@ def test_run_solve_nonhydro_multi_step(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -884,7 +884,7 @@ def test_run_solve_nonhydro_multi_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, icon_grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
@@ -906,8 +906,8 @@ def test_run_solve_nonhydro_multi_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = icon_grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = icon_grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -918,7 +918,7 @@ def test_run_solve_nonhydro_multi_step(
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
+        owner_mask=icon_grid_savepoint.c_owner_mask(),
         backend=backend,
     )
 
@@ -1053,7 +1053,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     at_initial_timestep,
@@ -1074,7 +1074,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, icon_grid_savepoint)
 
     current_rho = sp_init.rho_now()
     current_theta_v = sp_init.theta_v_now()
@@ -1271,7 +1271,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     at_initial_timestep,
@@ -1415,7 +1415,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -1451,7 +1451,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, icon_grid_savepoint)
 
     current_vn = sp_stencil_init.vn()
     next_vn = sp_nh_init.vn_new()
@@ -1478,16 +1478,16 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
-        dims.ECDim, field=grid_savepoint.primal_normal_cell_x()
+        dims.ECDim, field=icon_grid_savepoint.primal_normal_cell_x()
     )
     primal_normal_cell_2 = data_alloc.flatten_first_two_dims(
-        dims.ECDim, field=grid_savepoint.primal_normal_cell_y()
+        dims.ECDim, field=icon_grid_savepoint.primal_normal_cell_y()
     )
     dual_normal_cell_1 = data_alloc.flatten_first_two_dims(
-        dims.ECDim, field=grid_savepoint.dual_normal_cell_x()
+        dims.ECDim, field=icon_grid_savepoint.dual_normal_cell_x()
     )
     dual_normal_cell_2 = data_alloc.flatten_first_two_dims(
-        dims.ECDim, field=grid_savepoint.dual_normal_cell_y()
+        dims.ECDim, field=icon_grid_savepoint.dual_normal_cell_y()
     )
 
     iau_wgt_dyn = config.iau_wgt_dyn
@@ -1509,7 +1509,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             theta_v_ic=theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-            inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
+            inv_dual_edge_length=icon_grid_savepoint.inv_dual_edge_length(),
             z_hydro_corr=hydrostatic_correction,
             grav_o_cpd=constants.GRAV_O_CPD,
             horizontal_start=start_edge_nudging_level_2,
@@ -1562,11 +1562,11 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         ipeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
-        inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
+        inv_dual_edge_length=icon_grid_savepoint.inv_dual_edge_length(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
-        limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
+        limited_area=icon_grid_savepoint.get_metadata("limited_area").get("limited_area"),
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
         nflatlev=vertical_params.nflatlev,
@@ -1639,7 +1639,7 @@ def test_apply_divergence_damping_and_update_vn(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -1681,7 +1681,7 @@ def test_apply_divergence_damping_and_update_vn(
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
     second_order_divdamp_scaling_coeff = (
-        sp_nh_init.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
+        sp_nh_init.divdamp_fac_o2() * icon_grid_savepoint.mean_cell_area()
     )
     is_iau_active = config.is_iau_active
 
@@ -1705,7 +1705,7 @@ def test_apply_divergence_damping_and_update_vn(
         second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
-        inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
+        inv_dual_edge_length=icon_grid_savepoint.inv_dual_edge_length(),
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
         fourth_order_divdamp_factor=config.fourth_order_divdamp_factor,
@@ -1715,7 +1715,7 @@ def test_apply_divergence_damping_and_update_vn(
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
-        limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
+        limited_area=icon_grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
         starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
@@ -1771,7 +1771,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -1795,7 +1795,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, icon_grid_savepoint)
     at_first_substep = substep_init == 1
 
     mass_flux_at_edges_on_model_levels = sp_stencil_init.mass_fl_e()
@@ -1897,7 +1897,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         rayleigh_type=config.rayleigh_type,
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
-        index_of_damping_layer=grid_savepoint.nrdmax(),
+        index_of_damping_layer=icon_grid_savepoint.nrdmax(),
         starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         kstart_moist=vertical_params.kstart_moist,
         horizontal_start=start_cell_nudging,
@@ -1969,7 +1969,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     model_top_height,
     stretch_factor,
     damping_height,
-    grid_savepoint,
+    icon_grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -1990,7 +1990,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, icon_grid_savepoint)
 
     at_first_substep = substep_init == 0
     at_last_substep = substep_exit == 0
@@ -2111,7 +2111,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         rayleigh_type=config.rayleigh_type,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
-        index_of_damping_layer=grid_savepoint.nrdmax(),
+        index_of_damping_layer=icon_grid_savepoint.nrdmax(),
         kstart_moist=kstart_moist,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
