@@ -406,13 +406,14 @@ class Diffusion:
         self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,
         )
         self.calculate_nabla2_and_smag_coefficients_for_vn = (
             calculate_nabla2_and_smag_coefficients_for_vn.with_backend(self._backend).compile(
-                smag_offset=[self.smag_offset],
+                enable_jit=False,
                 vertical_start=[0],
                 vertical_end=[self._grid.num_levels],
                 offset_provider=self._grid.connectivities,
@@ -421,12 +422,14 @@ class Diffusion:
 
         self.calculate_diagnostic_quantities_for_turbulence = (
             calculate_diagnostic_quantities_for_turbulence.with_backend(self._backend).compile(
+                enable_jit=False,
                 vertical_start=[1],
                 vertical_end=[self._grid.num_levels],
                 offset_provider=self._grid.connectivities,
             )
         )
         self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(self._backend).compile(
+            enable_jit=False,
             nudgezone_diff=[self.nudgezone_diff],
             fac_bdydiff_v=[self.fac_bdydiff_v],
             limited_area=[self._grid.limited_area],
@@ -438,6 +441,7 @@ class Diffusion:
             apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
                 self._backend
             ).compile(
+                enable_jit=False,
                 diff_multfac_w=[self.diff_multfac_w],
                 type_shear=[int32(self.config.shear_type.value)],
                 nrdmax=[int32(self._vertical_grid.end_index_of_damping_layer + 1)],
@@ -450,6 +454,7 @@ class Diffusion:
             calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
                 self._backend
             ).compile(
+                enable_jit=False,
                 thresh_tdiff=[self.thresh_tdiff],
                 vertical_start=[(self._grid.num_levels - 2)],
                 vertical_end=[self._grid.num_levels],
@@ -459,6 +464,7 @@ class Diffusion:
         self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,
@@ -466,24 +472,30 @@ class Diffusion:
         self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
             truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(self._backend)
         ).compile(
+            enable_jit=False,
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,
         )
         self.update_theta_and_exner = update_theta_and_exner.with_backend(self._backend).compile(
+            enable_jit=False,
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider={},
         )
-        self.copy_field = copy_field.with_backend(self._backend).compile(offset_provider={})
-        self.scale_k = scale_k.with_backend(self._backend).compile(offset_provider={})
+        self.copy_field = copy_field.with_backend(self._backend).compile(
+            enable_jit=False, offset_provider={}
+        )
+        self.scale_k = scale_k.with_backend(self._backend).compile(
+            enable_jit=False, offset_provider={}
+        )
         self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(
             self._backend
-        ).compile(offset_provider={})
+        ).compile(enable_jit=False, offset_provider={})
 
         self.init_diffusion_local_fields_for_regular_timestep = (
             init_diffusion_local_fields_for_regular_timestep.with_backend(self._backend)
-        ).compile(offset_provider={"Koff": dims.KDim})
+        ).compile(enable_jit=False, offset_provider={"Koff": dims.KDim})
 
         self._allocate_temporary_fields()
 
@@ -617,7 +629,6 @@ class Diffusion:
             self.config.hdiff_efdt_ratio,
             diff_multfac_vn,
             smag_limit,
-            offset_provider={},
         )
         self._do_diffusion_step(
             diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, 0.0
@@ -683,7 +694,7 @@ class Diffusion:
             smag_offset:
 
         """
-        self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
+        self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
@@ -827,7 +838,7 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+        self.copy_field(prognostic_state.w, self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self._cell_params.area,
@@ -927,7 +938,6 @@ class Diffusion:
                 horizontal_end=self._cell_end_local,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
-                offset_provider={},
             )
             log.debug("running stencil 16 (update_theta_and_exner): end")
 
