@@ -34,7 +34,7 @@ pil_logger.setLevel(logging.INFO)
 log = logging.getLogger(__name__)
 
 DO_PLOTS = True
-PLOT_IMGS_DIR = "runxx_test_wiggles"
+PLOT_IMGS_DIR = os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output")
 
 
 @gtx.field_operator

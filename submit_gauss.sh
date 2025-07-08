@@ -8,13 +8,13 @@
 #SBATCH --uenv=icon/25.2:v3
 #SBATCH --view=default
 
-#SBATCH --time=02:00:00
 #SBATCH --partition=normal
+#SBATCH --time=01:00:00
 
-#SBATCH --job-name=runxx_test_wiggles
+#SBATCH --job-name=runyb_test_wiggles_cube
 
-#SBATCH --output=logs/torus.runxx_test_wiggles.log
-#SBATCH --error=logs/torus.runxx_test_wiggles.log
+#SBATCH --output=logs/torus.%x.log
+#SBATCH --error=logs/torus.%x.log
 
 case $CLUSTER_NAME in
 balfrin)
@@ -48,20 +48,19 @@ export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
 
 source "$PROJECTS_DIR/icon4py/.venv/bin/activate"
 
-export OUTPUT_DIR=$SLURM_JOB_NAME
-export SAVEPOINT_PATH="ser_data/exclaim_gauss3d.uniform100_flat/ser_data"
-export GRID_FILE_PATH="testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc"
-
-rm -rf "$OUTPUT_DIR"
+export ICON4PY_OUTPUT_DIR=$SLURM_JOB_NAME
+export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_gauss3d_250x250x250.uniform200_flat/ser_data"
+export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Torus_Triangles_250m_x_250m_res1.25m.nc"
+export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
 python \
 	model/driver/src/icon4py/model/driver/icon4py_driver.py \
-	$SAVEPOINT_PATH \
+	$ICON4PY_SAVEPOINT_PATH \
 	--icon4py_driver_backend="$ICON4PY_BACKEND" \
 	--experiment_type=gauss3d_torus \
 	--grid_root=2 --grid_level=0 --enable_output
 
 # generate vtu files
-python ../python-scripts/plot_vtk.py "$OUTPUT_DIR" "$SAVEPOINT_PATH" "$GRID_FILE_PATH"
+python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
 
 echo "Finished running job: $SLURM_JOB_NAME, one way or another"
