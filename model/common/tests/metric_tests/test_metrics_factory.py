@@ -828,6 +828,37 @@ def test_vertical_coordinates_on_half_levels(
     field_ref = metrics_savepoint.z_ifc()
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
+@pytest.mark.level("integration")
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+@pytest.mark.datatest
+def test_compute_wgtfac_c(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend,
+):
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_file=grid_file,
+        icon_grid=icon_grid,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    field = factory.get(attrs.WGTFAC_C)
+    field_ref = metrics_savepoint.wgtfac_c()
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
+
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error

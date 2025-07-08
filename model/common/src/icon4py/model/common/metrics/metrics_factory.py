@@ -527,9 +527,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-                dims.KDim: (
+                dims.KHalfDim: (
                     vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
+                    vertical_domain(v_grid.Zone.SURFACE),
                 ),
             },
             fields={attrs.WGTFAC_C: attrs.WGTFAC_C},

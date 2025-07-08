@@ -64,13 +64,20 @@ def compute_wgtfac_c(
     wgtfac_c: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
     nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_wgtfac_c(
         z_ifc,
         nlev,
         out=wgtfac_c,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
-
 
 def _compute_z1_z2_z3(
     z_ifc: data_alloc.NDArray, i1: int, i2: int, i3: int, i4: int

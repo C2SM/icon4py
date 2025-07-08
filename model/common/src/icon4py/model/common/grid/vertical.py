@@ -40,6 +40,7 @@ class Zone(enum.Enum):
     DAMPING = 2
     MOIST = 3
     FLAT = 4
+    SURFACE = 5
 
 
 @dataclasses.dataclass(frozen=True)
@@ -208,17 +209,22 @@ class VerticalGrid:
                 index = self._end_index_of_flat_layer
             case Zone.DAMPING:
                 index = self._end_index_of_damping_layer
+            case Zone.SURFACE:
+                index = self._surface_level(domain)
             case _:
                 raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
 
         index += domain.offset
         assert (
-            0 <= index <= self._bottom_level(domain)
+            0 <= index <= self._surface_level(domain)
         ), f"vertical index {index} outside of grid levels for {domain.dim}"
         return gtx.int32(index)
 
     def _bottom_level(self, domain: Domain) -> int:
         return self.size(domain.dim)
+
+    def _surface_level(self, domain: Domain) -> int:
+        return self.size(domain.dim) + 1
 
     @property
     def interface_physical_height(self) -> fa.KField[float]:

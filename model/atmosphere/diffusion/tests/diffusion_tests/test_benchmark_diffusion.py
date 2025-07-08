@@ -72,11 +72,10 @@ def _get_or_initialize(experiment, backend, name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
         grid = geometry_.grid
 
-        cell_params = grid_states.CellParams.from_global_num_cells(
+        cell_params = grid_states.CellParams(
             cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
             cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
             area=geometry_.get(geometry_meta.CELL_AREA),
-            global_num_cells=grid.global_num_cells,
         )
         edge_params = grid_states.EdgeParams(
             edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
@@ -134,13 +133,14 @@ def _get_or_initialize(experiment, backend, name):
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2]) # TODO: the default value is 5
+@pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     grid_savepoint,
     grid_file,
     experiment,
-    topography,
+    topography_savepoint,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -192,13 +192,12 @@ def test_run_diffusion_single_step(
         vertical_grid=vertical_grid,
         decomposition_info=geometry._decomposition_info,
         geometry_source=geometry,
-        topography=topography,
+        topography=topography_savepoint.topo_c(),
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
         e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),  # TODO: this goes to grid
         c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),  # TODO (Yilu): refin_ctrl
-        damping_height=damping_height,
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         exner_expol=exner_expol,
@@ -206,10 +205,18 @@ def test_run_diffusion_single_step(
     )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1),
-        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C2),
-        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim,
+            field=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
+            backend=backend,
+        ),
+        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
+        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim,
+            field=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
+            backend=backend,
+        ),
         geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
         geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
