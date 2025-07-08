@@ -599,8 +599,8 @@ class SolveNonhydro:
             self._backend
         ).compile(
             enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels + 1)],
+            vertical_start=[gtx.int32(1)],
+            vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
         )
         self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(

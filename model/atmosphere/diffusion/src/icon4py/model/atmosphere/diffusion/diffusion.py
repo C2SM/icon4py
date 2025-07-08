@@ -511,7 +511,15 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
 
-        diffusion_utils.init_nabla2_factor_in_upper_damping_zone.with_backend(self._backend)(
+        diffusion_utils.init_nabla2_factor_in_upper_damping_zone.with_backend(
+            self._backend
+        ).compile(
+            nshift=[0],
+            end_index_of_damping_layer=[self._vertical_grid.end_index_of_damping_layer],
+            vertical_start=[1],
+            vertical_end=[gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1)],
+            offset_provider={},
+        )(
             physical_heights=self._vertical_grid.interface_physical_height,
             diff_multfac_n2w=self.diff_multfac_n2w,
             end_index_of_damping_layer=self._vertical_grid.end_index_of_damping_layer,
@@ -522,7 +530,6 @@ class Diffusion:
             heights_1=self._vertical_grid.interface_physical_height.ndarray[1].item(),
             vertical_start=gtx.int32(1),
             vertical_end=gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1),
-            offset_provider={},
         )
 
         self._determine_horizontal_domains()
