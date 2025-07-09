@@ -695,39 +695,25 @@ def _vertically_implicit_solver_at_corrector_step(
         )
 
     # necessary to set the boundaries for the tridiagonal solver as well
-    tridiagonal_intermediate_result, next_w = concat_where(
-        (dims.KDim > 0) & (dims.KDim < n_lev),
-        _solve_tridiagonal_matrix_for_w_forward_sweep(
-            vwind_impl_wgt=exner_w_implicit_weight_parameter,
-            theta_v_ic=theta_v_at_cells_on_half_levels,
-            ddqz_z_half=ddqz_z_half,
-            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            z_w_expl=w_explicit_term,
-            z_exner_expl=exner_explicit_term,
-            dtime=dtime,
-            cpd=dycore_consts.cpd,
-        ),
-        concat_where(
-            dims.KDim == 0,
-            (
-                broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            ),
-            (
-                broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-                next_w,
-            ),
-        ),
+    tridiagonal_intermediate_result, next_w_intermediate_result = _solve_tridiagonal_matrix_for_w_forward_sweep(
+        vwind_impl_wgt=exner_w_implicit_weight_parameter,
+        theta_v_ic=theta_v_at_cells_on_half_levels,
+        ddqz_z_half=ddqz_z_half,
+        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+        z_w_expl=w_explicit_term,
+        z_exner_expl=exner_explicit_term,
+        dtime=dtime,
+        cpd=dycore_consts.cpd,
     )
 
-    next_w = concat_where(
+    next_w_intermediate_result = concat_where(
         (dims.KDim > 0) & (dims.KDim < n_lev),
         _solve_tridiagonal_matrix_for_w_back_substitution_scan(
             z_q=tridiagonal_intermediate_result,
-            w=next_w,
+            w=next_w_intermediate_result,
         ),
-        next_w,
+        broadcast(wpfloat("0.0"), (dims.CellDim,)),
     )
 
     # _vertically_implicit_solver_at_corrector_step_after_solving_w below
@@ -735,15 +721,21 @@ def _vertically_implicit_solver_at_corrector_step(
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
 
     if rayleigh_type == rayleigh_damping_options.KLEMP:
-        next_w = concat_where(
+        next_w_intermediate_result = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w_1=w_1,
                 w=next_w,
             ),
-            next_w,
+            next_w_intermediate_result,
         )
+    
+    next_w = concat_where(
+        dims.KDim < n_lev,
+        next_w_intermediate_result,
+        next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
+    )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
