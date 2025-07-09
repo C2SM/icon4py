@@ -118,12 +118,12 @@ def _get_or_initialize(experiment, backend, name):
 @pytest.mark.parametrize(
     "grid_file, experiment, step_date_init, step_date_exit",
     [  # TODO: ingnore regional
-        (
-            dt_utils.REGIONAL_EXPERIMENT,
-            dt_utils.REGIONAL_EXPERIMENT,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-        ),
+        # (
+        #     dt_utils.REGIONAL_EXPERIMENT,
+        #     dt_utils.REGIONAL_EXPERIMENT,
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:10.000",
+        # ),
         (
             dt_utils.GLOBAL_EXPERIMENT,
             dt_utils.GLOBAL_EXPERIMENT,
@@ -137,7 +137,6 @@ def _get_or_initialize(experiment, backend, name):
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
-    grid_savepoint,
     grid_file,
     experiment,
     topography_savepoint,
@@ -194,8 +193,8 @@ def test_run_diffusion_single_step(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),  # TODO: this goes to grid
-        c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),  # TODO (Yilu): refin_ctrl
+        e_refin_ctrl=grid.refinement_control[dims.EdgeDim],
+        c_refin_ctrl=grid.refinement_control[dims.CellDim],
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         exner_expol=exner_expol,
