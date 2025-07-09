@@ -45,7 +45,7 @@ class HaloGenerator:
         rank_mapping: data_alloc.NDArray,
         connectivities: dict[gtx.Dimension, data_alloc.NDArray],
         num_levels: int,
-        backend: Optional[gtx_backend.Backend],
+        backend: Optional[gtx_backend.Backend] = None,
     ):
         """
 

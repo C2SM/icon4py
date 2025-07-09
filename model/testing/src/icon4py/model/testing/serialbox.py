@@ -446,9 +446,9 @@ class IconGridSavepoint(IconSavepoint):
                 num_edges=self.num(dims.EdgeDim),
                 num_vertices=self.num(dims.VertexDim),
             )
-            .with_dimension(*self._get_decomp_fields(dims.CellDim))
-            .with_dimension(*self._get_decomp_fields(dims.EdgeDim))
-            .with_dimension(*self._get_decomp_fields(dims.VertexDim))
+            .with_dimension(*self._get_decomposition_fields(dims.CellDim))
+            .with_dimension(*self._get_decomposition_fields(dims.EdgeDim))
+            .with_dimension(*self._get_decomposition_fields(dims.VertexDim))
         )
 
     def _get_decomposition_fields(self, dim: gtx.Dimension):

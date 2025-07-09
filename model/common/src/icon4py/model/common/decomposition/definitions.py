@@ -82,10 +82,15 @@ class DecompositionInfo:
 
     @utils.chainable
     def with_dimension(
-        self, dim: Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
+        self,
+        dim: Dimension,
+        global_index: data_alloc.NDArray,
+        owner_mask: data_alloc.NDArray,
+        halo_levels: data_alloc.NDArray,
     ):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
+        self._halo_levels[dim] = halo_levels
 
     def __init__(
         self,
@@ -414,7 +419,7 @@ class DecompositionFlag(enum.IntEnum):
     """
     used for:
     - cells that share 1 edge with an OWNED cell
-    - vertices that are on OWNED cell 
+    - vertices that are on OWNED cell
     - edges that are on OWNED cell
     """
 
