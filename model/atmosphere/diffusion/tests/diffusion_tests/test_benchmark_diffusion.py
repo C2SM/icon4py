@@ -32,9 +32,7 @@ from .utils import (
     construct_diffusion_config,
     verify_diffusion_fields,
 )
-
-
-# TODO(Yilu): remove the grid file
+import icon4py.model.common.states.prognostic_state as prognostics
 
 grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
@@ -189,7 +187,7 @@ def test_run_diffusion_single_step(
         vertical_grid=vertical_grid,
         decomposition_info=geometry._decomposition_info,
         geometry_source=geometry,
-        topography=topography_savepoint.topo_c(),
+        topography=data_alloc.random_field(grid, dims.CellDim),
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
@@ -232,15 +230,22 @@ def test_run_diffusion_single_step(
     config = construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    # TODO: we should compute mannually the diagnostic states and prognostic states?
+    # TODO (Yilu): for now we feed it with random fields for the test
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=savepoint_diffusion_init.hdef_ic(),
-        div_ic=savepoint_diffusion_init.div_ic(),
-        dwdx=savepoint_diffusion_init.dwdx(),
-        dwdy=savepoint_diffusion_init.dwdy(),
+        hdef_ic=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        div_ic=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        dwdx=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        dwdy=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
     )
-    prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    # TODO:
+    # prognostic_state = savepoint_diffusion_init.construct_prognostics()
+    prognostic_state = prognostics.PrognosticState(
+        w=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        vn=data_alloc.random_field(grid, dims.EdgeDim, dims.KDim),
+        exner=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        theta_v=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        rho=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+    )
+
 
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
