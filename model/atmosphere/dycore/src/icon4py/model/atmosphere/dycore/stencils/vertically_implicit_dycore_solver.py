@@ -85,8 +85,11 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
 @gtx.field_operator
 def _set_surface_boundary_condition_for_computation_of_w(
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-) -> tuple[fa.CellKField[ta.wpfloat]]:
-    return (astype(contravariant_correction_at_cells_on_half_levels, wpfloat),)
+) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
+    return (
+        astype(contravariant_correction_at_cells_on_half_levels, wpfloat),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+    )
 
 
 @gtx.field_operator
@@ -480,7 +483,10 @@ def vertically_implicit_solver_at_predictor_step(
     )
     _set_surface_boundary_condition_for_computation_of_w(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-        out=(next_w,),
+        out=(
+            next_w,
+            vertical_mass_flux_at_cells_on_half_levels,
+        ),
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
             dims.KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
@@ -572,6 +578,7 @@ def _vertically_implicit_solver_at_corrector_step(
     next_w: fa.CellKField[
         ta.wpfloat
     ],  # need to be used as input because the last vertical level is set outside
+    vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_dynamical_increment: fa.CellKField[ta.wpfloat],
@@ -653,7 +660,11 @@ def _vertically_implicit_solver_at_corrector_step(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            vertical_mass_flux_at_cells_on_half_levels,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
+        ),
     )
     (
         tridiagonal_beta_coeff_at_cells_on_model_levels,
@@ -873,7 +884,10 @@ def vertically_implicit_solver_at_corrector_step(
 ):
     _set_surface_boundary_condition_for_computation_of_w(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-        out=(next_w,),
+        out=(
+            next_w,
+            vertical_mass_flux_at_cells_on_half_levels,
+        ),
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
             dims.KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
@@ -881,6 +895,7 @@ def vertically_implicit_solver_at_corrector_step(
     )
     _vertically_implicit_solver_at_corrector_step(
         next_w=next_w,
+        vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
         dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
         exner_dynamical_increment=exner_dynamical_increment,
