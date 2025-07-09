@@ -1676,12 +1676,6 @@ def test_apply_divergence_damping_and_update_vn(
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    xp = data_alloc.import_array_ns(backend)
-    starting_vertical_index_for_3d_divdamp = (
-        xp.min(xp.where(metrics_savepoint.scaling_factor_for_3d_divdamp().ndarray > 0.0))[0]
-        if config.divdamp_type == 32
-        else 0
-    )
 
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
@@ -1722,7 +1716,6 @@ def test_apply_divergence_damping_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
-        starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
@@ -1921,7 +1914,6 @@ def test_vertically_implicit_solver_at_predictor_step(
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         end_index_of_damping_layer=grid_savepoint.nrdmax(),
-        starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         kstart_moist=vertical_params.kstart_moist,
         flat_level_index_plus1=gtx.int32(vertical_params.nflatlev + 1),
         start_cell_index_nudging=start_cell_nudging,
@@ -1967,8 +1959,10 @@ def test_vertically_implicit_solver_at_predictor_step(
     )
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
     assert helpers.dallclose(
-        dwdz_at_cells_on_model_levels.asnumpy()[start_cell_nudging:, :],
-        z_dwdz_dd_ref.asnumpy()[start_cell_nudging:, :],
+        dwdz_at_cells_on_model_levels.asnumpy()[
+            start_cell_nudging:, starting_vertical_index_for_3d_divdamp:
+        ],
+        z_dwdz_dd_ref.asnumpy()[start_cell_nudging:, starting_vertical_index_for_3d_divdamp:],
         atol=1.0e-16,
     )
     assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())

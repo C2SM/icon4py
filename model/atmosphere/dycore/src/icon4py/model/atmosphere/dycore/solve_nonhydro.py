@@ -14,7 +14,6 @@ from typing import Final, Optional
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.atmosphere.dycore import dycore_states
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
@@ -22,14 +21,13 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.stencils import (
+    compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
-    compute_results_for_thermodynamic_variables,
+    vertically_implicit_dycore_solver,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
-
-from icon4py.model.atmosphere.dycore.stencils import compute_cell_diagnostics_for_dycore
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
@@ -40,7 +38,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import compute_avg_
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
-from icon4py.model.atmosphere.dycore.stencils import vertically_implicit_dycore_solver
 from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
 )
@@ -407,20 +404,6 @@ class SolveNonhydro:
         self._edge_geometry = edge_geometry
         self._cell_params = cell_geometry
 
-        #:  start level for 3D divergence damping terms
-        #: this is only different from 0 if divdamp_type == 32: calculation done in mo_vertical_grid.f90
-        xp = data_alloc.import_array_ns(self._backend)
-        self._starting_vertical_index_for_3d_divdamp = (
-            xp.min(
-                xp.where(self._metric_state_nonhydro.scaling_factor_for_3d_divdamp.ndarray > 0.0)
-            )[0]
-            if self._config.divdamp_type == 32
-            else 0
-        )
-        """
-        Declared as kstart_dd3d in ICON.
-        """
-
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
@@ -482,7 +465,6 @@ class SolveNonhydro:
             is_iau_active=[self._config.is_iau_active],
             limited_area=[self._grid.limited_area],
             divdamp_order=[self._config.divdamp_order],
-            starting_vertical_index_for_3d_divdamp=[self._starting_vertical_index_for_3d_divdamp],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
@@ -514,7 +496,6 @@ class SolveNonhydro:
             rayleigh_type=[self._config.rayleigh_type],
             divdamp_type=[self._config.divdamp_type],
             end_index_of_damping_layer=[self._vertical_params.end_index_of_damping_layer],
-            starting_vertical_index_for_3d_divdamp=[self._starting_vertical_index_for_3d_divdamp],
             kstart_moist=[self._vertical_params.kstart_moist],
             flat_level_index_plus1=[gtx.int32(self._vertical_params.nflatlev + 1)],
             vertical_start_index_model_top=[gtx.int32(0)],
@@ -1252,7 +1233,6 @@ class SolveNonhydro:
             rayleigh_type=self._config.rayleigh_type,
             divdamp_type=self._config.divdamp_type,
             at_first_substep=at_first_substep,
-            starting_vertical_index_for_3d_divdamp=self._starting_vertical_index_for_3d_divdamp,
             kstart_moist=self._vertical_params.kstart_moist,
             end_index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
             flat_level_index_plus1=gtx.int32(self._vertical_params.nflatlev + 1),
@@ -1292,7 +1272,7 @@ class SolveNonhydro:
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
                 horizontal_start=self._start_cell_lateral_boundary,
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
-                vertical_start=self._starting_vertical_index_for_3d_divdamp,
+                vertical_start=0,
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.connectivities,
             )
@@ -1423,7 +1403,6 @@ class SolveNonhydro:
             is_iau_active=self._config.is_iau_active,
             limited_area=self._grid.limited_area,
             divdamp_order=self._config.divdamp_order,
-            starting_vertical_index_for_3d_divdamp=self._starting_vertical_index_for_3d_divdamp,
             end_edge_halo_level_2=self._end_edge_halo_level_2,
             start_edge_lateral_boundary_level_7=self._start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=self._start_edge_nudging_level_2,

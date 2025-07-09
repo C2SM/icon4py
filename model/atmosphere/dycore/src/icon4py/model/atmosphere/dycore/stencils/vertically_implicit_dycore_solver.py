@@ -361,7 +361,6 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
     divdamp_type: gtx.int32,
     at_first_substep: bool,
     end_index_of_damping_layer: gtx.int32,
-    starting_vertical_index_for_3d_divdamp: gtx.int32,
     kstart_moist: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
@@ -402,14 +401,10 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
 
     # compute dw/dz for divergence damping term
     if divdamp_type >= 3:
-        dwdz_at_cells_on_model_levels = concat_where(
-            (starting_vertical_index_for_3d_divdamp <= dims.KDim),
-            _compute_dwdz_for_divergence_damping(
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                w=next_w,
-                w_concorr_c=contravariant_correction_at_cells_on_half_levels,
-            ),
-            dwdz_at_cells_on_model_levels,
+        dwdz_at_cells_on_model_levels = _compute_dwdz_for_divergence_damping(
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            w=next_w,
+            w_concorr_c=contravariant_correction_at_cells_on_half_levels,
         )
 
     exner_dynamical_increment = (
@@ -764,7 +759,6 @@ def vertically_implicit_solver_at_predictor_step(
     divdamp_type: gtx.int32,
     at_first_substep: bool,
     end_index_of_damping_layer: gtx.int32,
-    starting_vertical_index_for_3d_divdamp: gtx.int32,
     kstart_moist: gtx.int32,
     flat_level_index_plus1: gtx.int32,
     start_cell_index_nudging: gtx.int32,
@@ -864,7 +858,6 @@ def vertically_implicit_solver_at_predictor_step(
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         end_index_of_damping_layer=end_index_of_damping_layer,
-        starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         kstart_moist=kstart_moist,
         out=(
             next_w,
