@@ -14,12 +14,11 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 import uxarray as ux
-import xarray as xr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.io import ugrid, utils
+from icon4py.model.common.grid import simple, vertical as v_grid
+from icon4py.model.common.io import ugrid
 from icon4py.model.common.io.io import (
     FieldGroupIOConfig,
     FieldGroupMonitor,
@@ -28,9 +27,9 @@ from icon4py.model.common.io.io import (
     generate_name,
     to_delta,
 )
-from icon4py.model.common.states import data
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils, grid_utils
+
+from . import utils as test_utils
 
 
 # setting backend to fieldview embedded here.
@@ -41,35 +40,6 @@ simple_grid = simple.SimpleGrid()
 grid_file = datatest_utils.GRIDS_PATH.joinpath(
     datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE
 )
-
-
-def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
-    rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    w = data_alloc.random_field(
-        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=np.float32
-    )
-    vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=np.float32)
-    return {
-        "air_density": utils.to_data_array(rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
-        "exner_function": utils.to_data_array(
-            exner, data.PROGNOSTIC_CF_ATTRIBUTES["exner_function"]
-        ),
-        "theta_v": utils.to_data_array(
-            theta_v,
-            data.PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"],
-            is_on_interface=False,
-        ),
-        "upward_air_velocity": utils.to_data_array(
-            w,
-            data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"],
-            is_on_interface=True,
-        ),
-        "normal_velocity": utils.to_data_array(
-            vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"], is_on_interface=False
-        ),
-    }
 
 
 @pytest.mark.parametrize("num", range(1, 6))
@@ -183,7 +153,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
         vct_b=None,
     )
 
-    state = model_state(grid)
+    state = test_utils.model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     field_configs = [
         FieldGroupIOConfig(
@@ -235,7 +205,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
         vct_b=None,
     )
 
-    state = model_state(grid)
+    state = test_utils.model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     filename_stub = "icon4py_dummy_output"
     config = FieldGroupIOConfig(
@@ -301,7 +271,7 @@ def test_fieldgroup_monitor_output_time_updates_upon_store(test_path):
     config, group_monitor = create_field_group_monitor(test_path, simple_grid)
     configured_start_time = dt.datetime.fromisoformat(config.start_time)
     step_time = configured_start_time
-    state = model_state(simple_grid)
+    state = test_utils.model_state(simple_grid)
     group_monitor.store(state, step_time)
     assert group_monitor.next_output_time > configured_start_time
     one_hour_later = step_time + dt.timedelta(hours=1)
@@ -313,7 +283,7 @@ def test_fieldgroup_monitor_no_output_on_not_matching_time(test_path):
     config, group_monitor = create_field_group_monitor(test_path, simple_grid, start_time_str)
     start_time = dt.datetime.fromisoformat(config.start_time)
     step_time = start_time
-    state = model_state(simple_grid)
+    state = test_utils.model_state(simple_grid)
     group_monitor.store(state, step_time)
     assert group_monitor.next_output_time > start_time
     one_hour_later = step_time + dt.timedelta(hours=1)
@@ -339,7 +309,7 @@ def test_fieldgroup_monitor_no_output_before_start_time(test_path):
     )
     step_time = dt.datetime.fromisoformat("2023-12-12T00:12:00")
     assert start_time > step_time
-    group_monitor.store(model_state(simple_grid), step_time)
+    group_monitor.store(test_utils.model_state(simple_grid), step_time)
     assert group_monitor.next_output_time == start_time
     group_monitor.close()
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 0
@@ -453,5 +423,5 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
     )
     with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
-            model_state(simple_grid), dt.datetime.fromisoformat("2023-04-04T11:00:00")
+            test_utils.model_state(simple_grid), dt.datetime.fromisoformat("2023-04-04T11:00:00")
         )
