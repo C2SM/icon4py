@@ -708,7 +708,7 @@ def _vertically_implicit_solver_at_corrector_step(
     )
 
     next_w_intermediate_result = concat_where(
-        (dims.KDim > 0) & (dims.KDim < n_lev),
+        dims.KDim > 0,
         _solve_tridiagonal_matrix_for_w_back_substitution_scan(
             z_q=tridiagonal_intermediate_result,
             w=next_w_intermediate_result,
@@ -726,15 +726,15 @@ def _vertically_implicit_solver_at_corrector_step(
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w_1=w_1,
-                w=next_w,
+                w=next_w_intermediate_result,
             ),
             next_w_intermediate_result,
         )
     
-    next_w = concat_where(
+    next_w_intermediate_result = concat_where(
         dims.KDim < n_lev,
         next_w_intermediate_result,
-        next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
+        next_w,
     )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
@@ -742,7 +742,7 @@ def _vertically_implicit_solver_at_corrector_step(
         vwind_impl_wgt=exner_w_implicit_weight_parameter,
         inv_ddqz_z_full=inv_ddqz_z_full,
         rho_ic=rho_at_cells_on_half_levels,
-        w=next_w,
+        w=next_w_intermediate_result,
         z_exner_expl=exner_explicit_term,
         exner_ref_mc=reference_exner_at_cells_on_model_levels,
         z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
@@ -772,7 +772,7 @@ def _vertically_implicit_solver_at_corrector_step(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels,
                 vwind_impl_wgt=exner_w_implicit_weight_parameter,
-                w=next_w,
+                w=next_w_intermediate_result,
                 mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
                 r_nsubsteps=r_nsubsteps,
@@ -800,7 +800,7 @@ def _vertically_implicit_solver_at_corrector_step(
         vertical_mass_flux_at_cells_on_half_levels,
         tridiagonal_beta_coeff_at_cells_on_model_levels,
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        next_w,
+        next_w_intermediate_result,
         rho_explicit_term,
         exner_explicit_term,
         next_rho,
