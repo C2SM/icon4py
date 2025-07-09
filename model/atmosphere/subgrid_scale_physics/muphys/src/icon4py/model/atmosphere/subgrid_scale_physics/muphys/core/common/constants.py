@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-class graupel_ct:
+class GraupelCt:
     qmin = 1.0e-15  # threshold for computation
 
 
