@@ -75,11 +75,6 @@ def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
     }
 
 
-def state_values() -> list[xr.DataArray]:
-    state = model_state(simple_grid)
-    return list(state.values())
-
-
 @pytest.mark.parametrize("num", range(1, 6))
 @pytest.mark.parametrize("slot", ["DAY", "day", "Day", "days", "DAyS"])
 def test_to_delta_days(num, slot):
