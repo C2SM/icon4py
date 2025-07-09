@@ -102,7 +102,7 @@ def _compute_k_start_end(
     return kstart, kend, cell_index_mask
 
 
-def compute_diffusion_metrics(
+def _compute_diffusion_metrics_all(
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     max_nbhgt: data_alloc.NDArray,
@@ -114,7 +114,9 @@ def compute_diffusion_metrics(
     cell_nudging: int,
     nlev: int,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[
+    data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray
+]:
     n_cells = c2e2c.shape[0]
     n_c2e2c = c2e2c.shape[1]
     z_mc_off = z_mc[c2e2c]
@@ -175,3 +177,61 @@ def compute_diffusion_metrics(
     )
 
     return mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl
+
+
+def compute_diffusion_mask_and_coef(
+    c2e2c: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    max_nbhgt: data_alloc.NDArray,
+    c_owner_mask: data_alloc.NDArray,
+    maxslp_avg: data_alloc.NDArray,
+    maxhgtd_avg: data_alloc.NDArray,
+    thslp_zdiffu: float,
+    thhgtd_zdiffu: float,
+    cell_nudging: int,
+    nlev: int,
+    array_ns: ModuleType = np,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    mask_hdiff, zd_diffcoef_dsl, _, _ = _compute_diffusion_metrics_all(
+        c2e2c,
+        z_mc,
+        max_nbhgt,
+        c_owner_mask,
+        maxslp_avg,
+        maxhgtd_avg,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
+        cell_nudging,
+        nlev,
+        array_ns,
+    )
+    return mask_hdiff, zd_diffcoef_dsl
+
+
+def compute_diffusion_intcoef_and_vertoffset(
+    c2e2c: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    max_nbhgt: data_alloc.NDArray,
+    c_owner_mask: data_alloc.NDArray,
+    maxslp_avg: data_alloc.NDArray,
+    maxhgtd_avg: data_alloc.NDArray,
+    thslp_zdiffu: float,
+    thhgtd_zdiffu: float,
+    cell_nudging: int,
+    nlev: int,
+    array_ns: ModuleType = np,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    _, _, zd_intcoef_dsl, zd_vertoffset_dsl = _compute_diffusion_metrics_all(
+        c2e2c,
+        z_mc,
+        max_nbhgt,
+        c_owner_mask,
+        maxslp_avg,
+        maxhgtd_avg,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
+        cell_nudging,
+        nlev,
+        array_ns,
+    )
+    return zd_intcoef_dsl, zd_vertoffset_dsl
