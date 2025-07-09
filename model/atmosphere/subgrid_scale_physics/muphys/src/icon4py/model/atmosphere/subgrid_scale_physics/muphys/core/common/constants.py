@@ -11,7 +11,7 @@ class graupel_ct:
     qmin = 1.0e-15  # threshold for computation
 
 
-class idx:
+class Idx:
     prefactor_r = 14.58
     exponent_r = 0.111
     offset_r = 1.0e-12
