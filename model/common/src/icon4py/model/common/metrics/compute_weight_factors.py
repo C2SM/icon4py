@@ -79,6 +79,7 @@ def compute_wgtfac_c(
         },
     )
 
+
 def _compute_z1_z2_z3(
     z_ifc: data_alloc.NDArray, i1: int, i2: int, i3: int, i4: int
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:

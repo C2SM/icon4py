@@ -128,7 +128,7 @@ def get_num_levels(experiment: str):
 
 
 def get_grid_geometry(
-    backend: Optional[gtx_backend.Backend], grid_file: str,  experiment: str
+    backend: Optional[gtx_backend.Backend], grid_file: str, experiment: str
 ) -> geometry.GridGeometry:
     on_gpu = data_alloc.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)

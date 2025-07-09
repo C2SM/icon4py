@@ -526,12 +526,14 @@ def maximal_layer_thickness():
 def top_height_limit_for_maximal_layer_thickness():
     return 15000.0
 
+
 @pytest.fixture
 def rayleigh_coeff(experiment):
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         return 0.1
     else:
         return 5.0
+
 
 @pytest.fixture
 def exner_expol(experiment):
@@ -540,6 +542,7 @@ def exner_expol(experiment):
     else:
         return 0.333
 
+
 @pytest.fixture
 def vwind_offctr():
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
@@ -547,10 +550,8 @@ def vwind_offctr():
     else:
         return 0.2
 
+
 @pytest.fixture
 def rayleigh_type():
     return 2
 
-# @pytest.fixture
-# def topography():
-#     return topography_savepoint()

@@ -114,9 +114,7 @@ def _compute_diffusion_metrics_all(
     cell_nudging: int,
     nlev: int,
     array_ns: ModuleType = np,
-) -> tuple[
-    data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray
-]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
     n_c2e2c = c2e2c.shape[1]
     z_mc_off = z_mc[c2e2c]

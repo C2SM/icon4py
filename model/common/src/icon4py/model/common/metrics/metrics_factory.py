@@ -812,7 +812,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_diffusion_intcoef_and_vertoffset = factory.NumpyFieldsProvider(
             func=functools.partial(
-                compute_diffusion_metrics.compute_diffusion_intcoef_and_vertoffset, array_ns=self._xp
+                compute_diffusion_metrics.compute_diffusion_intcoef_and_vertoffset,
+                array_ns=self._xp,
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -837,7 +838,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
-
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

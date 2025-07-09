@@ -11,38 +11,28 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.utils.data_allocation import zero_field
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    grid_utils,
-    helpers,
-    reference_funcs as ref_funcs,
-    serialbox as sb,
-)
-
-from icon4py.model.common.interpolation import (
-    interpolation_attributes,
-    interpolation_factory
-)
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import (
     metrics_attributes,
     metrics_factory,
 )
-from icon4py.model.testing.datatest_fixtures import grid_savepoint
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    grid_utils,
+    helpers,
+)
 
 from .utils import (
-    compare_dace_orchestration_multiple_steps,
     construct_diffusion_config,
-    diff_multfac_vn_numpy,
-    smag_limit_numpy,
     verify_diffusion_fields,
 )
+
 
 # TODO(Yilu): remove the grid file
 
@@ -127,12 +117,22 @@ def _get_or_initialize(experiment, backend, name):
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment, step_date_init, step_date_exit",
-    [   # TODO: ingnore regional
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+    [  # TODO: ingnore regional
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", [2]) # TODO: the default value is 5
+@pytest.mark.parametrize("ndyn_substeps", [2])  # TODO: the default value is 5
 @pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
@@ -154,7 +154,6 @@ def test_run_diffusion_single_step(
     orchestration,
     benchmark,
 ):
-
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -175,7 +174,6 @@ def test_run_diffusion_single_step(
         vct_a=vct_a,
         vct_b=vct_b,
     )
-
 
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
 

@@ -828,6 +828,7 @@ def test_vertical_coordinates_on_half_levels(
     field_ref = metrics_savepoint.z_ifc()
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
+
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -895,6 +896,7 @@ def test_factory_compute_diffusion_mask_and_coef(
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
 
+
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
@@ -913,7 +915,6 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
     experiment,
     backend,
 ):
-
     field_ref_1 = metrics_savepoint.zd_intcoef()
     field_ref_2 = metrics_savepoint.zd_vertoffset()
     factory = _get_metrics_factory(
