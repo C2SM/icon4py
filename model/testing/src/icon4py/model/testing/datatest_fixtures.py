@@ -554,4 +554,3 @@ def vwind_offctr():
 @pytest.fixture
 def rayleigh_type():
     return 2
-
