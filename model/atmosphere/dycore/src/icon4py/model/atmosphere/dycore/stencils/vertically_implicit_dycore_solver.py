@@ -399,7 +399,9 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
         dtime=dtime,
     )
 
-    # compute dw/dz for divergence damping term
+    # compute dw/dz for divergence damping term. In ICON, dwdz_at_cells_on_model_levels is
+    # computed from k >= kstart_dd3d. We have decided to remove this manual optimization in icon4py.
+    # See discussion in this PR https://github.com/C2SM/icon4py/pull/793
     if divdamp_type >= 3:
         dwdz_at_cells_on_model_levels = _compute_dwdz_for_divergence_damping(
             inv_ddqz_z_full=inv_ddqz_z_full,

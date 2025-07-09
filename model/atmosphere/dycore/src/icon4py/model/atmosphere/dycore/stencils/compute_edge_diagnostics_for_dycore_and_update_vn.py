@@ -336,6 +336,10 @@ def _apply_divergence_damping_and_update_vn(
     start_edge_nudging_level_2: gtx.int32,
     end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.wpfloat]:
+    # add dw/dz for divergence damping term. In ICON, this stencil starts from k = kstart_dd3d until k = nlev - 1.
+    # Since scaling_factor_for_3d_divdamp is zero when k < kstart_dd3d, it is meaningless to execute computation
+    # above level kstart_dd3d. But we have decided to remove this manual optimization in icon4py.
+    # See discussion in this PR https://github.com/C2SM/icon4py/pull/793
     horizontal_gradient_of_total_divergence = concat_where(
         (start_edge_lateral_boundary_level_7 <= dims.EdgeDim)
         & (dims.EdgeDim < end_edge_halo_level_2),
