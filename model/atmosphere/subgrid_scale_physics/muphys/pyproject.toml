@@ -104,60 +104,15 @@ addopts = ['-p icon4py.model.testing.pytest_config']
 testpaths = 'tests'
 
 [tool.ruff]
-extend-exclude = [
-  '.eggs',
-  '.gt_cache',
-  '.ipynb_checkpoints',
-  '.tox',
-  '_local_',
-  'build',
-  'dist',
-  'docs',
-  '_external_src',
-  'tests/_disabled',
-  'setup.py'
-]
-indent-width = 4
-line-length = 100
-respect-gitignore = true
-show-fixes = true
-# Assume Python 3.10
-target-version = "py310"
-
-[tool.ruff.format]
-docstring-code-format = true
-
-[tool.ruff.lint]
-extend-select = ['E', 'F', 'I', 'B', 'A', 'T10', 'ERA', 'NPY', 'RUF']
-# # Rules sets:
-# E: pycodestyle
-# F: Pyflakes
-# I: isort
-# B: flake8-bugbear
-# A: flake8-builtins
-# T10: flake8-debugger
-# ERA: eradicate
-# NPY: NumPy-specific rules
-# RUF: Ruff-specific rules
-ignore = [
-  'E501',  # Line too long (using Bugbear's B950 warning)
-  'RUF009'  # Do not perform function call in dataclass defaults
-]
-ignore-init-module-imports = true
+extend = "../../../../pyproject.toml"
 
 [tool.ruff.lint.isort]
-combine-as-imports = true
-known-first-party = ['icon4py.model']
-known-third-party = [
-  'gt4py'
-]
-lines-after-imports = 2
+known-first-party = ['icon4py']
+known-third-party = ['gt4py']
 
-[tool.ruff.lint.mccabe]
-max-complexity = 15
-
-[tool.setuptools.dynamic]
-version = {attr = 'icon4py.model.atmosphere.subgrid_scale_physics.muphys.__init__.__version__'}
-
+# -- setuptools --
 [tool.setuptools.package-data]
-'icon4py.model.atmosphere.subgrid_scale_physics.muphys' = ['py.typed']
+'*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed']
+
+[tool.setuptools.packages]
+find = {namespaces = true, where = ['src']}
