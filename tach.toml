@@ -15,6 +15,12 @@ exact = true
 forbid_circular_dependencies = true
 
 [[modules]]
+path = "<root>"
+depends_on = [
+    { path = "icon4py.model.common" },
+]
+
+[[modules]]
 path = "icon4py.model.atmosphere.advection"
 depends_on = [
     { path = "icon4py.model.common" },

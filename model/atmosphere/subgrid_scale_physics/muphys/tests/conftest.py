@@ -7,26 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from icon4py.model.testing.datatest_fixtures import (
-    damping_height,
-    data_provider,
-    download_ser_data,
-    experiment,
-    flat_height,
-    grid_savepoint,
-    htop_moist_proc,
-    icon_grid,
-    interpolation_savepoint,
-    lowest_layer_thickness,
-    maximal_layer_thickness,
-    metrics_savepoint,
-    model_top_height,
-    ndyn_substeps,
-    processor_props,
-    ranked_data_path,
-    stretch_factor,
-    top_height_limit_for_maximal_layer_thickness,
-)
 from icon4py.model.testing.helpers import connectivities_as_numpy
 
 

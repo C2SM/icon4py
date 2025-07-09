@@ -8,7 +8,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import idx
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import Idx
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
     fall_speed,
 )
@@ -32,8 +32,8 @@ class TestFallSpeed(StencilTest):
     def input_data(self, grid):
         return dict(
             density=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            prefactor=idx.prefactor_r,
-            offset=idx.offset_r,
-            exponent=idx.exponent_r,
+            prefactor=Idx.prefactor_r,
+            offset=Idx.offset_r,
+            exponent=Idx.exponent_r,
             speed=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

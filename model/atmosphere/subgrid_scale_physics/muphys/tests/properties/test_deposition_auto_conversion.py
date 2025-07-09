@@ -8,7 +8,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import GraupelCt
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
     deposition_auto_conversion,
 )
@@ -30,7 +30,7 @@ class TestDepositionAutoConversion(StencilTest):
     def input_data(self, grid):
         return dict(
             qi=data_alloc.constant_field(
-                grid, 2.02422e-2 + graupel_ct.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
+                grid, 2.02422e-2 + GraupelCt.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             m_ice=data_alloc.constant_field(grid, 1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
             ice_dep=data_alloc.constant_field(

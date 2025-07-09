@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
   "gt4py>=1.0.1",
   "icon4py-common[io]>=0.0.6",
-  "packaging.=20.0"
+  "packaging>=20.0"
 ]
 description = "ICON subgrid scale muphys parameterization."
 dynamic = ['version']
