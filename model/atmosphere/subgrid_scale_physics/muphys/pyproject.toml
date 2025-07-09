@@ -59,30 +59,6 @@ version = "{new_version}"
 
 [[tool.bumpversion.files]]
 filename = "src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/__init__.py"
-[tool.coverage]
-
-[tool.coverage.html]
-directory = 'tests/_reports/coverage_html'
-
-[tool.coverage.paths]
-source = ['src/icon4py/model/']
-
-[tool.coverage.report]
-exclude_lines = [
-  'raise AssertionError',  # Don't complain if tests don't hit defensive assertion code
-  'raise NotImplementedError',  # Don't complain if tests don't hit defensive assertion code
-  'if 0:',  # Don't complain if non-runnable code isn't run
-  'if __name__ == .__main__.:'  # Don't complain if non-runnable code isn't run
-]
-ignore_errors = true
-
-[tool.coverage.run]
-branch = true
-parallel = true
-source_pkgs = ['muphys']
-
-
-
 
 [tool.ruff]
 extend = "../../../../pyproject.toml"

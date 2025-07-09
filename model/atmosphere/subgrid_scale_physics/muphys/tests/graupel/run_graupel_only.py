@@ -12,8 +12,15 @@ import sys
 import time
 
 import gt4py.next as gtx
-import netCDF4
 import numpy as np
+
+
+try:
+    from netCDF4 import Dataset
+except ImportError:
+    print("Netcdf not installed")
+    sys.exit()
+
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import (
     graupel_run,
@@ -55,7 +62,7 @@ def get_args():
 
 class Data:
     def __init__(self, args):
-        nc = netCDF4.Dataset(args.input_file)
+        nc = Dataset(args.input_file)
         # intent(in) variables:
         try:
             self.ncells = len(nc.dimensions["cell"])
@@ -120,7 +127,7 @@ def write_fields(
     pflx,
     pre_gsp,
 ):
-    ncfile = netCDF4.Dataset(output_filename, mode="w")
+    ncfile = Dataset(output_filename, mode="w")
     ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
     hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
     clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
