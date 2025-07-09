@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - cleanup_deploy_docs_action
 
 
 jobs:
