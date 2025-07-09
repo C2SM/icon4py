@@ -81,27 +81,8 @@ branch = true
 parallel = true
 source_pkgs = ['muphys']
 
-[tool.mypy]
-disallow_incomplete_defs = true
-disallow_untyped_defs = true
-exclude = [
-  '^tests/*.py'
-]
-ignore_missing_imports = false
-implicit_reexport = true
-install_types = true
-non_interactive = true
-show_column_numbers = true
-show_error_codes = true
-warn_redundant_casts = true
-warn_unused_configs = true
-warn_unused_ignores = true
 
-[tool.pytest]
 
-[tool.pytest.ini_options]
-addopts = ['-p icon4py.model.testing.pytest_config']
-testpaths = 'tests'
 
 [tool.ruff]
 extend = "../../../../pyproject.toml"
