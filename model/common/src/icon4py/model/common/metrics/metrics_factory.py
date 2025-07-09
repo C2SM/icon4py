@@ -822,7 +822,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "maxhgtd_avg": attrs.MAXHGTD_AVG,
             },
             connectivities={"c2e2c": dims.C2E2CDim},
-            domain=(dims.CellDim, dims.KDim),
+            domain=(dims.C2E2CDim, dims.KDim),
             fields=(
                 attrs.ZD_INTCOEF_DSL,
                 attrs.ZD_VERTOFFSET_DSL,

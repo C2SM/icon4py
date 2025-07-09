@@ -860,7 +860,6 @@ def test_compute_wgtfac_c(
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
-
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
@@ -870,7 +869,7 @@ def test_compute_wgtfac_c(
     ],
 )
 @pytest.mark.datatest
-def test_factory_compute_diffusion_metrics(
+def test_factory_compute_diffusion_mask_and_coef(
     grid_savepoint,
     metrics_savepoint,
     topography_savepoint,
@@ -881,8 +880,6 @@ def test_factory_compute_diffusion_metrics(
 ):
     field_ref_1 = metrics_savepoint.mask_hdiff()
     field_ref_2 = metrics_savepoint.zd_diffcoef()
-    field_ref_3 = metrics_savepoint.zd_intcoef()
-    field_ref_4 = metrics_savepoint.zd_vertoffset()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -895,9 +892,40 @@ def test_factory_compute_diffusion_metrics(
     field_1 = factory.get(attrs.MASK_HDIFF)
     field_2 = factory.get(attrs.ZD_DIFFCOEF_DSL)
 
-    field_3 = factory.get(attrs.ZD_INTCOEF_DSL)
-    field_4 = factory.get(attrs.ZD_VERTOFFSET_DSL)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
-    assert test_helpers.dallclose(field_ref_3.asnumpy(), field_3.asnumpy(), atol=1.0e-8)
-    assert test_helpers.dallclose(field_ref_4.asnumpy(), field_4.asnumpy())
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+    ],
+)
+@pytest.mark.datatest
+def test_factory_compute_diffusion_intcoeff_and_vertoffset(
+    grid_savepoint,
+    metrics_savepoint,
+    topography_savepoint,
+    grid_file,
+    icon_grid,
+    experiment,
+    backend,
+):
+
+    field_ref_1 = metrics_savepoint.zd_intcoef()
+    field_ref_2 = metrics_savepoint.zd_vertoffset()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_file=grid_file,
+        icon_grid=icon_grid,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    field_1 = factory.get(attrs.ZD_INTCOEF_DSL)
+    field_2 = factory.get(attrs.ZD_VERTOFFSET_DSL)
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
