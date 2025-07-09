@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-from icon4py.model.atmosphere.dycore.stencils.combined_solve_nh_30_to_38 import (
-    combined_solve_nh_30_to_38_corrector,
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
+    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -30,16 +30,16 @@ from .test_accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields_numpy,
 )
 
-class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
-    PROGRAM = combined_solve_nh_30_to_38_corrector
-    OUTPUTS = ("z_vn_avg", "mass_flux_at_edges_on_model_levels", "theta_v_flux_at_edges_on_model_levels", "vn_traj", "mass_flx_me",)
+class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.StencilTest):
+    PROGRAM = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection
+    OUTPUTS = ("spatially_averaged_vn", "mass_flux_at_edges_on_model_levels", "theta_v_flux_at_edges_on_model_levels", "substep_and_spatially_averaged_vn", "substep_averaged_mass_flux",)
     MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        vn_traj: np.ndarray,
-        mass_flx_me: np.ndarray,
+        substep_and_spatially_averaged_vn: np.ndarray,
+        substep_averaged_mass_flux: np.ndarray,
         e_flx_avg: np.ndarray,
         vn: np.ndarray,
         rho_at_edges_on_model_levels: np.ndarray,
@@ -51,42 +51,42 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
         **kwargs: Any,
     ) -> dict:
 
-        z_vn_avg = compute_avg_vn_numpy(connectivities, e_flx_avg, vn)
+        spatially_averaged_vn = compute_avg_vn_numpy(connectivities, e_flx_avg, vn)
 
         mass_fl_e, z_theta_v_fl_e = compute_mass_flux_numpy(
             rho_at_edges_on_model_levels,
-            z_vn_avg,
+            spatially_averaged_vn,
             ddqz_z_full_e,
             theta_v_at_edges_on_model_levels,
         )
 
-        vn_traj, mass_flx_me = (
+        substep_and_spatially_averaged_vn, substep_averaged_mass_flux = (
             (
-                (r_nsubsteps * z_vn_avg, r_nsubsteps * mass_fl_e)
+                (r_nsubsteps * spatially_averaged_vn, r_nsubsteps * mass_fl_e)
                 if at_first_substep
                 else accumulate_prep_adv_fields_numpy(
-                    z_vn_avg,
+                    spatially_averaged_vn,
                     mass_fl_e,
-                    vn_traj,
-                    mass_flx_me,
+                    substep_and_spatially_averaged_vn,
+                    substep_averaged_mass_flux,
                     r_nsubsteps,
                 )
             )
             if prepare_advection
-            else (vn_traj, mass_flx_me)
+            else (substep_and_spatially_averaged_vn, substep_averaged_mass_flux)
         )
 
-        return dict(z_vn_avg=z_vn_avg, mass_flux_at_edges_on_model_levels=mass_fl_e, theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e, vn_traj=vn_traj, mass_flx_me=mass_flx_me,)
+        return dict(spatially_averaged_vn=spatially_averaged_vn, mass_flux_at_edges_on_model_levels=mass_fl_e, theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e, substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn, substep_averaged_mass_flux=substep_averaged_mass_flux,)
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
 
-        z_vn_avg = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
-        vn_traj = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        mass_flx_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        substep_and_spatially_averaged_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        substep_averaged_mass_flux = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -101,11 +101,11 @@ class TestCombinedSolveNh30To38Corrector(test_helpers.StencilTest):
         horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         return dict(
-            z_vn_avg=z_vn_avg,
+            spatially_averaged_vn=spatially_averaged_vn,
             mass_flux_at_edges_on_model_levels=mass_fl_e,
             theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
-            vn_traj=vn_traj,
-            mass_flx_me=mass_flx_me,
+            substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn,
+            substep_averaged_mass_flux=substep_averaged_mass_flux,
             e_flx_avg=e_flx_avg,
             vn=vn,
             rho_at_edges_on_model_levels=z_rho_e,

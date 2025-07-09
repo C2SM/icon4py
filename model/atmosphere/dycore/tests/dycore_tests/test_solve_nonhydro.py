@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.dycore.stencils import (
     compute_hydrostatic_correction_term,
     vertically_implicit_dycore_solver,
 )
-from icon4py.model.atmosphere.dycore.stencils import combined_solve_nh_30_to_38
+from icon4py.model.atmosphere.dycore.stencils import compute_horizontal_velocity_quantities
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
@@ -787,10 +787,10 @@ def test_combined_solve_nh_30_to_38_in_predictor_step(
     z_vn_avg_ref = savepoint_dycore_30_to_38_exit.z_vn_avg()
     z_theta_v_fl_e_ref = savepoint_dycore_30_to_38_exit.z_theta_v_fl_e()
 
-    combined_solve_nh_30_to_38.combined_solve_nh_30_to_38_predictor.with_backend(
+    compute_horizontal_velocity_quantities.compute_horizontal_velocity_quantities_and_fluxes.with_backend(
         backend
     )(
-        z_vn_avg=z_vn_avg,
+        spatially_averaged_vn=z_vn_avg,
         horizontal_gradient_of_normal_wind_divergence=z_graddiv_vn,
         tangential_wind=vt,
         mass_flux_at_edges_on_model_levels=mass_fl_e,
@@ -901,14 +901,14 @@ def test_combined_solve_nh_30_to_38_in_corrector_step(
     vn_traj_ref = savepoint_dycore_30_to_38_exit.vn_traj()
     mass_flx_me_ref = savepoint_dycore_30_to_38_exit.mass_flx_me()
 
-    combined_solve_nh_30_to_38.combined_solve_nh_30_to_38_corrector.with_backend(
+    compute_horizontal_velocity_quantities.compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
         backend
     )(
-        z_vn_avg=z_vn_avg,
+        spatially_averaged_vn=z_vn_avg,
         mass_flux_at_edges_on_model_levels=mass_fl_e,
         theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
-        vn_traj=vn_traj,
-        mass_flx_me=mass_flx_me,
+        substep_and_spatially_averaged_vn=vn_traj,
+        substep_averaged_mass_flux=mass_flx_me,
         e_flx_avg=e_flx_avg,
         vn=vn,
         rho_at_edges_on_model_levels=z_rho_e,

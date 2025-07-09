@@ -6,80 +6,29 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import _accumulate_prep_adv_fields
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import _compute_avg_vn
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import \
-    _compute_avg_vn_and_graddiv_vn_and_vt
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
+from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import \
+    _interpolate_to_half_levels
+from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import _compute_mass_flux
+from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import _compute_mass_and_and_temperature_flux
+from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import _compute_tangential_wind
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import \
-    _init_two_edge_kdim_fields_with_zero_wp
-from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
-    _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_vp import (
-    _interpolate_edge_field_to_half_levels_vp,
-)
+from icon4py.model.common.dimension import E2C2EO, E2C2EODim
+from icon4py.model.common.type_alias import vpfloat
+
 
 @gtx.field_operator
-def _compute_vt_vn_on_half_levels_and_kinetic_energy(
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    vn: fa.EdgeKField[ta.wpfloat],
-    tangential_wind: fa.EdgeKField[ta.vpfloat],
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
-) -> tuple[
-    fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
-]:
-    vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels = concat_where(
-        dims.KDim >= 1,
-        _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(wgtfac_e, vn, tangential_wind),
-        (vn_on_half_levels, horizontal_kinetic_energy_at_edges_on_model_levels),
-    )
-
-    tangential_wind_on_half_levels = concat_where(
-        dims.KDim >= 1,
-        _interpolate_edge_field_to_half_levels_vp(wgtfac_e, tangential_wind),
-        tangential_wind_on_half_levels,
-    )
-
-    (
-        vn_on_half_levels,
-        tangential_wind_on_half_levels,
-        horizontal_kinetic_energy_at_edges_on_model_levels,
-    ) = concat_where(
-        dims.KDim == 0,
-        _compute_horizontal_kinetic_energy(vn, tangential_wind),
-        (
-            vn_on_half_levels,
-            tangential_wind_on_half_levels,
-            horizontal_kinetic_energy_at_edges_on_model_levels,
-        ),
-    )
-
-    return (
-        vn_on_half_levels,
-        tangential_wind_on_half_levels,
-        horizontal_kinetic_energy_at_edges_on_model_levels,
-    )
-
-@gtx.field_operator
-def _combined_solve_nh_30_to_38_predictor(
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+def _compute_horizontal_velocity_quantities_and_fluxes(
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
@@ -103,16 +52,20 @@ def _combined_solve_nh_30_to_38_predictor(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    z_vn_avg, horizontal_gradient_of_normal_wind_divergence, tangential_wind = _compute_avg_vn_and_graddiv_vn_and_vt(
-        e_flx_avg,
-        vn,
-        geofac_grdiv,
-        rbf_vec_coeff_e,
+    spatially_averaged_vn = _compute_avg_vn(e_flx_avg=e_flx_avg, vn=vn)
+    horizontal_gradient_of_normal_wind_divergence = astype(neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim), vpfloat)
+    tangential_wind = _compute_tangential_wind(vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
+
+    horizontal_kinetic_energy_at_edges_on_model_levels = _compute_horizontal_kinetic_energy(
+        vn, tangential_wind
     )
 
-    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_flux(
+    vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
+    tangential_wind_on_half_levels = _interpolate_to_half_levels(wgtfac_e, tangential_wind)
+
+    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_and_and_temperature_flux(
         rho_at_edges_on_model_levels,
-        z_vn_avg,
+        spatially_averaged_vn,
         ddqz_z_full_e,
         theta_v_at_edges_on_model_levels,
     )
@@ -123,21 +76,8 @@ def _combined_solve_nh_30_to_38_predictor(
         contravariant_correction_at_edges_on_model_levels,
     )
 
-    (
-        vn_on_half_levels,
-        tangential_wind_on_half_levels,
-        horizontal_kinetic_energy_at_edges_on_model_levels,
-    ) = _compute_vt_vn_on_half_levels_and_kinetic_energy(
-        vn_on_half_levels,
-        tangential_wind_on_half_levels,
-        horizontal_kinetic_energy_at_edges_on_model_levels,
-        vn,
-        tangential_wind,
-        wgtfac_e,
-    )
-
     return (
-        z_vn_avg,
+        spatially_averaged_vn,
         horizontal_gradient_of_normal_wind_divergence,
         tangential_wind,
         mass_flux_at_edges_on_model_levels,
@@ -149,8 +89,8 @@ def _combined_solve_nh_30_to_38_predictor(
     )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def combined_solve_nh_30_to_38_predictor(
-    z_vn_avg: fa.EdgeKField[ta.wpfloat],
+def compute_horizontal_velocity_quantities_and_fluxes(
+    spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat],
     tangential_wind: fa.EdgeKField[ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -176,10 +116,7 @@ def combined_solve_nh_30_to_38_predictor(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _combined_solve_nh_30_to_38_predictor(
-        tangential_wind_on_half_levels,
-        vn_on_half_levels,
-        horizontal_kinetic_energy_at_edges_on_model_levels,
+    _compute_horizontal_velocity_quantities_and_fluxes(
         contravariant_correction_at_edges_on_model_levels,
         vn,
         e_flx_avg,
@@ -193,7 +130,7 @@ def combined_solve_nh_30_to_38_predictor(
         wgtfac_e,
         nflatlev,
         out=(
-            z_vn_avg,
+            spatially_averaged_vn,
             horizontal_gradient_of_normal_wind_divergence,
             tangential_wind,
             mass_flux_at_edges_on_model_levels,
@@ -220,9 +157,9 @@ def combined_solve_nh_30_to_38_predictor(
     )
 
 @gtx.field_operator
-def _combined_solve_nh_30_to_38_corrector(
-    vn_traj: fa.EdgeKField[ta.wpfloat],
-    mass_flx_me: fa.EdgeKField[ta.wpfloat],
+def _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+    substep_and_spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
+    substep_averaged_mass_flux: fa.EdgeKField[ta.wpfloat],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -239,40 +176,40 @@ def _combined_solve_nh_30_to_38_corrector(
     fa.EdgeKField[ta.vpfloat],
 ]:
 
-    z_vn_avg = _compute_avg_vn(e_flx_avg, vn)
+    spatially_averaged_vn = _compute_avg_vn(e_flx_avg, vn)
 
-    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_flux(
+    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_and_and_temperature_flux(
         rho_at_edges_on_model_levels,
-        z_vn_avg,
+        spatially_averaged_vn,
         ddqz_z_full_e,
         theta_v_at_edges_on_model_levels,
     )
 
-    vn_traj, mass_flx_me = (
+    substep_and_spatially_averaged_vn, substep_averaged_mass_flux = (
         (
-            (r_nsubsteps * z_vn_avg, r_nsubsteps * mass_flux_at_edges_on_model_levels)
+            (r_nsubsteps * spatially_averaged_vn, r_nsubsteps * mass_flux_at_edges_on_model_levels)
             if at_first_substep
             else _accumulate_prep_adv_fields(
-                z_vn_avg,
+                spatially_averaged_vn,
                 mass_flux_at_edges_on_model_levels,
-                vn_traj,
-                mass_flx_me,
+                substep_and_spatially_averaged_vn,
+                substep_averaged_mass_flux,
                 r_nsubsteps,
             )
         )
         if prepare_advection
-        else (vn_traj, mass_flx_me)
+        else (substep_and_spatially_averaged_vn, substep_averaged_mass_flux)
     )
 
-    return z_vn_avg, mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels, vn_traj, mass_flx_me
+    return spatially_averaged_vn, mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels, substep_and_spatially_averaged_vn, substep_averaged_mass_flux
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def combined_solve_nh_30_to_38_corrector(
-    z_vn_avg: fa.EdgeKField[ta.wpfloat],
+def compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+    spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    vn_traj: fa.EdgeKField[ta.wpfloat],
-    mass_flx_me: fa.EdgeKField[ta.wpfloat],
+    substep_and_spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
+    substep_averaged_mass_flux: fa.EdgeKField[ta.wpfloat],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -286,9 +223,9 @@ def combined_solve_nh_30_to_38_corrector(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _combined_solve_nh_30_to_38_corrector(
-        vn_traj,
-        mass_flx_me,
+    _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+        substep_and_spatially_averaged_vn,
+        substep_averaged_mass_flux,
         e_flx_avg,
         vn,
         rho_at_edges_on_model_levels,
@@ -298,11 +235,11 @@ def combined_solve_nh_30_to_38_corrector(
         at_first_substep,
         r_nsubsteps,
         out=(
-            z_vn_avg,
+            spatially_averaged_vn,
             mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels,
-            vn_traj,
-            mass_flx_me
+            substep_and_spatially_averaged_vn,
+            substep_averaged_mass_flux
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

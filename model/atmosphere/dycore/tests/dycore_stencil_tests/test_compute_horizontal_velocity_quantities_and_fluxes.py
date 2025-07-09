@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-from icon4py.model.atmosphere.dycore.stencils.combined_solve_nh_30_to_38 import (
-    combined_solve_nh_30_to_38_predictor,
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
+    compute_horizontal_velocity_quantities_and_fluxes,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -92,10 +92,10 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     )
 
 
-class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
-    PROGRAM = combined_solve_nh_30_to_38_predictor
+class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest):
+    PROGRAM = compute_horizontal_velocity_quantities_and_fluxes
     OUTPUTS = (
-        "z_vn_avg",
+        "spatially_averaged_vn",
         "horizontal_gradient_of_normal_wind_divergence",
         "tangential_wind",
         "mass_flux_at_edges_on_model_levels",
@@ -137,7 +137,7 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
-        z_vn_avg, horizontal_gradient_of_normal_wind_divergence, tangential_wind = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
+        spatially_averaged_vn, horizontal_gradient_of_normal_wind_divergence, tangential_wind = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
             connectivities,
             e_flx_avg,
             vn,
@@ -147,7 +147,7 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
 
         mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = compute_mass_flux_numpy(
             rho_at_edges_on_model_levels,
-            z_vn_avg,
+            spatially_averaged_vn,
             ddqz_z_full_e,
             theta_v_at_edges_on_model_levels,
         )
@@ -175,7 +175,7 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
         )
 
         return dict(
-            z_vn_avg=z_vn_avg,
+            spatially_averaged_vn=spatially_averaged_vn,
             horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
             tangential_wind=tangential_wind,
             mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
@@ -189,7 +189,7 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
 
-        z_vn_avg = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
@@ -219,7 +219,7 @@ class TestCombinedSolveNh30To38Predictor(test_helpers.StencilTest):
         horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         return dict(
-            z_vn_avg=z_vn_avg,
+            spatially_averaged_vn=spatially_averaged_vn,
             horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
             tangential_wind=tangential_wind,
             mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,

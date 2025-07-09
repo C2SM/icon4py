@@ -25,9 +25,9 @@ from icon4py.model.atmosphere.dycore.stencils import (
     compute_edge_diagnostics_for_dycore_and_update_vn,
     compute_results_for_thermodynamic_variables,
 )
-from icon4py.model.atmosphere.dycore.stencils.combined_solve_nh_30_to_38 import (
-    combined_solve_nh_30_to_38_corrector,
-    combined_solve_nh_30_to_38_predictor,
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
+    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+    compute_horizontal_velocity_quantities_and_fluxes,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
@@ -486,12 +486,12 @@ class SolveNonhydro:
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
         )
-        self._combined_solve_nh_30_to_38_predictor = combined_solve_nh_30_to_38_predictor.with_backend(
+        self._compute_horizontal_velocity_quantities_and_fluxes = compute_horizontal_velocity_quantities_and_fluxes.with_backend(
             self._backend
         ).compile(
             offset_provider=self._grid.connectivities,
         )
-        self._combined_solve_nh_30_to_38_corrector = combined_solve_nh_30_to_38_corrector.with_backend(
+        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
             self._backend
         ).compile(
             offset_provider=self._grid.connectivities,
@@ -1162,8 +1162,8 @@ class SolveNonhydro:
             dims.EdgeDim, prognostic_states.next.vn, z_fields.rho_at_edges_on_model_levels
         )
 
-        self._combined_solve_nh_30_to_38_predictor(
-            z_vn_avg=self.z_vn_avg,
+        self._compute_horizontal_velocity_quantities_and_fluxes(
+            spatially_averaged_vn=self.z_vn_avg,
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             tangential_wind=diagnostic_state_nh.tangential_wind,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
@@ -1421,12 +1421,12 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
 
-        self._combined_solve_nh_30_to_38_corrector(
-            z_vn_avg=self.z_vn_avg,
+        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+            spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
-            vn_traj=prep_adv.vn_traj,
-            mass_flx_me=prep_adv.mass_flx_me,
+            substep_and_spatially_averaged_vn=prep_adv.vn_traj,
+            substep_averaged_mass_flux=prep_adv.mass_flx_me,
             e_flx_avg=self._interpolation_state.e_flx_avg,
             vn=prognostic_states.next.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
