@@ -20,13 +20,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-from typing import Protocol
+from typing import Optional, Protocol
 
 import gt4py.next as gtx
+import gt4py.next.backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as defs
 from icon4py.model.common import dimension as dims, exceptions
-from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
@@ -41,9 +42,10 @@ class HaloGenerator:
     def __init__(
         self,
         run_properties: defs.ProcessProperties,
-        rank_mapping: xp.ndarray,
-        connectivities: dict[gtx.Dimension, xp.ndarray],
+        rank_mapping: data_alloc.NDArray,
+        connectivities: dict[gtx.Dimension, data_alloc.NDArray],
         num_levels: int,
+        backend: Optional[gtx_backend.Backend],
     ):
         """
 
@@ -57,6 +59,7 @@ class HaloGenerator:
         self._mapping = rank_mapping
         self._connectivities = connectivities
         self._num_levels = num_levels
+        self._xp = data_alloc.import_array_ns(backend)
 
     @property
     def face_face_connectivity(self):
@@ -85,12 +88,12 @@ class HaloGenerator:
     def _validate(self):
         assert self._mapping.ndim == 1
         # the decomposition should match the communicator size
-        assert xp.max(self._mapping) == self._props.comm_size - 1
+        assert self._xp.max(self._mapping) == self._props.comm_size - 1
 
-    def _post_init(self):
+    def __post_init__(self):
         self._validate()
 
-    def _connectivity(self, dim: gtx.Dimension) -> xp.ndarray:
+    def _connectivity(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         try:
             conn_table = self._connectivities[dim]
             return conn_table
@@ -99,7 +102,7 @@ class HaloGenerator:
                 f"Connectivity for offset {dim} is not available"
             ) from err
 
-    def next_halo_line(self, cell_line: xp.ndarray, depot=None):
+    def next_halo_line(self, cell_line: data_alloc.NDArray, depot=None):
         """Returns the global indices of the next halo line.
 
         Args:
@@ -111,36 +114,42 @@ class HaloGenerator:
         cell_neighbors = self._cell_neighbors(cell_line)
 
         if depot is not None:
-            cells_so_far = xp.hstack((depot, cell_line))
+            cells_so_far = self._xp.hstack((depot, cell_line))
         else:
             cells_so_far = cell_line
 
-        next_halo_cells = xp.setdiff1d(xp.unique(cell_neighbors), cells_so_far, assume_unique=True)
+        next_halo_cells = self._xp.setdiff1d(
+            self._xp.unique(cell_neighbors), cells_so_far, assume_unique=True
+        )
         return next_halo_cells
 
-    def _cell_neighbors(self, cells: xp.ndarray):
-        return xp.unique(self.face_face_connectivity[cells, :])
+    def _cell_neighbors(self, cells: data_alloc.NDArray):
+        return self._xp.unique(self.face_face_connectivity[cells, :])
 
-    def _find_neighbors(self, source_indices: xp.ndarray, connectivity: xp.ndarray) -> xp.ndarray:
+    def _find_neighbors(
+        self, source_indices: data_alloc.NDArray, connectivity: data_alloc.NDArray
+    ) -> data_alloc.NDArray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
         neighbors = connectivity[source_indices, :]
         shp = neighbors.shape
-        unique_neighbors = xp.unique(neighbors.reshape(shp[0] * shp[1]))
+        unique_neighbors = self._xp.unique(neighbors.reshape(shp[0] * shp[1]))
         return unique_neighbors
 
-    def find_edge_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
+    def find_edge_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
         return self._find_neighbors(cell_line, connectivity=self.face_edge_connectivity)
 
-    def find_edge_neighbors_for_vertices(self, vertex_line: xp.ndarray) -> xp.ndarray:
+    def find_edge_neighbors_for_vertices(
+        self, vertex_line: data_alloc.NDArray
+    ) -> data_alloc.NDArray:
         return self._find_neighbors(vertex_line, connectivity=self.node_edge_connectivity)
 
-    def find_vertex_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
+    def find_vertex_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
         return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)
 
-    def owned_cells(self) -> xp.ndarray:
+    def owned_cells(self) -> data_alloc.NDArray:
         """Returns the global indices of the cells owned by this rank"""
         owned_cells = self._mapping == self._props.rank
-        return xp.asarray(owned_cells).nonzero()[0]
+        return self._xp.asarray(owned_cells).nonzero()[0]
 
     def _update_owner_mask_by_max_rank_convention(
         self, owner_mask, all_indices, indices_on_cutting_line, target_connectivity
@@ -161,10 +170,10 @@ class HaloGenerator:
             updated owner mask
         """
         for index in indices_on_cutting_line:
-            local_index = xp.nonzero(all_indices == index)[0][0]
+            local_index = self._xp.nonzero(all_indices == index)[0][0]
             owning_ranks = self._mapping[target_connectivity[index]]
             assert (
-                xp.unique(owning_ranks).size > 1
+                self._xp.unique(owning_ranks).size > 1
             ), f"rank {self._props.rank}: all neighboring cells are owned by the same rank"
             assert (
                 self._props.rank in owning_ranks
@@ -190,17 +199,19 @@ class HaloGenerator:
         first_halo_cells = self.next_halo_line(owned_cells)
         second_halo_cells = self.next_halo_line(first_halo_cells, owned_cells)
 
-        total_halo_cells = xp.hstack((first_halo_cells, second_halo_cells))
-        all_cells = xp.hstack((owned_cells, total_halo_cells))
+        total_halo_cells = self._xp.hstack((first_halo_cells, second_halo_cells))
+        all_cells = self._xp.hstack((owned_cells, total_halo_cells))
 
-        cell_owner_mask = xp.isin(all_cells, owned_cells)
-        cell_halo_levels = defs.DecompositionFlag.UNDEFINED * xp.ones(all_cells.size, dtype=int)
+        cell_owner_mask = self._xp.isin(all_cells, owned_cells)
+        cell_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
+            all_cells.size, dtype=int
+        )
         cell_halo_levels[cell_owner_mask] = defs.DecompositionFlag.OWNED
         cell_halo_levels[
-            xp.isin(all_cells, first_halo_cells)
+            self._xp.isin(all_cells, first_halo_cells)
         ] = defs.DecompositionFlag.FIRST_HALO_LINE
         cell_halo_levels[
-            xp.isin(all_cells, second_halo_cells)
+            self._xp.isin(all_cells, second_halo_cells)
         ] = defs.DecompositionFlag.SECOND_HALO_LINE
         decomp_info = defs.DecompositionInfo(klevels=self._num_levels).with_dimension(
             dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels
@@ -213,76 +224,83 @@ class HaloGenerator:
             second_halo_cells
         )  # TODO (@halungge): do we need that at all?
 
-        vertex_on_cutting_line = xp.intersect1d(vertex_on_owned_cells, vertex_on_first_halo_line)
+        vertex_on_cutting_line = self._xp.intersect1d(
+            vertex_on_owned_cells, vertex_on_first_halo_line
+        )
 
         # create decomposition_info for vertices
-        all_vertices = xp.unique(xp.hstack((vertex_on_owned_cells, vertex_on_first_halo_line)))
-        vertex_owner_mask = xp.isin(all_vertices, vertex_on_owned_cells)
+        all_vertices = self._xp.unique(
+            self._xp.hstack((vertex_on_owned_cells, vertex_on_first_halo_line))
+        )
+        vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
         vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
             vertex_owner_mask,
             all_vertices,
             vertex_on_cutting_line,
             self.node_face_connectivity,
         )
-        vertex_second_level = xp.setdiff1d(vertex_on_first_halo_line, vertex_on_owned_cells)
-        vertex_halo_levels = defs.DecompositionFlag.UNDEFINED * xp.ones(
+        vertex_second_level = self._xp.setdiff1d(vertex_on_first_halo_line, vertex_on_owned_cells)
+        vertex_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
             all_vertices.size, dtype=int
         )
         vertex_halo_levels[vertex_owner_mask] = defs.DecompositionFlag.OWNED
         vertex_halo_levels[
-            xp.logical_and(
-                xp.logical_not(vertex_owner_mask),
-                xp.isin(all_vertices, vertex_on_cutting_line),
+            self._xp.logical_and(
+                self._xp.logical_not(vertex_owner_mask),
+                self._xp.isin(all_vertices, vertex_on_cutting_line),
             )
         ] = defs.DecompositionFlag.FIRST_HALO_LINE
         vertex_halo_levels[
-            xp.isin(all_vertices, vertex_second_level)
+            self._xp.isin(all_vertices, vertex_second_level)
         ] = defs.DecompositionFlag.SECOND_HALO_LINE
         decomp_info.with_dimension(
             dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
         )
 
-        #: edges
+        # edges
         edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
         edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
         edges_on_second_halo_line = self.find_edge_neighbors_for_cells(second_halo_cells)
 
-        level_two_edges = xp.setdiff1d(
+        level_two_edges = self._xp.setdiff1d(
             self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells
         )
 
         # level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
-        all_edges = xp.hstack(
+        all_edges = self._xp.hstack(
             (
                 edges_on_owned_cells,
                 level_two_edges,
-                xp.setdiff1d(edges_on_second_halo_line, edges_on_first_halo_line),
+                self._xp.setdiff1d(edges_on_second_halo_line, edges_on_first_halo_line),
             )
         )
-        all_edges = xp.unique(all_edges)
+        all_edges = self._xp.unique(all_edges)
         # We need to reduce the overlap:
         # `edges_on_owned_cells` and `edges_on_first_halo_line` both contain the edges on the cutting line.
-        edge_intersect_owned_first_line = xp.intersect1d(
+        edge_intersect_owned_first_line = self._xp.intersect1d(
             edges_on_owned_cells, edges_on_first_halo_line
         )
 
         # construct the owner mask
-        edge_owner_mask = xp.isin(all_edges, edges_on_owned_cells)
+        edge_owner_mask = self._xp.isin(all_edges, edges_on_owned_cells)
         edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
             edge_owner_mask,
             all_edges,
             edge_intersect_owned_first_line,
             self.edge_face_connectivity,
         )
-        edge_halo_levels = defs.DecompositionFlag.UNDEFINED * xp.ones(all_edges.shape, dtype=int)
+        edge_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
+            all_edges.shape, dtype=int
+        )
         edge_halo_levels[edge_owner_mask] = defs.DecompositionFlag.OWNED
         edge_halo_levels[
-            xp.logical_and(
-                xp.logical_not(edge_owner_mask), xp.isin(all_edges, edge_intersect_owned_first_line)
+            self._xp.logical_and(
+                self._xp.logical_not(edge_owner_mask),
+                self._xp.isin(all_edges, edge_intersect_owned_first_line),
             )
         ] = defs.DecompositionFlag.FIRST_HALO_LINE
         edge_halo_levels[
-            xp.isin(all_edges, level_two_edges)
+            self._xp.isin(all_edges, level_two_edges)
         ] = defs.DecompositionFlag.SECOND_HALO_LINE
         decomp_info.with_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
 
@@ -294,7 +312,7 @@ class HaloGenerator:
 
 
 class Decomposer(Protocol):
-    def __call__(self, adjacency_matrix, n_part: int) -> xp.ndarray:
+    def __call__(self, adjacency_matrix, n_part: int) -> data_alloc.NDArray:
         ...
 
 
@@ -307,7 +325,7 @@ class SimpleMetisDecomposer(Decomposer):
     https://documen.tician.de/pymetis/functionality.html
     """
 
-    def __call__(self, adjacency_matrix: xp.ndarray, n_part: int) -> xp.ndarray:
+    def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
         """
         Generate partition labesl for this grid topology using METIS:
         https://github.com/KarypisLab/METIS
@@ -323,9 +341,9 @@ class SimpleMetisDecomposer(Decomposer):
         import pymetis
 
         cut_count, partition_index = pymetis.part_graph(nparts=n_part, adjacency=adjacency_matrix)
-        return xp.array(partition_index)
+        return self._xp.array(partition_index)
 
 
 class SingleNodeDecomposer(Decomposer):
-    def __call__(self, adjacency_matrix: xp.ndarray, n_part: int) -> xp.ndarray:
-        return xp.zeros(adjacency_matrix.shape[0], dtype=xp.int32)
+    def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
+        return self._xp.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)

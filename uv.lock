@@ -1804,6 +1804,7 @@ all = [
     { name = "mpi4py" },
     { name = "netcdf4" },
     { name = "numpy" },
+    { name = "pymetis" },
     { name = "scikit-learn" },
     { name = "uxarray" },
     { name = "xarray", extra = ["complete"] },
@@ -1823,6 +1824,7 @@ dace = [
 distributed = [
     { name = "ghex" },
     { name = "mpi4py" },
+    { name = "pymetis" },
 ]
 io = [
     { name = "cartopy" },
@@ -1855,6 +1857,7 @@ requires-dist = [
     { name = "netcdf4", marker = "extra == 'io'", specifier = ">=1.6.1" },
     { name = "numpy", marker = "extra == 'io'", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "pymetis", marker = "extra == 'distributed'", specifier = ">2022.1" },
     { name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0" },
     { name = "serialbox4py", specifier = ">=2.6.2", index = "https://test.pypi.org/simple/" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
@@ -3326,6 +3329,49 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8e/62/8336eff65bcbc8e4cb5d05b55faf041285951b6e80f33e2bff2024788f31/pygments-2.18.0.tar.gz", hash = "sha256:786ff802f32e91311bff3889f6e9a86e81505fe99f2735bb6d60ae0c5004f199", size = 4891905, upload-time = "2024-05-04T13:42:02.013Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f7/3f/01c8b82017c199075f8f788d0d906b9ffbbc5a47dc9918a945e13d5a2bda/pygments-2.18.0-py3-none-any.whl", hash = "sha256:b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a", size = 1205513, upload-time = "2024-05-04T13:41:57.345Z" },
+]
+
+[[package]]
+name = "pymetis"
+version = "2025.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a1/cd/e8f6b7004abf2c7587fc760d0b8830d7c23f76b88f72dd3b412fd9f69e3d/pymetis-2025.1.1.tar.gz", hash = "sha256:c02bf0fdd9483ff9dac031c73219ab9aa7a90e110f09d3c00f1799f334d813d8", size = 5033014, upload-time = "2025-05-05T19:23:08.011Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1c/71/3f916e0590fc0efa56c9bd6e4e0f2f9cf0e6da3c04b690cadebc997b1f3e/pymetis-2025.1.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:6d857b37bffffe345c3b6314332dcd55ca9217255bba9e8941aa8a08b434662f", size = 244755, upload-time = "2025-05-05T19:22:17.317Z" },
+    { url = "https://files.pythonhosted.org/packages/11/84/369a861c621fa91aa5a5f232dabf864fe349b0ea8daef7af5e63995ea626/pymetis-2025.1.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:00016ee75edac02da6c86df51dde1fb2e5abb815f1a334ecd273d33d9c4b2a0b", size = 217258, upload-time = "2025-05-05T19:22:19.177Z" },
+    { url = "https://files.pythonhosted.org/packages/87/77/2eb3f059a784a478dcf142a8b941b46ed06baf921bbefdce72600a21f276/pymetis-2025.1.1-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:76852cdb0fbea473df31fb995c13366fa41a4969853e96acb566e075556c0559", size = 336565, upload-time = "2025-05-05T19:22:20.8Z" },
+    { url = "https://files.pythonhosted.org/packages/04/0d/c7a71e9fa74b6402b961ae523a806495f480d3c6ee348c583830bd84d7ad/pymetis-2025.1.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:83372d22b015c017dae859a95974c1ead9800772411e0ed3ac106d127c21db23", size = 274742, upload-time = "2025-05-05T19:22:22.09Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/96/ed0862d0789dd54c429e5635cdb6d1bb286261666d8f5c77d523a5c1a900/pymetis-2025.1.1-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:64137431e0f41515d2c784a57a68269607fcc930691a6661ad818f5804c5a9a9", size = 1461516, upload-time = "2025-05-05T19:22:24.809Z" },
+    { url = "https://files.pythonhosted.org/packages/97/fd/7eae7d6a2462ce63669ed8813c43e8d8b1ea93ff440ceab38b0130d6a8cb/pymetis-2025.1.1-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:e0df438aca9fb832173644b2190b1c181bc10d8926ce8071752fb6c5cddf1117", size = 1290326, upload-time = "2025-05-05T19:22:26.29Z" },
+    { url = "https://files.pythonhosted.org/packages/54/c5/567e26cb9be60b4f11eac3511d4889569a7fb7044dfc2392a3f905fb366c/pymetis-2025.1.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:5bfbd3df3b3114c106054b15cc0455094526240fdd29c284084fdae3f4fdd289", size = 245886, upload-time = "2025-05-05T19:22:28.308Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/0b/35fc2fc5a16913af40a1eb2d85096117f2db2e2e82c477f7ab8fa91318ea/pymetis-2025.1.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:45c3478ff2a1d208e75cc5fe1189f0aac8d1efe6a61e12665be762347c91d6c0", size = 218446, upload-time = "2025-05-05T19:22:29.791Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/26/f86f9be6b62c23d7ac9141081b111d7215723063a0edc204951669f1d18d/pymetis-2025.1.1-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:0b74810074c602fedb0bcece8fdcbf58773e3bcfa1e28884271d069598405dc5", size = 337537, upload-time = "2025-05-05T19:22:31.512Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/c1/daf8797d7af40fe5748366118c9383e60bda339cac5e74c48dc8e7136931/pymetis-2025.1.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3aeda5d9ee8df41db134c9cf0a10c51a805dae29c9dae7f9cb7ccad37e15d6ec", size = 276008, upload-time = "2025-05-05T19:22:33.332Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/7f/ec0894623175ccc2d6de261c7f8fe7c4a99f7914ac6195bdff75883ad075/pymetis-2025.1.1-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:9b64ad48f45cb55d2077f965114f9818a10d24e2744d40c0ebc4d5a2065db10c", size = 1462382, upload-time = "2025-05-05T19:22:35.234Z" },
+    { url = "https://files.pythonhosted.org/packages/66/8c/16cc223821ed25250270b6f50633b0fb0da43912007e068be6f52ff98185/pymetis-2025.1.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:408437b4aad82b67379f624b9faf9761b09caccdae083823a84b1bc7a470d86a", size = 1291900, upload-time = "2025-05-05T19:22:37.188Z" },
+    { url = "https://files.pythonhosted.org/packages/84/8e/ac5d7110fea586fe660ef466e03abaca358dc2ed8282f01b4ae5cc93f5c1/pymetis-2025.1.1-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:7dd5019162d8f19d03f1be9096547660d02a5925949e00529f8a5d7d4dfadb95", size = 246019, upload-time = "2025-05-05T19:22:39.039Z" },
+    { url = "https://files.pythonhosted.org/packages/01/1e/74f3f9c9538a3435028b2bf00f659d84578861b6ca589acbd42d3623274c/pymetis-2025.1.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:c65cb13972feda4f7f186c08c8cf619ac5f3f1264c9609466615b909219b9e58", size = 218388, upload-time = "2025-05-05T19:22:40.392Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/de/3462853dbb8ce25610db986cfc9f0e4fa3014f21412d7659bfa747596604/pymetis-2025.1.1-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d5b1d8c053dbd456bfc2f1fac5a2307c1c5cb614973a6485de966c049d48b18a", size = 337651, upload-time = "2025-05-05T19:22:42.145Z" },
+    { url = "https://files.pythonhosted.org/packages/73/43/24c63cee0acd9d2ee9e1d657c933c33c16b83e638d7d36dca95437f4b979/pymetis-2025.1.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ce64511e0fcb58b3012d6bd007303f55a4b3156025ff945ca5d4069349608334", size = 275477, upload-time = "2025-05-05T19:22:44.128Z" },
+    { url = "https://files.pythonhosted.org/packages/07/b4/a6db323a67ac917ea902d1b52f64ca8defe1ae875890f55d7aefe55ceed5/pymetis-2025.1.1-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:5fba99f74ea32e60abde9d8ad77c4ee9865fabe1fc2627b982d3bb359689360e", size = 1462678, upload-time = "2025-05-05T19:22:45.605Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/5f/0e94aa79362017f7464d249ab056245cc42b8cf2200e92fd593d89c77040/pymetis-2025.1.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:ccc9f54edd33466a917ef5d2ea1c12e76787b4790e14754460daf427f1666247", size = 1292407, upload-time = "2025-05-05T19:22:47.504Z" },
+    { url = "https://files.pythonhosted.org/packages/39/be/731625c087d720e533c2fd9350bfc1b581701e3ca507c6269d4c633b6653/pymetis-2025.1.1-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:d4cdadbd49ba1f71a87c2a3c7e38241bff1cf16f9399ad05c1e856ce70c129d6", size = 246081, upload-time = "2025-05-05T19:22:48.826Z" },
+    { url = "https://files.pythonhosted.org/packages/06/1e/d220c9090e0f2c81919a2c482bf912c59010a25558a5c3ef50ababe9cd7f/pymetis-2025.1.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:d591bb9cd7d10b5f855b264ba713dc4a885492e61c5353c0a5ca34b9a28a4cf6", size = 218458, upload-time = "2025-05-05T19:22:50.209Z" },
+    { url = "https://files.pythonhosted.org/packages/87/57/20fbab509ac524ec94bd608ddda41c0d027a5661549d7402e3204b52fbd1/pymetis-2025.1.1-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:18704c986d76725ccb86288be24b069618cfc5916672450b967946f41a52cf2b", size = 337713, upload-time = "2025-05-05T19:22:51.525Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/fe/bb12c811cededf3b9b483851622e4622e2a27b64b0bca720cd966f522d16/pymetis-2025.1.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:12ce2c20a0d30600b0d3fe049107ca76f3fdd9fdae1009b33b1ce168eb2aa089", size = 275622, upload-time = "2025-05-05T19:22:52.949Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/c8/87ac7974edf3940a7d3c6b8b1db20f2eb861c46634d8b5827e8b9c443d0f/pymetis-2025.1.1-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:33ac080d603a309cdaa235c83291a392f4c1e9e89d498b62a7c947ce6ab9f8f2", size = 1462651, upload-time = "2025-05-05T19:22:54.408Z" },
+    { url = "https://files.pythonhosted.org/packages/57/18/763d5d4fa5da5c375b019d11251bc1955d005a4e4a6fccbf88e190b31aa6/pymetis-2025.1.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:c389c822fe38db2b5bff60674250a3f97448b372d060d5d4789fae961d425223", size = 1292442, upload-time = "2025-05-05T19:22:55.768Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/71/c7a486a55ee0efa3cd611b585ed4ac0c92241ba7ee488f3a5bafdf2ad8b8/pymetis-2025.1.1-pp310-pypy310_pp73-macosx_10_15_x86_64.whl", hash = "sha256:625da502859f7d9449ccc5702c5228396ded95446ee61ab02f3ba84d58bb1a3b", size = 244783, upload-time = "2025-05-05T19:22:57.205Z" },
+    { url = "https://files.pythonhosted.org/packages/10/8d/f1170b961645e5a33926314b62c3fc9f5a5e472a0d735bcf1a2dd0bdf656/pymetis-2025.1.1-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:05d7737ffa5594b622e6be53c9ae11855f798e3cd67b345bc8cdc286a501fab5", size = 217473, upload-time = "2025-05-05T19:22:58.517Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/cc/bc3c5190500648f7fe7b1427a68bdf7fc9fa3e2f03a740fe4ee4a1730d50/pymetis-2025.1.1-pp310-pypy310_pp73-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:f44b6cc411b395c04356305120b3fec19f4a0fc4e081d6f95c0acb3879fa1e24", size = 335596, upload-time = "2025-05-05T19:22:59.795Z" },
+    { url = "https://files.pythonhosted.org/packages/65/97/fc54d7ac05cd4b3de8d9ff3ebacecee53249270c685f332d33f6aecfd79b/pymetis-2025.1.1-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c3b9c5eeaf0a4be0c6e158fe0b43de6187580d9dc9b0c40c6569891c420e2731", size = 274340, upload-time = "2025-05-05T19:23:01.111Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/9f/2a5c32a99a80b4a8d6ee880c57e760167a8caa91a9f7c12566081612bfb5/pymetis-2025.1.1-pp311-pypy311_pp73-macosx_10_15_x86_64.whl", hash = "sha256:0e4363afc9aee6517cb3bd67978fa2bd5e923015f2e5630aad8451fd17cb24ef", size = 246012, upload-time = "2025-05-05T19:23:02.437Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/84/0e26a51fc1e6327e5f3d8bd67cfc78f47873d0f7f1c2f852464b56052d17/pymetis-2025.1.1-pp311-pypy311_pp73-macosx_11_0_arm64.whl", hash = "sha256:3880b7ec42b5d5dc1cee5170304962caf6349a347a882feb8156f082922badce", size = 218677, upload-time = "2025-05-05T19:23:03.775Z" },
+    { url = "https://files.pythonhosted.org/packages/64/7d/e77d5c7771a8c31e3cf00a5abb116ec8d70db5c8116692feba1fa0cc12ec/pymetis-2025.1.1-pp311-pypy311_pp73-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:03d71a0cf3d18c76c0a98131876d41d7810b89f8dcb2a21ef11eff9f290de688", size = 336761, upload-time = "2025-05-05T19:23:05.113Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/29/22137aeaef2b472aabddea09fe7f512423ad50e405bb8da6c82089ca6720/pymetis-2025.1.1-pp311-pypy311_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:daf4d7ea3f147fbb5328566abd4f493b1911ea911000036693bb5c639c7db4a5", size = 275642, upload-time = "2025-05-05T19:23:06.543Z" },
 ]
 
 [[package]]
