@@ -713,7 +713,7 @@ def _vertically_implicit_solver_at_corrector_step(
             z_q=tridiagonal_intermediate_result,
             w=next_w_intermediate_result,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        next_w_intermediate_result,
     )
 
     # _vertically_implicit_solver_at_corrector_step_after_solving_w below
@@ -730,11 +730,15 @@ def _vertically_implicit_solver_at_corrector_step(
             ),
             next_w_intermediate_result,
         )
-    
+
     next_w_intermediate_result = concat_where(
-        dims.KDim < n_lev,
+        (dims.KDim > 0) & (dims.KDim < n_lev),
         next_w_intermediate_result,
-        next_w,
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
+        ),
     )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
