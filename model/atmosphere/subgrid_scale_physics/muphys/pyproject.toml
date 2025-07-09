@@ -35,7 +35,30 @@ requires-python = ">=3.10"
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
+# -- bumpversion --
+[tool.bumpversion]
+allow_dirty = false
+commit = false
+current_version = "0.0.6"
+ignore_missing_version = false
+message = 'Bump icon4py-atmosphere-muphys version: {current_version} → {new_version}'
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
+serialize = ["{major}.{minor}.{patch}"]
+tag = false
 
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = '''
+# managed by bump-my-version:
+version = "{current_version}"
+'''
+replace = '''
+# managed by bump-my-version:
+version = "{new_version}"
+'''
+
+[[tool.bumpversion.files]]
+filename = "src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/__init__.py"
 [tool.coverage]
 
 [tool.coverage.html]
