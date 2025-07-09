@@ -41,9 +41,6 @@ simple_grid = simple.SimpleGrid()
 grid_file = datatest_utils.GRIDS_PATH.joinpath(
     datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE
 )
-global_grid = grid_utils.get_grid_manager_for_experiment(
-    datatest_utils.GLOBAL_EXPERIMENT, keep_skip_values=True, backend=backend
-).grid
 
 
 def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
