@@ -331,7 +331,14 @@ class HaloGenerator:
 
 
 class Decomposer(Protocol):
-    def __call__(self, adjacency_matrix, n_part: int) -> data_alloc.NDArray:
+    def __call__(self, adjacency_matrix:data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
+        """
+        Call the decomposition.
+
+        Args:
+            adjacency_matrix: face-to-face connectivity matrix on the global (undecomposed) grid. In the Icon4py context this C2E2C
+            n_part: number of nodes
+        """
         ...
 
 
@@ -365,4 +372,5 @@ class SimpleMetisDecomposer(Decomposer):
 
 class SingleNodeDecomposer(Decomposer):
     def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
+        """Dummy decomposer for single node: assigns all cells to rank = 0"""
         return self._xp.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)
