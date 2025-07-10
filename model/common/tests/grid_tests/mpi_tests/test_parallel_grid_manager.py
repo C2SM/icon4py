@@ -54,7 +54,7 @@ def test_start_end_index(
         gm.ToZeroBasedIndexTransformation(), file, v_grid.VerticalGridConfig(1)
     )
     single_node_grid = utils.run_grid_manager(file, keep_skip_values=True).grid
-    with manager.with_decomposer(partitioner, processor_props) as manage:
+    with manager.set_decomposer(partitioner, processor_props) as manage:
         manage(backend=backend, keep_skip_values=True)
         grid = manage.grid
 
