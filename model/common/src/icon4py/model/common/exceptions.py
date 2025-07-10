@@ -16,8 +16,13 @@ class InvalidConfigError(Exception):
 
 
 class IncompleteStateError(Exception):
-    def __init__(self, field_name):
+    def __init__(self, field_name: str):
         super().__init__(f"Field '{field_name}' is missing.")
+
+
+class ValidationError(Exception):
+    def __init__(self, name: str, msg: str):
+        super().__init__(f"'{name}':  {msg}.")
 
 
 class IconGridError(RuntimeError):

@@ -33,18 +33,15 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 
-# TODO (@halungge) do we need three of those: one for each dimension?
-
-
 class HaloGenerator:
     """Creates necessary halo information for a given rank."""
 
     def __init__(
         self,
         run_properties: defs.ProcessProperties,
-        rank_mapping: data_alloc.NDArray,
+        rank_mapping: data_alloc.NDArray,  # TODO should be an argument to __call__
         connectivities: dict[gtx.Dimension, data_alloc.NDArray],
-        num_levels: int,
+        num_levels,  # TODO is currently needed for ghex, pass via a different struct that the decomposition info and remove
         backend: Optional[gtx_backend.Backend] = None,
     ):
         """
@@ -53,13 +50,14 @@ class HaloGenerator:
             run_properties: contains information on the communicator and local compute node.
             rank_mapping: array with shape (global_num_cells,): mapping of global cell indices to their rank in the distribution
             connectivities: connectivity arrays needed to construct the halos
-            num_levels: # TODO (@halungge): should not be needed here
+            backend: GT4Py (used to determine the array ns import)
         """
+        self._xp = data_alloc.import_array_ns(backend)
+        self._num_levels = num_levels
         self._props = run_properties
         self._mapping = rank_mapping
         self._connectivities = connectivities
-        self._num_levels = num_levels
-        self._xp = data_alloc.import_array_ns(backend)
+        self._validate()
 
     @property
     def face_face_connectivity(self):
@@ -86,12 +84,33 @@ class HaloGenerator:
         return self._connectivity(dims.C2VDim)
 
     def _validate(self):
-        assert self._mapping.ndim == 1
-        # the decomposition should match the communicator size
-        assert self._xp.max(self._mapping) == self._props.comm_size - 1
+        # validate the distribution mapping:
+        num_cells = self.face_face_connectivity.shape[0]
+        expected_shape = (num_cells,)
+        if not self._mapping.shape == expected_shape:
+            raise exceptions.ValidationError(
+                "rank_mapping", f"should have shape {expected_shape} but is {self._mapping.shape}"
+            )
 
-    def __post_init__(self):
-        self._validate()
+        # the decomposition should match the communicator size
+        if self._xp.max(self._mapping) > self._props.comm_size - 1:
+            raise exceptions.ValidationError(
+                "rank_mapping",
+                f"The distribution assumes more nodes than the current run is scheduled on  {self._props} ",
+            )
+        # make sure we have all connectivity arrays used in the halo construction
+        relevant_dimension = [
+            dims.C2E2CDim,
+            dims.E2CDim,
+            dims.C2EDim,
+            dims.C2VDim,
+            dims.V2CDim,
+            dims.V2EDim,
+        ]
+        for d in relevant_dimension:
+            assert (
+                d in self._connectivities.keys()
+            ), f"Table for {d} is missing from the neighbor table array."
 
     def _connectivity(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         try:

@@ -116,11 +116,11 @@ class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
 
     @functools.cached_property
-    def rank(self):
+    def rank(self) -> int:
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self):
+    def comm_name(self) -> str:
         return self.comm.Get_name()
 
     @functools.cached_property

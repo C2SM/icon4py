@@ -44,6 +44,9 @@ class ProcessProperties(Protocol):
     def single_node(self) -> bool:
         return self.comm_size == 1
 
+    def __str__(self):
+        return f"Comm name={self.comm_name}: rank = {self.rank}/{self.comm_size}"
+
 
 @dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):

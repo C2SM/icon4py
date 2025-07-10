@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.utils.data_allocation import constant_field
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
@@ -17,14 +17,10 @@ try:
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
+import logging
+
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    DomainDescriptorIdGenerator,
-    SingleNodeExchange,
-    create_exchange,
-)
-from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
+from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
     decomposition_info,
@@ -41,12 +37,15 @@ from icon4py.model.testing.parallel_helpers import (  # noqa: F401  # import fix
 )
 
 
+_log = logging.getLogger(__name__)
+
+
 """
 running tests with mpi:
 
-mpirun -np 2 python -m pytest -v --with-mpi tests/mpi_tests/test_parallel_setup.py
+mpirun -np 2 python -m pytest -v --with-mpi tests/mpi_tests/test_mpi_decomposition.py
 
-mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
+mpirun -np 2 pytest -v --with-mpi -k mpi_tests/
 
 
 """
@@ -79,15 +78,19 @@ def test_decomposition_info_masked(
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
-    all_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.ALL)
+    all_indices = decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
     assert all_indices.shape[0] == my_total
 
-    owned_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.OWNED)
+    owned_indices = decomposition_info.global_index(
+        dim, definitions.DecompositionInfo.EntryType.OWNED
+    )
     assert owned_indices.shape[0] == my_owned
 
-    halo_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.HALO)
+    halo_indices = decomposition_info.global_index(
+        dim, definitions.DecompositionInfo.EntryType.HALO
+    )
     assert halo_indices.shape[0] == my_total - my_owned
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
@@ -124,18 +127,20 @@ def test_decomposition_info_local_index(
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
-    all_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.ALL)
+    all_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
 
     assert all_indices.shape[0] == my_total
     assert np.array_equal(all_indices, np.arange(0, my_total))
-    halo_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.HALO)
+    halo_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.HALO)
     assert halo_indices.shape[0] == my_total - my_owned
     assert halo_indices.shape[0] < all_indices.shape[0]
     assert np.all(halo_indices <= np.max(all_indices))
 
-    owned_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.OWNED)
+    owned_indices = decomposition_info.local_index(
+        dim, definitions.DecompositionInfo.EntryType.OWNED
+    )
     assert owned_indices.shape[0] == my_owned
     assert owned_indices.shape[0] <= all_indices.shape[0]
     assert np.all(owned_indices <= np.max(all_indices))
@@ -151,7 +156,7 @@ def test_domain_descriptor_id_are_globally_unique(
 ):
     props = processor_props
     size = props.comm_size
-    id_gen = DomainDescriptorIdGenerator(parallel_props=props)
+    id_gen = definitions.DomainDescriptorIdGenerator(parallel_props=props)
     id1 = id_gen()
     assert id1 == props.comm_size * props.rank
     assert id1 < props.comm_size * (props.rank + 2)
@@ -181,16 +186,20 @@ def test_decomposition_info_matches_gridsize(
     check_comm_size(processor_props)
     assert (
         decomposition_info.global_index(
-            dim=dims.CellDim, entry_type=DecompositionInfo.EntryType.ALL
+            dim=dims.CellDim, entry_type=definitions.DecompositionInfo.EntryType.ALL
         ).shape[0]
         == icon_grid.num_cells
     )
     assert (
-        decomposition_info.global_index(dims.VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
+        decomposition_info.global_index(
+            dims.VertexDim, definitions.DecompositionInfo.EntryType.ALL
+        ).shape[0]
         == icon_grid.num_vertices
     )
     assert (
-        decomposition_info.global_index(dims.EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
+        decomposition_info.global_index(
+            dims.EdgeDim, definitions.DecompositionInfo.EntryType.ALL
+        ).shape[0]
         == icon_grid.num_edges
     )
 
@@ -202,11 +211,11 @@ def test_create_multi_node_runtime_with_mpi(
     processor_props,  # noqa: F811  # fixture
 ):
     props = processor_props
-    exchange = create_exchange(props, decomposition_info)
+    exchange = definitions.create_exchange(props, decomposition_info)
     if props.comm_size > 1:
-        assert isinstance(exchange, GHexMultiNodeExchange)
+        assert isinstance(exchange, mpi_decomposition.GHexMultiNodeExchange)
     else:
-        assert isinstance(exchange, SingleNodeExchange)
+        assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
@@ -215,8 +224,8 @@ def test_create_single_node_runtime_without_mpi(
     processor_props,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
 ):
-    exchange = create_exchange(processor_props, decomposition_info)
-    assert isinstance(exchange, SingleNodeExchange)
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
 @pytest.mark.mpi
@@ -228,33 +237,39 @@ def test_exchange_on_dummy_data(
     grid_savepoint,  # noqa: F811 # fixture
     metrics_savepoint,  # noqa: F811 # fixture
     dimension,
+    caplog,
 ):
-    exchange = create_exchange(processor_props, decomposition_info)
+    caplog.set_level(logging.WARN, __name__)
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid(on_gpu=False)
 
     number = processor_props.rank + 10.0
-    input_field = constant_field(
+    input_field = data_alloc.constant_field(
         grid,
         number,
         dimension,
         dims.KDim,
     )
 
-    halo_points = decomposition_info.local_index(dimension, DecompositionInfo.EntryType.HALO)
-    local_points = decomposition_info.local_index(dimension, DecompositionInfo.EntryType.OWNED)
+    halo_points = decomposition_info.local_index(
+        dimension, definitions.DecompositionInfo.EntryType.HALO
+    )
+    local_points = decomposition_info.local_index(
+        dimension, definitions.DecompositionInfo.EntryType.OWNED
+    )
     assert np.all(input_field == number)
     exchange.exchange_and_wait(dimension, input_field)
     result = input_field.asnumpy()
-    print(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
-    print(
+    _log.info(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
+    _log.info(
         f" rank={processor_props.rank} - exchanged points: {np.sum(result != number)/grid.num_levels}"
     )
-    print(f"rank={processor_props.rank} - halo points: {halo_points}")
+    _log.debug(f"rank={processor_props.rank} - halo points: {halo_points}")
 
     assert np.all(result[local_points, :] == number)
     assert np.all(result[halo_points, :] != number)
 
     changed_points = np.argwhere(result[:, 2] != number)
-    print(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
+    _log.info(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
 
-    print(f"rank={processor_props.rank} - changed points {changed_points} ")
+    _log.debug(f"rank={processor_props.rank} - changed points {changed_points} ")
