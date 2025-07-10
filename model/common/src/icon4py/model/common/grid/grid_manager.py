@@ -35,10 +35,6 @@ _log = logging.getLogger(__name__)
 _single_node_properties = decomposition.SingleNodeProcessProperties()
 
 
-class ReadType(enum.IntEnum):
-    FLOAT = 0
-    INT = 1
-
 
 class IconGridError(RuntimeError):
     pass
@@ -133,7 +129,7 @@ class GridManager:
 
     # TODO # add args to __call__?
     @utils.chainable
-    def with_decomposer(
+    def set_decomposer(
         self,
         decomposer: Callable[[np.ndarray, int], np.ndarray],
         run_properties: decomposition.ProcessProperties,
