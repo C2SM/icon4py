@@ -13,7 +13,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from types import ModuleType
-from typing import Callable, Dict, Sequence
+from typing import Callable, Dict, Sequence, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -80,7 +80,7 @@ class GridConfig:
 
 class BaseGrid(ABC):
     def __init__(self):
-        self.config: GridConfig = None
+        self.config: Optional[GridConfig] = None
         self._neighbor_tables: Dict[gtx.Dimension, data_alloc.NDArray] = {}
         self.size: Dict[gtx.Dimension, int] = {}
         self._connectivity_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
