@@ -175,6 +175,34 @@ def _compute_solver_coefficients_matrix(
     )
     return astype((z_beta_wp, z_alpha_wp), vpfloat)
 
+@gtx.field_operator
+def _solve_tridiagonal_matrix_for_w_forward_backward_scan(
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKField[vpfloat],
+    z_beta: fa.CellKField[vpfloat],
+    z_w_expl: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    dtime: wpfloat,
+    cpd: wpfloat,
+) -> fa.CellKField[wpfloat]:
+    tridiagonal_intermediate_result, next_w_intermediate_result = _solve_tridiagonal_matrix_for_w_forward_sweep(
+        vwind_impl_wgt=vwind_impl_wgt,
+        theta_v_ic=theta_v_ic,
+        ddqz_z_half=ddqz_z_half,
+        z_alpha=z_alpha,
+        z_beta=z_beta,
+        z_w_expl=z_w_expl,
+        z_exner_expl=z_exner_expl,
+        dtime=dtime,
+        cpd=dycore_consts.cpd,
+    )
+    next_w_intermediate_result = _solve_tridiagonal_matrix_for_w_back_substitution_scan(
+        z_q=tridiagonal_intermediate_result,
+        w=next_w_intermediate_result,
+    )
+    return next_w_intermediate_result
 
 @gtx.field_operator
 def _vertically_implicit_solver_at_predictor_step_before_solving_w(
@@ -577,8 +605,8 @@ def vertically_implicit_solver_at_predictor_step(
 def _vertically_implicit_solver_at_corrector_step(
     next_w: fa.CellKField[
         ta.wpfloat
-    ],  # need to be used as input because the last vertical level is set outside
-    vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    ], # need to be used as input because the last vertical level is set outside
+    vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat], # need to be used as input because the last vertical level is set outside
     dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_dynamical_increment: fa.CellKField[ta.wpfloat],
@@ -705,26 +733,24 @@ def _vertically_implicit_solver_at_corrector_step(
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
-    # necessary to set the boundaries for the tridiagonal solver as well
-    tridiagonal_intermediate_result, next_w_intermediate_result = _solve_tridiagonal_matrix_for_w_forward_sweep(
-        vwind_impl_wgt=exner_w_implicit_weight_parameter,
-        theta_v_ic=theta_v_at_cells_on_half_levels,
-        ddqz_z_half=ddqz_z_half,
-        z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        z_w_expl=w_explicit_term,
-        z_exner_expl=exner_explicit_term,
-        dtime=dtime,
-        cpd=dycore_consts.cpd,
-    )
-
-    next_w_intermediate_result = concat_where(
-        dims.KDim > 0,
-        _solve_tridiagonal_matrix_for_w_back_substitution_scan(
-            z_q=tridiagonal_intermediate_result,
-            w=next_w_intermediate_result,
+    next_w = concat_where(
+        (dims.KDim > 0) & (dims.KDim < n_lev),
+        _solve_tridiagonal_matrix_for_w_forward_backward_scan(
+            vwind_impl_wgt=exner_w_implicit_weight_parameter,
+            theta_v_ic=theta_v_at_cells_on_half_levels,
+            ddqz_z_half=ddqz_z_half,
+            z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
+            z_w_expl=w_explicit_term,
+            z_exner_expl=exner_explicit_term,
+            dtime=dtime,
+            cpd=dycore_consts.cpd,
         ),
-        next_w_intermediate_result,
+        concat_where(
+            dims.KDim == 0,
+            broadcast(wpfloat("0.0"), (dims.CellDim,)),
+            next_w, # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
+        ),
     )
 
     # _vertically_implicit_solver_at_corrector_step_after_solving_w below
@@ -732,32 +758,22 @@ def _vertically_implicit_solver_at_corrector_step(
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
 
     if rayleigh_type == rayleigh_damping_options.KLEMP:
-        next_w_intermediate_result = concat_where(
+        next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w_1=w_1,
-                w=next_w_intermediate_result,
+                w=next_w,
             ),
-            next_w_intermediate_result,
+            next_w,
         )
-
-    next_w_intermediate_result = concat_where(
-        (dims.KDim > 0) & (dims.KDim < n_lev),
-        next_w_intermediate_result,
-        concat_where(
-            dims.KDim == 0,
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
-        ),
-    )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
         vwind_impl_wgt=exner_w_implicit_weight_parameter,
         inv_ddqz_z_full=inv_ddqz_z_full,
         rho_ic=rho_at_cells_on_half_levels,
-        w=next_w_intermediate_result,
+        w=next_w,
         z_exner_expl=exner_explicit_term,
         exner_ref_mc=reference_exner_at_cells_on_model_levels,
         z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
@@ -787,7 +803,7 @@ def _vertically_implicit_solver_at_corrector_step(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels,
                 vwind_impl_wgt=exner_w_implicit_weight_parameter,
-                w=next_w_intermediate_result,
+                w=next_w,
                 mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
                 r_nsubsteps=r_nsubsteps,
@@ -815,7 +831,7 @@ def _vertically_implicit_solver_at_corrector_step(
         vertical_mass_flux_at_cells_on_half_levels,
         tridiagonal_beta_coeff_at_cells_on_model_levels,
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        next_w_intermediate_result,
+        next_w,
         rho_explicit_term,
         exner_explicit_term,
         next_rho,
@@ -830,8 +846,8 @@ def _vertically_implicit_solver_at_corrector_step(
 @gtx.program
 def vertically_implicit_solver_at_corrector_step(
     vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[ta.vpfloat], # can be removed
+    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[ta.vpfloat], # can be removed
     next_w: fa.CellKField[ta.wpfloat],
     rho_explicit_term: fa.CellKField[ta.wpfloat],
     exner_explicit_term: fa.CellKField[ta.wpfloat],
@@ -938,11 +954,11 @@ def vertically_implicit_solver_at_corrector_step(
         n_lev=vertical_end_index_model_surface - 1,
         out=(
             vertical_mass_flux_at_cells_on_half_levels,
-            tridiagonal_beta_coeff_at_cells_on_model_levels,
-            tridiagonal_alpha_coeff_at_cells_on_half_levels,
+            tridiagonal_beta_coeff_at_cells_on_model_levels, # can be removed
+            tridiagonal_alpha_coeff_at_cells_on_half_levels, # can be removed
             next_w,
-            rho_explicit_term,
-            exner_explicit_term,
+            rho_explicit_term, # can be removed
+            exner_explicit_term, # can be removed
             next_rho,
             next_exner,
             next_theta_v,
