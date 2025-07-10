@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import enum
 import functools
 import logging
 import pathlib
@@ -33,7 +32,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 _log = logging.getLogger(__name__)
 _single_node_properties = decomposition.SingleNodeProcessProperties()
-
 
 
 class IconGridError(RuntimeError):
@@ -92,12 +90,14 @@ class GridManager:
         grid_file: Union[pathlib.Path, str],
         config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove to separate vertical and horizontal grid
         decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
+        halo_constructor: Optional[halo.HaloGenerator] = None,
         run_properties: decomposition.ProcessProperties = _single_node_properties,
     ):
         self._run_properties = run_properties
         self._transformation = transformation
         self._file_name = str(grid_file)
         self._decompose = decomposer
+        self._halo_constructor = halo_constructor
         self._vertical_config = config
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
@@ -348,6 +348,26 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(backend)
         on_gpu = data_alloc.is_cupy_device(backend)
+        global_connectivities_for_halo_construction = {
+            dims.C2E2C: self._get_index_field(gridfile.ConnectivityName.C2E2C),
+            dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
+            dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C),
+            dims.V2E: self._get_index_field(gridfile.ConnectivityName.V2E),
+            dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
+            dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
+        }
+        if not self._run_properties.single_node():
+            cells_to_rank_mapping = self._decompose(
+                global_connectivities_for_halo_construction[dims.C2E2C],
+                self._run_properties.comm_size,
+            )
+            self._halo_constructor(cells_to_rank_mapping)
+
+        global_connectivities = {
+            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
+            dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
+        }
+
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
         _derived_connectivities = functools.partial(
             _add_derived_connectivities,
@@ -360,16 +380,7 @@ class GridManager:
         )
         grid.set_refinement_control(refinement_fields)
 
-        global_connectivities = {
-            dims.C2E2C: self._get_index_field(gridfile.ConnectivityName.C2E2C),
-            dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
-            dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C),
-            dims.V2E: self._get_index_field(gridfile.ConnectivityName.V2E),
-            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
-            dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
-            dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
-            dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
-        }
+        global_connectivities.update(global_connectivities_for_halo_construction)
 
         grid.set_neighbor_tables(
             {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
@@ -699,5 +710,4 @@ def construct_local_connectivity(
         positions = np.searchsorted(global_idx_sorted, local_connectivity[i, valid_neighbor_mask])
         indices = sorted_index_of_global_idx[positions]
         local_connectivity[i, valid_neighbor_mask] = indices
-    # _log.debug(f"rank {self._props.rank} has local connectivity f: {local_connectivity}")
     return local_connectivity

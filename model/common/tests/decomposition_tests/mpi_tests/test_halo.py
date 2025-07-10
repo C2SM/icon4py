@@ -206,11 +206,10 @@ def test_halo_constructor_owned_cells(processor_props):  # F811 # fixture
     halo_generator = halo.HaloGenerator(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
-        rank_mapping=SIMPLE_DISTRIBUTION,
         num_levels=1,
         backend=backend,
     )
-    my_owned_cells = halo_generator.owned_cells()
+    my_owned_cells = halo_generator.owned_cells(SIMPLE_DISTRIBUTION)
 
     print(f"rank {processor_props.rank} owns {my_owned_cells} ")
     assert my_owned_cells.size == len(_CELL_OWN[processor_props.rank])
@@ -221,12 +220,12 @@ def test_halo_constructor_validate_number_of_node_mismatch(processor_props):
     grid = simple.SimpleGrid()
     distribution = (processor_props.comm_size + 1) * np.ones((grid.num_cells,), dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
-        halo.HaloGenerator(
+        halo_generator = halo.HaloGenerator(
             connectivities=grid.neighbor_tables,
             run_properties=processor_props,
-            rank_mapping=distribution,
             num_levels=1,
         )
+        halo_generator(distribution)
     assert "The distribution assumes more nodes than the current run" in e.value.args[0]
 
 
@@ -234,12 +233,12 @@ def test_halo_constructor_validate_number_of_node_mismatch(processor_props):
 def test_halo_constructor_validate_rank_mapping_wrong_shape(processor_props, shape):
     grid = simple.SimpleGrid()
     with pytest.raises(exceptions.ValidationError) as e:
-        halo.HaloGenerator(
+        halo_generator = halo.HaloGenerator(
             connectivities=grid.neighbor_tables,
             run_properties=processor_props,
-            rank_mapping=np.zeros((grid.num_cells, 3), dtype=int),
             num_levels=1,
         )
+        halo_generator(np.zeros((grid.num_cells, 3), dtype=int))
     assert f"should have shape ({grid.num_cells},)" in e.value.args[0]
 
 
@@ -417,10 +416,9 @@ def test_distributed_fields(processor_props):  # F811 # fixture
     halo_generator = halo.HaloGenerator(
         connectivities=global_grid.neighbor_tables,
         run_properties=processor_props,
-        rank_mapping=labels,
         num_levels=1,
     )
-    decomposition_info = halo_generator()
+    decomposition_info = halo_generator(labels)
     # distributed read: read one field per dimension
 
     ## TODO why is this local??
@@ -489,3 +487,22 @@ def test_halo_neighbor_access_c2e():
     # 3. compute geofac_div = primal_edge_length * edge_orientation / area
     # 4. gather geofac_div
     # 5 compare (possible reorder
+
+
+def test_no_halo():
+    grid = simple.SimpleGrid()
+    halo_generator = halo.NoHalos(grid.config.horizontal_config, num_levels=10, backend=None)
+    mapping = np.zeros((grid.num_cells), dtype=int)
+    decomposition_info = halo_generator(mapping)
+    np.testing.assert_allclose(
+        np.arange(grid.num_cells), decomposition_info.global_index(dims.CellDim)
+    )
+    assert np.all(decomposition_info.owner_mask(dims.CellDim))
+    np.testing.assert_allclose(
+        np.arange(grid.num_edges), decomposition_info.global_index(dims.EdgeDim)
+    )
+    assert np.all(decomposition_info.owner_mask(dims.EdgeDim))
+    np.testing.assert_allclose(
+        np.arange(grid.num_vertices), decomposition_info.global_index(dims.VertexDim)
+    )
+    assert np.all(decomposition_info.owner_mask(dims.VertexDim))

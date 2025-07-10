@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
@@ -18,28 +19,65 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import logging
+from types import ModuleType
 from typing import Optional, Protocol
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
+import numpy as np
 
-import icon4py.model.common.decomposition.definitions as defs
 from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common.decomposition import definitions as defs
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
 
 
-class HaloGenerator:
+class DecompositionFactory(Protocol):
+    """Callable that takes a mapping from faces (aka cells) to ranks"""
+
+    def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
+        ...
+
+
+class NoHalos(DecompositionFactory):
+    def __init__(
+        self,
+        size: base.HorizontalGridSize,
+        num_levels: int,
+        backend: Optional[gtx_backend.Backend] = None,
+    ):
+        self._size = size
+        self._num_levels = num_levels
+        self._backend = backend
+
+    def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
+        xp = data_alloc.import_array_ns(self._backend)
+        create_arrays = functools.partial(_create_dummy_decomposition_arrays, array_ns=xp)
+        decomposition_info = defs.DecompositionInfo(klevels=self._num_levels)
+
+        decomposition_info.with_dimension(dims.EdgeDim, *create_arrays(self._size.num_edges))
+        decomposition_info.with_dimension(dims.CellDim, *create_arrays(self._size.num_cells))
+        decomposition_info.with_dimension(dims.VertexDim, *create_arrays(self._size.num_vertices))
+        return decomposition_info
+
+
+def _create_dummy_decomposition_arrays(size: int, array_ns: ModuleType = np):
+    indices = array_ns.arange(size, dtype=gtx.int32)
+    owner_mask = array_ns.ones((size,), dtype=bool)
+    halo_levels = array_ns.ones((size,), dtype=gtx.int32) * defs.DecompositionFlag.OWNED
+    return indices, owner_mask, halo_levels
+
+
+class HaloGenerator(DecompositionFactory):
     """Creates necessary halo information for a given rank."""
 
     def __init__(
         self,
         run_properties: defs.ProcessProperties,
-        rank_mapping: data_alloc.NDArray,  # TODO should be an argument to __call__
         connectivities: dict[gtx.Dimension, data_alloc.NDArray],
         num_levels,  # TODO is currently needed for ghex, pass via a different struct that the decomposition info and remove
         backend: Optional[gtx_backend.Backend] = None,
@@ -48,16 +86,14 @@ class HaloGenerator:
 
         Args:
             run_properties: contains information on the communicator and local compute node.
-            rank_mapping: array with shape (global_num_cells,): mapping of global cell indices to their rank in the distribution
             connectivities: connectivity arrays needed to construct the halos
             backend: GT4Py (used to determine the array ns import)
         """
         self._xp = data_alloc.import_array_ns(backend)
         self._num_levels = num_levels
         self._props = run_properties
-        self._mapping = rank_mapping
         self._connectivities = connectivities
-        self._validate()
+        self._assert_all_neighbor_tables()
 
     @property
     def face_face_connectivity(self):
@@ -83,21 +119,24 @@ class HaloGenerator:
     def face_node_connectivity(self):
         return self._connectivity(dims.C2VDim)
 
-    def _validate(self):
+    def _validate_mapping(self, face_to_rank_mapping: data_alloc.NDArray):
         # validate the distribution mapping:
         num_cells = self.face_face_connectivity.shape[0]
         expected_shape = (num_cells,)
-        if not self._mapping.shape == expected_shape:
+        if not face_to_rank_mapping.shape == expected_shape:
             raise exceptions.ValidationError(
-                "rank_mapping", f"should have shape {expected_shape} but is {self._mapping.shape}"
+                "rank_mapping",
+                f"should have shape {expected_shape} but is {face_to_rank_mapping.shape}",
             )
 
         # the decomposition should match the communicator size
-        if self._xp.max(self._mapping) > self._props.comm_size - 1:
+        if self._xp.max(face_to_rank_mapping) > self._props.comm_size - 1:
             raise exceptions.ValidationError(
                 "rank_mapping",
                 f"The distribution assumes more nodes than the current run is scheduled on  {self._props} ",
             )
+
+    def _assert_all_neighbor_tables(self):
         # make sure we have all connectivity arrays used in the halo construction
         relevant_dimension = [
             dims.C2E2CDim,
@@ -115,6 +154,7 @@ class HaloGenerator:
     def _connectivity(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         try:
             conn_table = self._connectivities[dim]
+            return conn_table
             return conn_table
         except KeyError as err:
             raise exceptions.MissingConnectivity(
@@ -165,13 +205,13 @@ class HaloGenerator:
     def find_vertex_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
         return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)
 
-    def owned_cells(self) -> data_alloc.NDArray:
+    def owned_cells(self, face_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the global indices of the cells owned by this rank"""
-        owned_cells = self._mapping == self._props.rank
+        owned_cells = face_to_rank == self._props.rank
         return self._xp.asarray(owned_cells).nonzero()[0]
 
     def _update_owner_mask_by_max_rank_convention(
-        self, owner_mask, all_indices, indices_on_cutting_line, target_connectivity
+        self, face_to_rank, owner_mask, all_indices, indices_on_cutting_line, target_connectivity
     ):
         """
         In order to have unique ownership of edges (and vertices) among nodes there needs to be
@@ -190,7 +230,7 @@ class HaloGenerator:
         """
         for index in indices_on_cutting_line:
             local_index = self._xp.nonzero(all_indices == index)[0][0]
-            owning_ranks = self._mapping[target_connectivity[index]]
+            owning_ranks = face_to_rank[target_connectivity[index]]
             assert (
                 self._xp.unique(owning_ranks).size > 1
             ), f"rank {self._props.rank}: all neighboring cells are owned by the same rank"
@@ -205,14 +245,14 @@ class HaloGenerator:
         return owner_mask
 
     # TODO (@halungge): move out of halo generator?
-    def __call__(self) -> defs.DecompositionInfo:
+    def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         """
         Constructs the DecompositionInfo for the current rank.
 
         The DecompositionInfo object is constructed for all horizontal dimension starting from the
         cell distribution. Edges and vertices are then handled through their connectivity to the distributed cells.
         """
-
+        self._validate_mapping(face_to_rank)
         #: cells
         owned_cells = self.owned_cells()  # global indices of owned cells
         first_halo_cells = self.next_halo_line(owned_cells)
@@ -331,7 +371,7 @@ class HaloGenerator:
 
 
 class Decomposer(Protocol):
-    def __call__(self, adjacency_matrix:data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
+    def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
         """
         Call the decomposition.
 

@@ -13,7 +13,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from types import ModuleType
-from typing import Callable, Dict, Sequence, Optional
+from typing import Callable, Dict, Optional, Sequence
 
 import gt4py.next as gtx
 import numpy as np
