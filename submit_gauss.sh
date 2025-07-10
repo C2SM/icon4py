@@ -8,10 +8,10 @@
 #SBATCH --uenv=icon/25.2:v3
 #SBATCH --view=default
 
-#SBATCH --partition=normal
-#SBATCH --time=01:00:00
+#SBATCH --partition=debug
+#SBATCH --time=00:30:00
 
-#SBATCH --job-name=runyb_test_wiggles_cube
+#SBATCH --job-name=runyb_test_wiggles_cube_adv_term
 
 #SBATCH --output=logs/torus.%x.log
 #SBATCH --error=logs/torus.%x.log
@@ -61,6 +61,6 @@ python \
 	--grid_root=2 --grid_level=0 --enable_output
 
 # generate vtu files
-python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+# python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
 
 echo "Finished running job: $SLURM_JOB_NAME, one way or another"

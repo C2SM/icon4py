@@ -32,6 +32,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+from icon4py.model.common.io import plots
 
 class VelocityAdvection:
     def __init__(
@@ -86,6 +87,7 @@ class VelocityAdvection:
         #---> IBM
         if "ibm" in extras:
             self._ibm = extras["ibm"]
+            self._step = 0
         #<--- IBM
 
     def _allocate_local_fields(self):
@@ -311,6 +313,18 @@ class VelocityAdvection:
             vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
+        #---> IBM
+        # if self._ibm.DEBUG_LEVEL >= 4:
+        plots.pickle_data(
+            state={
+                "vn_adv": diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy(),
+                "vn_eh": diagnostic_state.vn_on_half_levels.asnumpy(),
+                "w_wcc_cf": self._contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
+            },
+            label=f"advection_predictor_{self._step:06d}",
+        )
+        self._step += 1
+        #<--- IBM
 
     def _scale_factors_by_dtime(self, dtime):
         scaled_cfl_w_limit = self.cfl_w_limit / dtime
@@ -454,3 +468,15 @@ class VelocityAdvection:
             vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
+        #---> IBM
+        # if self._ibm.DEBUG_LEVEL >= 4:
+        plots.pickle_data(
+            state={
+                "vn_adv": diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy(),
+                "vn_eh": diagnostic_state.vn_on_half_levels.asnumpy(),
+                "w_wcc_cf": self._contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
+            },
+            label=f"advection_corrector_{self._step:06d}",
+        )
+        self._step += 1
+        #<--- IBM

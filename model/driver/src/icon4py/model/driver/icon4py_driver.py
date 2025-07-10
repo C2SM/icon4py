@@ -169,8 +169,9 @@ class TimeLoop:
                 do_prep_adv,
             )
             timer.capture()
-            if time_step % 100 == 0:
-                plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:06d}")
+            #if time_step % 100 == 0:
+            plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:06d}")
+            import sys; sys.exit()
 
             self._is_first_step_in_simulation = False
 
@@ -284,6 +285,7 @@ class TimeLoop:
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
             )
+            plots.pickle_data(prognostic_states.next, f"end_of_dyn_substep_{dyn_substep:06d}")
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
