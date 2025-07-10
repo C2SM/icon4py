@@ -59,8 +59,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
-        e_refin_ctrl: gtx.Field,
-        c_refin_ctrl: gtx.Field,
         rayleigh_type: int,
         rayleigh_coeff: float,
         exner_expol: float,
@@ -114,8 +112,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 {
                     "topography": topography,
                     "vct_a": vct_a,
-                    "c_refin_ctrl": c_refin_ctrl,
-                    "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
                     "c_owner_mask": c_owner_mask,
                     "k_lev": k_index,
@@ -621,7 +617,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
             deps={
-                "c_refin_ctrl": "c_refin_ctrl",
+                "c_refin_ctrl": self._grid.refinement_control[dims.CellDim],
             },
             domain={
                 dims.CellDim: (
@@ -639,7 +635,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_horizontal_mask_for_3d_divdamp = factory.ProgramFieldProvider(
             func=mf.compute_horizontal_mask_for_3d_divdamp.with_backend(self._backend),
             deps={
-                "e_refin_ctrl": "e_refin_ctrl",
+                "e_refin_ctrl": self._grid.refinement_control[dims.EdgeDim],
             },
             domain={
                 dims.EdgeDim: (

@@ -312,7 +312,7 @@ class GridManager:
         return self._grid
 
     @property
-    def geometry(self) -> GeometryDict:
+    def geometry_fields(self) -> GeometryDict:
         return self._geometry
 
     @property

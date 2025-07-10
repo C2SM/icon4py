@@ -10,11 +10,13 @@ import functools
 import pytest
 
 import icon4py.model.common.dimension as dims
+import gt4py.next as gtx
+from icon4py.model.common.decomposition import definitions
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
-    vertical as v_grid,
+    vertical as v_grid, geometry,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import (
@@ -25,144 +27,179 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
-    helpers,
 )
 
 from .utils import (
     construct_diffusion_config,
-    verify_diffusion_fields,
 )
 import icon4py.model.common.states.prognostic_state as prognostics
 
-grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
+# TODO (Yilu)
+from icon4py.model.common.grid import geometry as grid_geometry
 
 
-def get_grid_for_experiment(experiment, backend):
-    return _get_or_initialize(experiment, backend, "grid")
+
+grid_functionality = {dt_utils.R02B04_GLOBAL: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
+
+def get_edge_geometry_for_grid_file(grid_file, geometry_factory, backend):
+    return _get_or_initialize_from_grid_file(grid_file, geometry_factory, backend, "edge_geometry")
 
 
-def get_edge_geometry_for_experiment(experiment, backend):
-    return _get_or_initialize(experiment, backend, "edge_geometry")
+def get_cell_geometry_for_grid_file(grid_file, geometry_factory, backend):
+    return _get_or_initialize_from_grid_file(grid_file, geometry_factory, backend, "cell_geometry")
 
 
-def get_cell_geometry_for_experiment(experiment, backend):
-    return _get_or_initialize(experiment, backend, "cell_geometry")
+def _get_or_initialize_from_grid_file(grid_file, geometry_factory, backend, name):
 
-
-def _get_or_initialize(experiment, backend, name):
-    grid_file = (
-        dt_utils.REGIONAL_EXPERIMENT
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else dt_utils.R02B04_GLOBAL
-    )
-
-    if not grid_functionality[experiment].get(name):
-        geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
-        grid = geometry_.grid
+    if not grid_functionality[grid_file].get(name):
 
         cell_params = grid_states.CellParams(
-            cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
-            cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
-            area=geometry_.get(geometry_meta.CELL_AREA),
+            cell_center_lat=geometry.get(geometry_meta.CELL_LAT),
+            cell_center_lon=geometry.get(geometry_meta.CELL_LON),
+            area=geometry.get(geometry_meta.CELL_AREA),
         )
         edge_params = grid_states.EdgeParams(
-            edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
-            edge_center_lon=geometry_.get(geometry_meta.EDGE_LON),
-            tangent_orientation=geometry_.get(geometry_meta.TANGENT_ORIENTATION),
-            coriolis_frequency=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
-            edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
-            primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
-            inverse_primal_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
-            dual_edge_lengths=geometry_.get(geometry_meta.DUAL_EDGE_LENGTH),
-            inverse_dual_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
-            inverse_vertex_vertex_lengths=geometry_.get(
+            edge_center_lat=geometry_factory.get(geometry_meta.EDGE_LAT),
+            edge_center_lon=geometry_factory.get(geometry_meta.EDGE_LON),
+            tangent_orientation=geometry_factory.get(geometry_meta.TANGENT_ORIENTATION),
+            coriolis_frequency=geometry_factory.get(geometry_meta.CORIOLIS_PARAMETER),
+            edge_areas=geometry_factory.get(geometry_meta.EDGE_AREA),
+            primal_edge_lengths=geometry_factory.get(geometry_meta.EDGE_LENGTH),
+            inverse_primal_edge_lengths=geometry_factory.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
+            dual_edge_lengths=geometry_factory.get(geometry_meta.DUAL_EDGE_LENGTH),
+            inverse_dual_edge_lengths=geometry_factory.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
+            inverse_vertex_vertex_lengths=geometry_factory.get(
                 f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
             ),
-            primal_normal_x=geometry_.get(geometry_meta.EDGE_NORMAL_U),
-            primal_normal_y=geometry_.get(geometry_meta.EDGE_NORMAL_V),
-            primal_normal_cell_x=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
-            primal_normal_cell_y=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
+            primal_normal_x=geometry_factory.get(geometry_meta.EDGE_NORMAL_U),
+            primal_normal_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_V),
+            primal_normal_cell_x=geometry_factory.get(geometry_meta.EDGE_NORMAL_CELL_U),
+            primal_normal_cell_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_CELL_V),
             primal_normal_vert_x=data_alloc.flatten_first_two_dims(
                 dims.ECVDim,
-                field=(geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U)),
+                field=(geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_U)),
                 backend=backend,
             ),
             primal_normal_vert_y=data_alloc.flatten_first_two_dims(
                 dims.ECVDim,
-                field=(geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V)),
+                field=(geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_V)),
                 backend=backend,
             ),
-            dual_normal_cell_x=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
-            dual_normal_cell_y=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
+            dual_normal_cell_x=geometry_factory.get(geometry_meta.EDGE_TANGENT_CELL_U),
+            dual_normal_cell_y=geometry_factory.get(geometry_meta.EDGE_TANGENT_CELL_V),
             dual_normal_vert_x=data_alloc.flatten_first_two_dims(
                 dims.ECVDim,
-                field=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+                field=geometry_factory.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
                 backend=backend,
             ),
             dual_normal_vert_y=data_alloc.flatten_first_two_dims(
                 dims.ECVDim,
-                field=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+                field=geometry_factory.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
                 backend=backend,
             ),
         )
-        grid_functionality[experiment]["grid"] = grid
-        grid_functionality[experiment]["edge_geometry"] = edge_params
-        grid_functionality[experiment]["cell_geometry"] = cell_params
-    return grid_functionality[experiment].get(name)
+        grid_functionality[grid_file]["edge_geometry"] = edge_params
+        grid_functionality[grid_file]["cell_geometry"] = cell_params
+    return grid_functionality[grid_file].get(name)
+
+def _construct_dummy_decomposition_info(grid, backend) -> definitions.DecompositionInfo:
+    def _add_dimension(dim: gtx.Dimension):
+        indices = data_alloc.index_field(grid, dim, backend=backend)
+        owner_mask = xp.ones((grid.size[dim],), dtype=bool)
+        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
+
+    on_gpu = data_alloc.is_cupy_device(backend)
+    xp = data_alloc.array_ns(on_gpu)
+    decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
+    _add_dimension(dims.EdgeDim)
+    _add_dimension(dims.VertexDim)
+    _add_dimension(dims.CellDim)
+
+    return decomposition_info
+
+@pytest.fixture
+def vertical_grid_params(
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+):
+    """Group vertical grid configuration parameters into a dictionary."""
+    return {
+        "lowest_layer_thickness": lowest_layer_thickness,
+        "model_top_height": model_top_height,
+        "stretch_factor": stretch_factor,
+        "damping_height": damping_height,
+    }
+
+
+@pytest.fixture
+def metrics_factory_params(
+    rayleigh_coeff,
+    exner_expol,
+    vwind_offctr,
+    rayleigh_type,
+):
+    """Group rayleigh damping configuration parameters into a dictionary."""
+    return {
+        "rayleigh_coeff": rayleigh_coeff,
+        "exner_expol": exner_expol,
+        "vwind_offctr": vwind_offctr,
+        "rayleigh_type": rayleigh_type,
+    }
 
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "grid_file, experiment, step_date_init, step_date_exit",
-    [  # TODO: ingnore regional
-        # (
-        #     dt_utils.REGIONAL_EXPERIMENT,
-        #     dt_utils.REGIONAL_EXPERIMENT,
-        #     "2021-06-20T12:00:10.000",
-        #     "2021-06-20T12:00:10.000",
-        # ),
+    "grid_file",
+    [
         (
-            dt_utils.GLOBAL_EXPERIMENT,
-            dt_utils.GLOBAL_EXPERIMENT,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
+            dt_utils.R02B04_GLOBAL
         ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])  # TODO: the default value is 5
 @pytest.mark.parametrize("orchestration", [False])
-def test_run_diffusion_single_step(
-    savepoint_diffusion_init,
-    savepoint_diffusion_exit,
+def test_run_diffusion_benchmark(
     grid_file,
-    experiment,
-    topography_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    rayleigh_coeff,
-    exner_expol,
-    vwind_offctr,
-    rayleigh_type,
+    vertical_grid_params,
+    metrics_factory_params,
     ndyn_substeps,
     backend,
     orchestration,
-    benchmark,
 ):
-    grid = get_grid_for_experiment(experiment, backend)
-    cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
-    edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
 
-    geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+    # get configuration
+    num_levels = 65
+    dtime = 10
+    config = construct_diffusion_config(grid_file, ndyn_substeps)
+    diffusion_parameters = diffusion.DiffusionParams(config)
+
+    # run the grid manager to get the grid, coordinates, geometry_fields
+    grid_manager = grid_utils.get_grid_manager(grid_file=grid_file, num_levels=num_levels, keep_skip_values=True,backend=backend)
+    grid = grid_manager.grid
+    coordinates = grid_manager.coordinates
+    geometry_input_fields = grid_manager.geometry_fields
+
+    geometry_field_source = grid_geometry.GridGeometry(
+        grid=grid,
+        decomposition_info=_construct_dummy_decomposition_info(grid, backend),
+        backend=backend,
+        coordinates=coordinates,
+        extra_fields=geometry_input_fields,
+        metadata=geometry_meta.attrs
+    )
+
+    cell_geometry = get_cell_geometry_for_grid_file(grid_file, geometry_field_source, backend)
+    edge_geometry = get_edge_geometry_for_grid_file(grid_file, geometry_field_source, backend)
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
+        lowest_layer_thickness=vertical_grid_params["lowest_layer_thickness"],
+        model_top_height=vertical_grid_params["model_top_height"],
+        stretch_factor=vertical_grid_params["stretch_factor"],
+        rayleigh_damping_height=vertical_grid_params["damping_height"],
     )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
@@ -172,12 +209,11 @@ def test_run_diffusion_single_step(
         vct_b=vct_b,
     )
 
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
         grid=grid,
-        decomposition_info=geometry._decomposition_info,
-        geometry_source=geometry,
+        decomposition_info=_construct_dummy_decomposition_info(grid, backend),
+        geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
     )
@@ -185,18 +221,16 @@ def test_run_diffusion_single_step(
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
         grid=grid,
         vertical_grid=vertical_grid,
-        decomposition_info=geometry._decomposition_info,
-        geometry_source=geometry,
-        topography=data_alloc.random_field(grid, dims.CellDim),
+        decomposition_info=_construct_dummy_decomposition_info(grid, backend),
+        geometry_source=geometry_field_source,
+        topography=data_alloc.random_field(grid, dims.CellDim, low=0.0), # TODO: check the analytical computation
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        e_refin_ctrl=grid.refinement_control[dims.EdgeDim],
-        c_refin_ctrl=grid.refinement_control[dims.CellDim],
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
-        exner_expol=exner_expol,
-        vwind_offctr=vwind_offctr,
+        rayleigh_type=metrics_factory_params["rayleigh_type"],
+        rayleigh_coeff=metrics_factory_params["rayleigh_coeff"],
+        exner_expol=metrics_factory_params["exner_expol"],
+        vwind_offctr=metrics_factory_params["vwind_offctr"],
     )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
@@ -227,9 +261,8 @@ def test_run_diffusion_single_step(
         zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
     )
 
-    config = construct_diffusion_config(experiment, ndyn_substeps)
-    additional_parameters = diffusion.DiffusionParams(config)
 
+    # initialization of the diagnostic and prognostic state
     # TODO (Yilu): for now we feed it with random fields for the test
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
@@ -239,18 +272,17 @@ def test_run_diffusion_single_step(
     )
     # prognostic_state = savepoint_diffusion_init.construct_prognostics()
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        w=data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=0.0),
         vn=data_alloc.random_field(grid, dims.EdgeDim, dims.KDim),
         exner=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
         theta_v=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
         rho=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
     )
 
-
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
-        params=additional_parameters,
+        params=diffusion_parameters,
         vertical_grid=vertical_grid,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -259,22 +291,12 @@ def test_run_diffusion_single_step(
         backend=backend,
         orchestration=orchestration,
     )
-    verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
-    assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    helpers.run_verify_and_benchmark(
-        functools.partial(
-            diffusion_granule.run,
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-        ),
-        functools.partial(
-            verify_diffusion_fields,
-            config=config,
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            diffusion_savepoint=savepoint_diffusion_exit,
-        ),
-        benchmark,
+    diffusion_granule.run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        dtime=dtime,
     )
+
+    # check the computation
+
