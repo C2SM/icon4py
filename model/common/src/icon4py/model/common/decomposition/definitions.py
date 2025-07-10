@@ -98,6 +98,7 @@ class DecompositionInfo:
     def __init__(
         self,
         klevels: int,
+        # TODO @halungge those were added for py2fgen, are they still needed
         num_cells: Optional[int] = None,
         num_edges: Optional[int] = None,
         num_vertices: Optional[int] = None,
