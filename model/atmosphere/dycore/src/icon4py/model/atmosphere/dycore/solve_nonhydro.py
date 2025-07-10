@@ -1492,12 +1492,7 @@ class SolveNonhydro:
             )
 
         self._vertically_implicit_solver_at_corrector_step(
-            vertical_mass_flux_at_cells_on_half_levels=z_fields.vertical_mass_flux_at_cells_on_half_levels,
-            tridiagonal_beta_coeff_at_cells_on_model_levels=z_fields.tridiagonal_beta_coeff_at_cells_on_model_levels,
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=z_fields.tridiagonal_alpha_coeff_at_cells_on_half_levels,
             next_w=prognostic_states.next.w,
-            rho_explicit_term=z_fields.rho_explicit_term,
-            exner_explicit_term=z_fields.exner_explicit_term,
             next_rho=prognostic_states.next.rho,
             next_exner=prognostic_states.next.exner,
             next_theta_v=prognostic_states.next.theta_v,
