@@ -331,25 +331,24 @@ def _apply_divergence_damping_and_update_vn(
     is_iau_active: bool,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    starting_vertical_index_for_3d_divdamp: gtx.int32,
     end_edge_halo_level_2: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
     end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.wpfloat]:
+    # add dw/dz for divergence damping term. In ICON, this stencil starts from k = kstart_dd3d until k = nlev - 1.
+    # Since scaling_factor_for_3d_divdamp is zero when k < kstart_dd3d, it is meaningless to execute computation
+    # above level kstart_dd3d. But we have decided to remove this manual optimization in icon4py.
+    # See discussion in this PR https://github.com/C2SM/icon4py/pull/793
     horizontal_gradient_of_total_divergence = concat_where(
-        starting_vertical_index_for_3d_divdamp <= dims.KDim,
-        concat_where(
-            (start_edge_lateral_boundary_level_7 <= dims.EdgeDim)
-            & (dims.EdgeDim < end_edge_halo_level_2),
-            _add_vertical_wind_derivative_to_divergence_damping(
-                hmask_dd3d=horizontal_mask_for_3d_divdamp,
-                scalfac_dd3d=scaling_factor_for_3d_divdamp,
-                inv_dual_edge_length=inv_dual_edge_length,
-                z_dwdz_dd=dwdz_at_cells_on_model_levels,
-                z_graddiv_vn=horizontal_gradient_of_normal_wind_divergence,
-            ),
-            horizontal_gradient_of_normal_wind_divergence,
+        (start_edge_lateral_boundary_level_7 <= dims.EdgeDim)
+        & (dims.EdgeDim < end_edge_halo_level_2),
+        _add_vertical_wind_derivative_to_divergence_damping(
+            hmask_dd3d=horizontal_mask_for_3d_divdamp,
+            scalfac_dd3d=scaling_factor_for_3d_divdamp,
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_dwdz_dd=dwdz_at_cells_on_model_levels,
+            z_graddiv_vn=horizontal_gradient_of_normal_wind_divergence,
         ),
         horizontal_gradient_of_normal_wind_divergence,
     )
@@ -660,7 +659,6 @@ def apply_divergence_damping_and_update_vn(
     is_iau_active: bool,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    starting_vertical_index_for_3d_divdamp: gtx.int32,
     end_edge_halo_level_2: gtx.int32,
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
@@ -707,7 +705,6 @@ def apply_divergence_damping_and_update_vn(
         - itime_scheme: ICON itime scheme (see ICON tutorial)
         - limited_area: option indicating the grid is limited area or not
         - divdamp_order: divergence damping order (see the class DivergenceDampingOrder)
-        - starting_vertical_index_for_3d_divdamp: starting vertical level index for 3D divergence damping (including dw/dz)
         - end_edge_halo_level_2: end index of second halo level zone for edges
         - start_edge_lateral_boundary_level_7: start index of 7th lateral boundary level (counting from outermost) zone for edges
         - start_edge_nudging_level_2: start index of second nudging level zone for edges
@@ -744,7 +741,6 @@ def apply_divergence_damping_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=limited_area,
         divdamp_order=divdamp_order,
-        starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
