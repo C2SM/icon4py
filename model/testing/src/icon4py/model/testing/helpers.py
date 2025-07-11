@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import backend as gtx_backend, constructors
-from gt4py.next.ffront.decorator import Program
+from gt4py.next.ffront.decorator import FieldOperator, Program
 from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
@@ -65,7 +65,11 @@ def allocate_data(
 ) -> dict[str, gtx.Field]:
     _allocate_field = constructors.as_field.partial(allocator=backend)
     input_data = {
-        k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
+        k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
+        if isinstance(v, tuple)
+        else _allocate_field(domain=v.domain, data=v.ndarray)
+        if not is_scalar_type(v) and k != "domain"
+        else v
         for k, v in input_data.items()
     }
     return input_data
@@ -115,7 +119,7 @@ def run_verify_and_benchmark(
     Function to perform verification and benchmarking of test_func (along with normally executing it).
 
     Args:
-        test_func: Function to be ran, verified and benchmarked.
+        test_func: Function to be run, verified and benchmarked.
         verification_func: Function to be used for verification of test_func.
         benchmark_fixture: pytest-benchmark fixture.
 
@@ -141,12 +145,21 @@ def _verify_stencil_test(
             else (out, (slice(None),), (slice(None),))
         )
 
-        np.testing.assert_allclose(
-            input_data[name].asnumpy()[gtslice],
-            reference_outputs[name][refslice],
-            equal_nan=True,
-            err_msg=f"Verification failed for '{name}'",
-        )
+        if isinstance(input_data[name], tuple):
+            for i_out_field, out_field in enumerate(input_data[name]):
+                np.testing.assert_allclose(
+                    out_field.asnumpy()[gtslice],
+                    reference_outputs[name][i_out_field][refslice],
+                    equal_nan=True,
+                    err_msg=f"Verification failed for '{name}[{i_out_field}]'",
+                )
+        else:
+            np.testing.assert_allclose(
+                input_data[name].asnumpy()[gtslice],
+                reference_outputs[name][refslice],
+                equal_nan=True,
+                err_msg=f"Verification failed for '{name}'",
+            )
 
 
 def _test_and_benchmark(
@@ -203,7 +216,7 @@ class StencilTest:
         ...         return dict(some_output=np.asarray(some_input) * 2)
     """
 
-    PROGRAM: ClassVar[Program]
+    PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: typing.Optional[tuple] = None
 

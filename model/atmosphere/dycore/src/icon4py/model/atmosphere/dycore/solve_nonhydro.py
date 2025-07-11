@@ -536,7 +536,7 @@ class SolveNonhydro:
             igradp_method=[self._config.igradp_method],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
-            offset_provider={},
+            offset_provider=self._grid.connectivities,
         )
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration.with_backend(
@@ -544,7 +544,7 @@ class SolveNonhydro:
         ).compile(
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels + 1)],
-            offset_provider={},
+            offset_provider=self._grid.connectivities,
         )
         self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
             self._backend
@@ -554,10 +554,12 @@ class SolveNonhydro:
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
         )
-        self._predictor_stencils_37_38 = (
-            nhsolve_stencils.predictor_stencils_37_38.with_backend(self._backend)
-            .with_connectivities(self._grid.connectivities)
-            .freeze()
+        self._predictor_stencils_37_38 = nhsolve_stencils.predictor_stencils_37_38.with_backend(
+            self._backend
+        ).compile(
+            vertical_start=[0],
+            vertical_end=[self._grid.num_levels + 1],
+            offset_provider=self._grid.connectivities,
         )
         self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend).compile(
             vertical_start=[gtx.int32(0)],

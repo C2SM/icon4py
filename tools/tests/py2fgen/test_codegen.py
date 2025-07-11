@@ -328,15 +328,16 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
         if __debug__:
             if logger.isEnabledFor(logging.DEBUG):
 
-                msg = "shape of two after computation = %s" % str(
-                    two.shape if two is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "two after computation: %s" % str(
+                two_arr = (
                     _conversion.as_array(ffi, two, _definitions.FLOAT64)
                     if two is not None
-                    else "None"
+                    else None
                 )
+                msg = "shape of two after computation = %s" % str(
+                    two_arr.shape if two is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "two after computation: %s" % str(two_arr) if two is not None else "None"
                 logger.debug(msg)
 
         if __debug__:
@@ -404,15 +405,16 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
         if __debug__:
             if logger.isEnabledFor(logging.DEBUG):
 
-                msg = "shape of one after computation = %s" % str(
-                    one.shape if one is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "one after computation: %s" % str(
+                one_arr = (
                     _conversion.as_array(ffi, one, _definitions.FLOAT32)
                     if one is not None
-                    else "None"
+                    else None
                 )
+                msg = "shape of one after computation = %s" % str(
+                    one_arr.shape if one is not None else "None"
+                )
+                logger.debug(msg)
+                msg = "one after computation: %s" % str(one_arr) if one is not None else "None"
                 logger.debug(msg)
 
         if __debug__:

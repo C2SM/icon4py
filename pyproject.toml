@@ -26,6 +26,7 @@ dependencies = [
     "icon4py-atmosphere-diffusion>=0.0.6",
     "icon4py-atmosphere-dycore>=0.0.6",
     "icon4py-atmosphere-microphysics>=0.0.6",
+    "icon4py-atmosphere-muphys>=0.0.6",
     "icon4py-common>=0.0.6",
     "icon4py-driver>=0.0.6",
 ]
@@ -112,11 +113,12 @@ explicit = true
 
 [tool.uv.sources]
 # ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master" }
-gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_staging_20250613" }
+gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_staging_20250704" }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
 icon4py-atmosphere-microphysics = { workspace = true }
+icon4py-atmosphere-muphys = { workspace = true }
 icon4py-common = { workspace = true }
 icon4py-driver = { workspace = true }
 icon4py-testing = { workspace = true }
@@ -129,6 +131,7 @@ members = [
     "model/atmosphere/diffusion",
     "model/atmosphere/dycore",
     "model/atmosphere/subgrid_scale_physics/microphysics",
+    "model/atmosphere/subgrid_scale_physics/muphys",
     "model/common",
     "model/driver",
     "model/testing",
