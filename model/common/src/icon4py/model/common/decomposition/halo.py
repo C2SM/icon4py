@@ -6,22 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
 import logging
 from types import ModuleType
-from typing import Optional, Protocol
+from typing import Optional, Protocol, runtime_checkable
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -35,22 +22,22 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 log = logging.getLogger(__name__)
 
-
-class DecompositionFactory(Protocol):
+@runtime_checkable
+class HaloConstructor(Protocol):
     """Callable that takes a mapping from faces (aka cells) to ranks"""
 
     def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         ...
 
 
-class NoHalos(DecompositionFactory):
+class NoHalos(HaloConstructor):
     def __init__(
         self,
-        size: base.HorizontalGridSize,
+        horizontal_size: base.HorizontalGridSize,
         num_levels: int,
         backend: Optional[gtx_backend.Backend] = None,
     ):
-        self._size = size
+        self._size = horizontal_size
         self._num_levels = num_levels
         self._backend = backend
 
@@ -71,8 +58,7 @@ def _create_dummy_decomposition_arrays(size: int, array_ns: ModuleType = np):
     halo_levels = array_ns.ones((size,), dtype=gtx.int32) * defs.DecompositionFlag.OWNED
     return indices, owner_mask, halo_levels
 
-
-class HaloGenerator(DecompositionFactory):
+class IconLikeHaloConstructor(HaloConstructor):
     """Creates necessary halo information for a given rank."""
 
     def __init__(
@@ -371,7 +357,7 @@ class HaloGenerator(DecompositionFactory):
 # TODO (@halungge): refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and
 #  the return value an array of shape (n_cells,)
 
-
+@runtime_checkable
 class Decomposer(Protocol):
     def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
         """
@@ -409,10 +395,10 @@ class SimpleMetisDecomposer(Decomposer):
         import pymetis
 
         cut_count, partition_index = pymetis.part_graph(nparts=n_part, adjacency=adjacency_matrix)
-        return self._xp.array(partition_index)
+        return np.array(partition_index)
 
 
 class SingleNodeDecomposer(Decomposer):
     def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
         """Dummy decomposer for single node: assigns all cells to rank = 0"""
-        return self._xp.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)
+        return np.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)

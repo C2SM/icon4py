@@ -621,7 +621,7 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     partitioner = halo.SimpleMetisDecomposer()
     face_face_connectivity = grid.connectivities[dims.C2E2CDim]
     labels = partitioner(face_face_connectivity, n_part=processor_props.comm_size)
-    halo_generator = halo.HaloGenerator(
+    halo_generator = halo.IconLikeHaloConstructor(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
         rank_mapping=labels,

@@ -15,7 +15,7 @@ import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import numpy as np
 
-from icon4py.model.common import dimension as dims, type_alias as ta, utils
+from icon4py.model.common import dimension as dims, type_alias as ta, utils, exceptions
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     halo,
@@ -84,20 +84,24 @@ class GridManager:
 
     """
 
+    def open(self):
+        """Open the gridfile resource for reading."""
+        self._reader = gridfile.GridFile(self._file_name)
+        self._reader.open()
+
     def __init__(
         self,
         transformation: IndexTransformation,
         grid_file: Union[pathlib.Path, str],
-        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove to separate vertical and horizontal grid
+        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove: - separate vertical from horizontal grid
         decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
-        halo_constructor: Optional[halo.HaloGenerator] = None,
         run_properties: decomposition.ProcessProperties = _single_node_properties,
     ):
         self._run_properties = run_properties
         self._transformation = transformation
         self._file_name = str(grid_file)
         self._decompose = decomposer
-        self._halo_constructor = halo_constructor
+        self._halo_constructor = None
         self._vertical_config = config
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
@@ -105,10 +109,6 @@ class GridManager:
         self._reader = None
         self._coordinates: CoordinateDict = {}
 
-    def open(self):
-        """Open the gridfile resource for reading."""
-        self._reader = gridfile.GridFile(self._file_name)
-        self._reader.open()
 
     def close(self):
         """close the gridfile resource."""
@@ -127,15 +127,18 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    # TODO # add args to __call__?
-    @utils.chainable
+    @utils.chainable # TODO split into to functions
     def set_decomposer(
         self,
         decomposer: Callable[[np.ndarray, int], np.ndarray],
-        run_properties: decomposition.ProcessProperties,
     ):
-        self._run_properties = run_properties
         self._decompose = decomposer
+        self._validate_decomposer()
+
+    def _validate_decomposer(self):
+        if not self._decompose or isinstance(self._decompose,
+                      halo.SingleNodeDecomposer) and not self._run_properties.single_node():
+            raise exceptions.InvalidConfigError(f"Need Decomposer for for multi node run.")
 
     def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool):
         if not self._reader:

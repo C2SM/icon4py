@@ -203,7 +203,7 @@ def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
 def test_halo_constructor_owned_cells(processor_props):  # F811 # fixture
     grid = simple.SimpleGrid()
 
-    halo_generator = halo.HaloGenerator(
+    halo_generator = halo.IconLikeHaloConstructor(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
@@ -220,7 +220,7 @@ def test_halo_constructor_validate_number_of_node_mismatch(processor_props):
     grid = simple.SimpleGrid()
     distribution = (processor_props.comm_size + 1) * np.ones((grid.num_cells,), dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
-        halo_generator = halo.HaloGenerator(
+        halo_generator = halo.IconLikeHaloConstructor(
             connectivities=grid.neighbor_tables,
             run_properties=processor_props,
             num_levels=1,
@@ -233,7 +233,7 @@ def test_halo_constructor_validate_number_of_node_mismatch(processor_props):
 def test_halo_constructor_validate_rank_mapping_wrong_shape(processor_props, shape):
     grid = simple.SimpleGrid()
     with pytest.raises(exceptions.ValidationError) as e:
-        halo_generator = halo.HaloGenerator(
+        halo_generator = halo.IconLikeHaloConstructor(
             connectivities=grid.neighbor_tables,
             run_properties=processor_props,
             num_levels=1,
@@ -253,7 +253,7 @@ def test_element_ownership_is_unique(dim, processor_props):  # F811 # fixture
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
     grid = simple.SimpleGrid()
-    halo_generator = halo.HaloGenerator(
+    halo_generator = halo.IconLikeHaloConstructor(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
@@ -297,7 +297,7 @@ def test_halo_constructor_decomposition_info_global_indices(processor_props, dim
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
     grid = simple.SimpleGrid()
-    halo_generator = halo.HaloGenerator(
+    halo_generator = halo.IconLikeHaloConstructor(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
@@ -324,7 +324,7 @@ def assert_same_entries(
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
 def test_halo_constructor_decomposition_info_halo_levels(processor_props, dim):  # F811 # fixture
     grid = simple.SimpleGrid()
-    halo_generator = halo.HaloGenerator(
+    halo_generator = halo.IconLikeHaloConstructor(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
@@ -410,7 +410,7 @@ def test_distributed_fields(processor_props):  # F811 # fixture
 
     labels = decompose(global_grid, processor_props)
 
-    halo_generator = halo.HaloGenerator(
+    halo_generator = halo.IconLikeHaloConstructor(
         connectivities=global_grid.neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
@@ -488,25 +488,25 @@ def test_halo_neighbor_access_c2e():
 
 
 def test_no_halo():
-    grid = simple.SimpleGrid()
-    halo_generator = halo.NoHalos(grid.config.horizontal_config, num_levels=10, backend=None)
-    mapping = np.zeros((grid.num_cells), dtype=int)
-    decomposition_info = halo_generator(mapping)
+    grid_size = base_grid.HorizontalGridSize(num_cells=9, num_edges=14, num_vertices=6)
+    halo_generator = halo.NoHalos(horizontal_size=grid_size, num_levels=10, backend=None)
+    decomposition = halo.SingleNodeDecomposer()
+    decomposition_info = halo_generator(decomposition(np.arange(grid_size.num_cells), 1))
     # cells
     np.testing.assert_allclose(
-        np.arange(grid.num_cells), decomposition_info.global_index(dims.CellDim)
+        np.arange(grid_size.num_cells), decomposition_info.global_index(dims.CellDim)
     )
     assert np.all(decomposition_info.owner_mask(dims.CellDim))
     assert np.all(decomposition_info.halo_levels(dims.CellDim) == defs.DecompositionFlag.OWNED)
     # edges
     np.testing.assert_allclose(
-        np.arange(grid.num_edges), decomposition_info.global_index(dims.EdgeDim)
+        np.arange(grid_size.num_edges), decomposition_info.global_index(dims.EdgeDim)
     )
     assert np.all(decomposition_info.halo_levels(dims.EdgeDim) == defs.DecompositionFlag.OWNED)
     assert np.all(decomposition_info.owner_mask(dims.EdgeDim))
     # vertices
     np.testing.assert_allclose(
-        np.arange(grid.num_vertices), decomposition_info.global_index(dims.VertexDim)
+        np.arange(grid_size.num_vertices), decomposition_info.global_index(dims.VertexDim)
     )
     assert np.all(decomposition_info.halo_levels(dims.VertexDim) == defs.DecompositionFlag.OWNED)
     assert np.all(decomposition_info.owner_mask(dims.VertexDim))
