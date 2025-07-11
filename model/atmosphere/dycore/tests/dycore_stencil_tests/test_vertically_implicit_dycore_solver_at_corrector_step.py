@@ -143,11 +143,16 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dynamical_increment.shape[1])
 
-        vertical_mass_flux_at_cells_on_half_levels = np.zeros((horizontal_end, vert_idx.size + 1), dtype=np.float64)
-        tridiagonal_beta_coeff_at_cells_on_model_levels = np.zeros((horizontal_end, vert_idx.size), dtype=np.float64)
-        tridiagonal_alpha_coeff_at_cells_on_half_levels = np.zeros((horizontal_end, vert_idx.size + 1), dtype=np.float64)
-        rho_explicit_term = np.zeros_like(next_rho)
-        exner_explicit_term = np.zeros_like(next_exner)
+        rng = np.random.default_rng()
+        vertical_mass_flux_at_cells_on_half_levels = rng.random((horizontal_end, vert_idx.size + 1))
+        tridiagonal_beta_coeff_at_cells_on_model_levels = rng.random(
+            (horizontal_end, vert_idx.size)
+        )
+        tridiagonal_alpha_coeff_at_cells_on_half_levels = rng.random(
+            (horizontal_end, vert_idx.size + 1)
+        )
+        rho_explicit_term = rng.random(next_rho.shape)
+        exner_explicit_term = rng.random(next_exner.shape)
 
         divergence_of_mass = np.zeros_like(current_rho)
         divergence_of_theta_v = np.zeros_like(current_theta_v)
