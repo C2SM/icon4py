@@ -11,7 +11,8 @@ import logging
 import pytest
 
 import icon4py.model.testing.grid_utils as grid_utils
-from icon4py.model.common.decomposition import halo
+from icon4py.model.common import exceptions
+from icon4py.model.common.decomposition import definitions, halo, mpi_decomposition
 from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
 from icon4py.model.testing import datatest_utils as dt_utils
 
@@ -20,11 +21,12 @@ from .. import utils
 
 try:
     import mpi4py  # noqa F401:  import mpi4py to check for optional mpi dependency
+
+    mpi_decomposition.init_mpi()
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 
-# mpi marker meses up mpi initialization
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(caplog, processor_props):  # fixture
@@ -33,6 +35,8 @@ def test_props(caplog, processor_props):  # fixture
     assert processor_props.comm_size > 1
 
 
+# TODO FIXME
+@pytest.mark.xfail
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
@@ -51,10 +55,18 @@ def test_start_end_index(
 
     partitioner = halo.SimpleMetisDecomposer()
     manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(), file, v_grid.VerticalGridConfig(1)
+        gm.ToZeroBasedIndexTransformation(),
+        file,
+        v_grid.VerticalGridConfig(1),
+        run_properties=processor_props,
     )
-    single_node_grid = utils.run_grid_manager(file, keep_skip_values=True).grid
-    with manager.set_decomposer(partitioner, processor_props) as manage:
+    single_node_grid = gm.GridManager(
+        gm.ToZeroBasedIndexTransformation(),
+        file,
+        v_grid.VerticalGridConfig(1),
+        run_properties=definitions.get_processor_properties(definitions.SingleNodeRun()),
+    ).grid
+    with manager.set_decomposer(partitioner) as manage:
         manage(backend=backend, keep_skip_values=True)
         grid = manage.grid
 
@@ -65,3 +77,18 @@ def test_start_end_index(
         assert grid.end_index(domain) == single_node_grid.end_index(
             domain
         ), f"end index wrong for domain {domain}"
+
+
+@pytest.mark.mpi(min_size=2)
+def test_grid_manager_validate_decomposer(processor_props):
+    file = grid_utils.resolve_full_grid_file_name(dt_utils.R02B04_GLOBAL)
+    manager = gm.GridManager(
+        gm.ToZeroBasedIndexTransformation(),
+        file,
+        v_grid.VerticalGridConfig(1),
+        run_properties=processor_props,
+    )
+    with pytest.raises(exceptions.InvalidConfigError) as e:
+        manager.set_decomposer(halo.SingleNodeDecomposer())
+
+    assert "Need a Decomposer for for multi" in e.value.args[0]

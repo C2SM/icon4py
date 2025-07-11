@@ -15,7 +15,7 @@ import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import numpy as np
 
-from icon4py.model.common import dimension as dims, type_alias as ta, utils, exceptions
+from icon4py.model.common import dimension as dims, exceptions, type_alias as ta, utils
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     halo,
@@ -109,7 +109,6 @@ class GridManager:
         self._reader = None
         self._coordinates: CoordinateDict = {}
 
-
     def close(self):
         """close the gridfile resource."""
         self._reader.close()
@@ -127,7 +126,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    @utils.chainable # TODO split into to functions
+    @utils.chainable  # TODO split into to functions
     def set_decomposer(
         self,
         decomposer: Callable[[np.ndarray, int], np.ndarray],
@@ -136,9 +135,12 @@ class GridManager:
         self._validate_decomposer()
 
     def _validate_decomposer(self):
-        if not self._decompose or isinstance(self._decompose,
-                      halo.SingleNodeDecomposer) and not self._run_properties.single_node():
-            raise exceptions.InvalidConfigError(f"Need Decomposer for for multi node run.")
+        if (
+            not self._decompose
+            or isinstance(self._decompose, halo.SingleNodeDecomposer)
+            and not self._run_properties.single_node()
+        ):
+            raise exceptions.InvalidConfigError("Need a Decomposer for for multi node run.")
 
     def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool):
         if not self._reader:

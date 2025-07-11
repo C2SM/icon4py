@@ -22,6 +22,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 log = logging.getLogger(__name__)
 
+
 @runtime_checkable
 class HaloConstructor(Protocol):
     """Callable that takes a mapping from faces (aka cells) to ranks"""
@@ -57,6 +58,7 @@ def _create_dummy_decomposition_arrays(size: int, array_ns: ModuleType = np):
     owner_mask = array_ns.ones((size,), dtype=bool)
     halo_levels = array_ns.ones((size,), dtype=gtx.int32) * defs.DecompositionFlag.OWNED
     return indices, owner_mask, halo_levels
+
 
 class IconLikeHaloConstructor(HaloConstructor):
     """Creates necessary halo information for a given rank."""
@@ -356,6 +358,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
 # TODO (@halungge): refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and
 #  the return value an array of shape (n_cells,)
+
 
 @runtime_checkable
 class Decomposer(Protocol):
