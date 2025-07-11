@@ -424,6 +424,7 @@ class SimpleGrid(BaseGrid):
             "E2C2EO": (self._construct_connectivity, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
             "E2C2E": (self._construct_connectivity, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
             "V2C": (self._construct_connectivity, dims.V2CDim, dims.VertexDim, dims.CellDim),
+            "C2V": (self._construct_connectivity, dims.C2VDim, dims.CellDim, dims.VertexDim),
             "V2E": (self._construct_connectivity, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
             "E2C": (self._construct_connectivity, dims.E2CDim, dims.EdgeDim, dims.CellDim),
             "E2V": (self._construct_connectivity, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
