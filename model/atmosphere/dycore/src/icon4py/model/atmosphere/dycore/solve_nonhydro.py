@@ -103,26 +103,6 @@ class IntermediateFields:
     """
     Declared as z_gradh_exner in ICON.
     """
-    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[
-        ta.vpfloat
-    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    """
-    Declared as z_alpha in ICON.
-    """
-    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[ta.vpfloat]
-    """
-    Declared as z_beta in ICON.
-    """
-    exner_explicit_term: fa.CellKField[ta.wpfloat]
-    """
-    Declared as z_exner_expl in ICON.
-    """
-    vertical_mass_flux_at_cells_on_half_levels: fa.EdgeKField[
-        ta.wpfloat
-    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    """
-    Declared as z_contr_w_fl_l in ICON.
-    """
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
     """
     Declared as z_rho_e in ICON.
@@ -143,10 +123,6 @@ class IntermediateFields:
     """
     Declared as z_graddiv_vn in ICON.
     """
-    rho_explicit_term: fa.CellKField[ta.wpfloat]
-    """
-    Declared as z_rho_expl in ICON.
-    """
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat]
     """
     Declared as z_dwdz_dd in ICON.
@@ -162,18 +138,6 @@ class IntermediateFields:
             horizontal_pressure_gradient=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-            ),
-            tridiagonal_beta_coeff_at_cells_on_model_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, backend=backend
-            ),
-            exner_explicit_term=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, backend=backend
-            ),
-            vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-            ),
             rho_at_edges_on_model_levels=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
@@ -183,7 +147,6 @@ class IntermediateFields:
             horizontal_gradient_of_normal_wind_divergence=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            rho_explicit_term=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
             dwdz_at_cells_on_model_levels=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, backend=backend
             ),
@@ -1210,12 +1173,7 @@ class SolveNonhydro:
 
         self._vertically_implicit_solver_at_predictor_step(
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            vertical_mass_flux_at_cells_on_half_levels=z_fields.vertical_mass_flux_at_cells_on_half_levels,
-            tridiagonal_beta_coeff_at_cells_on_model_levels=z_fields.tridiagonal_beta_coeff_at_cells_on_model_levels,
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=z_fields.tridiagonal_alpha_coeff_at_cells_on_half_levels,
             next_w=prognostic_states.next.w,
-            rho_explicit_term=z_fields.rho_explicit_term,
-            exner_explicit_term=z_fields.exner_explicit_term,
             next_rho=prognostic_states.next.rho,
             next_exner=prognostic_states.next.exner,
             next_theta_v=prognostic_states.next.theta_v,

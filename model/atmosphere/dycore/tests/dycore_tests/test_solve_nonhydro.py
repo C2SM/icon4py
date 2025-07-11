@@ -1868,12 +1868,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         backend
     )(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-        vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
-        tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
         next_w=next_w,
-        rho_explicit_term=rho_explicit_term,
-        exner_explicit_term=exner_explicit_term,
         next_rho=next_rho,
         next_exner=next_exner,
         next_theta_v=next_theta_v,
