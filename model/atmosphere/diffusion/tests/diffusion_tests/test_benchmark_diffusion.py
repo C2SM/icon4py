@@ -54,9 +54,9 @@ def _get_or_initialize_from_grid_file(grid_file, geometry_factory, backend, name
     if not grid_functionality[grid_file].get(name):
 
         cell_params = grid_states.CellParams(
-            cell_center_lat=geometry.get(geometry_meta.CELL_LAT),
-            cell_center_lon=geometry.get(geometry_meta.CELL_LON),
-            area=geometry.get(geometry_meta.CELL_AREA),
+            cell_center_lat=geometry_factory.get(geometry_meta.CELL_LAT),
+            cell_center_lon=geometry_factory.get(geometry_meta.CELL_LON),
+            area=geometry_factory.get(geometry_meta.CELL_AREA),
         )
         edge_params = grid_states.EdgeParams(
             edge_center_lat=geometry_factory.get(geometry_meta.EDGE_LAT),
@@ -155,7 +155,7 @@ def metrics_factory_params(
     "grid_file",
     [
         (
-            dt_utils.R02B04_GLOBAL
+            dt_utils.JABW_EXPERIMENT
         ),
     ],
 )
@@ -165,10 +165,13 @@ def test_run_diffusion_benchmark(
     grid_file,
     vertical_grid_params,
     metrics_factory_params,
+    topography_savepoint,
     ndyn_substeps,
     backend,
     orchestration,
 ):
+
+    topography = topography_savepoint.topo_c()
 
     # get configuration
     num_levels = 65
@@ -223,7 +226,7 @@ def test_run_diffusion_benchmark(
         vertical_grid=vertical_grid,
         decomposition_info=_construct_dummy_decomposition_info(grid, backend),
         geometry_source=geometry_field_source,
-        topography=data_alloc.random_field(grid, dims.CellDim, low=0.0), # TODO: check the analytical computation
+        topography=topography, #data_alloc.random_field(grid, dims.CellDim, low=0.0), # TODO: check the analytical computation
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
