@@ -115,6 +115,7 @@ def grid_init(
     on_gpu = c2e.array_ns is not np  # TODO(havogt): expose `on_gpu` from py2fgen
 
     grid = wrapper_common.construct_icon_grid(
+        global_params=icon_grid.GlobalGridParams.from_mean_cell_area(mean_cell_area),
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -138,7 +139,6 @@ def grid_init(
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
-    grid.set_global_params(icon_grid.GlobalGridParams.from_mean_cell_area(mean_cell_area))
 
     # Edge geometry
     edge_params = grid_states.EdgeParams(

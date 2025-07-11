@@ -33,7 +33,15 @@ def compare_values_shallow(value1, value2, obj_name="value"):
     # Handle comparison of dictionaries
     if isinstance(value1, dict) and isinstance(value2, dict):
         if value1.keys() != value2.keys():
-            return False, f"Dict keys mismatch for {obj_name}: {value1.keys()} != {value2.keys()}"
+            diff = set(value1.keys()) - set(value2.keys())
+            diff_str = f"- {diff}"
+            if len(diff) == 0:
+                diff = set(value2.keys()) - set(value1.keys())
+                diff_str = f"+ {diff}"
+            return (
+                False,
+                f"Dict keys mismatch for {obj_name}: {value1.keys()} != {value2.keys()}, diff: {diff_str}",
+            )
         result, error_message = compare_objects(value1, value2, obj_name)
         if not result:
             return False, error_message

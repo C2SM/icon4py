@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import dataclasses
 import functools
 import logging
@@ -13,10 +15,11 @@ import uuid
 from typing import Final, Optional
 
 import gt4py.next as gtx
-import numpy as np
+from gt4py.next import common as gtx_common
 
-from icon4py.model.common import constants, dimension as dims, utils
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.grid.base import data_alloc
 
 
 log = logging.getLogger(__name__)
@@ -107,91 +110,89 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
 
 
 class IconGrid(base.BaseGrid):
-    def __init__(self, id_: uuid.UUID):
+    def __init__(
+        self,
+        id_: uuid.UUID,
+        config: base.GridConfig,
+        start_end_indices: dict[gtx.Dimension, tuple[data_alloc.NDArray, data_alloc.NDArray]],
+        mesh: gtx_common.OffsetProvider,
+        global_params: GlobalGridParams,
+        refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
+    ):
         """Instantiate a grid according to the ICON model."""
-        super().__init__()
+        super().__init__(config=config, mesh=mesh)
         self._id = id_
-        self._refinement_control = {}
-        self._start_indices = {}
-        self._end_indices = {}
-        self.global_properties: GlobalGridParams = None
-        self._connectivity_mapping = {
-            "C2E": (self._construct_connectivity, dims.C2EDim, dims.CellDim, dims.EdgeDim),
-            "E2C": (self._construct_connectivity, dims.E2CDim, dims.EdgeDim, dims.CellDim),
-            "E2V": (self._construct_connectivity, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
-            "C2E2C": (self._construct_connectivity, dims.C2E2CDim, dims.CellDim, dims.CellDim),
-            "C2E2C2E": (self._construct_connectivity, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
-            "E2EC": (
-                self._get_connectivity_sparse_fields,
-                dims.E2CDim,
-                dims.EdgeDim,
-                dims.ECDim,
-            ),
-            "C2E2CO": (self._construct_connectivity, dims.C2E2CODim, dims.CellDim, dims.CellDim),
-            "E2C2V": (self._construct_connectivity, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
-            "V2E": (self._construct_connectivity, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
-            "V2C": (self._construct_connectivity, dims.V2CDim, dims.VertexDim, dims.CellDim),
-            "C2V": (self._construct_connectivity, dims.C2VDim, dims.CellDim, dims.VertexDim),
-            "E2ECV": (
-                self._get_connectivity_sparse_fields,
-                dims.E2C2VDim,
-                dims.EdgeDim,
-                dims.ECVDim,
-            ),
-            "C2CEC": (
-                self._get_connectivity_sparse_fields,
-                dims.C2E2CDim,
-                dims.CellDim,
-                dims.CECDim,
-            ),
-            "C2CE": (
-                self._get_connectivity_sparse_fields,
-                dims.C2EDim,
-                dims.CellDim,
-                dims.CEDim,
-            ),
-            "E2C2E": (self._construct_connectivity, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
-            "E2C2EO": (self._construct_connectivity, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
-            "C2E2C2E2C": (
-                self._construct_connectivity,
-                dims.C2E2C2E2CDim,
-                dims.CellDim,
-                dims.CellDim,
-            ),
-            "Koff": (lambda: dims.KDim,),  # Koff is a special case
-            "C2CECEC": (
-                self._get_connectivity_sparse_fields,
-                dims.C2E2C2E2CDim,
-                dims.CellDim,
-                dims.CECECDim,
-            ),
-        }
+        self._refinement_control = refinement_control
+        # TODO maybe store as single dict?
+        self._start_indices = {k: v[0] for k, v in start_end_indices.items()}
+        self._end_indices = {k: v[1] for k, v in start_end_indices.items()}
+        self.global_properties: GlobalGridParams = global_params  # TODO params or properties???
+
+    def __post_init__(self):
+        ...
+        # TODO use this info to verify we have all connectivities set
+        # self._connectivity_mapping = {
+        #     "C2E": (self._construct_connectivity, dims.C2EDim, dims.CellDim, dims.EdgeDim),
+        #     "E2C": (self._construct_connectivity, dims.E2CDim, dims.EdgeDim, dims.CellDim),
+        #     "E2V": (self._construct_connectivity, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
+        #     "C2E2C": (self._construct_connectivity, dims.C2E2CDim, dims.CellDim, dims.CellDim),
+        #     "C2E2C2E": (self._construct_connectivity, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
+        #     "E2EC": (
+        #         self._get_connectivity_sparse_fields,
+        #         dims.E2CDim,
+        #         dims.EdgeDim,
+        #         dims.ECDim,
+        #     ),
+        #     "C2E2CO": (self._construct_connectivity, dims.C2E2CODim, dims.CellDim, dims.CellDim),
+        #     "E2C2V": (self._construct_connectivity, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
+        #     "V2E": (self._construct_connectivity, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
+        #     "V2C": (self._construct_connectivity, dims.V2CDim, dims.VertexDim, dims.CellDim),
+        #     "C2V": (self._construct_connectivity, dims.C2VDim, dims.CellDim, dims.VertexDim),
+        #     "E2ECV": (
+        #         self._get_connectivity_sparse_fields,
+        #         dims.E2C2VDim,
+        #         dims.EdgeDim,
+        #         dims.ECVDim,
+        #     ),
+        #     "C2CEC": (
+        #         self._get_connectivity_sparse_fields,
+        #         dims.C2E2CDim,
+        #         dims.CellDim,
+        #         dims.CECDim,
+        #     ),
+        #     "C2CE": (
+        #         self._get_connectivity_sparse_fields,
+        #         dims.C2EDim,
+        #         dims.CellDim,
+        #         dims.CEDim,
+        #     ),
+        #     "E2C2E": (self._construct_connectivity, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
+        #     "E2C2EO": (self._construct_connectivity, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
+        #     "C2E2C2E2C": (
+        #         self._construct_connectivity,
+        #         dims.C2E2C2E2CDim,
+        #         dims.CellDim,
+        #         dims.CellDim,
+        #     ),
+        #     "Koff": (lambda: dims.KDim,),  # Koff is a special case
+        #     "C2CECEC": (
+        #         self._get_connectivity_sparse_fields,
+        #         dims.C2E2C2E2CDim,
+        #         dims.CellDim,
+        #         dims.CECECDim,
+        #     ),
+        # }
 
     def __repr__(self):
         return f"{self.__class__.__name__}: id={self._id}, R{self.global_properties.root}B{self.global_properties.level}"
 
-    def __eq__(self, other: "IconGrid"):
+    def __eq__(self, other: IconGrid):
         """TODO (@halungge)  this might not be enough at least for the distributed case: we might additional properties like sizes"""
         if isinstance(other, IconGrid):
             return self.id == other.id
 
         else:
             return False
-
-    @utils.chainable
-    def set_start_end_indices(
-        self,
-        dim: gtx.Dimension,
-        start_indices: np.ndarray,
-        end_indices: np.ndarray,
-    ):
-        log.debug(f"Using start_indices {dim} {start_indices}, end_indices {dim} {end_indices}")
-        self._start_indices[dim] = start_indices.astype(gtx.int32)
-        self._end_indices[dim] = end_indices.astype(gtx.int32)
-
-    @utils.chainable
-    def set_global_params(self, global_params: GlobalGridParams):
-        self.global_properties = global_params
 
     @property
     def num_levels(self):
@@ -254,15 +255,6 @@ class IconGrid(base.BaseGrid):
     @property
     def lvert_nest(self):
         return True if self.config.lvertnest else False
-
-    @property
-    def refinement_control(self) -> dict[gtx.Dimension, gtx.Field]:
-        """Return the refinement control field for the grid."""
-        return self._refinement_control
-
-    @utils.chainable
-    def set_refinement_control(self, refinement_control: dict[gtx.Dimension, gtx.Field]):
-        return self._refinement_control.update(refinement_control)
 
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """

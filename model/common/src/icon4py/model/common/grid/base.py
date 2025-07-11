@@ -10,17 +10,16 @@ import enum
 import functools
 import logging
 import uuid
-import warnings
 from abc import ABC, abstractmethod
 from types import ModuleType
-from typing import Callable, Dict, Sequence
+from typing import Dict, Sequence
 
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import common as gtx_common
 
-from icon4py.model.common import dimension as dims, utils
-from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -78,12 +77,73 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
+def construct_connectivity(
+    offset: gtx.FieldOffset,
+    table: data_alloc.NDArray,
+    skip_value: int | None = None,
+    *,
+    array_ns: ModuleType,
+    do_replace_skip_values: bool,
+):
+    from_dim, dim = offset.target
+    to_dim = offset.source
+
+    assert (
+        table.dtype == gtx.int32
+    ), f'Neighbor table\'s "{dim}" data type must be gtx.int32. Instead it\'s "{table.dtype}"'
+
+    # TODO maybe caller should already do the replacement?
+    if do_replace_skip_values:
+        _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
+        skip_value = None
+        table = replace_skip_values(dim, table, array_ns=array_ns)
+
+    return gtx.as_connectivity(
+        [from_dim, dim],
+        to_dim,
+        data=table,
+        skip_value=skip_value,
+    )
+
+
+def construct_1d_sparse_table(shape2d: tuple[int, int], array_ns: ModuleType) -> data_alloc.NDArray:
+    return array_ns.arange(shape2d[0] * shape2d[1], dtype=gtx.int32).reshape(shape2d)
+
+
 class BaseGrid(ABC):
-    def __init__(self):
-        self.config: GridConfig = None
-        self._neighbor_tables: Dict[gtx.Dimension, data_alloc.NDArray] = {}
-        self.size: Dict[gtx.Dimension, int] = {}
-        self._connectivity_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
+    def __init__(
+        self,
+        config: GridConfig,
+        mesh: gtx_common.OffsetProvider,
+        *,
+        extra_sizes: dict[gtx.Dimension, int] | None = None,
+    ):
+        self.config: GridConfig = config
+        # TODO(havogt): use `KDim + x` syntax and remove `Koff` from mesh
+        self.mesh = {**mesh, "Koff": dims.KDim}
+
+        # 1D sparse field sizes cannot be decuded from the mesh, if connectivities
+        # have padding. Therefore, they must be explicitly specified.
+        self._extra_sizes = extra_sizes or {}
+
+    @property
+    def connectivities(self) -> gtx_common.OffsetProvider:
+        # TODO decide mesh vs connectivities
+        return self.mesh
+
+    @property  # TODO cached once frozen dataclass
+    def size(self) -> Dict[gtx.Dimension, int]:
+        sizes = {
+            dims.VertexDim: self.config.num_vertices,
+            dims.EdgeDim: self.config.num_edges,
+            dims.CellDim: self.config.num_cells,
+            dims.KDim: self.config.num_levels,
+            **self._extra_sizes,
+        }
+        for connectivity in self.connectivities.values():
+            if not isinstance(connectivity, gtx.Dimension):
+                sizes[connectivity.domain.dims[1]] = connectivity.shape[1]
+        return sizes
 
     @property
     @abstractmethod
@@ -120,14 +180,15 @@ class BaseGrid(ABC):
     def geometry_type(self) -> GeometryType:
         ...
 
-    @functools.cached_property
-    def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
-        return {
-            dim: v.ndarray
-            for k, v in self.connectivities.items()
-            if (dim := dims.DIMENSIONS_BY_OFFSET_NAME.get(k)) is not None
-            and gtx_common.is_neighbor_connectivity(v)
-        }
+    # TODO check if still needed
+    # @functools.cached_property
+    # def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
+    #     return {
+    #         dim: v.ndarray
+    #         for k, v in self.connectivities.items()
+    #         if (dim := dims.DIMENSIONS_BY_OFFSET_NAME.get(k)) is not None
+    #         and gtx_common.is_neighbor_connectivity(v)
+    #     }
 
     @functools.cached_property
     def limited_area(self) -> bool:
@@ -138,73 +199,72 @@ class BaseGrid(ABC):
         """Determine whether a sparse dimension has skip values."""
         ...
 
-    @functools.cached_property
-    def connectivities(self) -> Dict[str, gtx.Connectivity]:
-        connectivity_map = {}
-        for key, value in self._connectivity_mapping.items():
-            try:
-                method, *args = value
-                connectivity_map[key] = method(*args) if args else method()
-            except MissingConnectivity:
-                warnings.warn(f"{key} connectivity is missing from grid.", stacklevel=2)
+    # @functools.cached_property
+    # def connectivities(self) -> Dict[str, gtx.Connectivity]:
+    #     connectivity_map = {}
+    #     for key, value in self._connectivity_mapping.items():
+    #         try:
+    #             method, *args = value
+    #             connectivity_map[key] = method(*args) if args else method()
+    #         except MissingConnectivity:
+    #             warnings.warn(f"{key} connectivity is missing from grid.", stacklevel=2)
 
-        return connectivity_map
+    #     return connectivity_map
 
-    @utils.chainable
-    def set_neighbor_tables(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
-        self._neighbor_tables.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
-        self.size.update({d: t.shape[1] for d, t in connectivity.items()})
+    # @utils.chainable
+    # def set_neighbor_tables(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
+    #     self._neighbor_tables.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
+    #     self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
-    @utils.chainable
-    def set_config(self, config: GridConfig):
-        self.config = config
-        self._update_size()
+    # @utils.chainable
+    # def add_connectivity(self, offset: gtx.FieldOffset, table: data_alloc.NDArray):
+    #     from_dim, dim = offset.target
+    #     to_dim = offset.source
 
-    def _update_size(self):
-        self.size[dims.VertexDim] = self.config.num_vertices
-        self.size[dims.CellDim] = self.config.num_cells
-        self.size[dims.EdgeDim] = self.config.num_edges
-        self.size[dims.KDim] = self.config.num_levels
+    #     assert (
+    #         table.dtype == gtx.int32
+    #     ), f'Neighbor table\'s "{dim}" data type must be gtx.int32. Instead it\'s "{table.dtype}"'
 
-    def _construct_connectivity(self, dim, from_dim, to_dim):
-        if dim not in self._neighbor_tables:
-            raise MissingConnectivity(f"no neighbor_table for dimension {dim}.")
-        assert (
-            self._neighbor_tables[dim].dtype == gtx.int32
-        ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
-            dim, self._neighbor_tables[dim].dtype
-        )
-        skip_value = -1 if self._has_skip_values(dim) else None
-        if self._do_replace_skip_values_in_table(dim):
-            _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
-            skip_value = None
-            neighbor_table = replace_skip_values(
-                dim, self._neighbor_tables[dim], array_ns=data_alloc.array_ns(self.config.on_gpu)
-            )
-        else:
-            neighbor_table = self._neighbor_tables[dim]
+    #     skip_value = -1 if self._has_skip_values(dim) else None
+    #     if self._do_replace_skip_values_in_table(dim):
+    #         _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
+    #         skip_value = None
+    #         table = replace_skip_values(
+    #             dim, table, array_ns=data_alloc.array_ns(self.config.on_gpu)
+    #         )
 
-        if (dimension_size := self.size[from_dim]) <= neighbor_table.shape[0]:
-            # TODO(havogt): Introduce a layer that isolates ICON Fortran related hacks.
-            # In Fortran, all connectivities have `nproma` size.
-            # Here we are restricting the connectivity to the actual size as this is currently used
-            # for sizing GT4Py temporaries.
-            _log.info(
-                f"Restricting connectivity for {dim} to size of {from_dim} ({dimension_size})."
-            )
-            neighbor_table = neighbor_table[:dimension_size, :]
+    #     if (dimension_size := self.size[from_dim]) <= table.shape[0]:
+    #         # TODO(havogt): Introduce a layer that isolates ICON Fortran related hacks.
+    #         # In Fortran, all connectivities have `nproma` size.
+    #         # Here we are restricting the connectivity to the actual size as this is currently used
+    #         # for sizing GT4Py temporaries.
+    #         _log.info(
+    #             f"Restricting connectivity for {dim} to size of {from_dim} ({dimension_size})."
+    #         )
+    #         table = table[:dimension_size, :]
 
-        connectivity = gtx.as_connectivity(
-            [from_dim, dim],
-            to_dim,
-            data=neighbor_table,
-            skip_value=skip_value,
-        )
-        return connectivity
+    #     self.connectivities[offset.value] = gtx.as_connectivity(
+    #         [from_dim, dim],
+    #         to_dim,
+    #         data=table,
+    #         skip_value=skip_value,
+    #     )
+
+    # TODO(havogt): why not only in init?
+    # @utils.chainable
+    # def set_config(self, config: GridConfig):
+    #     self.config = config
+    #     self._update_size()
+
+    # def _update_size(self):
+    #     self.size[dims.VertexDim] = self.config.num_vertices
+    #     self.size[dims.CellDim] = self.config.num_cells
+    #     self.size[dims.EdgeDim] = self.config.num_edges
+    #     self.size[dims.KDim] = self.config.num_levels
 
     def _do_replace_skip_values_in_table(self, dim: gtx.Dimension) -> bool:
         """
-        Check if the skip_values in a neighbor table  should be replaced.
+        Check if the skip_values in a neighbor table should be replaced.
 
         There are various reasons for skip_values in neighbor tables depending on the type of grid:
             - pentagon points (icosahedral grid),
@@ -229,29 +289,29 @@ class BaseGrid(ABC):
             self.limited_area or not self._has_skip_values(dim)
         )
 
-    def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
-        if dim not in self._neighbor_tables:
-            raise MissingConnectivity(f"No neighbor table for dimension {dim}.")
-        xp = data_alloc.array_ns(self.config.on_gpu)
-        return grid_utils.connectivity_for_1d_sparse_fields(
-            dim,
-            self._neighbor_tables[dim].shape,
-            from_dim,
-            to_dim,
-            self.size[from_dim],
-            has_skip_values=False,
-            array_ns=xp,
-        )
+    # def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
+    #     if dim not in self._neighbor_tables:
+    #         raise MissingConnectivity(f"No neighbor table for dimension {dim}.")
+    #     xp = data_alloc.array_ns(self.config.on_gpu)
+    #     return grid_utils.connectivity_for_1d_sparse_fields(
+    #         dim,
+    #         self._neighbor_tables[dim].shape,
+    #         from_dim,
+    #         to_dim,
+    #         self.size[from_dim],
+    #         has_skip_values=False,
+    #         array_ns=xp,
+    #     )
 
+    # TODO remove this function and use `connectivities[name]`` directly
     def get_connectivity(self, name: str) -> gtx.Connectivity:
-        if name in self._connectivity_mapping:
-            method, *args = self._connectivity_mapping[name]
-            return method(*args)
+        if name in self.mesh:
+            return self.mesh[name]
         else:
             raise MissingConnectivity(f"Offset provider for {name} not found.")
 
-    def update_size_connectivities(self, new_sizes):
-        self.size.update(new_sizes)
+    # def update_size_connectivities(self, new_sizes):
+    #     self.size.update(new_sizes)
 
     @abstractmethod
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
