@@ -254,7 +254,7 @@ class HaloGenerator(DecompositionFactory):
         """
         self._validate_mapping(face_to_rank)
         #: cells
-        owned_cells = self.owned_cells()  # global indices of owned cells
+        owned_cells = self.owned_cells(face_to_rank)  # global indices of owned cells
         first_halo_cells = self.next_halo_line(owned_cells)
         second_halo_cells = self.next_halo_line(first_halo_cells, owned_cells)
 
@@ -293,6 +293,7 @@ class HaloGenerator(DecompositionFactory):
         )
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
         vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
+            face_to_rank,
             vertex_owner_mask,
             all_vertices,
             vertex_on_cutting_line,
@@ -343,6 +344,7 @@ class HaloGenerator(DecompositionFactory):
         # construct the owner mask
         edge_owner_mask = self._xp.isin(all_edges, edges_on_owned_cells)
         edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
+            face_to_rank,
             edge_owner_mask,
             all_edges,
             edge_intersect_owned_first_line,

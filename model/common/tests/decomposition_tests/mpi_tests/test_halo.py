@@ -256,12 +256,11 @@ def test_element_ownership_is_unique(dim, processor_props):  # F811 # fixture
     halo_generator = halo.HaloGenerator(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
-        rank_mapping=SIMPLE_DISTRIBUTION,
         num_levels=1,
         backend=backend,
     )
 
-    decomposition_info = halo_generator()
+    decomposition_info = halo_generator(SIMPLE_DISTRIBUTION)
     owned = decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
     if not mpi4py.MPI.Is_initialized():
@@ -301,11 +300,10 @@ def test_halo_constructor_decomposition_info_global_indices(processor_props, dim
     halo_generator = halo.HaloGenerator(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
-        rank_mapping=SIMPLE_DISTRIBUTION,
         num_levels=1,
     )
 
-    decomp_info = halo_generator()
+    decomp_info = halo_generator(SIMPLE_DISTRIBUTION)
     my_halo = decomp_info.global_index(dim, defs.DecompositionInfo.EntryType.HALO)
     print(f"rank {processor_props.rank} has halo {dim} : {my_halo}")
     assert my_halo.size == len(HALO[dim][processor_props.rank])
@@ -329,10 +327,9 @@ def test_halo_constructor_decomposition_info_halo_levels(processor_props, dim): 
     halo_generator = halo.HaloGenerator(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
-        rank_mapping=SIMPLE_DISTRIBUTION,
         num_levels=1,
     )
-    decomp_info = halo_generator()
+    decomp_info = halo_generator(SIMPLE_DISTRIBUTION)
     my_halo_levels = decomp_info.halo_levels(dim)
     print(f"{dim.value}: rank {processor_props.rank} has halo levels {my_halo_levels} ")
     if dim != dims.EdgeDim:
@@ -477,8 +474,9 @@ def assert_gathered_field_against_global(
 #  Will uses geofac_div and geofac_n2s
 
 
+@pytest.mark.xfail
 def test_halo_neighbor_access_c2e():
-    ...
+    pytest.fail("TODO implement")
     # geofac_div = primal_edge_length(C2E) * edge_orientation / area
 
     # 1. read grid and distribue - GridManager
@@ -494,15 +492,21 @@ def test_no_halo():
     halo_generator = halo.NoHalos(grid.config.horizontal_config, num_levels=10, backend=None)
     mapping = np.zeros((grid.num_cells), dtype=int)
     decomposition_info = halo_generator(mapping)
+    # cells
     np.testing.assert_allclose(
         np.arange(grid.num_cells), decomposition_info.global_index(dims.CellDim)
     )
     assert np.all(decomposition_info.owner_mask(dims.CellDim))
+    assert np.all(decomposition_info.halo_levels(dims.CellDim) == defs.DecompositionFlag.OWNED)
+    # edges
     np.testing.assert_allclose(
         np.arange(grid.num_edges), decomposition_info.global_index(dims.EdgeDim)
     )
+    assert np.all(decomposition_info.halo_levels(dims.EdgeDim) == defs.DecompositionFlag.OWNED)
     assert np.all(decomposition_info.owner_mask(dims.EdgeDim))
+    # vertices
     np.testing.assert_allclose(
         np.arange(grid.num_vertices), decomposition_info.global_index(dims.VertexDim)
     )
+    assert np.all(decomposition_info.halo_levels(dims.VertexDim) == defs.DecompositionFlag.OWNED)
     assert np.all(decomposition_info.owner_mask(dims.VertexDim))
