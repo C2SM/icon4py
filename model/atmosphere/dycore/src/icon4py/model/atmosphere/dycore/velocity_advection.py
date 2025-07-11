@@ -63,6 +63,7 @@ class VelocityAdvection:
         self._compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction = compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             nflatlev=[self.vertical_params.nflatlev],
             skip_compute_predictor_vertical_advection=[False, True],
             vertical_start=[gtx.int32(0)],
@@ -72,6 +73,7 @@ class VelocityAdvection:
         self._compute_horizontal_advection_of_w = compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self.grid.num_levels)],
             offset_provider=self.grid.connectivities,
@@ -80,6 +82,7 @@ class VelocityAdvection:
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms = compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_terms.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             nflatlev=[self.vertical_params.nflatlev],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self.grid.num_levels + 1)],
@@ -89,6 +92,7 @@ class VelocityAdvection:
         self._compute_maximum_cfl_and_clip_contravariant_vertical_velocity = compute_maximum_cfl_and_clip_contravariant_vertical_velocity.compute_maximum_cfl_and_clip_contravariant_vertical_velocity.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             vertical_start=[gtx.int32(max_v_start - 1)],
             vertical_end=[gtx.int32(self.grid.num_levels - 3)],
             offset_provider={},
@@ -96,6 +100,7 @@ class VelocityAdvection:
         self._interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w = compute_cell_diagnostics_for_velocity_advection.interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_corrected_w.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             nflatlev=[self.vertical_params.nflatlev],
             nlev=[self.grid.num_levels],
             vertical_start=[0],
@@ -106,6 +111,7 @@ class VelocityAdvection:
         self._compute_advection_in_vertical_momentum_equation = compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
             nlev=[gtx.int32(self.grid.num_levels)],
             vertical_start=[0],
@@ -116,6 +122,7 @@ class VelocityAdvection:
         self._compute_advection_in_horizontal_momentum_equation = compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
             nlev=[self.grid.num_levels],
             vertical_start=[gtx.int32(0)],
@@ -279,7 +286,6 @@ class VelocityAdvection:
                 max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
             ),
             vertical_end=gtx.int32(self.grid.num_levels - 3),
-            offset_provider={},
         )
 
         # note level_mask removed, because all accesses where additionally checking cfl_clipping
@@ -420,7 +426,6 @@ class VelocityAdvection:
                 max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
             ),
             vertical_end=gtx.int32(self.grid.num_levels - 3),
-            offset_provider={},
         )
 
         self._compute_advection_in_vertical_momentum_equation(
