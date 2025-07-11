@@ -79,6 +79,7 @@ def test_start_end_index(
         ), f"end index wrong for domain {domain}"
 
 
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(processor_props):
     file = grid_utils.resolve_full_grid_file_name(dt_utils.R02B04_GLOBAL)

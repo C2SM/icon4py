@@ -8,16 +8,13 @@
 import pathlib
 from typing import Optional
 
-import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import halo
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
     grid_manager as gm,
-    icon,
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -133,25 +130,15 @@ def get_grid_geometry(
     num_levels = get_num_levels(experiment)
     register_name = "_".join((experiment, data_alloc.backend_name(backend)))
 
-    def _construct_dummy_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
-        def _add_dimension(dim: gtx.Dimension):
-            indices = data_alloc.index_field(grid, dim, backend=backend)
-            owner_mask = xp.ones((grid.size[dim],), dtype=bool)
-            decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
-
-        decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
-        _add_dimension(dims.EdgeDim)
-        _add_dimension(dims.VertexDim)
-        _add_dimension(dims.CellDim)
-
-        return decomposition_info
-
     def _construct_grid_geometry():
         gm = _download_and_load_gridfile(
             grid_file, keep_skip_values=True, num_levels=num_levels, backend=backend
         )
         grid = gm.grid
-        decomposition_info = _construct_dummy_decomposition_info(grid)
+        dummy_halo_constructor = halo.NoHalos(
+            horizontal_size=grid.config.horizontal_config, num_levels=num_levels, backend=backend
+        )
+        decomposition_info = dummy_halo_constructor(xp.zeros((grid.num_levels,), dtype=int))
         geometry_source = geometry.GridGeometry(
             grid, decomposition_info, backend, gm.coordinates, gm.geometry, geometry_attrs.attrs
         )

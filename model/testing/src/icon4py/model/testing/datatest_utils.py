@@ -14,8 +14,6 @@ from typing import Optional
 
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common.decomposition import definitions as decomposition
-
 
 DEFAULT_TEST_DATA_FOLDER = "testdata"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
@@ -136,10 +134,6 @@ def get_grid_id_for_experiment(experiment) -> uuid.UUID:
         return GRID_IDS[experiment]
     except KeyError as err:
         raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
-
-
-def get_processor_properties_for_run(run_instance):
-    return decomposition.get_processor_properties(run_instance)
 
 
 def get_ranked_data_path(base_path, processor_properties):

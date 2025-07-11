@@ -20,6 +20,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition,
     halo,
 )
+from icon4py.model.common.decomposition.halo import HaloConstructor
 from icon4py.model.common.grid import (
     base,
     gridfile,
@@ -135,9 +136,8 @@ class GridManager:
         self._validate_decomposer()
 
     def _validate_decomposer(self):
-        if (
-            not self._decompose
-            or isinstance(self._decompose, halo.SingleNodeDecomposer)
+        if not self._decompose or (
+            isinstance(self._decompose, halo.SingleNodeDecomposer)
             and not self._run_properties.single_node()
         ):
             raise exceptions.InvalidConfigError("Need a Decomposer for for multi node run.")
@@ -145,6 +145,7 @@ class GridManager:
     def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool):
         if not self._reader:
             self.open()
+
         self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
@@ -353,6 +354,7 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(backend)
         on_gpu = data_alloc.is_cupy_device(backend)
+        grid_size = self._read_horizontal_grid_size()
         global_connectivities_for_halo_construction = {
             dims.C2E2C: self._get_index_field(gridfile.ConnectivityName.C2E2C),
             dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
@@ -360,17 +362,20 @@ class GridManager:
             dims.V2E: self._get_index_field(gridfile.ConnectivityName.V2E),
             dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
             dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
+            dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
         }
-        if not self._run_properties.single_node():
-            cells_to_rank_mapping = self._decompose(
-                global_connectivities_for_halo_construction[dims.C2E2C],
-                self._run_properties.comm_size,
-            )
-            self._halo_constructor(cells_to_rank_mapping)
+        cells_to_rank_mapping = self._decompose(
+            global_connectivities_for_halo_construction[dims.C2E2C],
+            self._run_properties.comm_size,
+        )
+        halo_constructor = self._initialize_halo_constructor(
+            grid_size, global_connectivities_for_halo_construction, backend
+        )
+        decomposition_info = halo_constructor(cells_to_rank_mapping)
 
+        ## TODO from here do local reads (and halo exchanges!!)
         global_connectivities = {
             dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
-            dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
         }
 
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
@@ -381,7 +386,7 @@ class GridManager:
         refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
         limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
         grid = self._initialize_global(
-            with_skip_values=with_skip_values, limited_area=limited_area, on_gpu=on_gpu
+            grid_size, with_skip_values=with_skip_values, limited_area=limited_area, on_gpu=on_gpu
         )
         grid.set_refinement_control(refinement_fields)
 
@@ -406,7 +411,11 @@ class GridManager:
         return field
 
     def _initialize_global(
-        self, with_skip_values: bool, limited_area: bool, on_gpu: bool
+        self,
+        grid_size: base.HorizontalGridSize,
+        with_skip_values: bool,
+        limited_area: bool,
+        on_gpu: bool,
     ) -> icon.IconGrid:
         """
         Read basic information from the grid file:
@@ -423,16 +432,11 @@ class GridManager:
             IconGrid: basic grid, setup only with id and config information.
 
         """
-        num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
-        num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
-        num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
+
         uuid = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
-        grid_size = base.HorizontalGridSize(
-            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
-        )
         config = base.GridConfig(
             horizontal_config=grid_size,
             vertical_size=self._vertical_config.num_levels,
@@ -442,6 +446,35 @@ class GridManager:
         )
         grid = icon.IconGrid(uuid).set_config(config).set_global_params(global_params)
         return grid
+
+    def _read_horizontal_grid_size(self):
+        num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
+        num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
+        num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
+        grid_size = base.HorizontalGridSize(
+            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
+        )
+        return grid_size
+
+    def _initialize_halo_constructor(
+        self,
+        grid_size: base.HorizontalGridSize,
+        connectivities: dict,
+        backend=Optional[gtx_backend.Backend],
+    ) -> HaloConstructor:
+        if self._run_properties.single_node():
+            return halo.NoHalos(
+                num_levels=self._vertical_config.num_levels,
+                horizontal_size=grid_size,
+                backend=backend,
+            )
+        else:
+            return halo.IconLikeHaloConstructor(
+                run_properties=self._run_properties,
+                connectivities=connectivities,
+                num_levels=self._vertical_config.num_levels,
+                backend=backend,
+            )
 
 
 def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) -> icon.IconGrid:

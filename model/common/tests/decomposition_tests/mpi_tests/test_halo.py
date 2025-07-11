@@ -216,6 +216,7 @@ def test_halo_constructor_owned_cells(processor_props):  # F811 # fixture
     assert np.setdiff1d(my_owned_cells, _CELL_OWN[processor_props.rank]).size == 0
 
 
+@pytest.mark.parametrize("processor_props", [True, False], indirect=True)
 def test_halo_constructor_validate_number_of_node_mismatch(processor_props):
     grid = simple.SimpleGrid()
     distribution = (processor_props.comm_size + 1) * np.ones((grid.num_cells,), dtype=int)
@@ -229,6 +230,7 @@ def test_halo_constructor_validate_number_of_node_mismatch(processor_props):
     assert "The distribution assumes more nodes than the current run" in e.value.args[0]
 
 
+@pytest.mark.parametrize("processor_props", [True, False], indirect=True)
 @pytest.mark.parametrize("shape", [(simple.SimpleGrid._CELLS, 3), (2,)])
 def test_halo_constructor_validate_rank_mapping_wrong_shape(processor_props, shape):
     grid = simple.SimpleGrid()
@@ -322,6 +324,7 @@ def assert_same_entries(
 
 @pytest.mark.mpi(min_size=4)
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_constructor_decomposition_info_halo_levels(processor_props, dim):  # F811 # fixture
     grid = simple.SimpleGrid()
     halo_generator = halo.IconLikeHaloConstructor(

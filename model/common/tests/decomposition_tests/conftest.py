@@ -11,8 +11,14 @@ try:
     _ = sys.modules["icon4py.model.testing.pytest_config"]
 except KeyError:
     from icon4py.model.testing.pytest_config import *  # noqa: F403
-
-
-from icon4py.model.testing.parallel_helpers import (
-    processor_props,  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
+    data_provider,
+    decomposition_info,
+    download_ser_data,
+    experiment,
+    grid_savepoint,
+    icon_grid,
+    metrics_savepoint,
+    processor_props,
+    ranked_data_path,
 )

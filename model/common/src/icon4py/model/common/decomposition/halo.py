@@ -67,7 +67,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         self,
         run_properties: defs.ProcessProperties,
         connectivities: dict[gtx.Dimension, data_alloc.NDArray],
-        num_levels,  # TODO is currently needed for ghex, pass via a different struct that the decomposition info and remove
+        num_levels,
         backend: Optional[gtx_backend.Backend] = None,
     ):
         """
@@ -75,6 +75,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         Args:
             run_properties: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
+            num_levels: number of vertical levels, TODO: should be removed, it is needed in GHEX that why we have it no the DecompotionInfo
             backend: GT4Py (used to determine the array ns import)
         """
         self._xp = data_alloc.import_array_ns(backend)

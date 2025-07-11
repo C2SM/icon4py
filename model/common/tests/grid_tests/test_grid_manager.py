@@ -617,18 +617,17 @@ def test_limited_area_on_grid(grid_file, expected):
 )
 def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     caplog.set_level(logging.INFO)
-    grid = utils.run_grid_manager(dt_utils.R02B04_GLOBAL, backend=None).grid
+    grid = utils.run_grid_manager(dt_utils.R02B04_GLOBAL, keep_skip_values=True, backend=None).grid
     partitioner = halo.SimpleMetisDecomposer()
-    face_face_connectivity = grid.connectivities[dims.C2E2CDim]
+    face_face_connectivity = grid.neighbor_tables[dims.C2E2CDim]
     labels = partitioner(face_face_connectivity, n_part=processor_props.comm_size)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=grid.neighbor_tables,
         run_properties=processor_props,
-        rank_mapping=labels,
         num_levels=1,
     )
 
-    decomposition_info = halo_generator()
+    decomposition_info = halo_generator(labels)
 
     connectivity = gm.construct_local_connectivity(
         field_offset, decomposition_info, connectivity=grid.neighbor_tables[field_offset.target[1]]
