@@ -1844,8 +1844,10 @@ def test_vertically_implicit_solver_at_predictor_step(
     rho_ref = sp_nh_exit.rho_new()
     exner_ref = sp_nh_exit.exner_new()
     theta_v_ref = sp_nh_exit.theta_v_new()
-    z_dwdz_dd_ref = sp_nh_exit.z_dwdz_dd()
     exner_dyn_incr_ref = sp_nh_exit.exner_dyn_incr()
+
+    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers = sp_nh_exit.z_dwdz_dd().asnumpy()
+    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[0: starting_vertical_index_for_3d_divdamp] = 0.0
 
     geofac_div = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.geofac_div()
@@ -1959,10 +1961,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     )
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
     assert helpers.dallclose(
-        dwdz_at_cells_on_model_levels.asnumpy()[
-            start_cell_nudging:, starting_vertical_index_for_3d_divdamp:
-        ],
-        z_dwdz_dd_ref.asnumpy()[start_cell_nudging:, starting_vertical_index_for_3d_divdamp:],
+        dwdz_at_cells_on_model_levels.asnumpy()[start_cell_nudging:, :],
+        z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[start_cell_nudging:, :],
         atol=1.0e-16,
     )
     assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
