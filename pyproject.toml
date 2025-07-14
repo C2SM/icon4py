@@ -114,6 +114,7 @@ explicit = true
 [tool.uv.sources]
 # ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master" }
 gt4py = { git = "https://github.com/edopao/gt4py", branch = "gtir-dace-mempool" }
+dace = { git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_07_14" }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
