@@ -38,6 +38,8 @@ try:
         blocking_dim:
             Apply loop-blocking on the vertical dimension `KDim`, if the input
             argument `enable_loop_blocking` is `True`.
+        use_memory_pool:
+            Use CUDA memory pool for GPU backend.
         use_zero_origin:
             When set to `True`, the SDFG lowering will not generate the start symbol
             of the field range. Select this option if all fields have zero origin.
@@ -56,6 +58,7 @@ try:
             gpu=gpu,
             async_sdfg_call=True,
             make_persistent=False,
+            use_memory_pool=(True if gpu else False),
             blocking_dim=(dims.KDim if enable_loop_blocking else None),
             blocking_size=10,
             use_zero_origin=False,
