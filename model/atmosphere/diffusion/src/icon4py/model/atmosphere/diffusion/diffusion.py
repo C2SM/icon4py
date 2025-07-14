@@ -406,7 +406,7 @@ class Diffusion:
         self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(
             self._backend
         ).compile(
-            enable_jit=False,
+            enable_jit=[False],
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,

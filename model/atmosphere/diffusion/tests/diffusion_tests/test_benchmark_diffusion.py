@@ -155,7 +155,7 @@ def metrics_factory_params(
     "grid_file",
     [
         (
-            dt_utils.JABW_EXPERIMENT
+            dt_utils.R02B04_GLOBAL
         ),
     ],
 )
@@ -170,8 +170,6 @@ def test_run_diffusion_benchmark(
     backend,
     orchestration,
 ):
-
-    topography = topography_savepoint.topo_c()
 
     # get configuration
     num_levels = 65
@@ -226,7 +224,7 @@ def test_run_diffusion_benchmark(
         vertical_grid=vertical_grid,
         decomposition_info=_construct_dummy_decomposition_info(grid, backend),
         geometry_source=geometry_field_source,
-        topography=topography, #data_alloc.random_field(grid, dims.CellDim, low=0.0), # TODO: check the analytical computation
+        topography=data_alloc.random_field(grid, dims.CellDim, low=0.0), # TODO: check the analytical computation
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,

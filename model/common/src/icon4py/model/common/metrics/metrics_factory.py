@@ -106,7 +106,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         c_owner_mask = gtx.as_field(
             (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
         )
-
+        c_refin_ctrl= gtx.as_field(
+            (dims.CellDim,), self._grid.refinement_control[dims.CellDim].ndarray
+        )
+        e_refin_ctrl= gtx.as_field(
+            (dims.EdgeDim,), self._grid.refinement_control[dims.EdgeDim].ndarray
+        )
+        # TODO : here need to check () or []
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
@@ -116,6 +122,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "c_owner_mask": c_owner_mask,
                     "k_lev": k_index,
                     "e_lev": e_lev,
+                    "c_refin_ctrl": c_refin_ctrl,
+                    "e_refin_ctrl": e_refin_ctrl,
                 }
             )
         )
@@ -617,7 +625,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
             deps={
-                "c_refin_ctrl": self._grid.refinement_control[dims.CellDim],
+                "c_refin_ctrl": "c_refin_ctrl",
             },
             domain={
                 dims.CellDim: (
@@ -635,7 +643,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_horizontal_mask_for_3d_divdamp = factory.ProgramFieldProvider(
             func=mf.compute_horizontal_mask_for_3d_divdamp.with_backend(self._backend),
             deps={
-                "e_refin_ctrl": self._grid.refinement_control[dims.EdgeDim],
+                "e_refin_ctrl": "e_refin_ctrl",
             },
             domain={
                 dims.EdgeDim: (
