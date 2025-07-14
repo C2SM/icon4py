@@ -313,15 +313,15 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
         #---> IBM
-        # if self._ibm.DEBUG_LEVEL >= 4:
-        plots.pickle_data(
-            state={
-                "vn_adv": diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
-                "vn_eh": diagnostic_state.vn_on_half_levels.asnumpy(),
-                "w_wcc_cf": self._contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
-            },
-            label=f"advection_predictor",
-        )
+        if self._ibm.DEBUG_LEVEL >= 4:
+            plots.pickle_data(
+                state={
+                    "vn_adv": diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
+                    "vn_eh": diagnostic_state.vn_on_half_levels.asnumpy(),
+                    "w_wcc_cf": self._contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
+                },
+                label=f"advection_predictor",
+            )
         #<--- IBM
 
     def _scale_factors_by_dtime(self, dtime):
@@ -467,13 +467,13 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
         #---> IBM
-        # if self._ibm.DEBUG_LEVEL >= 4:
-        plots.pickle_data(
-            state={
-                "vn_adv": diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
-                "vn_eh": diagnostic_state.vn_on_half_levels.asnumpy(),
-                "w_wcc_cf": self._contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
-            },
-            label=f"advection_corrector",
-        )
+        if self._ibm.DEBUG_LEVEL >= 4:
+            plots.pickle_data(
+                state={
+                    "vn_adv": diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
+                    "vn_eh": diagnostic_state.vn_on_half_levels.asnumpy(),
+                    "w_wcc_cf": self._contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
+                },
+                label=f"advection_corrector",
+            )
         #<--- IBM

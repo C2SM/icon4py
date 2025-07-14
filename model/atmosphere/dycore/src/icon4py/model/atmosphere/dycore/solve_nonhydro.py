@@ -1316,7 +1316,6 @@ class SolveNonhydro:
                 },
                 label="w_matrix_c"
             )
-            log.info(" ***IBM finished saving w matrix")
         #<--- IBM
 
         if self._config.rayleigh_type == constants.RayleighType.KLEMP:
