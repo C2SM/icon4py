@@ -208,7 +208,9 @@ def _solve_tridiagonal_matrix_for_w_forward_backward_scan(
 
 @gtx.field_operator
 def _vertically_implicit_solver_at_predictor_step(
-    next_w: fa.CellKField[ta.wpfloat],
+    next_w: fa.CellKField[
+        ta.wpfloat
+    ],  # necessary input because the last vertical level is set outside this field operator
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -529,8 +531,7 @@ def vertically_implicit_solver_at_predictor_step(
 def _vertically_implicit_solver_at_corrector_step(
     next_w: fa.CellKField[
         ta.wpfloat
-    ],  # need to be used as input because the last vertical level is set outside
-    # vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat], # need to be used as input because the last vertical level is set outside
+    ],  # necessary input because the last vertical level is set outside this field operator
     dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_dynamical_increment: fa.CellKField[ta.wpfloat],
@@ -580,7 +581,6 @@ def _vertically_implicit_solver_at_corrector_step(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    # _vertically_implicit_solver_at_corrector_step_before_solving_w below
     divergence_of_mass, divergence_of_theta_v = _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div=geofac_div,
         mass_fl_e=mass_flux_at_edges_on_model_levels,
@@ -668,8 +668,6 @@ def _vertically_implicit_solver_at_corrector_step(
         ),
     )
 
-    # _vertically_implicit_solver_at_corrector_step_after_solving_w below
-
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
 
     if rayleigh_type == rayleigh_damping_options.KLEMP:
@@ -755,12 +753,7 @@ def _vertically_implicit_solver_at_corrector_step(
 
 @gtx.program
 def vertically_implicit_solver_at_corrector_step(
-    # vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    # tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[ta.vpfloat], # can be removed
-    # tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[ta.vpfloat], # can be removed
     next_w: fa.CellKField[ta.wpfloat],
-    # rho_explicit_term: fa.CellKField[ta.wpfloat],
-    # exner_explicit_term: fa.CellKField[ta.wpfloat],
     next_rho: fa.CellKField[ta.wpfloat],
     next_exner: fa.CellKField[ta.wpfloat],
     next_theta_v: fa.CellKField[ta.wpfloat],
