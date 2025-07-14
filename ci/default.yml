@@ -45,6 +45,12 @@ test_tools_datatests_aarch64:
     - if: $BACKEND == 'embedded'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
+    - if: $COMPONENT == 'driver' && $BACKEND == 'gtfn_gpu' && $LEVEL == 'integration'
+      variables:
+        NUM_PROCESSES: 7
+    - if: $COMPONENT == 'dycore' && $BACKEND == 'gtfn_gpu' && $LEVEL == 'integration'
+      variables:
+        NUM_PROCESSES: 8
     - when: on_success
   parallel:
     matrix:
