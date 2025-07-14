@@ -232,7 +232,6 @@ def test_nonhydro_predictor_step(
     cell_start_lateral_boundary_level_2 = icon_grid.start_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    cell_start_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
 
     edge_start_lateral_boundary_level_5 = icon_grid.start_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
@@ -445,45 +444,6 @@ def test_nonhydro_predictor_step(
         atol=1e-15,
     )
 
-    # stencils 43, 46, 47
-    assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.vertical_mass_flux_at_cells_on_half_levels.asnumpy()[
-            cell_start_nudging:, :
-        ],
-        sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
-        atol=2e-15,
-    )
-
-    # stencil 44, 45
-    assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.tridiagonal_alpha_coeff_at_cells_on_half_levels.asnumpy()[
-            cell_start_nudging:, :
-        ],
-        sp_exit.z_alpha().asnumpy()[cell_start_nudging:, :],
-        atol=5e-13,
-    )
-    # stencil 44
-    assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.tridiagonal_beta_coeff_at_cells_on_model_levels.asnumpy()[
-            cell_start_nudging:, :
-        ],
-        sp_exit.z_beta().asnumpy()[cell_start_nudging:, :],
-        atol=2e-15,
-    )
-
-    # stencil 48, 49
-    assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.rho_explicit_term.asnumpy()[cell_start_nudging:, :],
-        sp_exit.z_rho_expl().asnumpy()[cell_start_nudging:, :],
-        atol=2e-15,
-    )
-    # stencil 48, 49
-    assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.exner_explicit_term.asnumpy()[cell_start_nudging:, :],
-        sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
-        atol=2e-15,
-    )
-
     # end
     assert helpers.dallclose(prognostic_state_nnew.rho.asnumpy(), sp_exit.rho_new().asnumpy())
     assert helpers.dallclose(
@@ -565,14 +525,9 @@ def test_nonhydro_corrector_step(
 
     z_fields = solve_nh.IntermediateFields(
         horizontal_pressure_gradient=init_savepoint.z_gradh_exner(),
-        tridiagonal_alpha_coeff_at_cells_on_half_levels=init_savepoint.z_alpha(),
-        tridiagonal_beta_coeff_at_cells_on_model_levels=init_savepoint.z_beta(),
-        exner_explicit_term=init_savepoint.z_exner_expl(),
-        vertical_mass_flux_at_cells_on_half_levels=init_savepoint.z_contr_w_fl_l(),
         rho_at_edges_on_model_levels=init_savepoint.z_rho_e(),
         theta_v_at_edges_on_model_levels=init_savepoint.z_theta_v_e(),
         horizontal_gradient_of_normal_wind_divergence=init_savepoint.z_graddiv_vn(),
-        rho_explicit_term=init_savepoint.z_rho_expl(),
         dwdz_at_cells_on_model_levels=init_savepoint.z_dwdz_dd(),
         horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
         tangential_wind_on_half_levels=init_savepoint.z_vt_ie(),
@@ -1803,19 +1758,14 @@ def test_vertically_implicit_solver_at_predictor_step(
     theta_v_flux_at_edges_on_model_levels = sp_stencil_init.z_theta_v_fl_e()
     predictor_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(0)
     pressure_buoyancy_acceleration_at_cells_on_half_levels = sp_stencil_init.z_th_ddz_exner_c()
-    vertical_mass_flux_at_cells_on_half_levels = sp_stencil_init.z_contr_w_fl_l()
     rho_at_cells_on_half_levels = sp_stencil_init.rho_ic()
     contravariant_correction_at_cells_on_half_levels = savepoint_nonhydro_init.w_concorr_c()
     current_exner = sp_stencil_init.exner_nnow()
     current_rho = sp_stencil_init.rho_nnow()
     current_theta_v = sp_stencil_init.theta_v_nnow()
     current_w = sp_stencil_init.w()
-    tridiagonal_alpha_coeff_at_cells_on_half_levels = sp_stencil_init.z_alpha()
-    tridiagonal_beta_coeff_at_cells_on_model_levels = sp_stencil_init.z_beta()
     theta_v_at_cells_on_half_levels = sp_stencil_init.theta_v_ic()
     next_w = sp_stencil_init.w()
-    rho_explicit_term = sp_stencil_init.z_rho_expl()
-    exner_explicit_term = sp_stencil_init.z_exner_expl()
     perturbed_exner_at_cells_on_model_levels = sp_stencil_init.exner_pr()
     exner_tendency_due_to_slow_physics = sp_stencil_init.ddt_exner_phy()
     rho_iau_increment = sp_stencil_init.rho_incr()
@@ -1832,12 +1782,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     divdamp_type = config.divdamp_type
 
     w_concorr_c_ref = sp_nh_exit.w_concorr_c()
-    z_contr_w_fl_l_ref = sp_nh_exit.z_contr_w_fl_l()
-    z_beta_ref = sp_nh_exit.z_beta()
-    z_alpha_ref = sp_nh_exit.z_alpha()
     w_ref = sp_nh_exit.w_new()
-    z_rho_expl_ref = sp_nh_exit.z_rho_expl()
-    z_exner_expl_ref = sp_nh_exit.z_exner_expl()
     rho_ref = sp_nh_exit.rho_new()
     exner_ref = sp_nh_exit.exner_new()
     theta_v_ref = sp_nh_exit.theta_v_new()
@@ -1926,25 +1871,10 @@ def test_vertically_implicit_solver_at_predictor_step(
         atol=1e-15,
     )
     assert helpers.dallclose(
-        vertical_mass_flux_at_cells_on_half_levels.asnumpy(),
-        z_contr_w_fl_l_ref.asnumpy(),
-        atol=1e-12,
-    )
-    assert helpers.dallclose(
-        tridiagonal_beta_coeff_at_cells_on_model_levels.asnumpy(), z_beta_ref.asnumpy()
-    )
-    assert helpers.dallclose(
-        tridiagonal_alpha_coeff_at_cells_on_half_levels.asnumpy(), z_alpha_ref.asnumpy()
-    )
-    assert helpers.dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
         rtol=1e-7,
         atol=1e-12,
-    )
-    assert helpers.dallclose(rho_explicit_term.asnumpy(), z_rho_expl_ref.asnumpy())
-    assert helpers.dallclose(
-        exner_explicit_term.asnumpy(), z_exner_expl_ref.asnumpy(), rtol=1.0e-10, atol=1.0e-12
     )
     assert helpers.dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
@@ -2021,19 +1951,14 @@ def test_vertically_implicit_solver_at_corrector_step(
     predictor_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(0)
     corrector_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(1)
     pressure_buoyancy_acceleration_at_cells_on_half_levels = sp_stencil_init.z_th_ddz_exner_c()
-    vertical_mass_flux_at_cells_on_half_levels = sp_stencil_init.z_contr_w_fl_l()
     rho_at_cells_on_half_levels = sp_stencil_init.rho_ic()
     contravariant_correction_at_cells_on_half_levels = sp_stencil_init.w_concorr_c()
     current_exner = sp_stencil_init.exner_nnow()
     current_rho = sp_stencil_init.rho_nnow()
     current_theta_v = sp_stencil_init.theta_v_nnow()
     current_w = sp_stencil_init.w()
-    tridiagonal_alpha_coeff_at_cells_on_half_levels = sp_stencil_init.z_alpha()
-    tridiagonal_beta_coeff_at_cells_on_model_levels = sp_stencil_init.z_beta()
     theta_v_at_cells_on_half_levels = sp_stencil_init.theta_v_ic()
     next_w = sp_stencil_init.w()
-    rho_explicit_term = sp_stencil_init.z_rho_expl()
-    exner_explicit_term = sp_stencil_init.z_exner_expl()
     perturbed_exner_at_cells_on_model_levels = sp_stencil_init.exner_pr()
     exner_tendency_due_to_slow_physics = sp_stencil_init.ddt_exner_phy()
     rho_iau_increment = sp_stencil_init.rho_incr()
@@ -2053,12 +1978,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     iau_wgt_dyn = config.iau_wgt_dyn
     is_iau_active = config.is_iau_active
 
-    z_contr_w_fl_l_ref = sp_nh_exit.z_contr_w_fl_l()
-    z_beta_ref = sp_nh_exit.z_beta()
-    z_alpha_ref = sp_nh_exit.z_alpha()
     w_ref = sp_nh_exit.w_new()
-    z_rho_expl_ref = sp_nh_exit.z_rho_expl()
-    z_exner_expl_ref = sp_nh_exit.z_exner_expl()
     rho_ref = sp_nh_exit.rho_new()
     exner_ref = sp_nh_exit.exner_new()
     theta_v_ref = sp_nh_exit.theta_v_new()
@@ -2134,27 +2054,10 @@ def test_vertically_implicit_solver_at_corrector_step(
     )
 
     assert helpers.dallclose(
-        vertical_mass_flux_at_cells_on_half_levels.asnumpy(),
-        z_contr_w_fl_l_ref.asnumpy(),
-        atol=1e-12,
-    )
-    assert helpers.dallclose(
-        tridiagonal_beta_coeff_at_cells_on_model_levels.asnumpy(), z_beta_ref.asnumpy()
-    )
-    assert helpers.dallclose(
-        tridiagonal_alpha_coeff_at_cells_on_half_levels.asnumpy(), z_alpha_ref.asnumpy()
-    )
-    assert helpers.dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
         rtol=1e-10,
         atol=1e-12,
-    )
-    assert helpers.dallclose(rho_explicit_term.asnumpy(), z_rho_expl_ref.asnumpy())
-    assert helpers.dallclose(
-        exner_explicit_term.asnumpy(),
-        z_exner_expl_ref.asnumpy(),
-        rtol=1e-9,
     )
     assert helpers.dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
