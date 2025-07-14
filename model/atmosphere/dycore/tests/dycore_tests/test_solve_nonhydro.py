@@ -1785,11 +1785,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     xp = data_alloc.import_array_ns(backend)
-    starting_vertical_index_for_3d_divdamp = (
-        xp.min(xp.where(metrics_savepoint.scaling_factor_for_3d_divdamp().ndarray > 0.0))[0]
-        if config.divdamp_type == 32
-        else 0
-    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -1844,10 +1839,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     rho_ref = sp_nh_exit.rho_new()
     exner_ref = sp_nh_exit.exner_new()
     theta_v_ref = sp_nh_exit.theta_v_new()
+    z_dwdz_dd_ref = sp_nh_exit.z_dwdz_dd()
     exner_dyn_incr_ref = sp_nh_exit.exner_dyn_incr()
-
-    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers = sp_nh_exit.z_dwdz_dd().asnumpy()
-    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[0:starting_vertical_index_for_3d_divdamp] = 0.0
 
     geofac_div = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.geofac_div()
@@ -1960,11 +1953,24 @@ def test_vertically_implicit_solver_at_predictor_step(
         next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
+
+    # In ICON, z_dwdz_dd is computed from starting_vertical_index_for_3d_divdamp (kstart_dd3d in ICON).
+    # serialized data of z_dwdz_dd can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
+    # Since dwdz_at_cells_on_model_levels is computed for all levels in icon4py, we have to
+    # manually set the reference equal to zero when k < starting_vertical_index_for_3d_divdamp.
+    starting_vertical_index_for_3d_divdamp = (
+        xp.min(xp.where(metrics_savepoint.scaling_factor_for_3d_divdamp().ndarray > 0.0))[0]
+        if config.divdamp_type == 32
+        else 0
+    )
+    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers = z_dwdz_dd_ref.asnumpy()
+    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[0:starting_vertical_index_for_3d_divdamp] = 0.0
     assert helpers.dallclose(
         dwdz_at_cells_on_model_levels.asnumpy()[start_cell_nudging:, :],
         z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[start_cell_nudging:, :],
         atol=1.0e-16,
     )
+
     assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
 
 
