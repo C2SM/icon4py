@@ -1847,7 +1847,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     exner_dyn_incr_ref = sp_nh_exit.exner_dyn_incr()
 
     z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers = sp_nh_exit.z_dwdz_dd().asnumpy()
-    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[0: starting_vertical_index_for_3d_divdamp] = 0.0
+    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[0:starting_vertical_index_for_3d_divdamp] = 0.0
 
     geofac_div = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.geofac_div()
