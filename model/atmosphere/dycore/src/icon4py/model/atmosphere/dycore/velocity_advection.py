@@ -87,7 +87,6 @@ class VelocityAdvection:
         #---> IBM
         if "ibm" in extras:
             self._ibm = extras["ibm"]
-            self._step = 0
         #<--- IBM
 
     def _allocate_local_fields(self):
@@ -317,13 +316,12 @@ class VelocityAdvection:
         # if self._ibm.DEBUG_LEVEL >= 4:
         plots.pickle_data(
             state={
-                "vn_adv": diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy(),
+                "vn_adv": diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
                 "vn_eh": diagnostic_state.vn_on_half_levels.asnumpy(),
                 "w_wcc_cf": self._contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
             },
-            label=f"advection_predictor_{self._step:06d}",
+            label=f"advection_predictor",
         )
-        self._step += 1
         #<--- IBM
 
     def _scale_factors_by_dtime(self, dtime):
@@ -472,11 +470,10 @@ class VelocityAdvection:
         # if self._ibm.DEBUG_LEVEL >= 4:
         plots.pickle_data(
             state={
-                "vn_adv": diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy(),
+                "vn_adv": diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
                 "vn_eh": diagnostic_state.vn_on_half_levels.asnumpy(),
                 "w_wcc_cf": self._contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
             },
-            label=f"advection_corrector_{self._step:06d}",
+            label=f"advection_corrector",
         )
-        self._step += 1
         #<--- IBM

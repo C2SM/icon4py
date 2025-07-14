@@ -83,6 +83,10 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     vn_on_half_levels = where(ibm_dvndz_mask, vn(Koff[-1]), vn_on_half_levels)
     # Dirichlet
     # vn_on_half_levels = where(ibm_dvndz_mask, 0.0, vn_on_half_levels)
+    # NOTE: this is called only at velocity_advection.run_predictor_step. There
+    # is another place in solve_nonhydro which re-computes vn_on_half_levels
+    # and the same operation is performed again. Currently that is not inside a
+    # field_operator so a _ibm.set_bcs_dvndz method is used there.
     # <-- IBM
 
     tangential_wind_on_half_levels = (

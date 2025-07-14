@@ -6,7 +6,7 @@ from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.testing import serialbox as sb
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim, Koff
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.grid import (
     icon as icon_grid,
@@ -26,11 +26,53 @@ log = logging.getLogger(__name__)
 DO_IBM = True
 DEBUG_LEVEL = 2
 
-class IBMBoundaryConditions(enum.IntEnum):
-    #: No-slip boundary conditions: on all surfaces vn = w = 0
-    NO_SLIP = 0
-    #: Free-slip boundary conditions: on vertical surfaces vn = 0, dw/dz = 0; on horizontal surfaces w = 0, d(vn)/dn = 0
-    FREE_SLIP = 1
+@gtx.field_operator
+def _set_bcs_dvndz(
+    mask: fa.EdgeKField[bool],
+    vn: fa.EdgeKField[float],
+    vn_on_half_levels: fa.EdgeKField[float],
+) -> fa.EdgeKField[float]:
+    """
+    I hate doing this with the field_operator nested in the program with
+    the same name, but it will be refactored anyway due to all the combined
+    stencils
+    """
+    vn_on_half_levels = where(mask, vn(Koff[-1]), vn_on_half_levels)
+    return vn_on_half_levels
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def set_bcs_dvndz(
+    mask: fa.EdgeKField[bool],
+    vn: fa.EdgeKField[float],
+    vn_on_half_levels: fa.EdgeKField[float],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    # Set a value for vn on half levels.
+    # Depending on the value, different boundary conditions can be imposed:
+    #  - Neumann: vn_k+1/2 = vn_k approx for (dvn/dz)|_k+1/2 = 0
+    #  - Dirichlet: vn_k+1/2 = some value
+    #  - log law?
+    # This only matters on the half level at the top of a masked cell(s)
+    # (same as where w=0) because it is used to compute dvn/dz on the first
+    # full level above that.
+    # NOTE: this is called inside solve_nonhydro. There is another place in
+    # velocity_advection.run_predictor_step where vn_on_half_levels is
+    # computed and the same operation is performed. Currently that is
+    # `_compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction`
+    # Unfortunately that is a field_operator which cannot call (for now)
+    # this class and methods, so there it is hardcoded... :-(
+    _set_bcs_dvndz(
+        mask=mask,
+        vn=vn,
+        vn_on_half_levels=vn_on_half_levels,
+        out=vn_on_half_levels,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
 
 
 class ImmersedBoundaryMethod:
@@ -426,6 +468,9 @@ class ImmersedBoundaryMethod:
             out=horizontal_advection_of_w_at_edges_on_half_levels,
             offset_provider={},
         )
+
+
+
 
     # --------------------------------------------------------------------------
     # diffusion part
