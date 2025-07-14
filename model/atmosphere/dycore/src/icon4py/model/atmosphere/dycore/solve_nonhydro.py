@@ -1105,13 +1105,6 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        plots.pickle_data(
-            state={
-                "vn_eh": diagnostic_state_nh.vn_on_half_levels.asnumpy(),
-            },
-            label=f"solve_nonhydro_01",
-        )
-
         self._predictor_stencils_35_36(
             vn=prognostic_states.next.vn,
             ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
@@ -1130,12 +1123,6 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
-        plots.pickle_data(
-            state={
-                "vn_eh": diagnostic_state_nh.vn_on_half_levels.asnumpy(),
-            },
-            label=f"solve_nonhydro_02",
-        )
         #---> IBM
         self._ibm_set_bcs_dvndz(
             mask=self._ibm.half_edge_mask,
@@ -1147,12 +1134,6 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels + 1,
             offset_provider=self._grid.offset_providers,
         )
-        # NOTE: this is called inside solve_nonhydro. There is another place in
-        # velocity_advection.run_predictor_step where vn_on_half_levels is
-        # computed and the same operation is performed. Currently that is
-        # `_compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction`
-        # Unfortunately that is a field_operator which cannot call (for now)
-        # this class and methods, so there it is hardcoded... :-(
         #<--- IBM
 
         if not self.l_vert_nested:
@@ -1168,12 +1149,6 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self._grid.num_levels + 1,
                 offset_provider=self._grid.offset_providers,
-            )
-            plots.pickle_data(
-                state={
-                    "vn_eh": diagnostic_state_nh.vn_on_half_levels.asnumpy(),
-                },
-                label=f"solve_nonhydro_03",
             )
 
         self._stencils_39_40(

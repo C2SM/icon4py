@@ -26,6 +26,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_dvndz
 
 @gtx.field_operator
 def _interpolate_to_half_levels(
@@ -78,16 +79,13 @@ def _compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_c
     )
     vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
 
-    # --> IBM
-    # Neumann
-    vn_on_half_levels = where(ibm_dvndz_mask, vn(Koff[-1]), vn_on_half_levels)
-    # Dirichlet
-    # vn_on_half_levels = where(ibm_dvndz_mask, 0.0, vn_on_half_levels)
-    # NOTE: this is called only at velocity_advection.run_predictor_step. There
-    # is another place in solve_nonhydro which re-computes vn_on_half_levels
-    # and the same operation is performed again. Currently that is not inside a
-    # field_operator so a _ibm.set_bcs_dvndz method is used there.
-    # <-- IBM
+    #---> IBM
+    vn_on_half_levels = _set_bcs_dvndz(
+        mask=ibm_dvndz_mask,
+        vn=vn,
+        vn_on_half_levels=vn_on_half_levels,
+    )
+    #<--- IBM
 
     tangential_wind_on_half_levels = (
         _interpolate_to_half_levels(wgtfac_e, tangential_wind)

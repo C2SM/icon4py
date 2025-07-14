@@ -37,7 +37,10 @@ def _set_bcs_dvndz(
     the same name, but it will be refactored anyway due to all the combined
     stencils
     """
+    # Neumann
     vn_on_half_levels = where(mask, vn(Koff[-1]), vn_on_half_levels)
+    # Dirichlet
+    #vn_on_half_levels = where(mask, 0.0, vn_on_half_levels)
     return vn_on_half_levels
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def set_bcs_dvndz(
@@ -57,12 +60,6 @@ def set_bcs_dvndz(
     # This only matters on the half level at the top of a masked cell(s)
     # (same as where w=0) because it is used to compute dvn/dz on the first
     # full level above that.
-    # NOTE: this is called inside solve_nonhydro. There is another place in
-    # velocity_advection.run_predictor_step where vn_on_half_levels is
-    # computed and the same operation is performed. Currently that is
-    # `_compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction`
-    # Unfortunately that is a field_operator which cannot call (for now)
-    # this class and methods, so there it is hardcoded... :-(
     _set_bcs_dvndz(
         mask=mask,
         vn=vn,
