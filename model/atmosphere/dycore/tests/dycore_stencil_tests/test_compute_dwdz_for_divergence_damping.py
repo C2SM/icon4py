@@ -12,11 +12,10 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import (
-    compute_dwdz_for_divergence_damping,
+    _compute_dwdz_for_divergence_damping,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -35,8 +34,8 @@ def compute_dwdz_for_divergence_damping_numpy(
 
 
 class TestComputeDwdzForDivergenceDamping(StencilTest):
-    PROGRAM = compute_dwdz_for_divergence_damping
-    OUTPUTS = ("z_dwdz_dd",)
+    PROGRAM = _compute_dwdz_for_divergence_damping
+    OUTPUTS = ("out",)
 
     @staticmethod
     def reference(
@@ -49,10 +48,10 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
         z_dwdz_dd = compute_dwdz_for_divergence_damping_numpy(
             connectivities, inv_ddqz_z_full=inv_ddqz_z_full, w=w, w_concorr_c=w_concorr_c
         )
-        return dict(z_dwdz_dd=z_dwdz_dd)
+        return dict(out=z_dwdz_dd)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.BaseGrid) -> dict[str, Any]:
         inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
         w_concorr_c = random_field(
@@ -64,9 +63,9 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
             inv_ddqz_z_full=inv_ddqz_z_full,
             w=w,
             w_concorr_c=w_concorr_c,
-            z_dwdz_dd=z_dwdz_dd,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_cells),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            out=z_dwdz_dd,
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
         )

@@ -25,6 +25,12 @@ E_FLX_AVG: Final[str] = "e_flux_average"
 POS_ON_TPLANE_E_X: Final[str] = "pos_on_tplane_e_x"
 POS_ON_TPLANE_E_Y: Final[str] = "pos_on_tplane_e_y"
 CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
+NUDGECOEFFS_E: Final[str] = "nudging_coefficients_for_edges"
+RBF_VEC_COEFF_C1: Final[str] = "rbf_interpolation_coefficient_cell_1"
+RBF_VEC_COEFF_C2: Final[str] = "rbf_interpolation_coefficient_cell_2"
+RBF_VEC_COEFF_E: Final[str] = "rbf_interpolation_coefficient_edge"
+RBF_VEC_COEFF_V1: Final[str] = "rbf_interpolation_coefficient_vertex_1"
+RBF_VEC_COEFF_V2: Final[str] = "rbf_interpolation_coefficient_vertex_2"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -33,6 +39,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="c_lin_e",
+        dtype=ta.wpfloat,
+    ),
+    NUDGECOEFFS_E: dict(
+        standard_name=NUDGECOEFFS_E,
+        long_name="nudging_coefficients_for_edges",
+        units="",  # TODO (Yilu) : need to check unit
+        dims=(dims.EdgeDim,),
+        icon_var_name="nudgecoeffs_e",
         dtype=ta.wpfloat,
     ),
     C_BLN_AVG: dict(
@@ -129,6 +143,46 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.VertexDim, dims.V2CDim),
         icon_var_name="cells_aw_verts",
+        dtype=ta.wpfloat,
+    ),
+    RBF_VEC_COEFF_C1: dict(
+        standard_name=RBF_VEC_COEFF_C1,
+        long_name="rbf interpolation coefficient from cells to edges 1",
+        units="",
+        dims=(dims.CellDim, dims.C2E2C2EDim),
+        icon_var_name="rbf_vec_coeff_c1",
+        dtype=ta.wpfloat,
+    ),
+    RBF_VEC_COEFF_C2: dict(
+        standard_name=RBF_VEC_COEFF_C2,
+        long_name="rbf interpolation coefficient from cells to edges 2",
+        units="",
+        dims=(dims.CellDim, dims.C2E2C2EDim),
+        icon_var_name="rbf_vec_coeff_c2",
+        dtype=ta.wpfloat,
+    ),
+    RBF_VEC_COEFF_E: dict(
+        standard_name=RBF_VEC_COEFF_E,
+        long_name="rbf interpolation coefficient from edges to edges",
+        units="",
+        dims=(dims.EdgeDim, dims.E2C2EDim),
+        icon_var_name="rbf_vec_coeff_e",
+        dtype=ta.wpfloat,
+    ),
+    RBF_VEC_COEFF_V1: dict(
+        standard_name=RBF_VEC_COEFF_V1,
+        long_name="rbf interpolation coefficient from vertices to edges 1",
+        units="",
+        dims=(dims.VertexDim, dims.V2EDim),
+        icon_var_name="rbf_vec_coeff_v1",
+        dtype=ta.wpfloat,
+    ),
+    RBF_VEC_COEFF_V2: dict(
+        standard_name=RBF_VEC_COEFF_V2,
+        long_name="rbf interpolation coefficient from vertices to edges 2",
+        units="",
+        dims=(dims.VertexDim, dims.V2EDim),
+        icon_var_name="rbf_vec_coeff_v2",
         dtype=ta.wpfloat,
     ),
 }
