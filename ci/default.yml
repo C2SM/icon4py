@@ -47,10 +47,12 @@ test_tools_datatests_aarch64:
         SLURM_TIMELIMIT: '00:15:00'
     - if: $COMPONENT == 'driver' && $BACKEND == 'gtfn_gpu' && $LEVEL == 'integration'
       variables:
-        NUM_PROCESSES: 7
+        # With more than 4 there are CUDA_ERROR_ILLEGAL_ADDRESS errors
+        NUM_PROCESSES: 4
     - if: $COMPONENT == 'dycore' && $BACKEND == 'gtfn_gpu' && $LEVEL == 'integration'
       variables:
-        NUM_PROCESSES: 8
+        # With more than 4 there are CUDA_ERROR_ILLEGAL_ADDRESS errors
+        NUM_PROCESSES: 4
     - when: on_success
   parallel:
     matrix:
