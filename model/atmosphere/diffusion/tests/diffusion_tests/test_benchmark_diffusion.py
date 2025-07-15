@@ -37,8 +37,6 @@ import icon4py.model.common.states.prognostic_state as prognostics
 # TODO (Yilu)
 from icon4py.model.common.grid import geometry as grid_geometry
 
-
-
 grid_functionality = {dt_utils.R02B04_GLOBAL: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
 def get_edge_geometry_for_grid_file(grid_file, geometry_factory, backend):
@@ -165,7 +163,6 @@ def test_run_diffusion_benchmark(
     grid_file,
     vertical_grid_params,
     metrics_factory_params,
-    topography_savepoint,
     ndyn_substeps,
     backend,
     orchestration,
@@ -261,7 +258,6 @@ def test_run_diffusion_benchmark(
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
         zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
     )
-
 
     # initialization of the diagnostic and prognostic state
     # TODO (Yilu): for now we feed it with random fields for the test
