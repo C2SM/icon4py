@@ -469,7 +469,7 @@ def test_velocity_corrector_step(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
+def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     icon_grid,
     grid_savepoint,
     savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
@@ -490,9 +490,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     tangential_wind = savepoint_velocity_init.vt()
     vn_on_half_levels = savepoint_velocity_init.vn_ie()
     horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_init.z_kin_hor_e()
-    horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
-    )
     vn = savepoint_velocity_init.vn()
     w = savepoint_velocity_init.w()
 
@@ -503,10 +500,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     contravariant_correction_at_edges_on_model_levels = savepoint_velocity_init.z_w_concorr_me()
     wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
     nflatlev = grid_savepoint.nflatlev()
-    c_intp = interpolation_savepoint.c_intp()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    tangent_orientation = grid_savepoint.tangent_orientation()
 
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.vn_only()
     # TODO(havogt): we need a test where skip_compute_predictor_vertical_advection is True!
@@ -521,9 +514,8 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     z_w_concorr_me_ref = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_w_concorr_me()
     )
-    z_v_grad_w_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
 
-    compute_edge_diagnostics_for_velocity_advection.compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
+    compute_edge_diagnostics_for_velocity_advection.compute_derived_horizontal_winds_and_ke_and_contravariant_correction.with_backend(
         backend
     )(
         tangential_wind=tangential_wind,
@@ -531,7 +523,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         vn_on_half_levels=vn_on_half_levels,
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
-        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         vn=vn,
         w=w,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
@@ -539,10 +530,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
         ddxn_z_full=ddxn_z_full,
         ddxt_z_full=ddxt_z_full,
         wgtfacq_e=wgtfacq_e,
-        c_intp=c_intp,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_primal_edge_length=inv_primal_edge_length,
-        tangent_orientation=tangent_orientation,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
         nflatlev=gtx.int32(nflatlev),
         horizontal_start=horizontal_start,
@@ -576,93 +563,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     assert helpers.dallclose(
         z_w_concorr_me_ref.asnumpy(),
         contravariant_correction_at_edges_on_model_levels.asnumpy(),
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
-    # the restriction is ok, as this is a velocity advection temporary
-    lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-    halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
-    assert helpers.dallclose(
-        z_v_grad_w_ref.asnumpy()[lateral_boundary_7:halo_1, :],
-        horizontal_advection_of_w_at_edges_on_half_levels.asnumpy()[lateral_boundary_7:halo_1, :],
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.infinite_concat_where
-@pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
-    ],
-)
-@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
-def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
-    icon_grid,
-    grid_savepoint,
-    savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
-    step_date_init,
-    step_date_exit,
-    substep_init,
-    istep_init,
-    istep_exit,
-    backend,
-):
-    edge_domain = h_grid.domain(dims.EdgeDim)
-
-    tangential_wind_on_half_levels = savepoint_velocity_init.z_vt_ie()
-    vn_on_half_levels = savepoint_velocity_init.vn_ie()
-    horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
-    )
-    w = savepoint_velocity_init.w()
-
-    c_intp = interpolation_savepoint.c_intp()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    tangent_orientation = grid_savepoint.tangent_orientation()
-
-    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
-
-    z_v_grad_w_ref = savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_v_grad_w()
-
-    compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
-        backend
-    )(
-        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
-        w=w,
-        tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-        vn_on_half_levels=vn_on_half_levels,
-        c_intp=c_intp,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_primal_edge_length=inv_primal_edge_length,
-        tangent_orientation=tangent_orientation,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={
-            "E2C": icon_grid.get_connectivity("E2C"),
-            "E2V": icon_grid.get_connectivity("E2V"),
-            "V2C": icon_grid.get_connectivity("V2C"),
-            "E2C2E": icon_grid.get_connectivity("E2C2E"),
-            "Koff": dims.KDim,
-        },
-    )
-
-    assert helpers.dallclose(
-        z_v_grad_w_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        horizontal_advection_of_w_at_edges_on_half_levels.asnumpy()[
-            horizontal_start:horizontal_end, :
-        ],
         rtol=1.0e-15,
         atol=1.0e-15,
     )
@@ -898,26 +798,27 @@ def test_compute_advection_in_vertical_momentum_equation(
     )
     cfl_clipping_np = z_w_con_c_8_13 > (cfl_w_limit * ddqz_z_half.asnumpy())
     cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np, allocator=backend)
-    contravariant_corrected_w_at_cells_on_half_levels = (
-        savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c()
-    )
+    contravariant_correction_at_cells_on_half_levels = savepoint_velocity_exit.w_concorr_c()
     w = savepoint_compute_advection_in_vertical_momentum_equation_init.w()
+    tangential_wind_on_half_levels = savepoint_velocity_init.z_vt_ie()
+    vn_on_half_levels = savepoint_velocity_init.vn_ie()
     vertical_wind_advective_tendency = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.ddt_w_adv()
     )
-    horizontal_advection_of_w_at_edges_on_half_levels = (
-        savepoint_compute_advection_in_vertical_momentum_equation_init.z_v_grad_w()
-    )
-
     contravariant_corrected_w_at_cells_on_model_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
     )
+    vertical_cfl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     skip_compute_predictor_vertical_advection = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.lvn_only()
     )
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
+    c_intp = interpolation_savepoint.c_intp()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
+    tangent_orientation = grid_savepoint.tangent_orientation()
     e_bln_c_s = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
     )
@@ -947,13 +848,19 @@ def test_compute_advection_in_vertical_momentum_equation(
     compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
         backend
     )(
-        contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
         vertical_wind_advective_tendency=vertical_wind_advective_tendency,
+        contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+        vertical_cfl=vertical_cfl,
         w=w,
-        contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
-        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
+        tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+        vn_on_half_levels=vn_on_half_levels,
+        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
+        c_intp=c_intp,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
         e_bln_c_s=e_bln_c_s,
         ddqz_z_half=ddqz_z_half,
         area=area,
@@ -964,6 +871,7 @@ def test_compute_advection_in_vertical_momentum_equation(
         cfl_w_limit=cfl_w_limit,
         dtime=dtime,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
+        nflatlev=grid_savepoint.nflatlev(),
         nlev=icon_grid.num_levels,
         end_index_of_damping_layer=end_index_of_damping_layer,
         horizontal_start=horizontal_start,
@@ -996,6 +904,7 @@ def test_compute_advection_in_vertical_momentum_equation(
         rtol=1.0e-15,
         atol=1.0e-15,
     )
+    # TODO (Chia Rui): Verify cfl when serialized data is ready
 
 
 @pytest.mark.datatest
@@ -1027,15 +936,13 @@ def test_compute_advection_in_horizontal_momentum_equation(
     horizontal_kinetic_energy_at_edges_on_model_levels = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.z_kin_hor_e()
     )
-    horizontal_kinetic_energy_at_cells_on_model_levels = (
-        savepoint_compute_advection_in_horizontal_momentum_equation_init.z_ekinh()
-    )
     tangential_wind = savepoint_compute_advection_in_horizontal_momentum_equation_init.vt()
     contravariant_corrected_w_at_cells_on_model_levels = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.z_w_con_c_full()
     )
     vn_on_half_levels = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn_ie()
-    levelmask = savepoint_compute_advection_in_horizontal_momentum_equation_init.levelmask()
+    # TODO (Chia Rui): read max_vertical_cfl from serialized data
+    max_vertical_cfl = 0.0
     normal_wind_advective_tendency = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.ddt_vn_apc()
     )
@@ -1069,7 +976,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
         normal_wind_advective_tendency=normal_wind_advective_tendency,
         vn=vn,
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
-        horizontal_kinetic_energy_at_cells_on_model_levels=horizontal_kinetic_energy_at_cells_on_model_levels,
         tangential_wind=tangential_wind,
         coriolis_frequency=coriolis_frequency,
         contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
@@ -1078,7 +984,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
         coeff_gradekin=coeff_gradekin,
         c_lin_e=c_lin_e,
         ddqz_z_full_e=ddqz_z_full_e,
-        levelmask=levelmask,
         area_edge=area_edge,
         tangent_orientation=tangent_orientation,
         inv_primal_edge_length=inv_primal_edge_length,
@@ -1086,6 +991,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
         cfl_w_limit=cfl_w_limit,
         scalfac_exdiff=scalfac_exdiff,
         d_time=d_time,
+        max_vertical_cfl=max_vertical_cfl,
         nlev=icon_grid.num_levels,
         end_index_of_damping_layer=end_index_of_damping_layer,
         horizontal_start=start_edge_nudging_level_2,
