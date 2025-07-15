@@ -538,9 +538,6 @@ class Diffusion:
         self.z_nabla2_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.z_temp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
@@ -880,7 +877,7 @@ class Diffusion:
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
-                theta_v_in=prognostic_state.theta_v,
+                theta_v=prognostic_state.theta_v,
                 geofac_div=self._interpolation_state.geofac_div,
                 mask=self._metric_state.mask_hdiff,
                 zd_vertoffset=self._metric_state.zd_vertoffset,
@@ -889,7 +886,6 @@ class Diffusion:
                 geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
                 vcoef=self._metric_state.zd_intcoef,
                 area=self._cell_params.area,
-                theta_v=prognostic_state.theta_v,
                 exner=prognostic_state.exner,
                 rd_o_cvd=self.rd_o_cvd,
                 apply_zdiffusion_t=self.config.apply_zdiffusion_t,
@@ -899,7 +895,7 @@ class Diffusion:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.connectivities,
             )
-            log.debug("running apply_diffusion_to_theta_and_exner: end")
+            log.debug("running stencil 13 to 16  apply_diffusion_to_theta_and_exner: end")
 
         self.halo_exchange_wait(
             handle_edge_comm
