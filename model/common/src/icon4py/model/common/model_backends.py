@@ -57,11 +57,11 @@ try:
             cached=True,
             gpu=gpu,
             async_sdfg_call=False,
-            make_persistent=False,
-            use_memory_pool=False,
-            use_zero_origin=True,
             blocking_dim=(dims.KDim if enable_loop_blocking else None),
             blocking_size=10,
+            make_persistent=False,
+            use_memory_pool=False,
+            use_zero_origin=False,
         )
 
     BACKENDS.update(
