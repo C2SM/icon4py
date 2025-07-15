@@ -56,7 +56,7 @@ def _compute_horizontal_advection_of_w(
         )
     )
 
-    return horizontal_advection_of_w_at_edges_on_half_levels
+    return astype(horizontal_advection_of_w_at_edges_on_half_levels, vpfloat)
 
 
 @gtx.field_operator

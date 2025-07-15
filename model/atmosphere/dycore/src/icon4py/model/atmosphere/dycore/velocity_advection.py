@@ -60,6 +60,7 @@ class VelocityAdvection:
         self._compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction = compute_derived_horizontal_winds_and_ke_and_contravariant_correction.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             nflatlev=[self.vertical_params.nflatlev],
             skip_compute_predictor_vertical_advection=[False, True],
             vertical_start=[gtx.int32(0)],
@@ -79,17 +80,21 @@ class VelocityAdvection:
         self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = compute_advection_in_vertical_momentum_equation.compute_contravariant_correction_and_advection_in_vertical_momentum_equation.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
+            nflatlev=[self.vertical_params.nflatlev],
             nlev=[gtx.int32(self.grid.num_levels)],
-            vertical_start=[0],
-            vertical_end=[gtx.int32(self.grid.num_levels)],
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[self.grid.num_levels],
             offset_provider=self.grid.connectivities,
         )
 
         self._compute_advection_in_vertical_momentum_equation = compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
+            nflatlev=[self.vertical_params.nflatlev],
             nlev=[gtx.int32(self.grid.num_levels)],
             vertical_start=[0],
             vertical_end=[gtx.int32(self.grid.num_levels)],
@@ -99,6 +104,7 @@ class VelocityAdvection:
         self._compute_advection_in_horizontal_momentum_equation = compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
             nlev=[self.grid.num_levels],
             vertical_start=[gtx.int32(0)],
