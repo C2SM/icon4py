@@ -137,7 +137,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         divdamp_type: int,
         at_first_substep: bool,
         end_index_of_damping_layer: int,
-        starting_vertical_index_for_3d_divdamp: int,
         kstart_moist: int,
         flat_level_index_plus1: int,
         **kwargs: Any,
@@ -378,9 +377,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         # compute dw/dz for divergence damping term
         if divdamp_type >= 3:
             dwdz_at_cells_on_model_levels = np.where(
-                (start_cell_index_nudging <= horz_idx)
-                & (horz_idx < end_cell_index_local)
-                & (vert_idx >= starting_vertical_index_for_3d_divdamp),
+                (start_cell_index_nudging <= horz_idx) & (horz_idx < end_cell_index_local),
                 compute_dwdz_for_divergence_damping_numpy(
                     connectivities=connectivities,
                     inv_ddqz_z_full=inv_ddqz_z_full,
@@ -458,7 +455,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         rayleigh_type = 2
         divdamp_type = 3
         end_index_of_damping_layer = 3
-        starting_vertical_index_for_3d_divdamp = 0
         kstart_moist = 1
         flat_level_index_plus1 = 3
         dtime = 0.001
@@ -512,7 +508,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             divdamp_type=divdamp_type,
             at_first_substep=at_first_substep,
             end_index_of_damping_layer=end_index_of_damping_layer,
-            starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
             kstart_moist=kstart_moist,
             flat_level_index_plus1=flat_level_index_plus1,
             start_cell_index_nudging=start_cell_nudging,
