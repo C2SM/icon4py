@@ -1676,7 +1676,6 @@ def test_apply_divergence_damping_and_update_vn(
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
@@ -1717,7 +1716,6 @@ def test_apply_divergence_damping_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
-        starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
@@ -1786,7 +1784,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    xp = data_alloc.import_array_ns(backend)
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -1841,6 +1839,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     rho_ref = sp_nh_exit.rho_new()
     exner_ref = sp_nh_exit.exner_new()
     theta_v_ref = sp_nh_exit.theta_v_new()
+    z_dwdz_dd_ref = sp_nh_exit.z_dwdz_dd()
     exner_dyn_incr_ref = sp_nh_exit.exner_dyn_incr()
 
     geofac_div = data_alloc.flatten_first_two_dims(
@@ -1861,9 +1860,6 @@ def test_vertically_implicit_solver_at_predictor_step(
         "Koff": dims.KDim,
     }
 
-    print("DEBUG, DEBUG")
-    print(metrics_savepoint.wgtfacq_c_dsl().asnumpy().shape)
-    print("DEBUG, DEBUG")
     vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step.with_backend(
         backend
     )(
@@ -1913,7 +1909,6 @@ def test_vertically_implicit_solver_at_predictor_step(
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         end_index_of_damping_layer=grid_savepoint.nrdmax(),
-        starting_vertical_index_for_3d_divdamp=nonhydro_params.starting_vertical_index_for_3d_divdamp,
         kstart_moist=vertical_params.kstart_moist,
         flat_level_index_plus1=gtx.int32(vertical_params.nflatlev + 1),
         start_cell_index_nudging=start_cell_nudging,
@@ -1958,6 +1953,24 @@ def test_vertically_implicit_solver_at_predictor_step(
         next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert helpers.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
+
+    # In ICON, z_dwdz_dd is computed from starting_vertical_index_for_3d_divdamp (kstart_dd3d in ICON).
+    # serialized data of z_dwdz_dd can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
+    # Since dwdz_at_cells_on_model_levels is computed for all levels in icon4py, we have to
+    # manually set the reference equal to zero when k < starting_vertical_index_for_3d_divdamp.
+    starting_vertical_index_for_3d_divdamp = (
+        xp.min(xp.where(metrics_savepoint.scaling_factor_for_3d_divdamp().ndarray > 0.0))[0]
+        if config.divdamp_type == 32
+        else 0
+    )
+    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers = z_dwdz_dd_ref.asnumpy()
+    z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[0:starting_vertical_index_for_3d_divdamp] = 0.0
+    assert helpers.dallclose(
+        dwdz_at_cells_on_model_levels.asnumpy()[start_cell_nudging:, :],
+        z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[start_cell_nudging:, :],
+        atol=1.0e-16,
+    )
+
     assert helpers.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
 
 

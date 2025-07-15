@@ -60,7 +60,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
         divdamp_order: gtx.int32,
-        starting_vertical_index_for_3d_divdamp: gtx.int32,
         end_edge_halo_level_2: gtx.int32,
         start_edge_lateral_boundary_level_7: gtx.int32,
         start_edge_nudging_level_2: gtx.int32,
@@ -70,7 +69,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
     ) -> dict:
-        vert_idx = np.arange(vertical_end)
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 
         scaling_factor_for_3d_divdamp = np.expand_dims(scaling_factor_for_3d_divdamp, axis=0)
@@ -84,9 +82,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         )
 
         horizontal_gradient_of_total_divergence = np.where(
-            (start_edge_lateral_boundary_level_7 <= horz_idx)
-            & (horz_idx < end_edge_halo_level_2)
-            & (vert_idx >= starting_vertical_index_for_3d_divdamp),
+            (start_edge_lateral_boundary_level_7 <= horz_idx) & (horz_idx < end_edge_halo_level_2),
             horizontal_gradient_of_normal_wind_divergence
             + (
                 horizontal_mask_for_3d_divdamp
@@ -225,7 +221,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         )
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-        starting_vertical_index_for_3d_divdamp = 0
 
         return dict(
             horizontal_gradient_of_normal_wind_divergence=horizontal_gradient_of_normal_wind_divergence,
@@ -255,7 +250,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             is_iau_active=is_iau_active,
             limited_area=limited_area,
             divdamp_order=divdamp_order,
-            starting_vertical_index_for_3d_divdamp=starting_vertical_index_for_3d_divdamp,
             end_edge_halo_level_2=end_edge_halo_level_2,
             start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=start_edge_nudging_level_2,
