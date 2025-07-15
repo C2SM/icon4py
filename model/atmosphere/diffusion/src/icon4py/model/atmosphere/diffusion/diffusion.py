@@ -459,7 +459,6 @@ class Diffusion:
             self._backend
         ).compile(
             enable_jit=False,
-            apply_zdiffusion_t=[self.config.apply_zdiffusion_t],
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,
