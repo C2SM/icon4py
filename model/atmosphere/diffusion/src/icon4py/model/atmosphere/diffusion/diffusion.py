@@ -458,7 +458,7 @@ class Diffusion:
         self.apply_diffusion_to_theta_and_exner = apply_diffusion_to_theta_and_exner.with_backend(
             self._backend
         ).compile(
-            enable_jit=False,
+            apply_zdiffusion_t=[self.config.apply_zdiffusion_t],
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,
@@ -895,7 +895,7 @@ class Diffusion:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.connectivities,
             )
-            log.debug("running stencil 13 to 16  apply_diffusion_to_theta_and_exner: end")
+            log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 
         self.halo_exchange_wait(
             handle_edge_comm
