@@ -28,6 +28,9 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     scale_k,
     setup_fields_for_initial_step,
 )
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
+    apply_diffusion_to_theta_and_exner,
+)
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
     apply_diffusion_to_vn,
 )
@@ -42,15 +45,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_theta import (
-    calculate_nabla2_for_theta,
-)
-from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
-    truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
-)
-from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
-    update_theta_and_exner,
 )
 from icon4py.model.common import field_type_aliases as fa, constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -461,27 +455,13 @@ class Diffusion:
                 offset_provider=self._grid.connectivities,
             )
         )
-        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(
+        self.apply_diffusion_to_theta_and_exner = apply_diffusion_to_theta_and_exner.with_backend(
             self._backend
         ).compile(
             enable_jit=False,
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,
-        )
-        self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
-            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(self._backend)
-        ).compile(
-            enable_jit=False,
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.connectivities,
-        )
-        self.update_theta_and_exner = update_theta_and_exner.with_backend(self._backend).compile(
-            enable_jit=False,
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider={},
         )
         self.copy_field = copy_field.with_backend(self._backend).compile(
             enable_jit=False, offset_provider={}
@@ -896,57 +876,31 @@ class Diffusion:
             log.debug(
                 "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
-
-            log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-            self.calculate_nabla2_for_theta(
-                kh_smag_e=self.kh_smag_e,
-                inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
-                theta_v=prognostic_state.theta_v,
-                geofac_div=self._interpolation_state.geofac_div,
-                z_temp=self.z_temp,
-                horizontal_start=self._cell_start_nudging,
-                horizontal_end=self._cell_end_local,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.connectivities,
-            )
-            log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
-            log.debug(
-                "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
-            )
+            log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
             if self.config.apply_zdiffusion_t:
-                self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
+                self.apply_diffusion_to_theta_and_exner(
+                    kh_smag_e=self.kh_smag_e,
+                    inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
+                    theta_v_in=prognostic_state.theta_v,
+                    geofac_div=self._interpolation_state.geofac_div,
                     mask=self._metric_state.mask_hdiff,
                     zd_vertoffset=self._metric_state.zd_vertoffset,
                     zd_diffcoef=self._metric_state.zd_diffcoef,
                     geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
                     geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
                     vcoef=self._metric_state.zd_intcoef,
+                    area=self._cell_params.area,
                     theta_v=prognostic_state.theta_v,
-                    z_temp=self.z_temp,
+                    exner=prognostic_state.exner,
+                    rd_o_cvd=self.rd_o_cvd,
+                    apply_zdiffusion_t=self.config.apply_zdiffusion_t,
                     horizontal_start=self._cell_start_nudging,
                     horizontal_end=self._cell_end_local,
                     vertical_start=0,
                     vertical_end=self._grid.num_levels,
                     offset_provider=self._grid.connectivities,
                 )
-
-                log.debug(
-                    "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
-                )
-            log.debug("running stencil 16 (update_theta_and_exner): start")
-            self.update_theta_and_exner(
-                z_temp=self.z_temp,
-                area=self._cell_params.area,
-                theta_v=prognostic_state.theta_v,
-                exner=prognostic_state.exner,
-                rd_o_cvd=self.rd_o_cvd,
-                horizontal_start=self._cell_start_nudging,
-                horizontal_end=self._cell_end_local,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-            )
-            log.debug("running stencil 16 (update_theta_and_exner): end")
+            log.debug("running stencil 13 and 16 (apply_diffusion_to_theta_and_exner): end")
 
         self.halo_exchange_wait(
             handle_edge_comm

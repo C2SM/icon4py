@@ -40,20 +40,21 @@ def _apply_diffusion_to_theta_and_exner(
     area: fa.CellField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
+    apply_zdiffusion_t: bool,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v_in)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
-    # TODO (@halungge) this is only done conditionally on _apply_extra_diffusion
-    z_temp = _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-        mask,
-        zd_vertoffset,
-        zd_diffcoef,
-        geofac_n2s_c,
-        geofac_n2s_nbh,
-        vcoef,
-        theta_v_in,
-        z_temp,
-    )
+    if apply_zdiffusion_t:
+        z_temp = _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
+            mask,
+            zd_vertoffset,
+            zd_diffcoef,
+            geofac_n2s_c,
+            geofac_n2s_nbh,
+            vcoef,
+            theta_v_in,
+            z_temp,
+        )
     theta_v, exner = _update_theta_and_exner(z_temp, area, theta_v_in, exner, rd_o_cvd)
     return theta_v, exner
 
@@ -74,6 +75,7 @@ def apply_diffusion_to_theta_and_exner(
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
+    apply_zdiffusion_t: bool,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -93,6 +95,7 @@ def apply_diffusion_to_theta_and_exner(
         area,
         exner,
         rd_o_cvd,
+        apply_zdiffusion_t,
         out=(theta_v, exner),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
