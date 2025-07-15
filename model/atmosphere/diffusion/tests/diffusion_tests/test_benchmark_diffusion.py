@@ -267,7 +267,7 @@ def test_run_diffusion_benchmark(
         dwdx=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
         dwdy=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
     )
-    # prognostic_state = savepoint_diffusion_init.construct_prognostics()
+
     prognostic_state = prognostics.PrognosticState(
         w=data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=0.0),
         vn=data_alloc.random_field(grid, dims.EdgeDim, dims.KDim),
