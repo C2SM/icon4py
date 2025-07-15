@@ -207,6 +207,20 @@ def _solve_tridiagonal_matrix_for_w_forward_backward_scan(
 
 
 @gtx.field_operator
+def w_boundary_condition(
+    last_inner_level: gtx.int32,
+    on_first_level: fa.CellField[ta.wpfloat],
+    between_first_and_last_level: fa.CellKField[ta.wpfloat],
+    on_last_level: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    return concat_where(
+        dims.KDim < 1,
+        on_first_level,
+        concat_where(dims.KDim < last_inner_level, between_first_and_last_level, on_last_level),
+    )
+
+
+@gtx.field_operator
 def _vertically_implicit_solver_at_predictor_step(
     next_w: fa.CellKField[
         ta.wpfloat
@@ -321,9 +335,10 @@ def _vertically_implicit_solver_at_predictor_step(
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
-    next_w = concat_where(
-        (dims.KDim > 0) & (dims.KDim < n_lev),
-        _solve_tridiagonal_matrix_for_w_forward_backward_scan(
+    next_w = w_boundary_condition(
+        last_inner_level=n_lev,
+        on_first_level=broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        between_first_and_last_level=_solve_tridiagonal_matrix_for_w_forward_backward_scan(
             vwind_impl_wgt=exner_w_implicit_weight_parameter,
             theta_v_ic=theta_v_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
@@ -334,11 +349,7 @@ def _vertically_implicit_solver_at_predictor_step(
             dtime=dtime,
             cpd=dycore_consts.cpd,
         ),
-        concat_where(
-            dims.KDim == 0,
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
-        ),
+        on_last_level=next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
     )
 
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
@@ -643,9 +654,10 @@ def _vertically_implicit_solver_at_corrector_step(
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
-    next_w = concat_where(
-        (dims.KDim > 0) & (dims.KDim < n_lev),
-        _solve_tridiagonal_matrix_for_w_forward_backward_scan(
+    next_w = w_boundary_condition(
+        last_inner_level=n_lev,
+        on_first_level=broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        between_first_and_last_level=_solve_tridiagonal_matrix_for_w_forward_backward_scan(
             vwind_impl_wgt=exner_w_implicit_weight_parameter,
             theta_v_ic=theta_v_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
@@ -656,11 +668,7 @@ def _vertically_implicit_solver_at_corrector_step(
             dtime=dtime,
             cpd=dycore_consts.cpd,
         ),
-        concat_where(
-            dims.KDim == 0,
-            broadcast(wpfloat("0.0"), (dims.CellDim,)),
-            next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
-        ),
+        on_last_level=next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
     )
 
     w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
