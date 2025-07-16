@@ -157,7 +157,7 @@ def get_grid_geometry(
         grid = gm.grid
         decomposition_info = _construct_dummy_decomposition_info(grid)
         geometry_source = geometry.GridGeometry(
-            grid, decomposition_info, backend, gm.coordinates, gm.geometry, geometry_attrs.attrs
+            grid, decomposition_info, backend, gm.coordinates, gm.geometry_fields, geometry_attrs.attrs
         )
         return geometry_source
 

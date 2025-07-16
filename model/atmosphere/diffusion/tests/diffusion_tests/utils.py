@@ -66,7 +66,7 @@ def diff_multfac_vn_numpy(shape, k4, substeps):
 def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
     if name.lower() in "mch_ch_r04b09_dsl":
         return r04b09_diffusion_config(ndyn_substeps)
-    elif name.lower() in "r02b04_global":
+    elif name.lower() in "exclaim_ape_R02B04":
         return exclaim_ape_diffusion_config(ndyn_substeps)
 
 

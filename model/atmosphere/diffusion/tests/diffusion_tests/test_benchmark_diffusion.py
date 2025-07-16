@@ -153,24 +153,23 @@ def metrics_factory_params(
     "grid_file",
     [
         (
-            dt_utils.R02B04_GLOBAL
+            dt_utils.GLOBAL_EXPERIMENT
         ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])  # TODO: the default value is 5
-@pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_benchmark(
     grid_file,
     vertical_grid_params,
     metrics_factory_params,
     ndyn_substeps,
     backend,
-    orchestration,
 ):
 
     # get configuration
     num_levels = 65
     dtime = 10
+    orchestration = False
     config = construct_diffusion_config(grid_file, ndyn_substeps)
     diffusion_parameters = diffusion.DiffusionParams(config)
 
@@ -288,6 +287,7 @@ def test_run_diffusion_benchmark(
         backend=backend,
         orchestration=orchestration,
     )
+
 
     diffusion_granule.run(
         diagnostic_state=diagnostic_state,
