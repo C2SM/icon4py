@@ -424,7 +424,7 @@ class _EndIndices:
         return gtx.int32(self.size)
 
 
-def SimpleGrid(backend: gtx_backend.Backend | None = None) -> base.Grid:
+def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
     """
     Factory function to create a SimpleGrid instance.
 

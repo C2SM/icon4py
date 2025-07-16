@@ -15,14 +15,14 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.grid.simple import simple_grid
 from icon4py.tools.py2fgen.wrappers.icon4py_export import export
 
 
 # global profiler object
 profiler = cProfile.Profile()
 
-grid = SimpleGrid()
+grid = simple_grid()
 
 
 @export

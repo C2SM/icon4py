@@ -376,7 +376,7 @@ def test_vertex(backend, grid_file, experiment):
 
 
 def test_sparse_fields_creator():
-    grid = simple.SimpleGrid()
+    grid = simple.simple_grid()
     f1 = data_alloc.random_field(grid, dims.EdgeDim)
     f2 = data_alloc.random_field(grid, dims.EdgeDim)
     g1 = data_alloc.random_field(grid, dims.EdgeDim)
