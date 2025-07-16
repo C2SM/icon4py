@@ -539,6 +539,7 @@ class SimpleGrid(BaseGrid):
                 dims.ECVDim: self.size[dims.EdgeDim] * self.size[dims.E2C2VDim],
                 dims.CEDim: self.size[dims.CellDim] * self.size[dims.C2EDim],
                 dims.ECDim: self.size[dims.EdgeDim] * self.size[dims.E2CDim],
+                dims.CECDim: self.size[dims.CellDim] * self.size[dims.C2E2CDim],
             }
         )
 
