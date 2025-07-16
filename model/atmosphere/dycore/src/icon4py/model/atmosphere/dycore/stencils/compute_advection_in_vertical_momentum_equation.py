@@ -183,8 +183,6 @@ def _compute_contravariant_corrected_w(
         astype(w, vpfloat),
     )
 
-    # TODO (Chia Rui): Please confirm that k=nlev is only used for computing contravariant_corrected_w_at_cells_on_model_levels
-    # TODO (Chia Rui): return concat_where(dims.KDim == nlev, 0.0, contravariant_corrected_w_at_cells_on_half_levels)
     return contravariant_corrected_w_at_cells_on_half_levels
 
 
@@ -435,16 +433,20 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
         - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity at edges on half levels
         - coeff1_dwdz: metrics field (first coefficient for vertical derivative of vertical wind)
         - coeff2_dwdz: metrics field (second coefficient for vertical derivative of vertical wind)
+        - c_intp: interpolation field for cell-to-vertex interpolation
+        - inv_dual_edge_length: inverse dual edge length
+        - inv_primal_edge_length: inverse primal edge length
+        - tangent_orientation: orientation of the edge with respect to the grid
         - e_bln_c_s: interpolation field (edge-to-cell interpolation weights)
         - ddqz_z_half: metrics field
         - area: cell area
         - geofac_n2s: interpolation field
+        - owner_mask: ownership mask for each cell
         - scalfac_exdiff: scalar factor for external diffusion
         - cfl_w_limit: CFL limit for vertical velocity
         - dtime: time step
         - skip_compute_predictor_vertical_advection: logical flag to skip the vertical advection
-        - cfl_clipping: boolean field indicating CFL clipping applied per cell and level
-        - owner_mask: ownership mask for each cell
+        - nflatlev: number of flat levels
         - end_index_of_damping_layer: vertical index where damping ends
         - horizontal_start: start index in the horizontal dimension
         - horizontal_end: end index in the horizontal dimension
@@ -617,15 +619,19 @@ def compute_advection_in_vertical_momentum_equation(
         - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity at edges on half levels
         - coeff1_dwdz: metrics field (first coefficient for vertical derivative of vertical wind)
         - coeff2_dwdz: metrics field (second coefficient for vertical derivative of vertical wind)
+        - c_intp: interpolation field for cell-to-vertex interpolation
+        - inv_dual_edge_length: inverse dual edge length
+        - inv_primal_edge_length: inverse primal edge length
+        - tangent_orientation: orientation of the edge with respect to the grid
         - e_bln_c_s: interpolation field (edge-to-cell interpolation weights)
         - ddqz_z_half: metrics field
         - area: cell area
         - geofac_n2s: interpolation field
+        - owner_mask: ownership mask for each cell
         - scalfac_exdiff: scalar factor for external diffusion
         - cfl_w_limit: CFL limit for vertical velocity
         - dtime: time step
-        - cfl_clipping: boolean field indicating CFL clipping applied per cell and level
-        - owner_mask: ownership mask for each cell
+        - nflatlev: number of flat levels
         - end_index_of_damping_layer: vertical index where damping ends
         - horizontal_start: start index in the horizontal dimension
         - horizontal_end: end index in the horizontal dimension

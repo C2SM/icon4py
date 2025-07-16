@@ -23,10 +23,38 @@ from icon4py.model.testing import helpers as test_helpers
 from .test_add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy,
 )
-from .test_compute_advective_normal_wind_tendency import (
-    compute_advective_normal_wind_tendency_numpy,
-)
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
+
+
+def compute_advective_normal_wind_tendency_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    z_kin_hor_e: np.ndarray,
+    coeff_gradekin: np.ndarray,
+    z_ekinh: np.ndarray,
+    zeta: np.ndarray,
+    vt: np.ndarray,
+    f_e: np.ndarray,
+    c_lin_e: np.ndarray,
+    z_w_con_c_full: np.ndarray,
+    vn_ie: np.ndarray,
+    ddqz_z_full_e: np.ndarray,
+) -> np.ndarray:
+    e2c = connectivities[dims.E2CDim]
+    z_ekinh_e2c = z_ekinh[e2c]
+    coeff_gradekin = coeff_gradekin.reshape(e2c.shape)
+    coeff_gradekin = np.expand_dims(coeff_gradekin, axis=-1)
+    f_e = np.expand_dims(f_e, axis=-1)
+    c_lin_e = np.expand_dims(c_lin_e, axis=-1)
+
+    ddt_vn_apc = -(
+        (coeff_gradekin[:, 0] - coeff_gradekin[:, 1]) * z_kin_hor_e
+        + (-coeff_gradekin[:, 0] * z_ekinh_e2c[:, 0] + coeff_gradekin[:, 1] * z_ekinh_e2c[:, 1])
+        + vt * (f_e + 0.5 * np.sum(zeta[connectivities[dims.E2VDim]], axis=1))
+        + np.sum(z_w_con_c_full[e2c] * c_lin_e, axis=1)
+        * (vn_ie[:, :-1] - vn_ie[:, 1:])
+        / ddqz_z_full_e
+    )
+    return ddt_vn_apc
 
 
 class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
