@@ -482,44 +482,41 @@ class IconGridSavepoint(IconSavepoint):
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
         xp = data_alloc.array_ns(on_gpu)
-        grid = (
-            icon.IconGridBuilder(self._grid_id)
-            .set_config(config)
-            .set_global_params(self.global_grid_params)
-            .set_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
-            .set_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
-            .set_start_end_indices(dims.CellDim, cell_starts, cell_ends)
-            .set_neighbor_tables(
-                {
-                    dims.C2EDim: xp.asarray(self.c2e()),
-                    dims.E2CDim: xp.asarray(self.e2c()),
-                    dims.C2E2CDim: xp.asarray(c2e2c),
-                    dims.C2E2CODim: xp.asarray(c2e2c0),
-                    dims.C2E2C2EDim: xp.asarray(self.c2e2c2e()),
-                    dims.E2C2EDim: xp.asarray(e2c2e),
-                    dims.E2C2EODim: xp.asarray(e2c2e0),
-                }
-            )
-            .set_neighbor_tables(
-                {
-                    dims.E2VDim: xp.asarray(self.e2v()),
-                    dims.V2EDim: xp.asarray(self.v2e()),
-                    dims.V2CDim: xp.asarray(self.v2c()),
-                    dims.E2C2VDim: xp.asarray(self.e2c2v()),
-                    dims.C2VDim: xp.asarray(self.c2v()),
-                }
-            )
-        )
 
-        grid.update_size_connectivities(
-            {
-                dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
-                dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
-                dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
-            }
-        )
+        start_indices = {
+            dims.VertexDim: vertex_starts,
+            dims.EdgeDim: edge_starts,
+            dims.CellDim: cell_starts,
+        }
+        end_indices = {
+            dims.VertexDim: vertex_ends,
+            dims.EdgeDim: edge_ends,
+            dims.CellDim: cell_ends,
+        }
 
-        return grid.build()
+        neighbor_tables = {
+            dims.C2E: xp.asarray(self.c2e()),
+            dims.E2C: xp.asarray(self.e2c()),
+            dims.C2E2C: xp.asarray(c2e2c),
+            dims.C2E2CO: xp.asarray(c2e2c0),
+            dims.C2E2C2E: xp.asarray(self.c2e2c2e()),
+            dims.E2C2E: xp.asarray(e2c2e),
+            dims.E2C2EO: xp.asarray(e2c2e0),
+            dims.E2V: xp.asarray(self.e2v()),
+            dims.V2E: xp.asarray(self.v2e()),
+            dims.V2C: xp.asarray(self.v2c()),
+            dims.E2C2V: xp.asarray(self.e2c2v()),
+            dims.C2V: xp.asarray(self.c2v()),
+        }
+
+        return icon.icon_grid(
+            id_=self._grid_id,
+            config=config,
+            neighbor_tables=neighbor_tables,
+            global_properties=self.global_grid_params,
+            start_indices=start_indices,
+            end_indices=end_indices,
+        )
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:
         primal_normal_vert: tuple[

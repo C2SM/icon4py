@@ -424,7 +424,7 @@ class _EndIndices:
         return gtx.int32(self.size)
 
 
-def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
+def simple_grid(backend: gtx_backend.Backend | None = None) -> base.BaseGrid:
     """
     Factory function to create a SimpleGrid instance.
 
@@ -470,7 +470,7 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
         for offset, table in neighbor_tables.items()
     }
 
-    return base.Grid(
+    return base.BaseGrid(
         id=uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85"),
         config=config,
         connectivities=connectivities,

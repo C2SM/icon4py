@@ -8,6 +8,7 @@
 import functools
 import logging
 import pathlib
+import uuid
 from types import ModuleType
 from typing import Literal, Optional, Protocol, TypeAlias, Union
 
@@ -332,17 +333,16 @@ class GridManager:
         on_gpu = data_alloc.is_cupy_device(backend)
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
         _derived_connectivities = functools.partial(
-            _add_derived_connectivities,
+            _get_derived_connectivities,
             array_ns=xp,
         )
         refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
         limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
-        grid = self._initialize_global(
+        uuid, config, global_properties = self._initialize_global(
             with_skip_values=with_skip_values, limited_area=limited_area, on_gpu=on_gpu
         )
-        grid.set_refinement_control(refinement_fields)
 
-        global_connectivities = {
+        neighbor_tables = {
             dims.C2E2C: self._get_index_field(gridfile.ConnectivityName.C2E2C),
             dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
             dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C),
@@ -352,18 +352,21 @@ class GridManager:
             dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
         }
+        neighbor_tables.update(_derived_connectivities(neighbor_tables))
 
-        grid.set_neighbor_tables(
-            {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
-        )
-
-        _derived_connectivities(grid)
-        _update_size_for_1d_sparse_dims(grid)
         start, end, _ = self._read_start_end_indices()
-        for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
-            grid.set_start_end_indices(dim, start[dim], end[dim])
+        start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
+        end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
 
-        return grid.build()
+        return icon.icon_grid(
+            id_=uuid,
+            config=config,
+            neighbor_tables=neighbor_tables,
+            start_indices=start_indices,
+            end_indices=end_indices,
+            global_properties=global_properties,
+            refinement_control=refinement_fields,
+        )
 
     def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
         field = self._reader.int_variable(field, transpose=transpose)
@@ -373,7 +376,7 @@ class GridManager:
 
     def _initialize_global(
         self, with_skip_values: bool, limited_area: bool, on_gpu: bool
-    ) -> icon.IconGridBuilder:
+    ) -> tuple[uuid.UUID, base.GridConfig, icon.GlobalGridParams]:
         """
         Read basic information from the grid file:
         Mostly reads global grid file parameters and dimensions.
@@ -406,18 +409,17 @@ class GridManager:
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )
-        grid = icon.IconGridBuilder(uuid).set_config(config).set_global_params(global_params)
-        return grid
+        return uuid, config, global_params
 
 
-def _add_derived_connectivities(
-    grid: icon.IconGridBuilder, array_ns: ModuleType = np
-) -> icon.IconGridBuilder:
-    e2v_table = grid._neighbor_tables[dims.E2VDim]
-    c2v_table = grid._neighbor_tables[dims.C2VDim]
-    e2c_table = grid._neighbor_tables[dims.E2CDim]
-    c2e_table = grid._neighbor_tables[dims.C2EDim]
-    c2e2c_table = grid._neighbor_tables[dims.C2E2CDim]
+def _get_derived_connectivities(
+    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray], array_ns: ModuleType = np
+) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
+    e2v_table = neighbor_tables[dims.E2V]
+    c2v_table = neighbor_tables[dims.C2V]
+    e2c_table = neighbor_tables[dims.E2C]
+    c2e_table = neighbor_tables[dims.C2E]
+    c2e2c_table = neighbor_tables[dims.C2E2C]
     e2c2v = _construct_diamond_vertices(
         e2v_table,
         c2v_table,
@@ -436,28 +438,14 @@ def _add_derived_connectivities(
     )
     c2e2c2e2c = _construct_butterfly_cells(c2e2c_table, array_ns=array_ns)
 
-    grid.set_neighbor_tables(
-        {
-            dims.C2E2CODim: c2e2c0,
-            dims.C2E2C2EDim: c2e2c2e,
-            dims.C2E2C2E2CDim: c2e2c2e2c,
-            dims.E2C2VDim: e2c2v,
-            dims.E2C2EDim: e2c2e,
-            dims.E2C2EODim: e2c2e0,
-        }
-    )
-
-    return grid
-
-
-def _update_size_for_1d_sparse_dims(grid):
-    grid.update_size_connectivities(
-        {
-            dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
-            dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
-            dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
-        }
-    )
+    return {
+        dims.C2E2CO: c2e2c0,
+        dims.C2E2C2E: c2e2c2e,
+        dims.C2E2C2E2C: c2e2c2e2c,
+        dims.E2C2V: e2c2v,
+        dims.E2C2E: e2c2e,
+        dims.E2C2EO: e2c2e0,
+    }
 
 
 def _construct_diamond_vertices(
