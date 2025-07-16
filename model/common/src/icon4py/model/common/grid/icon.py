@@ -303,4 +303,5 @@ class IconGrid(base.BaseGrid):
             start_index=start_index,
             end_index=end_index,
             global_properties=self.global_properties,
+            refinement_control=self.refinement_control,
         )

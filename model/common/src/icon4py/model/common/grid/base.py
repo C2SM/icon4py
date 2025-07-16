@@ -91,6 +91,7 @@ class Grid:
     start_index: Callable[[h_grid.Domain], gtx.int32]
     end_index: Callable[[h_grid.Domain], gtx.int32]
     global_properties: ...  # TODO does it belong here?
+    refinement_control: ...  # TODO does it belong here?
 
     @property
     def num_cells(self) -> int:
@@ -110,7 +111,10 @@ class Grid:
 
     @property
     def geometry_type(self) -> GeometryType:
-        ...  # TODO
+        # TODO this is not nice, maybe make it a primary property of Grid
+        if self.global_properties is not None:
+            return self.global_properties.geometry_type
+        return GeometryType.TORUS  # default value if not set
 
     @property
     def limited_area(self) -> bool:
@@ -120,6 +124,15 @@ class Grid:
     def get_connectivity(self, name: str) -> gtx.Connectivity:
         """Get the connectivity by its name."""
         return self.connectivities[name]
+
+    @functools.cached_property
+    def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
+        return {
+            dim: v.ndarray
+            for k, v in self.connectivities.items()
+            if (dim := dims.DIMENSIONS_BY_OFFSET_NAME.get(k)) is not None
+            and gtx_common.is_neighbor_connectivity(v)
+        }
 
 
 class BaseGrid(ABC):
