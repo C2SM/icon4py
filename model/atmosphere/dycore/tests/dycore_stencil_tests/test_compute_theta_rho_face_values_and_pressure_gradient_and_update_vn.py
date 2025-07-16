@@ -521,7 +521,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
         end_edge_end = grid.num_edges
         nflatlev = 4
-        nflat_gradp = min(27, grid.num_levels - 1)
+        nflat_gradp = 27
 
         return dict(
             rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
