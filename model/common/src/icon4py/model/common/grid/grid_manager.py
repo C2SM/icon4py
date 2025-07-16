@@ -91,7 +91,7 @@ class GridManager:
         self._transformation = transformation
         self._file_name = str(grid_file)
         self._vertical_config = config
-        self._grid: Optional[icon.IconGridBuilder] = None
+        self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
         self._geometry: GeometryDict = {}
         self._reader = None
@@ -308,7 +308,7 @@ class GridManager:
         return start_indices, end_indices, grid_refinement_dimensions
 
     @property
-    def grid(self) -> icon.IconGridBuilder:
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
@@ -321,7 +321,7 @@ class GridManager:
 
     def _construct_grid(
         self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
-    ) -> icon.IconGridBuilder:
+    ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in
