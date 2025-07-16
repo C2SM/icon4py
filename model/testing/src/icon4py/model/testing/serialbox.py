@@ -510,7 +510,16 @@ class IconGridSavepoint(IconSavepoint):
 
         mesh = {
             k.value: base.construct_connectivity(
-                k, v, skip_value=None, do_replace_skip_values=True, array_ns=xp
+                k,
+                v,
+                skip_value=-1
+                if (
+                    k in icon.CONNECTIVITIES_ON_PENTAGONS
+                    or (config.limited_area and k in icon.CONNECTIVITIES_ON_BOUNDARIES)
+                )
+                else None,
+                do_replace_skip_values=False,
+                array_ns=xp,
             )
             for k, v in tables.items()
         }

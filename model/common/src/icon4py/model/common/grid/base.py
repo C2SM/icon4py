@@ -113,7 +113,7 @@ def construct_1d_sparse_table(shape2d: tuple[int, int], array_ns: ModuleType) ->
 class BaseGrid(ABC):
     def __init__(
         self,
-        config: GridConfig,
+        config: GridConfig,  # TODO(havogt): the grid config seems a bit IconGrid specific, is it really the right thing for the BaseGrid?
         mesh: gtx_common.OffsetProvider,
         *,
         extra_sizes: dict[gtx.Dimension, int] | None = None,

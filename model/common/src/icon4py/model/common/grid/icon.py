@@ -25,16 +25,16 @@ from icon4py.model.common.grid.base import data_alloc
 log = logging.getLogger(__name__)
 
 CONNECTIVITIES_ON_BOUNDARIES = (
-    dims.C2E2C2EDim,
-    dims.E2CDim,
-    dims.C2E2CDim,
-    dims.C2E2CODim,
-    dims.E2C2VDim,
-    dims.E2C2EDim,
-    dims.E2C2EODim,
-    dims.C2E2C2E2CDim,
+    dims.C2E2C2E,
+    dims.E2C,
+    dims.C2E2C,
+    dims.C2E2CO,
+    dims.E2C2V,
+    dims.E2C2E,
+    dims.E2C2EO,
+    dims.C2E2C2E2C,
 )
-CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
+CONNECTIVITIES_ON_PENTAGONS = (dims.V2E, dims.V2C, dims.V2E2V)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -118,9 +118,10 @@ class IconGrid(base.BaseGrid):
         mesh: gtx_common.OffsetProvider,
         global_params: GlobalGridParams,
         refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
+        extra_sizes: dict[gtx.Dimension, int] | None = None,
     ):
         """Instantiate a grid according to the ICON model."""
-        super().__init__(config=config, mesh=mesh)
+        super().__init__(config=config, mesh=mesh, extra_sizes=extra_sizes)
         self._id = id_
         self._refinement_control = refinement_control
         # TODO maybe store as single dict?
@@ -268,6 +269,8 @@ class IconGrid(base.BaseGrid):
             return gtx.int32(0)
         return gtx.int32(self._start_indices[domain.dim][domain()])
 
+    # @override
+    # TODO add as abstractmethod to base.BaseGrid
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
         Use to specify upper end of domains of a field for field_operators.

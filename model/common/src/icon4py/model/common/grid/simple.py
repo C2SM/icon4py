@@ -494,22 +494,23 @@ class SimpleGrid(BaseGrid):
             dims.V2E: simple_grid_data.v2e_table,
             dims.C2E2C2E: simple_grid_data.c2e2c2e_table,
             dims.C2E2C2E2C: simple_grid_data.c2e2c2e2c_table,
+            # 1d sparse tables
+            dims.C2CE: base_grid.construct_1d_sparse_table(
+                simple_grid_data.c2e_table.shape, array_ns=array_ns
+            ),
+            dims.E2ECV: base_grid.construct_1d_sparse_table(
+                simple_grid_data.e2c2v_table.shape, array_ns=array_ns
+            ),
+            dims.E2EC: base_grid.construct_1d_sparse_table(
+                simple_grid_data.e2c_table.shape, array_ns=array_ns
+            ),
+            dims.C2CEC: base_grid.construct_1d_sparse_table(
+                simple_grid_data.c2e2c_table.shape, array_ns=array_ns
+            ),
+            dims.C2CECEC: base_grid.construct_1d_sparse_table(
+                simple_grid_data.c2e2c2e_table.shape, array_ns=array_ns
+            ),
         }
-        raw_tables[dims.C2CE] = base_grid.construct_1d_sparse_table(
-            raw_tables[dims.C2E].shape, array_ns=array_ns
-        )
-        raw_tables[dims.E2ECV] = base_grid.construct_1d_sparse_table(
-            raw_tables[dims.E2C2V].shape, array_ns=array_ns
-        )
-        raw_tables[dims.E2EC] = base_grid.construct_1d_sparse_table(
-            raw_tables[dims.E2C].shape, array_ns=array_ns
-        )
-        raw_tables[dims.C2CEC] = base_grid.construct_1d_sparse_table(
-            raw_tables[dims.C2E2C].shape, array_ns=array_ns
-        )
-        raw_tables[dims.C2CECEC] = base_grid.construct_1d_sparse_table(
-            raw_tables[dims.C2E2C2E2C].shape, array_ns=array_ns
-        )
         mesh = {
             k.value: base_grid.construct_connectivity(
                 k, v, skip_value=None, do_replace_skip_values=True, array_ns=array_ns

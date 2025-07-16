@@ -337,10 +337,10 @@ class GridManager:
         )
         refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
         limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
-        grid = self._initialize_global(
+        uuid, config, global_params = self._initialize_global(
             with_skip_values=with_skip_values, limited_area=limited_area, on_gpu=on_gpu
         )
-        grid.set_refinement_control(refinement_fields)
+        # grid.set_refinement_control(refinement_fields)
 
         global_connectivities = {
             dims.C2E2C: self._get_index_field(gridfile.ConnectivityName.C2E2C),
@@ -353,15 +353,73 @@ class GridManager:
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
         }
 
-        grid.set_neighbor_tables(
-            {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
-        )
+        # TODO create connectivities
+        # grid.set_neighbor_tables(
+        #     {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
+        # )
 
-        _derived_connectivities(grid)
-        _update_size_for_1d_sparse_dims(grid)
+        derived_connectivities = _derived_connectivities(global_connectivities)
+
+        sparse1d = {
+            dims.C2CE: base.construct_1d_sparse_table(
+                global_connectivities[dims.C2E].shape, array_ns=xp
+            ),
+            dims.E2ECV: base.construct_1d_sparse_table(
+                derived_connectivities[dims.E2C2V].shape, array_ns=xp
+            ),
+            dims.E2EC: base.construct_1d_sparse_table(
+                global_connectivities[dims.E2C].shape, array_ns=xp
+            ),
+            dims.C2CEC: base.construct_1d_sparse_table(
+                global_connectivities[dims.C2E2C].shape, array_ns=xp
+            ),
+        }
+        # TODO: create a `construct_connectivities` method in base.py
+
+        # !!!!!!!!!!! TODO !!!!!!!!!!!!!!!!!!!!!
+        # pass correct skip_value
+
+        mesh = {
+            k.value: base.construct_connectivity(
+                k,
+                v,
+                skip_value=-1
+                if (
+                    k in icon.CONNECTIVITIES_ON_PENTAGONS
+                    or (limited_area and k in icon.CONNECTIVITIES_ON_BOUNDARIES)
+                )
+                else None,
+                do_replace_skip_values=False,
+                array_ns=xp,
+            )
+            for k, v in {**global_connectivities, **derived_connectivities, **sparse1d}.items()
+        }  # TODO fix parameters
+
+        ncells = mesh[dims.C2E.value].shape[0]
+        nedges = mesh[dims.E2C.value].shape[0]
+        extra_sizes = {
+            dims.ECVDim: nedges * mesh[dims.E2C2V.value].shape[1],
+            dims.CEDim: ncells * mesh[dims.C2E.value].shape[1],
+            dims.ECDim: nedges * mesh[dims.E2C.value].shape[1],
+        }
+
+        # _update_size_for_1d_sparse_dims(grid)
         start, end, _ = self._read_start_end_indices()
-        for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
-            grid.set_start_end_indices(dim, start[dim], end[dim])
+        # for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+        #     grid.set_start_end_indices(dim, start[dim], end[dim])
+        start_end_indices = {
+            dim: (start[dim], end[dim]) for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        }
+
+        grid = icon.IconGrid(
+            uuid,
+            config=config,
+            global_params=global_params,
+            refinement_control=refinement_fields,
+            mesh=mesh,
+            start_end_indices=start_end_indices,
+            extra_sizes=extra_sizes,
+        )
 
         return grid
 
@@ -406,16 +464,21 @@ class GridManager:
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )
-        grid = icon.IconGrid(uuid).set_config(config).set_global_params(global_params)
-        return grid
+        # grid = icon.IconGrid(uuid).set_config(config).set_global_params(global_params)
+        # return grid
+        # TODO fix this interface
+        return uuid, config, global_params
 
 
-def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) -> icon.IconGrid:
-    e2v_table = grid._neighbor_tables[dims.E2VDim]
-    c2v_table = grid._neighbor_tables[dims.C2VDim]
-    e2c_table = grid._neighbor_tables[dims.E2CDim]
-    c2e_table = grid._neighbor_tables[dims.C2EDim]
-    c2e2c_table = grid._neighbor_tables[dims.C2E2CDim]
+# TODO rename
+def _add_derived_connectivities(
+    global_connectivities: dict[gtx.Dimension, data_alloc.NDArray], array_ns: ModuleType = np
+) -> icon.IconGrid:
+    e2v_table = global_connectivities[dims.E2V]
+    c2v_table = global_connectivities[dims.C2V]
+    e2c_table = global_connectivities[dims.E2C]
+    c2e_table = global_connectivities[dims.C2E]
+    c2e2c_table = global_connectivities[dims.C2E2C]
     e2c2v = _construct_diamond_vertices(
         e2v_table,
         c2v_table,
@@ -423,29 +486,25 @@ def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) 
         array_ns=array_ns,
     )
     e2c2e = _construct_diamond_edges(e2c_table, c2e_table, array_ns=array_ns)
-    e2c2e0 = array_ns.column_stack((array_ns.asarray(range(e2c2e.shape[0])), e2c2e))
+    e2c2e0 = array_ns.column_stack((array_ns.asarray(range(e2c2e.shape[0]), dtype=np.int32), e2c2e))
 
     c2e2c2e = _construct_triangle_edges(c2e2c_table, c2e_table, array_ns=array_ns)
     c2e2c0 = array_ns.column_stack(
         (
-            array_ns.asarray(range(c2e2c_table.shape[0])),
+            array_ns.asarray(range(c2e2c_table.shape[0]), dtype=np.int32),
             (c2e2c_table),
         )
     )
     c2e2c2e2c = _construct_butterfly_cells(c2e2c_table, array_ns=array_ns)
 
-    grid.set_neighbor_tables(
-        {
-            dims.C2E2CODim: c2e2c0,
-            dims.C2E2C2EDim: c2e2c2e,
-            dims.C2E2C2E2CDim: c2e2c2e2c,
-            dims.E2C2VDim: e2c2v,
-            dims.E2C2EDim: e2c2e,
-            dims.E2C2EODim: e2c2e0,
-        }
-    )
-
-    return grid
+    return {
+        dims.C2E2CO: c2e2c0,
+        dims.C2E2C2E: c2e2c2e,
+        dims.C2E2C2E2C: c2e2c2e2c,
+        dims.E2C2V: e2c2v,
+        dims.E2C2E: e2c2e,
+        dims.E2C2EO: e2c2e0,
+    }
 
 
 def _update_size_for_1d_sparse_dims(grid):
