@@ -91,8 +91,6 @@ class Grid:
     geometry_type: GeometryType
     _start_indices: dict[gtx.Dimension, data_alloc.NDArray]
     _end_indices: dict[gtx.Dimension, data_alloc.NDArray]
-    # start_index: Callable[[h_grid.Domain], gtx.int32]
-    # end_index: Callable[[h_grid.Domain], gtx.int32]
 
     @property
     def num_cells(self) -> int:
@@ -109,10 +107,6 @@ class Grid:
     @property
     def num_levels(self) -> int:
         return self.config.num_levels
-
-    @property
-    def geometry_type(self) -> GeometryType:
-        return self.geometry_type
 
     @property
     def limited_area(self) -> bool:
@@ -143,7 +137,7 @@ class Grid:
         if domain.local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
-        return gtx.int32(self._start_indices[domain.dim][domain()])
+        return gtx.int32(self._start_indices[domain.dim][domain])
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
@@ -155,7 +149,7 @@ class Grid:
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
-        return gtx.int32(self._end_indices[domain.dim][domain()])
+        return gtx.int32(self._end_indices[domain.dim][domain])
 
 
 class BaseGrid(ABC):

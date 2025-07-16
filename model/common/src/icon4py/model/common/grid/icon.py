@@ -295,13 +295,7 @@ class IconGridBuilder(base.BaseGrid):
         return gtx.int32(self._end_indices[domain.dim][domain()])
 
     def build(self) -> base.Grid:
-        def start_index(domain: h_grid.Domain) -> gtx.int32:
-            return self.start_index(domain)
-
-        def end_index(domain: h_grid.Domain) -> gtx.int32:
-            return self.end_index(domain)
-
-        return base.Grid(
+        return IconGrid(
             id=self.id,
             config=self.config,
             connectivities=self.connectivities,

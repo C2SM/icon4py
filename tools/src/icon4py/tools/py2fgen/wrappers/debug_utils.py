@@ -34,48 +34,48 @@ def print_grid_decomp_info(
 ) -> None:
     # TODO
 
-    # log.info("icon_grid:cell_start%s", icon_grid._start_indices[CellDim])
-    # log.info("icon_grid:cell_end:%s", icon_grid._end_indices[CellDim])
-    # log.info("icon_grid:vert_start:%s", icon_grid._start_indices[VertexDim])
-    # log.info("icon_grid:vert_end:%s", icon_grid._end_indices[VertexDim])
-    # log.info("icon_grid:edge_start:%s", icon_grid._start_indices[EdgeDim])
-    # log.info("icon_grid:edge_end:%s", icon_grid._end_indices[EdgeDim])
+    log.info("icon_grid:cell_start%s", icon_grid._start_indices[CellDim])
+    log.info("icon_grid:cell_end:%s", icon_grid._end_indices[CellDim])
+    log.info("icon_grid:vert_start:%s", icon_grid._start_indices[VertexDim])
+    log.info("icon_grid:vert_end:%s", icon_grid._end_indices[VertexDim])
+    log.info("icon_grid:edge_start:%s", icon_grid._start_indices[EdgeDim])
+    log.info("icon_grid:edge_end:%s", icon_grid._end_indices[EdgeDim])
     log.info("icon_grid:c2e:%s", icon_grid.neighbor_tables[C2EDim])
     log.info("icon_grid:c2e2c:%s", icon_grid.neighbor_tables[C2E2CDim])
     log.info("icon_grid:v2e:%s", icon_grid.neighbor_tables[V2EDim])
     log.info("icon_grid:e2c2v:%s", icon_grid.neighbor_tables[E2C2VDim])
     log.info("icon_grid:e2c:%s", icon_grid.neighbor_tables[E2CDim])
 
-    # log.info(
-    #     "icon_grid:cell_start for rank %s is.... %s",
-    #     processor_props.rank,
-    #     icon_grid._start_indices[CellDim],
-    # )
-    # log.info(
-    #     "icon_grid:cell_end for rank %s is.... %s",
-    #     processor_props.rank,
-    #     icon_grid._end_indices[CellDim],
-    # )
-    # log.info(
-    #     "icon_grid:vert_start for rank %s is.... %s",
-    #     processor_props.rank,
-    #     icon_grid._start_indices[VertexDim],
-    # )
-    # log.info(
-    #     "icon_grid:vert_end for rank %s is.... %s",
-    #     processor_props.rank,
-    #     icon_grid._end_indices[VertexDim],
-    # )
-    # log.info(
-    #     "icon_grid:edge_start for rank %s is.... %s",
-    #     processor_props.rank,
-    #     icon_grid._start_indices[EdgeDim],
-    # )
-    # log.info(
-    #     "icon_grid:edge_end for rank %s is.... %s",
-    #     processor_props.rank,
-    #     icon_grid._end_indices[EdgeDim],
-    # )
+    log.info(
+        "icon_grid:cell_start for rank %s is.... %s",
+        processor_props.rank,
+        icon_grid._start_indices[CellDim],
+    )
+    log.info(
+        "icon_grid:cell_end for rank %s is.... %s",
+        processor_props.rank,
+        icon_grid._end_indices[CellDim],
+    )
+    log.info(
+        "icon_grid:vert_start for rank %s is.... %s",
+        processor_props.rank,
+        icon_grid._start_indices[VertexDim],
+    )
+    log.info(
+        "icon_grid:vert_end for rank %s is.... %s",
+        processor_props.rank,
+        icon_grid._end_indices[VertexDim],
+    )
+    log.info(
+        "icon_grid:edge_start for rank %s is.... %s",
+        processor_props.rank,
+        icon_grid._start_indices[EdgeDim],
+    )
+    log.info(
+        "icon_grid:edge_end for rank %s is.... %s",
+        processor_props.rank,
+        icon_grid._end_indices[EdgeDim],
+    )
     log.info(
         "icon_grid:c2e for rank %s is.... %s",
         processor_props.rank,

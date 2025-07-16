@@ -578,7 +578,7 @@ class _StartIndices:
 class _EndIndices:
     size: gtx.int32
 
-    def __getitem__(self, domain: h_grid.Domain) -> gtx.int32:
+    def __getitem__(self, _: h_grid.Domain) -> gtx.int32:
         return gtx.int32(self.size)
 
 
