@@ -112,10 +112,13 @@ class Grid:
     def limited_area(self) -> bool:
         return self.config.limited_area
 
-    # TODO remove and replace useage by `.connectivities[name]`
-    def get_connectivity(self, name: str) -> gtx.Connectivity:
+    def get_connectivity(self, offset: str | gtx.FieldOffset) -> gtx_common.NeighborTable:
         """Get the connectivity by its name."""
-        return self.connectivities[name]
+        if isinstance(offset, gtx.FieldOffset):
+            offset = offset.value
+        connectivity = self.connectivities[offset]
+        assert gtx_common.is_neighbor_table(connectivity)
+        return connectivity
 
     @functools.cached_property
     def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
