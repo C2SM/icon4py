@@ -89,8 +89,10 @@ class Grid:
     connectivities: gtx_common.OffsetProvider
     size: dict[gtx.Dimension, int]
     geometry_type: GeometryType
-    start_index: Callable[[h_grid.Domain], gtx.int32]
-    end_index: Callable[[h_grid.Domain], gtx.int32]
+    _start_indices: dict[gtx.Dimension, data_alloc.NDArray]
+    _end_indices: dict[gtx.Dimension, data_alloc.NDArray]
+    # start_index: Callable[[h_grid.Domain], gtx.int32]
+    # end_index: Callable[[h_grid.Domain], gtx.int32]
 
     @property
     def num_cells(self) -> int:
@@ -130,6 +132,30 @@ class Grid:
             if (dim := dims.DIMENSIONS_BY_OFFSET_NAME.get(k)) is not None
             and gtx_common.is_neighbor_connectivity(v)
         }
+
+    def start_index(self, domain: h_grid.Domain) -> gtx.int32:
+        """
+        Use to specify lower end of domains of a field for field_operators.
+
+        For a given dimension, returns the start index of the
+        horizontal region in a field given by the marker.
+        """
+        if domain.local:
+            # special treatment because this value is not set properly in the underlying data.
+            return gtx.int32(0)
+        return gtx.int32(self._start_indices[domain.dim][domain()])
+
+    def end_index(self, domain: h_grid.Domain) -> gtx.int32:
+        """
+        Use to specify upper end of domains of a field for field_operators.
+
+        For a given dimension, returns the end index of the
+        horizontal region in a field given by the marker.
+        """
+        if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
+            # special treatment because this value is not set properly in the underlying data, for a global grid
+            return gtx.int32(self.size[domain.dim])
+        return gtx.int32(self._end_indices[domain.dim][domain()])
 
 
 class BaseGrid(ABC):

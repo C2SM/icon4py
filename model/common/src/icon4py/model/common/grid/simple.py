@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import dataclasses
 import functools
 import uuid
 
@@ -565,6 +566,22 @@ class _SimpleGrid(BaseGrid):
                 )
 
 
+@dataclasses.dataclass(frozen=True)
+class _StartIndices:
+    size: gtx.int32
+
+    def __getitem__(self, domain: h_grid.Domain) -> gtx.int32:
+        return gtx.int32(self.size if domain.zone.is_halo() else 0)
+
+
+@dataclasses.dataclass(frozen=True)
+class _EndIndices:
+    size: gtx.int32
+
+    def __getitem__(self, domain: h_grid.Domain) -> gtx.int32:
+        return gtx.int32(self.size)
+
+
 def SimpleGrid(backend: gtx_backend.Backend | None = None) -> base.Grid:
     """
     Factory function to create a SimpleGrid instance.
@@ -579,6 +596,14 @@ def SimpleGrid(backend: gtx_backend.Backend | None = None) -> base.Grid:
         connectivities=tmp.connectivities,
         size=tmp.size,
         geometry_type=tmp.geometry_type,
-        start_index=tmp.start_index,
-        end_index=tmp.end_index,
+        _start_indices={
+            dims.CellDim: _StartIndices(tmp.num_cells),
+            dims.EdgeDim: _StartIndices(tmp.num_edges),
+            dims.VertexDim: _StartIndices(tmp.num_vertices),
+        },
+        _end_indices={
+            dims.CellDim: _EndIndices(tmp.num_cells),
+            dims.EdgeDim: _EndIndices(tmp.num_edges),
+            dims.VertexDim: _EndIndices(tmp.num_vertices),
+        },
     )

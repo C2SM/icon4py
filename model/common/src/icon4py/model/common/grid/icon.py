@@ -307,8 +307,8 @@ class IconGridBuilder(base.BaseGrid):
             connectivities=self.connectivities,
             size=self.size,
             geometry_type=self.geometry_type,
-            start_index=start_index,
-            end_index=end_index,
+            _start_indices=self._start_indices,
+            _end_indices=self._end_indices,
             global_properties=self.global_properties,
             refinement_control=self.refinement_control,
         )
