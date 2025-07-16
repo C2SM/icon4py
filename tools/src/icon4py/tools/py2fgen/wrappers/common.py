@@ -145,7 +145,7 @@ def construct_icon_grid(
     vertical_size: int,
     limited_area: bool,
     on_gpu: bool,
-):
+) -> icon.IconGridBuilder:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
     log.debug("num_edges:%s", num_edges)
@@ -194,7 +194,7 @@ def construct_icon_grid(
     )
 
     grid = (
-        icon.IconGrid(id_=grid_id)
+        icon.IconGridBuilder(id_=grid_id)
         .set_config(config)
         .set_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
         .set_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)

@@ -565,7 +565,7 @@ class _SimpleGrid(BaseGrid):
                 )
 
 
-def SimpleGrid(backend: gtx_backend.Backend | None = None) -> BaseGrid:
+def SimpleGrid(backend: gtx_backend.Backend | None = None) -> base.Grid:
     """
     Factory function to create a SimpleGrid instance.
 
@@ -578,7 +578,7 @@ def SimpleGrid(backend: gtx_backend.Backend | None = None) -> BaseGrid:
         config=tmp.config,
         connectivities=tmp.connectivities,
         size=tmp.size,
+        geometry_type=tmp.geometry_type,
         start_index=tmp.start_index,
         end_index=tmp.end_index,
-        global_properties=None,
     )

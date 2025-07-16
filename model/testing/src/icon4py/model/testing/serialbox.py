@@ -458,7 +458,9 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, on_gpu: bool, keep_skip_values: bool = True) -> icon.IconGrid:
+    def construct_icon_grid(
+        self, on_gpu: bool, keep_skip_values: bool = True
+    ) -> icon.IconGridBuilder:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -483,7 +485,7 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
         xp = data_alloc.array_ns(on_gpu)
         grid = (
-            icon.IconGrid(self._grid_id)
+            icon.IconGridBuilder(self._grid_id)
             .set_config(config)
             .set_global_params(self.global_grid_params)
             .set_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)

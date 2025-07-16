@@ -106,7 +106,13 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
     return 4.0 * math.pi * radius**2 / num_cells
 
 
-class IconGrid(base.BaseGrid):
+@dataclasses.dataclass(frozen=True)
+class IconGrid(base.Grid):
+    global_properties: GlobalGridParams
+    refinement_control: dict[gtx.Dimension, gtx.Field]
+
+
+class IconGridBuilder(base.BaseGrid):
     def __init__(self, id_: uuid.UUID):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
@@ -170,9 +176,9 @@ class IconGrid(base.BaseGrid):
     def __repr__(self):
         return f"{self.__class__.__name__}: id={self._id}, R{self.global_properties.root}B{self.global_properties.level}"
 
-    def __eq__(self, other: "IconGrid"):
+    def __eq__(self, other: "IconGridBuilder"):
         """TODO (@halungge)  this might not be enough at least for the distributed case: we might additional properties like sizes"""
-        if isinstance(other, IconGrid):
+        if isinstance(other, IconGridBuilder):
             return self.id == other.id
 
         else:
@@ -300,6 +306,7 @@ class IconGrid(base.BaseGrid):
             config=self.config,
             connectivities=self.connectivities,
             size=self.size,
+            geometry_type=self.geometry_type,
             start_index=start_index,
             end_index=end_index,
             global_properties=self.global_properties,

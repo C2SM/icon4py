@@ -91,7 +91,7 @@ class GridManager:
         self._transformation = transformation
         self._file_name = str(grid_file)
         self._vertical_config = config
-        self._grid: Optional[icon.IconGrid] = None
+        self._grid: Optional[icon.IconGridBuilder] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
         self._geometry: GeometryDict = {}
         self._reader = None
@@ -308,7 +308,7 @@ class GridManager:
         return start_indices, end_indices, grid_refinement_dimensions
 
     @property
-    def grid(self) -> icon.IconGrid:
+    def grid(self) -> icon.IconGridBuilder:
         return self._grid
 
     @property
@@ -321,7 +321,7 @@ class GridManager:
 
     def _construct_grid(
         self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
-    ) -> icon.IconGrid:
+    ) -> icon.IconGridBuilder:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in
@@ -373,7 +373,7 @@ class GridManager:
 
     def _initialize_global(
         self, with_skip_values: bool, limited_area: bool, on_gpu: bool
-    ) -> icon.IconGrid:
+    ) -> icon.IconGridBuilder:
         """
         Read basic information from the grid file:
         Mostly reads global grid file parameters and dimensions.
@@ -406,11 +406,13 @@ class GridManager:
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )
-        grid = icon.IconGrid(uuid).set_config(config).set_global_params(global_params)
+        grid = icon.IconGridBuilder(uuid).set_config(config).set_global_params(global_params)
         return grid
 
 
-def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) -> icon.IconGrid:
+def _add_derived_connectivities(
+    grid: icon.IconGridBuilder, array_ns: ModuleType = np
+) -> icon.IconGridBuilder:
     e2v_table = grid._neighbor_tables[dims.E2VDim]
     c2v_table = grid._neighbor_tables[dims.C2VDim]
     e2c_table = grid._neighbor_tables[dims.E2CDim]
