@@ -824,7 +824,7 @@ class MetricSavepoint(IconSavepoint):
             allocator=self.backend,
         )
 
-    @IconSavepoint.optionally_registered()
+    @IconSavepoint.optionally_registered(dims.CECDim, dims.KDim)
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 

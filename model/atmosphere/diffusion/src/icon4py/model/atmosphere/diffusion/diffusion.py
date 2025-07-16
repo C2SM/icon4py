@@ -874,29 +874,27 @@ class Diffusion:
                 "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
-            # TODO: zd_vertoffset not serialized in R02B04 experiment
-            if self._metric_state.zd_vertoffset is not None:
-                self.apply_diffusion_to_theta_and_exner(
-                    kh_smag_e=self.kh_smag_e,
-                    inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
-                    theta_v=prognostic_state.theta_v,
-                    geofac_div=self._interpolation_state.geofac_div,
-                    mask=self._metric_state.mask_hdiff,
-                    zd_vertoffset=self._metric_state.zd_vertoffset,
-                    zd_diffcoef=self._metric_state.zd_diffcoef,
-                    geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
-                    geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
-                    vcoef=self._metric_state.zd_intcoef,
-                    area=self._cell_params.area,
-                    exner=prognostic_state.exner,
-                    rd_o_cvd=self.rd_o_cvd,
-                    apply_zdiffusion_t=self.config.apply_zdiffusion_t,
-                    horizontal_start=self._cell_start_nudging,
-                    horizontal_end=self._cell_end_local,
-                    vertical_start=0,
-                    vertical_end=self._grid.num_levels,
-                    offset_provider=self._grid.connectivities,
-                )
+            self.apply_diffusion_to_theta_and_exner(
+                kh_smag_e=self.kh_smag_e,
+                inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
+                theta_v=prognostic_state.theta_v,
+                geofac_div=self._interpolation_state.geofac_div,
+                mask=self._metric_state.mask_hdiff,
+                zd_vertoffset=self._metric_state.zd_vertoffset,
+                zd_diffcoef=self._metric_state.zd_diffcoef,
+                geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
+                geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
+                vcoef=self._metric_state.zd_intcoef,
+                area=self._cell_params.area,
+                exner=prognostic_state.exner,
+                rd_o_cvd=self.rd_o_cvd,
+                apply_zdiffusion_t=self.config.apply_zdiffusion_t,
+                horizontal_start=self._cell_start_nudging,
+                horizontal_end=self._cell_end_local,
+                vertical_start=0,
+                vertical_end=self._grid.num_levels,
+                offset_provider=self._grid.connectivities,
+            )
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 
         self.halo_exchange_wait(
