@@ -516,6 +516,7 @@ class IconGridSavepoint(IconSavepoint):
                 dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
                 dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
                 dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
+                dims.CECDim: grid.size[dims.CellDim] * grid.size[dims.C2E2CDim],
             }
         )
 
@@ -824,7 +825,7 @@ class MetricSavepoint(IconSavepoint):
             allocator=self.backend,
         )
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
+    @IconSavepoint.optionally_registered(dims.CECDim, dims.KDim)
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 
