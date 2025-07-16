@@ -7,10 +7,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+import xarray as xr
 
+from icon4py.model.common.grid import simple
 from icon4py.model.common.io import cf_utils
 
-from .test_io import state_values
+from . import utils as test_utils
+
+
+def state_values() -> list[xr.DataArray]:
+    state = test_utils.model_state(simple.SimpleGrid())
+    return list(state.values())
 
 
 @pytest.mark.parametrize("input_", state_values())
