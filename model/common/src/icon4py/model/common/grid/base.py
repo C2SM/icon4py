@@ -91,7 +91,7 @@ class Grid:
     start_index: Callable[[h_grid.Domain], gtx.int32]
     end_index: Callable[[h_grid.Domain], gtx.int32]
     global_properties: ...  # TODO does it belong here?
-    refinement_control: ...  # TODO does it belong here?
+    refinement_control: ... = None  # TODO does it belong here?
 
     @property
     def num_cells(self) -> int:
