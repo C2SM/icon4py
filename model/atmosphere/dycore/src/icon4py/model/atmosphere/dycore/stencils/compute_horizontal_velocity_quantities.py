@@ -6,21 +6,26 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
-from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import _accumulate_prep_adv_fields
+from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
+    _accumulate_prep_adv_fields,
+)
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import _compute_avg_vn
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import \
-    _interpolate_to_half_levels
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
     _compute_horizontal_kinetic_energy,
+    _interpolate_to_half_levels,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import _compute_mass_and_temperature_flux
-from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import _compute_tangential_wind
+from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import (
+    _compute_mass_and_temperature_flux,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
+    _compute_tangential_wind,
+)
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C2EO, E2C2EODim
@@ -53,10 +58,15 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
     fa.EdgeKField[ta.vpfloat],
 ]:
     spatially_averaged_vn = _compute_avg_vn(e_flx_avg=e_flx_avg, vn=vn)
-    horizontal_gradient_of_normal_wind_divergence = astype(neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim), vpfloat)
+    horizontal_gradient_of_normal_wind_divergence = astype(
+        neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim), vpfloat
+    )
     tangential_wind = _compute_tangential_wind(vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
 
-    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_and_temperature_flux(
+    (
+        mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels,
+    ) = _compute_mass_and_temperature_flux(
         rho_at_edges_on_model_levels,
         spatially_averaged_vn,
         ddqz_z_full_e,
@@ -87,6 +97,7 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
         horizontal_kinetic_energy_at_edges_on_model_levels,
         contravariant_correction_at_edges_on_model_levels,
     )
+
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_horizontal_velocity_quantities_and_fluxes(
@@ -156,6 +167,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
         },
     )
 
+
 @gtx.field_operator
 def _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     substep_and_spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
@@ -175,10 +187,12 @@ def _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-
     spatially_averaged_vn = _compute_avg_vn(e_flx_avg, vn)
 
-    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_and_temperature_flux(
+    (
+        mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels,
+    ) = _compute_mass_and_temperature_flux(
         rho_at_edges_on_model_levels,
         spatially_averaged_vn,
         ddqz_z_full_e,
@@ -201,7 +215,14 @@ def _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
         else (substep_and_spatially_averaged_vn, substep_averaged_mass_flux)
     )
 
-    return spatially_averaged_vn, mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels, substep_and_spatially_averaged_vn, substep_averaged_mass_flux
+    return (
+        spatially_averaged_vn,
+        mass_flux_at_edges_on_model_levels,
+        theta_v_flux_at_edges_on_model_levels,
+        substep_and_spatially_averaged_vn,
+        substep_averaged_mass_flux,
+    )
+
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
@@ -239,7 +260,7 @@ def compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
             mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels,
             substep_and_spatially_averaged_vn,
-            substep_averaged_mass_flux
+            substep_averaged_mass_flux,
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

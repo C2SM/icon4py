@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -20,12 +19,11 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-
 def compute_avg_vn_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     e_flx_avg: np.ndarray,
     vn: np.ndarray,
-) -> dict:
+) -> np.ndarray:
     e2c2eO = connectivities[dims.E2C2EODim]
     geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
     z_vn_avg = np.sum(

@@ -20,10 +20,10 @@ from icon4py.model.atmosphere.dycore import (
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
+    compute_horizontal_velocity_quantities,
     compute_hydrostatic_correction_term,
     vertically_implicit_dycore_solver,
 )
-from icon4py.model.atmosphere.dycore.stencils import compute_horizontal_velocity_quantities
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
@@ -1749,14 +1749,14 @@ def test_apply_divergence_damping_and_update_vn(
     "experiment, step_date_init, step_date_exit",
     [
         (
-                dt_utils.REGIONAL_EXPERIMENT,
-                "2021-06-20T12:00:10.000",
-                "2021-06-20T12:00:10.000",
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
         ),
         (
-                dt_utils.GLOBAL_EXPERIMENT,
-                "2000-01-01T00:00:02.000",
-                "2000-01-01T00:00:02.000",
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
         ),
     ],
 )
@@ -1858,7 +1858,6 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         horizontal_end=horizontal_end,
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels + 1),
-
         offset_provider={
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "E2C2E": icon_grid.get_connectivity("E2C2E"),
@@ -1937,14 +1936,14 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     "experiment, step_date_init, step_date_exit",
     [
         (
-                dt_utils.REGIONAL_EXPERIMENT,
-                "2021-06-20T12:00:10.000",
-                "2021-06-20T12:00:10.000",
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
         ),
         (
-                dt_utils.GLOBAL_EXPERIMENT,
-                "2000-01-01T00:00:02.000",
-                "2000-01-01T00:00:02.000",
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
         ),
     ],
 )
@@ -2013,7 +2012,6 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
         horizontal_end=horizontal_end,
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
-
         offset_provider={
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "Koff": dims.KDim,

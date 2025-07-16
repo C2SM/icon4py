@@ -29,22 +29,17 @@ def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
     geofac_grdiv: np.ndarray,
     rbf_vec_coeff_e: np.ndarray,
 ) -> dict:
-
     e2c2eO = connectivities[dims.E2C2EODim]
     e2c2e = connectivities[dims.E2C2EDim]
     e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
-    z_vn_avg = np.sum(
-        np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1
-    )
+    z_vn_avg = np.sum(np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1)
     geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
     z_graddiv_vn = np.sum(
         np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0), axis=1
     )
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    vt = np.sum(
-        np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1
-    )
-    return z_vn_avg, z_graddiv_vn, vt
+    vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
+    return dict(z_vn_avg=z_vn_avg, z_graddiv_vn=z_graddiv_vn, vt=vt)
 
 
 class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
@@ -61,7 +56,6 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         rbf_vec_coeff_e: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-
         z_vn_avg, z_graddiv_vn, vt = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
             connectivities,
             e_flx_avg,

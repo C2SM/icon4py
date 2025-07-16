@@ -20,19 +20,26 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers as test_helpers
 
+from .test_accumulate_prep_adv_fields import (
+    accumulate_prep_adv_fields_numpy,
+)
 from .test_compute_avg_vn import (
     compute_avg_vn_numpy,
 )
 from .test_compute_mass_flux import (
     compute_mass_flux_numpy,
 )
-from .test_accumulate_prep_adv_fields import (
-    accumulate_prep_adv_fields_numpy,
-)
+
 
 class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.StencilTest):
     PROGRAM = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection
-    OUTPUTS = ("spatially_averaged_vn", "mass_flux_at_edges_on_model_levels", "theta_v_flux_at_edges_on_model_levels", "substep_and_spatially_averaged_vn", "substep_averaged_mass_flux",)
+    OUTPUTS = (
+        "spatially_averaged_vn",
+        "mass_flux_at_edges_on_model_levels",
+        "theta_v_flux_at_edges_on_model_levels",
+        "substep_and_spatially_averaged_vn",
+        "substep_averaged_mass_flux",
+    )
     MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
@@ -50,7 +57,6 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
         r_nsubsteps: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-
         spatially_averaged_vn = compute_avg_vn_numpy(connectivities, e_flx_avg, vn)
 
         mass_fl_e, z_theta_v_fl_e = compute_mass_flux_numpy(
@@ -76,11 +82,16 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
             else (substep_and_spatially_averaged_vn, substep_averaged_mass_flux)
         )
 
-        return dict(spatially_averaged_vn=spatially_averaged_vn, mass_flux_at_edges_on_model_levels=mass_fl_e, theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e, substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn, substep_averaged_mass_flux=substep_averaged_mass_flux,)
+        return dict(
+            spatially_averaged_vn=spatially_averaged_vn,
+            mass_flux_at_edges_on_model_levels=mass_fl_e,
+            theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
+            substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn,
+            substep_averaged_mass_flux=substep_averaged_mass_flux,
+        )
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)

@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import astype, broadcast
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (

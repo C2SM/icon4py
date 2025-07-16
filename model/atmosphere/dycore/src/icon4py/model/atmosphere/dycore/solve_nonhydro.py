@@ -486,15 +486,17 @@ class SolveNonhydro:
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
         )
-        self._compute_horizontal_velocity_quantities_and_fluxes = compute_horizontal_velocity_quantities_and_fluxes.with_backend(
-            self._backend
-        ).compile(
-            offset_provider=self._grid.connectivities,
+        self._compute_horizontal_velocity_quantities_and_fluxes = (
+            compute_horizontal_velocity_quantities_and_fluxes.with_backend(self._backend).compile(
+                offset_provider=self._grid.connectivities,
+            )
         )
-        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
-            self._backend
-        ).compile(
-            offset_provider=self._grid.connectivities,
+        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = (
+            compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
+                self._backend
+            ).compile(
+                offset_provider=self._grid.connectivities,
+            )
         )
         self._compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
             self._backend

@@ -19,6 +19,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
+
 def compute_mass_flux_numpy(
     z_rho_e: np.ndarray,
     z_vn_avg: np.ndarray,
@@ -28,12 +29,12 @@ def compute_mass_flux_numpy(
     mass_fl_e = z_rho_e * z_vn_avg * ddqz_z_full_e
     z_theta_v_fl_e = mass_fl_e * z_theta_v_e
 
-    return mass_fl_e, z_theta_v_fl_e
+    return dict(mass_fl_e=mass_fl_e, z_theta_v_fl_e=z_theta_v_fl_e)
+
 
 class TestComputeMassFlux(StencilTest):
     PROGRAM = compute_mass_flux
     OUTPUTS = ("mass_fl_e", "z_theta_v_fl_e")
-
 
     @staticmethod
     def reference(

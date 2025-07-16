@@ -258,6 +258,7 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_i
         istep=istep_init, date=step_date_init, substep=substep_init
     )
 
+
 @pytest.fixture
 def savepoint_dycore_30_to_38_init(data_provider, istep_init, step_date_init, substep_init):
     """
@@ -271,6 +272,7 @@ def savepoint_dycore_30_to_38_init(data_provider, istep_init, step_date_init, su
     return data_provider.from_savepoint_30_to_38_init(
         istep=istep_init, date=step_date_init, substep=substep_init
     )
+
 
 @pytest.fixture
 def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
@@ -405,6 +407,7 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
         istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
+
 @pytest.fixture
 def savepoint_dycore_30_to_38_exit(data_provider, istep_exit, step_date_exit, substep_exit):
     """
@@ -418,6 +421,7 @@ def savepoint_dycore_30_to_38_exit(data_provider, istep_exit, step_date_exit, su
     return data_provider.from_savepoint_30_to_38_exit(
         istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
+
 
 @pytest.fixture
 def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(

@@ -15,29 +15,30 @@ import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
     compute_horizontal_velocity_quantities_and_fluxes,
 )
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers as test_helpers
 
+from .test_compute_avg_vn_and_graddiv_vn_and_vt import (
+    compute_avg_vn_and_graddiv_vn_and_vt_numpy,
+)
 from .test_compute_contravariant_correction import (
     compute_contravariant_correction_numpy,
 )
-from .test_compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction import \
-    extrapolate_to_surface_numpy
+from .test_compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction import (
+    extrapolate_to_surface_numpy,
+)
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
 from .test_compute_mass_flux import (
     compute_mass_flux_numpy,
 )
-from .test_compute_avg_vn_and_graddiv_vn_and_vt import (
-    compute_avg_vn_and_graddiv_vn_and_vt_numpy,
+from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
+    interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
 )
-from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import \
-    interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy
 from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
 
 
-@staticmethod
 def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     vn: np.ndarray,
@@ -107,7 +108,6 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
     )
     MARKERS = (pytest.mark.embedded_remap_error,)
 
-
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
@@ -137,7 +137,11 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
-        spatially_averaged_vn, horizontal_gradient_of_normal_wind_divergence, tangential_wind = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
+        (
+            spatially_averaged_vn,
+            horizontal_gradient_of_normal_wind_divergence,
+            tangential_wind,
+        ) = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
             connectivities,
             e_flx_avg,
             vn,
@@ -145,7 +149,10 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
             rbf_vec_coeff_e,
         )
 
-        mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = compute_mass_flux_numpy(
+        (
+            mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels,
+        ) = compute_mass_flux_numpy(
             rho_at_edges_on_model_levels,
             spatially_averaged_vn,
             ddqz_z_full_e,
@@ -182,22 +189,29 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
             theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             vn_on_half_levels=vn_on_half_levels,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-            horizontal_kinetic_energy_at_edges_on_model_levels= horizontal_kinetic_energy_at_edges_on_model_levels,
-            contravariant_correction_at_edges_on_model_levels= contravariant_correction_at_edges_on_model_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         )
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
         tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vn_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        vn_on_half_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
+        contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
 
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -212,7 +226,6 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
         ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
         nflatlev = 5
-
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
