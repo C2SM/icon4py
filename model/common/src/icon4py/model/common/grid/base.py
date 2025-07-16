@@ -90,6 +90,7 @@ class Grid:
     size: dict[gtx.Dimension, int]
     start_index: Callable[[h_grid.Domain], gtx.int32]
     end_index: Callable[[h_grid.Domain], gtx.int32]
+    global_properties: ...  # TODO does it belong here?
 
     @property
     def num_cells(self) -> int:
@@ -114,6 +115,11 @@ class Grid:
     @property
     def limited_area(self) -> bool:
         return self.config.limited_area
+
+    # TODO remove and replace useage by `.connectivities[name]`
+    def get_connectivity(self, name: str) -> gtx.Connectivity:
+        """Get the connectivity by its name."""
+        return self.connectivities[name]
 
 
 class BaseGrid(ABC):

@@ -302,4 +302,5 @@ class IconGrid(base.BaseGrid):
             size=self.size,
             start_index=start_index,
             end_index=end_index,
+            global_properties=self.global_properties,
         )

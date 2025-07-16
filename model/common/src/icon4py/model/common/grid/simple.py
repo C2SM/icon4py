@@ -580,4 +580,5 @@ def SimpleGrid(backend: gtx_backend.Backend | None = None) -> BaseGrid:
         size=tmp.size,
         start_index=tmp.start_index,
         end_index=tmp.end_index,
+        global_properties=None,
     )
