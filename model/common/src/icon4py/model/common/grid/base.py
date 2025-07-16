@@ -9,6 +9,7 @@ import dataclasses
 import enum
 import functools
 import logging
+import math
 import uuid
 import warnings
 from abc import ABC, abstractmethod
@@ -17,7 +18,7 @@ from typing import Callable, Dict, Sequence
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import common as gtx_common
+from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
@@ -58,7 +59,7 @@ class GridConfig:
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
     lvertnest: bool = False
-    on_gpu: bool = False
+    on_gpu: bool = False  # TODO can this be removed?
     keep_skip_values: bool = True
 
     @property
@@ -78,6 +79,23 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
+def _1d_size(connectivity: gtx_common.NeighborTable) -> int:
+    return math.prod(connectivity.shape)
+
+
+def _default_1d_sparse_connectivity_constructor(
+    offset: gtx.FieldOffset,
+    shape2d: tuple[int, int],
+    allocator: gtx_allocators.FieldBufferAllocatorProtocol | None = None,
+) -> data_alloc.NDArray:
+    return gtx.as_connectivity(
+        domain=offset.target,
+        codomain=offset.source,
+        data=np.arange(shape2d[0] * shape2d[1], dtype=gtx.int32).reshape(shape2d),
+        allocator=allocator,
+    )
+
+
 @dataclasses.dataclass(frozen=True)
 class Grid:
     """
@@ -87,10 +105,71 @@ class Grid:
     id: uuid.UUID
     config: GridConfig
     connectivities: gtx_common.OffsetProvider
-    size: dict[gtx.Dimension, int]
     geometry_type: GeometryType
     _start_indices: dict[gtx.Dimension, data_alloc.NDArray]
     _end_indices: dict[gtx.Dimension, data_alloc.NDArray]
+    _1d_sparse_connectivity_constructor: Callable[
+        [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+        gtx_common.NeighborTable,
+    ] = _default_1d_sparse_connectivity_constructor
+
+    def __post_init__(self):
+        self._validate()
+        # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
+        self.connectivities[dims.Koff.value] = dims.KDim
+        # 1d sparse connectivities
+        allocator = None  # TODO
+        self.connectivities[dims.C2CE.value] = self._1d_sparse_connectivity_constructor(
+            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=allocator
+        )
+        self.connectivities[dims.E2ECV.value] = self._1d_sparse_connectivity_constructor(
+            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=allocator
+        )
+        self.connectivities[dims.E2EC.value] = self._1d_sparse_connectivity_constructor(
+            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=allocator
+        )
+        self.connectivities[dims.C2CEC.value] = self._1d_sparse_connectivity_constructor(
+            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=allocator
+        )
+        self.connectivities[dims.C2CECEC.value] = self._1d_sparse_connectivity_constructor(
+            dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=allocator
+        )
+
+    def _validate(self):
+        # TODO check all expected connectivities are present
+        ...
+
+    @functools.cached_property
+    def size(self) -> Dict[gtx.Dimension, int]:
+        sizes = {
+            dims.KDim: self.config.num_levels,
+            dims.CellDim: self.config.num_cells,
+            dims.EdgeDim: self.config.num_edges,
+            dims.VertexDim: self.config.num_vertices,
+            # 1d sparse sizes cannot be deduced from their connectivity
+            dims.ECVDim: _1d_size(self.get_connectivity(dims.E2C2V)),
+            dims.CEDim: _1d_size(self.get_connectivity(dims.C2E)),
+            dims.ECDim: _1d_size(self.get_connectivity(dims.E2C)),
+        }
+
+        # extract sizes from connectivities # TODO consider extracting into function
+        for offset, connectivity in self.connectivities.items():
+            if gtx_common.is_neighbor_table(connectivity):
+                for dim, size in zip(connectivity.domain.dims, connectivity.shape, strict=True):
+                    if dim in sizes:
+                        if sizes[dim] != size:
+                            raise ValueError(
+                                f"Inconsistent sizes for {dim}: expected {sizes[dim]}, got {size}."
+                            )
+                    else:
+                        sizes[dim] = size
+            elif isinstance(connectivity, gtx.Dimension):
+                ...
+            else:
+                raise TypeError(
+                    f"Unsupported connectivity type {type(connectivity)} for offset {offset}."
+                )
+        return sizes
 
     @property
     def num_cells(self) -> int:
@@ -153,6 +232,36 @@ class Grid:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
         return gtx.int32(self._end_indices[domain.dim][domain])
+
+
+def construct_connectivity(
+    offset: gtx.FieldOffset,
+    table: data_alloc.NDArray,
+    skip_value: int | None = None,
+    *,
+    allocator: gtx_allocators.FieldBufferAllocatorProtocol | None = None,
+    do_replace_skip_values: bool = False,
+):
+    from_dim, dim = offset.target
+    to_dim = offset.source
+
+    assert (
+        table.dtype == gtx.int32
+    ), f'Neighbor table\'s "{dim}" data type must be gtx.int32. Instead it\'s "{table.dtype}"'
+
+    # TODO maybe caller should already do the replacement?
+    if do_replace_skip_values:
+        _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
+        skip_value = None
+        table = replace_skip_values(dim, table, array_ns=np)  # TODO fix numpy/cupy
+
+    return gtx.as_connectivity(
+        [from_dim, dim],
+        to_dim,
+        data=table,
+        skip_value=skip_value,
+        allocator=allocator,
+    )
 
 
 class BaseGrid(ABC):
