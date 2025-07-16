@@ -488,6 +488,9 @@ class SolveNonhydro:
         )
         self._compute_horizontal_velocity_quantities_and_fluxes = (
             compute_horizontal_velocity_quantities_and_fluxes.with_backend(self._backend).compile(
+                nflatlev=[self._vertical_params.nflatlev],
+                vertical_start=[gtx.int32(0)],
+                vertical_end=[gtx.int32(self._grid.num_levels + 1)],
                 offset_provider=self._grid.connectivities,
             )
         )
@@ -495,6 +498,10 @@ class SolveNonhydro:
             compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
                 self._backend
             ).compile(
+                prepare_advection=[False, True],
+                at_first_substep=[False, True],
+                vertical_start=[gtx.int32(0)],
+                vertical_end=[gtx.int32(self._grid.num_levels)],
                 offset_provider=self._grid.connectivities,
             )
         )

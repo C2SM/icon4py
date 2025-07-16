@@ -1872,6 +1872,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         atol=0,
     )
 
+    # same tolerances as in Liskov
     assert helpers.dallclose(
         z_graddiv_vn_ref.asnumpy()[horizontal_start:horizontal_end, :],
         z_graddiv_vn.asnumpy()[horizontal_start:horizontal_end, :],
@@ -1972,9 +1973,9 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
 
-    z_vn_avg = savepoint_nonhydro_exit.z_vn_avg()
-    mass_fl_e = savepoint_nonhydro_init.mass_fl_e()
-    z_theta_v_fl_e = savepoint_nonhydro_exit.z_theta_v_fl_e()
+    z_vn_avg = savepoint_dycore_30_to_38_init.z_vn_avg()
+    mass_fl_e = savepoint_dycore_30_to_38_init.mass_fl_e()
+    z_theta_v_fl_e = savepoint_dycore_30_to_38_init.z_theta_v_fl_e()
     vn_traj = savepoint_nonhydro_init.vn_traj()
     mass_flx_me = savepoint_nonhydro_init.mass_flx_me()
     e_flx_avg = interpolation_savepoint.e_flx_avg()
