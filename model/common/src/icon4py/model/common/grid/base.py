@@ -78,6 +78,44 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
+@dataclasses.dataclass(frozen=True)
+class Grid:
+    """
+    TODO: A data-only grid implementation.
+    """
+
+    id: uuid.UUID
+    config: GridConfig
+    connectivities: gtx_common.OffsetProvider
+    size: dict[gtx.Dimension, int]
+    start_index: Callable[[h_grid.Domain], gtx.int32]
+    end_index: Callable[[h_grid.Domain], gtx.int32]
+
+    @property
+    def num_cells(self) -> int:
+        return self.config.num_cells
+
+    @property
+    def num_vertices(self) -> int:
+        return self.config.num_vertices
+
+    @property
+    def num_edges(self) -> int:
+        return self.config.num_edges
+
+    @property
+    def num_levels(self) -> int:
+        return self.config.num_levels
+
+    @property
+    def geometry_type(self) -> GeometryType:
+        ...  # TODO
+
+    @property
+    def limited_area(self) -> bool:
+        return self.config.limited_area
+
+
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None

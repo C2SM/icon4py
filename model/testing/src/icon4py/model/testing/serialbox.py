@@ -519,7 +519,7 @@ class IconGridSavepoint(IconSavepoint):
             }
         )
 
-        return grid
+        return grid.build()
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:
         primal_normal_vert: tuple[

@@ -12,7 +12,7 @@ import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims, exceptions
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.grid.base import BaseGrid, GeometryType, GridConfig, HorizontalGridSize
 
 # periodic
@@ -407,7 +407,7 @@ class SimpleGridData:
         )
 
 
-class SimpleGrid(BaseGrid):
+class _SimpleGrid(BaseGrid):
     _CELLS = 18
     _EDGES = 27
     _VERTICES = 9
@@ -563,3 +563,21 @@ class SimpleGrid(BaseGrid):
                 raise exceptions.IconGridError(
                     f" {domain} : Not a valid horizontal Domain implementation {type(domain)}"
                 )
+
+
+def SimpleGrid(backend: gtx_backend.Backend | None = None) -> BaseGrid:
+    """
+    Factory function to create a SimpleGrid instance.
+
+    :param backend: Optional backend to use for the grid.
+    :return: An instance of SimpleGrid.
+    """
+    tmp = _SimpleGrid(backend=backend)
+    return base.Grid(
+        id=tmp.id,
+        config=tmp.config,
+        connectivities=tmp.connectivities,
+        size=tmp.size,
+        start_index=tmp.start_index,
+        end_index=tmp.end_index,
+    )

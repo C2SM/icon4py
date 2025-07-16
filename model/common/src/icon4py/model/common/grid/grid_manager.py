@@ -363,7 +363,7 @@ class GridManager:
         for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
             grid.set_start_end_indices(dim, start[dim], end[dim])
 
-        return grid
+        return grid.build()
 
     def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
         field = self._reader.int_variable(field, transpose=transpose)
