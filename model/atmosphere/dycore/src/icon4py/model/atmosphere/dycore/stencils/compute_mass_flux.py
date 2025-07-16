@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _compute_mass_and_and_temperature_flux(
+def _compute_mass_and_temperature_flux(
     z_rho_e: fa.EdgeKField[wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
@@ -39,7 +39,7 @@ def compute_mass_flux(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_mass_and_and_temperature_flux(
+    _compute_mass_and_temperature_flux(
         z_rho_e,
         z_vn_avg,
         ddqz_z_full_e,

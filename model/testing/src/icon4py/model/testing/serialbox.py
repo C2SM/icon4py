@@ -1302,8 +1302,14 @@ class IconDycoreInit30To38Savepoint(IconSavepoint):
     def z_vn_avg(self):
         return self._get_field("z_vn_avg", dims.EdgeDim, dims.KDim)
 
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
     def vn(self):
         return self._get_field("vn", dims.EdgeDim, dims.KDim)
+
+    def vt(self):
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
 
     def z_rho_e(self):
         return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
@@ -1311,11 +1317,17 @@ class IconDycoreInit30To38Savepoint(IconSavepoint):
     def z_theta_v_e(self):
         return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
 
-    def vt_ie(self):
-        return self._get_field("vt_ie", dims.EdgeDim, dims.KDim)
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", dims.EdgeDim, dims.KDim)
 
     def vn_ie(self):
         return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
+
+    def mass_fl_e(self):
+        return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_fl_e(self):
+        return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
 
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
@@ -1343,8 +1355,8 @@ class IconDycoreExit30To38Savepoint(IconSavepoint):
     def vn_ie(self):
         return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
 
-    def vt_ie(self):
-        return self._get_field("vt_ie", dims.EdgeDim, dims.KDim)
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", dims.EdgeDim, dims.KDim)
 
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)

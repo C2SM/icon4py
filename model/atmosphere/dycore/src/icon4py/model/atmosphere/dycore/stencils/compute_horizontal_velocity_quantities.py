@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_veloc
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import _compute_mass_and_and_temperature_flux
+from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import _compute_mass_and_temperature_flux
 from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import _compute_tangential_wind
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
@@ -56,19 +56,19 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
     horizontal_gradient_of_normal_wind_divergence = astype(neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim), vpfloat)
     tangential_wind = _compute_tangential_wind(vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
 
+    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_and_temperature_flux(
+        rho_at_edges_on_model_levels,
+        spatially_averaged_vn,
+        ddqz_z_full_e,
+        theta_v_at_edges_on_model_levels,
+    )
+
     horizontal_kinetic_energy_at_edges_on_model_levels = _compute_horizontal_kinetic_energy(
         vn, tangential_wind
     )
 
     vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
     tangential_wind_on_half_levels = _interpolate_to_half_levels(wgtfac_e, tangential_wind)
-
-    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_and_and_temperature_flux(
-        rho_at_edges_on_model_levels,
-        spatially_averaged_vn,
-        ddqz_z_full_e,
-        theta_v_at_edges_on_model_levels,
-    )
 
     contravariant_correction_at_edges_on_model_levels = concat_where(
         nflatlev <= dims.KDim,
@@ -178,7 +178,7 @@ def _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
 
     spatially_averaged_vn = _compute_avg_vn(e_flx_avg, vn)
 
-    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_and_and_temperature_flux(
+    mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = _compute_mass_and_temperature_flux(
         rho_at_edges_on_model_levels,
         spatially_averaged_vn,
         ddqz_z_full_e,
