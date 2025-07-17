@@ -25,11 +25,11 @@ def compute_mass_flux_numpy(
     z_vn_avg: np.ndarray,
     ddqz_z_full_e: np.ndarray,
     z_theta_v_e: np.ndarray,
-) -> dict:
+) -> tuple[np.ndarray, np.ndarray]:
     mass_fl_e = z_rho_e * z_vn_avg * ddqz_z_full_e
     z_theta_v_fl_e = mass_fl_e * z_theta_v_e
 
-    return dict(mass_fl_e=mass_fl_e, z_theta_v_fl_e=z_theta_v_fl_e)
+    return mass_fl_e, z_theta_v_fl_e
 
 
 class TestComputeMassFlux(StencilTest):
