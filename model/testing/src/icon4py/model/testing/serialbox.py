@@ -1893,14 +1893,12 @@ class IconSerialDataProvider:
 
     @functools.cached_property
     def grid_size(self):
-        sp = self._get_icon_grid_savepoint()
-        grid_sizes = {
-            dims.CellDim: self.serializer.read("num_cells", savepoint=sp).astype(gtx.int32)[0],
-            dims.EdgeDim: self.serializer.read("num_edges", savepoint=sp).astype(gtx.int32)[0],
-            dims.VertexDim: self.serializer.read("num_vert", savepoint=sp).astype(gtx.int32)[0],
-            dims.KDim: sp.metainfo.to_dict()["nlev"],
-        }
-        return grid_sizes
+        return (
+            self.from_savepoint_grid(grid_id=uuid.UUID(int=0), grid_root=0, grid_level=0)
+            .construct_icon_grid(backend=None)
+            .size
+        )
+
 
     def from_savepoint_grid(
         self, grid_id: uuid.UUID, grid_root: int, grid_level: int
