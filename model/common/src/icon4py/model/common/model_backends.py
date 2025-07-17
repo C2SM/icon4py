@@ -38,8 +38,10 @@ try:
         blocking_dim:
             Apply loop-blocking on the vertical dimension `KDim`, if the input
             argument `enable_loop_blocking` is `True`.
-        use_memory_pool:
-            Use CUDA memory pool for GPU backend.
+        make_persistent:
+            Allocate temporary arrays at SDFG initialization, when it is loaded
+            from the binary library. The memory will be persistent across all SDFG
+            calls and released only at application exit.
         use_zero_origin:
             When set to `True`, the SDFG lowering will not generate the start symbol
             of the field range. Select this option if all fields have zero origin.
@@ -56,12 +58,11 @@ try:
             auto_optimize=True,
             cached=True,
             gpu=gpu,
-            async_sdfg_call=False,
+            async_sdfg_call=True,
             blocking_dim=(dims.KDim if enable_loop_blocking else None),
             blocking_size=10,
             make_persistent=False,
-            use_memory_pool=False,
-            use_zero_origin=False,
+            use_zero_origin=True,
         )
 
     BACKENDS.update(
