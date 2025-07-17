@@ -475,6 +475,7 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.BaseGrid:
         config=config,
         connectivities=connectivities,
         geometry_type=GeometryType.TORUS,
+        _allocator=backend,
         _start_indices={
             dims.CellDim: _StartIndices(_CELLS),
             dims.EdgeDim: _StartIndices(_EDGES),

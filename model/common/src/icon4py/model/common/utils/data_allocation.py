@@ -11,11 +11,11 @@ from __future__ import annotations
 import logging as log
 from typing import TYPE_CHECKING, Optional, TypeAlias, Union
 
-import gt4py._core.definitions as gtx_core_defs
+import gt4py._core.definitions as gtx_core_defs  # TODO(havogt): avoid this private import
 import numpy as np
 import numpy.typing as npt
 from gt4py import next as gtx
-from gt4py.next import backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 
 from icon4py.model.common import type_alias as ta
 
@@ -23,14 +23,6 @@ from icon4py.model.common import type_alias as ta
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
 
-
-#: Enum values from Enum values taken from DLPack reference implementation at:
-#:  https://github.com/dmlc/dlpack/blob/main/include/dlpack/dlpack.h
-#:  via GT4Py
-CUDA_DEVICE_TYPES = (
-    gtx_core_defs.DeviceType.CUDA,
-    gtx_core_defs.DeviceType.ROCM,
-)
 
 try:
     import cupy as xp
@@ -56,11 +48,14 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
         return cp.asnumpy(array)
 
 
-def is_cupy_device(backend: Optional[gtx_backend.Backend]) -> bool:
-    if backend is not None:
-        return backend.allocator.__gt_device_type__ in CUDA_DEVICE_TYPES
-    else:
-        return False
+def is_cupy_device(
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
+) -> bool:
+    # TODO(havogt): Add to gt4py `gtx_allocators.is_field_buffer_allocation_util_for(...)`
+    # and consider exposing CUPY_DEVICE_TYPE or move this function to gt4py.
+    if (allocator := gtx_allocators.get_allocator(allocator, default=None)) is not None:
+        return allocator.__gt_device_type__ is gtx_core_defs.CUPY_DEVICE_TYPE
+    return False
 
 
 def array_ns(try_cupy: bool):

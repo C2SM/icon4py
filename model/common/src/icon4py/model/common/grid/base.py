@@ -119,11 +119,11 @@ class BaseGrid:
     geometry_type: GeometryType
     _start_indices: dict[gtx.Dimension, data_alloc.NDArray]
     _end_indices: dict[gtx.Dimension, data_alloc.NDArray]
+    _allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None
     _1d_sparse_connectivity_constructor: Callable[
         [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
         gtx_common.NeighborTable,
     ] = _default_1d_sparse_connectivity_constructor
-    _allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None = None
 
     def __post_init__(self):
         self._validate()
@@ -257,12 +257,11 @@ def construct_connectivity(
 ):
     from_dim, dim = offset.target
     to_dim = offset.source
-
     # TODO maybe caller should already do the replacement?
     if replace_skip_values:
         _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
         skip_value = None
-        table = _replace_skip_values(dim, table, array_ns=np)  # TODO fix numpy/cupy
+        table = _replace_skip_values(dim, table, array_ns=data_alloc.import_array_ns(allocator))
 
     return gtx.as_connectivity(
         [from_dim, dim],
