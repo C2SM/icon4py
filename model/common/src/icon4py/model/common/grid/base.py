@@ -97,10 +97,23 @@ def _default_1d_sparse_connectivity_constructor(
 @dataclasses.dataclass(frozen=True)
 class BaseGrid:
     """
-    TODO: A data-only grid implementation.
+    Contains core features of a grid.
+
+    The 'BaseGrid' is ICON4Py specific: it expects certain connectivities to be present
+    to construct derived (1D sparse) connectivities.
+
+    Note: A 'BaseGrid' can be used in 'StencilTest's, while some components of ICON4Py may
+    require an 'IconGrid'.
     """
 
     id: uuid.UUID
+    """
+    Unique identifier of the horizontal grid.
+
+    ICON grid files contain a UUID that uniquely identifies the horizontal grid
+    described in the file (global attribute `uuidOfHGrid`).
+    UUID from icon grid files are UUID v1.
+    """
     config: GridConfig
     connectivities: gtx_common.OffsetProvider
     geometry_type: GeometryType
@@ -136,6 +149,7 @@ class BaseGrid:
 
     def _validate(self):
         # TODO check all expected connectivities are present
+
         ...
 
     @functools.cached_property

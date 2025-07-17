@@ -459,7 +459,7 @@ class IconGridSavepoint(IconSavepoint):
         return dim, global_index, mask
 
     def construct_icon_grid(
-        self, backend: gtx_backend.Backend, keep_skip_values: bool = True
+        self, backend: gtx_backend.Backend | None = None, keep_skip_values: bool = True
     ) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()

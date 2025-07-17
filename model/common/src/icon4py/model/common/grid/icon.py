@@ -155,7 +155,7 @@ def _should_replace_skip_values(
         bool: True if the skip values in the neighbor table should be replaced, False otherwise.
 
     """
-    return not keep_skip_values and (limited_area or not _has_skip_values(offset))
+    return not keep_skip_values and (limited_area or not _has_skip_values(offset, limited_area))
 
 
 # TODO backend...
