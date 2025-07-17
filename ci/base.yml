@@ -61,6 +61,7 @@ build_image_aarch64:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
+    SLURM_GPUS_PER_NODE: 4
     SLURM_TIMELIMIT: '01:30:00'
     CSCS_CUDA_MPS: 1
     NUM_PROCESSES: auto
