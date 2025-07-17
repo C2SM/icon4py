@@ -1869,7 +1869,6 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         z_vn_avg_ref.asnumpy()[horizontal_start:horizontal_end, :],
         z_vn_avg.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     # same tolerances as in Liskov
@@ -1884,49 +1883,42 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         vt_ref.asnumpy()[horizontal_start:horizontal_end, :],
         vt.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         mass_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
         mass_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         z_theta_v_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
         z_theta_v_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         vn_ie_ref.asnumpy()[horizontal_start:horizontal_end, :],
         vn_ie.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-5,
-        atol=0,
     )
 
     assert helpers.dallclose(
         z_vt_ie_ref.asnumpy()[horizontal_start:horizontal_end, :],
         z_vt_ie.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         z_kin_hor_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
         z_kin_hor_e.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         z_w_concorr_me_ref.asnumpy()[horizontal_start:horizontal_end, :],
         z_w_concorr_me.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-7,
-        atol=0,
     )
 
 
@@ -2023,35 +2015,30 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
         z_vn_avg_ref.asnumpy()[horizontal_start:horizontal_end, :],
         z_vn_avg.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         mass_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
         mass_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         z_theta_v_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
         z_theta_v_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         vn_traj_ref.asnumpy()[horizontal_start:horizontal_end, :],
         vn_traj.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
     assert helpers.dallclose(
         mass_flx_me_ref.asnumpy()[horizontal_start:horizontal_end, :],
         mass_flx_me.asnumpy()[horizontal_start:horizontal_end, :],
         rtol=1.0e-6,
-        atol=0,
     )
 
 
