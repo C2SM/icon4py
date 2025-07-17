@@ -19,7 +19,7 @@ from icon4py.model.testing import helpers as test_helpers, helpers as testing_he
 
 
 def test_cross_product(backend):
-    mesh = simple.SimpleGrid()
+    mesh = simple.simple_grid()
     x1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
     y1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
     z1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)

@@ -716,7 +716,7 @@ def test_dycore_wrapper_granule_inputs(
             assert result, f"Grid comparison failed: {error_message}"
         except AssertionError as e:
             error_message = str(e)
-            if "object._neighbor_tables" not in error_message:
+            if "icon_grid != " not in error_message:
                 raise
             else:
                 pass

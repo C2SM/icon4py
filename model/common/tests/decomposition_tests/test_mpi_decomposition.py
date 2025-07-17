@@ -230,7 +230,7 @@ def test_exchange_on_dummy_data(
     dimension,
 ):
     exchange = create_exchange(processor_props, decomposition_info)
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    grid = grid_savepoint.construct_icon_grid()
 
     number = processor_props.rank + 10.0
     input_field = constant_field(

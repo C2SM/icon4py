@@ -90,7 +90,7 @@ def read_icon_grid(
                 mpi_rank=rank,
             )
             .from_savepoint_grid(grid_id, grid_root, grid_level)
-            .construct_icon_grid(on_gpu=data_alloc.is_cupy_device(backend))
+            .construct_icon_grid(backend=backend)
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
