@@ -8,10 +8,10 @@
 #SBATCH --uenv=icon/25.2:v3
 #SBATCH --view=default
 
-#SBATCH --partition=debug
-#SBATCH --time=00:30:00
+#SBATCH --partition=normal
+#SBATCH --time=01:00:00
 
-#SBATCH --job-name=runyb_test_wiggles_cube_adv_term
+#SBATCH --job-name=runyf_test_wiggles
 
 #SBATCH --output=logs/torus.%x.log
 #SBATCH --error=logs/torus.%x.log

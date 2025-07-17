@@ -862,6 +862,11 @@ class Diffusion:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
+        #---> IBM
+        # NOTE: this only works as long as Magdalena's copying is there, otherwise need to find another solution
+        self._ibm.set_bcs_diffw(prognostic_state.w, self.w_tmp)
+        #<--- IBM
+
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )

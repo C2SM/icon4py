@@ -130,6 +130,10 @@ class TimeLoop:
 
         # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
+        #---> IBM
+        plots.pickle_data(prognostic_states.current, "initial_condition")
+        #<--- IBM
+
         if (
             self.diffusion.config.apply_to_horizontal_wind
             and self.run_config.apply_initial_stabilization
@@ -141,6 +145,7 @@ class TimeLoop:
                 prognostic_states.current,
                 self.dtime_in_seconds,
             )
+
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
@@ -169,8 +174,10 @@ class TimeLoop:
                 do_prep_adv,
             )
             timer.capture()
-            if time_step % 10 == 0:
-                plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:06d}")
+            #---> IBM
+            #if time_step % 10 == 0:
+            plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:06d}")
+            #<--- IBM
 
             self._is_first_step_in_simulation = False
 
@@ -201,12 +208,14 @@ class TimeLoop:
             do_prep_adv,
         )
 
+        plots.pickle_data(prognostic_states.next, "diffusion_before")
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.next,
                 self.dtime_in_seconds,
             )
+        plots.pickle_data(prognostic_states.next, "diffusion_after")
 
         prognostic_states.swap()
 
@@ -284,8 +293,6 @@ class TimeLoop:
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
             )
-            if ibm.DEBUG_LEVEL >= 4:
-                plots.pickle_data(prognostic_states.next, f"end_of_dyn_substep_{dyn_substep:06d}")
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()

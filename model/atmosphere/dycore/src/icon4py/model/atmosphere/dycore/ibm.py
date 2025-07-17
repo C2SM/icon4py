@@ -1,5 +1,4 @@
 import logging
-import enum
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -25,6 +24,53 @@ log = logging.getLogger(__name__)
 
 DO_IBM = True
 DEBUG_LEVEL = 2
+
+
+@gtx.field_operator
+def _set_bcs_cells(
+    mask: fa.CellKField[bool],
+    dir_value: float,
+    field: fa.CellKField[float],
+) -> fa.CellKField[float]:
+    """
+    Set boundary conditions for fields defined on cell centres.
+    """
+    field = where(mask, dir_value, field)
+    return field
+@gtx.field_operator
+def _set_bcs_edges(
+    mask: fa.EdgeKField[bool],
+    dir_value: float,
+    field: fa.EdgeKField[float],
+) -> fa.EdgeKField[float]:
+    """
+    Set boundary conditions for fields defined on edges.
+    """
+    field = where(mask, dir_value, field)
+    return field
+@gtx.field_operator
+def _set_bcs_vertices(
+    mask: fa.VertexKField[bool],
+    dir_value: float,
+    field: fa.VertexKField[float],
+) -> fa.VertexKField[float]:
+    """
+    Set boundary conditions for fields defined on vertices.
+    """
+    field = where(mask, dir_value, field)
+    return field
+
+@gtx.field_operator
+def _set_bcs_cell_field(
+    mask: fa.CellKField[bool],
+    dir_field: fa.CellKField[float],
+    field: fa.CellKField[float],
+) -> fa.CellKField[float]:
+    """
+    Set boundary conditions for fields defined on cell centres.
+    """
+    field = where(mask, dir_field, field)
+    return field
 
 @gtx.field_operator
 def _set_bcs_dvndz(
@@ -99,9 +145,9 @@ class ImmersedBoundaryMethod:
 
         self._dirichlet_value_vn      = 0.0
         self._dirichlet_value_w       = 0.0
-        self._dirichlet_value_rho     = 1.0
-        self._dirichlet_value_exner   = 1.0
-        self._dirichlet_value_theta_v = 301.0
+        self._dirichlet_value_rho     = -999.0
+        self._dirichlet_value_exner   = -999.0
+        self._dirichlet_value_theta_v = -999.0
 
         log.info("IBM initialized")
 
@@ -314,7 +360,7 @@ class ImmersedBoundaryMethod:
     ):
         if not self.DO_IBM:
             return
-        self.set_bcs_edges(
+        _set_bcs_edges(
             mask=self.full_edge_mask,
             dir_value=self._dirichlet_value_vn,
             field=vn,
@@ -328,7 +374,7 @@ class ImmersedBoundaryMethod:
     ):
         if not self.DO_IBM:
             return
-        self.set_bcs_cells(
+        _set_bcs_cells(
             mask=self.half_cell_mask,
             dir_value=self._dirichlet_value_w,
             field=w,
@@ -342,7 +388,7 @@ class ImmersedBoundaryMethod:
     ):
         if not self.DO_IBM:
             return
-        self.set_bcs_cells(
+        _set_bcs_cells(
             mask=self.full_cell_mask,
             dir_value=self._dirichlet_value_rho,
             field=rho,
@@ -356,7 +402,7 @@ class ImmersedBoundaryMethod:
     ):
         if not self.DO_IBM:
             return
-        self.set_bcs_cells(
+        _set_bcs_cells(
             mask=self.full_cell_mask,
             dir_value=self._dirichlet_value_exner,
             field=exner,
@@ -370,7 +416,7 @@ class ImmersedBoundaryMethod:
     ):
         if not self.DO_IBM:
             return
-        self.set_bcs_cells(
+        _set_bcs_cells(
             mask=self.full_cell_mask,
             dir_value=self._dirichlet_value_theta_v,
             field=theta_v,
@@ -397,7 +443,7 @@ class ImmersedBoundaryMethod:
         # and should work as theta_v_ic is not used anymore after this point,
         # nor are a, b, and c. Only alfa and beta are used in the equation for
         # exner, but those are not affected by this hack.
-        self.set_bcs_cells(
+        _set_bcs_cells(
             mask=self.half_cell_mask,
             dir_value=0.,
             field=theta_v_ic,
@@ -405,7 +451,7 @@ class ImmersedBoundaryMethod:
             offset_provider={},
         )
         # Then set the Dirichlet value for $w$.
-        self.set_bcs_cells(
+        _set_bcs_cells(
             mask=self.half_cell_mask,
             dir_value=self._dirichlet_value_w,
             field=z_w_expl,
@@ -420,7 +466,7 @@ class ImmersedBoundaryMethod:
         if not self.DO_IBM:
             return
         # Set the flux to zero at the boundaries.
-        self.set_bcs_edges(
+        _set_bcs_edges(
             mask=self.full_edge_mask,
             dir_value=0,
             field=flux,
@@ -436,14 +482,14 @@ class ImmersedBoundaryMethod:
         if not self.DO_IBM:
             return
         # Zero the gradients in masked cells and their neighbors.
-        self.set_bcs_cells(
+        _set_bcs_cells(
             mask=self.neigh_full_cell_mask,
             dir_value=0.,
             field=grad_x,
             out=grad_x,
             offset_provider={},
         )
-        self.set_bcs_cells(
+        _set_bcs_cells(
             mask=self.neigh_full_cell_mask,
             dir_value=0.,
             field=grad_y,
@@ -458,7 +504,7 @@ class ImmersedBoundaryMethod:
         if not self.DO_IBM:
             return
         # Set the horizontal advection of w to zero at the vertical surfaces
-        self.set_bcs_edges(
+        _set_bcs_edges(
             mask=self.half_edge_mask,
             dir_value=0,
             field=horizontal_advection_of_w_at_edges_on_half_levels,
@@ -479,14 +525,14 @@ class ImmersedBoundaryMethod:
     ):
         if not self.DO_IBM:
             return
-        self.set_bcs_vertices(
+        _set_bcs_vertices(
             mask=self.full_vertex_mask,
             dir_value=0,
             field=u_vert,
             out=u_vert,
             offset_provider={},
         )
-        self.set_bcs_vertices(
+        _set_bcs_vertices(
             mask=self.full_vertex_mask,
             dir_value=0,
             field=v_vert,
@@ -503,7 +549,7 @@ class ImmersedBoundaryMethod:
         # Set to zero Kh_smag as a 'hack' for setting to zero the gradient of
         # theta_v on masked edges.
         # Actually these edges have some gradient, but this is ignored for now.
-        self.set_bcs_edges(
+        _set_bcs_edges(
             mask=self.full_edge_mask,
             dir_value=0,
             field=Kh_smag,
@@ -511,39 +557,17 @@ class ImmersedBoundaryMethod:
             offset_provider={},
         )
 
-
-    @gtx.field_operator
-    def set_bcs_cells(
-        mask: fa.CellKField[bool],
-        dir_value: float,
-        field: fa.CellKField[float],
-    ) -> fa.CellKField[float]:
-        """
-        Set boundary conditions for fields defined on cell centres.
-        """
-        field = where(mask, dir_value, field)
-        return field
-
-    @gtx.field_operator
-    def set_bcs_edges(
-        mask: fa.EdgeKField[bool],
-        dir_value: float,
-        field: fa.EdgeKField[float],
-    ) -> fa.EdgeKField[float]:
-        """
-        Set boundary conditions for fields defined on edges.
-        """
-        field = where(mask, dir_value, field)
-        return field
-
-    @gtx.field_operator
-    def set_bcs_vertices(
-        mask: fa.VertexKField[bool],
-        dir_value: float,
-        field: fa.VertexKField[float],
-    ) -> fa.VertexKField[float]:
-        """
-        Set boundary conditions for fields defined on vertices.
-        """
-        field = where(mask, dir_value, field)
-        return field
+    def set_bcs_diffw(
+        self,
+        w: fa.CellKField[float],
+        w_old: fa.CellKField[float],
+    ):
+        if not self.DO_IBM:
+            return
+        _set_bcs_cells(
+            mask=self.half_cell_mask,
+            dir_field=w_old,
+            field=w,
+            out=w,
+            offset_provider={},
+        )

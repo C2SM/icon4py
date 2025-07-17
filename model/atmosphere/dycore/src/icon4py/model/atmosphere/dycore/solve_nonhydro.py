@@ -782,6 +782,7 @@ class SolveNonhydro:
             self._ibm.set_dirichlet_value_rho(prognostic_states.current.rho)
             self._ibm.set_dirichlet_value_exner(prognostic_states.current.exner)
             self._ibm.set_dirichlet_value_theta_v(prognostic_states.current.theta_v)
+            plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
         #<--- IBM
 
         self.run_predictor_step(
@@ -792,6 +793,10 @@ class SolveNonhydro:
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
         )
+        #---> IBM
+        if self._ibm.DEBUG_LEVEL >= 3:
+            plots.pickle_data(prognostic_states.next, f"end_of_predictor")
+        #<--- IBM
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -804,6 +809,10 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
+        #---> IBM
+        if self._ibm.DEBUG_LEVEL >= 3:
+            plots.pickle_data(prognostic_states.next, f"end_of_corrector")
+        #<--- IBM
 
         if self._grid.limited_area:
             self._compute_theta_and_exner(
@@ -1069,6 +1078,22 @@ class SolveNonhydro:
 
         #---> IBM
         self._ibm.set_dirichlet_value_vn(prognostic_states.next.vn)
+        #<--- IBM
+
+        #---> IBM
+        if self._ibm.DEBUG_LEVEL >= 3:
+            plots.pickle_data(
+                state={
+                    "vn_curr": prognostic_states.current.vn.asnumpy(),
+                    "vn_next": prognostic_states.next.vn.asnumpy(),
+                    "vn_adv": diagnostic_state_nh.normal_wind_advective_tendency.predictor.asnumpy(),
+                    "theta_v_ef": z_fields.theta_v_at_edges_on_model_levels.asnumpy(),
+                    "gradh_exner": z_fields.horizontal_pressure_gradient.asnumpy(),
+                    "dt": dtime,
+                    "cpd": constants.CPD,
+                },
+                label=f"vn_tendency_predictor",
+            )
         #<--- IBM
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
@@ -1555,6 +1580,22 @@ class SolveNonhydro:
 
         #---> IBM
         self._ibm.set_dirichlet_value_vn(prognostic_states.next.vn)
+        #<--- IBM
+
+        #---> IBM
+        if self._ibm.DEBUG_LEVEL >= 3:
+            plots.pickle_data(
+                state={
+                    "vn_curr": prognostic_states.current.vn.asnumpy(),
+                    "vn_next": prognostic_states.next.vn.asnumpy(),
+                    "vn_adv": diagnostic_state_nh.normal_wind_advective_tendency.predictor.asnumpy(),
+                    "theta_v_ef": z_fields.theta_v_at_edges_on_model_levels.asnumpy(),
+                    "gradh_exner": z_fields.horizontal_pressure_gradient.asnumpy(),
+                    "dt": dtime,
+                    "cpd": constants.CPD,
+                },
+                label=f"vn_tendency_corrector",
+            )
         #<--- IBM
 
         log.debug("exchanging prognostic field 'vn'")
