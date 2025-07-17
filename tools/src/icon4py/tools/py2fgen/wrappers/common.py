@@ -159,10 +159,10 @@ def construct_icon_grid(
     # TODO(havogt): pass backend to grid_wrapper
     if on_gpu:
         xp = cp
-        allocator = gtx_allocators.StandardGPUFieldBufferAllocator
+        allocator = gtx_allocators.device_allocators[gt4py_definitions.CUPY_DEVICE_TYPE]
     else:
         xp = np
-        allocator = gtx_allocators.StandardCPUFieldBufferAllocator
+        allocator = gtx_allocators.device_allocators[gt4py_definitions.CUPY_DEVICE_TYPE]
 
     cells_start_index = adjust_fortran_indices(cell_starts, offset)
     vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
