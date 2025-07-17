@@ -144,8 +144,9 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
+    mean_cell_area: gtx.float64,
     on_gpu: bool,
-) -> icon.IconGridBuilder:
+) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
     log.debug("num_edges:%s", num_edges)
@@ -193,42 +194,39 @@ def construct_icon_grid(
         keep_skip_values=False,
     )
 
-    grid = (
-        icon.IconGridBuilder(id_=grid_id)
-        .set_config(config)
-        .set_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
-        .set_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)
-        .set_start_end_indices(dims.CellDim, cells_start_index, cells_end_index)
-        .set_neighbor_tables(
-            {
-                dims.C2EDim: c2e,
-                dims.C2VDim: c2v,
-                dims.E2CDim: e2c,
-                dims.E2C2EDim: e2c2e,
-                dims.C2E2CDim: c2e2c,
-                dims.C2E2CODim: c2e2c0,
-                dims.E2C2EODim: e2c2e0,
-            }
-        )
-        .set_neighbor_tables(
-            {
-                dims.V2EDim: v2e,
-                dims.E2VDim: e2v,
-                dims.E2C2VDim: e2c2v,
-                dims.V2CDim: v2c,
-            }
-        )
-    )
+    neighbor_tables = {
+        dims.C2E: c2e,
+        dims.C2V: c2v,
+        dims.E2C: e2c,
+        dims.E2C2E: e2c2e,
+        dims.C2E2C: c2e2c,
+        dims.C2E2CO: c2e2c0,
+        dims.E2C2EO: e2c2e0,
+        dims.V2E: v2e,
+        dims.E2V: e2v,
+        dims.E2C2V: e2c2v,
+        dims.V2C: v2c,
+    }
 
-    grid.update_size_connectivities(
-        {
-            dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
-            dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
-            dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
-        }
-    )
+    start_indices = {
+        dims.CellDim: cells_start_index,
+        dims.EdgeDim: edge_start_index,
+        dims.VertexDim: vertex_start_index,
+    }
+    end_indices = {
+        dims.CellDim: cells_end_index,
+        dims.EdgeDim: edge_end_index,
+        dims.VertexDim: vertex_end_index,
+    }
 
-    return grid
+    return icon.icon_grid(
+        id=grid_id,
+        config=config,
+        neighbor_tables=neighbor_tables,
+        start_indices=start_indices,
+        end_indices=end_indices,
+        global_properties=icon.GlobalGridParams.from_mean_cell_area(mean_cell_area),
+    )
 
 
 def construct_decomposition(

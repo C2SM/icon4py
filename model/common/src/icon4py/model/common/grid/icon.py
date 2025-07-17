@@ -129,7 +129,7 @@ def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
     return value
 
 
-def _do_replace_skip_values_in_table(
+def _should_replace_skip_values(
     offset: gtx.FieldOffset, keep_skip_values: bool, limited_area: bool
 ) -> bool:
     """
@@ -174,7 +174,7 @@ def icon_grid(
             table,
             skip_value=-1 if _has_skip_values(offset, config.limited_area) else None,
             allocator=allocator,
-            replace_skip_values=_do_replace_skip_values_in_table(
+            replace_skip_values=_should_replace_skip_values(
                 offset, config.keep_skip_values, config.limited_area
             ),
         )
