@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import astype, broadcast
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
@@ -35,10 +35,8 @@ def _interpolate_horizontal_kinetic_energy_to_cells_and_compute_contravariant_co
         horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
     )
 
-    contravariant_correction_at_cells_model_levels = concat_where(
-        dims.KDim >= nflatlev,
-        _interpolate_to_cell_center(contravariant_correction_at_edges_on_model_levels, e_bln_c_s),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+    contravariant_correction_at_cells_model_levels = _interpolate_to_cell_center(
+        contravariant_correction_at_edges_on_model_levels, e_bln_c_s
     )
 
     contravariant_correction_at_cells_on_half_levels = concat_where(
