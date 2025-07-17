@@ -274,7 +274,7 @@ def construct_connectivity(
 
 
 def _replace_skip_values(
-    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, array_ns: ModuleType = np
+    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, array_ns: ModuleType
 ) -> data_alloc.NDArray:
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.

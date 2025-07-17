@@ -158,7 +158,6 @@ def _should_replace_skip_values(
     return not keep_skip_values and (limited_area or not _has_skip_values(offset, limited_area))
 
 
-# TODO backend...
 def icon_grid(
     id_: uuid.UUID,
     allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None,
@@ -172,7 +171,7 @@ def icon_grid(
     connectivities = {
         offset.value: base.construct_connectivity(
             offset,
-            table,
+            data_alloc.import_array_ns(allocator).asarray(table),
             skip_value=-1 if _has_skip_values(offset, config.limited_area) else None,
             allocator=allocator,
             replace_skip_values=_should_replace_skip_values(

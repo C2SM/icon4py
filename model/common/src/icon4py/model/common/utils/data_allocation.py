@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import logging as log
+from types import ModuleType
 from typing import TYPE_CHECKING, Optional, TypeAlias, Union
 
 import gt4py._core.definitions as gtx_core_defs  # TODO(havogt): avoid this private import
@@ -58,7 +59,7 @@ def is_cupy_device(
     return False
 
 
-def array_ns(try_cupy: bool):
+def array_ns(try_cupy: bool) -> ModuleType:
     if try_cupy:
         try:
             import cupy as cp
@@ -71,9 +72,9 @@ def array_ns(try_cupy: bool):
     return np
 
 
-def import_array_ns(backend: Optional[gtx_backend.Backend]):
+def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
-    return array_ns(is_cupy_device(backend))
+    return array_ns(is_cupy_device(allocator))
 
 
 def as_field(
