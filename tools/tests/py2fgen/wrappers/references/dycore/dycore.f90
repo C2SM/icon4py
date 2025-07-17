@@ -114,6 +114,7 @@ module dycore
                                     vn_traj_size_0, &
                                     vn_traj_size_1, &
                                     dtime, &
+                                    max_vertical_cfl, &
                                     lprep_adv, &
                                     at_initial_timestep, &
                                     divdamp_fac_o2, &
@@ -334,6 +335,8 @@ module dycore
          integer(c_int), value :: vn_traj_size_1
 
          real(c_double), value, target :: dtime
+
+         real(c_double), value, target :: max_vertical_cfl
 
          logical(c_int), value, target :: lprep_adv
 
@@ -931,6 +934,7 @@ contains
                            vol_flx_ic, &
                            vn_traj, &
                            dtime, &
+                           max_vertical_cfl, &
                            lprep_adv, &
                            at_initial_timestep, &
                            divdamp_fac_o2, &
@@ -1010,6 +1014,8 @@ contains
       real(c_double), dimension(:, :), target :: vn_traj
 
       real(c_double), value, target :: dtime
+
+      real(c_double), value, target :: max_vertical_cfl
 
       logical(c_int), value, target :: lprep_adv
 
@@ -1440,6 +1446,7 @@ contains
                                 vn_traj_size_0=vn_traj_size_0, &
                                 vn_traj_size_1=vn_traj_size_1, &
                                 dtime=dtime, &
+                                max_vertical_cfl=max_vertical_cfl, &
                                 lprep_adv=lprep_adv, &
                                 at_initial_timestep=at_initial_timestep, &
                                 divdamp_fac_o2=divdamp_fac_o2, &

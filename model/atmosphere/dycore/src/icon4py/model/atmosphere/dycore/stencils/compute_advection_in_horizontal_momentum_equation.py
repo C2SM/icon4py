@@ -117,6 +117,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
         wpfloat,
     )
 
+    #: intermediate variable contravariant_corrected_w_at_edges_on_model_levels is originally declared as w_con_e in ICON
     contravariant_corrected_w_at_edges_on_model_levels = neighbor_sum(
         c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=E2CDim
     )
@@ -255,6 +256,7 @@ def compute_advection_in_horizontal_momentum_equation(
         - coriolis_frequency: coriolis frequency parameter
         - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at model levels
         - vn_on_half_levels: normal wind on half levels
+        - e_bln_c_s: interpolation field (edge-to-cell interpolation weights)
         - geofac_rot: metric field for rotor computation
         - coeff_gradekin: metrics field/coefficient for the gradient of kinematic energy
         - c_lin_e: metrics field for linear interpolation from cells to edges
@@ -266,6 +268,7 @@ def compute_advection_in_horizontal_momentum_equation(
         - cfl_w_limit: CFL limit for vertical velocity
         - scalfac_exdiff: scalar factor for external diffusion
         - d_time: time step
+        - max_vertical_cfl: maximum vertical cfl number
         - end_index_of_damping_layer: vertical index where damping ends
         - horizontal_start: start index in the horizontal domain
         - horizontal_end: end index in the horizontal domain

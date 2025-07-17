@@ -326,7 +326,7 @@ def solve_nh_run(
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     dtime: gtx.float64,
-    max_vertical_cfl: gtx.float64,
+    max_vcfl: gtx.float64,
     lprep_adv: bool,
     at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
@@ -358,7 +358,7 @@ def solve_nh_run(
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=max_vertical_cfl,
+        max_vertical_cfl=max_vcfl,
         theta_v_at_cells_on_half_levels=theta_v_ic,
         perturbed_exner_at_cells_on_model_levels=exner_pr,
         rho_at_cells_on_half_levels=rho_ic,

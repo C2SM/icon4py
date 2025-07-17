@@ -14,9 +14,14 @@ from icon4py.model.atmosphere.dycore import (
     dycore_states,
     velocity_advection as advection,
 )
-from icon4py.model.atmosphere.dycore.stencils import (
+from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
     compute_advection_in_horizontal_momentum_equation,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
     compute_advection_in_vertical_momentum_equation,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_and_advection_in_vertical_momentum_equation import (
+    compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
@@ -587,7 +592,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     vertical_start = 0
     vertical_end = icon_grid.num_levels
-    compute_advection_in_vertical_momentum_equation.compute_contravariant_correction_and_advection_in_vertical_momentum_equation.with_backend(
+    compute_contravariant_correction_and_advection_in_vertical_momentum_equation.with_backend(
         backend
     )(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
@@ -733,9 +738,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     vertical_start = 0
     vertical_end = icon_grid.num_levels
-    compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
-        backend
-    )(
+    compute_advection_in_vertical_momentum_equation.with_backend(backend)(
         vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
         vertical_cfl=vertical_cfl,
@@ -862,9 +865,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
 
-    compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
-        backend
-    )(
+    compute_advection_in_horizontal_momentum_equation.with_backend(backend)(
         normal_wind_advective_tendency=normal_wind_advective_tendency,
         vn=vn,
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,

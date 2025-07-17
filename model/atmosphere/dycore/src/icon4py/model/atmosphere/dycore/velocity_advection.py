@@ -15,9 +15,14 @@ import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.atmosphere.dycore.stencils import (
+from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
     compute_advection_in_horizontal_momentum_equation,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
     compute_advection_in_vertical_momentum_equation,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_and_advection_in_vertical_momentum_equation import (
+    compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
@@ -70,19 +75,7 @@ class VelocityAdvection:
             )
         )
 
-        self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = compute_advection_in_vertical_momentum_equation.compute_contravariant_correction_and_advection_in_vertical_momentum_equation.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
-            skip_compute_predictor_vertical_advection=[False, True],
-            nflatlev=[self.vertical_params.nflatlev],
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[self.grid.num_levels],
-            offset_provider=self.grid.connectivities,
-        )
-
-        self._compute_advection_in_vertical_momentum_equation = compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
+        self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = compute_contravariant_correction_and_advection_in_vertical_momentum_equation.with_backend(
             self._backend
         ).compile(
             enable_jit=False,
@@ -93,14 +86,25 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        self._compute_advection_in_horizontal_momentum_equation = compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self.grid.num_levels)],
-            offset_provider=self.grid.connectivities,
+        self._compute_advection_in_vertical_momentum_equation = (
+            compute_advection_in_vertical_momentum_equation.with_backend(self._backend).compile(
+                enable_jit=False,
+                end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
+                nflatlev=[self.vertical_params.nflatlev],
+                vertical_start=[gtx.int32(0)],
+                vertical_end=[self.grid.num_levels],
+                offset_provider=self.grid.connectivities,
+            )
+        )
+
+        self._compute_advection_in_horizontal_momentum_equation = (
+            compute_advection_in_horizontal_momentum_equation.with_backend(self._backend).compile(
+                enable_jit=False,
+                end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
+                vertical_start=[gtx.int32(0)],
+                vertical_end=[gtx.int32(self.grid.num_levels)],
+                offset_provider=self.grid.connectivities,
+            )
         )
 
     def _allocate_local_fields(self):

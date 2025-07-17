@@ -33,9 +33,9 @@ extern int solve_nh_run_wrapper(
     int mass_flx_me_size_0, int mass_flx_me_size_1, double *mass_flx_ic,
     int mass_flx_ic_size_0, int mass_flx_ic_size_1, double *vol_flx_ic,
     int vol_flx_ic_size_0, int vol_flx_ic_size_1, double *vn_traj,
-    int vn_traj_size_0, int vn_traj_size_1, double dtime, int lprep_adv,
-    int at_initial_timestep, double divdamp_fac_o2, double ndyn_substeps,
-    int idyn_timestep, int on_gpu);
+    int vn_traj_size_0, int vn_traj_size_1, double dtime, double max_vertical_cfl,
+    int lprep_adv, int at_initial_timestep, double divdamp_fac_o2,
+    double ndyn_substeps, int idyn_timestep, int on_gpu);
 extern int solve_nh_init_wrapper(
     double *vct_a, int vct_a_size_0, double *vct_b, int vct_b_size_0,
     double *c_lin_e, int c_lin_e_size_0, int c_lin_e_size_1, double *c_intp,

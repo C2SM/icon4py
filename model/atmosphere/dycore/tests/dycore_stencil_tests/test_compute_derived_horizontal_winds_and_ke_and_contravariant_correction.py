@@ -19,18 +19,12 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers as test_helpers
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
-from .test_compute_horizontal_advection_term_for_vertical_velocity import (
-    compute_horizontal_advection_term_for_vertical_velocity_numpy,
-)
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
 from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
     interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
 )
 from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
-from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
-)
 
 
 def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
@@ -58,7 +52,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         "vn_on_half_levels",
         "horizontal_kinetic_energy_at_edges_on_model_levels",
         "contravariant_correction_at_edges_on_model_levels",
-        "horizontal_advection_of_w_at_edges_on_half_levels",
     )
     MARKERS = (pytest.mark.embedded_remap_error,)
 
@@ -142,18 +135,12 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         vn_on_half_levels: np.ndarray,
         horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
         contravariant_correction_at_edges_on_model_levels: np.ndarray,
-        horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
         vn: np.ndarray,
-        w: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         wgtfac_e: np.ndarray,
         ddxn_z_full: np.ndarray,
         ddxt_z_full: np.ndarray,
         wgtfacq_e: np.ndarray,
-        c_intp: np.ndarray,
-        inv_dual_edge_length: np.ndarray,
-        inv_primal_edge_length: np.ndarray,
-        tangent_orientation: np.ndarray,
         skip_compute_predictor_vertical_advection: bool,
         nflatlev: int,
         horizontal_start: int,
@@ -169,9 +156,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         )
         initial_contravariant_correction_at_edges_on_model_levels = (
             contravariant_correction_at_edges_on_model_levels.copy()
-        )
-        initial_horizontal_advection_of_w_at_edges_on_half_levels = (
-            horizontal_advection_of_w_at_edges_on_half_levels.copy()
         )
 
         (
@@ -196,24 +180,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             nflatlev,
             vertical_end,
         )
-
-        khalf_w_at_edge = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
-            connectivities, w, c_intp
-        )
-
-        if not skip_compute_predictor_vertical_advection:
-            horizontal_advection_of_w_at_edges_on_half_levels = (
-                compute_horizontal_advection_term_for_vertical_velocity_numpy(
-                    connectivities,
-                    vn_on_half_levels[:, :-1],
-                    inv_dual_edge_length,
-                    w,
-                    tangential_wind_on_half_levels,
-                    inv_primal_edge_length,
-                    tangent_orientation,
-                    khalf_w_at_edge,
-                )
-            )
 
         tangential_wind[:horizontal_start, :] = initial_tangential_wind[:horizontal_start, :]
         tangential_wind[horizontal_end:, :] = initial_tangential_wind[horizontal_end:, :]
@@ -242,27 +208,16 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             horizontal_end:, :
         ] = initial_contravariant_correction_at_edges_on_model_levels[horizontal_end:, :]
 
-        horizontal_advection_of_w_at_edges_on_half_levels[
-            :horizontal_start, :
-        ] = initial_horizontal_advection_of_w_at_edges_on_half_levels[:horizontal_start, :]
-        horizontal_advection_of_w_at_edges_on_half_levels[
-            horizontal_end:, :
-        ] = initial_horizontal_advection_of_w_at_edges_on_half_levels[horizontal_end:, :]
-
         return dict(
             tangential_wind=tangential_wind,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
             vn_on_half_levels=vn_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
-            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
         tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         vn_on_half_levels = data_alloc.random_field(
@@ -275,19 +230,14 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             grid, dims.EdgeDim, dims.KDim
         )
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
         wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
-        nflatlev = 13
+        nflatlev = 3
 
         skip_compute_predictor_vertical_advection = False
 
@@ -304,18 +254,12 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             vn_on_half_levels=vn_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
-            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
             vn=vn,
-            w=w,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             wgtfac_e=wgtfac_e,
             ddxn_z_full=ddxn_z_full,
             ddxt_z_full=ddxt_z_full,
             wgtfacq_e=wgtfacq_e,
-            c_intp=c_intp,
-            inv_dual_edge_length=inv_dual_edge_length,
-            inv_primal_edge_length=inv_primal_edge_length,
-            tangent_orientation=tangent_orientation,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             nflatlev=nflatlev,
             horizontal_start=horizontal_start,

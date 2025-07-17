@@ -805,7 +805,7 @@ def test_dycore_wrapper_granule_inputs(
             vol_flx_ic=vol_flx_ic,
             vn_traj=vn_traj,
             dtime=dtime,
-            max_vertical_cfl=max_vertical_cfl,
+            max_vcfl=max_vertical_cfl,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
@@ -995,7 +995,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         vn_traj=vn_traj,
         vol_flx_ic=vol_flx_ic,
         dtime=dtime,
-        max_vertical_cfl=max_vertical_cfl,
+        max_vcfl=max_vertical_cfl,
         lprep_adv=lprep_adv,
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
@@ -1086,6 +1086,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
     # Diagnostic state parameters
+    max_vertical_cfl = 0.0
     theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
     exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
     rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
@@ -1178,6 +1179,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             vn_traj=vn_traj,
             vol_flx_ic=vol_flx_ic,
             dtime=dtime,
+            max_vcfl=max_vertical_cfl,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
