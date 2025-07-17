@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from icon4py.model.testing.datatest_fixtures import (
+from icon4py.model.testing.fixtures.datatest import (
     icon_grid,  # noqa: F401  # import fixtures from test_utils package
 )
 from icon4py.model.testing.parallel_helpers import (

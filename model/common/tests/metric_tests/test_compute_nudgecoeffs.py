@@ -15,7 +15,7 @@ from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing.fixtures.datatest import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     download_ser_data,
     experiment,

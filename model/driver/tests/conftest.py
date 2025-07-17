@@ -17,12 +17,12 @@ try:
 
     _ = sys.modules["icon4py.model.testing.pytest_config"]
 except KeyError:
-    from icon4py.model.testing.pytest_config import *  # noqa: F403 [undefined-local-with-import-star]
+    from icon4py.model.testing.pytest_hooks import *  # noqa: F403 [undefined-local-with-import-star]
 
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.driver import icon4py_configuration as driver_config
-from icon4py.model.testing.datatest_fixtures import (
+from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
     download_ser_data,

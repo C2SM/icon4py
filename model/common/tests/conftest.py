@@ -11,7 +11,7 @@ import random
 
 import pytest
 
-from icon4py.model.testing.datatest_fixtures import (
+from icon4py.model.testing.fixtures.datatest import (
     decomposition_info,
     experiment,
 )
@@ -25,7 +25,7 @@ try:
 
     _ = sys.modules["icon4py.model.testing.pytest_config"]
 except KeyError:
-    from icon4py.model.testing.pytest_config import *  # noqa: F403
+    from icon4py.model.testing.pytest_hooks import *  # noqa: F403
 
 __all__ = [
     # local:

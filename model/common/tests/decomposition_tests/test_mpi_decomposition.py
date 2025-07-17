@@ -25,7 +25,7 @@ from icon4py.model.common.decomposition.definitions import (
     create_exchange,
 )
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
-from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
+from icon4py.model.testing.fixtures.datatest import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
     decomposition_info,
     download_ser_data,
