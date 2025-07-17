@@ -57,15 +57,17 @@ class VelocityAdvection:
         self._allocate_local_fields()
         self._determine_local_domains()
 
-        self._compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction = compute_derived_horizontal_winds_and_ke_and_contravariant_correction.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            nflatlev=[self.vertical_params.nflatlev],
-            skip_compute_predictor_vertical_advection=[False, True],
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self.grid.num_levels + 1)],
-            offset_provider=self.grid.connectivities,
+        self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = (
+            compute_derived_horizontal_winds_and_ke_and_contravariant_correction.with_backend(
+                self._backend
+            ).compile(
+                enable_jit=False,
+                nflatlev=[self.vertical_params.nflatlev],
+                skip_compute_predictor_vertical_advection=[False, True],
+                vertical_start=[gtx.int32(0)],
+                vertical_end=[gtx.int32(self.grid.num_levels + 1)],
+                offset_provider=self.grid.connectivities,
+            )
         )
 
         self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = compute_advection_in_vertical_momentum_equation.compute_contravariant_correction_and_advection_in_vertical_momentum_equation.with_backend(
@@ -73,6 +75,7 @@ class VelocityAdvection:
         ).compile(
             enable_jit=False,
             end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
+            skip_compute_predictor_vertical_advection=[False, True],
             nflatlev=[self.vertical_params.nflatlev],
             vertical_start=[gtx.int32(0)],
             vertical_end=[self.grid.num_levels],
@@ -173,7 +176,7 @@ class VelocityAdvection:
 
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        self._compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction(
+        self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
             tangential_wind=diagnostic_state.tangential_wind,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
@@ -196,8 +199,8 @@ class VelocityAdvection:
 
         # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditons
         self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
-            vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.predictor,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
+            vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.predictor,
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
             vertical_cfl=self.vertical_cfl,
             w=prognostic_state.w,
@@ -229,11 +232,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        # TODO(havogt): can we move this to the end?
-        xp = data_alloc.import_array_ns(self._backend)
-        max_vertical_cfl = xp.max(self.vertical_cfl.ndarray)
-        print(max_vertical_cfl)
-        print(type(max_vertical_cfl))
+        max_vertical_cfl = self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray)[()]
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
@@ -324,9 +323,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        # TODO(havogt): can we move this to the end?
-        xp = data_alloc.import_array_ns(self._backend)
-        max_vertical_cfl = xp.max(self.vertical_cfl.ndarray)
+        max_vertical_cfl = self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray)[()]
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,

@@ -255,6 +255,7 @@ def initialize_solve_nonhydro_diagnostic_state(
         ),
     )
     return dycore_states.DiagnosticStateNonHydro(
+        max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),

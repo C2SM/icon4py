@@ -115,12 +115,12 @@ def _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
     )
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
 
-    ddt_w_adv_wp = -contravariant_corrected_w_at_cells_on_half_levels_wp * (
+    vertical_wind_advective_tendency_wp = -contravariant_corrected_w_at_cells_on_half_levels_wp * (
         w(Koff[-1]) * coeff1_dwdz_wp
         - w(Koff[1]) * coeff2_dwdz_wp
         + w * astype(coeff2_dwdz - coeff1_dwdz, wpfloat)
     )
-    return astype(ddt_w_adv_wp, vpfloat)
+    return astype(vertical_wind_advective_tendency_wp, vpfloat)
 
 
 @gtx.field_operator
@@ -389,8 +389,8 @@ def _compute_contravariant_correction_and_advection_in_vertical_momentum_equatio
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
-    vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     vertical_cfl: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
@@ -421,16 +421,17 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
     vertical_end: gtx.int32,
 ):
     """
-    Formerly known as fused_velocity_advection_stencil_15_to_18.
-
     This computes the vertical momentum advection in the vertical momentum equation
 
     Args:
-        - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at model levels
+        - contravariant_correction_at_cells_on_half_levels: contravariant correction at cells on model levels
         - vertical_wind_advective_tendency: vertical advection tendency of the vertical wind
-        - w: vertical wind at cell centers
-        - contravariant_corrected_w_at_cells_on_half_levels: contravariant-corrected vertical velocity at cells on half levels
-        - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity at edges on half levels
+        - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at cells on model levels
+        - vertical_cfl: vertical cfl number at cells on half levels
+        - w: vertical wind at cells on half levels
+        - tangential_wind: tangential wind at edges on model levels
+        - vn_on_half_levels: normal wind at edges on half levels
+        - contravariant_correction_at_edges_on_model_levels: contravariant correction at edges on model levels
         - coeff1_dwdz: metrics field (first coefficient for vertical derivative of vertical wind)
         - coeff2_dwdz: metrics field (second coefficient for vertical derivative of vertical wind)
         - c_intp: interpolation field for cell-to-vertex interpolation
@@ -438,6 +439,7 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
         - inv_primal_edge_length: inverse primal edge length
         - tangent_orientation: orientation of the edge with respect to the grid
         - e_bln_c_s: interpolation field (edge-to-cell interpolation weights)
+        - wgtfac_c: metric coefficient for interpolating a cell variable from full to half levels
         - ddqz_z_half: metrics field
         - area: cell area
         - geofac_n2s: interpolation field
@@ -454,9 +456,10 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
         - vertical_end: end index in the vertical dimension at model bottom (or number of full/model vertical levels)
 
     Returns:
-        - contravariant_corrected_w_at_cells_on_model_levels
+        - contravariant_correction_at_cells_on_half_levels
         - vertical_wind_advective_tendency
-
+        - contravariant_corrected_w_at_cells_on_model_levels
+        - vertical_cfl
     """
 
     _compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
@@ -607,16 +610,16 @@ def compute_advection_in_vertical_momentum_equation(
     vertical_end: gtx.int32,
 ):
     """
-    Formerly known as fused_velocity_advection_stencil_15_to_18.
-
     This computes the vertical momentum advection in the vertical momentum equation
 
     Args:
-        - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at model levels
         - vertical_wind_advective_tendency: vertical advection tendency of the vertical wind
+        - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at cells on model levels
+        - vertical_cfl: vertical cfl number at cells on half levels
         - w: vertical wind at cell centers
-        - contravariant_corrected_w_at_cells_on_half_levels: contravariant-corrected vertical velocity at cells on half levels
-        - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection for vertical velocity at edges on half levels
+        - tangential_wind: tangential wind at edges on model levels
+        - vn_on_half_levels: normal wind at edges on half levels
+        - contravariant_correction_at_edges_on_model_levels: contravariant correction at edges on model levels
         - coeff1_dwdz: metrics field (first coefficient for vertical derivative of vertical wind)
         - coeff2_dwdz: metrics field (second coefficient for vertical derivative of vertical wind)
         - c_intp: interpolation field for cell-to-vertex interpolation
@@ -639,9 +642,9 @@ def compute_advection_in_vertical_momentum_equation(
         - vertical_end: end index in the vertical dimension at model bottom (or number of full/model vertical levels)
 
     Returns:
-        - contravariant_corrected_w_at_cells_on_model_levels
         - vertical_wind_advective_tendency
-
+        - contravariant_corrected_w_at_cells_on_model_levels
+        - vertical_cfl
     """
 
     _compute_advection_in_vertical_momentum_equation(

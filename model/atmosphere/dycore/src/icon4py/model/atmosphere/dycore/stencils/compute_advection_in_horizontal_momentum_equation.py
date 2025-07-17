@@ -59,7 +59,7 @@ def _compute_advective_normal_wind_tendency(
         wpfloat,
     )
 
-    ddt_vn_apc_wp = -(
+    normal_wind_advective_tendency_wp = -(
         astype(
             horizontal_kinetic_energy_at_edges_on_model_levels
             * (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1]))
@@ -83,7 +83,7 @@ def _compute_advective_normal_wind_tendency(
         / ddqz_z_full_e_wp
     )
 
-    return astype(ddt_vn_apc_wp, vpfloat)
+    return astype(normal_wind_advective_tendency_wp, vpfloat)
 
 
 @gtx.field_operator

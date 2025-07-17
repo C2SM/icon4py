@@ -109,6 +109,7 @@ def test_run_solve_nonhydro_single_step(
     # linit = sp_v.get_metadata("linit").get("linit")  # noqa: ERA001 [commented-out-code]
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
         rho_at_cells_on_half_levels=sp.rho_ic(),
