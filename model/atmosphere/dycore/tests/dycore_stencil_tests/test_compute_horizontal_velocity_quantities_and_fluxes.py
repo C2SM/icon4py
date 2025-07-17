@@ -50,13 +50,11 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     wgtfacq_e: np.ndarray,
     nlevp1: int,
 ) -> tuple[np.ndarray, ...]:
-    k = np.arange(nlevp1)
-    k = k[np.newaxis, :]
+    k = np.arange(nlevp1)[np.newaxis, :]
     k_nlev = k[:, :-1]
 
-    condition1 = 1 <= k_nlev
     vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
-        condition1,
+        1 <= k_nlev,
         interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
             wgtfac_e, vn, tangential_wind
         ),
@@ -64,18 +62,17 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     )
 
     tangential_wind_on_half_levels = np.where(
-        condition1,
+        1 <= k_nlev,
         interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
         tangential_wind_on_half_levels,
     )
 
-    condition2 = k_nlev == 0
     (
         vn_on_half_levels[:, :-1],
         tangential_wind_on_half_levels,
         horizontal_kinetic_energy_at_edges_on_model_levels,
     ) = np.where(
-        condition2,
+        k_nlev == 0,
         compute_horizontal_kinetic_energy_numpy(vn, tangential_wind),
         (
             vn_on_half_levels[:, :-1],
@@ -133,8 +130,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
         vertical_end: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        k = np.arange(vertical_end)
-        k = k[np.newaxis, :]
+        k = np.arange(vertical_end)[np.newaxis, :]
         k_nlev = k[:, :-1]
 
         (

@@ -30,10 +30,10 @@ def accumulate_prep_adv_fields_numpy(
     mass_flx_me: np.ndarray,
     r_nsubsteps: ta.wpfloat,
     **kwargs: Any,
-) -> dict:
+) -> tuple[np.ndarray, np.ndarray]:
     vn_traj = vn_traj + r_nsubsteps * z_vn_avg
     mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
-    return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
+    return vn_traj, mass_flx_me
 
 
 class TestAccumulatePrepAdvFields(StencilTest):
