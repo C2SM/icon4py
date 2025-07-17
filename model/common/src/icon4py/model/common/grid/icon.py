@@ -13,6 +13,7 @@ import uuid
 from typing import Final, Optional
 
 import gt4py.next as gtx
+from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
@@ -160,6 +161,7 @@ def _should_replace_skip_values(
 # TODO backend...
 def icon_grid(
     id_: uuid.UUID,
+    allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     start_indices: dict[gtx.Dimension, data_alloc.NDArray],
@@ -167,7 +169,6 @@ def icon_grid(
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
-    allocator = None  # TODO
     connectivities = {
         offset.value: base.construct_connectivity(
             offset,
@@ -182,6 +183,7 @@ def icon_grid(
     }
     return IconGrid(
         id=id_,
+        _allocator=allocator,
         config=config,
         connectivities=connectivities,
         geometry_type=global_properties.geometry_type,

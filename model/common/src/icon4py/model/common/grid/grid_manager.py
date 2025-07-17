@@ -5,10 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 import logging
 import pathlib
-import uuid
 from types import ModuleType
 from typing import Literal, Optional, Protocol, TypeAlias, Union
 
@@ -331,71 +329,15 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(backend)
         on_gpu = data_alloc.is_cupy_device(backend)
-        _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
-        _derived_connectivities = functools.partial(
-            _get_derived_connectivities,
-            array_ns=xp,
-        )
-        refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
-        limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
-        uuid, config, global_properties = self._initialize_global(
-            with_skip_values=with_skip_values, limited_area=limited_area, on_gpu=on_gpu
+        refinement_fields = self._read_grid_refinement_fields(backend=backend)
+        limited_area = refinement.is_limited_area_grid(
+            refinement_fields[dims.CellDim].ndarray, array_ns=xp
         )
 
-        neighbor_tables = {
-            dims.C2E2C: self._get_index_field(gridfile.ConnectivityName.C2E2C),
-            dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
-            dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C),
-            dims.V2E: self._get_index_field(gridfile.ConnectivityName.V2E),
-            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
-            dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
-            dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
-            dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
-        }
-        neighbor_tables.update(_derived_connectivities(neighbor_tables))
-
-        start, end, _ = self._read_start_end_indices()
-        start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
-        end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
-
-        return icon.icon_grid(
-            id_=uuid,
-            config=config,
-            neighbor_tables=neighbor_tables,
-            start_indices=start_indices,
-            end_indices=end_indices,
-            global_properties=global_properties,
-            refinement_control=refinement_fields,
-        )
-
-    def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
-        field = self._reader.int_variable(field, transpose=transpose)
-        if apply_offset:
-            field = field + self._transformation(field)
-        return field
-
-    def _initialize_global(
-        self, with_skip_values: bool, limited_area: bool, on_gpu: bool
-    ) -> tuple[uuid.UUID, base.GridConfig, icon.GlobalGridParams]:
-        """
-        Read basic information from the grid file:
-        Mostly reads global grid file parameters and dimensions.
-
-        Args:
-            with_skip_values: bool whether or not to remove skip values in neighbor tables
-            limited_area: bool whether or not the produced grid is a limited area grid.
-            # TODO (@halungge) this is not directly encoded in the grid, which is why we passed it in. It could be determined from the refinement fields though.
-
-            on_gpu: bool, whether or not we run on GPU. # TODO (@halungge) can this be removed and defined differently.
-
-        Returns:
-            IconGrid: basic grid, setup only with id and config information.
-
-        """
         num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
         num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
         num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
-        uuid = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
+        uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
@@ -409,7 +351,39 @@ class GridManager:
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )
-        return uuid, config, global_params
+
+        neighbor_tables = {
+            dims.C2E2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2E2C)),
+            dims.C2E: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2E)),
+            dims.E2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.E2C)),
+            dims.V2E: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E)),
+            dims.E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.E2V)),
+            dims.V2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2C)),
+            dims.C2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2V)),
+            dims.V2E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E2V)),
+        }
+        neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
+
+        start, end, _ = self._read_start_end_indices()
+        start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
+        end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
+
+        return icon.icon_grid(
+            id_=uuid_,
+            allocator=backend,
+            config=config,
+            neighbor_tables=neighbor_tables,
+            start_indices=start_indices,
+            end_indices=end_indices,
+            global_properties=global_params,
+            refinement_control=refinement_fields,
+        )
+
+    def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
+        field = self._reader.int_variable(field, transpose=transpose)
+        if apply_offset:
+            field = field + self._transformation(field)
+        return field
 
 
 def _get_derived_connectivities(

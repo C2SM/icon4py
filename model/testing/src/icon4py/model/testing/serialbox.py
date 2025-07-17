@@ -458,7 +458,9 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, on_gpu: bool, keep_skip_values: bool = True) -> icon.IconGrid:
+    def construct_icon_grid(
+        self, backend: gtx_backend.Backend, keep_skip_values: bool = True
+    ) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -474,14 +476,13 @@ class IconGridSavepoint(IconSavepoint):
             ),
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
-            on_gpu=on_gpu,
+            on_gpu=data_alloc.is_cupy_device(backend),
             keep_skip_values=keep_skip_values,
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
-        xp = data_alloc.array_ns(on_gpu)
 
         start_indices = {
             dims.VertexDim: vertex_starts,
@@ -495,22 +496,23 @@ class IconGridSavepoint(IconSavepoint):
         }
 
         neighbor_tables = {
-            dims.C2E: xp.asarray(self.c2e()),
-            dims.E2C: xp.asarray(self.e2c()),
-            dims.C2E2C: xp.asarray(c2e2c),
-            dims.C2E2CO: xp.asarray(c2e2c0),
-            dims.C2E2C2E: xp.asarray(self.c2e2c2e()),
-            dims.E2C2E: xp.asarray(e2c2e),
-            dims.E2C2EO: xp.asarray(e2c2e0),
-            dims.E2V: xp.asarray(self.e2v()),
-            dims.V2E: xp.asarray(self.v2e()),
-            dims.V2C: xp.asarray(self.v2c()),
-            dims.E2C2V: xp.asarray(self.e2c2v()),
-            dims.C2V: xp.asarray(self.c2v()),
+            dims.C2E: self.c2e(),
+            dims.E2C: self.e2c(),
+            dims.C2E2C: c2e2c,
+            dims.C2E2CO: c2e2c0,
+            dims.C2E2C2E: self.c2e2c2e(),
+            dims.E2C2E: e2c2e,
+            dims.E2C2EO: e2c2e0,
+            dims.E2V: self.e2v(),
+            dims.V2E: self.v2e(),
+            dims.V2C: self.v2c(),
+            dims.E2C2V: self.e2c2v(),
+            dims.C2V: self.c2v(),
         }
 
         return icon.icon_grid(
             id_=self._grid_id,
+            allocator=backend,
             config=config,
             neighbor_tables=neighbor_tables,
             global_properties=self.global_grid_params,

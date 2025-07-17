@@ -15,7 +15,7 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
-from gt4py.next import backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
@@ -156,7 +156,13 @@ def construct_icon_grid(
     log.debug("Offsetting Fortran connectivitity arrays by 1")
     offset = 1
 
-    xp = np if not on_gpu else cp
+    # TODO(havogt): pass backend to grid_wrapper
+    if on_gpu:
+        xp = cp
+        allocator = gtx_allocators.StandardGPUFieldBufferAllocator
+    else:
+        xp = np
+        allocator = gtx_allocators.StandardCPUFieldBufferAllocator
 
     cells_start_index = adjust_fortran_indices(cell_starts, offset)
     vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
@@ -220,7 +226,8 @@ def construct_icon_grid(
     }
 
     return icon.icon_grid(
-        id=grid_id,
+        id_=grid_id,
+        allocator=allocator,
         config=config,
         neighbor_tables=neighbor_tables,
         start_indices=start_indices,

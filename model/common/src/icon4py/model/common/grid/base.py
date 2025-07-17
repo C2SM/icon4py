@@ -110,28 +110,28 @@ class BaseGrid:
         [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
         gtx_common.NeighborTable,
     ] = _default_1d_sparse_connectivity_constructor
+    _allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None = None
 
     def __post_init__(self):
         self._validate()
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
         # 1d sparse connectivities
-        allocator = None  # TODO
         self.connectivities[dims.C2CE.value] = self._1d_sparse_connectivity_constructor(
-            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=allocator
+            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=self._allocator
         )
         self.connectivities[dims.E2ECV.value] = self._1d_sparse_connectivity_constructor(
-            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=allocator
+            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=self._allocator
         )
         self.connectivities[dims.E2EC.value] = self._1d_sparse_connectivity_constructor(
-            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=allocator
+            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=self._allocator
         )
         self.connectivities[dims.C2CEC.value] = self._1d_sparse_connectivity_constructor(
-            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=allocator
+            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=self._allocator
         )
         if dims.C2E2C2E2C.value in self.connectivities:  # TODO is this optional?
             self.connectivities[dims.C2CECEC.value] = self._1d_sparse_connectivity_constructor(
-                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=allocator
+                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=self._allocator
             )
 
     def _validate(self):
