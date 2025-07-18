@@ -88,7 +88,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         "pressure_buoyancy_acceleration_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
-    MARKERS = (pytest.mark.infinite_concat_where,)
+    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(

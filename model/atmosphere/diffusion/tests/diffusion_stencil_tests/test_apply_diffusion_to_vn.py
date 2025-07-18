@@ -28,6 +28,7 @@ from .test_calculate_nabla4 import calculate_nabla4_numpy
 class TestApplyDiffusionToVn(StencilTest):
     PROGRAM = apply_diffusion_to_vn
     OUTPUTS = ("vn",)
+    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
