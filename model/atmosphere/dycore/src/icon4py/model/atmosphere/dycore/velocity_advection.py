@@ -234,7 +234,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        max_vertical_cfl = self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray)[()]
+        max_vertical_cfl = float(self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray))
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
@@ -325,7 +325,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        max_vertical_cfl = self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray)[()]
+        max_vertical_cfl = float(self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray))
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
