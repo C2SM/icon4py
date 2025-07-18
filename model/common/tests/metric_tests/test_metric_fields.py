@@ -185,7 +185,7 @@ def test_compute_exner_w_explicit_weight_parameter(icon_grid, metrics_savepoint,
 
 
 @pytest.mark.level("unit")
-@pytest.mark.infinite_concat_where
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
