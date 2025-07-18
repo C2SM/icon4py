@@ -207,7 +207,7 @@ def _solve_tridiagonal_matrix_for_w_forward_backward_scan(
 
 
 @gtx.field_operator
-def w_boundary_condition(
+def solve_w(
     last_inner_level: gtx.int32,
     on_first_level: fa.CellField[ta.wpfloat],
     between_first_and_last_level: fa.CellKField[ta.wpfloat],
@@ -334,7 +334,7 @@ def _vertically_implicit_solver_at_predictor_step(
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
-    next_w = w_boundary_condition(
+    next_w = solve_w(
         last_inner_level=n_lev,
         on_first_level=broadcast(wpfloat("0.0"), (dims.CellDim,)),
         between_first_and_last_level=_solve_tridiagonal_matrix_for_w_forward_backward_scan(
@@ -652,7 +652,7 @@ def _vertically_implicit_solver_at_corrector_step(
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
-    next_w = w_boundary_condition(
+    next_w = solve_w(
         last_inner_level=n_lev,
         on_first_level=broadcast(wpfloat("0.0"), (dims.CellDim,)),
         between_first_and_last_level=_solve_tridiagonal_matrix_for_w_forward_backward_scan(
