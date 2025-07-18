@@ -186,7 +186,6 @@ def construct_solve_nh_config(name: str, ndyn_substeps: int = 5):
 def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
-        ndyn_substeps_var=ndyn_substeps,
         divdamp_order=24,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
@@ -200,5 +199,4 @@ def _exclaim_ape_nonhydrostatic_config(ndyn_substeps):
     return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
         divdamp_order=24,
-        ndyn_substeps_var=ndyn_substeps,
     )

@@ -207,7 +207,6 @@ class NonHydrostaticConfig:
         itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
-        ndyn_substeps_var: float = 5.0,
         rayleigh_type: model_options.RayleighType = model_options.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
@@ -237,9 +236,6 @@ class NonHydrostaticConfig:
         #: Use truly horizontal pressure-gradient computation to ensure numerical
         #: stability without heavy orography smoothing
         self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
-
-        #: number of dynamics substeps per fast-physics timestep
-        self.ndyn_substeps_var: float = ndyn_substeps_var
 
         #: type of Rayleigh damping
         self.rayleigh_type: constants.RayleighType = rayleigh_type
@@ -518,7 +514,6 @@ class SolveNonhydro:
             self._backend
         ).compile(
             enable_jit=False,
-            ndyn_substeps_var=[float(self._config.ndyn_substeps_var)],
             iau_wgt_dyn=[self._config.iau_wgt_dyn],
             is_iau_active=[self._config.is_iau_active],
             rayleigh_type=[self._config.rayleigh_type],
@@ -1318,10 +1313,8 @@ class SolveNonhydro:
             f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
         )
 
-        # TODO (magdalena) is it correct to to use a config parameter here? the actual number of substeps can vary dynmically...
-        #                  should this config parameter exist at all in SolveNonHydro?
         # Inverse value of ndyn_substeps for tracer advection precomputations
-        r_nsubsteps = 1.0 / self._config.ndyn_substeps_var
+        r_nsubsteps = 1.0 / diagnostic_state_nh.ndyn_substeps_var
 
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
@@ -1520,7 +1513,7 @@ class SolveNonhydro:
             advection_implicit_weight_parameter=self._params.advection_implicit_weight_parameter,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
-            ndyn_substeps_var=float(self._config.ndyn_substeps_var),
+            ndyn_substeps_var=float(diagnostic_state_nh.ndyn_substeps_var),
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
             is_iau_active=self._config.is_iau_active,

@@ -86,9 +86,7 @@ def read_config(
         )
 
     def _mch_ch_r04b09_nonhydro_config():
-        return solve_nh.NonHydrostaticConfig(
-            ndyn_substeps_var=n_substeps_reduced,
-        )
+        return solve_nh.NonHydrostaticConfig()
 
     def _jabw_vertical_config():
         return v_grid.VerticalGridConfig(
@@ -117,7 +115,6 @@ def read_config(
         return solve_nh.NonHydrostaticConfig(
             # original igradp_method is 2
             # original divdamp_order is 4
-            ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             fourth_order_divdamp_factor=0.0025,
         )
@@ -162,12 +159,13 @@ def read_config(
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
-        return diffusion.DiffusionConfig()
+        return diffusion.DiffusionConfig(
+            n_substeps=n_substeps,
+        )
 
-    def _gauss3d_nonhydro_config(n_substeps: int):
+    def _gauss3d_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             igradp_method=3,
-            ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             fourth_order_divdamp_factor=0.0025,
         )
@@ -182,7 +180,7 @@ def read_config(
         )
         vertical_config = _gauss3d_vertical_config()
         diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)
-        nonhydro_config = _gauss3d_nonhydro_config(icon_run_config.n_substeps)
+        nonhydro_config = _gauss3d_nonhydro_config()
         return (
             icon_run_config,
             vertical_config,

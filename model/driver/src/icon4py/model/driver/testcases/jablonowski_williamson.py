@@ -40,6 +40,7 @@ def model_initialization_jabw(
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: Optional[gtx_backend.Backend],
+    ndyn_substeps: int,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
@@ -353,6 +354,7 @@ def model_initialization_jabw(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner,
         grid=grid,
         backend=backend,
+        ndyn_substeps=ndyn_substeps,
     )
     prep_adv = testcases_utils.initialize_prep_advection(grid=grid, backend=backend)
     log.info("Initialization completed.")

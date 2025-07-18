@@ -173,7 +173,7 @@ def test_nonhydro_predictor_step(
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -187,7 +187,7 @@ def test_nonhydro_predictor_step(
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, ndyn_substeps, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
@@ -539,7 +539,7 @@ def test_nonhydro_corrector_step(
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
     init_savepoint = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
@@ -561,7 +561,9 @@ def test_nonhydro_corrector_step(
         ),
     )
 
-    diagnostic_state_nh = utils.construct_diagnostics(init_savepoint, icon_grid, backend)
+    diagnostic_state_nh = utils.construct_diagnostics(
+        init_savepoint, icon_grid, ndyn_substeps, backend
+    )
 
     z_fields = solve_nh.IntermediateFields(
         horizontal_pressure_gradient=init_savepoint.z_gradh_exner(),
@@ -750,7 +752,7 @@ def test_run_solve_nonhydro_single_step(
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
@@ -774,7 +776,7 @@ def test_run_solve_nonhydro_single_step(
         ),
     )
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, ndyn_substeps, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
@@ -873,7 +875,7 @@ def test_run_solve_nonhydro_multi_step(
     backend,
     at_initial_timestep,
 ):
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -899,7 +901,7 @@ def test_run_solve_nonhydro_multi_step(
     linit = sp.get_metadata("linit").get("linit")
 
     diagnostic_state_nh = utils.construct_diagnostics(
-        sp, icon_grid, backend, swap_vertical_wind_advective_tendency=not linit
+        sp, icon_grid, ndyn_substeps, backend, swap_vertical_wind_advective_tendency=not linit
     )
     prognostic_states = utils.create_prognostic_states(sp)
 
@@ -1110,7 +1112,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     )
 
     limited_area = icon_grid.limited_area
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
     igradp_method = config.igradp_method
 
     nflatlev = vertical_params.nflatlev
@@ -1476,7 +1478,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     normal_wind_iau_increment = sp_stencil_init.vn_incr()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
     primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
         dims.ECDim, field=grid_savepoint.primal_normal_cell_x()
     )
@@ -1675,7 +1677,7 @@ def test_apply_divergence_damping_and_update_vn(
     current_vn = sp_stencil_init.vn()
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
 
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
@@ -1783,7 +1785,7 @@ def test_vertically_implicit_solver_at_predictor_step(
 ):
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
     xp = data_alloc.import_array_ns(backend)
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -2030,7 +2032,7 @@ def test_vertically_implicit_solver_at_corrector_step(
 
     at_first_substep = substep_init == 0
     at_last_substep = substep_exit == 0
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
@@ -2065,7 +2067,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
     advection_explicit_weight_parameter = nonhydro_params.advection_explicit_weight_parameter
     advection_implicit_weight_parameter = nonhydro_params.advection_implicit_weight_parameter
-    r_nsubsteps = 1.0 / config.ndyn_substeps_var
+    r_nsubsteps = 1.0 / ndyn_substeps
     kstart_moist = vertical_params.kstart_moist
 
     iau_wgt_dyn = config.iau_wgt_dyn
@@ -2140,7 +2142,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         lprep_adv=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
         r_nsubsteps=r_nsubsteps,
-        ndyn_substeps_var=float(config.ndyn_substeps_var),
+        ndyn_substeps_var=float(ndyn_substeps),
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
