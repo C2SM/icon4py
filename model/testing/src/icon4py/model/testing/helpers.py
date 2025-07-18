@@ -22,11 +22,8 @@ from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import fixtures
 
-
-@pytest.fixture(scope="session")
-def connectivities_as_numpy(grid) -> dict[gtx.Dimension, np.ndarray]:
-    return {dim: data_alloc.as_numpy(table) for dim, table in grid.neighbor_tables.items()}
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
@@ -197,6 +194,7 @@ def _test_and_benchmark(
     )
 
 
+
 class StencilTest:
     """
     Base class to be used for testing stencils.
@@ -220,6 +218,11 @@ class StencilTest:
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: typing.Optional[tuple] = None
 
+    # Helper fixtures
+    grid = staticmethod(fixtures.grid)
+    backend = staticmethod(fixtures.backend)
+    connectivities_as_numpy = staticmethod(fixtures.connectivities_as_numpy)
+
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that
         # reflect the name of the test we do this dynamically here instead of using regular
@@ -227,7 +230,7 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_and_benchmark)
 
-
+    
 def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
     return np.reshape(arr, shape)
 

@@ -14,7 +14,15 @@ from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.testing.helpers import apply_markers
 
 
-TEST_LEVELS = ("any", "unit", "integration")
+__all__ = [
+    "pytest_configure",
+    "pytest_addoption",
+    "pytest_collection_modifyitems",
+    "pytest_runtest_setup",
+    "pytest_benchmark_update_json",
+]
+
+_TEST_LEVELS = ("any", "unit", "integration")
 
 
 def pytest_configure(config):
@@ -93,7 +101,7 @@ def pytest_addoption(parser):
         parser.addoption(
             "--level",
             action="store",
-            choices=TEST_LEVELS,
+            choices=_TEST_LEVELS,
             help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
             default="any",
         )
@@ -108,8 +116,8 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if (marker := item.get_closest_marker("level")) is not None:
             assert all(
-                level in TEST_LEVELS for level in marker.args
-            ), f"Invalid test level argument on function '{item.name}' - possible values are {TEST_LEVELS}"
+                level in _TEST_LEVELS for level in marker.args
+            ), f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             if test_level not in marker.args:
                 item.add_marker(
                     pytest.mark.skip(

@@ -6,3 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
+from . import datatest, general
+
+from .datatest import *
+from .general import *
+
