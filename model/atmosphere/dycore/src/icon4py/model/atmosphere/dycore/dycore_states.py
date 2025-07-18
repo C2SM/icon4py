@@ -79,7 +79,7 @@ class RhoThetaAdvectionType(FrozenNamespace[int]):
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
-    # TODO (Chia Rui): ndyn_substeps_var: int
+    ndyn_substeps_var: int
     """
     This variable is defined in mo_nonhydrostatic_config.f90 in ICON as a derived "namelist parameter".
     """

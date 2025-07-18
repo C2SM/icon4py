@@ -20,8 +20,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_mo
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
     compute_advection_in_vertical_momentum_equation,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_and_advection_in_vertical_momentum_equation import (
     compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (

@@ -120,7 +120,6 @@ def solve_nh_init(
     itime_scheme: gtx.int32,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
-    ndyn_substeps: gtx.float64,
     rayleigh_type: gtx.int32,
     rayleigh_coeff: gtx.float64,
     divdamp_order: gtx.int32,
@@ -164,7 +163,6 @@ def solve_nh_init(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
-        ndyn_substeps_var=ndyn_substeps,
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
@@ -330,7 +328,7 @@ def solve_nh_run(
     lprep_adv: bool,
     at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
-    ndyn_substeps: gtx.float64,
+    ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
 ):
     global granule
@@ -358,6 +356,7 @@ def solve_nh_run(
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        ndyn_substeps_var=ndyn_substeps_var,
         max_vertical_cfl=max_vcfl,
         theta_v_at_cells_on_half_levels=theta_v_ic,
         perturbed_exner_at_cells_on_model_levels=exner_pr,
@@ -412,5 +411,5 @@ def solve_nh_run(
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
-        at_last_substep=idyn_timestep == (ndyn_substeps - 1),
+        at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
     )

@@ -260,7 +260,7 @@ class TimeLoop:
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
-        for dyn_substep in range(self._n_substeps_var):
+        for dyn_substep in range(solve_nonhydro_diagnostic_state.ndyn_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
@@ -453,6 +453,7 @@ def initialize(
         edge_geometry,
         file_path,
         backend=backend,
+        ndyn_substeps=config.run_config.n_substeps,
         rank=props.rank,
         experiment_type=experiment_type,
     )

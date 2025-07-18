@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_and_advection_in_vertical_momentum_equation import (
+from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
     compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta

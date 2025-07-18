@@ -104,14 +104,17 @@ def decomposition_info(data_provider, experiment):
 
 
 @pytest.fixture
-def ndyn_substeps():
+def ndyn_substeps(experiment):
     """
     Return number of dynamical substeps.
 
-    Serialized data uses a reduced number (2 instead of the default 5) in order to reduce the amount
-    of data generated.
+    Serialized data of global and regional experiments uses a reduced number
+    (2 instead of the default 5) in order to reduce the amount of data generated.
     """
-    return 2
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        return 5
+    else:
+        return 2
 
 
 @pytest.fixture

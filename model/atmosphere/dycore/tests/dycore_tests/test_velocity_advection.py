@@ -19,8 +19,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_mo
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
     compute_advection_in_vertical_momentum_equation,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_and_advection_in_vertical_momentum_equation import (
     compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
@@ -167,6 +165,7 @@ def test_velocity_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_velocity_exit,
+    ndyn_substeps,
     backend,
     caplog,
 ):
@@ -176,6 +175,7 @@ def test_velocity_predictor_step(
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
+        ndyn_substeps_var=ndyn_substeps,
         max_vertical_cfl=0.0,
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
@@ -311,6 +311,7 @@ def test_velocity_corrector_step(
     savepoint_velocity_exit,
     interpolation_savepoint,
     metrics_savepoint,
+    ndyn_substeps,
     backend,
 ):
     init_savepoint = savepoint_velocity_init
@@ -320,6 +321,7 @@ def test_velocity_corrector_step(
     assert not vn_only
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
+        ndyn_substeps_var=ndyn_substeps,
         max_vertical_cfl=0.0,
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),

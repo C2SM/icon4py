@@ -42,12 +42,10 @@ def solve_nh_init(
     grid_savepoint,
     interpolation_savepoint,
     metrics_savepoint,
-    ndyn_substeps,
 ):
     itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    ndyn_substeps = ndyn_substeps
     rayleigh_type = model_options.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
@@ -223,7 +221,6 @@ def solve_nh_init(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
-        ndyn_substeps=ndyn_substeps,
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
@@ -550,11 +547,12 @@ def test_dycore_wrapper_granule_inputs(
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    expected_config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    expected_config = utils.construct_solve_nh_config(experiment)
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        ndyn_substeps_var=ndyn_substeps,
         # TODO (Chia Rui): read from serialized data
         max_vertical_cfl=0.0,
         tangential_wind=sp.vt(),
@@ -679,7 +677,6 @@ def test_dycore_wrapper_granule_inputs(
             itime_scheme=itime_scheme,
             iadv_rhotheta=iadv_rhotheta,
             igradp_method=igradp_method,
-            ndyn_substeps=ndyn_substeps,
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             divdamp_order=divdamp_order,
@@ -809,7 +806,7 @@ def test_dycore_wrapper_granule_inputs(
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
-            ndyn_substeps=ndyn_substeps,
+            ndyn_substeps_var=ndyn_substeps,
             idyn_timestep=substep,
         )
 
@@ -999,7 +996,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         lprep_adv=lprep_adv,
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
-        ndyn_substeps=ndyn_substeps,
+        ndyn_substeps_var=ndyn_substeps,
         idyn_timestep=substep,
     )
 
@@ -1183,7 +1180,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
-            ndyn_substeps=ndyn_substeps,
+            ndyn_substeps_var=ndyn_substeps,
             idyn_timestep=i_substep,
         )
 
