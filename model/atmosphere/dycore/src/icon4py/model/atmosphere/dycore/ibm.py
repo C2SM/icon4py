@@ -1,19 +1,18 @@
 import logging
 
 import gt4py.next as gtx
+import xarray as xr
 from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.fbuiltins import where
 
-from icon4py.model.testing import serialbox as sb
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim, Koff
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 from icon4py.model.common.grid import (
     icon as icon_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common import dimension as dims
+from icon4py.model.testing import serialbox as sb
 
-import xarray as xr
 
 """
 Immersed boundary method module
@@ -23,7 +22,7 @@ Immersed boundary method module
 log = logging.getLogger(__name__)
 
 DO_IBM = True
-DEBUG_LEVEL = 2
+DEBUG_LEVEL = 3
 
 
 @gtx.field_operator
@@ -37,6 +36,8 @@ def _set_bcs_cells(
     """
     field = where(mask, dir_value, field)
     return field
+
+
 @gtx.field_operator
 def _set_bcs_edges(
     mask: fa.EdgeKField[bool],
@@ -48,6 +49,8 @@ def _set_bcs_edges(
     """
     field = where(mask, dir_value, field)
     return field
+
+
 @gtx.field_operator
 def _set_bcs_vertices(
     mask: fa.VertexKField[bool],
@@ -60,6 +63,7 @@ def _set_bcs_vertices(
     field = where(mask, dir_value, field)
     return field
 
+
 @gtx.field_operator
 def _set_bcs_cell_field(
     mask: fa.CellKField[bool],
@@ -71,6 +75,7 @@ def _set_bcs_cell_field(
     """
     field = where(mask, dir_field, field)
     return field
+
 
 @gtx.field_operator
 def _set_bcs_dvndz(
@@ -86,8 +91,10 @@ def _set_bcs_dvndz(
     # Neumann
     vn_on_half_levels = where(mask, vn(Koff[-1]), vn_on_half_levels)
     # Dirichlet
-    #vn_on_half_levels = where(mask, 0.0, vn_on_half_levels)
+    # vn_on_half_levels = where(mask, 0.0, vn_on_half_levels)
     return vn_on_half_levels
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def set_bcs_dvndz(
     mask: fa.EdgeKField[bool],
@@ -143,10 +150,10 @@ class ImmersedBoundaryMethod:
             backend=backend,
         )
 
-        self._dirichlet_value_vn      = 0.0
-        self._dirichlet_value_w       = 0.0
-        self._dirichlet_value_rho     = -999.0
-        self._dirichlet_value_exner   = -999.0
+        self._dirichlet_value_vn = 0.0
+        self._dirichlet_value_w = 0.0
+        self._dirichlet_value_rho = -999.0
+        self._dirichlet_value_exner = -999.0
         self._dirichlet_value_theta_v = -999.0
 
         log.info("IBM initialized")
@@ -163,8 +170,8 @@ class ImmersedBoundaryMethod:
         """
         xp = data_alloc.import_array_ns(backend)
 
-        half_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
-        half_edge_mask_np = xp.zeros((grid.num_edges, grid.num_levels+1), dtype=bool)
+        half_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=bool)
+        half_edge_mask_np = xp.zeros((grid.num_edges, grid.num_levels + 1), dtype=bool)
         full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
         full_edge_mask_np = xp.zeros((grid.num_edges, grid.num_levels), dtype=bool)
         full_vertex_mask_np = xp.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
@@ -172,26 +179,30 @@ class ImmersedBoundaryMethod:
 
         if self.DO_IBM:
             # fill masks, otherwise False everywhere
-            #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-            #half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
-            half_cell_mask_np = self._mask_blocks(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            # half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
+            # half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
+            half_cell_mask_np = self._mask_blocks(
+                grid_file_path, savepoint_path, backend, half_cell_mask_np
+            )
 
             full_cell_mask_np = half_cell_mask_np[:, :-1]
 
             log.info(f"IBM: nr. of masked cells: {xp.sum(full_cell_mask_np)}")
 
             c2e = grid.connectivities[dims.C2EDim]
-            for k in range(grid.num_levels+1):
-                half_edge_mask_np[xp.unique(c2e[xp.where(half_cell_mask_np[:,k])[0]]), k] = True
+            for k in range(grid.num_levels + 1):
+                half_edge_mask_np[xp.unique(c2e[xp.where(half_cell_mask_np[:, k])[0]]), k] = True
             full_edge_mask_np = half_edge_mask_np[:, :-1]
 
             c2v = grid.connectivities[dims.C2VDim]
             for k in range(grid.num_levels):
-                full_vertex_mask_np[xp.unique(c2v[xp.where(full_cell_mask_np[:,k])[0]]), k] = True
+                full_vertex_mask_np[xp.unique(c2v[xp.where(full_cell_mask_np[:, k])[0]]), k] = True
 
             c2e2c = grid.connectivities[dims.C2E2CDim]
             for k in range(grid.num_levels):
-                neigh_full_cell_mask_np[xp.unique(c2e2c[xp.where(full_cell_mask_np[:,k])[0]]), k] = True
+                neigh_full_cell_mask_np[
+                    xp.unique(c2e2c[xp.where(full_cell_mask_np[:, k])[0]]), k
+                ] = True
 
         self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
         self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
@@ -200,10 +211,7 @@ class ImmersedBoundaryMethod:
         self.full_vertex_mask = gtx.as_field((VertexDim, KDim), full_vertex_mask_np)
         self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np)
 
-    def _mask_test_cells(
-        self,
-        half_cell_mask_np: data_alloc.NDArray
-    ) -> data_alloc.NDArray:
+    def _mask_test_cells(self, half_cell_mask_np: data_alloc.NDArray) -> data_alloc.NDArray:
         """
         Create a test mask.
         """
@@ -211,7 +219,7 @@ class ImmersedBoundaryMethod:
         # on Torus_Triangles_1000m_x_1000m_res10m
         #
         # individual cells
-        #half_cell_mask_np[[10,11], -3:] = True
+        # half_cell_mask_np[[10,11], -3:] = True
         #
         # "cube" block (x-aligned faces zig-zaggy)
         # ids = [
@@ -258,10 +266,10 @@ class ImmersedBoundaryMethod:
         """
         xp = data_alloc.import_array_ns(backend)
 
-        hill_x = 500.
-        hill_y = 500.
-        hill_height = 100.
-        hill_width  = 100.
+        hill_x = 500.0
+        hill_y = 500.0
+        hill_height = 100.0
+        hill_width = 100.0
 
         grid_file = xr.open_dataset(grid_file_path)
         data_provider = sb.IconSerialDataProvider(
@@ -272,12 +280,18 @@ class ImmersedBoundaryMethod:
         metrics_savepoint = data_provider.from_metrics_savepoint()
         half_level_heights = metrics_savepoint.z_ifc().ndarray
 
-        compute_distance_from_hill = lambda x, y: ((x - hill_x)**2 + (y - hill_y)**2)**0.5
-        compute_hill_elevation = lambda x, y: hill_height * xp.exp(-(compute_distance_from_hill(x, y) / hill_width)**2)
+        compute_distance_from_hill = lambda x, y: ((x - hill_x) ** 2 + (y - hill_y) ** 2) ** 0.5
+        compute_hill_elevation = lambda x, y: hill_height * xp.exp(
+            -((compute_distance_from_hill(x, y) / hill_width) ** 2)
+        )
         cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
         cell_y = xp.asarray(grid_file.cell_circumcenter_cartesian_y.values)
         for k in range(half_cell_mask_np.shape[1]):
-            half_cell_mask_np[:, k] = xp.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, half_cell_mask_np[:, k])
+            half_cell_mask_np[:, k] = xp.where(
+                compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:, k],
+                True,
+                half_cell_mask_np[:, k],
+            )
         return half_cell_mask_np
 
     def _mask_blocks(
@@ -330,7 +344,7 @@ class ImmersedBoundaryMethod:
         # on Torus_Triangles_250m_x_250m_res2.5m / res1.25m
         blocks = [
             #
-            [75, 175, 78, 178, 100], # 1x1 100x100x100
+            [75, 175, 78, 178, 100],  # 1x1 100x100x100
         ]
 
         grid_file = xr.open_dataset(grid_file_path)
@@ -347,9 +361,16 @@ class ImmersedBoundaryMethod:
         for k in range(half_cell_mask_np.shape[1]):
             for block in blocks:
                 xmin, xmax, ymin, ymax, top = block
-                half_cell_mask_np[:, k] = xp.where( (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (half_level_heights[:,k] <= top), True, half_cell_mask_np[:, k])
+                half_cell_mask_np[:, k] = xp.where(
+                    (cell_x >= xmin)
+                    & (cell_x <= xmax)
+                    & (cell_y >= ymin)
+                    & (cell_y <= ymax)
+                    & (half_level_heights[:, k] <= top),
+                    True,
+                    half_cell_mask_np[:, k],
+                )
         return half_cell_mask_np
-
 
     # --------------------------------------------------------------------------
     # dirichlet values part
@@ -445,7 +466,7 @@ class ImmersedBoundaryMethod:
         # exner, but those are not affected by this hack.
         _set_bcs_cells(
             mask=self.half_cell_mask,
-            dir_value=0.,
+            dir_value=0.0,
             field=theta_v_ic,
             out=theta_v_ic,
             offset_provider={},
@@ -484,14 +505,14 @@ class ImmersedBoundaryMethod:
         # Zero the gradients in masked cells and their neighbors.
         _set_bcs_cells(
             mask=self.neigh_full_cell_mask,
-            dir_value=0.,
+            dir_value=0.0,
             field=grad_x,
             out=grad_x,
             offset_provider={},
         )
         _set_bcs_cells(
             mask=self.neigh_full_cell_mask,
-            dir_value=0.,
+            dir_value=0.0,
             field=grad_y,
             out=grad_y,
             offset_provider={},
@@ -511,9 +532,6 @@ class ImmersedBoundaryMethod:
             out=horizontal_advection_of_w_at_edges_on_half_levels,
             offset_provider={},
         )
-
-
-
 
     # --------------------------------------------------------------------------
     # diffusion part
