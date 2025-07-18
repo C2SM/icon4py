@@ -284,7 +284,6 @@ def _vertically_implicit_solver_at_predictor_step(
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
         rho_at_cells_on_half_levels
         * (
@@ -606,7 +605,6 @@ def _vertically_implicit_solver_at_corrector_step(
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
         rho_at_cells_on_half_levels
         * (
