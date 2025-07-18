@@ -564,7 +564,7 @@ class ImmersedBoundaryMethod:
     ):
         if not self.DO_IBM:
             return
-        _set_bcs_cells(
+        _set_bcs_cell_field(
             mask=self.half_cell_mask,
             dir_field=w_old,
             field=w,
