@@ -565,7 +565,7 @@ def test_factory_exner_w_explicit_weight_parameter(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.infinite_concat_where
+@pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [

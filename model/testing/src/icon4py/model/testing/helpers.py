@@ -91,10 +91,10 @@ def apply_markers(
                 pytest.xfail("Embedded backend currently fails in remap function.")
             case "embedded_static_args" if is_embedded(backend):
                 pytest.xfail(" gt4py _compiled_programs returns error when backend is None.")
-            case "infinite_concat_where" if is_embedded(backend):
-                pytest.xfail("Embedded backend does not support infinite concat_where.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
+            case "uses_concat_where" if is_embedded(backend):
+                pytest.xfail("Embedded backend does not support concat_where.")
             case "skip_value_error":
                 if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
