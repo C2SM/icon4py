@@ -60,7 +60,6 @@ jobs:
             - name: run nox session - stencil tests
               shell: bash
               env:
-                  # TODO: we limit to 1 pytest worker because of job failure
-                  NUM_PROCESSES: 1
+                  NUM_PROCESSES: auto
               run: |
                 uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid
