@@ -39,11 +39,13 @@ def diff(reference: pathlib.Path, actual: pathlib.Path):
         reference_lines = f.readlines()
     with open(actual, "r") as f:
         actual_lines = f.readlines()
+        for line in actual_lines:
+            print(line)
     result = difflib.context_diff(reference_lines, actual_lines)
 
     clean = True
     for line in result:
-        print(line)
+        print("DEBUG:: ", line)
         clean = False
 
     return clean
