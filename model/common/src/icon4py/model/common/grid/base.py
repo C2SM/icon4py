@@ -126,7 +126,6 @@ class BaseGrid:
     ] = _default_1d_sparse_connectivity_constructor
 
     def __post_init__(self):
-        self._validate()
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
         # 1d sparse connectivities
@@ -146,11 +145,25 @@ class BaseGrid:
             self.connectivities[dims.C2CECEC.value] = self._1d_sparse_connectivity_constructor(
                 dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=self._allocator
             )
+        self._validate()
 
     def _validate(self):
-        # TODO check all expected connectivities are present
-
-        ...
+        expected_connectivities = {
+            dims.C2E,
+            dims.C2V,
+            dims.E2C,
+            dims.E2C2E,
+            dims.C2E2C,
+            dims.C2E2CO,
+            dims.E2C2EO,
+            dims.V2E,
+            dims.E2V,
+            dims.E2C2V,
+            dims.V2C,
+        }
+        if not all(offset.value in self.connectivities for offset in expected_connectivities):
+            missing = {c.value for c in expected_connectivities} - self.connectivities.keys()
+            raise MissingConnectivity(f"Missing connectivities in {self.id}: {', '.join(missing)}")
 
     @functools.cached_property
     def size(self) -> Dict[gtx.Dimension, int]:
@@ -165,15 +178,16 @@ class BaseGrid:
             dims.ECDim: _1d_size(self.get_connectivity(dims.E2C)),
         }
 
-        # extract sizes from connectivities # TODO consider extracting into function
+        # extract sizes from connectivities
         for offset, connectivity in self.connectivities.items():
             if gtx_common.is_neighbor_table(connectivity):
                 for dim, size in zip(connectivity.domain.dims, connectivity.shape, strict=True):
                     if dim in sizes:
-                        if sizes[dim] != size:
-                            raise ValueError(
-                                f"Inconsistent sizes for {dim}: expected {sizes[dim]}, got {size}."
-                            )
+                        ...
+                        # TODO(havogt) currently the blueline granules violates the following assumption on sizes
+                        # because connectivities have `nproma` size. Will be re-enabled in a follow-up commit.
+                        # if sizes[dim] != size:
+                        #     raise ValueError(f"Inconsistent sizes for {dim}: expected {sizes[dim]}, got {size}.")  # noqa: ERA001
                     else:
                         sizes[dim] = size
             elif isinstance(connectivity, gtx.Dimension):
