@@ -9,6 +9,7 @@
 
 import functools
 import logging
+from types import ModuleType
 from typing import Callable, TypeAlias, Union
 
 import gt4py.next as gtx
@@ -34,7 +35,6 @@ try:
         run_dace_gpu_cached,
     )
 except ImportError:
-    from types import ModuleType
     from typing import Optional
 
     dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
@@ -262,11 +262,9 @@ def construct_decomposition(
     definitions.ProcessProperties, definitions.DecompositionInfo, definitions.ExchangeRuntime
 ]:
     log.debug("Offsetting Fortran connectivitity arrays by 1")
-    offset = 1
-
-    c_glb_index = adjust_fortran_indices(c_glb_index, offset)
-    e_glb_index = adjust_fortran_indices(e_glb_index, offset)
-    v_glb_index = adjust_fortran_indices(v_glb_index, offset)
+    c_glb_index = adjust_fortran_indices(c_glb_index)
+    e_glb_index = adjust_fortran_indices(e_glb_index)
+    v_glb_index = adjust_fortran_indices(v_glb_index)
 
     c_owner_mask = c_owner_mask[:num_cells]
     e_owner_mask = e_owner_mask[:num_edges]
