@@ -12,7 +12,10 @@ import pathlib
 import pytest
 from click.testing import CliRunner
 
-from icon4py.tools.py2fgen import _cli
+from icon4py.tools.py2fgen import _cli, _utils
+
+
+logger = _utils.setup_logger("test_codegen_references")
 
 
 @pytest.fixture
@@ -40,12 +43,13 @@ def diff(reference: pathlib.Path, actual: pathlib.Path):
     with open(actual, "r") as f:
         actual_lines = f.readlines()
         for line in actual_lines:
-            print(line)
+            logger.debug(f"actual line: {line}")
     result = difflib.context_diff(reference_lines, actual_lines)
 
     clean = True
     for line in result:
-        print("DEBUG:: ", line)
+        # print("DEBUG:: ", line)
+        logger.debug(f"result line: {line}")
         clean = False
 
     return clean
@@ -53,7 +57,7 @@ def diff(reference: pathlib.Path, actual: pathlib.Path):
 
 def check_generated_files(bindings_name: str) -> None:
     for suffix in [".h", ".f90", ".py"]:
-        diff(
+        assert diff(
             reference_path(bindings_name) / f"{bindings_name}{suffix}",
             actual_path(bindings_name) / f"{bindings_name}{suffix}",
         )
