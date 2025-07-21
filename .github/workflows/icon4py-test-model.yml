@@ -60,7 +60,6 @@ jobs:
             - name: run nox session - stencil tests
               shell: bash
               env:
-                  GT4PY_BUILD_JOBS: 1
                   NUM_PROCESSES: auto
               run: |
                 uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid
