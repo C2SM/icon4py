@@ -24,7 +24,7 @@ test_model_stencils_aarch64:
 
 
 test_model_stencils_dycore_gtfn_cpu_aarch64:
-  # TODO: move back to github actions, temporaily here because of increased resource usage
+  # TODO: move back to github actions, temporarily here because of increased resource usage
   extends: [.test_template_aarch64]
   stage: test
   variables:
