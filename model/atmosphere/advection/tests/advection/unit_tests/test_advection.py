@@ -12,7 +12,8 @@ from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-from ..fixtures import *  # noqa: F403
+from tests.advection.fixtures import *  # noqa: F403
+
 from ..utils import (
     construct_config,
     construct_diagnostic_exit_state,

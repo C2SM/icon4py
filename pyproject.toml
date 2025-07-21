@@ -242,6 +242,18 @@ combine-as-imports = true
 known-first-party = ['icon4py']
 known-third-party = ['gt4py', 'packaging', 'setuptools']
 lines-after-imports = 2
+order-by-type = true
+section-order = [
+  'future',
+  'standard-library',
+  'third-party',
+  'first-party',
+  'tests',
+  'local-folder'
+]
+
+[tool.ruff.lint.isort.sections]
+'tests' = ['tests']
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
