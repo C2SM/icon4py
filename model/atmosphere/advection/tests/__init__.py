@@ -5,8 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+#
 
-from __future__ import annotations
-
-from .datatest import *  # noqa: F403
-from .general import *  # noqa: F403
+  # legacy namespace package for tests
+  __path__ = __import__("pkgutil").extend_path(__path__, __name__)
