@@ -9,6 +9,7 @@
 
 import functools
 import logging
+from types import ModuleType
 from typing import Callable, TypeAlias, Union
 
 import gt4py.next as gtx
@@ -34,7 +35,6 @@ try:
         run_dace_gpu_cached,
     )
 except ImportError:
-    from types import ModuleType
     from typing import Optional
 
     dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
