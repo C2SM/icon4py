@@ -12,7 +12,7 @@ import logging
 import math
 import uuid
 from types import ModuleType
-from typing import Callable, Dict, Sequence
+from typing import Callable, Dict, Mapping, Sequence
 
 import gt4py.next as gtx
 import numpy as np
@@ -117,33 +117,45 @@ class BaseGrid:
     config: GridConfig
     connectivities: gtx_common.OffsetProvider
     geometry_type: GeometryType
-    _start_indices: dict[gtx.Dimension, data_alloc.NDArray]
-    _end_indices: dict[gtx.Dimension, data_alloc.NDArray]
-    _allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None
-    _1d_sparse_connectivity_constructor: Callable[
-        [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
-        gtx_common.NeighborTable,
+    # only used internally for `start_index` and `end_index` public interface:
+    # TODO(havogt): consider refactoring to `Mapping[h_grid.Zone, gtx.int32]`
+    _start_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
+    _end_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
+    # for construction:
+    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocatorFactoryProtocol | None]
+    sparse_1d_connectivity_constructor: dataclasses.InitVar[
+        Callable[
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+            gtx_common.NeighborTable,
+        ]
     ] = _default_1d_sparse_connectivity_constructor
 
-    def __post_init__(self):
+    def __post_init__(
+        self,
+        allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None,
+        sparse_1d_connectivity_constructor: Callable[
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+            gtx_common.NeighborTable,
+        ],
+    ):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
         # 1d sparse connectivities
-        self.connectivities[dims.C2CE.value] = self._1d_sparse_connectivity_constructor(
-            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=self._allocator
+        self.connectivities[dims.C2CE.value] = sparse_1d_connectivity_constructor(
+            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=allocator
         )
-        self.connectivities[dims.E2ECV.value] = self._1d_sparse_connectivity_constructor(
-            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=self._allocator
+        self.connectivities[dims.E2ECV.value] = sparse_1d_connectivity_constructor(
+            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=allocator
         )
-        self.connectivities[dims.E2EC.value] = self._1d_sparse_connectivity_constructor(
-            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=self._allocator
+        self.connectivities[dims.E2EC.value] = sparse_1d_connectivity_constructor(
+            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=allocator
         )
-        self.connectivities[dims.C2CEC.value] = self._1d_sparse_connectivity_constructor(
-            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=self._allocator
+        self.connectivities[dims.C2CEC.value] = sparse_1d_connectivity_constructor(
+            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=allocator
         )
         if dims.C2E2C2E2C.value in self.connectivities:  # TODO is this optional?
-            self.connectivities[dims.C2CECEC.value] = self._1d_sparse_connectivity_constructor(
-                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=self._allocator
+            self.connectivities[dims.C2CECEC.value] = sparse_1d_connectivity_constructor(
+                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=allocator
             )
         self._validate()
 
@@ -245,7 +257,7 @@ class BaseGrid:
         if domain.local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
-        return gtx.int32(self._start_indices[domain.dim][domain])
+        return gtx.int32(self._start_indices[domain.dim][domain()])
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
@@ -257,7 +269,7 @@ class BaseGrid:
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
-        return gtx.int32(self._end_indices[domain.dim][domain])
+        return gtx.int32(self._end_indices[domain.dim][domain()])
 
 
 def construct_connectivity(

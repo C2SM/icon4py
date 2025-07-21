@@ -182,7 +182,7 @@ def icon_grid(
     }
     return IconGrid(
         id=id_,
-        _allocator=allocator,
+        allocator=allocator,
         config=config,
         connectivities=connectivities,
         geometry_type=global_properties.geometry_type,

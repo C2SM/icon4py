@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import dataclasses
 import functools
 import uuid
 
@@ -408,22 +407,6 @@ class SimpleGridData:
         )
 
 
-@dataclasses.dataclass(frozen=True)
-class _StartIndices:
-    size: gtx.int32
-
-    def __getitem__(self, domain: h_grid.Domain) -> gtx.int32:
-        return gtx.int32(self.size if domain.zone.is_halo() else 0)
-
-
-@dataclasses.dataclass(frozen=True)
-class _EndIndices:
-    size: gtx.int32
-
-    def __getitem__(self, _: h_grid.Domain) -> gtx.int32:
-        return gtx.int32(self.size)
-
-
 def simple_grid(backend: gtx_backend.Backend | None = None) -> base.BaseGrid:
     """
     Factory function to create a SimpleGrid instance.
@@ -470,20 +453,42 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.BaseGrid:
         for offset, table in neighbor_tables.items()
     }
 
+    start_indices = {
+        dims.CellDim: {
+            h_grid._map_to_index(dims.CellDim, zone): (0 if not zone.is_halo() else _CELLS)
+            for zone in h_grid.Zone
+            if zone in h_grid.CELL_ZONES
+        },
+        dims.EdgeDim: {
+            h_grid._map_to_index(dims.EdgeDim, zone): (0 if not zone.is_halo() else _EDGES)
+            for zone in h_grid.Zone
+        },
+        dims.VertexDim: {
+            h_grid._map_to_index(dims.VertexDim, zone): (0 if not zone.is_halo() else _VERTICES)
+            for zone in h_grid.Zone
+            if zone in h_grid.VERTEX_ZONES
+        },
+    }
+    end_indices = {
+        dims.CellDim: {
+            h_grid._map_to_index(dims.CellDim, zone): _CELLS
+            for zone in h_grid.Zone
+            if zone in h_grid.CELL_ZONES
+        },
+        dims.EdgeDim: {h_grid._map_to_index(dims.EdgeDim, zone): _EDGES for zone in h_grid.Zone},
+        dims.VertexDim: {
+            h_grid._map_to_index(dims.VertexDim, zone): _VERTICES
+            for zone in h_grid.Zone
+            if zone in h_grid.VERTEX_ZONES
+        },
+    }
+
     return base.BaseGrid(
         id=uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85"),
         config=config,
         connectivities=connectivities,
         geometry_type=GeometryType.TORUS,
-        _allocator=backend,
-        _start_indices={
-            dims.CellDim: _StartIndices(_CELLS),
-            dims.EdgeDim: _StartIndices(_EDGES),
-            dims.VertexDim: _StartIndices(_VERTICES),
-        },
-        _end_indices={
-            dims.CellDim: _EndIndices(_CELLS),
-            dims.EdgeDim: _EndIndices(_EDGES),
-            dims.VertexDim: _EndIndices(_VERTICES),
-        },
+        allocator=backend,
+        _start_indices=start_indices,
+        _end_indices=end_indices,
     )
