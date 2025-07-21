@@ -10,6 +10,7 @@
 
 import ast
 import enum
+import functools
 import pathlib
 
 import rich
@@ -21,16 +22,14 @@ from . import _common as common
 class ExitCode(enum.IntEnum):
     """Exit codes for the script."""
 
-    INVALID_COMMAND_OPTIONS = 1
-    GIT_LS_ERROR = 2
-    MISSING_INIT_FILES = 3
+    MISSING_OR_INVALID_INIT_FILES = 1
 
 
 cli = typer.Typer(help=__doc__)
 
 
-@cli.command(name="check-tests")
-def check_tests(
+@cli.command(name="check-tests-layout")
+def check_tests_layout(
     fix: bool = typer.Option(
         False, "--fix", "-f", help="Automatically create missing __init__.py files."
     ),
@@ -53,8 +52,12 @@ def check_tests(
             '__path__ = __import__("pkgutil").extend_path(__path__, __name__)\n'
         )
 
+    ns_init_ast = ast.parse('__path__ = __import__("pkgutil").extend_path(__path__, __name__)')
+    ast_dump = functools.partial(ast.dump, annotate_fields=False, include_attributes=False)
+
     for root_dir in root_dirs:
         prefix_len = len(root_dir.parts)
+
         for dir_path, _, file_names in root_dir.walk(top_down=True):
             if dir_path.name.startswith((".", "__")):
                 # Skip hidden and special directories (e.g. '__pycache__')
@@ -62,38 +65,39 @@ def check_tests(
 
             local_parts = dir_path.parts[prefix_len:]
             if "tests" in local_parts:
-                if is_ns_pkg := (local_parts[-1] == "tests"):
+                if local_parts[-1] == "tests":
                     rich.print(f"Checking '{'/'.join(local_parts)}' (namespace package)")
-                    fix_content = ns_init_py_content
-                else:
-                    rich.print(f"Checking '{'/'.join(local_parts)}'")
-                    fix_content = init_py_content
-
-                if "__init__.py" not in file_names:
-                    violations += 1
-                    rich.print("  [red]-> Missing '__init__.py' file[/red]")
-                    if fix:
-                        rich.print(f"  [yellow]-> Creating '__init__.py' in {dir_path}[/yellow]")
-                        (dir_path / "__init__.py").write_text(fix_content)
-                elif is_ns_pkg:
-                    file_ast = ast.parse((dir_path / "__init__.py").read_text())
-                    template_ast = ast.parse('__path__ = __import__("pkgutil").extend_path(__path__, __name__)')
-                    if ast.dump(file_ast, annotate_fields=False, include_attributes=False) != ast.dump(template_ast, annotate_fields=False, include_attributes=False):
+                    try:
+                        wrong_ns_init = ast_dump(ast.parse((dir_path / "__init__.py").read_text())) != ast_dump(ns_init_ast)
+                    except SyntaxError:
+                        wrong_ns_init = True
+                    if "__init__.py" not in file_names or wrong_ns_init:
                         violations += 1
-                        rich.print("  [red]-> '__init__.py' does not match namespace package template[/red]")
+                        rich.print(
+                            "  [red]-> missing or invalid '__init__.py' for namespace package[/red]"
+                        )
                         if fix:
                             rich.print(f"  [yellow]-> Fixing '__init__.py' in {dir_path}[/yellow]")
-                            (dir_path / "__init__.py").write_text(fix_content)
+                            (dir_path / "__init__.py").write_text(ns_init_py_content)
+
+                else:
+                    rich.print(f"Checking '{'/'.join(local_parts)}'")
+                    if "__init__.py" not in file_names:
+                        violations += 1
+                        rich.print("  [red]-> Missing '__init__.py' file[/red]")
+                        if fix:
+                            rich.print(
+                                f"  [yellow]-> Creating '__init__.py' in {dir_path}[/yellow]"
+                            )
+                            (dir_path / "__init__.py").write_text(init_py_content)
 
     rich.print()
     if violations:
         if fix:
-            rich.print(
-                f"[yellow]FIXED:[/yellow] {violations} missing '__init__.py' files have been created."
-            )
+            rich.print(f"[yellow]FIXED:[/yellow] {violations} issues have been fixed.")
         else:
-            rich.print(f"[red]ERROR:[/red] {violations} '__init__.py' files are missing!")
-            raise typer.Exit(code=ExitCode.MISSING_INIT_FILES)
+            rich.print(f"[red]ERROR:[/red] {violations} issues have been found.")
+            raise typer.Exit(code=ExitCode.MISSING_OR_INVALID_INIT_FILES)
 
     else:
         rich.print(f"[green]OK:[/green] Tests structure seems correct.")
