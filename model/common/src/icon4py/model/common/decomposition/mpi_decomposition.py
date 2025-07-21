@@ -23,11 +23,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import cupy as cp
-except ImportError:
-    cp = None
-
-try:
     import ghex
     import mpi4py
     from ghex.context import make_context
