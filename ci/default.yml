@@ -23,6 +23,16 @@ test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
 
+test_model_stencils_dycore_gtfn_cpu_aarch64:
+  # TODO: move back to github actions, temporaily here because of increased resource usage
+  extends: [.test_template_aarch64]
+  stage: test
+  variables:
+    SLURM_TIMELIMIT: '00:10:00'
+  script:
+    - nox -s "test_model-3.10(stencils, dycore)" -- --backend=gtfn_cpu --grid=icon_grid
+
+
 .test_tools_datatests:
   stage: test
   script:
