@@ -236,6 +236,7 @@ def test_factory_ddqz_full_e(
     ],
 )
 @pytest.mark.datatest
+@pytest.mark.uses_concat_where
 def test_factory_ddqz_z_half(
     grid_savepoint,
     metrics_savepoint,
