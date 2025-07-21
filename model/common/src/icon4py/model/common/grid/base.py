@@ -117,33 +117,44 @@ class BaseGrid:
     config: GridConfig
     connectivities: gtx_common.OffsetProvider
     geometry_type: GeometryType
+    # only used internally for `start_index` and `end_index` public interface:
     _start_indices: dict[gtx.Dimension, data_alloc.NDArray]
     _end_indices: dict[gtx.Dimension, data_alloc.NDArray]
-    _allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None
-    _1d_sparse_connectivity_constructor: Callable[
-        [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
-        gtx_common.NeighborTable,
+    # for construction:
+    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocatorFactoryProtocol | None]
+    sparse_1d_connectivity_constructor: dataclasses.InitVar[
+        Callable[
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+            gtx_common.NeighborTable,
+        ]
     ] = _default_1d_sparse_connectivity_constructor
 
-    def __post_init__(self):
+    def __post_init__(
+        self,
+        allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None,
+        sparse_1d_connectivity_constructor: Callable[
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+            gtx_common.NeighborTable,
+        ],
+    ):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
         # 1d sparse connectivities
-        self.connectivities[dims.C2CE.value] = self._1d_sparse_connectivity_constructor(
-            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=self._allocator
+        self.connectivities[dims.C2CE.value] = sparse_1d_connectivity_constructor(
+            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=allocator
         )
-        self.connectivities[dims.E2ECV.value] = self._1d_sparse_connectivity_constructor(
-            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=self._allocator
+        self.connectivities[dims.E2ECV.value] = sparse_1d_connectivity_constructor(
+            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=allocator
         )
-        self.connectivities[dims.E2EC.value] = self._1d_sparse_connectivity_constructor(
-            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=self._allocator
+        self.connectivities[dims.E2EC.value] = sparse_1d_connectivity_constructor(
+            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=allocator
         )
-        self.connectivities[dims.C2CEC.value] = self._1d_sparse_connectivity_constructor(
-            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=self._allocator
+        self.connectivities[dims.C2CEC.value] = sparse_1d_connectivity_constructor(
+            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=allocator
         )
         if dims.C2E2C2E2C.value in self.connectivities:  # TODO is this optional?
-            self.connectivities[dims.C2CECEC.value] = self._1d_sparse_connectivity_constructor(
-                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=self._allocator
+            self.connectivities[dims.C2CECEC.value] = sparse_1d_connectivity_constructor(
+                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=allocator
             )
         self._validate()
 
