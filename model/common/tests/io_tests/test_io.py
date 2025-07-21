@@ -36,7 +36,7 @@ from icon4py.model.testing import datatest_utils, grid_utils
 # setting backend to fieldview embedded here.
 backend = None
 UNLIMITED = None
-simple_grid = simple.SimpleGrid()
+simple_grid = simple.simple_grid()
 
 grid_file = datatest_utils.GRIDS_PATH.joinpath(
     datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE

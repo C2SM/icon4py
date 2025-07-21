@@ -16,6 +16,13 @@ import numpy as np
 from icon4py.tools.py2fgen import _codegen, _definitions
 
 
+try:
+    import cupy as cp
+
+except ImportError:
+    cp = None
+
+
 """
 Utilities for testing a py2fgen code.
 
@@ -64,7 +71,7 @@ def array_info(
 
 
 def array_to_array_info(
-    arr: np.ndarray,
+    arr: np.ndarray,  # or cp.ndarray
     *,
     ffi: Optional[cffi.FFI] = None,
     keep_alive: bool = True,
@@ -78,15 +85,17 @@ def array_to_array_info(
     - the array is kept alive to avoid deallocation of the array before the pointer in 'ArrayInfo' is used;
     - the array is converted to Fortran layout.
     """
+    on_gpu = not isinstance(arr, np.ndarray)
+    xp = cp if on_gpu else np
     if ffi is None:
         ffi = cffi.FFI()
     # TODO(havogt): need to move bool handling to Fortran side
     if arr.dtype == np.bool_:
         arr = arr.astype(np.int32, copy=True)
     if as_fortran_layout and not arr.flags["F_CONTIGUOUS"]:
-        arr = np.asfortranarray(arr)
+        arr = xp.asfortranarray(arr)
 
-    addr = arr.ctypes.data
+    addr = arr.ctypes.data if not on_gpu else arr.data.ptr
     strtype = _codegen.BUILTIN_TO_CPP_TYPE[from_np_dtype(arr.dtype)]
     ptr = ffi.cast(f"{strtype}*", addr)
 
@@ -94,4 +103,4 @@ def array_to_array_info(
         # bind the lifetime of the `arr` to `ptr`
         ptr = ffi.gc(ptr, lambda _=arr: None)  # type: ignore[misc] # cannot infer type of lambda
 
-    return array_info(ptr, arr.shape, False, False)
+    return array_info(ptr, arr.shape, on_gpu, False)

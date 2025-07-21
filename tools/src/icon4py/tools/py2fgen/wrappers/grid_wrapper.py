@@ -111,9 +111,12 @@ def grid_init(
     num_edges: gtx.int32,
     vertical_size: gtx.int32,
     limited_area: bool,
+    backend: gtx.int32,
 ) -> None:
-    on_gpu = c2e.array_ns is not np  # TODO(havogt): expose `on_gpu` from py2fgen
-
+    on_gpu = not c2e.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    actual_backend = wrapper_common.select_backend(
+        wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
+    )
     grid = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
@@ -136,10 +139,9 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=on_gpu,
+        mean_cell_area=mean_cell_area,
+        backend=actual_backend,
     )
-    grid.set_global_params(icon_grid.GlobalGridParams.from_mean_cell_area(mean_cell_area))
-
     # Edge geometry
     edge_params = grid_states.EdgeParams(
         tangent_orientation=tangent_orientation,

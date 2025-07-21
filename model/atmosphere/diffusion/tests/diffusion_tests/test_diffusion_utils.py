@@ -22,7 +22,7 @@ def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
 
 
 def test_scale_k(backend):
-    grid = simple_grid.SimpleGrid(backend=backend)
+    grid = simple_grid.simple_grid(backend=backend)
     field = data_alloc.random_field(grid, dims.KDim, backend=backend)
     scaled_field = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     factor = 2.0
@@ -31,7 +31,7 @@ def test_scale_k(backend):
 
 
 def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
-    grid = simple_grid.SimpleGrid(backend=backend)
+    grid = simple_grid.simple_grid(backend=backend)
     diff_multfac_vn_init = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     smag_limit_init = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     k4 = 1.0
@@ -52,7 +52,7 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
 
 
 def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
-    grid = simple_grid.SimpleGrid()
+    grid = simple_grid.simple_grid()
     diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     smag_limit = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     k4 = 1.0
@@ -75,7 +75,7 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
 
 
 def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
-    grid = simple_grid.SimpleGrid()
+    grid = simple_grid.simple_grid()
     diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     smag_limit = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     k4 = 0.003
