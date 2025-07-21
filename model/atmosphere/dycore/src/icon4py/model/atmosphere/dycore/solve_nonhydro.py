@@ -1335,7 +1335,7 @@ class SolveNonhydro:
             gtx.int32(self._config.divdamp_order),
             self._grid.global_properties.mean_cell_area,
             second_order_divdamp_factor,
-            self._config.nudge_max_coeff,
+            self._config.nudge_max_coeff * 5.0,
             constants.DBL_EPS,
             out=(
                 self.fourth_order_divdamp_scaling_coeff,
