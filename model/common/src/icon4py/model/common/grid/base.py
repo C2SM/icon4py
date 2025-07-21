@@ -183,11 +183,10 @@ class BaseGrid:
             if gtx_common.is_neighbor_table(connectivity):
                 for dim, size in zip(connectivity.domain.dims, connectivity.shape, strict=True):
                     if dim in sizes:
-                        ...
-                        # TODO(havogt) currently the blueline granules violates the following assumption on sizes
-                        # because connectivities have `nproma` size. Will be re-enabled in a follow-up commit.
-                        # if sizes[dim] != size:
-                        #     raise ValueError(f"Inconsistent sizes for {dim}: expected {sizes[dim]}, got {size}.")  # noqa: ERA001
+                        if sizes[dim] != size:
+                            raise ValueError(
+                                f"Inconsistent sizes for {dim}: expected {sizes[dim]}, got {size}."
+                            )
                     else:
                         sizes[dim] = size
             elif isinstance(connectivity, gtx.Dimension):
