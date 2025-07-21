@@ -373,7 +373,7 @@ class Domain(Protocol):
     def local(self) -> bool:
         return self._marker == Zone.LOCAL
 
-    def __index__(self) -> int:
+    def __call__(self) -> int:
         return self._index
 
 
@@ -418,23 +418,40 @@ class EdgeDomain(Domain):
         return True
 
 
+VERTEX_ZONES = (
+    Zone.END,
+    Zone.INTERIOR,
+    Zone.HALO,
+    Zone.HALO_LEVEL_2,
+    Zone.LOCAL,
+    Zone.LATERAL_BOUNDARY,
+    Zone.LATERAL_BOUNDARY_LEVEL_2,
+    Zone.LATERAL_BOUNDARY_LEVEL_3,
+    Zone.LATERAL_BOUNDARY_LEVEL_4,
+)
+
+
 class VertexDomain(Domain):
     """Domain object for the Vertex dimension."""
 
     _dim = dims.VertexDim
 
     def _valid(self, marker: Zone):
-        return marker in (
-            Zone.END,
-            Zone.INTERIOR,
-            Zone.HALO,
-            Zone.HALO_LEVEL_2,
-            Zone.LOCAL,
-            Zone.LATERAL_BOUNDARY,
-            Zone.LATERAL_BOUNDARY_LEVEL_2,
-            Zone.LATERAL_BOUNDARY_LEVEL_3,
-            Zone.LATERAL_BOUNDARY_LEVEL_4,
-        )
+        return marker in VERTEX_ZONES
+
+
+CELL_ZONES = (
+    Zone.END,
+    Zone.INTERIOR,
+    Zone.HALO,
+    Zone.HALO_LEVEL_2,
+    Zone.LOCAL,
+    Zone.LATERAL_BOUNDARY,
+    Zone.LATERAL_BOUNDARY_LEVEL_2,
+    Zone.LATERAL_BOUNDARY_LEVEL_3,
+    Zone.LATERAL_BOUNDARY_LEVEL_4,
+    Zone.NUDGING,
+)
 
 
 class CellDomain(Domain):
@@ -443,15 +460,4 @@ class CellDomain(Domain):
     _dim = dims.CellDim
 
     def _valid(self, marker: Zone):
-        return marker in (
-            Zone.END,
-            Zone.INTERIOR,
-            Zone.HALO,
-            Zone.HALO_LEVEL_2,
-            Zone.LOCAL,
-            Zone.LATERAL_BOUNDARY,
-            Zone.LATERAL_BOUNDARY_LEVEL_2,
-            Zone.LATERAL_BOUNDARY_LEVEL_3,
-            Zone.LATERAL_BOUNDARY_LEVEL_4,
-            Zone.NUDGING,
-        )
+        return marker in CELL_ZONES
