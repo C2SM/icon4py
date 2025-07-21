@@ -61,7 +61,5 @@ jobs:
               shell: bash
               env:
                   NUM_PROCESSES: auto
-              # setting unlimited stack size to avoid failure of gtfn_cpu dycore stencil test
               run: |
-                ulimit -s unlimited
                 uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid
