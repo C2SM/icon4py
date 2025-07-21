@@ -94,7 +94,7 @@ extern int solve_nh_init_wrapper(
     double divdamp_trans_start, double divdamp_trans_end, int l_vert_nested,
     double rhotheta_offctr, double veladv_offctr, double nudge_max_coeff,
     double divdamp_fac, double divdamp_fac2, double divdamp_fac3,
-    double divdamp_fac4, double divdamp_z, double divdamp_z2,
-    double divdamp_z3, double divdamp_z4, double lowest_layer_thickness,
-    double model_top_height, double stretch_factor, int nflat_gradp,
-    int num_levels, int backend, int on_gpu);
+    double divdamp_fac4, double divdamp_z, double divdamp_z2, double divdamp_z3,
+    double divdamp_z4, double lowest_layer_thickness, double model_top_height,
+    double stretch_factor, int nflat_gradp, int num_levels, int backend,
+    int on_gpu);
