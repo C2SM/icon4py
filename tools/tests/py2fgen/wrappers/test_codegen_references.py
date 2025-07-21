@@ -48,7 +48,6 @@ def diff(reference: pathlib.Path, actual: pathlib.Path):
 
     clean = True
     for line in result:
-        # print("DEBUG:: ", line)
         logger.debug(f"result line: {line}")
         clean = False
 
