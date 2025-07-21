@@ -162,7 +162,7 @@ def construct_icon_grid(
         allocator = gtx_allocators.device_allocators[gt4py_definitions.CUPY_DEVICE_TYPE]
     else:
         xp = np
-        allocator = gtx_allocators.device_allocators[gt4py_definitions.CUPY_DEVICE_TYPE]
+        allocator = gtx_allocators.device_allocators[gt4py_definitions.DeviceType.CPU]
 
     cells_start_index = adjust_fortran_indices(cell_starts, offset)
     vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
