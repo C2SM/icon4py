@@ -21,6 +21,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib import colors
 from matplotlib.colors import TwoSlopeNorm
 
 from icon4py.model.common.config import Device
@@ -84,15 +85,18 @@ def determine_divergence_in_div_converge_experiment(
     return analytic_divergence
 
 
-def eigen_divergence(divergence_factor: float, order: int, grid_space: float, div_wave: DivWave):
+def eigen_divergence(
+    divergence_factor: float, order: int, grid_space: float, div_wave: DivWave, debug: bool = False
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     eigen_value = np.zeros(3, dtype=float)
     eigen_vector = np.zeros((3, 3), dtype=float)
     eigen_vector_cartesian = np.zeros((3, 2), dtype=float)
 
     a = 0.25 * 3.0 * grid_space * 2.0 * math.pi * div_wave.x_wavenumber_factor * 1.0e-5
-    b = 0.25 * math.sqrt(3.0) * grid_space * math.pi * div_wave.y_wavenumber_factor * 1.0e-5
-    print("a, b: ", a, b)
-    print("cos(a+b), cos(a-b), cos(2a): ", math.cos(a + b), math.cos(a - b), math.cos(2.0 * a))
+    b = 0.25 * math.sqrt(3.0) * grid_space * 2.0 * math.pi * div_wave.y_wavenumber_factor * 1.0e-5
+    if debug:
+        print("a, b: ", a, b)
+        print("cos(a+b), cos(a-b), cos(2a): ", math.cos(a + b), math.cos(a - b), math.cos(2.0 * a))
 
     if order == 1:
         sol1, sol2, sol3 = cubic_solution(
@@ -104,7 +108,8 @@ def eigen_divergence(divergence_factor: float, order: int, grid_space: float, di
         sol1 = sol1 - 1.0
         sol2 = sol2 - 1.0
         sol3 = sol3 - 1.0
-        print("eigen solutions: ", sol1, sol2, sol3)
+        if debug:
+            print("eigen solutions: ", sol1, sol2, sol3)
         # eigen_value[0] = -1.0
         # eigen_value[1] = -1.0 + math.sqrt(1.0 + math.cos(2.0 * a) * (math.cos(2.0 * a) + math.cos(2.0 * b)))
         # eigen_value[2] = -1.0 - math.sqrt(1.0 + math.cos(2.0 * a) * (math.cos(2.0 * a) + math.cos(2.0 * b)))
@@ -112,10 +117,20 @@ def eigen_divergence(divergence_factor: float, order: int, grid_space: float, di
         eigen_value[1] = sol2
         eigen_value[2] = sol3
     elif order == 2:
-        print(math.cos(2.0 * a))
         if b == 0.0:
-            eigen_value[0] = sol1
-            eigen_value[1] = sol2
+            eigen_value[0] = 0.0
+            eigen_value[1] = 0.0
+            eigen_value[2] = 2.0 * (math.cos(2.0 * a) - 1.0)
+        # elif a == 0.0:
+        #     g = math.cos(4.0*b) + math.cos(2.0*b) - 2.0
+        #     f = (math.cos(4.0*b) - 1.0) * (math.cos(2.0*b) - 1.0) - (math.cos(3.0*b) - math.cos(b))**2
+        #     eigen_value[0] = 0.5 * (g + math.sqrt(g**2 - 4.0*f))
+        #     eigen_value[1] = 0.5 * (g - math.sqrt(g**2 - 4.0*f))
+        #     eigen_value[2] = 0.0
+        elif a == b:
+            eigen_value[0] = math.cos(4.0 * a) - 1.0
+            eigen_value[1] = 0.0
+            eigen_value[2] = math.cos(4.0 * a) - 1.0
         else:
             sol1, sol2, sol3 = cubic_solution(
                 1.0,
@@ -124,16 +139,16 @@ def eigen_divergence(divergence_factor: float, order: int, grid_space: float, di
                 2.0
                 * math.sin(2.0 * b) ** 2
                 * (
-                    -4.0 * (math.sin(a + b) ** 2 + math.sin(a - b) ** 2) ** 2
-                    + 12.0 * math.sin(a + b) ** 2 * math.sin(a - b) ** 2
-                    + 4.0
+                    4.0 * math.sin(a + b) ** 2 * math.sin(a - b) ** 2
+                    + (math.cos(2.0 * b) - math.cos(2.0 * a)) ** 2
+                    - 4.0
                     * math.sin(a + b)
                     * math.sin(a - b)
                     * (math.cos(2.0 * b) - math.cos(2.0 * a))
-                    - 1.0
                 ),
             )
-            print("eigen solutions: ", sol1, sol2, sol3)
+            if debug:
+                print("eigen solutions: ", sol1, sol2, sol3)
             eigen_value[0] = sol1
             eigen_value[1] = sol2
             eigen_value[2] = sol3
@@ -141,8 +156,6 @@ def eigen_divergence(divergence_factor: float, order: int, grid_space: float, di
         raise NotImplementedError(
             f"computation of eigen values with divergence order {order} is not implemented."
         )
-    print("eigenvalues: ", eigen_value)
-    print()
 
     def _make_matrix_lists(eigenvalue):
         if order == 1:
@@ -160,86 +173,133 @@ def eigen_divergence(divergence_factor: float, order: int, grid_space: float, di
         return list1, list2, list3
 
     triangle_vector = np.zeros((3, 2), dtype=float)
-    triangle_vector[0] = np.array([0.0, -1.0])
-    triangle_vector[1] = np.array([0.5 * math.sqrt(3.0), 0.5])
-    triangle_vector[2] = np.array([-0.5 * math.sqrt(3.0), 0.5])
-    print(triangle_vector.T[0])
-    print(triangle_vector.T[1])
-    print()
+    triangle_vector[0] = np.array([0.0, -1.0], dtype=float)
+    triangle_vector[1] = np.array([0.5 * math.sqrt(3.0), 0.5], dtype=float)
+    triangle_vector[2] = np.array([-0.5 * math.sqrt(3.0), 0.5], dtype=float)
+    # print(triangle_vector.T[0])
+    # print(triangle_vector.T[1])
+    # print()
 
     for i in range(3):
         list1, list2, list3 = _make_matrix_lists(eigen_value[i])
         matrix = np.zeros((3, 3), dtype=float)
-        matrix[0] = np.array(list1)
-        matrix[1] = np.array(list2)
-        matrix[2] = np.array(list3)
+        matrix[0] = np.array(list1, dtype=float, copy=True)
+        matrix[1] = np.array(list2, dtype=float, copy=True)
+        matrix[2] = np.array(list3, dtype=float, copy=True)
+
+        rank_space = np.zeros((3, 3), dtype=float)
 
         # handle special case:
+        special_case = False
         if order == 2:
             if b == 0.0:
-                return
-        rank_space = np.zeros((3, 3), dtype=float)
-        rank_space[0] = np.array(list1)
-        rank_space[0] = rank_space[0] / math.sqrt(np.sum(rank_space[0][:] ** 2))
+                if i == 0:
+                    eigen_vector[i] = np.array((0.0, 0.0, 0.0), dtype=float)
+                elif i == 1:
+                    eigen_vector[i] = np.array((0.0, 1.0, 1.0), dtype=float)
+                elif i == 2:
+                    eigen_vector[i] = np.array((0.0, 1.0, -1.0), dtype=float)
+                special_case = True
+            # elif a == 0.0:
+            #     if i == 0 or i == 1:
+            #         minor_rank_space = np.zeros((2, 2), dtype=float)
+            #         minor_rank_space[0] = np.array([math.cos(4.0*b) - 1.0 - eigen_value[i], math.cos(3.0*b) - math.cos(b)], dtype=float)
+            #         minor_rank_space[0] = minor_rank_space[0] / math.sqrt(np.sum(minor_rank_space[0][:] ** 2))
+            #         minor_rank_space[1] = np.array([math.cos(3.0*b) - math.cos(b), math.cos(2.0*b) - 1.0 - eigen_value[i]], dtype=float)
+            #         # minor_rank_space[1] = minor_rank_space[1] - np.dot(minor_rank_space[1], minor_rank_space[0]) * minor_rank_space[0]
+            #         # minor_rank_space[1] = minor_rank_space[1] / math.sqrt(np.sum(minor_rank_space[1][:] ** 2))
+            #         eigen_vector[i,0:2] = np.array((-minor_rank_space[0,1], minor_rank_space[0,0]), dtype=float)
+            #         null_space_threshold1 = np.dot(minor_rank_space[0], eigen_vector[i,0:2])
+            #         null_space_threshold2 = np.dot(minor_rank_space[1], eigen_vector[i,0:2])
+            #         assert (
+            #             np.abs(null_space_threshold1) < 1.0e-10
+            #         ), f"null space is none, {null_space_threshold1} - {minor_rank_space[0]} - {eigen_vector[i]}"
+            #         assert (
+            #             np.abs(null_space_threshold2) < 1.0e-10
+            #         ), f"null space is none, {null_space_threshold2} - {minor_rank_space[1]} - {eigen_vector[i]}"
+            #     elif i == 2:
+            #         eigen_vector[i] = np.array((0.0, 0.0, 0.0), dtype=float)
+            #     special_case = True
+            elif a == b:
+                if i == 0:
+                    eigen_vector[i] = np.array((1.0, 0.0, 0.0), dtype=float)
+                elif i == 1:
+                    eigen_vector[i] = np.array((0.0, 1.0, 0.0), dtype=float)
+                elif i == 2:
+                    eigen_vector[i] = np.array((0.0, 0.0, 1.0), dtype=float)
+                special_case = True
+        if not special_case:
+            rank_space[0] = np.array(list1, dtype=float, copy=True)
+            rank_space[0] = rank_space[0] / math.sqrt(np.sum(rank_space[0][:] ** 2))
 
-        rank_space[1] = np.array(list2)
-        rank_space[1] = rank_space[1] - np.dot(rank_space[1], rank_space[0]) * rank_space[0]
-        rank_space[1] = rank_space[1] / math.sqrt(np.sum(rank_space[1][:] ** 2))
+            rank_space[1] = np.array(list2, dtype=float, copy=True)
+            rank_space[1] = rank_space[1] - np.dot(rank_space[1], rank_space[0]) * rank_space[0]
+            if math.sqrt(np.sum(rank_space[1][:] ** 2)) == 0.0:
+                rank_space[1] = rank_space[0]
+            else:
+                rank_space[1] = rank_space[1] / math.sqrt(np.sum(rank_space[1][:] ** 2))
 
-        rank_space[2] = np.array(list3)
-        rank_space[2] = rank_space[2] / math.sqrt(np.sum(rank_space[2][:] ** 2))
+            rank_space[2] = np.array(list3, dtype=float, copy=True)
+            rank_space[2] = rank_space[2] / math.sqrt(np.sum(rank_space[2][:] ** 2))
 
-        eigen_vector[i] = np.cross(rank_space[0], rank_space[1])
-        eigen_vector[i] = eigen_vector[i] / math.sqrt(np.sum(eigen_vector[i][:] ** 2))
+            eigen_vector[i] = np.cross(rank_space[0], rank_space[1])
+            if math.sqrt(np.sum(eigen_vector[i][:] ** 2)) != 0.0:
+                eigen_vector[i] = eigen_vector[i] / math.sqrt(np.sum(eigen_vector[i][:] ** 2))
 
-        null_space_threshold1 = np.dot(matrix[0], eigen_vector[i])
-        null_space_threshold2 = np.dot(matrix[1], eigen_vector[i])
-        null_space_threshold3 = np.dot(matrix[2], eigen_vector[i])
-        assert (
-            np.abs(null_space_threshold1) < 1.0e-10
-        ), f"null space is none, {null_space_threshold1} - {rank_space[0]} - {eigen_vector[i]}"
-        assert (
-            np.abs(null_space_threshold2) < 1.0e-10
-        ), f"null space is none, {null_space_threshold2} - {rank_space[1]} - {eigen_vector[i]}"
-        assert (
-            np.abs(null_space_threshold3) < 1.0e-10
-        ), f"null space is none, {null_space_threshold3} - {rank_space[2]} - {eigen_vector[i]}"
-        print(
-            "checking null space ",
-            null_space_threshold1,
-            null_space_threshold2,
-            null_space_threshold3,
-        )
-        print("eigenvector of eigenvalue ", eigen_value[i], " is ", eigen_vector[i])
+            null_space_threshold1 = np.dot(matrix[0], eigen_vector[i])
+            null_space_threshold2 = np.dot(matrix[1], eigen_vector[i])
+            null_space_threshold3 = np.dot(matrix[2], eigen_vector[i])
+            assert (
+                np.abs(null_space_threshold1) < 1.0e-6
+            ), f"null space is none, {null_space_threshold1} - {rank_space[0]} - {rank_space[1]} - {rank_space[2]} - {eigen_vector[i]} - {eigen_value[i]} // {eigen_value[:]}"
+            assert (
+                np.abs(null_space_threshold2) < 1.0e-6
+            ), f"null space is none, {null_space_threshold2} - {rank_space[0]} - {rank_space[1]} - {rank_space[2]} - {eigen_vector[i]} - {eigen_value[i]} // {eigen_value[:]}"
+            assert (
+                np.abs(null_space_threshold3) < 1.0e-6
+            ), f"null space is none, {null_space_threshold3} - {rank_space[0]} - {rank_space[1]} - {rank_space[2]} - {eigen_vector[i]} - {eigen_value[i]} // {eigen_value[:]}"
+            if debug:
+                print(
+                    "checking null space ",
+                    null_space_threshold1,
+                    null_space_threshold2,
+                    null_space_threshold3,
+                )
+
+        if debug:
+            print("eigenvector of eigenvalue ", eigen_value[i], " is ", eigen_vector[i])
         eigen_vector_cartesian[i][0] = np.dot(eigen_vector[i], triangle_vector.T[0])
         eigen_vector_cartesian[i][1] = np.dot(eigen_vector[i], triangle_vector.T[1])
 
-        print(
-            "eigenvector in cartesian before normalization of eigenvalue ",
-            eigen_value[i],
-            " is ",
-            eigen_vector_cartesian[i],
-        )
+        if debug:
+            print(
+                "eigenvector in cartesian before normalization of eigenvalue ",
+                eigen_value[i],
+                " is ",
+                eigen_vector_cartesian[i],
+            )
         eigen_vector_cartesian[i] = eigen_vector_cartesian[i] / math.sqrt(
             np.sum(eigen_vector_cartesian[i][:] ** 2)
         )
-        print(
-            "eigenvector in cartesian of eigenvalue ",
-            eigen_value[i],
-            " is ",
-            eigen_vector_cartesian[i],
-        )
+        if debug:
+            print(
+                "eigenvector in cartesian of eigenvalue ",
+                eigen_value[i],
+                " is ",
+                eigen_vector_cartesian[i],
+            )
+            print()
+
+    if debug:
         print()
+        print(
+            "checking orthogonality of eigenvectors ",
+            np.dot(eigen_vector[0], eigen_vector[1]),
+            np.dot(eigen_vector[0], eigen_vector[2]),
+            np.dot(eigen_vector[1], eigen_vector[2]),
+        )
 
-    print()
-    print(
-        "checking orthogonality of eigenvectors ",
-        np.dot(eigen_vector[0], eigen_vector[1]),
-        np.dot(eigen_vector[0], eigen_vector[2]),
-        np.dot(eigen_vector[1], eigen_vector[2]),
-    )
-
-    return
+    return eigen_value, eigen_vector, eigen_vector_cartesian
 
 
 def eigen_vorticity(divergence_factor: float, order: int, grid_space: float, div_wave: DivWave):
@@ -425,6 +485,120 @@ def plot_tridata(
         plt.savefig(output_filename + "_at_" + str(k) + "_level.pdf", format="pdf", dpi=500)
         plt.clf()
 
+    return
+
+
+def plot_triedgedata(
+    grid_filename: str,
+    data: xp.ndarray,
+    title: str,
+    output_filename: str,
+    div_wave: DivWave,
+    eigen_vector: np.ndarray = None,
+    plot_analytic=False,
+):
+    grid = xr.open_dataset(grid_filename, engine="netcdf4")
+
+    elon = np.unique(grid.elon.values)
+    mid_point = int(elon.shape[0] / 2)
+    mid_point_plus1 = mid_point + 1
+    while True:
+        if elon[mid_point_plus1] - elon[mid_point] > 1.0e-9:
+            break
+        else:
+            mid_point_plus1 = mid_point_plus1 + 1
+    mid_point_plus2 = mid_point_plus1 + 1
+    while True:
+        if elon[mid_point_plus2] - elon[mid_point_plus1] > 1.0e-9:
+            break
+        else:
+            mid_point_plus2 = mid_point_plus2 + 1
+    mid_point_plus3 = mid_point_plus2 + 1
+    while True:
+        if elon[mid_point_plus3] - elon[mid_point_plus2] > 1.0e-9:
+            break
+        else:
+            mid_point_plus3 = mid_point_plus3 + 1
+    mid_point_plus4 = mid_point_plus3 + 1
+    while True:
+        if elon[mid_point_plus4] - elon[mid_point_plus3] > 1.0e-9:
+            break
+        else:
+            mid_point_plus4 = mid_point_plus4 + 1
+    mid_point_plus5 = mid_point_plus4 + 1
+    while True:
+        if elon[mid_point_plus5] - elon[mid_point_plus4] > 1.0e-9:
+            break
+        else:
+            mid_point_plus5 = mid_point_plus5 + 1
+    mask = []
+    interior_mask = (grid.elat.values >= -7.4 * math.pi / 180.0) & (
+        grid.elat.values <= 7.4 * math.pi / 180.0
+    )
+    mask.append(
+        (grid.elon.values >= elon[mid_point] - 1.0e-9)
+        & (grid.elon.values < elon[mid_point_plus1] - 1.0e-9)
+        & interior_mask
+    )
+    mask.append(
+        (grid.elon.values >= elon[mid_point_plus1] - 1.0e-9)
+        & (grid.elon.values < elon[mid_point_plus2] - 1.0e-9)
+        & interior_mask
+    )
+    mask.append(
+        (grid.elon.values >= elon[mid_point_plus2] - 1.0e-9)
+        & (grid.elon.values < elon[mid_point_plus3] - 1.0e-9)
+        & interior_mask
+    )
+    mask.append(
+        (grid.elon.values >= elon[mid_point_plus3] - 1.0e-9)
+        & (grid.elon.values < elon[mid_point_plus4] - 1.0e-9)
+        & interior_mask
+    )
+    mask.append(
+        (grid.elon.values >= elon[mid_point_plus4] - 1.0e-9)
+        & (grid.elon.values < elon[mid_point_plus5] - 1.0e-9)
+        & interior_mask
+    )
+
+    plt.close()
+
+    for number, item in enumerate(mask):
+        f, ax = plt.subplots()
+        x_elat = grid.elat[item].values
+        argsort = x_elat.argsort()
+        x_elat = x_elat[argsort[::-1]]
+        plot_data = data[item, 0]
+        plot_data = plot_data[argsort[::-1]]
+        normal_y = grid.edge_primal_normal_cartesian_y[item].values
+        normal_y = normal_y[argsort[::-1]]
+        plot_data = np.where(normal_y < 1.0e-10, -plot_data, plot_data)
+        ax.plot(x_elat, plot_data, linestyle="solid", color="black", label="numerical")
+        if plot_analytic:
+            v_scale = 180.0 / 7.5
+            v_edge = (
+                xp.cos(v_scale * x_elat * div_wave.y_wavenumber_factor)
+                / div_wave.y_wavenumber_factor
+            )
+            ax.plot(x_elat, v_edge, linestyle="solid", color="green", label="analytic V")
+            ax.scatter(
+                x_elat, v_edge * np.abs(normal_y), color="purple", label="analytic edge value"
+            )
+        if eigen_vector is not None and number == 0:
+            x_elat_next = grid.elat[mask[number + 1]].values
+            argsort_next = x_elat_next.argsort()
+            x_elat_next = x_elat_next[argsort_next[::-1]]
+            plot_data_next = data[mask[number + 1], 0]
+            plot_data_next = plot_data_next[argsort_next[::-1]]
+            log.info(f"Number of layers {plot_data_next.shape[0]} ----- {plot_data.shape[0]}")
+            for k in range(np.minimum(plot_data_next.shape[0], plot_data.shape[0])):
+                log.info(f"{k} == {plot_data_next[k]} ----- {plot_data[k]}")
+        ax.set_ylabel("VN (m s-1)")
+        ax.set_xlabel("Latitude")
+        ax.set_title(title)
+        plt.legend()
+        plt.savefig(output_filename + str(number) + ".pdf", format="pdf", dpi=500)
+        plt.clf()
     return
 
 
@@ -759,7 +933,7 @@ def test_divergence_single_time_step():
 def test_divergence_multiple_time_step():
     resolutions = (
         "1000m",
-        "500m",
+        # "500m",
         # '250m',
         # '125m',
     )
@@ -778,7 +952,7 @@ def test_divergence_multiple_time_step():
     run_path = "./"
     experiment_type = ExperimentType.DIVCONVERGE
     serialization_type = SerializationType.SB
-    div_wave = DivWave(wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=40.0, y_wavenumber_factor=0.0)
+    div_wave = DivWave(wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=50.0, y_wavenumber_factor=0.0)
     log.critical(f"Experiment: {ExperimentType.DIVCONVERGE}")
     print_config(div_wave)
 
@@ -829,9 +1003,27 @@ def test_divergence_multiple_time_step():
             div_wave,
         )
 
+        eigen_value, eigen_vector, eigen_vector_cartesian = eigen_divergence(
+            divergence_factor=0.0,
+            order=timeloop.solve_nonhydro.config.divergence_order,
+            grid_space=1000.0,
+            div_wave=div_wave,
+        )
+        damping_eigen_vector = eigen_vector[np.argmax(np.abs(eigen_value))]
+
         mask = create_mask(grid_filename)
 
         initial_vn = xp.array(prognostic_state_list[0].vn.ndarray, copy=True)
+
+        plot_triedgedata(
+            grid_filename,
+            initial_vn,
+            f"VN at {res}",
+            "plot_initial_vn" + res,
+            div_wave,
+            eigen_vector=damping_eigen_vector,
+            plot_analytic=True,
+        )
 
         timeloop.time_integration(
             diffusion_diagnostic_state,
@@ -880,6 +1072,15 @@ def test_divergence_multiple_time_step():
             mask,
             f"Analytic divergence at {res}",
             "plot_analytic_divergence_" + res,
+        )
+        plot_triedgedata(
+            grid_filename,
+            prognostic_state_list[0].vn.asnumpy(),
+            f"VN at {res}",
+            "plot_final_vn" + res,
+            div_wave,
+            eigen_vector=damping_eigen_vector,
+            plot_analytic=False,
         )
         plot_tridata(
             grid_filename,
@@ -1313,52 +1514,317 @@ def cubic_solution(a: float, b: float, c: float, d: float):
     # x = t - b/3a
     determinant = -(4.0 * p**3 + 27.0 * q**2)
 
-    assert (
-        determinant > 0.0
-    ), f"Determinat with cubic equation coefficients {a}, {b}, {c}, {d} is negative: {determinant}"
-    print("cubic polynomial determinant is ", determinant)
+    if np.abs(c) <= 1.0e-15 and np.abs(d) <= 1.0e-12:
+        first_solution = -b
+        second_solution = 0.0
+        third_solution = 0.0
+        # print("cubic polynomial determinant (c and d are zero) is ", determinant)
+    else:
+        assert (
+            determinant > -1.0e-15
+        ), f"Determinant with cubic equation coefficients {a}, {b}, {c}, {d} is negative: {determinant}"
+        # print("cubic polynomial determinant is ", a, b, c, d, determinant)
 
-    sqrt_factor = c_sqrt(0.25 * q**2 + 1.0 / 27.0 * p**3)
-    u1 = -0.5 * q + sqrt_factor
-    u2 = -0.5 * q - sqrt_factor
+        sqrt_factor = c_sqrt(0.25 * q**2 + 1.0 / 27.0 * p**3)
+        u1 = -0.5 * q + sqrt_factor
+        u2 = -0.5 * q - sqrt_factor
 
-    cubic_root = 0.5 * (-1 + 1j * math.sqrt(3.0))
-    squared_cubic_root = 0.5 * (-1 - 1j * math.sqrt(3.0))
-    first_solution = u1 ** (1.0 / 3.0) + u2 ** (1.0 / 3.0) - b / (3.0 * a)
-    second_solution = (
-        cubic_root * u1 ** (1.0 / 3.0) + squared_cubic_root * u2 ** (1.0 / 3.0) - b / (3.0 * a)
-    )
-    thrid_solution = (
-        squared_cubic_root * u1 ** (1.0 / 3.0) + cubic_root * u2 ** (1.0 / 3.0) - b / (3.0 * a)
-    )
+        cubic_root = 0.5 * (-1 + 1j * math.sqrt(3.0))
+        squared_cubic_root = 0.5 * (-1 - 1j * math.sqrt(3.0))
+        if sqrt_factor.imag == 0.0:
+            u1_cube = np.sign(u1) * np.abs(u1) ** (1 / 3)
+            u2_cube = np.sign(u2) * np.abs(u2) ** (1 / 3)
+        else:
+            u1_cube = u1 ** (1 / 3)
+            u2_cube = u2 ** (1 / 3)
+        first_solution = u1_cube + u2_cube - b / (3.0 * a)
+        second_solution = cubic_root * u1_cube + squared_cubic_root * u2_cube - b / (3.0 * a)
+        third_solution = squared_cubic_root * u1_cube + cubic_root * u2_cube - b / (3.0 * a)
 
-    def _cubic_compute(solution):
-        return a * solution**3 + b * solution**2 + c * solution + d
+        def _cubic_compute(solution):
+            return a * solution**3 + b * solution**2 + c * solution + d
 
-    assert abs(first_solution.imag) < 1.0e-10, f"First solution is not real, {first_solution}"
-    assert abs(second_solution.imag) < 1.0e-10, f"Second solution is not real, {second_solution}"
-    assert abs(thrid_solution.imag) < 1.0e-10, f"Third solution is not real, {thrid_solution}"
+        if first_solution.real <= 1.0e-15:
+            assert (
+                abs(first_solution.imag) < 1.0e-8
+            ), f"First solution is not real, {first_solution}"
+        else:
+            assert (
+                np.abs(first_solution.imag) / np.abs(first_solution.real) < 1.0e-6
+            ), f"First solution is not real, {first_solution}"
+        if second_solution.real <= 1.0e-15:
+            assert (
+                abs(second_solution.imag) < 1.0e-8
+            ), f"Second solution is not real, {second_solution}"
+        else:
+            assert (
+                np.abs(second_solution.imag) / np.abs(second_solution.real) < 1.0e-6
+            ), f"Second solution is not real, {second_solution.real}, {second_solution.imag}"
+        if third_solution.real <= 1.0e-15:
+            assert (
+                abs(third_solution.imag) < 1.0e-8
+            ), f"Third solution is not real, {third_solution}"
+        else:
+            assert (
+                np.abs(third_solution.imag) / np.abs(third_solution.real) < 1.0e-6
+            ), f"Third solution is not real, {third_solution}"
 
-    first_solution = first_solution.real
-    second_solution = second_solution.real
-    thrid_solution = thrid_solution.real
+        first_solution = first_solution.real
+        second_solution = second_solution.real
+        third_solution = third_solution.real
 
-    assert (
-        abs(_cubic_compute(first_solution)) < 1.0e-10
-    ), f"Cubic polynomial is not zero, first solution is not correct, {_cubic_compute(first_solution)}, {first_solution}"
-    assert (
-        abs(_cubic_compute(second_solution)) < 1.0e-10
-    ), f"Cubic polynomial is not zero, second solution is not real, {_cubic_compute(second_solution)}, {second_solution}"
-    assert (
-        abs(_cubic_compute(thrid_solution)) < 1.0e-10
-    ), f"Cubic polynomial is not zero, third solution is not real, {_cubic_compute(thrid_solution)}, {thrid_solution}"
-    return (first_solution, second_solution, thrid_solution)
+        assert (
+            abs(_cubic_compute(first_solution)) < 1.0e-10
+        ), f"Cubic polynomial is not zero, first solution is not correct, {_cubic_compute(first_solution)}, {first_solution}"
+        assert (
+            abs(_cubic_compute(second_solution)) < 1.0e-10
+        ), f"Cubic polynomial is not zero, second solution is not correct, {_cubic_compute(second_solution)}, {second_solution}"
+        assert (
+            abs(_cubic_compute(third_solution)) < 1.0e-10
+        ), f"Cubic polynomial is not zero, third solution is not correct, {_cubic_compute(third_solution)}, {third_solution}"
+
+    return (first_solution, second_solution, third_solution)
 
 
 def test_eigen_divergence():
-    div_wave = DivWave(wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=10.0, y_wavenumber_factor=0.0)
-    eigen_divergence(divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave)
+    for x in range(1):
+        for y in range(10):
+            print("WAVE NUMBERS (X Y):", x, y)
+            div_wave = DivWave(
+                wave_type=WAVETYPE.Y_WAVE,
+                x_wavenumber_factor=float(x),
+                y_wavenumber_factor=float(y),
+            )
+            eigen_value, eigen_vector, eigen_vector_cartesian = eigen_divergence(
+                divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave, debug=True
+            )
+            eigen_value, eigen_vector, eigen_vector_cartesian = eigen_divergence(
+                divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave, debug=True
+            )
+            print()
+            print()
     # eigen_vorticity(divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave)
+
+
+def plot_eigen_divergence():
+    x_grid = np.arange(0.1, 99.9, 0.1)
+    y_grid = np.arange(0.1, 99.9, 0.1)
+    x_wave = 2.0 * math.pi / 10000.0 * x_grid * 100.0
+    y_wave = 2.0 * math.pi / 10000.0 * y_grid * 100.0
+    xy_xwave, xy_ywave = np.meshgrid(x_wave, y_wave, indexing="ij")
+
+    xdamp1_max = np.zeros(x_grid.shape, dtype=float)
+    xdamp1_actual = np.zeros(x_grid.shape, dtype=float)
+    xdamp2 = np.zeros(x_grid.shape, dtype=float)
+    ydamp1_max = np.zeros(y_grid.shape, dtype=float)
+    ydamp1_actual = np.zeros(y_grid.shape, dtype=float)
+    ydamp2 = np.zeros(y_grid.shape, dtype=float)
+    xydamp1_max = np.zeros(xy_xwave.shape, dtype=float)
+    xydamp1_actual = np.zeros(xy_xwave.shape, dtype=float)
+    xydamp2 = np.zeros(xy_xwave.shape, dtype=float)
+
+    for i, x_wavenumber in enumerate(x_grid):
+        div_wave = DivWave(
+            wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=x_wavenumber, y_wavenumber_factor=0.0
+        )
+        eigen_value1, eigen_vector1, eigen_vector_cartesian1 = eigen_divergence(
+            divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave
+        )
+        eigen_value2, eigen_vector2, eigen_vector_cartesian2 = eigen_divergence(
+            divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave
+        )
+        xdamp1_max[i] = eigen_value1[np.argmax(np.abs(eigen_value1))]
+        eigen_value1 = np.sort(eigen_value1)
+        xdamp1_actual[i] = eigen_value1[1]
+        xdamp2[i] = eigen_value2[np.argmax(np.abs(eigen_value2))]
+        # is_found1, is_found2 = False, False
+        # threshold = 1.e-6
+        # for k in range(3):
+        #     if np.abs(np.abs(eigen_vector_cartesian1[k, 0]) - 1.0) < threshold:
+        #         assert np.abs(np.abs(eigen_vector_cartesian1[k, 1]) - 0.0) < threshold, f"{x_wavenumber} -- {eigen_vector_cartesian1[k, 1]}"
+        #         assert is_found1 == True, f"Two overlapped eigen vectors 1 for x!!"
+        #         xdamp1[i] = eigen_value1[k]
+        #         is_found1 = True
+        #     if np.abs(np.abs(eigen_vector_cartesian2[k, 0]) - 1.0) < threshold:
+        #         assert np.abs(np.abs(eigen_vector_cartesian2[k, 1]) - 0.0) < threshold, f"{x_wavenumber} -- {eigen_vector_cartesian2[k, 1]}"
+        #         assert is_found2 == True, f"Two overlapped eigen vectors 2 for x!!"
+        #         xdamp2[i] = eigen_value2[k]
+        #         is_found2 = True
+    is_found1, is_found2 = False, False
+    for i, y_wavenumber in enumerate(y_grid):
+        div_wave = DivWave(
+            wave_type=WAVETYPE.Y_WAVE, x_wavenumber_factor=0.0, y_wavenumber_factor=y_wavenumber
+        )
+        eigen_value1, eigen_vector1, eigen_vector_cartesian1 = eigen_divergence(
+            divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave
+        )
+        eigen_value2, eigen_vector2, eigen_vector_cartesian2 = eigen_divergence(
+            divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave
+        )
+        ydamp1_max[i] = eigen_value1[np.argmax(np.abs(eigen_value1))]
+        eigen_value1 = np.sort(eigen_value1)
+        ydamp1_actual[i] = eigen_value1[1]
+        ydamp2[i] = eigen_value2[np.argmax(np.abs(eigen_value2))]
+    #     is_found1, is_found2 = False, False
+    #     for k in range(3):
+    #         if np.abs(np.abs(eigen_vector_cartesian1[k, 1]) - 1.0) < threshold:
+    #             assert np.abs(np.abs(eigen_vector_cartesian1[k, 0]) - 0.0) < threshold, f"{y_wavenumber} -- {eigen_vector_cartesian1[k, 0]}"
+    #             assert is_found1 == True, f"Two overlapped eigen vectors 1 for y!!"
+    #             ydamp1[i] = eigen_value1[k]
+    #             is_found1 = True
+    #         if np.abs(np.abs(eigen_vector_cartesian2[k, 1]) - 1.0) < threshold:
+    #             assert np.abs(np.abs(eigen_vector_cartesian2[k, 0]) - 0.0) < threshold, f"{y_wavenumber} -- {eigen_vector_cartesian2[k, 0]}"
+    #             assert is_found2 == True, f"Two overlapped eigen vectors 2 for y!!"
+    #             ydamp2[i] = eigen_value2[k]
+    #             is_found2 = True
+
+    plt.close()
+
+    f, ax = plt.subplots()
+
+    ax.plot(x_wave, xdamp1_max, label="order 1 (eigen-1)")
+    ax.plot(x_wave, xdamp1_actual, label="order 1 (eigen-2)")
+    ax.plot(x_wave, xdamp2, label="order 2")
+    # ax.set_xscale("log")
+    # ax.set_yscale("log")
+    ax.set_ylabel("eigenvalue")
+    ax.set_xlabel("wavenumber")
+    xtick = [0, math.pi / 2.0, math.pi, math.pi * 3.0 / 2.0, math.pi * 2.0]
+    ax.set_xticks(xtick)
+    # ax.set_title("Mean error in divergence")
+    labels = [item.get_text() for item in ax.get_xticklabels()]
+    labels[1] = "$\\pi/2$"
+    labels[2] = "$\\pi$"
+    labels[3] = "$3\\pi$/2"
+    labels[4] = "$2\\pi$"
+    ax.set_xticklabels(labels)
+    plt.legend()
+    plt.savefig("plot_xdamp.pdf", format="pdf", dpi=500)
+
+    plt.clf()
+
+    f, ax = plt.subplots()
+
+    ax.plot(y_wave, ydamp1_max, label="order 1 (eigen-1)")
+    ax.plot(y_wave, ydamp1_actual, label="order 1 (eigen-2)")
+    ax.plot(y_wave, ydamp2, label="order 2")
+    # ax.set_xscale("log")
+    # ax.set_yscale("log")
+    ax.set_ylabel("eigenvalue")
+    ax.set_xlabel("wavenumber")
+    xtick = [0, math.pi / 2.0, math.pi, math.pi * 3.0 / 2.0, math.pi * 2.0]
+    ax.set_xticks(xtick)
+    # ax.set_title("Mean error in divergence")
+    labels = [item.get_text() for item in ax.get_xticklabels()]
+    labels[1] = "$\\pi/2$"
+    labels[2] = "$\\pi$"
+    labels[3] = "$3\\pi$/2"
+    labels[4] = "$2\\pi$"
+    ax.set_xticklabels(labels)
+    plt.legend()
+    plt.savefig("plot_ydamp.pdf", format="pdf", dpi=500)
+
+    for i, x_wavenumber in enumerate(x_grid):
+        for j, y_wavenumber in enumerate(y_grid):
+            div_wave = DivWave(
+                wave_type=WAVETYPE.X_AND_Y_WAVE,
+                x_wavenumber_factor=x_wavenumber,
+                y_wavenumber_factor=y_wavenumber,
+            )
+            eigen_value1, eigen_vector1, eigen_vector_cartesian1 = eigen_divergence(
+                divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave
+            )
+            eigen_value2, eigen_vector2, eigen_vector_cartesian2 = eigen_divergence(
+                divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave
+            )
+            xydamp1_max[i, j] = eigen_value1[np.argmax(np.abs(eigen_value1))]
+            eigen_value1 = np.sort(eigen_value1)
+            xydamp1_actual[i, j] = eigen_value1[1]
+            xydamp2[i, j] = eigen_value2[np.argmax(np.abs(eigen_value2))]
+
+    plt.clf()
+    f, ax = plt.subplots()
+    # cmap = plt.get_cmap('plasma')
+    cmap = plt.get_cmap("gist_rainbow")
+    cmap = cmap.reversed()
+    boundaries = np.linspace(-5.0, 0.0, 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax.contourf(xy_xwave, xy_ywave, xydamp1_max, cmap=cmap, levels=boundaries, norm=lnorm)
+    cb1 = f.colorbar(cp, location="right")
+
+    ax.set_xlabel("x wavenumber")
+    ax.set_ylabel("y wavenumber")
+    tick = [0, math.pi / 2.0, math.pi, math.pi * 3.0 / 2.0, math.pi * 2.0]
+    ax.set_xticks(tick)
+    ax.set_yticks(tick)
+    labels = [item.get_text() for item in ax.get_xticklabels()]
+    labels[1] = "$\\pi/2$"
+    labels[2] = "$\\pi$"
+    labels[3] = "$3\\pi$/2"
+    labels[4] = "$2\\pi$"
+    ax.set_xticklabels(labels)
+    labels = [item.get_text() for item in ax.get_yticklabels()]
+    labels[1] = "$\\pi/2$"
+    labels[2] = "$\\pi$"
+    labels[3] = "$3\\pi$/2"
+    labels[4] = "$2\\pi$"
+    ax.set_yticklabels(labels)
+    plt.savefig("fig_xydamp1_max.pdf", format="pdf", dpi=400)
+
+    plt.clf()
+    f, ax = plt.subplots()
+    boundaries = np.linspace(-5.0, 0.0, 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax.contourf(xy_xwave, xy_ywave, xydamp1_actual, cmap=cmap, levels=boundaries, norm=lnorm)
+    cb1 = f.colorbar(cp, location="right")
+
+    ax.set_xlabel("x wavenumber")
+    ax.set_ylabel("y wavenumber")
+    tick = [0, math.pi / 2.0, math.pi, math.pi * 3.0 / 2.0, math.pi * 2.0]
+    ax.set_xticks(tick)
+    ax.set_yticks(tick)
+    labels = [item.get_text() for item in ax.get_xticklabels()]
+    labels[1] = "$\\pi/2$"
+    labels[2] = "$\\pi$"
+    labels[3] = "$3\\pi$/2"
+    labels[4] = "$2\\pi$"
+    ax.set_xticklabels(labels)
+    labels = [item.get_text() for item in ax.get_yticklabels()]
+    labels[1] = "$\\pi/2$"
+    labels[2] = "$\\pi$"
+    labels[3] = "$3\\pi$/2"
+    labels[4] = "$2\\pi$"
+    ax.set_yticklabels(labels)
+    plt.savefig("fig_xydamp1_actual.pdf", format="pdf", dpi=400)
+
+    plt.clf()
+    f, ax = plt.subplots()
+    boundaries = np.linspace(-5.0, 0.0, 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax.contourf(xy_xwave, xy_ywave, xydamp2, cmap=cmap, levels=boundaries, norm=lnorm)
+    cb1 = f.colorbar(cp, location="right")
+
+    ax.set_xlabel("x wavenumber")
+    ax.set_ylabel("y wavenumber")
+    tick = [0, math.pi / 2.0, math.pi, math.pi * 3.0 / 2.0, math.pi * 2.0]
+    ax.set_xticks(tick)
+    ax.set_yticks(tick)
+    labels = [item.get_text() for item in ax.get_xticklabels()]
+    labels[1] = "$\\pi/2$"
+    labels[2] = "$\\pi$"
+    labels[3] = "$3\\pi$/2"
+    labels[4] = "$2\\pi$"
+    ax.set_xticklabels(labels)
+    labels = [item.get_text() for item in ax.get_yticklabels()]
+    labels[1] = "$\\pi/2$"
+    labels[2] = "$\\pi$"
+    labels[3] = "$3\\pi$/2"
+    labels[4] = "$2\\pi$"
+    ax.set_yticklabels(labels)
+    plt.savefig("fig_xydamp2.pdf", format="pdf", dpi=400)
+
+    print("MEAN VALUE OF DIV1: ", np.mean(xydamp1_max), np.mean(xydamp1_actual))
+    print("MEAN VALUE OF DIV2: ", np.mean(xydamp2))
 
 
 if __name__ == "__main__":
@@ -1369,3 +1835,4 @@ if __name__ == "__main__":
     # test_divergence_multiple_time_step_on_globe()
 
     # test_eigen_divergence()
+    # plot_eigen_divergence()

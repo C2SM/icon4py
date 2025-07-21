@@ -1058,14 +1058,14 @@ def read_config(
         return NonHydrostaticConfig(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
-            divdamp_fac=0.01,  # 0.025, 0.1 for o2, 0.01 for 04
+            divdamp_fac=1.8,  # 0.025, 0.1 for o2, 0.01 for 04
             divdamp_z=40000.0,
             divdamp_z2=50000.0,
             scal_divsign=1.0,
             first_order_div_threshold=0.0,
-            do_o2_divdamp=False,
+            do_o2_divdamp=True,
             do_3d_divergence_damping=True,
-            divergence_order=1,
+            divergence_order=2,
             do_multiple_divdamp=False,
             number_of_divdamp_step=100,
             do_proper_diagnostics_divdamp=True,
