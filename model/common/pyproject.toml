@@ -5,7 +5,7 @@ requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 
 # -- Standard project description options (PEP 621) --
 [project]
-authors = [{email = "gridtools@cscs.ch", name = "ETH Zurich"}]
+authors = [{ email = "gridtools@cscs.ch", name = "ETH Zurich" }]
 classifiers = [
   'Development Status :: 3 - Alpha',
   'Intended Audience :: Science/Research',
@@ -19,17 +19,17 @@ classifiers = [
   'Programming Language :: Python :: Implementation :: CPython',
   'Topic :: Scientific/Engineering :: Atmospheric Science',
   'Topic :: Scientific/Engineering :: Mathematics',
-  'Topic :: Scientific/Engineering :: Physics'
+  'Topic :: Scientific/Engineering :: Physics',
 ]
 dependencies = [
-  "gt4py>=1.0.4",
+  "gt4py==1.0.5",
   'packaging>=20.0',
   "serialbox4py>=2.6.2",
   'packaging>=20.0',
-  "typing-extensions>=4.11.0"
+  "typing-extensions>=4.11.0",
 ]
 description = "Shared code for the icon4py model."
-license = {text = "BSD-3 License"}
+license = { text = "BSD-3 License" }
 name = "icon4py-common"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -55,7 +55,7 @@ io = [
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
   # mapping. It is not yet clear whether this is a uxarray bug or on our side.
   "uxarray==2024.3.0",
-  "xarray[complete]>=2024.3.0"
+  "xarray[complete]>=2024.3.0",
 ]
 
 [project.urls]
@@ -122,4 +122,4 @@ known-third-party = ['gt4py']
 '*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed']
 
 [tool.setuptools.packages]
-find = {namespaces = true, where = ['src']}
+find = { namespaces = true, where = ['src'] }
