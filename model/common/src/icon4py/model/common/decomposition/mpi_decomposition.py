@@ -23,6 +23,11 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
+    import cupy as cp
+except ImportError:
+    cp = None
+
+try:
     import ghex
     import mpi4py
     from ghex.context import make_context
@@ -243,6 +248,11 @@ class GHexMultiNodeExchange:
             )
             for f in sliced_fields
         ]
+        if hasattr(fields[0].array_ns, "cuda"):
+            # TODO(havogt): this is a workaround as ghex does not that it should synchronize
+            # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
+            fields[0].array_ns.cuda.runtime.deviceSynchronize()
+            self._comm_world.Barrier()
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
