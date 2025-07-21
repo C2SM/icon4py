@@ -25,7 +25,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import fixtures
 
 
-
 def is_python(backend: gtx_backend.Backend | None) -> bool:
     # want to exclude python backends:
     #   - cannot run on embedded: because of slicing
@@ -194,7 +193,6 @@ def _test_and_benchmark(
     )
 
 
-
 class StencilTest:
     """
     Base class to be used for testing stencils.
@@ -230,7 +228,7 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_and_benchmark)
 
-    
+
 def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
     return np.reshape(arr, shape)
 

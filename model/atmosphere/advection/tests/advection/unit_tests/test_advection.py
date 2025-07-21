@@ -12,7 +12,8 @@ from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-from .utils import (
+from ..fixtures import *  # import fixtures
+from ..utils import (
     construct_config,
     construct_diagnostic_exit_state,
     construct_diagnostic_init_state,
@@ -80,20 +81,22 @@ from .utils import (
     ],
 )
 def test_advection_run_single_step(
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    advection_init_savepoint,
-    advection_exit_savepoint,
-    data_provider,
-    backend,
+    date,
     even_timestep,
     ntracer,
     horizontal_advection_type,
     horizontal_advection_limiter,
     vertical_advection_type,
     vertical_advection_limiter,
+    *,
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+    metrics_savepoint,
+    data_provider,
+    backend,
+    advection_init_savepoint,
+    advection_exit_savepoint,
 ):
     # TODO (Chia Rui): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
     if (

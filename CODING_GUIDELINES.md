@@ -134,15 +134,38 @@ return undeclared_symbol  # noqa: F821 [undefined-name] on purpose to trigger bl
 Testing components is a critical part of a software development project. We follow standard practices in software development and write unit, integration, and regression tests. Note that even though [doctests][doctest] are great for documentation purposes, they lack many features and are difficult to debug. Hence, they should not be used as replacement for proper unit tests except in trivial cases.
 
 ### Test suite folder structure
-In each package tests are organized under the `tests` folder. The `tests` folder should not be a package but the contained test suites may be python packages.
+Each component contains a `tests` folders with the following structure:
 
-Test suites in folders `stencil_tests` are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) and should only contain tests for the GT4Py stencils that might be integrated into ICON.
+- a `conftest.py` file with pytest configuration settings
+- a `<component>` folder with the name of the package being tested (e.g. `advection` for the `icon4py.model.atmosphere.advection` component) which should be a Python package, contain all tests organized in subfolders, and (optionally) define `fixtures.py` and `utils.py` modules with the shared fixtures and testing utilities used in the tests.
 
+Example:
 
-## Further 
+```
+/model/system/subsystem/component/
+   src/
+      ...
+   tests/
+      conftest.py          # pytest settings only
+      component/
+         __init__.py       # REQUIRED to make this folder a Python package
+         fixtures.py       # all fixture definitions and imports
+         utils.py          # other shared testing utilities 
+         stencil_tests/
+            test_foo.py
+            ...
+         unit_test/
+            test_bar.py
+            ...
+```
+
+Test suites inside a `stencil_tests` folder are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) and should only contain tests for the GT4Py stencils that might be integrated into ICON.
 
 
 <!--
+
+## Further 
+
 TODO: add test conventions:
 TODO:    - to name test functions
 TODO:    - to use pytest features (fixtures, markers, etc.)

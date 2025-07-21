@@ -8,8 +8,5 @@
 
 from __future__ import annotations
 
-from . import datatest, general
-
-from .datatest import *
-from .general import *
-
+from .datatest import *  # noqa: F401  # import fixtures
+from .general import *  # noqa: F401  # import fixtures
