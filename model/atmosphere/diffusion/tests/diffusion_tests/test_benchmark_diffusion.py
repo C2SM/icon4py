@@ -8,6 +8,8 @@
 import functools
 
 import pytest
+import netCDF4 as nc4
+from pathlib import Path
 
 import icon4py.model.common.dimension as dims
 import gt4py.next as gtx
@@ -28,6 +30,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
 )
+from icon4py.model.testing.data_handling import download_and_extract
 
 from .utils import (
     construct_diffusion_config,
@@ -153,7 +156,7 @@ def metrics_factory_params(
     "grid_file",
     [
         (
-            dt_utils.GLOBAL_EXPERIMENT
+            dt_utils.R02B04_GLOBAL
         ),
     ],
 )
@@ -165,13 +168,33 @@ def test_run_diffusion_benchmark(
     ndyn_substeps,
     backend,
 ):
+    download_and_extract("https://polybox.ethz.ch/index.php/s/mt84D4wWc3EJFP5", Path("/extpar_data/"),Path("/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_data/"), "extpar_r04b09.tar.gz")
+
+    f = nc4.Dataset("/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_r04b09.nc", "r")
+    topo_c = f.variables["topo_c"]
+    f.close()
 
     # get configuration
     num_levels = 65
     dtime = 10
     orchestration = False
-    config = construct_diffusion_config(grid_file, ndyn_substeps)
+    # TODO (Yilu): for now we use the default configuration, later we can add more configurations
+    config=diffusion.DiffusionConfig(
+        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        hdiff_w=True,
+        hdiff_vn=True,
+        zdiffu_t=False,
+        type_t_diffu=2,
+        type_vn_diffu=1,
+        hdiff_efdt_ratio=24.0,
+        smagorinski_scaling_factor=0.025,
+        hdiff_temp=True,
+        n_substeps=ndyn_substeps,
+    )
+    #config = construct_diffusion_config(grid_file, ndyn_substeps)
     diffusion_parameters = diffusion.DiffusionParams(config)
+
+    #nc4.Dataset(grid_file, "r", format="NETCDF4")
 
     # run the grid manager to get the grid, coordinates, geometry_fields
     grid_manager = grid_utils.get_grid_manager(grid_file=grid_file, num_levels=num_levels, keep_skip_values=True,backend=backend)
@@ -220,7 +243,7 @@ def test_run_diffusion_benchmark(
         vertical_grid=vertical_grid,
         decomposition_info=_construct_dummy_decomposition_info(grid, backend),
         geometry_source=geometry_field_source,
-        topography=data_alloc.random_field(grid, dims.CellDim, low=0.0), # TODO: check the analytical computation
+        topography=topo_c,  #data_alloc.random_field(grid, dims.CellDim, low=0.0), # TODO: check the analytical computation
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
