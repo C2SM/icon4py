@@ -1427,6 +1427,9 @@ class IconNonHydroExitSavepoint(IconSavepoint):
     def z_theta_v_fl_e(self):
         return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
 
+    def z_dwdz_dd(self):
+        return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
+
 
 class NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
     def z_rho_e(self):
