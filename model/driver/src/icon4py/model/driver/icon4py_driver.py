@@ -29,7 +29,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import device_utils
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
@@ -173,7 +173,7 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
-            data_alloc.device_sync(self.run_config.backend)
+            device_utils.sync(self.run_config.backend)
             timer.capture()
 
             self._is_first_step_in_simulation = False
