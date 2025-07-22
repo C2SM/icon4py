@@ -1903,7 +1903,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250613" },
+    { name = "gt4py", specifier = "==1.0.5" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
