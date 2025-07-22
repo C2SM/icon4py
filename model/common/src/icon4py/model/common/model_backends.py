@@ -59,7 +59,7 @@ try:
             cached=True,
             gpu=gpu,
             async_sdfg_call=True,
-            blocking_dim=(dims.KDim if (enable_loop_blocking and gpu) else None),
+            blocking_dim=(dims.KDim if enable_loop_blocking else None),
             blocking_size=10,
             make_persistent=False,
             use_zero_origin=True,
