@@ -238,16 +238,6 @@ class BaseGrid:
         assert gtx_common.is_neighbor_table(connectivity)
         return connectivity
 
-    @functools.cached_property
-    def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
-        # TODO this should be removed
-        return {
-            dim: v.ndarray
-            for k, v in self.connectivities.items()
-            if (dim := dims.DIMENSIONS_BY_OFFSET_NAME.get(k)) is not None
-            and gtx_common.is_neighbor_connectivity(v)
-        }
-
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
         Use to specify lower end of domains of a field for field_operators.
