@@ -514,7 +514,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_remap_error
+@pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
