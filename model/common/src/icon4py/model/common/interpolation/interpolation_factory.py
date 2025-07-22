@@ -60,7 +60,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._config = {
             "divavg_cntrwgt": 0.5,
             "weighting_factor": 0.0,
-            "nudge_max_coeffs": 0.375,
+            "nudge_max_coeffs": 0.375,  # TODO why the extra `s` at the end? is this a typo?
             "nudge_efold_width": 2.0,
             "nudge_zone_width": 10,
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],

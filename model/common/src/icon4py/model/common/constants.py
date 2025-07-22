@@ -79,7 +79,9 @@ DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 # Implementation constants
 #: default physics to dynamics time step ratio
 # TODO (magdalena) not a constant, this is a default config parameter
-DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
+DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[
+    float
+] = 5.0  # TODO isn't this the inverse i.e. should it be called DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
 
 #: average earth radius in [m]
 EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6

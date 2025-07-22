@@ -59,7 +59,7 @@ def solve_nh_init(
     l_vert_nested = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
-    nudge_max_coeff = 0.375
+    nudge_max_coeff = 0.075 * common_utils.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
     divdamp_fac = 0.004
     divdamp_fac2 = 0.004
     divdamp_fac3 = 0.004
@@ -314,7 +314,9 @@ def test_dycore_wrapper_granule_inputs(
     l_vert_nested = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
-    nudge_max_coeff = 0.375  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
+    nudge_max_coeff = (
+        0.075 * common_utils.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+    )  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
     divdamp_fac = 0.004
     divdamp_fac2 = 0.004
     divdamp_fac3 = 0.004
