@@ -457,10 +457,10 @@ def test_diffusion_wrapper_single_step(
     assert helpers.dallclose(py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12)
     assert helpers.dallclose(py2fgen.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12)
     assert helpers.dallclose(
-        py2fgen.as_array(ffi, exner, py2fgen.FLOAT64), exner_.asnumpy(), atol=1e-12, rtol=1.0e-6
+        py2fgen.as_array(ffi, exner, py2fgen.FLOAT64), exner_.asnumpy(), atol=1e-12
     )
     assert helpers.dallclose(
-        py2fgen.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12, rtol=1.0e-6
+        py2fgen.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12
     )
     assert helpers.dallclose(
         py2fgen.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
