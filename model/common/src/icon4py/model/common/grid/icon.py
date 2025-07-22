@@ -10,10 +10,10 @@ import functools
 import logging
 import math
 import uuid
-from typing import Final, Optional
+from typing import Callable, Final, Optional
 
 import gt4py.next as gtx
-from gt4py.next import allocators as gtx_allocators
+from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
@@ -167,6 +167,11 @@ def icon_grid(
     end_indices: dict[gtx.Dimension, data_alloc.NDArray],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
+    sparse_1d_connectivity_constructor: Callable[
+        [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+        gtx_common.NeighborTable,
+    ]
+    | None = None,
 ) -> IconGrid:
     connectivities = {
         offset.value: base.construct_connectivity(
@@ -190,4 +195,5 @@ def icon_grid(
         _end_indices=end_indices,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
+        sparse_1d_connectivity_constructor=sparse_1d_connectivity_constructor,
     )
