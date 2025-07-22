@@ -532,6 +532,7 @@ class SolveNonhydro:
             compute_dwdz_for_divergence_damping.with_backend(self._backend)
         ).compile(
             enable_jit=False,
+            vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
         )
