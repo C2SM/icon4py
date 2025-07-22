@@ -455,6 +455,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     icon_result_vt = savepoint_velocity_exit.vt()
     icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie()
+    # TODO (Chia Rui): z_kin_hor_e is not available in savepoint_velocity_exit
     icon_result_z_kin_hor_e = (
         savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_kin_hor_e()
     )
@@ -527,8 +528,6 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     icon_grid,
     grid_savepoint,
     savepoint_compute_advection_in_vertical_momentum_equation_init,
-    savepoint_compute_advection_in_vertical_momentum_equation_exit,
-    savepoint_compute_cell_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_exit,
@@ -546,19 +545,16 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
     contravariant_correction_at_edges_on_model_levels = savepoint_velocity_exit.z_w_concorr_me()
     contravariant_correction_at_cells_on_half_levels = savepoint_velocity_init.w_concorr_c()
-    w = savepoint_compute_advection_in_vertical_momentum_equation_init.w()
+    w = savepoint_velocity_init.w()
     tangential_wind_on_half_levels = savepoint_velocity_exit.z_vt_ie()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
-    vertical_wind_advective_tendency = (
-        savepoint_compute_advection_in_vertical_momentum_equation_init.ddt_w_adv()
-    )
+    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
+    # TODO (Chia Rui): contravariant_corrected_w_at_cells_on_model_levels is not available in savepoint_velocity_init
     contravariant_corrected_w_at_cells_on_model_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
     )
     vertical_cfl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    skip_compute_predictor_vertical_advection = (
-        savepoint_compute_advection_in_vertical_momentum_equation_init.lvn_only()
-    )
+    skip_compute_predictor_vertical_advection = savepoint_velocity_init.lvn_only()
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
@@ -679,8 +675,6 @@ def test_compute_advection_in_vertical_momentum_equation(
     icon_grid,
     grid_savepoint,
     savepoint_compute_advection_in_vertical_momentum_equation_init,
-    savepoint_compute_advection_in_vertical_momentum_equation_exit,
-    savepoint_compute_cell_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_exit,
@@ -697,12 +691,11 @@ def test_compute_advection_in_vertical_momentum_equation(
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
     contravariant_correction_at_cells_on_half_levels = savepoint_velocity_exit.w_concorr_c()
-    w = savepoint_compute_advection_in_vertical_momentum_equation_init.w()
+    w = savepoint_velocity_init.w()
     tangential_wind_on_half_levels = savepoint_velocity_exit.z_vt_ie()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
-    vertical_wind_advective_tendency = (
-        savepoint_compute_advection_in_vertical_momentum_equation_init.ddt_w_adv()
-    )
+    vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
+    # TODO (Chia Rui): contravariant_corrected_w_at_cells_on_model_levels is not available in savepoint_velocity_init
     contravariant_corrected_w_at_cells_on_model_levels = (
         savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
     )
@@ -812,7 +805,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
     icon_grid,
     grid_savepoint,
     savepoint_compute_advection_in_horizontal_momentum_equation_init,
-    savepoint_compute_advection_in_horizontal_momentum_equation_exit,
     interpolation_savepoint,
     metrics_savepoint,
     backend,
@@ -824,18 +816,15 @@ def test_compute_advection_in_horizontal_momentum_equation(
     step_date_init,
     step_date_exit,
 ):
-    vn = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn()
+    vn = savepoint_velocity_init.vn()
+    # TODO (Chia Rui): z_kin_hor_e is not available in savepoint_velocity_exit
     horizontal_kinetic_energy_at_edges_on_model_levels = (
         savepoint_compute_advection_in_horizontal_momentum_equation_init.z_kin_hor_e()
     )
-    tangential_wind = savepoint_compute_advection_in_horizontal_momentum_equation_init.vt()
-    contravariant_corrected_w_at_cells_on_model_levels = (
-        savepoint_compute_advection_in_horizontal_momentum_equation_init.z_w_con_c_full()
-    )
-    vn_on_half_levels = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn_ie()
-    normal_wind_advective_tendency = (
-        savepoint_compute_advection_in_horizontal_momentum_equation_init.ddt_vn_apc()
-    )
+    tangential_wind = savepoint_velocity_exit.vt()
+    contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_exit.z_w_con_c_full()
+    vn_on_half_levels = savepoint_velocity_exit.vn_ie()
+    normal_wind_advective_tendency = savepoint_velocity_init.ddt_vn_apc_pc(istep_init - 1)
 
     e_bln_c_s = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend

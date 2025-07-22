@@ -1504,6 +1504,9 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def w_concorr_c(self):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
 
+    def lvn_only(self) -> bool:
+        return bool(self.serializer.read("vn_only", self.savepoint)[0])
+
 
 class VelocityAdvectionCellDiagnosticsInitSavepoint(IconSavepoint):
     def z_kin_hor_e(self):
