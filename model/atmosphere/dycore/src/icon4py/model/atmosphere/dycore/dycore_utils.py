@@ -58,7 +58,7 @@ def _calculate_fourth_order_divdamp_scaling_coeff(
 ) -> fa.KField[float]:
     interpolated_fourth_order_divdamp_factor = (
         maximum(0.0, interpolated_fourth_order_divdamp_factor - 0.25 * second_order_divdamp_factor)
-        if (divdamp_order == 24 or divdamp_order == 4)
+        if divdamp_order == 24
         else interpolated_fourth_order_divdamp_factor
     )
     return -interpolated_fourth_order_divdamp_factor * mean_cell_area**2
