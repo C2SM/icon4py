@@ -32,7 +32,7 @@ class _ConnectivityConceptFixer:
     keep this for a while, otherwise we need to touch all StencilTests.
     """
 
-    _grid: base.BaseGrid
+    _grid: base.Grid
 
     def __getitem__(self, dim: gtx.Dimension | str) -> np.ndarray:
         if isinstance(dim, gtx.Dimension):
@@ -41,7 +41,7 @@ class _ConnectivityConceptFixer:
 
 
 @pytest.fixture(scope="session")
-def connectivities_as_numpy(grid: base.BaseGrid) -> dict[gtx.Dimension, np.ndarray]:
+def connectivities_as_numpy(grid: base.Grid) -> dict[gtx.Dimension, np.ndarray]:
     return _ConnectivityConceptFixer(grid)
 
 
@@ -93,7 +93,7 @@ def allocate_data(
 
 def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
-    grid: base.BaseGrid,
+    grid: base.Grid,
     backend: gtx_backend.Backend | None,
 ):
     for marker in markers:
@@ -180,7 +180,7 @@ def _verify_stencil_test(
 
 def _test_and_benchmark(
     self,
-    grid: base.BaseGrid,
+    grid: base.Grid,
     backend: gtx_backend.Backend,
     connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field],

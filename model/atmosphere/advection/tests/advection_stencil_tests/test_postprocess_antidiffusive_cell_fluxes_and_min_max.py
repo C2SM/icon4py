@@ -55,7 +55,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
         )
 
     @pytest.fixture()
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         hi_bound, lo_bound = 3, 1
         refin_ctrl = data_alloc.constant_field(grid, 2, dims.CellDim, dtype=gtx.int32)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

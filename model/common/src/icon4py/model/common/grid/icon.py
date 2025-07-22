@@ -108,7 +108,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
 
 
 @dataclasses.dataclass(frozen=True)
-class IconGrid(base.BaseGrid):
+class IconGrid(base.Grid):
     global_properties: GlobalGridParams = dataclasses.field(default=None, kw_only=True)
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True

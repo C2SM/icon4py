@@ -338,7 +338,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         reference_rho_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )

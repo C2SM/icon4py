@@ -126,7 +126,7 @@ def random_field(
 
 
 def random_mask(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     *dims: gtx.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gtx.Dimension, int]] = None,
@@ -145,7 +145,7 @@ def random_mask(
 
 
 def zero_field(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
     extend: Optional[dict[gtx.Dimension, int]] = None,
@@ -156,7 +156,7 @@ def zero_field(
 
 
 def constant_field(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     value: float,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
@@ -170,7 +170,7 @@ def constant_field(
 
 
 def _shape(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     *dims: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
 ) -> tuple[int, ...]:
@@ -179,7 +179,7 @@ def _shape(
 
 
 def index_field(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     dim: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
     dtype=gtx.int32,

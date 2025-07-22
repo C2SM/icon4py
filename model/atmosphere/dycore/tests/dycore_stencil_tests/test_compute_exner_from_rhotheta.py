@@ -39,7 +39,7 @@ class TestComputeExnerFromRhotheta(StencilTest):
         return dict(out=(theta_v, exner))
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, Any]:
+    def input_data(self, grid: base.Grid) -> dict[str, Any]:
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
         rho = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)

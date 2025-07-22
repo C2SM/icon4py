@@ -57,7 +57,6 @@ class GridConfig:
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
     lvertnest: bool = False
-    on_gpu: bool = False  # TODO can this be removed?
     keep_skip_values: bool = True
 
     @property
@@ -95,14 +94,14 @@ def _default_1d_sparse_connectivity_constructor(
 
 
 @dataclasses.dataclass(frozen=True)
-class BaseGrid:
+class Grid:
     """
     Contains core features of a grid.
 
-    The 'BaseGrid' is ICON4Py specific: it expects certain connectivities to be present
+    The 'Grid' is ICON4Py specific: it expects certain connectivities to be present
     to construct derived (1D sparse) connectivities.
 
-    Note: A 'BaseGrid' can be used in 'StencilTest's, while some components of ICON4Py may
+    Note: A 'Grid' can be used in 'StencilTest's, while some components of ICON4Py may
     require an 'IconGrid'.
     """
 
