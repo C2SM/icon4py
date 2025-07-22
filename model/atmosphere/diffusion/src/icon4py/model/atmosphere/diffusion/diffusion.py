@@ -458,6 +458,7 @@ class Diffusion:
         self.apply_diffusion_to_theta_and_exner = apply_diffusion_to_theta_and_exner.with_backend(
             self._backend
         ).compile(
+            enable_jit=False,
             apply_zdiffusion_t=[self.config.apply_zdiffusion_t],
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
@@ -551,6 +552,9 @@ class Diffusion:
         )
         self.w_tmp = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+        )
+        self.theta_v_tmp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
     def _determine_horizontal_domains(self):
@@ -874,10 +878,14 @@ class Diffusion:
                 "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
+            self.copy_field(
+                prognostic_state.theta_v, self.theta_v_tmp
+            )  # TODO write in a way that we can avoid the copy
+
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
-                theta_v=prognostic_state.theta_v,
+                theta_v_in=self.theta_v_tmp,
                 geofac_div=self._interpolation_state.geofac_div,
                 mask=self._metric_state.mask_hdiff,
                 zd_vertoffset=self._metric_state.zd_vertoffset,
@@ -886,6 +894,7 @@ class Diffusion:
                 geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
                 vcoef=self._metric_state.zd_intcoef,
                 area=self._cell_params.area,
+                theta_v=prognostic_state.theta_v,
                 exner=prognostic_state.exner,
                 rd_o_cvd=self.rd_o_cvd,
                 apply_zdiffusion_t=self.config.apply_zdiffusion_t,

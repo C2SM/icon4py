@@ -18,7 +18,7 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias
 from icon4py.model.common.grid import base, icon
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -57,7 +57,7 @@ class IconSavepoint:
         self.backend = backend
         self.xp = data_alloc.import_array_ns(self.backend)
 
-    def optionally_registered(*dims):
+    def optionally_registered(*dims, dtype=type_alias.wpfloat):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
@@ -72,7 +72,9 @@ class IconSavepoint:
                         # We allocate a dummy field with size 1 in each dimension
                         # as a workaround for the lack of support for optional fields in gt4py.
                         shp = (1,) * len(dims)
-                        return gtx.as_field(dims, np.zeros(shp), allocator=self.backend)
+                        return gtx.as_field(
+                            dims, np.zeros(shp, dtype=dtype), allocator=self.backend
+                        )
                     else:
                         return None
 
@@ -775,7 +777,7 @@ class MetricSavepoint(IconSavepoint):
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", dims.EdgeDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim, dtype=gtx.bool)
     def mask_hdiff(self):
         return self._get_field("mask_hdiff", dims.CellDim, dims.KDim, dtype=bool)
 
@@ -798,7 +800,7 @@ class MetricSavepoint(IconSavepoint):
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", dims.CellDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered()
+    @IconSavepoint.optionally_registered(dims.CECDim, dims.KDim)
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
@@ -826,7 +828,7 @@ class MetricSavepoint(IconSavepoint):
             allocator=self.backend,
         )
 
-    @IconSavepoint.optionally_registered(dims.CECDim, dims.KDim)
+    @IconSavepoint.optionally_registered(dims.CECDim, dims.KDim, dtype=gtx.int32)
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 

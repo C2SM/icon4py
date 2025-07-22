@@ -66,7 +66,7 @@ def _apply_diffusion_to_theta_and_exner(
 def apply_diffusion_to_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
-    theta_v: fa.CellKField[wpfloat],
+    theta_v_in: fa.CellKField[wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     mask: fa.CellKField[bool],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32],
@@ -75,6 +75,7 @@ def apply_diffusion_to_theta_and_exner(
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CECDim], wpfloat],
     vcoef: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], wpfloat],
     area: fa.CellField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
     apply_zdiffusion_t: bool,
@@ -86,7 +87,7 @@ def apply_diffusion_to_theta_and_exner(
     _apply_diffusion_to_theta_and_exner(
         kh_smag_e,
         inv_dual_edge_length,
-        theta_v,
+        theta_v_in,
         geofac_div,
         mask,
         zd_vertoffset,
