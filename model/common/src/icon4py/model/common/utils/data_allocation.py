@@ -26,9 +26,12 @@ if TYPE_CHECKING:
 
 
 try:
+    import cupy as cp
     import cupy as xp
 except ImportError:
     import numpy as xp
+
+    cp = None
 
 NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
@@ -75,6 +78,12 @@ def array_ns(try_cupy: bool) -> ModuleType:
 def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(is_cupy_device(allocator))
+
+
+# TODO does not really belong here...
+def device_sync(backend: Optional[gtx_backend.Backend] = None) -> None:
+    if is_cupy_device(backend):
+        cp.cuda.runtime.deviceSynchronize()
 
 
 def as_field(
