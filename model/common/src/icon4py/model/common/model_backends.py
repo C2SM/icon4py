@@ -28,7 +28,7 @@ try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
     def make_custom_dace_backend(
-        gpu: bool, enable_loop_blocking: bool = False
+        gpu: bool, enable_loop_blocking: bool = True
     ) -> gtx_backend.Backend:
         """Customize the dace backend with the following configuration.
 
@@ -59,7 +59,7 @@ try:
             cached=True,
             gpu=gpu,
             async_sdfg_call=True,
-            blocking_dim=(dims.KDim if enable_loop_blocking else None),
+            blocking_dim=(dims.KDim if (enable_loop_blocking and gpu) else None),
             blocking_size=10,
             make_persistent=False,
             use_zero_origin=True,
