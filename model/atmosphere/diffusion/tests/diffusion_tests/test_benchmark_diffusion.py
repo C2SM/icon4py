@@ -167,6 +167,7 @@ def test_run_diffusion_benchmark(
     metrics_factory_params,
     ndyn_substeps,
     backend,
+    benchmark,
 ):
     download_and_extract("https://polybox.ethz.ch/index.php/s/mt84D4wWc3EJFP5", Path("/extpar_data/"),Path("/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_data/"), "extpar_r04b09.tar.gz")
 
