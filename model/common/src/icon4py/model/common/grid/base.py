@@ -272,7 +272,6 @@ def construct_connectivity(
 ):
     from_dim, dim = offset.target
     to_dim = offset.source
-    # TODO maybe caller should already do the replacement?
     if replace_skip_values:
         _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
         skip_value = None
