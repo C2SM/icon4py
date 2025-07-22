@@ -225,7 +225,6 @@ def construct_icon_grid(
             dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
             dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
             dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
-            dims.CECDim: grid.size[dims.CellDim] * grid.size[dims.C2E2CDim],
         }
     )
 

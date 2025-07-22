@@ -69,7 +69,9 @@ class IconSavepoint:
                         f"{name}: field not registered in savepoint {self.savepoint.metainfo}"
                     )
                     if dims:
-                        shp = tuple(self.sizes[d] for d in dims)
+                        # We allocate a dummy field with size 1 in each dimension
+                        # as a workaround for the lack of support for optional fields in gt4py.
+                        shp = (1,) * len(dims)
                         return gtx.as_field(dims, np.zeros(shp), allocator=self.backend)
                     else:
                         return None
@@ -516,7 +518,6 @@ class IconGridSavepoint(IconSavepoint):
                 dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
                 dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
                 dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
-                dims.CECDim: grid.size[dims.CellDim] * grid.size[dims.C2E2CDim],
             }
         )
 
@@ -1893,12 +1894,14 @@ class IconSerialDataProvider:
 
     @functools.cached_property
     def grid_size(self):
-        return (
-            self.from_savepoint_grid(grid_id=uuid.UUID(int=0), grid_root=0, grid_level=0)
-            .construct_icon_grid(backend=None)
-            .size
-        )
-
+        sp = self._get_icon_grid_savepoint()
+        grid_sizes = {
+            dims.CellDim: self.serializer.read("num_cells", savepoint=sp).astype(gtx.int32)[0],
+            dims.EdgeDim: self.serializer.read("num_edges", savepoint=sp).astype(gtx.int32)[0],
+            dims.VertexDim: self.serializer.read("num_vert", savepoint=sp).astype(gtx.int32)[0],
+            dims.KDim: sp.metainfo.to_dict()["nlev"],
+        }
+        return grid_sizes
 
     def from_savepoint_grid(
         self, grid_id: uuid.UUID, grid_root: int, grid_level: int
