@@ -33,12 +33,10 @@ CUDA_DEVICE_TYPES = (
 )
 
 try:
-    import cupy as cp
     import cupy as xp
 except ImportError:
     import numpy as xp
 
-    cp = None
 
 NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
