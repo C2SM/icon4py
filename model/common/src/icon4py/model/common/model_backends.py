@@ -70,5 +70,6 @@ try:
     )
 
 except ImportError:
-    # dace module not installed, ignore dace backends
-    pass
+    # dace module not installed, thus the dace backends are not available
+    def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
+        raise NotImplementedError("Depends on dace module, which is not installed.")

@@ -27,14 +27,6 @@ from icon4py.model.common.grid import base, icon
 
 
 try:
-    import dace  # type: ignore[import-untyped]
-except ImportError:
-    from types import ModuleType
-    from typing import Optional
-
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
-
-try:
     import cupy as cp
 
     xp = cp
@@ -65,11 +57,13 @@ _BACKEND_MAP = {
     BackendIntEnum._GTFN_CPU: run_gtfn_cached,
     BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
 }
-if dace:
+try:
     _BACKEND_MAP |= {
         BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(gpu=False),
         BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(gpu=True),
     }
+except NotImplementedError:
+    pass  # dace backends not available
 
 
 def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
