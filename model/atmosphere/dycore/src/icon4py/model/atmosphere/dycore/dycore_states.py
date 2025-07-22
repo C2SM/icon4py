@@ -79,11 +79,6 @@ class RhoThetaAdvectionType(FrozenNamespace[int]):
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
-    ndyn_substeps_var: int
-    """
-    This variable is defined in mo_nonhydrostatic_config.f90 in ICON as a derived "namelist parameter".
-    """
-
     max_vertical_cfl: ta.wpfloat
     """
     Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.

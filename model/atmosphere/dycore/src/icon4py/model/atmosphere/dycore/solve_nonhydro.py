@@ -831,6 +831,7 @@ class SolveNonhydro:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         dtime: float,
+        ndyn_substeps_var: int,
         at_initial_timestep: bool,
         lprep_adv: bool,
         at_first_substep: bool,
@@ -844,6 +845,7 @@ class SolveNonhydro:
             prep_adv: variables for tracer advection
             second_order_divdamp_factor: Originally declared as divdamp_fac_o2 in ICON. Second order (nabla2) divergence damping coefficient.
             dtime: time step
+            ndyn_substeps_var: number of dynamical substeps
             at_initial_timestep: initial time step of the model run
             lprep_adv: Preparation for tracer advection
             at_first_substep: first substep
@@ -883,6 +885,7 @@ class SolveNonhydro:
             prep_adv=prep_adv,
             second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=dtime,
+            ndyn_substeps_var=ndyn_substeps_var,
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
@@ -1304,6 +1307,7 @@ class SolveNonhydro:
         second_order_divdamp_factor: float,
         prep_adv: dycore_states.PrepAdvection,
         dtime: float,
+        ndyn_substeps_var: int,
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
@@ -1314,7 +1318,7 @@ class SolveNonhydro:
         )
 
         # Inverse value of ndyn_substeps for tracer advection precomputations
-        r_nsubsteps = 1.0 / diagnostic_state_nh.ndyn_substeps_var
+        r_nsubsteps = 1.0 / ndyn_substeps_var
 
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
@@ -1513,7 +1517,7 @@ class SolveNonhydro:
             advection_implicit_weight_parameter=self._params.advection_implicit_weight_parameter,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
-            ndyn_substeps_var=float(diagnostic_state_nh.ndyn_substeps_var),
+            ndyn_substeps_var=float(ndyn_substeps_var),
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
             is_iau_active=self._config.is_iau_active,

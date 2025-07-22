@@ -286,7 +286,6 @@ def test_run_timeloop_single_step(
 
     current_index, next_index = (1, 0) if not linit else (0, 1)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        ndyn_substeps_var=ndyn_substeps,
         max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),

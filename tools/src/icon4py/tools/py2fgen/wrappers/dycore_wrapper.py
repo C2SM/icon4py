@@ -356,7 +356,6 @@ def solve_nh_run(
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        ndyn_substeps_var=ndyn_substeps_var,
         max_vertical_cfl=max_vcfl,
         theta_v_at_cells_on_half_levels=theta_v_ic,
         perturbed_exner_at_cells_on_model_levels=exner_pr,
@@ -408,6 +407,7 @@ def solve_nh_run(
         prep_adv=prep_adv,
         second_order_divdamp_factor=divdamp_fac_o2,
         dtime=dtime,
+        ndyn_substeps_var=ndyn_substeps_var,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,

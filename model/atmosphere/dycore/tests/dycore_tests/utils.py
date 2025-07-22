@@ -130,7 +130,6 @@ def construct_diagnostics(
 ):
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
-        ndyn_substeps_var=ndyn_substeps,
         max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=init_savepoint.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=init_savepoint.exner_pr(),

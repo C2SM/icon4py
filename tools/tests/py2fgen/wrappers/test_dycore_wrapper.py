@@ -552,7 +552,6 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        ndyn_substeps_var=ndyn_substeps,
         # TODO (Chia Rui): read from serialized data
         max_vertical_cfl=0.0,
         tangential_wind=sp.vt(),

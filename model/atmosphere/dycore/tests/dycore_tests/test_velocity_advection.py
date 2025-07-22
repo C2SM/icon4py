@@ -175,7 +175,6 @@ def test_velocity_predictor_step(
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        ndyn_substeps_var=ndyn_substeps,
         max_vertical_cfl=0.0,
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
@@ -321,7 +320,6 @@ def test_velocity_corrector_step(
     assert not vn_only
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        ndyn_substeps_var=ndyn_substeps,
         max_vertical_cfl=0.0,
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
