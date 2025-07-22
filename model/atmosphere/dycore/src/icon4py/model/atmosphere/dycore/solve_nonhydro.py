@@ -337,8 +337,11 @@ class NonHydrostaticConfig:
         if self.itime_scheme != dycore_states.TimeSteppingScheme.MOST_EFFICIENT:
             raise NotImplementedError("itime_scheme can only be 4")
 
-        if self.divdamp_order != dycore_states.DivergenceDampingOrder.COMBINED:
-            raise NotImplementedError("divdamp_order can only be 24")
+        if self.divdamp_order not in (
+            dycore_states.DivergenceDampingOrder.COMBINED,
+            dycore_states.DivergenceDampingOrder.FOURTH_ORDER,
+        ):
+            raise NotImplementedError("divdamp_order can only be 4 or 24")
 
         if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
             raise NotImplementedError(
