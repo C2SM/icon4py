@@ -173,7 +173,7 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
-            device_utils.device_sync(self.run_config.backend)
+            device_utils.sync(self.run_config.backend)
             timer.capture()
 
             self._is_first_step_in_simulation = False
