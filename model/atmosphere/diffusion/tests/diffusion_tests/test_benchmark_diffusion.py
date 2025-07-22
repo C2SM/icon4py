@@ -16,6 +16,7 @@ import gt4py.next as gtx
 from icon4py.model.common.decomposition import definitions
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
+from icon4py.model.common.dimension import CellDim
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid, geometry,
@@ -167,12 +168,12 @@ def test_run_diffusion_benchmark(
     metrics_factory_params,
     ndyn_substeps,
     backend,
-    benchmark,
+    # benchmark,
 ):
-    download_and_extract("https://polybox.ethz.ch/index.php/s/mt84D4wWc3EJFP5", Path("/extpar_data/"),Path("/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_data/"), "extpar_r04b09.tar.gz")
+    download_and_extract("https://polybox.ethz.ch/index.php/s/CWWtBHBC9iNpLEo/download", Path("./extpar_data/"),Path("./extpar_data/"), "extpar_r04b09.tar.gz")
 
-    f = nc4.Dataset("/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_r04b09.nc", "r")
-    topo_c = f.variables["topo_c"]
+    f = nc4.Dataset("/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_data/extpar_r04b09.nc", "r")
+    topo_c = f.variables["topography_c"][:]
     f.close()
 
     # get configuration
@@ -244,7 +245,7 @@ def test_run_diffusion_benchmark(
         vertical_grid=vertical_grid,
         decomposition_info=_construct_dummy_decomposition_info(grid, backend),
         geometry_source=geometry_field_source,
-        topography=topo_c,  #data_alloc.random_field(grid, dims.CellDim, low=0.0), # TODO: check the analytical computation
+        topography=gtx.as_field((dims.CellDim,), data=topo_c), # TODO: check the analytical computation
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
