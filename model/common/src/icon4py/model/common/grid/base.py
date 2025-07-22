@@ -128,7 +128,8 @@ class BaseGrid:
             [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
             gtx_common.NeighborTable,
         ]
-    ] = _default_1d_sparse_connectivity_constructor
+        | None
+    ] = None
 
     def __post_init__(
         self,
@@ -136,8 +137,11 @@ class BaseGrid:
         sparse_1d_connectivity_constructor: Callable[
             [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
             gtx_common.NeighborTable,
-        ],
+        ]
+        | None,
     ):
+        if sparse_1d_connectivity_constructor is None:
+            sparse_1d_connectivity_constructor = _default_1d_sparse_connectivity_constructor
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
         # 1d sparse connectivities

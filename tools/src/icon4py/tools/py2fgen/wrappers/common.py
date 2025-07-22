@@ -10,13 +10,13 @@
 import functools
 import logging
 from types import ModuleType
-from typing import Callable, TypeAlias, Union
+from typing import Callable, Iterable, TypeAlias, Union
 
 import gt4py.next as gtx
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
-from gt4py.next import backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
@@ -134,6 +134,30 @@ def add_origin(xp: ModuleType, table: NDArray) -> NDArray:
     return xp.column_stack((xp.arange(table.shape[0], dtype=xp.int32), table))
 
 
+def get_nproma(tables: Iterable[NDArray]) -> int:
+    tables = list(tables)
+    nproma = tables[0].shape[0]
+    if not all(table.shape[0] == nproma for table in tables):
+        raise ValueError("All connectivity tables must have the same number of rows (nproma).")
+    return nproma
+
+
+def _nproma_1d_sparse_connectivity_constructor(
+    nproma: int,
+    offset: gtx.FieldOffset,
+    shape2d: tuple[int, int],
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> data_alloc.NDArray:
+    arr = np.arange(nproma * shape2d[1], dtype=gtx.int32).reshape((nproma, shape2d[1]))
+    arr = arr[: shape2d[0], :]  # shrink to the actual size of the grid
+    return gtx.as_connectivity(
+        domain=offset.target,
+        codomain=offset.source,
+        data=arr,
+        allocator=allocator,
+    )
+
+
 def construct_icon_grid(
     cell_starts: np.ndarray,
     cell_ends: np.ndarray,
@@ -219,6 +243,9 @@ def construct_icon_grid(
         dims.V2C: v2c,
     }
 
+    # extract nproma before shrinking the connectivities
+    nproma = get_nproma(neighbor_tables.values())
+
     neighbor_tables = shrink_to_dimension(
         sizes={dims.EdgeDim: num_edges, dims.VertexDim: num_vertices, dims.CellDim: num_cells},
         tables=neighbor_tables,
@@ -243,6 +270,9 @@ def construct_icon_grid(
         start_indices=start_indices,
         end_indices=end_indices,
         global_properties=icon.GlobalGridParams.from_mean_cell_area(mean_cell_area),
+        sparse_1d_connectivity_constructor=functools.partial(
+            _nproma_1d_sparse_connectivity_constructor, nproma
+        ),
     )
 
 
