@@ -83,7 +83,7 @@ def _1d_size(connectivity: gtx_common.NeighborTable) -> int:
 def _default_1d_sparse_connectivity_constructor(
     offset: gtx.FieldOffset,
     shape2d: tuple[int, int],
-    allocator: gtx_allocators.FieldBufferAllocatorProtocol | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> data_alloc.NDArray:
     return gtx.as_connectivity(
         domain=offset.target,
@@ -121,19 +121,19 @@ class Grid:
     _start_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
     _end_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
     # for construction:
-    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocatorFactoryProtocol | None]
+    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocationUtil | None]
     sparse_1d_connectivity_constructor: dataclasses.InitVar[
         Callable[
-            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
             gtx_common.NeighborTable,
         ]
     ] = _default_1d_sparse_connectivity_constructor
 
     def __post_init__(
         self,
-        allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None,
+        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
         sparse_1d_connectivity_constructor: Callable[
-            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
             gtx_common.NeighborTable,
         ],
     ):
@@ -267,7 +267,7 @@ def construct_connectivity(
     table: data_alloc.NDArray,
     skip_value: int | None = None,
     *,
-    allocator: gtx_allocators.FieldBufferAllocatorProtocol | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
     replace_skip_values: bool = False,
 ):
     from_dim, dim = offset.target
