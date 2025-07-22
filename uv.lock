@@ -1515,8 +1515,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post580+8a4308bf"
-source = { git = "https://github.com/GridTools/gt4py?tag=icon4py_staging_20250613#8a4308bf351ad3f89d4a483024e52f18af035cd0" }
+version = "1.0.5"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
