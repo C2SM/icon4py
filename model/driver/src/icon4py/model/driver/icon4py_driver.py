@@ -173,6 +173,7 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
+            data_alloc.device_sync(self.run_config.backend)
             timer.capture()
 
             self._is_first_step_in_simulation = False
@@ -183,7 +184,6 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
-        data_alloc.device_sync(self.run_config.backend)
         first_timer.summary(True)
         rest_timer.summary(True)
 
@@ -362,7 +362,7 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(backend, experiment_type)
+    config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
 
     decomp_info = driver_init.read_decomp_info(
         file_path,
