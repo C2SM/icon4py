@@ -1014,7 +1014,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_06_13#09dfda39e298a86251ca3f62dffda539041cfcf4" }
+source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_07_16#ff441fe0fa21c9f30ab0b08d8cc3681253b82877" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
