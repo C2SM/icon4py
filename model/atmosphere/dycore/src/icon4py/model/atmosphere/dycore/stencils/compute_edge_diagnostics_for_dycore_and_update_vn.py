@@ -64,7 +64,6 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType()
-divergence_damp_order: Final = dycore_states.DivergenceDampingOrder()
 dycore_consts: Final = constants.PhysicsConstants()
 
 
@@ -293,15 +292,14 @@ def _apply_divergence_damping_and_update_vn(
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     nudgecoeff_e: fa.EdgeField[ta.wpfloat],
     geofac_grdiv: gtx.Field[[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
-    fourth_order_divdamp_factor: ta.wpfloat,
-    second_order_divdamp_factor: ta.wpfloat,
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
     limited_area: bool,
-    divdamp_order: gtx.int32,
+    apply_2nd_order_divergence_damping: bool,
+    apply_4th_order_divergence_damping: bool,
 ) -> fa.EdgeKField[ta.wpfloat]:
     # add dw/dz for divergence damping term. In ICON, this stencil starts from k = kstart_dd3d until k = nlev - 1.
     # Since scaling_factor_for_3d_divdamp is zero when k < kstart_dd3d, it is meaningless to execute computation
@@ -328,19 +326,14 @@ def _apply_divergence_damping_and_update_vn(
         cpd=dycore_consts.cpd,
     )
 
-    if (divdamp_order == divergence_damp_order.COMBINED) & (
-        second_order_divdamp_scaling_coeff > 1.0e-6
-    ):
+    if apply_2nd_order_divergence_damping:
         next_vn = _apply_2nd_order_divergence_damping(
             z_graddiv_vn=horizontal_gradient_of_total_divergence,
             vn=next_vn,
             scal_divdamp_o2=second_order_divdamp_scaling_coeff,
         )
 
-    if (divdamp_order == divergence_damp_order.FOURTH_ORDER) | (
-        (divdamp_order == divergence_damp_order.COMBINED)
-        & (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
-    ):
+    if apply_4th_order_divergence_damping:
         squared_horizontal_gradient_of_total_divergence = _compute_graddiv2_of_vn(
             geofac_grdiv=geofac_grdiv, z_graddiv_vn=horizontal_gradient_of_total_divergence
         )
@@ -553,15 +546,14 @@ def apply_divergence_damping_and_update_vn(
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     nudgecoeff_e: fa.EdgeField[ta.wpfloat],
     geofac_grdiv: gtx.Field[[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
-    fourth_order_divdamp_factor: ta.wpfloat,
-    second_order_divdamp_factor: ta.wpfloat,
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     dtime: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
     is_iau_active: bool,
     limited_area: bool,
-    divdamp_order: gtx.int32,
+    apply_2nd_order_divergence_damping: bool,
+    apply_4th_order_divergence_damping: bool,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -629,15 +621,14 @@ def apply_divergence_damping_and_update_vn(
         inv_dual_edge_length=inv_dual_edge_length,
         nudgecoeff_e=nudgecoeff_e,
         geofac_grdiv=geofac_grdiv,
-        fourth_order_divdamp_factor=fourth_order_divdamp_factor,
-        second_order_divdamp_factor=second_order_divdamp_factor,
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         dtime=dtime,
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=limited_area,
-        divdamp_order=divdamp_order,
+        apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
+        apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
         out=next_vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

@@ -498,7 +498,8 @@ class SolveNonhydro:
             iau_wgt_dyn=[self._config.iau_wgt_dyn],
             is_iau_active=[self._config.is_iau_active],
             limited_area=[self._grid.limited_area],
-            divdamp_order=[self._config.divdamp_order],
+            apply_2nd_order_divergence_damping=[True, False],
+            apply_4th_order_divergence_damping=[True, False],
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
@@ -1378,6 +1379,17 @@ class SolveNonhydro:
         )
 
         log.debug(f"corrector: start stencil apply_divergence_damping_and_update_vn")
+        apply_2nd_order_divergence_damping = (
+            self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
+            and second_order_divdamp_scaling_coeff > 1.0e-6
+        )
+        apply_4th_order_divergence_damping = (
+            self._config.divdamp_order == dycore_states.DivergenceDampingOrder.FOURTH_ORDER
+            or (
+                self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
+                and second_order_divdamp_factor <= (4.0 * self._config.fourth_order_divdamp_factor)
+            )
+        )
         self._apply_divergence_damping_and_update_vn(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             next_vn=prognostic_states.next.vn,
@@ -1397,15 +1409,14 @@ class SolveNonhydro:
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
             nudgecoeff_e=self._interpolation_state.nudgecoeff_e,
             geofac_grdiv=self._interpolation_state.geofac_grdiv,
-            fourth_order_divdamp_factor=self._config.fourth_order_divdamp_factor,
-            second_order_divdamp_factor=second_order_divdamp_factor,
             advection_explicit_weight_parameter=self._params.advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=self._params.advection_implicit_weight_parameter,
             dtime=dtime,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             is_iau_active=self._config.is_iau_active,
             limited_area=self._grid.limited_area,
-            divdamp_order=self._config.divdamp_order,
+            apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
+            apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
             horizontal_start=gtx.int32(self._start_edge_nudging_level_2),
             horizontal_end=gtx.int32(self._end_edge_local),
             vertical_start=gtx.int32(0),
