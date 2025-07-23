@@ -51,15 +51,14 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         inv_dual_edge_length: np.ndarray,
         nudgecoeff_e: np.ndarray,
         geofac_grdiv: np.ndarray,
-        fourth_order_divdamp_factor: ta.wpfloat,
-        second_order_divdamp_factor: ta.wpfloat,
         advection_explicit_weight_parameter: ta.wpfloat,
         advection_implicit_weight_parameter: ta.wpfloat,
         dtime: ta.wpfloat,
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
-        divdamp_order: gtx.int32,
+        apply_2nd_order_divergence_damping: bool,
+        apply_4th_order_divergence_damping: bool,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
@@ -97,10 +96,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             next_vn,
         )
 
-        if (
-            divdamp_order == divergence_damp_order.COMBINED
-            or divdamp_order == divergence_damp_order.FOURTH_ORDER
-        ):
+        if apply_4th_order_divergence_damping:
             e2c2eO = connectivities[dims.E2C2EODim]
             # verified for e-10
             squared_horizontal_gradient_of_total_divergence = np.where(
@@ -117,10 +113,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 np.zeros_like(horizontal_gradient_of_total_divergence),
             )
 
-        if (
-            divdamp_order == divergence_damp_order.COMBINED
-            and second_order_divdamp_scaling_coeff > 1.0e-6
-        ):
+        if apply_2nd_order_divergence_damping:
             next_vn = np.where(
                 (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
                 next_vn
@@ -128,10 +121,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 next_vn,
             )
 
-        if (
-            divdamp_order == divergence_damp_order.COMBINED
-            and second_order_divdamp_factor <= 4 * fourth_order_divdamp_factor
-        ):
+        if apply_4th_order_divergence_damping:
             if limited_area:
                 next_vn = np.where(
                     (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
@@ -164,7 +154,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
         return dict(next_vn=next_vn)
 
-    @pytest.fixture(params=[True, False])
+    @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
@@ -203,6 +193,16 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         second_order_divdamp_factor = 0.012
         divdamp_order = 24
         second_order_divdamp_scaling_coeff = 194588.14247428576
+        apply_2nd_order_divergence_damping = (divdamp_order == divergence_damp_order.COMBINED) and (
+            second_order_divdamp_scaling_coeff > 1.0e-6
+        )
+        apply_4th_order_divergence_damping = (
+            divdamp_order == divergence_damp_order.FOURTH_ORDER
+        ) or (
+            (divdamp_order == divergence_damp_order.COMBINED)
+            and (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
+        )
+
         limited_area = True
         edge_domain = h_grid.domain(dims.EdgeDim)
 
@@ -228,15 +228,14 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             inv_dual_edge_length=inv_dual_edge_length,
             nudgecoeff_e=nudgecoeff_e,
             geofac_grdiv=geofac_grdiv,
-            fourth_order_divdamp_factor=fourth_order_divdamp_factor,
-            second_order_divdamp_factor=second_order_divdamp_factor,
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
             dtime=dtime,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
             limited_area=limited_area,
-            divdamp_order=divdamp_order,
+            apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
+            apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
             horizontal_start=start_edge_nudging_level_2,
             horizontal_end=end_edge_local,
             vertical_start=0,
