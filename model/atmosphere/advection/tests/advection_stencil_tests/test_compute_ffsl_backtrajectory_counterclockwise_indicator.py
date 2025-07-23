@@ -45,7 +45,7 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest
         return dict(lvn_sys_pos=lvn_sys_pos)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
         lvn_sys_pos = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=bool)

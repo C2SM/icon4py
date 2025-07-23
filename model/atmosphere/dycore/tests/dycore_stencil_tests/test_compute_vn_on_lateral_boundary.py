@@ -37,7 +37,7 @@ class TestComputeVnOnLateralBoundary(StencilTest):
         return dict(vn_new=vn_new)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         grf_tend_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         vn_now = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         vn_new = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)

@@ -19,7 +19,7 @@ from icon4py.model.testing import helpers as test_helpers, helpers as testing_he
 
 
 def test_cross_product(backend):
-    mesh = simple.SimpleGrid()
+    mesh = simple.simple_grid()
     x1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
     y1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
     z1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
@@ -63,7 +63,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
         return dict(average=average)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         input_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
         result = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
         return dict(
@@ -97,7 +97,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(testing_helpers.StencilTest):
         return dict(average=res)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         input_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         result = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(

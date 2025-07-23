@@ -165,7 +165,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         return dict(next_vn=next_vn)
 
     @pytest.fixture(params=[True, False])
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
         scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim)

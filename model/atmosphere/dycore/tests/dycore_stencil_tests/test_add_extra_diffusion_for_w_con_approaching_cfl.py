@@ -108,7 +108,7 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)
         owner_mask = random_mask(grid, dims.CellDim)
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

@@ -376,7 +376,7 @@ def test_vertex(backend, grid_file, experiment):
 
 
 def test_sparse_fields_creator():
-    grid = simple.SimpleGrid()
+    grid = simple.simple_grid()
     f1 = data_alloc.random_field(grid, dims.EdgeDim)
     f2 = data_alloc.random_field(grid, dims.EdgeDim)
     g1 = data_alloc.random_field(grid, dims.EdgeDim)
@@ -415,7 +415,7 @@ def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_
     lat_0, lon_0, lat_1, lon_1 = geometry.create_auxiliary_coordinate_arrays_for_orientation(
         grid, cell_lat, cell_lon, edge_lat, edge_lon, backend=backend
     )
-    connectivity = data_alloc.as_numpy(grid.neighbor_tables[dims.E2CDim])
+    connectivity = grid.get_connectivity(dims.E2C).asnumpy()
     has_boundary_edges = np.count_nonzero(connectivity == -1)
     if has_boundary_edges == 0:
         assert helpers.dallclose(lat_0.asnumpy(), cell_lat.asnumpy()[connectivity[:, 0]])
