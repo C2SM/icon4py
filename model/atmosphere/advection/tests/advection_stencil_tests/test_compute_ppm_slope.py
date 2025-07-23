@@ -27,6 +27,7 @@ class TestComputePpmSlope(helpers.StencilTest):
             "z_slope", refslice=(slice(None), slice(None, -1)), gtslice=(slice(None), slice(1, -1))
         ),
     )
+    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
