@@ -1122,7 +1122,6 @@ def test_compute_perturbed_quantities_and_interpolation(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
     start_cell_halo_level_2 = icon_grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
-    end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     end_cell_halo_level_2 = icon_grid.end_index((cell_domain(h_grid.Zone.HALO_LEVEL_2)))
 
@@ -1188,11 +1187,8 @@ def test_compute_perturbed_quantities_and_interpolation(
         start_cell_lateral_boundary=start_cell_lateral_boundary,
         start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
         start_cell_halo_level_2=start_cell_halo_level_2,
-        end_cell_end=end_cell_end,
         end_cell_halo=end_cell_halo,
         end_cell_halo_level_2=end_cell_halo_level_2,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={
