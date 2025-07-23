@@ -73,7 +73,6 @@ def model_initialization_gauss3d(
     exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
     d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
     geopot = data_provider.from_metrics_savepoint().geopot().ndarray
-    full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray
 
     primal_normal_x = edge_param.primal_normal[0].ndarray
 
@@ -122,7 +121,6 @@ def model_initialization_gauss3d(
     # - mount_height
     # - mount_width
     nh_t0 = 300.0
-    nh_u0 = 0.0
     nh_brunt_vais = 0.0
     log.info("Topography can only be read from serialized data for now.")
 
@@ -132,18 +130,21 @@ def model_initialization_gauss3d(
     data = xp.loadtxt("../python-scripts/data/LeeMoser_chan5200.mean", skiprows=72)
     LM_y = data[:,0]
     LM_u = data[:,2] * 4.14872e-02 # <U> * u_tau (that's how it's normalized in the file)
+    # rescale to the ICON grid and mirror y to full channel height
+    LM_y = LM_y * 50
+    LM_y = xp.concatenate((LM_y, 100 - LM_y[::-1]), axis=0)
+    LM_u = xp.concatenate((LM_u,       LM_u[::-1]), axis=0)
 
     # Interpolate LM_u onto the ICON grid
+    full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray[0,:]
     u_interpolated = xp.zeros((num_edges, num_levels), dtype=float)
-    
     # Ensure arrays are C-contiguous for interpolation
     LM_y_contiguous = xp.ascontiguousarray(LM_y)
     LM_u_contiguous = xp.ascontiguousarray(LM_u)
     
     for edge_idx in range(num_edges):
-        heights_at_edge = xp.ascontiguousarray(full_level_heights[edge_idx, :])
         u_interpolated[edge_idx, :] = xp.interp(
-            heights_at_edge, LM_y_contiguous, LM_u_contiguous
+            full_level_heights, LM_y_contiguous, LM_u_contiguous
         )
     u = xp.where(mask, u_interpolated, 0.0)
 

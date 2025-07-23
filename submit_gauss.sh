@@ -35,6 +35,11 @@ squirrel)
 	export PROJECTS_DIR=/home/l_jcanton/projects
 	export ICON4PY_BACKEND="gtfn_cpu"
 	;;
+mac)
+	export SCRATCH=/Users/jcanton/projects
+	export PROJECTS_DIR=/Users/jcanton/projects
+	export ICON4PY_BACKEND="gtfn_cpu"
+	;;
 *)
 	echo "cluster name not recognized: ${CLUSTER_NAME}"
 	;;
