@@ -369,7 +369,7 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(backend, experiment_type)
+    config = driver_config.read_config(experiment_type, backend)
 
     decomp_info = driver_init.read_decomp_info(
         file_path,
