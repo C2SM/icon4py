@@ -25,7 +25,8 @@ from icon4py.model.testing import (
     serialbox as sb,
 )
 
-from .utils import (
+from ..fixtures import *  # noqa: F403
+from ..utils import (
     compare_dace_orchestration_multiple_steps,
     construct_diffusion_config,
     diff_multfac_vn_numpy,
@@ -334,6 +335,8 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_verify_diffusion_init_against_savepoint(
     experiment,
+    step_date_init,
+    *,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_diffusion_init,
@@ -418,11 +421,14 @@ def test_verify_diffusion_init_against_savepoint(
 # TODO: Enable dace orchestration, currently broken by precompiled programs
 @pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_single_step(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    experiment,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -539,12 +545,15 @@ def test_run_diffusion_single_step(
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_run_diffusion_multiple_steps(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    experiment,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,

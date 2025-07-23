@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+#
 
 # legacy namespace package for tests
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)

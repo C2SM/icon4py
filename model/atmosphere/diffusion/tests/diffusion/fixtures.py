@@ -8,6 +8,8 @@
 
 
 from icon4py.model.testing.fixtures.datatest import (  # noqa: F401  # import fixtures from test_utils package
+    backend,
+    grid,
     damping_height,
     data_provider,
     decomposition_info,

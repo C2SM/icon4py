@@ -13,6 +13,8 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion import diffusion_states
 
+from ..fixtures import *  # noqa: F403
+
 
 @pytest.mark.datatest
 def test_verify_geofac_n2s_field_manipulation(interpolation_savepoint, icon_grid, backend):

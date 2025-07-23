@@ -16,6 +16,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
+from ..fixtures import *  # noqa: F403
 
 
 @pytest.skip("FIXME: Need updated test data yet", allow_module_level=True)
