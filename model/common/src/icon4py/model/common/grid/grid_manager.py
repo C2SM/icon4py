@@ -328,7 +328,6 @@ class GridManager:
 
         """
         xp = data_alloc.import_array_ns(backend)
-        on_gpu = data_alloc.is_cupy_device(backend)
         refinement_fields = self._read_grid_refinement_fields(backend=backend)
         limited_area = refinement.is_limited_area_grid(
             refinement_fields[dims.CellDim].ndarray, array_ns=xp
@@ -347,7 +346,6 @@ class GridManager:
         config = base.GridConfig(
             horizontal_config=grid_size,
             vertical_size=self._vertical_config.num_levels,
-            on_gpu=on_gpu,
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )

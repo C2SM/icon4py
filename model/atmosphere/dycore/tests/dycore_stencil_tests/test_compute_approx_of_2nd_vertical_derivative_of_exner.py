@@ -58,7 +58,7 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
         return dict(z_dexner_dz_c_2=z_dexner_dz_c_2)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_theta_v_pr_ic = random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )

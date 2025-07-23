@@ -22,22 +22,11 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_gpu_cached,
 )
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-
-try:
-    import dace  # type: ignore[import-untyped]
-    from gt4py.next.program_processors.runners.dace import (
-        run_dace_cpu_cached,
-        run_dace_gpu_cached,
-    )
-except ImportError:
-    from typing import Optional
-
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
 
 try:
     import cupy as cp
@@ -70,11 +59,13 @@ _BACKEND_MAP = {
     BackendIntEnum._GTFN_CPU: run_gtfn_cached,
     BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
 }
-if dace:
+try:
     _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: run_dace_cpu_cached,
-        BackendIntEnum._DACE_GPU: run_dace_gpu_cached,
+        BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(gpu=False),
+        BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(gpu=True),
     }
+except NotImplementedError:
+    pass  # dace backends not available
 
 
 def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
@@ -225,7 +216,6 @@ def construct_icon_grid(
         ),
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=data_alloc.is_cupy_device(backend),
         keep_skip_values=False,
     )
 

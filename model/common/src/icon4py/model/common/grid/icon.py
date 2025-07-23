@@ -108,7 +108,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
 
 
 @dataclasses.dataclass(frozen=True)
-class IconGrid(base.BaseGrid):
+class IconGrid(base.Grid):
     global_properties: GlobalGridParams = dataclasses.field(default=None, kw_only=True)
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True
@@ -160,7 +160,7 @@ def _should_replace_skip_values(
 
 def icon_grid(
     id_: uuid.UUID,
-    allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     start_indices: dict[gtx.Dimension, data_alloc.NDArray],

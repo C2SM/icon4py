@@ -40,7 +40,7 @@ class TestComputeAvgVn(StencilTest):
         return dict(z_vn_avg=z_vn_avg)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

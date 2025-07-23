@@ -57,7 +57,6 @@ class GridConfig:
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
     lvertnest: bool = False
-    on_gpu: bool = False  # TODO can this be removed?
     keep_skip_values: bool = True
 
     @property
@@ -84,7 +83,7 @@ def _1d_size(connectivity: gtx_common.NeighborTable) -> int:
 def _default_1d_sparse_connectivity_constructor(
     offset: gtx.FieldOffset,
     shape2d: tuple[int, int],
-    allocator: gtx_allocators.FieldBufferAllocatorProtocol | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> data_alloc.NDArray:
     return gtx.as_connectivity(
         domain=offset.target,
@@ -95,14 +94,14 @@ def _default_1d_sparse_connectivity_constructor(
 
 
 @dataclasses.dataclass(frozen=True)
-class BaseGrid:
+class Grid:
     """
     Contains core features of a grid.
 
-    The 'BaseGrid' is ICON4Py specific: it expects certain connectivities to be present
+    The 'Grid' is ICON4Py specific: it expects certain connectivities to be present
     to construct derived (1D sparse) connectivities.
 
-    Note: A 'BaseGrid' can be used in 'StencilTest's, while some components of ICON4Py may
+    Note: A 'Grid' can be used in 'StencilTest's, while some components of ICON4Py may
     require an 'IconGrid'.
     """
 
@@ -122,10 +121,10 @@ class BaseGrid:
     _start_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
     _end_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
     # for construction:
-    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocatorFactoryProtocol | None]
+    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocationUtil | None]
     sparse_1d_connectivity_constructor: dataclasses.InitVar[
         Callable[
-            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
             gtx_common.NeighborTable,
         ]
         | None
@@ -133,9 +132,9 @@ class BaseGrid:
 
     def __post_init__(
         self,
-        allocator: gtx_allocators.FieldBufferAllocatorFactoryProtocol | None,
+        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
         sparse_1d_connectivity_constructor: Callable[
-            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocatorProtocol | None],
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
             gtx_common.NeighborTable,
         ]
         | None,
@@ -241,16 +240,6 @@ class BaseGrid:
         assert gtx_common.is_neighbor_table(connectivity)
         return connectivity
 
-    @functools.cached_property
-    def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
-        # TODO this should be removed
-        return {
-            dim: v.ndarray
-            for k, v in self.connectivities.items()
-            if (dim := dims.DIMENSIONS_BY_OFFSET_NAME.get(k)) is not None
-            and gtx_common.is_neighbor_connectivity(v)
-        }
-
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
         Use to specify lower end of domains of a field for field_operators.
@@ -281,12 +270,11 @@ def construct_connectivity(
     table: data_alloc.NDArray,
     skip_value: int | None = None,
     *,
-    allocator: gtx_allocators.FieldBufferAllocatorProtocol | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
     replace_skip_values: bool = False,
 ):
     from_dim, dim = offset.target
     to_dim = offset.source
-    # TODO maybe caller should already do the replacement?
     if replace_skip_values:
         _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
         skip_value = None

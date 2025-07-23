@@ -407,7 +407,7 @@ class SimpleGridData:
         )
 
 
-def simple_grid(backend: gtx_backend.Backend | None = None) -> base.BaseGrid:
+def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
     """
     Factory function to create a SimpleGrid instance.
 
@@ -422,14 +422,13 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.BaseGrid:
         num_vertices=_VERTICES, num_edges=_EDGES, num_cells=_CELLS
     )
     vertical_grid_config = VerticalGridConfig(num_levels=10)
-    on_gpu = False if backend is None else data_alloc.is_cupy_device(backend)
     config = GridConfig(
         horizontal_config=horizontal_grid_size,
         vertical_size=vertical_grid_config.num_levels,
         limited_area=False,
-        on_gpu=on_gpu,
     )
 
+    on_gpu = False if backend is None else data_alloc.is_cupy_device(backend)
     simple_grid_data = SimpleGridData(on_gpu=on_gpu)
 
     neighbor_tables = {
@@ -483,7 +482,7 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.BaseGrid:
         },
     }
 
-    return base.BaseGrid(
+    return base.Grid(
         id=uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85"),
         config=config,
         connectivities=connectivities,

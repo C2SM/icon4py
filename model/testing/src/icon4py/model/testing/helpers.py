@@ -32,7 +32,7 @@ class _ConnectivityConceptFixer:
     keep this for a while, otherwise we need to touch all StencilTests.
     """
 
-    _grid: base.BaseGrid
+    _grid: base.Grid
 
     def __getitem__(self, dim: gtx.Dimension | str) -> np.ndarray:
         if isinstance(dim, gtx.Dimension):
@@ -41,7 +41,7 @@ class _ConnectivityConceptFixer:
 
 
 @pytest.fixture(scope="session")
-def connectivities_as_numpy(grid: base.BaseGrid) -> dict[gtx.Dimension, np.ndarray]:
+def connectivities_as_numpy(grid: base.Grid) -> dict[gtx.Dimension, np.ndarray]:
     return _ConnectivityConceptFixer(grid)
 
 
@@ -93,7 +93,7 @@ def allocate_data(
 
 def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
-    grid: base.BaseGrid,
+    grid: base.Grid,
     backend: gtx_backend.Backend | None,
 ):
     for marker in markers:
@@ -107,10 +107,10 @@ def apply_markers(
                 pytest.xfail("Embedded backend currently fails in remap function.")
             case "embedded_static_args" if is_embedded(backend):
                 pytest.xfail(" gt4py _compiled_programs returns error when backend is None.")
-            case "infinite_concat_where" if is_embedded(backend):
-                pytest.xfail("Embedded backend does not support infinite concat_where.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
+            case "uses_concat_where" if is_embedded(backend):
+                pytest.xfail("Embedded backend does not support concat_where.")
             case "skip_value_error":
                 if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
@@ -180,7 +180,7 @@ def _verify_stencil_test(
 
 def _test_and_benchmark(
     self,
-    grid: base.BaseGrid,
+    grid: base.Grid,
     backend: gtx_backend.Backend,
     connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field],

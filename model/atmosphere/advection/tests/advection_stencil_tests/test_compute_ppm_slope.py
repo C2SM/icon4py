@@ -27,6 +27,7 @@ class TestComputePpmSlope(helpers.StencilTest):
             "z_slope", refslice=(slice(None), slice(None, -1)), gtslice=(slice(None), slice(1, -1))
         ),
     )
+    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -66,7 +67,7 @@ class TestComputePpmSlope(helpers.StencilTest):
         return dict(z_slope=z_slope)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         z_slope = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         p_cellhgt_mc_now = data_alloc.random_field(

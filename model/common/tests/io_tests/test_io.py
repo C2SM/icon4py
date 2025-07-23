@@ -46,7 +46,7 @@ global_grid = grid_utils.get_grid_manager_for_experiment(
 ).grid
 
 
-def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
+def model_state(grid: base.Grid) -> dict[str, xr.DataArray]:
     rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
     exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
     theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)

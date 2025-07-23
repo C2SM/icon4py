@@ -156,7 +156,7 @@ def pytest_addoption(parser):
 
 def _get_grid(
     selected_grid_type: str, selected_backend: gtx_backend.Backend | None
-) -> base_grid.BaseGrid:
+) -> base_grid.Grid:
     match selected_grid_type:
         case "icon_grid":
             from icon4py.model.testing.grid_utils import (

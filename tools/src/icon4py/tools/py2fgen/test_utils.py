@@ -95,7 +95,7 @@ def array_to_array_info(
     if as_fortran_layout and not arr.flags["F_CONTIGUOUS"]:
         arr = xp.asfortranarray(arr)
 
-    addr = arr.ctypes.data if not on_gpu else arr.data.ptr
+    addr = arr.ctypes.data if not on_gpu else arr.data.ptr  # type: ignore[attr-defined] # we claim it's numpy while the 2nd case is for cupy
     strtype = _codegen.BUILTIN_TO_CPP_TYPE[from_np_dtype(arr.dtype)]
     ptr = ffi.cast(f"{strtype}*", addr)
 
