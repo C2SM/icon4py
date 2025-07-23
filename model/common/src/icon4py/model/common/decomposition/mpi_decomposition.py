@@ -138,7 +138,6 @@ class GHexMultiNodeExchange:
         domain_decomposition: definitions.DecompositionInfo,
     ):
         self._context = make_context(props.comm, False)
-        self._comm_world = props.comm
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
@@ -248,7 +247,6 @@ class GHexMultiNodeExchange:
             # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
             # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
             fields[0].array_ns.cuda.runtime.deviceSynchronize()
-            self._comm_world.Barrier()
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
