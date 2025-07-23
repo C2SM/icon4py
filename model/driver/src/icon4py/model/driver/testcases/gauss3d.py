@@ -138,9 +138,9 @@ def model_initialization_gauss3d(
     # Interpolate LM_u onto the ICON grid
     full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray[0,:]
     u_interpolated = xp.zeros((num_edges, num_levels), dtype=float)
-    
+
     for j in range(num_levels):
-        LM_j = xp.argmin(full_level_heights[j] - LM_y)
+        LM_j = xp.argmin(xp.abs(LM_y - full_level_heights[j]))
         u_interpolated[:, j] = LM_u[LM_j] * xp.ones(num_edges, dtype=float)
     u = xp.where(mask, u_interpolated, 0.0)
 
