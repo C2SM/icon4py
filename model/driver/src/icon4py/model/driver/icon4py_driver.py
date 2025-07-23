@@ -29,6 +29,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.utils import device_utils
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
@@ -145,20 +146,23 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        timer = Timer(self._full_name(self._integrate_one_time_step))
+        first_timer = Timer("first_time_step", dp=6)
+        rest_timer = Timer(self._full_name(self._integrate_one_time_step), dp=6)
         for time_step in range(self._n_time_steps):
+            timer = first_timer if time_step == 0 else rest_timer
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.debug(
-                f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
-            )
-            log.debug(
-                f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
-            )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
+            if log.isEnabledFor(logging.DEBUG):
+                log.debug(
+                    f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
+                )
+                log.debug(
+                    f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
+                )
+                # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
-            # update boundary condition
+            # update boundary conditions
 
             timer.start()
             self._integrate_one_time_step(
@@ -169,6 +173,7 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
+            device_utils.sync(self.run_config.backend)
             timer.capture()
 
             self._is_first_step_in_simulation = False
@@ -179,7 +184,8 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
-        timer.summary(True)
+        first_timer.summary(True)
+        rest_timer.summary(True)
 
     def _integrate_one_time_step(
         self,
@@ -356,7 +362,7 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(backend, experiment_type)
+    config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
 
     decomp_info = driver_init.read_decomp_info(
         file_path,
