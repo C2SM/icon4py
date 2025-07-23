@@ -23,7 +23,8 @@ from icon4py.model.driver import (
 )
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
-from .utils import (
+from ..fixtures import *  # noqa: F403
+from ..utils import (
     construct_diffusion_config,
     construct_icon4pyrun_config,
     construct_nonhydrostatic_config,

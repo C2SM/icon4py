@@ -42,7 +42,7 @@ def check_tests_layout(
     if fix:
         init_py_content = (
             "\n".join(
-                f"# {line}" if line else "#"
+                f"# {line}" if line.strip() else "#"
                 for line in [*(common.REPO_ROOT / "HEADER.txt").read_text().splitlines(), "\n"]
             )
             + "\n"

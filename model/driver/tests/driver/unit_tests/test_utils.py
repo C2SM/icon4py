@@ -13,6 +13,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import utils
 from icon4py.model.testing import helpers
 
+from ..fixtures import *  # noqa: F403
+
 
 def test_hydrostatic_adjustment_ndarray(backend):
     # TODO (Jacopo / Chia Rui) these tests could be better

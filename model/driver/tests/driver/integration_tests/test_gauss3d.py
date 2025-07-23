@@ -11,6 +11,8 @@ import pytest
 from icon4py.model.driver.testcases import gauss3d
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
+from ..fixtures import *  # noqa: F403
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
