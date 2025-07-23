@@ -227,8 +227,9 @@ class DiffusionConfig:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        #: Note: The user can pass the ICON namelist paramter `max_nudge_coeff` as `_max_nudging_coefficient` or
-        #: the properly scaled one as `scaled_max_nudging_coefficient`, see the comment in mo_interpol_nml.f90
+        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_max_nudging_coefficient` or
+        #: the properly scaled one (`max_nudge_coeff` in ICON) as `scaled_max_nudging_coefficient`,
+        #: see the comment in mo_interpol_nml.f90
         #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
         if _max_nudging_coefficient is not None and scaled_max_nudging_coefficient is not None:
             raise ValueError(
