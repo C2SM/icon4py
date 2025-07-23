@@ -226,7 +226,10 @@ class DiffusionConfig:
         #:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90 (see also comment about scaling in mo_interpol_nml.f90)
+        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
+        #: Note: The user can pass the ICON namelist paramter `max_nudge_coeff` as `_max_nudging_coefficient` or
+        #: the properly scaled one as `scaled_max_nudging_coefficient`, see the comment in mo_interpol_nml.f90
+        #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
         if _max_nudging_coefficient is not None and scaled_max_nudging_coefficient is not None:
             raise ValueError(
                 "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
@@ -235,11 +238,11 @@ class DiffusionConfig:
             self.scaled_max_nudging_coefficient: float = scaled_max_nudging_coefficient
         elif _max_nudging_coefficient is not None:
             self.scaled_max_nudging_coefficient: float = (
-                constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO * _max_nudging_coefficient
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _max_nudging_coefficient
             )
-        else:  # default value
+        else:  # default value in ICON
             self.scaled_max_nudging_coefficient: float = (
-                constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO * 0.02
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
             )
 
         #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
