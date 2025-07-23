@@ -159,6 +159,31 @@ def zero_field(
     return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=backend)
 
 
+def empty_field(
+    grid: grid_base.BaseGrid,
+    *dims: gtx.Dimension,
+    dtype=ta.wpfloat,
+    extend: Optional[dict[gtx.Dimension, int]] = None,
+    backend=None,
+    # TODO set to false
+    init_with_extreme: bool = True,  # Setting to True is meant for debugging purposes
+) -> gtx.Field:
+    field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
+    if init_with_extreme:
+        # Only for debugging purposes, to check if the field is not used uninitialized
+        if dtype in (gtx.float32, gtx.float64):
+            fill_value = np.nan
+        elif dtype is gtx.bool:
+            fill_value = False
+        else:
+            # integers
+            fill_value = np.iinfo(dtype).max
+        return gtx.constructors.full(
+            field_domain, fill_value=fill_value, dtype=dtype, allocator=backend
+        )
+    return gtx.constructors.empty(field_domain, dtype=dtype, allocator=backend)
+
+
 def constant_field(
     grid: grid_base.BaseGrid,
     value: float,
