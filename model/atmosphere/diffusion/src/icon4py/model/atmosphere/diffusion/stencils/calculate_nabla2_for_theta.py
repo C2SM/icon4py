@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta impor
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_edges
 
 @field_operator
 def _calculate_nabla2_for_theta(
@@ -25,8 +26,12 @@ def _calculate_nabla2_for_theta(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    ibm_nabla2theta_mask: fa.EdgeKField[bool],
 ) -> fa.CellKField[vpfloat]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
+    #---> IBM
+    z_nabla2_e = _set_bcs_edges(ibm_nabla2theta_mask, 0.0, z_nabla2_e)
+    #<--- IBM
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
     return z_temp
 
@@ -38,6 +43,7 @@ def calculate_nabla2_for_theta(
     theta_v: fa.CellKField[float],
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], float],
     z_temp: fa.CellKField[float],
+    ibm_nabla2theta_mask: fa.EdgeKField[bool],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -48,6 +54,7 @@ def calculate_nabla2_for_theta(
         inv_dual_edge_length,
         theta_v,
         geofac_div,
+        ibm_nabla2theta_mask,
         out=z_temp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

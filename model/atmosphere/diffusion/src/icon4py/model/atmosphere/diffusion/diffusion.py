@@ -899,6 +899,7 @@ class Diffusion:
                 theta_v=prognostic_state.theta_v,
                 geofac_div=self._interpolation_state.geofac_div,
                 z_temp=self.z_temp,
+                ibm_nabla2theta_mask=self._ibm.full_edge_mask,
                 horizontal_start=self._cell_start_nudging,
                 horizontal_end=self._cell_end_local,
                 vertical_start=0,
