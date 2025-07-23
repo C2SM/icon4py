@@ -28,7 +28,6 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -132,7 +131,7 @@ def solve_nh_init(
     l_vert_nested: bool,
     rhotheta_offctr: gtx.float64,
     veladv_offctr: gtx.float64,
-    nudge_max_coeff: gtx.float64,  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
+    nudge_max_coeff: gtx.float64,  # note: this is the scaled ICON value, i.e. not the namelist value
     divdamp_fac: gtx.float64,
     divdamp_fac2: gtx.float64,
     divdamp_fac3: gtx.float64,
@@ -176,7 +175,7 @@ def solve_nh_init(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+        scaled_max_nudging_coefficient=nudge_max_coeff,
         fourth_order_divdamp_factor=divdamp_fac,
         fourth_order_divdamp_factor2=divdamp_fac2,
         fourth_order_divdamp_factor3=divdamp_fac3,

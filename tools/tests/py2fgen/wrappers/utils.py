@@ -149,7 +149,7 @@ def r04b09_diffusion_config(
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
+        _max_nudging_coefficient=0.075,
         n_substeps=ndyn_substeps,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )

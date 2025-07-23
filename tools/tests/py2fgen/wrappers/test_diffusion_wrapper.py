@@ -65,7 +65,7 @@ def test_diffusion_wrapper_granule_inputs(
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
-    nudge_max_coeff = 0.075 * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+    nudge_max_coeff = 0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
     itype_sher = (
         diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
@@ -327,7 +327,7 @@ def test_diffusion_wrapper_single_step(
     thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
     nudge_max_coeff = (
-        0.075 * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+        0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO
     )  # this is done in ICON, so we replicate it here
     itype_sher = (
         diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
