@@ -22,7 +22,7 @@ Immersed boundary method module
 log = logging.getLogger(__name__)
 
 DO_IBM = True
-DEBUG_LEVEL = 3
+DEBUG_LEVEL = 2
 
 
 @gtx.field_operator

@@ -1081,7 +1081,7 @@ class SolveNonhydro:
         #<--- IBM
 
         #---> IBM
-        if self._ibm.DEBUG_LEVEL >= 3:
+        if self._ibm.DEBUG_LEVEL >= 4:
             plots.pickle_data(
                 state={
                     "vn_curr": prognostic_states.current.vn.asnumpy(),
@@ -1583,7 +1583,7 @@ class SolveNonhydro:
         #<--- IBM
 
         #---> IBM
-        if self._ibm.DEBUG_LEVEL >= 3:
+        if self._ibm.DEBUG_LEVEL >= 4:
             plots.pickle_data(
                 state={
                     "vn_curr": prognostic_states.current.vn.asnumpy(),
