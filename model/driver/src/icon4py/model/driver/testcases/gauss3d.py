@@ -138,14 +138,10 @@ def model_initialization_gauss3d(
     # Interpolate LM_u onto the ICON grid
     full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray[0,:]
     u_interpolated = xp.zeros((num_edges, num_levels), dtype=float)
-    # Ensure arrays are C-contiguous for interpolation
-    LM_y_contiguous = xp.ascontiguousarray(LM_y)
-    LM_u_contiguous = xp.ascontiguousarray(LM_u)
     
-    for edge_idx in range(num_edges):
-        u_interpolated[edge_idx, :] = xp.interp(
-            full_level_heights, LM_y_contiguous, LM_u_contiguous
-        )
+    for j in range(num_levels):
+        LM_j = xp.argmin(full_level_heights[j] - LM_y)
+        u_interpolated[:, j] = LM_u[LM_j] * xp.ones(num_edges, dtype=float)
     u = xp.where(mask, u_interpolated, 0.0)
 
     vn_ndarray = u * primal_normal_x
