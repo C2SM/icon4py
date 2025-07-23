@@ -1429,16 +1429,15 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
 
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    start_edge_halo_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-    end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
     start_edge_lateral_boundary = icon_grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
-    end_edge_halo = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
     start_edge_lateral_boundary_level_7 = icon_grid.start_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+    end_edge_nudging = icon_grid.end_index(edge_domain(h_grid.Zone.NUDGING))
+    end_edge_halo = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
+    end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-    end_edge_end = icon_grid.end_index(edge_domain(h_grid.Zone.END))
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -1470,6 +1469,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     predictor_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(0)
     normal_wind_tendency_due_to_slow_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increment = sp_stencil_init.vn_incr()
+    grf_tend_vn = sp_nh_init.grf_tend_vn()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -1487,7 +1487,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     )
 
     iau_wgt_dyn = config.iau_wgt_dyn
-    iadv_rhotheta = config.iadv_rhotheta
     is_iau_active = config.is_iau_active
     igradp_method = config.igradp_method
 
@@ -1544,6 +1543,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
         normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
         normal_wind_iau_increment=normal_wind_iau_increment,
+        grf_tend_vn=grf_tend_vn,
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         pos_on_tplane_e_x=interpolation_savepoint.pos_on_tplane_e_x(),
@@ -1563,20 +1563,15 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
-        iadv_rhotheta=iadv_rhotheta,
-        igradp_method=igradp_method,
         nflatlev=vertical_params.nflatlev,
         nflat_gradp=vertical_params.nflat_gradp,
-        start_edge_halo_level_2=start_edge_halo_level_2,
-        end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary=start_edge_lateral_boundary,
-        end_edge_halo=end_edge_halo,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
-        end_edge_local=end_edge_local,
-        end_edge_end=end_edge_end,
+        end_edge_nudging=end_edge_nudging,
+        end_edge_halo=end_edge_halo,
         horizontal_start=gtx.int32(0),
-        horizontal_end=gtx.int32(icon_grid.num_edges),
+        horizontal_end=gtx.int32(end_edge_halo_level_2),
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
@@ -1592,8 +1587,8 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     assert helpers.dallclose(theta_v_at_edges_on_model_levels.asnumpy(), z_theta_v_e_ref.asnumpy())
 
     assert helpers.dallclose(
-        horizontal_pressure_gradient.asnumpy(),
-        z_gradh_exner_ref.asnumpy(),
+        horizontal_pressure_gradient.asnumpy()[start_edge_nudging_level_2:end_edge_local, :],
+        z_gradh_exner_ref.asnumpy()[start_edge_nudging_level_2:end_edge_local, :],
         atol=1e-20,
     )
     assert helpers.dallclose(
@@ -1652,10 +1647,6 @@ def test_apply_divergence_damping_and_update_vn(
 
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-    start_edge_lateral_boundary_level_7 = icon_grid.start_index(
-        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
-    )
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
@@ -1712,12 +1703,8 @@ def test_apply_divergence_damping_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
-        end_edge_halo_level_2=end_edge_halo_level_2,
-        start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
-        start_edge_nudging_level_2=start_edge_nudging_level_2,
-        end_edge_local=end_edge_local,
-        horizontal_start=gtx.int32(0),
-        horizontal_end=gtx.int32(icon_grid.num_edges),
+        horizontal_start=start_edge_nudging_level_2,
+        horizontal_end=end_edge_local,
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
