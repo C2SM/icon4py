@@ -34,6 +34,8 @@ from icon4py.model.driver import (
     initialization_utils as driver_init,
 )
 
+import pickle, os
+PLOT_IMGS_DIR = os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output")
 
 log = logging.getLogger(__name__)
 
@@ -170,6 +172,17 @@ class TimeLoop:
                 do_prep_adv,
             )
             timer.capture()
+            state_dict = {
+                "vn": prognostic_states.current.vn.asnumpy(),
+                "w": prognostic_states.current.w.asnumpy(),
+                "rho": prognostic_states.current.rho.asnumpy(),
+                "exner": prognostic_states.current.exner.asnumpy(),
+                "theta_v": prognostic_states.current.theta_v.asnumpy(),
+            }
+            file_name = f"{PLOT_IMGS_DIR}/end_of_timestep_{time_step:06d}.pkl"
+            with open(file_name, "wb") as f:
+                pickle.dump(state_dict, f)
+                log.debug(f"PLOTS: saved {file_name}")
 
             self._is_first_step_in_simulation = False
 
