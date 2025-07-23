@@ -27,6 +27,7 @@ ModelSubpackagePath: TypeAlias = Literal[
     "atmosphere/diffusion",
     "atmosphere/dycore",
     "atmosphere/subgrid_scale_physics/microphysics",
+    "atmosphere/subgrid_scale_physics/muphys",
     "common",
     "driver",
     # "testing", #TODO: Add tests to testing subpackage

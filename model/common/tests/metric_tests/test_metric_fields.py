@@ -185,7 +185,7 @@ def test_compute_exner_w_explicit_weight_parameter(icon_grid, metrics_savepoint,
 
 
 @pytest.mark.level("unit")
-@pytest.mark.infinite_concat_where
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
@@ -467,7 +467,7 @@ def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
     h_scal_bg = constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
     grav = constants.GRAV
     rd = constants.RD
-    p0sl_bg = constants.SEAL_LEVEL_PRESSURE
+    p0sl_bg = constants.SEA_LEVEL_PRESSURE
     rd_o_cpd = constants.RD_O_CPD
     p0ref = constants.REFERENCE_PRESSURE
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()

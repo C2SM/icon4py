@@ -19,7 +19,7 @@ import xarray as xr
 
 import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils
 
 
@@ -53,7 +53,7 @@ class NETCDFWriter:
         self,
         file_name: pathlib.Path,
         vertical: v_grid.VerticalGrid,
-        horizontal: h_grid.HorizontalGridSize,
+        horizontal: base.HorizontalGridSize,
         time_properties: TimeProperties,
         global_attrs: dict,
         process_properties: decomposition.ProcessProperties = processor_properties,

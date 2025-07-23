@@ -5,32 +5,33 @@ requires = ['setuptools>=61.0', 'wheel>=0.40.0']
 
 # -- Standard project description options (PEP 621) --
 [project]
-authors = [{email = "gridtools@cscs.ch", name = "ETH Zurich"}]
+authors = [{ email = "gridtools@cscs.ch", name = "ETH Zurich" }]
 classifiers = [
-  'Development Status :: 3 - Alpha',
-  'Intended Audience :: Science/Research',
-  'License :: OSI Approved :: BSD License',
-  'Operating System :: POSIX',
-  'Programming Language :: Python',
-  'Programming Language :: Python :: 3',
-  'Programming Language :: Python :: 3 :: Only',
-  'Programming Language :: Python :: 3.10',
-  'Programming Language :: Python :: 3.11',
-  'Programming Language :: Python :: Implementation :: CPython',
-  'Topic :: Scientific/Engineering :: Atmospheric Science',
-  'Topic :: Scientific/Engineering :: Mathematics',
-  'Topic :: Scientific/Engineering :: Physics'
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: BSD License',
+    'Operating System :: POSIX',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: Implementation :: CPython',
+    'Topic :: Scientific/Engineering :: Atmospheric Science',
+    'Topic :: Scientific/Engineering :: Mathematics',
+    'Topic :: Scientific/Engineering :: Physics',
 ]
 dependencies = [
     "icon4py-atmosphere-advection>=0.0.6",
     "icon4py-atmosphere-diffusion>=0.0.6",
     "icon4py-atmosphere-dycore>=0.0.6",
     "icon4py-atmosphere-microphysics>=0.0.6",
+    "icon4py-atmosphere-muphys>=0.0.6",
     "icon4py-common>=0.0.6",
     "icon4py-driver>=0.0.6",
 ]
 description = 'ICON model in Python.'
-license = {text = "BSD-3 License"}
+license = { text = "BSD-3 License" }
 name = "icon4py"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -74,7 +75,7 @@ test = [
     "icon4py-testing>=0.0.6",
     # external dependencies
     "coverage[toml]>=7.5.0",
-    "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b",  # TODO: remove once there is any release newer than 2024.10.09
+    "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b", # TODO: remove once there is any release newer than 2024.10.09
     "pytest>=8.0.1",
     "pytest-benchmark>=5.0.0",
     "pytest-cache>=1.0",
@@ -98,12 +99,7 @@ dev = [
 
 # -- uv: packages & workspace --
 [tool.uv]
-conflicts = [
-  [
-    {extra = "cuda11"},
-    {extra = "cuda12"},
-  ],
-]
+conflicts = [[{ extra = "cuda11" }, { extra = "cuda12" }]]
 
 [[tool.uv.index]]
 name = "test.pypi"
@@ -112,11 +108,13 @@ explicit = true
 
 [tool.uv.sources]
 # ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master" }
-gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_staging_20250612" }
+# gt4py = { git = "https://github.com/GridTools/gt4py", branch = "main" }
+dace = { git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_07_16" }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
 icon4py-atmosphere-microphysics = { workspace = true }
+icon4py-atmosphere-muphys = { workspace = true }
 icon4py-common = { workspace = true }
 icon4py-driver = { workspace = true }
 icon4py-testing = { workspace = true }
@@ -129,6 +127,7 @@ members = [
     "model/atmosphere/diffusion",
     "model/atmosphere/dycore",
     "model/atmosphere/subgrid_scale_physics/microphysics",
+    "model/atmosphere/subgrid_scale_physics/muphys",
     "model/common",
     "model/driver",
     "model/testing",
@@ -183,9 +182,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
 module = '*.dycore_stencil_tests.*'
-
-
-
 
 
 # -- ruff --
@@ -249,5 +245,12 @@ packages = []
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.testing.pytest_config', '--strict-markers']
 markers = [
-    "embedded_remap_error", "embedded_static_args", "uses_as_offset", "skip_value_error", "datatest", "embedded_only", "cpu_only", "infinite_concat_where"
+    "embedded_remap_error",
+    "embedded_static_args",
+    "uses_as_offset",
+    "skip_value_error",
+    "datatest",
+    "embedded_only",
+    "cpu_only",
+    "uses_concat_where",
 ]
