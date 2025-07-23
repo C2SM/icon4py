@@ -54,9 +54,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
     _compute_vn_on_lateral_boundary,
 )
-from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
-    _mo_math_gradients_grad_green_gauss_cell_dsl,
-)
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -184,19 +181,6 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
 ]:
-    # TODO absorb into `_compute_horizontal_advection_of_rho_and_theta`
-    (
-        ddx_perturbed_rho,
-        ddy_perturbed_rho,
-        ddx_perturbed_theta_v,
-        ddy_perturbed_theta_v,
-    ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
-        p_ccpr1=perturbed_rho_at_cells_on_model_levels,
-        p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
-    )
-
     # TODO(havogt): it would be nice if we could shrink the compute domain to `start_edge_lateral_boundary_level_7 <= dims.EdgeDim`,
     # but that requires either persisting the `0.0` values or put the correct lateral boundary condition where this is consumed.
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
@@ -213,12 +197,10 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             p_dthalf=wpfloat("0.5") * dtime,
             rho_ref_me=reference_rho_at_edges_on_model_levels,
             theta_ref_me=reference_theta_at_edges_on_model_levels,
-            z_grad_rth_1=ddx_perturbed_rho,
-            z_grad_rth_2=ddy_perturbed_rho,
-            z_grad_rth_3=ddx_perturbed_theta_v,
-            z_grad_rth_4=ddy_perturbed_theta_v,
-            z_rth_pr_1=perturbed_rho_at_cells_on_model_levels,
-            z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels,
+            perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+            perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
         ),
         (
             broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),

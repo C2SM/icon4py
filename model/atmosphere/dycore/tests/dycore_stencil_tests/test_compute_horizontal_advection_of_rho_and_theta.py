@@ -13,12 +13,43 @@ import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rho_and_theta import (
-    compute_horizontal_advection_of_rho_and_theta,
+    _compute_horizontal_advection_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers
+
+
+# TODO copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
+def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    p_ccpr1: np.ndarray,
+    p_ccpr2: np.ndarray,
+    geofac_grg_x: np.ndarray,
+    geofac_grg_y: np.ndarray,
+) -> tuple[np.ndarray, ...]:
+    c2e2cO = connectivities[dims.C2E2CODim]
+    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
+    p_grad_1_u = np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr1[c2e2cO], 0), axis=1
+    )
+    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
+    p_grad_1_v = np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr1[c2e2cO], 0), axis=1
+    )
+    p_grad_2_u = np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr2[c2e2cO], 0), axis=1
+    )
+    p_grad_2_v = np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr2[c2e2cO], 0), axis=1
+    )
+    return (
+        p_grad_1_u,
+        p_grad_1_v,
+        p_grad_2_u,
+        p_grad_2_v,
+    )
 
 
 def compute_btraj_numpy(
@@ -126,12 +157,10 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     p_dthalf: float,
     rho_ref_me: np.ndarray,
     theta_ref_me: np.ndarray,
-    z_grad_rth_1: np.ndarray,
-    z_grad_rth_2: np.ndarray,
-    z_grad_rth_3: np.ndarray,
-    z_grad_rth_4: np.ndarray,
-    z_rth_pr_1: np.ndarray,
-    z_rth_pr_2: np.ndarray,
+    perturbed_rho_at_cells_on_model_levels: np.ndarray,
+    perturbed_theta_v_at_cells_on_model_levels: np.ndarray,
+    geofac_grg_x: np.ndarray,
+    geofac_grg_y: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
     e2c = connectivities[dims.E2CDim]
     pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
@@ -140,6 +169,19 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
     primal_normal_cell_2 = primal_normal_cell_2.reshape(e2c.shape)
     dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
+
+    (
+        z_grad_rth_1,
+        z_grad_rth_2,
+        z_grad_rth_3,
+        z_grad_rth_4,
+    ) = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
+        connectivities,
+        perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels,
+        geofac_grg_x,
+        geofac_grg_y,
+    )
 
     p_distv_bary_1, p_distv_bary_2 = compute_btraj_numpy(
         p_vn,
@@ -164,16 +206,16 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
         z_grad_rth_2,
         z_grad_rth_3,
         z_grad_rth_4,
-        z_rth_pr_1,
-        z_rth_pr_2,
+        perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels,
     )
 
     return (z_rho_e, z_theta_v_e)
 
 
-class TestComputeBtraj(helpers.StencilTest):
-    PROGRAM = compute_horizontal_advection_of_rho_and_theta
-    OUTPUTS = ("z_rho_e", "z_theta_v_e")
+class TestComputeHorizontalAvectionOfRhoAndTheta(helpers.StencilTest):
+    PROGRAM = _compute_horizontal_advection_of_rho_and_theta
+    OUTPUTS = ("out",)
     MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
@@ -190,12 +232,10 @@ class TestComputeBtraj(helpers.StencilTest):
         p_dthalf: float,
         rho_ref_me: np.ndarray,
         theta_ref_me: np.ndarray,
-        z_grad_rth_1: np.ndarray,
-        z_grad_rth_2: np.ndarray,
-        z_grad_rth_3: np.ndarray,
-        z_grad_rth_4: np.ndarray,
-        z_rth_pr_1: np.ndarray,
-        z_rth_pr_2: np.ndarray,
+        perturbed_rho_at_cells_on_model_levels: np.ndarray,
+        perturbed_theta_v_at_cells_on_model_levels: np.ndarray,
+        geofac_grg_x: np.ndarray,
+        geofac_grg_y: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         z_rho_e, z_theta_v_e = compute_horizontal_advection_of_rho_and_theta_numpy(
@@ -211,14 +251,12 @@ class TestComputeBtraj(helpers.StencilTest):
             p_dthalf,
             rho_ref_me,
             theta_ref_me,
-            z_grad_rth_1,
-            z_grad_rth_2,
-            z_grad_rth_3,
-            z_grad_rth_4,
-            z_rth_pr_1,
-            z_rth_pr_2,
+            perturbed_rho_at_cells_on_model_levels,
+            perturbed_theta_v_at_cells_on_model_levels,
+            geofac_grg_x,
+            geofac_grg_y,
         )
-        return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
+        return dict(out=(z_rho_e, z_theta_v_e))
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
@@ -234,12 +272,14 @@ class TestComputeBtraj(helpers.StencilTest):
 
         rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        z_grad_rth_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_grad_rth_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_grad_rth_3 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_grad_rth_4 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_rth_pr_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_rth_pr_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+        )
+        geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
+        geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
@@ -255,16 +295,15 @@ class TestComputeBtraj(helpers.StencilTest):
             p_dthalf=p_dthalf,
             rho_ref_me=rho_ref_me,
             theta_ref_me=theta_ref_me,
-            z_grad_rth_1=z_grad_rth_1,
-            z_grad_rth_2=z_grad_rth_2,
-            z_grad_rth_3=z_grad_rth_3,
-            z_grad_rth_4=z_grad_rth_4,
-            z_rth_pr_1=z_rth_pr_1,
-            z_rth_pr_2=z_rth_pr_2,
-            z_rho_e=z_rho_e,
-            z_theta_v_e=z_theta_v_e,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_edges),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+            perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
+            out=(z_rho_e, z_theta_v_e),
+            domain=gtx.domain(
+                {
+                    dims.EdgeDim: (0, gtx.int32(grid.num_edges)),
+                    dims.KDim: (0, gtx.int32(grid.num_levels)),
+                }
+            ),
         )
