@@ -180,6 +180,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         start_edge_lateral_boundary_level_7: gtx.int32,
         start_edge_nudging_level_2: gtx.int32,
         end_edge_nudging: gtx.int32,
+        end_edge_halo: gtx.int32,
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
         horizontal_end: gtx.int32,
@@ -237,7 +238,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         # initialize also nest boundary points with zero
         if limited_area:
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = np.where(
-                horz_idx >= start_edge_lateral_boundary,
+                (horz_idx >= start_edge_lateral_boundary) & (horz_idx < end_edge_halo),
                 (
                     np.zeros_like(rho_at_edges_on_model_levels),
                     np.zeros_like(theta_v_at_edges_on_model_levels),
@@ -249,7 +250,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         # Note: the length of the backward trajectory should be 0.5*dtime*(vn,tangential_wind) in order to arrive
         # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
         (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = np.where(
-            start_edge_lateral_boundary_level_7 <= horz_idx,
+            (start_edge_lateral_boundary_level_7 <= horz_idx) & (horz_idx < end_edge_halo),
             compute_theta_rho_face_value_by_miura_scheme_numpy(
                 connectivities=connectivities,
                 vn=current_vn,
@@ -285,7 +286,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
         horizontal_pressure_gradient = np.where(
-            (start_edge_nudging_level_2 <= horz_idx) & (vert_idx < nflatlev),
+            (vert_idx < nflatlev),
             inv_dual_edge_length * weighted_temporal_extrapolation_of_perturbed_exner_at_edges,
             horizontal_pressure_gradient,
         )
@@ -322,9 +323,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         # horizontal gradient of Exner pressure, including metric correction
         # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
         horizontal_pressure_gradient = np.where(
-            (start_edge_nudging_level_2 <= horz_idx)
-            & (vert_idx >= nflatlev)
-            & (vert_idx < (nflat_gradp + gtx.int32(1))),
+            (vert_idx >= nflatlev) & (vert_idx < (nflat_gradp + gtx.int32(1))),
             inv_dual_edge_length * weighted_temporal_extrapolation_of_perturbed_exner_at_edges
             - ddxn_z_full
             * np.sum(
@@ -361,7 +360,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         )
         sum_expr = at_neighbor(1) - at_neighbor(0)
         horizontal_pressure_gradient = np.where(
-            (start_edge_nudging_level_2 <= horz_idx) & (vert_idx >= (nflat_gradp + gtx.int32(1))),
+            (vert_idx >= (nflat_gradp + gtx.int32(1))),
             inv_dual_edge_length * sum_expr,
             horizontal_pressure_gradient,
         )
@@ -372,12 +371,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             axis=1,
         )
         horizontal_pressure_gradient = np.where(
-            start_edge_nudging_level_2 <= horz_idx,
-            np.where(
-                ipeidx_dsl,
-                horizontal_pressure_gradient + hydrostatic_correction * pg_exdist,
-                horizontal_pressure_gradient,
-            ),
+            ipeidx_dsl,
+            horizontal_pressure_gradient + hydrostatic_correction * pg_exdist,
             horizontal_pressure_gradient,
         )
 
@@ -495,6 +490,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         )
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING))
+        end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
         nflatlev = 4
         nflat_gradp = 27
 
@@ -542,6 +538,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=start_edge_nudging_level_2,
             end_edge_nudging=end_edge_nudging,
+            end_edge_halo=end_edge_halo,
             horizontal_start=0,
             horizontal_end=grid.num_edges,
             vertical_start=0,
