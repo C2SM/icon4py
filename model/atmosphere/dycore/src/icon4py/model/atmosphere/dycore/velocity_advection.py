@@ -32,8 +32,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-from icon4py.model.common.io import plots
-
 class VelocityAdvection:
     def __init__(
         self,

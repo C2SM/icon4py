@@ -208,14 +208,12 @@ class TimeLoop:
             do_prep_adv,
         )
 
-        plots.pickle_data(prognostic_states.next, "diffusion_before")
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.next,
                 self.dtime_in_seconds,
             )
-        plots.pickle_data(prognostic_states.next, "diffusion_after")
 
         prognostic_states.swap()
 
