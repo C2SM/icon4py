@@ -60,7 +60,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     type_alias as ta,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType()
@@ -302,8 +302,6 @@ def _apply_divergence_damping_and_update_vn(
     is_iau_active: bool,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    start_edge_nudging_level_2: gtx.int32,
-    end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[ta.wpfloat]:
     # add dw/dz for divergence damping term. In ICON, this stencil starts from k = kstart_dd3d until k = nlev - 1.
     # Since scaling_factor_for_3d_divdamp is zero when k < kstart_dd3d, it is meaningless to execute computation
@@ -317,102 +315,54 @@ def _apply_divergence_damping_and_update_vn(
         z_graddiv_vn=horizontal_gradient_of_normal_wind_divergence,
     )
 
-    squared_horizontal_gradient_of_total_divergence = (
-        concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-            _compute_graddiv2_of_vn(
-                geofac_grdiv=geofac_grdiv, z_graddiv_vn=horizontal_gradient_of_total_divergence
-            ),
-            broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-        )
-        if (divdamp_order == divergence_damp_order.COMBINED)
-        | (divdamp_order == divergence_damp_order.FOURTH_ORDER)
-        else broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim))
+    next_vn = _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
+        vn_nnow=current_vn,
+        ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
+        ddt_vn_apc_ntl2=corrector_normal_wind_advective_tendency,
+        ddt_vn_phy=normal_wind_tendency_due_to_slow_physics_process,
+        z_theta_v_e=theta_v_at_edges_on_model_levels,
+        z_gradh_exner=horizontal_pressure_gradient,
+        dtime=dtime,
+        wgt_nnow_vel=advection_explicit_weight_parameter,
+        wgt_nnew_vel=advection_implicit_weight_parameter,
+        cpd=dycore_consts.cpd,
     )
 
-    next_vn = concat_where(
-        (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-        _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
-            vn_nnow=current_vn,
-            ddt_vn_apc_ntl1=predictor_normal_wind_advective_tendency,
-            ddt_vn_apc_ntl2=corrector_normal_wind_advective_tendency,
-            ddt_vn_phy=normal_wind_tendency_due_to_slow_physics_process,
-            z_theta_v_e=theta_v_at_edges_on_model_levels,
-            z_gradh_exner=horizontal_pressure_gradient,
-            dtime=dtime,
-            wgt_nnow_vel=advection_explicit_weight_parameter,
-            wgt_nnew_vel=advection_implicit_weight_parameter,
-            cpd=dycore_consts.cpd,
-        ),
-        next_vn,
-    )
-
-    next_vn = (
-        concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-            _apply_2nd_order_divergence_damping(
-                z_graddiv_vn=horizontal_gradient_of_total_divergence,
-                vn=next_vn,
-                scal_divdamp_o2=second_order_divdamp_scaling_coeff,
-            ),
-            next_vn,
+    if (divdamp_order == divergence_damp_order.COMBINED) & (
+        second_order_divdamp_scaling_coeff > 1.0e-6
+    ):
+        next_vn = _apply_2nd_order_divergence_damping(
+            z_graddiv_vn=horizontal_gradient_of_total_divergence,
+            vn=next_vn,
+            scal_divdamp_o2=second_order_divdamp_scaling_coeff,
         )
-        if (
-            (divdamp_order == divergence_damp_order.COMBINED)
-            & (second_order_divdamp_scaling_coeff > 1.0e-6)
-        )
-        else next_vn
-    )
 
-    next_vn = (
-        concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-            _apply_weighted_2nd_and_4th_order_divergence_damping(
+    if (divdamp_order == divergence_damp_order.FOURTH_ORDER) | (
+        (divdamp_order == divergence_damp_order.COMBINED)
+        & (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
+    ):
+        squared_horizontal_gradient_of_total_divergence = _compute_graddiv2_of_vn(
+            geofac_grdiv=geofac_grdiv, z_graddiv_vn=horizontal_gradient_of_total_divergence
+        )
+        if limited_area:
+            next_vn = _apply_weighted_2nd_and_4th_order_divergence_damping(
                 scal_divdamp=fourth_order_divdamp_scaling_coeff,
                 bdy_divdamp=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
                 nudgecoeff_e=nudgecoeff_e,
                 z_graddiv2_vn=squared_horizontal_gradient_of_total_divergence,
                 vn=next_vn,
-            ),
-            next_vn,
-        )
-        if (
-            (divdamp_order == divergence_damp_order.COMBINED)
-            & (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
-            & limited_area
-        )
-        else next_vn
-    )
-
-    next_vn = (
-        concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-            _apply_4th_order_divergence_damping(
+            )
+        else:
+            next_vn = _apply_4th_order_divergence_damping(
                 scal_divdamp=fourth_order_divdamp_scaling_coeff,
                 z_graddiv2_vn=squared_horizontal_gradient_of_total_divergence,
                 vn=next_vn,
-            ),
-            next_vn,
-        )
-        if (
-            (divdamp_order == divergence_damp_order.COMBINED)
-            & (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
-            & (not limited_area)
-        )
-        else next_vn
-    )
+            )
 
-    next_vn = (
-        concat_where(
-            (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-            _add_analysis_increments_to_vn(
-                vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
-            ),
-            next_vn,
+    if is_iau_active:
+        next_vn = _add_analysis_increments_to_vn(
+            vn_incr=normal_wind_iau_increment, vn=next_vn, iau_wgt_dyn=iau_wgt_dyn
         )
-        if (is_iau_active)
-        else next_vn
-    )
 
     return next_vn
 
@@ -612,8 +562,6 @@ def apply_divergence_damping_and_update_vn(
     is_iau_active: bool,
     limited_area: bool,
     divdamp_order: gtx.int32,
-    start_edge_nudging_level_2: gtx.int32,
-    end_edge_local: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -690,8 +638,6 @@ def apply_divergence_damping_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=limited_area,
         divdamp_order=divdamp_order,
-        start_edge_nudging_level_2=start_edge_nudging_level_2,
-        end_edge_local=end_edge_local,
         out=next_vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

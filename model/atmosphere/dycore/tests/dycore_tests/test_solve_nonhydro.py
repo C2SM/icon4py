@@ -1651,10 +1651,6 @@ def test_apply_divergence_damping_and_update_vn(
 
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-    start_edge_lateral_boundary_level_7 = icon_grid.start_index(
-        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
-    )
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
@@ -1711,10 +1707,8 @@ def test_apply_divergence_damping_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
-        start_edge_nudging_level_2=start_edge_nudging_level_2,
-        end_edge_local=end_edge_local,
-        horizontal_start=start_edge_lateral_boundary_level_7,
-        horizontal_end=end_edge_halo_level_2,
+        horizontal_start=start_edge_nudging_level_2,
+        horizontal_end=end_edge_local,
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
