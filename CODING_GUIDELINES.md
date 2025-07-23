@@ -146,11 +146,11 @@ Example:
    src/
       ...
    tests/
-      conftest.py          # pytest settings only
-      component/
+      system_subsystem_component/
          __init__.py       # REQUIRED to make this folder a Python package
-         fixtures.py       # all fixture definitions and imports
-         utils.py          # other shared testing utilities 
+         conftest.py       # pytest settings only
+         fixtures.py       # fixture definitions (it might be also a package)
+         utils.py          # other shared testing utilities (it might be also a package)
          stencil_tests/
             test_foo.py
             ...

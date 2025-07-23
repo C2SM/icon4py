@@ -6,6 +6,4 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.testing.parallel_helpers import (
-    processor_props,  # noqa: F401  # import fixtures from test_utils package
-)
+pytest_plugins = ["icon4py.model.testing.pytest_hooks"]

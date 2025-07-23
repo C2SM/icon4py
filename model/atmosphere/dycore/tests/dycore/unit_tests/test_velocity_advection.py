@@ -30,7 +30,7 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
-from . import utils
+from .. import utils
 
 
 log = logging.getLogger(__name__)
@@ -103,6 +103,8 @@ def test_verify_velocity_init_against_savepoint(
     ],
 )
 def test_scale_factors_by_dtime(
+    experiment,
+    step_date_init,
     savepoint_velocity_init,
     icon_grid,
     grid_savepoint,
@@ -146,10 +148,11 @@ def test_scale_factors_by_dtime(
 )
 def test_velocity_predictor_step(
     experiment,
-    istep_init,
-    istep_exit,
     step_date_init,
     step_date_exit,
+    *,
+    istep_init,
+    istep_exit,
     substep_init,
     substep_exit,
     lowest_layer_thickness,
@@ -324,9 +327,11 @@ def test_velocity_predictor_step(
 def test_velocity_corrector_step(
     istep_init,
     istep_exit,
+    experiment,
     substep_init,
     step_date_init,
     step_date_exit,
+    *,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -470,6 +475,10 @@ def test_velocity_corrector_step(
     ],
 )
 def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *,
     icon_grid,
     grid_savepoint,
     savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
@@ -477,8 +486,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
     metrics_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    step_date_init,
-    step_date_exit,
     substep_init,
     istep_init,
     istep_exit,
@@ -601,6 +608,10 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_predictor_step(
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *,
     icon_grid,
     grid_savepoint,
     savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
@@ -608,8 +619,6 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     metrics_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    step_date_init,
-    step_date_exit,
     substep_init,
     istep_init,
     istep_exit,
@@ -678,6 +687,10 @@ def test_compute_edge_diagnostics_for_velocity_advection_in_corrector_step(
     ],
 )
 def test_compute_cell_diagnostics_for_velocity_advection_predictor(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *,
     icon_grid,
     grid_savepoint,
     savepoint_compute_cell_diagnostics_for_velocity_advection_init,
@@ -688,8 +701,6 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
     istep_exit,
     substep_init,
     substep_exit,
-    step_date_init,
-    step_date_exit,
     backend,
 ):
     cell_domain = h_grid.domain(dims.CellDim)
@@ -778,6 +789,10 @@ def test_compute_cell_diagnostics_for_velocity_advection_predictor(
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_cell_diagnostics_for_velocity_advection_corrector(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *,
     icon_grid,
     grid_savepoint,
     savepoint_compute_cell_diagnostics_for_velocity_advection_init,
@@ -788,8 +803,6 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
     istep_exit,
     substep_init,
     substep_exit,
-    step_date_init,
-    step_date_exit,
     backend,
 ):
     cell_domain = h_grid.domain(dims.CellDim)
@@ -872,6 +885,10 @@ def test_compute_cell_diagnostics_for_velocity_advection_corrector(
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_vertical_momentum_equation(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *,
     icon_grid,
     grid_savepoint,
     savepoint_compute_advection_in_vertical_momentum_equation_init,
@@ -882,8 +899,6 @@ def test_compute_advection_in_vertical_momentum_equation(
     savepoint_velocity_exit,
     backend,
     savepoint_velocity_init,
-    step_date_init,
-    step_date_exit,
     substep_init,
     substep_exit,
     istep_init,
@@ -1009,6 +1024,10 @@ def test_compute_advection_in_vertical_momentum_equation(
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_horizontal_momentum_equation(
+    experiment,
+    step_date_init,
+    step_date_exit,
+    *,
     icon_grid,
     grid_savepoint,
     savepoint_compute_advection_in_horizontal_momentum_equation_init,
@@ -1020,8 +1039,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
     istep_init,
     istep_exit,
     substep_init,
-    step_date_init,
-    step_date_exit,
 ):
     vn = savepoint_compute_advection_in_horizontal_momentum_equation_init.vn()
     horizontal_kinetic_energy_at_edges_on_model_levels = (

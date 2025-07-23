@@ -268,3 +268,6 @@ packages = []
 markers = [
     "embedded_remap_error", "embedded_static_args", "uses_as_offset", "skip_value_error", "datatest", "embedded_only", "cpu_only", "infinite_concat_where"
 ]
+addopts = ["--import-mode=append"]
+#pythonpath = ["testing"]
+# pytest_plugins="icon4py.model.testing.pytest_hooks"

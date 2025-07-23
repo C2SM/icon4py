@@ -6,3 +6,4 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+pytest_plugins = ["icon4py.model.testing.pytest_hooks"]

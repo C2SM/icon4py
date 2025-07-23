@@ -32,7 +32,7 @@ from icon4py.model.testing import (
     helpers,
 )
 
-from . import utils
+from .. import utils
 
 
 @pytest.mark.datatest
@@ -518,8 +518,11 @@ def test_nonhydro_predictor_step(
 )
 def test_nonhydro_corrector_step(
     istep_init,
-    istep_exit,
     substep_init,
+    istep_exit,
+    substep_exit,
+    at_initial_timestep,
+    *,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -534,7 +537,6 @@ def test_nonhydro_corrector_step(
     savepoint_nonhydro_exit,
     experiment,
     ndyn_substeps,
-    at_initial_timestep,
     caplog,
     backend,
 ):
@@ -727,9 +729,11 @@ def test_nonhydro_corrector_step(
 )
 def test_run_solve_nonhydro_single_step(
     istep_init,
-    istep_exit,
     substep_init,
+    istep_exit,
     substep_exit,
+    at_initial_timestep,
+    *,
     step_date_init,
     step_date_exit,
     experiment,
@@ -745,7 +749,6 @@ def test_run_solve_nonhydro_single_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_final,
-    at_initial_timestep,
     caplog,
     backend,
 ):
@@ -848,15 +851,22 @@ def test_run_solve_nonhydro_single_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit,  at_initial_timestep",
+    "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, at_initial_timestep",
     [
         (1, 1, "2021-06-20T12:00:10.000", 2, 2, "2021-06-20T12:00:10.000", True),
         (1, 1, "2021-06-20T12:00:20.000", 2, 2, "2021-06-20T12:00:20.000", False),
     ],
 )
 def test_run_solve_nonhydro_multi_step(
+    experiment,
+    istep_init,
+    substep_init,
     step_date_init,
+    istep_exit,
+    substep_exit,
     step_date_exit,
+    at_initial_timestep,
+    *,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -868,10 +878,8 @@ def test_run_solve_nonhydro_multi_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_final,
-    experiment,
     ndyn_substeps,
     backend,
-    at_initial_timestep,
 ):
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
@@ -1044,9 +1052,11 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     ],
 )
 def test_compute_perturbed_quantities_and_interpolation(
+    at_initial_timestep,
+    experiment,
     step_date_init,
     step_date_exit,
-    experiment,
+    *,
     ndyn_substeps,
     icon_grid,
     lowest_layer_thickness,
@@ -1056,7 +1066,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
-    at_initial_timestep,
     substep_init,
     substep_exit,
     savepoint_nonhydro_init,
@@ -1262,9 +1271,13 @@ def test_compute_perturbed_quantities_and_interpolation(
     ],
 )
 def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
+    at_initial_timestep,
+    istep_init,
+    istep_exit,
+    experiment,
     step_date_init,
     step_date_exit,
-    experiment,
+    *,
     ndyn_substeps,
     icon_grid,
     lowest_layer_thickness,
@@ -1274,8 +1287,6 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
-    at_initial_timestep,
-    istep_init,
     substep_init,
     substep_exit,
     savepoint_nonhydro_init,
@@ -1405,9 +1416,10 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     ],
 )
 def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
+    experiment,
     step_date_init,
     step_date_exit,
-    experiment,
+    *,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -1629,9 +1641,14 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     ],
 )
 def test_apply_divergence_damping_and_update_vn(
+    istep_init,
+    substep_init,
+    istep_exit,
+    substep_exit,
+    experiment,
     step_date_init,
     step_date_exit,
-    experiment,
+    *,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -1643,9 +1660,6 @@ def test_apply_divergence_damping_and_update_vn(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    substep_init,
-    substep_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
@@ -1759,9 +1773,12 @@ def test_apply_divergence_damping_and_update_vn(
     ],
 )
 def test_vertically_implicit_solver_at_predictor_step(
+    at_initial_timestep,
+    substep_init,
+    experiment,
     step_date_init,
     step_date_exit,
-    experiment,
+    *,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -1773,10 +1790,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    at_initial_timestep,
     istep_init,
     istep_exit,
-    substep_init,
     substep_exit,
     savepoint_vertically_implicit_dycore_solver_init,
     backend,
@@ -1995,9 +2010,15 @@ def test_vertically_implicit_solver_at_predictor_step(
     ],
 )
 def test_vertically_implicit_solver_at_corrector_step(
+    istep_init,
+    substep_init,
+    istep_exit,
+    substep_exit,
+    at_initial_timestep,
+    experiment,
     step_date_init,
     step_date_exit,
-    experiment,
+    *,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -2009,11 +2030,6 @@ def test_vertically_implicit_solver_at_corrector_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    at_initial_timestep,
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
     savepoint_vertically_implicit_dycore_solver_init,
     backend,
 ):

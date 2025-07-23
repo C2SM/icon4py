@@ -9,4 +9,5 @@
 
 from __future__ import annotations
 
-from icon4py.model.testing.pytest_hooks import *  # noqa: F403 [undefined-local-with-import-star]
+
+pytest_plugins = ["icon4py.model.testing.pytest_hooks"]
