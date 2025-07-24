@@ -89,6 +89,7 @@ def read_config(
     def _mch_ch_r04b09_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             ndyn_substeps_var=n_substeps_reduced,
+            max_nudging_coefficient=0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
         )
 
     def _jabw_vertical_config():
@@ -111,7 +112,6 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=200.0,
-            max_nudging_coefficient=0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
         )
 
     def _jabw_nonhydro_config(n_substeps: int):
@@ -119,7 +119,6 @@ def read_config(
             # original igradp_method is 2
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
-            max_nudging_coefficient=0.02 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
             fourth_order_divdamp_factor=0.0025,
         )
 
