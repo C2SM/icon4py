@@ -12,7 +12,7 @@ import click.testing as click_testing
 import pytest
 
 import icon4py.model.common.type_alias as type_alias
-from icon4py.model.testing.fixtures.datatest import (  # F401
+from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
     download_ser_data,

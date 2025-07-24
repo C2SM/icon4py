@@ -12,12 +12,15 @@ import os
 import pathlib
 import re
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.decomposition import definitions as decomposition
 
+
+if TYPE_CHECKING:
+    from icon4py.model.testing import serialbox
 
 DEFAULT_TEST_DATA_FOLDER = "testdata"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
@@ -154,7 +157,7 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
 
 def create_icon_serial_data_provider(
     datapath, processor_props, backend: Optional[gtx_backend.Backend]
-) -> icon4py.model.testing.serialbox.IconSerialDataProvider:
+) -> serialbox.IconSerialDataProvider:
     # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.testing.serialbox import IconSerialDataProvider
 

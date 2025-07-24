@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import pytest
 from gt4py.next import backend as gtx_backend
@@ -22,6 +22,9 @@ from icon4py.model.testing.datatest_utils import (
 
 from .. import data_handling as data, datatest_utils as dt_utils
 
+
+if TYPE_CHECKING:
+    from icon4py.model.testing import serialbox
 
 DEFAULT_GRID: Final[str] = "simple_grid"
 VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
@@ -150,7 +153,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 @pytest.fixture
 def data_provider(
     download_ser_data, ranked_data_path, experiment, processor_props, backend
-) -> icon4py.model.testing.serialbox.IconSerialDataProvider:
+) -> serialbox.IconSerialDataProvider:
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
@@ -186,7 +189,7 @@ def decomposition_info(data_provider, experiment):
 
 
 @pytest.fixture
-def ndyn_substeps():
+def ndyn_substeps() -> int:
     """
     Return number of dynamical substeps.
 
@@ -197,7 +200,7 @@ def ndyn_substeps():
 
 
 @pytest.fixture
-def linit():
+def linit() -> bool:
     """
     Set the 'linit' flag for the ICON diffusion data savepoint.
 
@@ -207,7 +210,7 @@ def linit():
 
 
 @pytest.fixture
-def step_date_init():
+def step_date_init() -> str:
     """
     Set the step date for the loaded ICON time stamp at start of module.
 
@@ -217,12 +220,12 @@ def step_date_init():
 
 
 @pytest.fixture
-def substep_init():
+def substep_init() -> int:
     return 1
 
 
 @pytest.fixture
-def substep_exit():
+def substep_exit() -> int:
     return 1
 
 

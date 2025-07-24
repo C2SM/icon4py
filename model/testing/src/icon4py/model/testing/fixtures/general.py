@@ -12,9 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.grid import base
-
 
 
 @dataclasses.dataclass

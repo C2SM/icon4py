@@ -11,8 +11,6 @@ import pytest
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -23,12 +21,11 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    ndyn_substeps,
     processor_props,
     ranked_data_path,
 )
 
-from ..fixtures import advection_init_savepoint, advection_exit_savepoint
+from ..fixtures import advection_exit_savepoint, advection_init_savepoint
 from ..utils import (
     construct_config,
     construct_diagnostic_exit_state,

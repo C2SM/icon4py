@@ -12,7 +12,7 @@ from icon4py.model.common.decomposition.definitions import (
     SingleNodeExchange,
     create_exchange,
 )
-from icon4py.model.testing.fixtures.datatest import (  # noqa: F401 # import fixtures form test_utils
+from icon4py.model.testing.fixtures.datatest import (  # import fixtures form test_utils
     data_provider,
     download_ser_data,
     experiment,
@@ -24,7 +24,7 @@ from icon4py.model.testing.fixtures.datatest import (  # noqa: F401 # import fix
 
 
 @pytest.mark.datatest
-def test_create_single_node_runtime_without_mpi(icon_grid, processor_props):  # noqa: F811 # fixture
+def test_create_single_node_runtime_without_mpi(icon_grid, processor_props):  
     decomposition_info = DecompositionInfo(
         klevels=10,
         num_cells=icon_grid.num_cells,

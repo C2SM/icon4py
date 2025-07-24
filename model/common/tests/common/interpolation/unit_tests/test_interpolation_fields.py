@@ -28,7 +28,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing.fixtures.datatest import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
@@ -45,7 +45,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):  # fixture
+def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):  
     xp = data_alloc.import_array_ns(backend)
     func = functools.partial(compute_c_lin_e, array_ns=xp)
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()

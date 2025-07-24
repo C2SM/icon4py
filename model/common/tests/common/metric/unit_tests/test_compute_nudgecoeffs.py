@@ -15,7 +15,7 @@ from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing.fixtures.datatest import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
@@ -30,10 +30,10 @@ from icon4py.model.testing.fixtures.datatest import (  # noqa: F401  # import fi
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_nudgecoeffs_e(
-    grid_savepoint,  # noqa: F811 # fixture
-    interpolation_savepoint,  # noqa: F811 # fixture
-    icon_grid,  # noqa: F811  # fixture
-    backend,  # fixture
+    grid_savepoint,  
+    interpolation_savepoint,  
+    icon_grid,  
+    backend,  
 ):
     nudgecoeff_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat, backend=backend)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()

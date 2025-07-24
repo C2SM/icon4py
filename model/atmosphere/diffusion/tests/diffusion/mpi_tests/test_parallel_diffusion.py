@@ -30,7 +30,7 @@ def test_parallel_diffusion(
     step_date_init,
     linit,
     ndyn_substeps,
-    processor_props,  # fixture
+    processor_props,  
     decomposition_info,
     icon_grid,
     savepoint_diffusion_init,
@@ -167,7 +167,7 @@ def test_parallel_diffusion_multiple_steps(
     step_date_init,
     linit,
     ndyn_substeps,
-    processor_props,  # fixture
+    processor_props,  
     decomposition_info,
     icon_grid,
     savepoint_diffusion_init,

@@ -30,7 +30,7 @@ if typing.TYPE_CHECKING:
     import netCDF4
 
 try:
-    import netCDF4  # noqa # F401
+    import netCDF4
 except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 

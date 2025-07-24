@@ -9,7 +9,7 @@
 import pytest
 
 from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
-from icon4py.model.testing.fixtures.datatest import (  # noqa: F401
+from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
     decomposition_info,

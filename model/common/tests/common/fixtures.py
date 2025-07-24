@@ -11,14 +11,14 @@ import random
 
 import pytest
 
-from icon4py.model.testing.fixtures import (  # noqa: F401
+from icon4py.model.testing.fixtures import (
     backend,
     connectivities_as_numpy,
     decomposition_info,
     experiment,
     grid,
 )
-from icon4py.model.testing.fixtures.datatest import (  # noqa: F401
+from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
     download_ser_data,

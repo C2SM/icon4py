@@ -14,7 +14,7 @@ from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
-from ..fixtures import backend  # noqa: F401
+from ..fixtures import backend
 
 
 def fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
