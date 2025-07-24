@@ -182,6 +182,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
 ]:
     # TODO(havogt): it would be nice if we could shrink the start of the compute domain to `start_edge_lateral_boundary_level_7 <= dims.EdgeDim`,
     # but that would require to put the correct lateral boundary condition where this is consumed.
+    # TODO(havogt): most likely it is possible to remove the `end_edge_halo` bound here (and shrink the compute domain), the corresponding
+    # Fortran code states "Initialize halo edges with zero in order to avoid access of uninitialized array elements".
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
         ((start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo)),
         _compute_horizontal_advection_of_rho_and_theta(
