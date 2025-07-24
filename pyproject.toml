@@ -268,6 +268,4 @@ markers = [
     "cpu_only",
     "uses_concat_where",
 ]
-addopts = ["--import-mode=append"]
-#pythonpath = ["testing"]
-# pytest_plugins="icon4py.model.testing.pytest_hooks"
+addopts = ["--import-mode=append", "-p icon4py.model.testing.pytest_hooks"]

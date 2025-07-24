@@ -10,4 +10,4 @@
 from __future__ import annotations
 
 
-pytest_plugins = ["icon4py.model.testing.pytest_hooks"]
+
