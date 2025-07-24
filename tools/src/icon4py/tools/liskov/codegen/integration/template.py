@@ -55,8 +55,7 @@ class OutputFields(InputFields):
     verification: bool
 
 
-class ToleranceFields(InputFields):
-    ...
+class ToleranceFields(InputFields): ...
 
 
 def get_array_dims(association: str) -> str:
@@ -96,8 +95,7 @@ class MetadataStatementGenerator(TemplatedGenerator):
     )
 
 
-class Declaration(Assign):
-    ...
+class Declaration(Assign): ...
 
 
 class CopyDeclaration(Declaration):
@@ -236,7 +234,7 @@ class BaseEndStencilStatementGenerator(TemplatedGenerator):
             if len(split_idx) >= 3:
                 split_idx[-1] = "1"
 
-            setattr(f, "rh_index", enclose_in_parentheses(",".join(split_idx)))
+            f.rh_index = enclose_in_parentheses(",".join(split_idx))
         return self.generic_visit(out)
 
     OutputFields = as_jinja(
@@ -451,32 +449,28 @@ class StartCreateStatementGenerator(TemplatedGenerator):
     )
 
 
-class EndCreateStatement(eve.Node):
-    ...
+class EndCreateStatement(eve.Node): ...
 
 
 class EndCreateStatementGenerator(TemplatedGenerator):
     EndCreateStatement = as_jinja("!$ACC END DATA")
 
 
-class StartDeleteStatement(eve.Node):
-    ...
+class StartDeleteStatement(eve.Node): ...
 
 
 class StartDeleteStatementGenerator(TemplatedGenerator):
     StartDeleteStatement = as_jinja("#ifdef __DSL_VERIFY")
 
 
-class EndDeleteStatement(eve.Node):
-    ...
+class EndDeleteStatement(eve.Node): ...
 
 
 class EndDeleteStatementGenerator(TemplatedGenerator):
     EndDeleteStatement = as_jinja("#endif")
 
 
-class EndIfStatement(eve.Node):
-    ...
+class EndIfStatement(eve.Node): ...
 
 
 class EndIfStatementGenerator(TemplatedGenerator):
@@ -491,8 +485,7 @@ class StartProfileStatementGenerator(TemplatedGenerator):
     StartProfileStatement = as_jinja('call nvtxStartRange("{{ _this_node.name }}")')
 
 
-class EndProfileStatement(eve.Node):
-    ...
+class EndProfileStatement(eve.Node): ...
 
 
 class EndProfileStatementGenerator(TemplatedGenerator):

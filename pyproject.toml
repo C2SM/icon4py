@@ -83,7 +83,7 @@ dependencies = [
   "icon4py-driver>=0.0.6"
 ]
 description = 'ICON model in Python.'
-license = { text = "BSD-3 License" }
+license = {text = "BSD-3 License"}
 name = "icon4py"
 readme = "README.md"
 requires-python = ">=3.10"

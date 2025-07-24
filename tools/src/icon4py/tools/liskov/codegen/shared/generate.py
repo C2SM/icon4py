@@ -23,8 +23,7 @@ class CodeGenerator(Step):
         self.generated: list[GeneratedCode] = []
 
     @abc.abstractmethod
-    def __call__(self, data: Any) -> list[GeneratedCode]:
-        ...
+    def __call__(self, data: Any) -> list[GeneratedCode]: ...
 
     @staticmethod
     def _generate_fortran_code(

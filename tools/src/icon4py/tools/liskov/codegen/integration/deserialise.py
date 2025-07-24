@@ -88,8 +88,7 @@ def pop_item_from_dict(dictionary: dict, key: str, default_value: Optional[str])
 class DirectiveInputFactory(Protocol):
     def __call__(
         self, parsed: ts.ParsedDict
-    ) -> list[CodeGenInput] | CodeGenInput | Type[UnusedDirective]:
-        ...
+    ) -> list[CodeGenInput] | CodeGenInput | Type[UnusedDirective]: ...
 
 
 class DataFactoryBase:

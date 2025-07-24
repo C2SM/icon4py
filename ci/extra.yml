@@ -8,9 +8,9 @@ include:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
-      BACKEND: [embedded, gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu]
-      LEVEL: [unit]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+        BACKEND: [embedded, gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu]
+        LEVEL: [unit]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:

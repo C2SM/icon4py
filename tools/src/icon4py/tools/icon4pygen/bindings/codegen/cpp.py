@@ -516,8 +516,7 @@ class IncludeStatements(Node):
     block_size: int
 
 
-class UtilityFunctions(Node):
-    ...
+class UtilityFunctions(Node): ...
 
 
 class GpuTriMesh(Node):
@@ -550,8 +549,7 @@ class PrivateMembers(Node):
     out_fields: Sequence[Field]
 
 
-class StencilClassSetupFunc(CppSetupFuncDeclaration):
-    ...
+class StencilClassSetupFunc(CppSetupFuncDeclaration): ...
 
 
 class StencilClass(Node):
@@ -585,12 +583,10 @@ class VerifyFunc(Node):
     metrics_serialisation: MetricsSerialisation
 
 
-class RunFuncCall(CppRunFuncDeclaration):
-    ...
+class RunFuncCall(CppRunFuncDeclaration): ...
 
 
-class VerifyFuncCall(CppVerifyFuncDeclaration):
-    ...
+class VerifyFuncCall(CppVerifyFuncDeclaration): ...
 
 
 class SetupFunc(CppFunc):
@@ -604,8 +600,7 @@ class RunAndVerifyFunc(Node):
     verify_func_call: VerifyFuncCall
 
 
-class FreeFunc(CppFreeFunc):
-    ...
+class FreeFunc(CppFreeFunc): ...
 
 
 class CppDefTemplate(Node):

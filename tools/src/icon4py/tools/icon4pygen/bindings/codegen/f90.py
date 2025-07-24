@@ -205,8 +205,7 @@ class F90Field(eve.Node):
     suffix: str = ""
 
 
-class F90HostDataField(F90Field):
-    ...
+class F90HostDataField(F90Field): ...
 
 
 class F90TypedField(F90Field):

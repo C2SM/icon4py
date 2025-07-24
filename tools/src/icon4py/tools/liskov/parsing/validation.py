@@ -31,8 +31,7 @@ class Validator(Protocol):
     filepath: Path
 
     @abstractmethod
-    def validate(self, directives: Sequence[ts.ParsedDirective]) -> None:
-        ...
+    def validate(self, directives: Sequence[ts.ParsedDirective]) -> None: ...
 
 
 def _extract_arg_from_directive(directive: str, arg: str) -> str:

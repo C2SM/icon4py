@@ -30,12 +30,10 @@ class StandardFields(eve.Node):
     fields: list[Field]
 
 
-class DecomposedFieldsAllocNode(StandardFields):
-    ...
+class DecomposedFieldsAllocNode(StandardFields): ...
 
 
-class DecomposedFieldDeclarations(DecomposedFieldsAllocNode):
-    ...
+class DecomposedFieldDeclarations(DecomposedFieldsAllocNode): ...
 
 
 class SavepointStatement(eve.Node):
@@ -114,7 +112,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
                 raise Exception("No dimension found in `DecomposedField` {node}")
 
             f.variable = f.variable.replace(f"_{f.ptr_var}", "")
-            setattr(f, "alloc_dims", ",".join(generate_size_strings(f.dimension, f.variable)))
+            f.alloc_dims = ",".join(generate_size_strings(f.dimension, f.variable))
 
         return self.generic_visit(node)
 
@@ -130,8 +128,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
     )
 
 
-class ImportStatement(eve.Node):
-    ...
+class ImportStatement(eve.Node): ...
 
 
 class ImportStatementGenerator(TemplatedGenerator):

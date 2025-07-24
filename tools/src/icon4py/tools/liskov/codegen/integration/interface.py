@@ -13,8 +13,7 @@ from typing import Optional, Sequence
 from icon4py.tools.liskov.codegen.shared.types import CodeGenInput
 
 
-class UnusedDirective:
-    ...
+class UnusedDirective: ...
 
 
 @dataclass
@@ -44,8 +43,7 @@ class DeclareData(CodeGenInput):
 
 
 @dataclass
-class ImportsData(CodeGenInput):
-    ...
+class ImportsData(CodeGenInput): ...
 
 
 @dataclass
@@ -54,13 +52,11 @@ class StartCreateData(CodeGenInput):
 
 
 @dataclass
-class EndCreateData(CodeGenInput):
-    ...
+class EndCreateData(CodeGenInput): ...
 
 
 @dataclass
-class EndIfData(CodeGenInput):
-    ...
+class EndIfData(CodeGenInput): ...
 
 
 @dataclass
@@ -69,8 +65,7 @@ class StartProfileData(CodeGenInput):
 
 
 @dataclass
-class EndProfileData(CodeGenInput):
-    ...
+class EndProfileData(CodeGenInput): ...
 
 
 @dataclass
@@ -89,8 +84,7 @@ class StartStencilData(BaseStartStencilData):
 
 
 @dataclass
-class StartFusedStencilData(BaseStartStencilData):
-    ...
+class StartFusedStencilData(BaseStartStencilData): ...
 
 
 @dataclass
@@ -106,8 +100,7 @@ class EndStencilData(BaseEndStencilData):
 
 
 @dataclass
-class EndFusedStencilData(BaseEndStencilData):
-    ...
+class EndFusedStencilData(BaseEndStencilData): ...
 
 
 @dataclass
@@ -116,8 +109,7 @@ class StartDeleteData(CodeGenInput):
 
 
 @dataclass
-class EndDeleteData(StartDeleteData):
-    ...
+class EndDeleteData(StartDeleteData): ...
 
 
 @dataclass

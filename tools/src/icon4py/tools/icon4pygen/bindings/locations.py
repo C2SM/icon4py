@@ -52,8 +52,7 @@ class MultiLocation(metaclass=ABCMeta):
     chain: list[BasicLocation]
 
     @abstractmethod
-    def __str__(self) -> str:
-        ...
+    def __str__(self) -> str: ...
 
     def __init__(self, chain: list[BasicLocation]) -> None:
         if is_valid(chain):

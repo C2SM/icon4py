@@ -15,7 +15,6 @@ from typing import Any, TypeGuard
 from gt4py import eve, next as gtx
 from gt4py.next.common import (
     _DEFAULT_SKIP_VALUE,
-    Connectivity,
     Dimension,
     DimensionKind,
     NeighborConnectivityType,
@@ -52,21 +51,6 @@ class FieldInfo:
     field: past.DataSymbol
     inp: bool
     out: bool
-
-
-@dataclass
-class DummyConnectivity(Connectivity):
-    """Provides static information to the code generator (`max_neighbors`, `has_skip_values`)."""
-
-    max_neighbors: int
-    has_skip_values: bool
-    origin_axis: Dimension
-    neighbor_axis: Dimension = Dimension("unused")
-    index_type: type[int] = int
-
-    def mapped_index(self, cur_index, neigh_index) -> int:  # type: ignore[no-untyped-def]  # code will disappear with next gt4py version
-        raise AssertionError("Unreachable")
-        return 0
 
 
 def _is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:

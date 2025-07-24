@@ -114,8 +114,7 @@ class CppFunc(Node):
     funcname: str
 
 
-class CppFreeFunc(CppFunc):
-    ...
+class CppFreeFunc(CppFunc): ...
 
 
 class CppSizeFunc(CppFunc):
@@ -132,12 +131,10 @@ class CppVerifyFuncDeclaration(CppSizeFunc):
     before_suffix: str
 
 
-class CppSetupFuncDeclaration(CppFunc):
-    ...
+class CppSetupFuncDeclaration(CppFunc): ...
 
 
-class CppRunAndVerifyFuncDeclaration(CppRunFuncDeclaration, CppVerifyFuncDeclaration):
-    ...
+class CppRunAndVerifyFuncDeclaration(CppRunFuncDeclaration, CppVerifyFuncDeclaration): ...
 
 
 class CppHeaderFile(Node):

@@ -44,8 +44,7 @@ class SavepointData(CodeGenInput):
     metadata: Optional[list[Metadata]]
 
 
-class ImportData(CodeGenInput):
-    ...
+class ImportData(CodeGenInput): ...
 
 
 @dataclass
