@@ -91,7 +91,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.infinite_concat_where,)
+    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
