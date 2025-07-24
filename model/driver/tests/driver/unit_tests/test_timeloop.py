@@ -109,10 +109,19 @@ from ..utils import (
     ],
 )
 def test_run_timeloop_single_step(
-    experiment,
+   experiment,
+    istep_init,
+    istep_exit,
+    substep_init,
+    substep_exit,
     timeloop_date_init,
     timeloop_date_exit,
+    step_date_init,
+    step_date_exit,
     timeloop_diffusion_linit_init,
+    timeloop_diffusion_linit_exit,
+    vn_only,
+    *,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
@@ -127,7 +136,6 @@ def test_run_timeloop_single_step(
     savepoint_velocity_init,
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
-    vn_only,
     backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
@@ -355,6 +363,7 @@ def test_run_timeloop_single_step(
     theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
+    backend,
 
     assert helpers.dallclose(
         prognostic_states.current.vn.asnumpy(),
