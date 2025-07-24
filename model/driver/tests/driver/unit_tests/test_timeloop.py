@@ -109,7 +109,7 @@ from ..utils import (
     ],
 )
 def test_run_timeloop_single_step(
-   experiment,
+    experiment,
     istep_init,
     istep_exit,
     substep_init,
@@ -363,7 +363,6 @@ def test_run_timeloop_single_step(
     theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
-    backend,
 
     assert helpers.dallclose(
         prognostic_states.current.vn.asnumpy(),

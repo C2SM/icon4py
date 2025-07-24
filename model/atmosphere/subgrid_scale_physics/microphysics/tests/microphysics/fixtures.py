@@ -6,14 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.testing.fixtures.datatest import (
-    grid,
+from icon4py.model.testing.fixtures.datatest import (  # noqa: F401
     backend,
     damping_height,
     data_provider,
     download_ser_data,
     experiment,
     flat_height,
+    grid,
     grid_savepoint,
     htop_moist_proc,
     icon_grid,
@@ -28,4 +28,3 @@ from icon4py.model.testing.fixtures.datatest import (
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
 )
-from icon4py.model.testing.helpers import connectivities_as_numpy

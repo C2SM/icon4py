@@ -11,14 +11,13 @@ import random
 
 import pytest
 
-from icon4py.model.testing.fixtures import (
-    grid,
+from icon4py.model.testing.fixtures import (  # noqa: F401
     backend,
     connectivities_as_numpy,
     decomposition_info,
     experiment,
+    grid,
 )
-
 
 
 @pytest.fixture

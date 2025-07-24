@@ -12,8 +12,8 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.driver import icon4py_configuration as driver_config
+from icon4py.model.testing.fixtures import *  # noqa: F403
 
-from icon4py.model.testing.fixtures import * # noqa: F401, F403
 
 # TODO (Chia Rui): Reuse those pytest fixtures for diffusion test instead of creating here
 @pytest.fixture

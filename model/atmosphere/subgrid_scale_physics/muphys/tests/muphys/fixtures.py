@@ -7,8 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from icon4py.model.testing.fixtures.datatest import (
-    grid,
+from icon4py.model.testing.fixtures.datatest import (  # noqa: F401
     backend,
-    connectivities_as_numpy
+    connectivities_as_numpy,
+    grid,
 )
