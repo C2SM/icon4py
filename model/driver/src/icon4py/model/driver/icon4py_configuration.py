@@ -111,7 +111,7 @@ def read_config(
             max_nudging_coeff=0.075,
         )
 
-    def _jabw_nonhydro_config(n_substeps: int):
+    def _jabw_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             # original igradp_method is 2
             # original divdamp_order is 4
@@ -144,7 +144,7 @@ def read_config(
         )
         jabw_vertical_config = _jabw_vertical_config()
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
-        jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
+        jabw_nonhydro_config = _jabw_nonhydro_config()
         return (
             icon_run_config,
             jabw_vertical_config,
