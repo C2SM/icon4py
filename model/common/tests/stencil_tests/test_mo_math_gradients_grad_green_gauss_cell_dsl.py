@@ -11,11 +11,11 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
-    mo_math_gradients_grad_green_gauss_cell_dsl,
-)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.interpolation.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
+    mo_math_gradients_grad_green_gauss_cell_dsl,
+)
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field

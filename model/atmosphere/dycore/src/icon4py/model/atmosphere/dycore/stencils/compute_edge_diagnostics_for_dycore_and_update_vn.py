@@ -69,7 +69,7 @@ dycore_consts: Final = constants.PhysicsConstants()
 
 # TODO better name
 @gtx.field_operator
-def level_switch(
+def apply_on_vertical_level(
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     on_flatlevels: fa.EdgeKField[ta.wpfloat],
@@ -100,21 +100,21 @@ def _compute_horizontal_pressure_gradient(
     nflat_gradp: gtx.int32,
 ) -> fa.EdgeKField[ta.wpfloat]:
     # Note: we only support `TAYLOR_HYDRO`
-    horizontal_pressure_gradient = level_switch(
+    horizontal_pressure_gradient = apply_on_vertical_level(
         nflatlev,
         nflat_gradp,
-        _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
+        on_flatlevels=_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
         ),
-        _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+        between_flat_and_flatgradp=_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
             ddxn_z_full=ddxn_z_full,
             c_lin_e=c_lin_e,
             z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         ),
-        _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
+        below_flatgradp=_compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
             zdiff_gradp=zdiff_gradp,
@@ -181,8 +181,8 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
 ]:
-    # TODO(havogt): it would be nice if we could shrink the compute domain to `start_edge_lateral_boundary_level_7 <= dims.EdgeDim`,
-    # but that requires either persisting the `0.0` values or put the correct lateral boundary condition where this is consumed.
+    # TODO(havogt): it would be nice if we could shrink the start of the compute domain to `start_edge_lateral_boundary_level_7 <= dims.EdgeDim`,
+    # but that would require to put the correct lateral boundary condition where this is consumed.
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
         ((start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo)),
         _compute_horizontal_advection_of_rho_and_theta(

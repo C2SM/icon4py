@@ -154,8 +154,8 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
         return dict(next_vn=next_vn)
 
-    @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    @pytest.fixture(params=[True, False])
+    def input_data(self, request, grid: base.BaseGrid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
         scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim)
@@ -203,7 +203,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             and (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
         )
 
-        limited_area = True
+        limited_area = request.param
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
