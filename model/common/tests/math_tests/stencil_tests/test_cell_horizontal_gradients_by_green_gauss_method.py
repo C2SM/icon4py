@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.interpolation.stencils.cell_horizontal_gradients_by_green_gauss_method import (
+from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
     cell_horizontal_gradients_by_green_gauss_method,
 )
 from icon4py.model.common.states import utils as state_utils
