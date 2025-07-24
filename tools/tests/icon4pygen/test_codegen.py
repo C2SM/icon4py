@@ -133,6 +133,7 @@ def test_codegen(cli, stencil_module, stencil_name, flags, test_temp_dir) -> Non
         "compute_edge_diagnostics_for_velocity_advection",
         "compute_cell_diagnostics_for_velocity_advection",
         "compute_edge_diagnostics_for_dycore_and_update_vn",
+        "compute_horizontal_advection_of_rho_and_theta",
         "compute_cell_diagnostics_for_dycore",
         "vertically_implicit_dycore_solver",
     ):
