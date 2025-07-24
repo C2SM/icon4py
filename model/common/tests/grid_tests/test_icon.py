@@ -178,18 +178,20 @@ def test_1d_sparse_fields_connectivities_have_no_skip_values(grid_file, dim, bac
 
 
 @pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
-@pytest.mark.parametrize("dim", (utils.local_dims()))
-def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_file, dim, backend, caplog):
+@pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
+def test_when_keep_skip_value_then_neighbor_table_matches_config(
+    grid_file, offset, backend, caplog
+):
     caplog.set_level(logging.DEBUG)
-    if dim == dims.V2E2VDim:
-        pytest.skip("V2E2VDim is not supported in the current grid configuration.")
+    if offset.source in utils.one_dimensional_sparse_dims():
+        pytest.skip("Sparse 1d connectivities never have skip_values in our setup.")
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
-    connectivity = grid.get_connectivity(dim.value)
+    connectivity = grid.get_connectivity(offset)
 
     assert (
         np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
-    ) == grid._has_skip_values(dim)
-    if not grid._has_skip_values(dim):
+    ) == icon._has_skip_values(offset, grid.config.limited_area)
+    if not icon._has_skip_values(offset, grid.config.limited_area):
         assert connectivity.skip_value is None
     else:
         assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX

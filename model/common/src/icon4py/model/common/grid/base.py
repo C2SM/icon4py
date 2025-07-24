@@ -160,25 +160,6 @@ class Grid:
             self.connectivities[dims.C2CECEC.value] = sparse_1d_connectivity_constructor(
                 dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=allocator
             )
-        self._validate()
-
-    def _validate(self):
-        expected_connectivities = {
-            dims.C2E,
-            dims.C2V,
-            dims.E2C,
-            dims.E2C2E,
-            dims.C2E2C,
-            dims.C2E2CO,
-            dims.E2C2EO,
-            dims.V2E,
-            dims.E2V,
-            dims.E2C2V,
-            dims.V2C,
-        }
-        if not all(offset.value in self.connectivities for offset in expected_connectivities):
-            missing = {c.value for c in expected_connectivities} - self.connectivities.keys()
-            raise MissingConnectivity(f"Missing connectivities in {self.id}: {', '.join(missing)}")
 
     @functools.cached_property
     def size(self) -> Dict[gtx.Dimension, int]:
@@ -236,6 +217,10 @@ class Grid:
         """Get the connectivity by its name."""
         if isinstance(offset, gtx.FieldOffset):
             offset = offset.value
+        if offset not in self.connectivities:
+            raise MissingConnectivity(
+                f"Missing connectivity for offset {offset} in grid {self.id}."
+            )
         connectivity = self.connectivities[offset]
         assert gtx_common.is_neighbor_table(connectivity)
         return connectivity
