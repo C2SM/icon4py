@@ -52,7 +52,7 @@ class TestExtrapolateAtTop(StencilTest):
         return dict(vn_ie=vn_ie)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfacq_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vn_ie = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, extend={dims.KDim: 1})

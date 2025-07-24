@@ -88,7 +88,7 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         coeff_gradekin = data_alloc.random_field(grid, dims.ECDim, dtype=ta.vpfloat)
         z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

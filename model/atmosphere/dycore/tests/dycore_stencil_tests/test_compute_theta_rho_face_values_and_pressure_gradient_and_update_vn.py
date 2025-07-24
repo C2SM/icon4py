@@ -435,7 +435,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

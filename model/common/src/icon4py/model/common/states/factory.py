@@ -38,6 +38,7 @@ val = factory.get("foo", RetrievalType.DATA_ARRAY)
 TODO: @halungge: allow to read configuration data
 
 """
+
 import collections
 import enum
 import functools
@@ -449,10 +450,10 @@ class ProgramFieldProvider(FieldProvider):
     def _allocate(
         self,
         backend: Optional[gtx_backend.Backend],
-        grid: base_grid.BaseGrid,  # TODO @halungge: change to vertical grid
+        grid: base_grid.Grid,  # TODO @halungge: change to vertical grid
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
-        def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:
+        def _map_size(dim: gtx.Dimension, grid: base_grid.Grid) -> int:
             if dim == dims.KHalfDim:
                 return grid.num_levels + 1
             return grid.size[dim]

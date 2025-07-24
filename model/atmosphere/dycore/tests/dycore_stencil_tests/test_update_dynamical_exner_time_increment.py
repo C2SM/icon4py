@@ -59,7 +59,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddt_exner_phy = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
