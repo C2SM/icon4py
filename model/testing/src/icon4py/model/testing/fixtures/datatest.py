@@ -46,7 +46,7 @@ def _check_grid_validity(grid_name: str) -> None:
 
 def _get_grid(
     selected_grid_type: str, selected_backend: gtx_backend.Backend | None
-) -> base_grid.BaseGrid:
+) -> base_grid.Grid:
     match selected_grid_type:
         case "icon_grid":
             from icon4py.model.testing.grid_utils import (
@@ -67,7 +67,7 @@ def _get_grid(
             ).grid
             return grid_instance
         case _:
-            return simple_grid.SimpleGrid(selected_backend)
+            return simple_grid.simple_grid(selected_backend)
 
 
 @pytest.fixture(scope="session")
