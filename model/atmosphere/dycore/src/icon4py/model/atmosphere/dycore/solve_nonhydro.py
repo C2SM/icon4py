@@ -156,38 +156,40 @@ class IntermediateFields:
         backend: Optional[gtx_backend.Backend] = None,
     ):
         return IntermediateFields(
-            horizontal_pressure_gradient=data_alloc.zero_field(
+            horizontal_pressure_gradient=data_alloc.empty_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=data_alloc.zero_field(
+            tridiagonal_alpha_coeff_at_cells_on_half_levels=data_alloc.empty_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
-            tridiagonal_beta_coeff_at_cells_on_model_levels=data_alloc.zero_field(
+            tridiagonal_beta_coeff_at_cells_on_model_levels=data_alloc.empty_field(
                 grid, dims.CellDim, dims.KDim, backend=backend
             ),
-            exner_explicit_term=data_alloc.zero_field(
+            exner_explicit_term=data_alloc.empty_field(
                 grid, dims.CellDim, dims.KDim, backend=backend
             ),
-            vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
+            vertical_mass_flux_at_cells_on_half_levels=data_alloc.empty_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
-            rho_at_edges_on_model_levels=data_alloc.zero_field(
+            rho_at_edges_on_model_levels=data_alloc.empty_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            theta_v_at_edges_on_model_levels=data_alloc.zero_field(
+            theta_v_at_edges_on_model_levels=data_alloc.empty_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            horizontal_gradient_of_normal_wind_divergence=data_alloc.zero_field(
+            horizontal_gradient_of_normal_wind_divergence=data_alloc.empty_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            rho_explicit_term=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            dwdz_at_cells_on_model_levels=data_alloc.zero_field(
+            rho_explicit_term=data_alloc.empty_field(
                 grid, dims.CellDim, dims.KDim, backend=backend
             ),
-            horizontal_kinetic_energy_at_edges_on_model_levels=data_alloc.zero_field(
+            dwdz_at_cells_on_model_levels=data_alloc.empty_field(
+                grid, dims.CellDim, dims.KDim, backend=backend
+            ),
+            horizontal_kinetic_energy_at_edges_on_model_levels=data_alloc.empty_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
-            tangential_wind_on_half_levels=data_alloc.zero_field(
+            tangential_wind_on_half_levels=data_alloc.empty_field(
                 grid, dims.EdgeDim, dims.KDim, backend=backend
             ),
         )
@@ -626,7 +628,7 @@ class SolveNonhydro:
             owner_mask,
             backend=self._backend,
         )
-        self._allocate_local_fields()
+        self._allocate_temporary_fields()
         self._determine_local_domains()
 
         self._en_smag_fac_for_zero_nshift(
@@ -645,8 +647,8 @@ class SolveNonhydro:
 
         self.p_test_run = True
 
-    def _allocate_local_fields(self):
-        self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
+    def _allocate_temporary_fields(self):
+        self.temporal_extrapolation_of_perturbed_exner = data_alloc.empty_field(
             self._grid,
             dims.CellDim,
             dims.KDim,
@@ -657,7 +659,7 @@ class SolveNonhydro:
         """
         Declared as z_exner_ex_pr in ICON.
         """
-        self.exner_at_cells_on_half_levels = data_alloc.zero_field(
+        self.exner_at_cells_on_half_levels = data_alloc.empty_field(
             self._grid,
             dims.CellDim,
             dims.KDim,
@@ -669,14 +671,14 @@ class SolveNonhydro:
         Declared as z_exner_ic in ICON.
         """
         self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-            data_alloc.zero_field(
+            data_alloc.empty_field(
                 self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
             )
         )
         """
         Declared as z_dexner_dz_c_1 in ICON.
         """
-        self.perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
+        self.perturbed_theta_v_at_cells_on_half_levels = data_alloc.empty_field(
             self._grid,
             dims.CellDim,
             dims.KDim,
@@ -688,7 +690,7 @@ class SolveNonhydro:
         """
         Declared as z_theta_v_pr_ic in ICON.
         """
-        self.pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
+        self.pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.empty_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
         )
         """
@@ -697,76 +699,76 @@ class SolveNonhydro:
         Note that it only has nlev because it is only used in computation of the explicit
         term for updating w, and w at model top/bottom is diagnosed.
         """
-        self.perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
+        self.perturbed_rho_at_cells_on_model_levels = data_alloc.empty_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
         )
         """
         Declared as z_rth_pr_1 in ICON.
         """
-        self.perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
+        self.perturbed_theta_v_at_cells_on_model_levels = data_alloc.empty_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
         )
         """
         Declared as z_rth_pr_2 in ICON.
         """
         self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-            data_alloc.zero_field(
+            data_alloc.empty_field(
                 self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
             )
         )
         """
         Declared as z_dexner_dz_c_2 in ICON.
         """
-        self.z_vn_avg = data_alloc.zero_field(
+        self.z_vn_avg = data_alloc.empty_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
-        self.theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(
+        self.theta_v_flux_at_edges_on_model_levels = data_alloc.empty_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         """
         Declared as z_theta_v_fl_e in ICON.
         """
-        self.z_rho_v = data_alloc.zero_field(
+        self.z_rho_v = data_alloc.empty_field(
             self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
-        self.z_theta_v_v = data_alloc.zero_field(
+        self.z_theta_v_v = data_alloc.empty_field(
             self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.k_field = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
         self.edge_field = data_alloc.index_field(self._grid, dims.EdgeDim, backend=self._backend)
-        self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
+        self._contravariant_correction_at_edges_on_model_levels = data_alloc.empty_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
         )
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
         """
-        self.hydrostatic_correction = data_alloc.zero_field(
+        self.hydrostatic_correction = data_alloc.empty_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
         )
         """
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
-        self.rayleigh_damping_factor = data_alloc.zero_field(
+        self.rayleigh_damping_factor = data_alloc.empty_field(
             self._grid, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         """
         Declared as z_raylfac in ICON.
         """
-        self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
+        self.interpolated_fourth_order_divdamp_factor = data_alloc.empty_field(
             self._grid, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         """
         Declared as enh_divdamp_fac in ICON.
         """
-        self.reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
+        self.reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.empty_field(
             self._grid, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         """
         Declared as bdy_divdamp in ICON.
         """
-        self.fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
+        self.fourth_order_divdamp_scaling_coeff = data_alloc.empty_field(
             self._grid, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         """

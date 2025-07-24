@@ -255,11 +255,6 @@ def test_diffusion_init(
         1.0 / 48.0, additional_parameters.K4W * config.substep_as_float
     )
 
-    assert helpers.dallclose(diffusion_granule.v_vert.asnumpy(), 0.0)
-    assert helpers.dallclose(diffusion_granule.u_vert.asnumpy(), 0.0)
-    assert helpers.dallclose(diffusion_granule.kh_smag_ec.asnumpy(), 0.0)
-    assert helpers.dallclose(diffusion_granule.kh_smag_e.asnumpy(), 0.0)
-
     shape_k = (grid.num_levels,)
     expected_smag_limit = smag_limit_numpy(
         diff_multfac_vn_numpy,
@@ -313,7 +308,12 @@ def _verify_init_values_against_savepoint(
 
     assert helpers.dallclose(diffusion_granule.smag_limit.asnumpy(), savepoint.smag_limit())
     assert helpers.dallclose(
-        diffusion_granule.diff_multfac_n2w.asnumpy(), savepoint.diff_multfac_n2w()
+        diffusion_granule.diff_multfac_n2w.asnumpy()[
+            1 : diffusion_granule._vertical_grid.end_index_of_damping_layer + 1
+        ],
+        savepoint.diff_multfac_n2w()[
+            1 : diffusion_granule._vertical_grid.end_index_of_damping_layer + 1
+        ],
     )
     assert helpers.dallclose(
         diffusion_granule.diff_multfac_vn.asnumpy(), savepoint.diff_multfac_vn()
