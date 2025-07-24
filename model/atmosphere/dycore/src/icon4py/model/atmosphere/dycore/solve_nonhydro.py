@@ -1029,10 +1029,6 @@ class SolveNonhydro:
         log.debug(
             f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
         )
-        assert (
-            self._config.igradp_method
-            == dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-        )
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
             ikoffset=self._metric_state_nonhydro.vertoffset_gradp,

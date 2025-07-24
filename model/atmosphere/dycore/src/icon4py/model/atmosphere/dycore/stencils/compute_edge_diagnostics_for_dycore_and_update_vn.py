@@ -67,7 +67,6 @@ horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType(
 dycore_consts: Final = constants.PhysicsConstants()
 
 
-# TODO better name
 @gtx.field_operator
 def apply_on_vertical_level(
     nflatlev: gtx.int32,
