@@ -168,7 +168,6 @@ def read_config(
         return solve_nh.NonHydrostaticConfig(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
-            max_nudging_coefficient=0.02 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
             fourth_order_divdamp_factor=0.0025,
         )
 
