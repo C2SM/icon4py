@@ -9,7 +9,7 @@
 #SBATCH --view=default
 
 #SBATCH --partition=debug
-#SBATCH --time=00:10:00
+#SBATCH --time=00:30:00
 
 #SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser
 
@@ -58,14 +58,14 @@ export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/se
 export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
-# python \
-# 	model/driver/src/icon4py/model/driver/icon4py_driver.py \
-# 	$ICON4PY_SAVEPOINT_PATH \
-# 	--icon4py_driver_backend="$ICON4PY_BACKEND" \
-# 	--experiment_type=gauss3d_torus \
-# 	--grid_root=2 --grid_level=0 --enable_output
+python \
+	model/driver/src/icon4py/model/driver/icon4py_driver.py \
+	$ICON4PY_SAVEPOINT_PATH \
+	--icon4py_driver_backend="$ICON4PY_BACKEND" \
+	--experiment_type=gauss3d_torus \
+	--grid_root=2 --grid_level=0 --enable_output
 
-# generate vtu files
-python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+## generate vtu files
+#python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
 
 echo "Finished running job: $SLURM_JOB_NAME, one way or another"

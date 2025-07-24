@@ -144,9 +144,21 @@ class TimeLoop:
                 prognostic_states.current,
                 self.dtime_in_seconds,
             )
+        state_dict = {
+            "vn": prognostic_states.current.vn.asnumpy(),
+            "w": prognostic_states.current.w.asnumpy(),
+            "rho": prognostic_states.current.rho.asnumpy(),
+            "exner": prognostic_states.current.exner.asnumpy(),
+            "theta_v": prognostic_states.current.theta_v.asnumpy(),
+        }
+        file_name = f"{PLOT_IMGS_DIR}/initial_condition.pkl"
+        with open(file_name, "wb") as f:
+            pickle.dump(state_dict, f)
+            log.debug(f"PLOTS: saved {file_name}")
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
+
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
