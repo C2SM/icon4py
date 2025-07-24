@@ -244,7 +244,6 @@ def _compute_advective_vertical_wind_tendency(
         vertical_wind_advective_tendency,
     )
 
-    # TODO (Chia Rui): We can remove this concat_where because cfl_clipping is False outside of the bounds
     vertical_wind_advective_tendency = _add_extra_diffusion_for_w_con_approaching_cfl(
         cfl_clipping,
         owner_mask,
