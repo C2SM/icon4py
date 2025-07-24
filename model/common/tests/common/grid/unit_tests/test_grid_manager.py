@@ -35,7 +35,7 @@ except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
 
-from . import utils
+from .. import utils
 
 
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080

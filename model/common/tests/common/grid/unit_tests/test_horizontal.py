@@ -12,7 +12,7 @@ import pytest
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 
-from . import utils
+from .. import utils
 
 
 log = logging.getLogger(__name__)

@@ -19,6 +19,8 @@ from icon4py.model.common.io.ugrid import (
 )
 from icon4py.model.testing import datatest_utils, grid_utils
 
+from ...fixtures import test_path
+
 
 def grid_files():
     files = [

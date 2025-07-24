@@ -12,7 +12,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
 
-from . import utils
+from icon4py.model.testing.fixtures import grid_savepoint
+from .. import utils
 
 
 @pytest.mark.with_netcdf

@@ -22,7 +22,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
 
-from . import utils
+from .. import utils
 
 
 @functools.cache

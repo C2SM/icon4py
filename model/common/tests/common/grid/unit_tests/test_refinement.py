@@ -13,7 +13,7 @@ import icon4py.model.common.grid.refinement as refin
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 
-from . import utils
+from .. import utils
 
 
 def out_of_range(dim: gtx.Dimension):
