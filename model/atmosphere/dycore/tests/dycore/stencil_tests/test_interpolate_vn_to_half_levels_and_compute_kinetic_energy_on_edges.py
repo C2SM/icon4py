@@ -86,7 +86,7 @@ class TestInterpolateVnToHalfLevelsAndComputeKineticEnergyOnEdges(test_helpers.S
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

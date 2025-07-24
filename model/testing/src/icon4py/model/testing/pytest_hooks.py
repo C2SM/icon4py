@@ -109,6 +109,32 @@ def pytest_addoption(parser):
         pass
 
 
+def _get_grid(
+    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
+) -> base_grid.Grid:
+    match selected_grid_type:
+        case "icon_grid":
+            from icon4py.model.testing.grid_utils import (
+                get_grid_manager_for_experiment,
+            )
+
+            grid_instance = get_grid_manager_for_experiment(
+                REGIONAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
+            ).grid
+            return grid_instance
+        case "icon_grid_global":
+            from icon4py.model.testing.grid_utils import (
+                get_grid_manager_for_experiment,
+            )
+
+            grid_instance = get_grid_manager_for_experiment(
+                GLOBAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
+            ).grid
+            return grid_instance
+        case _:
+            return simple_grid.simple_grid(selected_backend)
+
+
 def pytest_collection_modifyitems(config, items):
     test_level = config.getoption("--level")
     if test_level == "any":
@@ -132,7 +158,7 @@ def pytest_runtest_setup(item):
         grid = item.funcargs["grid"]
     else:
         # use the default grid
-        grid = simple_grid.SimpleGrid(backend)
+        grid = simple_grid.simple_grid(backend)
     apply_markers(
         item.own_markers,
         grid,

@@ -40,7 +40,7 @@ class TestLimitVerticalSlopeSemiMonotonically(helpers.StencilTest):
         return dict(z_slope=slope)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_slope = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         k = data_alloc.index_field(grid, dims.KDim)
