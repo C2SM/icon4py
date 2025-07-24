@@ -14,6 +14,7 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+from icon4py.model.common import constants
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
 
@@ -82,7 +83,7 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=150.0,
-            _nudge_max_coeff=0.075,
+            max_nudging_coefficient=0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
         )
 
     def _mch_ch_r04b09_nonhydro_config():
@@ -110,7 +111,7 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=200.0,
-            _nudge_max_coeff=0.075,
+            max_nudging_coefficient=0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
         )
 
     def _jabw_nonhydro_config(n_substeps: int):
@@ -118,7 +119,7 @@ def read_config(
             # original igradp_method is 2
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
-            max_nudging_coeff=0.02,
+            max_nudging_coefficient=0.02 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
             fourth_order_divdamp_factor=0.0025,
         )
 
@@ -168,7 +169,7 @@ def read_config(
         return solve_nh.NonHydrostaticConfig(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
-            max_nudging_coeff=0.02,
+            max_nudging_coefficient=0.02 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
             fourth_order_divdamp_factor=0.0025,
         )
 
