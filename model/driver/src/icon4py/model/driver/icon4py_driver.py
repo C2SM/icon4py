@@ -15,7 +15,7 @@ from typing import Callable, NamedTuple
 import click
 import numpy as np
 from devtools import Timer
-from gt4py.next import backend as gtx_backend
+from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
@@ -118,6 +118,7 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
+        profiling: driver_config.ProfilingConfig | None = None,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -146,10 +147,22 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        first_timer = Timer("first_time_step", dp=6)
+        first_timer = (
+            Timer("first_time_step", dp=6)
+            if profiling is not None and profiling.skip_first_timestep
+            else None
+        )
         rest_timer = Timer(self._full_name(self._integrate_one_time_step), dp=6)
         for time_step in range(self._n_time_steps):
-            timer = first_timer if time_step == 0 else rest_timer
+            timer = (
+                first_timer
+                if (time_step == 0 and profiling is not None and profiling.skip_first_timestep)
+                else rest_timer
+            )
+            if profiling is not None:
+                if not profiling.skip_first_timestep or time_step > 0:
+                    gtx_config.COLLECT_METRICS_LEVEL = profiling.gt4py_metrics_level
+
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             if log.isEnabledFor(logging.DEBUG):
                 log.debug(
@@ -184,8 +197,12 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
-        first_timer.summary(True)
+        if first_timer is not None:
+            first_timer.summary(True)
         rest_timer.summary(True)
+        if profiling is not None and profiling.gt4py_metrics_level > gtx_metrics.NONE:
+            print(gtx_metrics.dumps())
+            gtx_metrics.dump_json(profiling.gt4py_metrics_output_file)
 
     def _integrate_one_time_step(
         self,
@@ -533,6 +550,12 @@ def initialize(
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
+    "--enable_profiling",
+    is_flag=True,
+    default=False,
+    help="Enable detailed profiling with GT4Py metrics.",
+)
+@click.option(
     "--icon4py_driver_backend",
     "-b",
     required=True,
@@ -548,6 +571,7 @@ def icon4py_driver(
     grid_root,
     grid_level,
     enable_output,
+    enable_profiling,
     icon4py_driver_backend,
 ) -> None:
     """
@@ -612,6 +636,7 @@ def icon4py_driver(
         ds.prep_advection_prognostic,
         dp.second_order_divdamp_factor,
         do_prep_adv=False,
+        profiling=driver_config.ProfilingConfig() if enable_profiling else None,
     )
 
     log.info("time loop:  DONE")
