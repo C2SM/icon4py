@@ -11,33 +11,14 @@ import random
 
 import pytest
 
-from icon4py.model.testing.fixtures.datatest import (
+from icon4py.model.testing.fixtures import (
+    grid,
+    backend,
+    connectivities_as_numpy,
     decomposition_info,
     experiment,
 )
-from icon4py.model.testing.helpers import connectivities_as_numpy
 
-
-# ruff: noqa: F405
-# Make sure custom icon4py pytest hooks are loaded
-try:
-    import sys
-
-    _ = sys.modules["icon4py.model.testing.pytest_config"]
-except KeyError:
-    from icon4py.model.testing.pytest_hooks import *  # noqa: F403
-
-__all__ = [
-    # local:
-    "random_name",
-    "test_path",
-    # imported fixtures:
-    "backend",
-    "grid",
-    "decomposition_info",
-    "experiment",
-    "connectivities_as_numpy",
-]
 
 
 @pytest.fixture
