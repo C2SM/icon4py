@@ -671,7 +671,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
         longitude of second neighbor
     """
     xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
-    e2c_table = grid.neighbor_tables[dims.E2CDim]
+    e2c_table = grid.get_connectivity(dims.E2C).ndarray
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):

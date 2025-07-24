@@ -51,7 +51,7 @@ class TestUpdateThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         area = random_field(grid, dims.CellDim, dtype=wpfloat)
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

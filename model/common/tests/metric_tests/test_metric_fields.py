@@ -45,7 +45,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlevp1,
-        offset_provider={"Koff": icon_grid.get_connectivity("Koff")},
+        offset_provider={"Koff": dims.KDim},
     )
 
     assert testing_helpers.dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
@@ -68,7 +68,7 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": icon_grid.get_connectivity("Koff")},
+        offset_provider={"Koff": dims.KDim},
     )
 
     assert testing_helpers.dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
@@ -94,7 +94,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
         divdamp_type=divdamp_type,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": icon_grid.get_connectivity("Koff")},
+        offset_provider={"Koff": dims.KDim},
     )
 
     assert testing_helpers.dallclose(
@@ -154,7 +154,7 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
         horizontal_end=icon_grid.num_cells,
         vertical_start=1,
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"Koff": icon_grid.get_connectivity("Koff")},
+        offset_provider={"Koff": dims.KDim},
     )
 
     assert testing_helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
@@ -185,7 +185,7 @@ def test_compute_exner_w_explicit_weight_parameter(icon_grid, metrics_savepoint,
 
 
 @pytest.mark.level("unit")
-@pytest.mark.infinite_concat_where
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
@@ -272,7 +272,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     vwind_offctr = 0.2 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.15
     xp = data_alloc.import_array_ns(backend)
     exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
-        c2e=icon_grid.neighbor_tables[dims.C2EDim],
+        c2e=icon_grid.get_connectivity(dims.C2E).ndarray,
         vct_a=grid_savepoint.vct_a().ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
         z_ddxn_z_half_e=z_ddxn_z_half_e.ndarray,
@@ -325,7 +325,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     z_mc = metrics_savepoint.z_mc()
     z_ifc = metrics_savepoint.z_ifc()
     c_lin_e = interpolation_savepoint.c_lin_e()
-    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
+    topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
 
     k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, backend=backend)
@@ -356,7 +356,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C": icon_grid.get_connectivity("E2C"),
-            "Koff": icon_grid.get_connectivity("Koff"),
+            "Koff": dims.KDim,
         },
     )
     flat_idx_max = gtx.as_field(
@@ -365,7 +365,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
 
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
         z_mc=z_mc,
-        z_ifc_sliced=z_ifc_sliced,
+        topography=topography,
         c_lin_e=c_lin_e,
         e_owner_mask=grid_savepoint.e_owner_mask(),
         flat_idx_max=flat_idx_max,
@@ -381,7 +381,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C": icon_grid.get_connectivity("E2C"),
-            "Koff": icon_grid.get_connectivity("Koff"),
+            "Koff": dims.KDim,
         },
     )
 

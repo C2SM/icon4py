@@ -67,6 +67,12 @@ def local_dims():
             yield d
 
 
+def horizontal_offsets():
+    for d in vars(dims).values():
+        if isinstance(d, gtx.FieldOffset) and len(d.target) == 2:
+            yield d
+
+
 def non_local_dims():
     yield from vertical_dims()
     yield from horizontal_dims()
