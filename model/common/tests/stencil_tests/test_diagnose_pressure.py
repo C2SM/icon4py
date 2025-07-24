@@ -53,7 +53,7 @@ class TestDiagnosePressure(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         ddqz_z_full = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0, dtype=ta.wpfloat
         )

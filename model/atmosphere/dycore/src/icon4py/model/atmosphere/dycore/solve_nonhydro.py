@@ -152,7 +152,7 @@ class IntermediateFields:
     @classmethod
     def allocate(
         cls,
-        grid: grid_def.BaseGrid,
+        grid: grid_def.Grid,
         backend: Optional[gtx_backend.Backend] = None,
     ):
         return IntermediateFields(

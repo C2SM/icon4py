@@ -84,7 +84,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         return dict(w=w, dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         nrdmax = 13
         interior_idx = 1
         halo_idx = 5

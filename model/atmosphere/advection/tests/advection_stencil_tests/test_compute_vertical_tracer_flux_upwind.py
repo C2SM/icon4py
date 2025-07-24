@@ -42,7 +42,7 @@ class TestComputeVerticalTracerFluxUpwind(helpers.StencilTest):
         return dict(p_upflux=p_upflux)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim

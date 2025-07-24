@@ -87,7 +87,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid):
+    def input_data(self, grid: base.Grid):
         pytest.xfail(
             "stencil segfaults with GTFN and it is not used in diffusion: it is missing an if condition"
         )
