@@ -142,7 +142,7 @@ def diffusion_init(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         velocity_boundary_diffusion_denom=denom_diffu_v,
-        scaled_max_nudging_coefficient=nudge_max_coeff,
+        max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
         ltkeshs=ltkeshs,
     )

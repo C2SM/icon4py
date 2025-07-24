@@ -82,7 +82,7 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=150.0,
-            _max_nudging_coefficient=0.075,
+            _nudge_max_coeff=0.075,
         )
 
     def _mch_ch_r04b09_nonhydro_config():
@@ -110,7 +110,7 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=200.0,
-            _max_nudging_coefficient=0.075,
+            _nudge_max_coeff=0.075,
         )
 
     def _jabw_nonhydro_config(n_substeps: int):

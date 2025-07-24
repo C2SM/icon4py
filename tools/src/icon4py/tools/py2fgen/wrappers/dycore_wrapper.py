@@ -175,7 +175,7 @@ def solve_nh_init(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        scaled_max_nudging_coefficient=nudge_max_coeff,
+        max_nudging_coefficient=nudge_max_coeff,
         fourth_order_divdamp_factor=divdamp_fac,
         fourth_order_divdamp_factor2=divdamp_fac2,
         fourth_order_divdamp_factor3=divdamp_fac3,

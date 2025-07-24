@@ -140,8 +140,8 @@ class DiffusionConfig:
         thhgtd_zdiffu: float = 200.0,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
-        _max_nudging_coefficient: float | None = None,  # default is set in __init__
-        scaled_max_nudging_coefficient: float | None = None,  # default is set in __init__
+        _nudge_max_coeff: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float | None = None,  # default is set in __init__
         nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         ltkeshs: bool = True,
@@ -227,22 +227,22 @@ class DiffusionConfig:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
-        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_max_nudging_coefficient` or
-        #: the properly scaled one (`max_nudge_coeff` in ICON) as `scaled_max_nudging_coefficient`,
+        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_nudge_max_coeff` or
+        #: the properly scaled one as `max_nudging_coefficient`,
         #: see the comment in mo_interpol_nml.f90
         #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
-        if _max_nudging_coefficient is not None and scaled_max_nudging_coefficient is not None:
+        if _nudge_max_coeff is not None and max_nudging_coefficient is not None:
             raise ValueError(
                 "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
             )
-        elif scaled_max_nudging_coefficient is not None:
-            self.scaled_max_nudging_coefficient: float = scaled_max_nudging_coefficient
-        elif _max_nudging_coefficient is not None:
-            self.scaled_max_nudging_coefficient: float = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _max_nudging_coefficient
+        elif max_nudging_coefficient is not None:
+            self.max_nudging_coefficient: float = max_nudging_coefficient
+        elif _nudge_max_coeff is not None:
+            self.max_nudging_coefficient: float = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _nudge_max_coeff
             )
         else:  # default value in ICON
-            self.scaled_max_nudging_coefficient: float = (
+            self.max_nudging_coefficient: float = (
                 constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
             )
 
@@ -406,11 +406,9 @@ class Diffusion:
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
         self.nudgezone_diff: float = 0.04 / (
-            config.scaled_max_nudging_coefficient + sys.float_info.epsilon
+            config.max_nudging_coefficient + sys.float_info.epsilon
         )
-        self.bdy_diff: float = 0.015 / (
-            config.scaled_max_nudging_coefficient + sys.float_info.epsilon
-        )
+        self.bdy_diff: float = 0.015 / (config.max_nudging_coefficient + sys.float_info.epsilon)
         self.fac_bdydiff_v: float = (
             math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
         )
