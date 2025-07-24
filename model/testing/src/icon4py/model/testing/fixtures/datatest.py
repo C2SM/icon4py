@@ -13,7 +13,6 @@ import pytest
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
 from icon4py.model.testing.datatest_utils import (
@@ -149,7 +148,9 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
 
 @pytest.fixture
-def data_provider(download_ser_data, ranked_data_path, experiment, processor_props, backend):
+def data_provider(
+    download_ser_data, ranked_data_path, experiment, processor_props, backend
+) -> icon4py.model.testing.serialbox.IconSerialDataProvider:
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 

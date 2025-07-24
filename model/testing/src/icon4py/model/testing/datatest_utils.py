@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import os
 import pathlib
 import re
@@ -152,7 +154,7 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
 
 def create_icon_serial_data_provider(
     datapath, processor_props, backend: Optional[gtx_backend.Backend]
-):
+) -> icon4py.model.testing.serialbox.IconSerialDataProvider:
     # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.testing.serialbox import IconSerialDataProvider
 
