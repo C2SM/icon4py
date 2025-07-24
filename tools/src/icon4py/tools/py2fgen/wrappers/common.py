@@ -109,7 +109,7 @@ def cached_dummy_field_factory(
     return impl
 
 
-def adjust_fortran_indices(inp: np.ndarray | NDArray) -> np.ndarray | NDArray:
+def adjust_fortran_indices(inp: NDArray) -> NDArray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
     return inp - 1
 
