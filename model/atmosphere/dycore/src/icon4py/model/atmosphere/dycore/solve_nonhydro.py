@@ -238,7 +238,7 @@ class NonHydrostaticConfig:
         self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
 
         #: type of Rayleigh damping
-        self.rayleigh_type: constants.RayleighType = rayleigh_type
+        self.rayleigh_type: model_options.RayleighType = rayleigh_type
         # used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
         self.rayleigh_coeff: float = rayleigh_coeff
 

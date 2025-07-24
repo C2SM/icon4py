@@ -32,16 +32,24 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _compute_advective_normal_wind_tendency(
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    horizontal_kinetic_energy_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     upward_vorticity_at_vertices_on_model_levels: fa.VertexKField[ta.vpfloat],
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     coriolis_frequency: fa.EdgeField[ta.wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
 ) -> fa.EdgeKField[ta.vpfloat]:
+    #: intermediate variable horizontal_kinetic_energy_at_cells_on_model_levels is originally declared as z_ekinh in ICON
+    horizontal_kinetic_energy_at_cells_on_model_levels = _interpolate_to_cell_center(
+        horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
+    )
+    horizontal_kinetic_energy_at_cells_on_model_levels = astype(
+        horizontal_kinetic_energy_at_cells_on_model_levels, vpfloat
+    )
+
     (
         contravariant_corrected_w_at_cells_on_model_levels_wp,
         ddqz_z_full_e_wp,
@@ -195,22 +203,14 @@ def _compute_advection_in_horizontal_momentum_equation(
         upward_vorticity_at_vertices_on_model_levels, vpfloat
     )
 
-    #: intermediate variable horizontal_kinetic_energy_at_cells_on_model_levels is originally declared as z_ekinh in ICON
-    horizontal_kinetic_energy_at_cells_on_model_levels = _interpolate_to_cell_center(
-        horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
-    )
-    horizontal_kinetic_energy_at_cells_on_model_levels = astype(
-        horizontal_kinetic_energy_at_cells_on_model_levels, vpfloat
-    )
-
     normal_wind_advective_tendency = _compute_advective_normal_wind_tendency(
         horizontal_kinetic_energy_at_edges_on_model_levels,
-        horizontal_kinetic_energy_at_cells_on_model_levels,
         upward_vorticity_at_vertices_on_model_levels,
         tangential_wind,
         vn_on_half_levels,
         contravariant_corrected_w_at_cells_on_model_levels,
         coriolis_frequency,
+        e_bln_c_s,
         c_lin_e,
         coeff_gradekin,
         ddqz_z_full_e,
