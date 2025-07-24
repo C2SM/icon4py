@@ -58,7 +58,7 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         scal_divdamp = random_field(grid, dims.KDim, dtype=wpfloat)
         bdy_divdamp = random_field(grid, dims.KDim, dtype=wpfloat)
         nudgecoeff_e = random_field(grid, dims.EdgeDim, dtype=wpfloat)

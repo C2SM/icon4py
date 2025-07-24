@@ -43,7 +43,7 @@ class TestCalculateNabla2OfTheta(helpers.StencilTest):
         return dict(z_temp=z_temp)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         geofac_div = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
 
