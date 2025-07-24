@@ -172,8 +172,7 @@ def icon_grid(grid_savepoint, backend):
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    on_gpu = True if data_alloc.is_cupy_device(backend) else False
-    return grid_savepoint.construct_icon_grid(on_gpu=on_gpu, keep_skip_values=False)
+    return grid_savepoint.construct_icon_grid(keep_skip_values=False)
 
 
 @pytest.fixture
