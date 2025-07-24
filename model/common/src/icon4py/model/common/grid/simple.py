@@ -13,7 +13,6 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.grid.base import GeometryType, GridConfig, HorizontalGridSize
 
 # periodic
 #
@@ -418,11 +417,11 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
     _EDGES = 27
     _VERTICES = 9
 
-    horizontal_grid_size = HorizontalGridSize(
+    horizontal_grid_size = base.HorizontalGridSize(
         num_vertices=_VERTICES, num_edges=_EDGES, num_cells=_CELLS
     )
     vertical_grid_config = VerticalGridConfig(num_levels=10)
-    config = GridConfig(
+    config = base.GridConfig(
         horizontal_config=horizontal_grid_size,
         vertical_size=vertical_grid_config.num_levels,
         limited_area=False,
@@ -486,7 +485,7 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
         id=uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85"),
         config=config,
         connectivities=connectivities,
-        geometry_type=GeometryType.TORUS,
+        geometry_type=base.GeometryType.TORUS,
         allocator=backend,
         _start_indices=start_indices,
         _end_indices=end_indices,
