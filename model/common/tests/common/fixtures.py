@@ -18,12 +18,10 @@ from icon4py.model.testing.fixtures import (  # noqa: F401
     experiment,
     grid,
 )
-
 from icon4py.model.testing.fixtures.datatest import (  # noqa: F401
     damping_height,
     data_provider,
     download_ser_data,
-    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -40,6 +38,7 @@ from icon4py.model.testing.fixtures.datatest import (  # noqa: F401
     step_date_exit,
     step_date_init,
 )
+
 
 @pytest.fixture
 def random_name() -> str:
