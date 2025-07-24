@@ -33,7 +33,7 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
 
 class SimpleGridData:
@@ -427,7 +427,7 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
         limited_area=False,
     )
 
-    on_gpu = False if backend is None else data_alloc.is_cupy_device(backend)
+    on_gpu = False if backend is None else device_utils.is_cupy_device(backend)
     simple_grid_data = SimpleGridData(on_gpu=on_gpu)
 
     neighbor_tables = {
