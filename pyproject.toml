@@ -165,6 +165,7 @@ markers = [
   "skip_value_error",
   "datatest",
   "embedded_only",
+  "uses_concat_where",
   "cpu_only",
   "infinite_concat_where"
 ]
