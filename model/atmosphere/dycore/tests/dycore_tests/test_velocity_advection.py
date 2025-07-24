@@ -844,15 +844,16 @@ def test_compute_advection_in_horizontal_momentum_equation(
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    d_time = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
     icon_result_ddt_vn_apc = savepoint_velocity_exit.ddt_vn_apc_pc(istep_exit - 1)
-    # TODO (Chia Rui): read max_vertical_cfl from serialized data
-    max_vertical_cfl = 0.0
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
+    # TODO (Chia Rui): read max_vertical_cfl from serialized data
+    max_vertical_cfl = 0.0
+    apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
 
     compute_advection_in_horizontal_momentum_equation.with_backend(backend)(
         normal_wind_advective_tendency=normal_wind_advective_tendency,
@@ -873,8 +874,8 @@ def test_compute_advection_in_horizontal_momentum_equation(
         geofac_grdiv=geofac_grdiv,
         cfl_w_limit=cfl_w_limit,
         scalfac_exdiff=scalfac_exdiff,
-        d_time=d_time,
-        max_vertical_cfl=max_vertical_cfl,
+        dtime=dtime,
+        apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
         end_index_of_damping_layer=end_index_of_damping_layer,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,

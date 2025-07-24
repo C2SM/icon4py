@@ -99,6 +99,7 @@ class VelocityAdvection:
             compute_advection_in_horizontal_momentum_equation.with_backend(self._backend).compile(
                 enable_jit=False,
                 end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
+                apply_extra_diffusion_on_vn=[False, True],
                 vertical_start=[gtx.int32(0)],
                 vertical_end=[gtx.int32(self.grid.num_levels)],
                 offset_provider=self.grid.connectivities,
@@ -236,6 +237,7 @@ class VelocityAdvection:
 
         max_vertical_cfl = float(self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray))
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
+        apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
             vn=prognostic_state.vn,
@@ -256,7 +258,7 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             d_time=dtime,
-            max_vertical_cfl=max_vertical_cfl,
+            apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
             end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
             horizontal_start=self._start_edge_nudging_level_2,
             horizontal_end=self._end_edge_local,
@@ -327,6 +329,7 @@ class VelocityAdvection:
 
         max_vertical_cfl = float(self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray))
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
+        apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
             vn=prognostic_state.vn,
@@ -347,7 +350,7 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             d_time=dtime,
-            max_vertical_cfl=max_vertical_cfl,
+            apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
             end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
             horizontal_start=self._start_edge_nudging_level_2,
             horizontal_end=self._end_edge_local,

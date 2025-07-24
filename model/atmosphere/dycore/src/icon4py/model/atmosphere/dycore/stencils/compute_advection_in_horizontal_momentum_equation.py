@@ -185,8 +185,8 @@ def _compute_advection_in_horizontal_momentum_equation(
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     cfl_w_limit: ta.vpfloat,
     scalfac_exdiff: ta.wpfloat,
-    d_time: ta.wpfloat,
-    max_vertical_cfl: ta.wpfloat,
+    dtime: ta.wpfloat,
+    apply_extra_diffusion_on_vn: bool,
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
@@ -216,7 +216,7 @@ def _compute_advection_in_horizontal_momentum_equation(
         ddqz_z_full_e,
     )
 
-    if max_vertical_cfl > cfl_w_limit * d_time:
+    if apply_extra_diffusion_on_vn:
         normal_wind_advective_tendency = concat_where(
             ((maximum(3, end_index_of_damping_layer - 2) - 1) <= dims.KDim)
             & (dims.KDim < (nlev - 4)),
@@ -233,7 +233,7 @@ def _compute_advection_in_horizontal_momentum_equation(
                 normal_wind_advective_tendency,
                 cfl_w_limit,
                 scalfac_exdiff,
-                d_time,
+                dtime,
             ),
             normal_wind_advective_tendency,
         )
@@ -261,8 +261,8 @@ def compute_advection_in_horizontal_momentum_equation(
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     cfl_w_limit: ta.vpfloat,
     scalfac_exdiff: ta.wpfloat,
-    d_time: ta.wpfloat,
-    max_vertical_cfl: ta.wpfloat,
+    dtime: ta.wpfloat,
+    apply_extra_diffusion_on_vn: bool,
     end_index_of_damping_layer: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -294,8 +294,8 @@ def compute_advection_in_horizontal_momentum_equation(
         - geofac_grdiv: metrics field used to compute the gradient of a divergence (of vn)
         - cfl_w_limit: CFL limit for vertical velocity
         - scalfac_exdiff: scalar factor for external diffusion
-        - d_time: time step
-        - max_vertical_cfl: maximum vertical cfl number
+        - dtime: time step
+        - apply_extra_diffusion_on_vn: option to apply extra diffusion to vn
         - end_index_of_damping_layer: vertical index where damping ends
         - horizontal_start: start index in the horizontal domain
         - horizontal_end: end index in the horizontal domain
@@ -325,8 +325,8 @@ def compute_advection_in_horizontal_momentum_equation(
         geofac_grdiv,
         cfl_w_limit,
         scalfac_exdiff,
-        d_time,
-        max_vertical_cfl,
+        dtime,
+        apply_extra_diffusion_on_vn,
         vertical_end,
         end_index_of_damping_layer,
         out=normal_wind_advective_tendency,
