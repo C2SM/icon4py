@@ -548,14 +548,6 @@ icon4py.model.atmosphere.dycore.stencils.mo\_math\_divrot\_rot\_vertex\_ri\_dsl 
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.mo\_math\_gradients\_grad\_green\_gauss\_cell\_dsl module
---------------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.mo\_solve\_nonhydro\_stencil\_51 module
 --------------------------------------------------------------------------------
 
