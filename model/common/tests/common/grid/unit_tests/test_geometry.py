@@ -21,8 +21,15 @@ from icon4py.model.common.grid.geometry import as_sparse_field
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing.fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    grid_savepoint,
+    processor_props,
+    ranked_data_path,
+)
 
-from icon4py.model.testing.fixtures import grid_savepoint
 
 def test_geometry_raises_for_unknown_field(backend):
     geometry = grid_utils.get_grid_geometry(

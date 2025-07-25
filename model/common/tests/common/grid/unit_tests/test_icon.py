@@ -21,8 +21,16 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
+from icon4py.model.testing.fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    processor_props,
+    ranked_data_path,
+)
 
 from .. import utils
+from ..fixtures import experiment, grid_savepoint, icon_grid
 
 
 @functools.cache

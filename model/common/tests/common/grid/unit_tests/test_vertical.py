@@ -15,10 +15,33 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing.fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    processor_props,
+    ranked_data_path,
+)
+
+from ..fixtures import (
+    damping_height,
+    experiment,
+    flat_height,
+    grid_savepoint,
+    htop_moist_proc,
+    icon_grid,
+    interpolation_savepoint,
+    lowest_layer_thickness,
+    maximal_layer_thickness,
+    metrics_savepoint,
+    model_top_height,
+    stretch_factor,
+    top_height_limit_for_maximal_layer_thickness,
+    topography_savepoint,
+)
 
 
 NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
-
 
 @pytest.mark.parametrize(
     "max_h,damping_height,delta",

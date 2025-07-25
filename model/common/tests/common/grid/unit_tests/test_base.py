@@ -11,6 +11,9 @@ import gt4py.next as gtx
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, gridfile, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.fixtures import backend
+
+from ..fixtures import grid_file
 
 
 def test_replace_skip_values(grid_file, caplog, backend):

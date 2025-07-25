@@ -35,7 +35,16 @@ except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
 
+from icon4py.model.testing.fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    processor_props,
+    ranked_data_path,
+)
+
 from .. import utils
+from ..fixtures import grid_savepoint
 
 
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
@@ -300,7 +309,7 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
+def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     serialized_ref = grid_savepoint.e2c2v()
@@ -324,7 +333,7 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file, backend):
+def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     c2v = grid.get_connectivity("C2V").asnumpy()
@@ -401,7 +410,7 @@ def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
     "grid_file, experiment",
     [(dt_utils.R02B04_GLOBAL, dt_utils.JABW_EXPERIMENT)],
 )
-def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
+def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid()
@@ -462,7 +471,7 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_read_geometry_fields(grid_savepoint, grid_file, backend):
+def test_read_geometry_fields(grid_savepoint, grid_file, experiment, backend):
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     cell_area = manager.geometry[gridfile.GeometryName.CELL_AREA.value]
     tangent_orientation = manager.geometry[gridfile.GeometryName.TANGENT_ORIENTATION.value]
@@ -498,7 +507,7 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_tangent_orientation(grid_file, grid_savepoint, backend):
+def test_tangent_orientation(grid_file, grid_savepoint, experiment,backend):
     expected = grid_savepoint.tangent_orientation()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
@@ -515,7 +524,7 @@ def test_tangent_orientation(grid_file, grid_savepoint, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
+def test_edge_orientation_on_vertex(grid_file, grid_savepoint, experiment, backend):
     expected = grid_savepoint.vertex_edge_orientation()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
@@ -533,7 +542,7 @@ def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_dual_area(grid_file, grid_savepoint, backend):
+def test_dual_area(grid_file, grid_savepoint, experiment, backend):
     expected = grid_savepoint.vertex_dual_area()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
@@ -550,7 +559,7 @@ def test_dual_area(grid_file, grid_savepoint, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_edge_cell_distance(grid_file, grid_savepoint, backend):
+def test_edge_cell_distance(grid_file, grid_savepoint, experiment, backend):
     expected = grid_savepoint.edge_cell_length()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
@@ -570,7 +579,7 @@ def test_edge_cell_distance(grid_file, grid_savepoint, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
+def test_cell_normal_orientation(grid_file, grid_savepoint, experiment,backend):
     expected = grid_savepoint.edge_orientation()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
@@ -587,7 +596,7 @@ def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_edge_vertex_distance(grid_file, grid_savepoint, backend):
+def test_edge_vertex_distance(grid_file, grid_savepoint, experiment, backend):
     expected = grid_savepoint.edge_vert_length()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
