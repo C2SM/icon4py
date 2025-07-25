@@ -74,26 +74,6 @@ depends_on = [
 ]
 
 [[modules]]
-path = "icon4py.tools.f2ser"
-depends_on = [
-    { path = "icon4py.tools.liskov" },
-]
-
-[[modules]]
-path = "icon4py.tools.icon4pygen"
-depends_on = [
-    { path = "icon4py.model.common" },
-    { path = "icon4py.tools.common" },
-]
-
-[[modules]]
-path = "icon4py.tools.liskov"
-depends_on = [
-    { path = "icon4py.tools" },
-    { path = "icon4py.tools.common" },
-]
-
-[[modules]]
 path = "icon4py.tools.py2fgen"
 depends_on = [
     { path = "icon4py.model.atmosphere.diffusion" },
