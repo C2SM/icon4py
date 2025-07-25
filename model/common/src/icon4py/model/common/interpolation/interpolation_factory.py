@@ -60,7 +60,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._config = {
             "divavg_cntrwgt": 0.5,
             "weighting_factor": 0.0,
-            "nudge_max_coeffs": 0.375,
+            "max_nudging_coefficient": 0.375,
             "nudge_efold_width": 2.0,
             "nudge_zone_width": 10,
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
@@ -115,7 +115,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "grf_nudge_start_e": refinement.refine_control_value(
                     dims.EdgeDim, h_grid.Zone.NUDGING
                 ).value,
-                "nudge_max_coeffs": self._config["nudge_max_coeffs"],
+                "max_nudging_coefficient": self._config["max_nudging_coefficient"],
                 "nudge_efold_width": self._config["nudge_efold_width"],
                 "nudge_zone_width": self._config["nudge_zone_width"],
             },

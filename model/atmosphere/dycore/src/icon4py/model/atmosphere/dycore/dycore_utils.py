@@ -44,9 +44,11 @@ def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
 
 @gtx.field_operator
 def _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
-    fourth_order_divdamp_scaling_coeff: fa.KField[float], nudge_max_coeff: float, dbl_eps: float
+    fourth_order_divdamp_scaling_coeff: fa.KField[float],
+    max_nudging_coefficient: float,
+    dbl_eps: float,
 ) -> fa.KField[float]:
-    return 0.75 / (nudge_max_coeff + dbl_eps) * abs(fourth_order_divdamp_scaling_coeff)
+    return 0.75 / (max_nudging_coefficient + dbl_eps) * abs(fourth_order_divdamp_scaling_coeff)
 
 
 @gtx.field_operator
@@ -70,7 +72,7 @@ def _calculate_divdamp_fields(
     divdamp_order: gtx.int32,
     mean_cell_area: float,
     second_order_divdamp_factor: float,
-    nudge_max_coeff: float,
+    max_nudging_coefficient: float,
     dbl_eps: float,
 ) -> tuple[fa.KField[float], fa.KField[float]]:
     fourth_order_divdamp_scaling_coeff = _calculate_fourth_order_divdamp_scaling_coeff(
@@ -81,7 +83,7 @@ def _calculate_divdamp_fields(
     )
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = (
         _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
-            fourth_order_divdamp_scaling_coeff, nudge_max_coeff, dbl_eps
+            fourth_order_divdamp_scaling_coeff, max_nudging_coefficient, dbl_eps
         )
     )
     return (fourth_order_divdamp_scaling_coeff, reduced_fourth_order_divdamp_coeff_at_nest_boundary)

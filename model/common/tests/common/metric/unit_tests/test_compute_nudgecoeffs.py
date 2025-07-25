@@ -39,7 +39,7 @@ def test_compute_nudgecoeffs_e(
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
     refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     grf_nudge_start_e = refinement.refine_control_value(dims.EdgeDim, h_grid.Zone.NUDGING).value
-    nudge_max_coeff = wpfloat(0.375)
+    max_nudging_coefficient = wpfloat(0.375)
     nudge_efold_width = wpfloat(2.0)
     nudge_zone_width = 10
 
@@ -51,7 +51,7 @@ def test_compute_nudgecoeffs_e(
         nudgecoeff_e,
         refin_ctrl,
         grf_nudge_start_e,
-        nudge_max_coeff,
+        max_nudging_coefficient,
         nudge_efold_width,
         nudge_zone_width,
         horizontal_start,

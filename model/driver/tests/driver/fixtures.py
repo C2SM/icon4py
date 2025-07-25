@@ -12,7 +12,35 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.driver import icon4py_configuration as driver_config
-from icon4py.model.testing.fixtures import *  # noqa: F403
+
+from icon4py.model.testing.fixtures import (
+    damping_height,
+    data_provider,
+    download_ser_data,
+    experiment,
+    flat_height,
+    grid_savepoint,
+    htop_moist_proc,
+    icon_grid,
+    interpolation_savepoint,
+    istep_exit,
+    istep_init,
+    lowest_layer_thickness,
+    maximal_layer_thickness,
+    metrics_savepoint,
+    model_top_height,
+    ndyn_substeps,
+    processor_props,
+    ranked_data_path,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_init,
+    savepoint_nonhydro_step_final,
+    savepoint_velocity_init,
+    step_date_exit,
+    step_date_init,
+    stretch_factor,
+    top_height_limit_for_maximal_layer_thickness,
+)
 
 
 # TODO (Chia Rui): Reuse those pytest fixtures for diffusion test instead of creating here
@@ -35,7 +63,7 @@ def r04b09_diffusion_config(ndyn_substeps) -> diffusion.DiffusionConfig:
         smagorinski_scaling_factor=0.025,
         zdiffu_t=True,
         velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
+        _nudge_max_coeff=0.075,
         n_substeps=ndyn_substeps,
     )
 
