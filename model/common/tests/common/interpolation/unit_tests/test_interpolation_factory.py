@@ -25,11 +25,18 @@ from icon4py.model.testing import (
 )
 from icon4py.model.testing.fixtures import (
     backend,
+    data_provider,
     decomposition_info,
     experiment,
 )
+from icon4py.model.testing.fixtures.datatest import (
+    download_ser_data,
+    interpolation_savepoint,
+    processor_props,
+    ranked_data_path,
+)
 
-from ..fixtures import grid_file
+from ...fixtures import grid_file
 
 
 V2E_SIZE = 6

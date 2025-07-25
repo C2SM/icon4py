@@ -26,9 +26,13 @@ from icon4py.model.testing import (
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    data_provider,
+    download_ser_data,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
+    processor_props,
+    ranked_data_path,
 )
 
 

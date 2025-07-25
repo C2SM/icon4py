@@ -507,7 +507,7 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_tangent_orientation(grid_file, grid_savepoint, experiment,backend):
+def test_tangent_orientation(grid_file, grid_savepoint, experiment, backend):
     expected = grid_savepoint.tangent_orientation()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
@@ -579,7 +579,7 @@ def test_edge_cell_distance(grid_file, grid_savepoint, experiment, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_cell_normal_orientation(grid_file, grid_savepoint, experiment,backend):
+def test_cell_normal_orientation(grid_file, grid_savepoint, experiment, backend):
     expected = grid_savepoint.edge_orientation()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry

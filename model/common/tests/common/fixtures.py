@@ -11,18 +11,18 @@ import random
 
 import pytest
 
+from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
 
-# from icon4py.model.testing.fixtures import (
+
+# from icon4py.model.testing.fixtures.datatest import (
 #     backend,
 #     connectivities_as_numpy,
-#     decomposition_info,
-#     experiment,
-#     grid,
-# )
-# from icon4py.model.testing.fixtures.datatest import (
 #     damping_height,
+#     decomposition_info,
 #     data_provider,
 #     download_ser_data,
+#     experiment,
+#     grid,
 #     grid_savepoint,
 #     icon_grid,
 #     interpolation_savepoint,
@@ -61,3 +61,11 @@ def _delete_recursive(p: pathlib.Path) -> None:
         else:
             _delete_recursive(child)
     p.rmdir()
+
+
+from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
+
+
+@pytest.fixture
+def grid_file():
+    return REGIONAL_EXPERIMENT

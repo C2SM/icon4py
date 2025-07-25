@@ -31,8 +31,6 @@ class _ConnectivityConceptFixer:
         return self._grid.connectivities[dim].asnumpy()
 
 
-
 @pytest.fixture(scope="session")
 def connectivities_as_numpy(grid: base.Grid) -> dict[gtx.Dimension, np.ndarray]:
     return _ConnectivityConceptFixer(grid)
-

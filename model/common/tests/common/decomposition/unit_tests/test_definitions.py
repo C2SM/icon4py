@@ -24,7 +24,7 @@ from icon4py.model.testing.fixtures.datatest import (  # import fixtures form te
 
 
 @pytest.mark.datatest
-def test_create_single_node_runtime_without_mpi(icon_grid, processor_props):  
+def test_create_single_node_runtime_without_mpi(icon_grid, processor_props):
     decomposition_info = DecompositionInfo(
         klevels=10,
         num_cells=icon_grid.num_cells,

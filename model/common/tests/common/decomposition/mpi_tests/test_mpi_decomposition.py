@@ -53,7 +53,7 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props):  
+def test_props(processor_props):
     assert processor_props.comm
 
 
@@ -73,9 +73,9 @@ def test_decomposition_info_masked(
     owned,
     total,
     caplog,
-    download_ser_data,  
-    decomposition_info,  
-    processor_props,  
+    download_ser_data,
+    decomposition_info,
+    processor_props,
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
@@ -118,9 +118,9 @@ def test_decomposition_info_local_index(
     owned,
     total,
     caplog,
-    download_ser_data,  #fixture
-    decomposition_info,  #fixture
-    processor_props,  #fixture
+    download_ser_data,  # fixture
+    decomposition_info,  # fixture
+    processor_props,  # fixture
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
@@ -173,10 +173,10 @@ def test_domain_descriptor_id_are_globally_unique(
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
     caplog,
-    download_ser_data,  #fixture
-    decomposition_info,  #fixture
-    icon_grid,  #fixture
-    processor_props,  #fixture
+    download_ser_data,  # fixture
+    decomposition_info,  # fixture
+    icon_grid,  # fixture
+    processor_props,  # fixture
 ):
     check_comm_size(processor_props)
     assert (
@@ -198,8 +198,8 @@ def test_decomposition_info_matches_gridsize(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_create_multi_node_runtime_with_mpi(
-    decomposition_info,  
-    processor_props,  
+    decomposition_info,
+    processor_props,
 ):
     props = processor_props
     exchange = create_exchange(props, decomposition_info)
@@ -212,8 +212,8 @@ def test_create_multi_node_runtime_with_mpi(
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
 @pytest.mark.mpi_skip()
 def test_create_single_node_runtime_without_mpi(
-    processor_props,  
-    decomposition_info,  
+    processor_props,
+    decomposition_info,
 ):
     exchange = create_exchange(processor_props, decomposition_info)
     assert isinstance(exchange, SingleNodeExchange)
@@ -223,10 +223,10 @@ def test_create_single_node_runtime_without_mpi(
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
 def test_exchange_on_dummy_data(
-    processor_props,  
-    decomposition_info,  
-    grid_savepoint,  
-    metrics_savepoint,  
+    processor_props,
+    decomposition_info,
+    grid_savepoint,
+    metrics_savepoint,
     dimension,
 ):
     exchange = create_exchange(processor_props, decomposition_info)

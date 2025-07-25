@@ -31,10 +31,10 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_nudgecoeffs_e(
-    grid_savepoint,  
-    interpolation_savepoint,  
-    icon_grid,  
-    backend,  
+    grid_savepoint,
+    interpolation_savepoint,
+    icon_grid,
+    backend,
 ):
     nudgecoeff_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat, backend=backend)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()

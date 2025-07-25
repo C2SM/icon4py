@@ -23,6 +23,7 @@ def date() -> str:
     """
     return "0000-00-00T00:00:00Z"
 
+
 @pytest.fixture
 def advection_init_savepoint(data_provider, date):
     """

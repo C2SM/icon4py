@@ -95,7 +95,9 @@ def test_io_monitor_create_output_path(test_path):
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)),
+        vct_a=gtx.as_field(
+            (dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)
+        ),
         vct_b=None,
     )
     config = IOConfig(field_groups=[], output_path=path_name)
@@ -115,7 +117,9 @@ def test_io_monitor_write_ugrid_file(test_path):
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)),
+        vct_a=gtx.as_field(
+            (dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)
+        ),
         vct_b=None,
     )
 
@@ -278,7 +282,9 @@ def test_fieldgroup_monitor_output_time_updates_upon_store(test_path):
 
 def test_fieldgroup_monitor_no_output_on_not_matching_time(test_path):
     start_time_str = "2024-01-01T00:00:00"
-    config, group_monitor = create_field_group_monitor(test_path, test_io_utils.simple_grid, start_time_str)
+    config, group_monitor = create_field_group_monitor(
+        test_path, test_io_utils.simple_grid, start_time_str
+    )
     start_time = dt.datetime.fromisoformat(config.start_time)
     step_time = start_time
     state = test_io_utils.model_state(test_io_utils.simple_grid)
@@ -323,7 +329,9 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)),
+        vct_a=gtx.as_field(
+            (dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)
+        ),
         vct_b=None,
     )
 
@@ -421,5 +429,6 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
     )
     with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
-            test_io_utils.model_state(test_io_utils.simple_grid), dt.datetime.fromisoformat("2023-04-04T11:00:00")
+            test_io_utils.model_state(test_io_utils.simple_grid),
+            dt.datetime.fromisoformat("2023-04-04T11:00:00"),
         )
