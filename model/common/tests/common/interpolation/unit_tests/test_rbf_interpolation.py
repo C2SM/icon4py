@@ -25,7 +25,6 @@ from icon4py.model.testing import (
     helpers as test_helpers,
 )
 
-
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -36,7 +35,7 @@ from icon4py.model.testing import (
     ],
 )
 def test_construct_rbf_matrix_offsets_tables_for_cells(
-    grid_file, grid_savepoint, icon_grid, backend
+    grid_file, experiment, grid_savepoint, icon_grid, backend
 ):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
     grid = grid_manager.grid
@@ -71,7 +70,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
     ],
 )
 def test_construct_rbf_matrix_offsets_tables_for_edges(
-    grid_file, grid_savepoint, icon_grid, backend
+    grid_file, experiment, grid_savepoint, icon_grid, backend
 ):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
     grid = grid_manager.grid
@@ -104,7 +103,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
     ],
 )
 def test_construct_rbf_matrix_offsets_tables_for_vertices(
-    grid_file, grid_savepoint, icon_grid, backend
+    experiment, grid_file, grid_savepoint, icon_grid, backend
 ):
     grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
     grid = grid_manager.grid

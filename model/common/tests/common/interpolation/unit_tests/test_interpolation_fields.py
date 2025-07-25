@@ -32,6 +32,9 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    grid_savepoint,
+    interpolation_savepoint,
+    icon_grid,
     processor_props,
     ranked_data_path,
 )
@@ -77,7 +80,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_div(experiment, grid_savepoint, interpolation_savepoint, icon_grid, backend):
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()
@@ -98,7 +101,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_rot(experiment, grid_savepoint, interpolation_savepoint, icon_grid, backend):
     mesh = icon_grid
     dual_edge_length = grid_savepoint.dual_edge_length()
     edge_orientation = grid_savepoint.vertex_edge_orientation()

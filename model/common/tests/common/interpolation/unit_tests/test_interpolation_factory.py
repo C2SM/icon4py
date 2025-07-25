@@ -24,6 +24,12 @@ from icon4py.model.testing import (
     helpers as test_helpers,
 )
 
+from icon4py.model.testing.fixtures import (
+    backend, decomposition_info, experiment, 
+)
+
+from ..fixtures import grid_file
+
 
 V2E_SIZE = 6
 

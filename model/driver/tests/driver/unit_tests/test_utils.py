@@ -13,6 +13,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import utils
 from icon4py.model.testing import helpers
 
+from icon4py.model.testing.fixtures import backend
 from ..fixtures import *  # noqa: F403
 
 

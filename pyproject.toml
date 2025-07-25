@@ -70,7 +70,7 @@ docs = [
     "TexSoup>=0.3.1",
 ]
 lint = ["pre-commit>=4.0.1", "ruff>=0.8.0", "tach>=0.16.0"]
-scripts = ["typer>=0.12.3"]
+scripts = ["typer>=0.12.3", "pytest"]
 test = [
     # workspace members
     "icon4py-testing>=0.0.6",

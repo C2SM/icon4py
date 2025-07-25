@@ -11,10 +11,13 @@
 import ast
 import enum
 import functools
+import os
 import pathlib
+from typing import Annotated
 
 import rich
 import typer
+import pytest
 
 from . import _common as common
 
@@ -23,16 +26,17 @@ class ExitCode(enum.IntEnum):
     """Exit codes for the script."""
 
     MISSING_OR_INVALID_INIT_FILES = 1
+    UNKNOWN_FIXTURE_REQUESTS = 2
 
 
-cli = typer.Typer(help=__doc__)
+cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
 
-@cli.command(name="check-tests-layout")
-def check_tests_layout(
-    fix: bool = typer.Option(
-        False, "--fix", "-f", help="Automatically create missing __init__.py files."
-    ),
+@cli.command(name="check-layout")
+def check_layout(
+    fix: Annotated[
+        bool, typer.Option("--fix", "-f", help="Automatically create unknown __init__.py files.")
+    ] = False,
 ):
     """Check if all 'tests' subpackages have proper '__init__.py' files."""
     root_dirs: list[pathlib.Path] = [common.REPO_ROOT / "model", common.REPO_ROOT / "tools"]
@@ -68,13 +72,15 @@ def check_tests_layout(
                 if local_parts[-1] == "tests":
                     rich.print(f"Checking '{'/'.join(local_parts)}' (namespace package)")
                     try:
-                        wrong_ns_init = ast_dump(ast.parse((dir_path / "__init__.py").read_text())) != ast_dump(ns_init_ast)
+                        wrong_ns_init = ast_dump(
+                            ast.parse((dir_path / "__init__.py").read_text())
+                        ) != ast_dump(ns_init_ast)
                     except SyntaxError:
                         wrong_ns_init = True
                     if "__init__.py" not in file_names or wrong_ns_init:
                         violations += 1
                         rich.print(
-                            "  [red]-> missing or invalid '__init__.py' for namespace package[/red]"
+                            "  [red]-> unknown or invalid '__init__.py' for namespace package[/red]"
                         )
                         if fix:
                             rich.print(f"  [yellow]-> Fixing '__init__.py' in {dir_path}[/yellow]")
@@ -84,7 +90,7 @@ def check_tests_layout(
                     rich.print(f"Checking '{'/'.join(local_parts)}'")
                     if "__init__.py" not in file_names:
                         violations += 1
-                        rich.print("  [red]-> Missing '__init__.py' file[/red]")
+                        rich.print("  [red]-> unknown '__init__.py' file[/red]")
                         if fix:
                             rich.print(
                                 f"  [yellow]-> Creating '__init__.py' in {dir_path}[/yellow]"
@@ -101,6 +107,218 @@ def check_tests_layout(
 
     else:
         rich.print(f"[green]OK:[/green] Tests structure seems correct.")
+
+
+def _collect_fixture_requests(
+    test_path: pathlib.Path,
+) -> dict[pathlib.Path, tuple[set[str], set[str]]]:
+    """Collect all pytest fixtures from the specified test path."""
+    collected_fixtures: dict[pathlib.Path, tuple[set[str], set[str]]] = {}
+
+    class CollectorPlugin:
+        def pytest_collection_finish(self, session):
+            for item in session.items:
+                item_fixtures = set(item.fixturenames)
+
+                if item.path not in collected_fixtures:
+                    collected_fixtures[item.path] = (set(), set())
+                all, unknown = collected_fixtures[item.path]
+                all.update(item_fixtures)
+                unknown.update(
+                    item_fixtures - (item._fixtureinfo.name2fixturedefs.keys() | {"request"})
+                )
+
+    os.chdir(str(common.REPO_ROOT))
+    pytest.main(
+        [
+            str(test_path.resolve().relative_to(common.REPO_ROOT)),
+            "-q",
+            "--no-header",
+            "--no-summary",
+            "--collect-only",
+        ],
+        plugins=[CollectorPlugin()],
+    )
+    return collected_fixtures
+
+
+def _collect_fixtures_in_file(test_file_path: pathlib.Path) -> list[str]:
+    """Parse a Python file and return the names of all pytest fixture defined inside."""
+
+    try:
+        tree = ast.parse(test_file_path.read_text(), filename=test_file_path)
+    except SyntaxError:
+        return []
+
+    fixtures = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            for decorator in node.decorator_list:
+                if (
+                    isinstance(decorator, ast.Call)
+                    and isinstance(decorator.func, ast.Attribute)
+                    and decorator.func.attr == "fixture"
+                    and isinstance(decorator.func.value, ast.Name)
+                    and decorator.func.value.id == "pytest"
+                ):
+                    fixtures.append(node.name)
+                elif (
+                    isinstance(decorator, ast.Attribute)
+                    and decorator.attr == "fixture"
+                    and isinstance(decorator.value, ast.Name)
+                    and decorator.value.id == "pytest"
+                ):
+                    fixtures.append(node.name)
+    return fixtures
+
+
+def _collect_fixture_files(root_dir: pathlib.Path) -> list[pathlib.Path]:
+    """Find all Python files in 'fixtures' folders or named 'fixtures.py'."""
+    fixture_pkgs = set()
+    fixture_files = []
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        if "/site-packages/" in dirpath:
+            continue  # Skip virtual environments
+        if (dirpath.endswith("fixtures") or dirpath in fixture_pkgs) and "__init__.py" in filenames:
+            fixture_pkgs.update(f"{dirpath}/{d}" for d in dirnames)
+            for fname in filenames:
+                if fname.endswith(".py"):
+                    fixture_files.append(pathlib.Path(dirpath) / fname)
+            if dirpath in fixture_pkgs:
+                fixture_pkgs.remove(dirpath)
+        elif "fixtures.py" in filenames:
+            fixture_files.append(pathlib.Path(dirpath) / "fixtures.py")
+    return fixture_files
+
+
+def _collect_fixtures(root_dir: pathlib.Path) -> dict[str, list[pathlib.Path]]:
+    """Collect all pytest fixtures in the project."""
+    fixtures_dict = {}
+    fixture_files = _collect_fixture_files(root_dir)
+    for file_path in fixture_files:
+        fixtures = _collect_fixtures_in_file(file_path)
+        for fixture in fixtures:
+            fixtures_dict.setdefault(fixture, []).append(file_path.relative_to(root_dir))
+    return fixtures_dict
+
+
+def _find_closest_fixture_import_path(
+    test_file_path: pathlib.Path, fixture_definitions: list[pathlib.Path]
+) -> str | None:
+    """Find the closest import path for a fixture definition relative to the test file."""
+    test_file_path = test_file_path.resolve().relative_to(common.REPO_ROOT)
+    test_file_component = test_file_path.parts[test_file_path.parts.index("tests") + 1]
+    up_levels = 100
+    fixture_import = None
+
+    for i, def_path in enumerate(fixture_definitions):
+        if (
+            "tests" in def_path.parts
+            and def_path.parts[def_path.parts.index("tests") + 1] == test_file_component
+        ):
+            relative_path = def_path.relative_to(test_file_path.parent, walk_up=True)
+            if (levels := relative_path.parts.count("..")) < up_levels:
+                up_levels = levels
+                fixture_import = "".join(
+                    "." if part == ".." else part.split(".")[0] for part in relative_path.parts
+                )
+
+        elif fixture_import is None:
+            fixture_import = ".".join(
+                p.split(".")[0] for p in def_path.parts[def_path.parts.index("src") + 1 :]
+            )
+
+    return fixture_import
+
+
+def _fix_fixture_requests(
+    fixture_requests: dict[pathlib.Path, tuple[set[str], set[str]]],
+    test_path: pathlib.Path,
+) -> tuple[list[tuple[str, pathlib.Path]], list[tuple[str, pathlib.Path]]]:
+    """Fix unknown fixture requests by creating __init__.py files."""
+    rich.print(f"[yellow]Adding missing fixtures...[/yellow]")
+
+    fixed = []
+    errors = []
+    fixture_definitions = _collect_fixtures(common.REPO_ROOT)
+
+    for path, (_all_fixtures, unknown_fixtures) in fixture_requests.items():
+        if not unknown_fixtures:
+            continue
+
+        rich.print(f"- '{path}':")
+        new_imports = []
+        for fixture in unknown_fixtures:
+            rich.print(f"    + fixture: '{fixture}'")
+            rich.print(
+                f"    + matching definitions: {', '.join(f'\'{f!s}\'' for f in fixture_definitions.get(fixture, []))}"
+            )
+            if fixture not in fixture_definitions or not (
+                import_path := _find_closest_fixture_import_path(path, fixture_definitions[fixture])
+            ):
+                errors += (fixture, path)
+                continue
+            assert import_path
+            fixed += (fixture, path)
+            new_imports.append(f"from {import_path} import {fixture}\n")
+
+        lines = path.read_text().splitlines(keepends=True)
+        i = 0
+        for i in range(len(lines)):
+            line = lines[i].rstrip()
+            if line and not (
+                line.startswith("import ")
+                or line.startswith("from ")
+                or line.startswith("#")
+                or line.startswith("(")
+                or line.startswith(")")
+                or line.startswith("    ")
+            ):
+                break
+
+        path.write_text("".join([*lines[:i], *new_imports, "\n", *lines[i:]]))
+
+    return fixed, errors
+
+
+@cli.command(name="fixture-requests", help=_collect_fixture_requests.__doc__)
+def fixture_requests(
+    test_path: Annotated[
+        pathlib.Path, typer.Argument(help="The path to collect fixture requests for.")
+    ],
+    fix: Annotated[
+        bool,
+        typer.Option(
+            "--fix",
+            "-f",
+            help="Automatically create explicit imports for missing fixtures in test files.",
+        ),
+    ] = False,
+):
+    fixture_requests = _collect_fixture_requests(test_path)
+    report = [
+        f"- {path}:\n"
+        f"    + {len(all)} requested{':' if all else ''} {', '.join(sorted(all))}\n"
+        f"    + {len(unknown)} unknown{':' if unknown else ''} {', '.join(sorted(unknown))}\n"
+        for path, (all, unknown) in fixture_requests.items()
+    ]
+    rich.print("\n".join(report))
+    errors = [(fixture, path) for path, unknown in fixture_requests.items() for fixture in unknown]
+    fixes = None
+
+    if errors and fix:
+        fixes, errors = _fix_fixture_requests(fixture_requests, test_path)
+    if errors:
+        rich.print(
+            f"[red]ERROR:[/red] {len(errors)} fixtures were requested but not found in the test files."
+        )
+        raise typer.Exit(code=ExitCode.MISSING_OR_INVALID_INIT_FILES)
+    elif fixes:
+        rich.print(
+            f"[yellow]Fixed {len(fixes)} fixture requests in {len(fixture_requests)} test files.[/yellow]"
+        )
+    else:
+        rich.print("[green]OK:[/green] No unknown fixture requests found in the test files.")
 
 
 if __name__ == "__main__":
