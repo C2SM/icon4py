@@ -55,23 +55,21 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
     ddqz_z_half: np.ndarray,
     cfl_w_limit: ta.wpfloat,
     dtime: ta.wpfloat,
-    nflatlev: int,
     nlev: int,
     end_index_of_damping_layer: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     num_rows, num_cols = contravariant_correction_at_cells_on_half_levels.shape
 
     k = np.arange(num_cols)
-    condition1 = k >= nflatlev + 1
-    condition2 = (np.maximum(3, end_index_of_damping_layer - 2) - 1 <= k) & (k < nlev - 3)
+    condition = (np.maximum(2, end_index_of_damping_layer - 2) <= k) & (k < nlev - 3)
 
-    contravariant_corrected_w_at_cells_on_half_levels = np.where(
-        condition1, w - contravariant_correction_at_cells_on_half_levels, w
+    contravariant_corrected_w_at_cells_on_half_levels = (
+        w - contravariant_correction_at_cells_on_half_levels
     )
 
     cfl_clipping = np.where(
         (np.abs(contravariant_corrected_w_at_cells_on_half_levels) > cfl_w_limit * ddqz_z_half)
-        & condition2,
+        & condition,
         np.ones([num_rows, num_cols]),
         np.zeros_like(contravariant_corrected_w_at_cells_on_half_levels),
     )
@@ -230,7 +228,7 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
         vertical_wind_advective_tendency,
     )
 
-    condition2 = (np.maximum(3, end_index_of_damping_layer - 2) - 1 <= k) & (k < nlev - 3)
+    condition2 = (np.maximum(2, end_index_of_damping_layer - 2) <= k) & (k < nlev - 3)
 
     vertical_wind_advective_tendency = np.where(
         condition2,
@@ -287,7 +285,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         cfl_w_limit: ta.wpfloat,
         dtime: ta.wpfloat,
         owner_mask: np.ndarray,
-        nflatlev: int,
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
@@ -310,7 +307,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
             ddqz_z_half,
             cfl_w_limit,
             dtime,
-            nflatlev,
             nlev,
             end_index_of_damping_layer,
         )
@@ -411,7 +407,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime
 
-        nflatlev = 3
         end_index_of_damping_layer = 5
 
         cell_domain = h_grid.domain(dims.CellDim)
@@ -442,7 +437,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
-            nflatlev=nflatlev,
             end_index_of_damping_layer=end_index_of_damping_layer,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,

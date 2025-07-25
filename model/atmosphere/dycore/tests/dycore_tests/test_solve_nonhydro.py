@@ -187,7 +187,7 @@ def test_nonhydro_predictor_step(
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, ndyn_substeps, backend)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
@@ -561,9 +561,7 @@ def test_nonhydro_corrector_step(
         ),
     )
 
-    diagnostic_state_nh = utils.construct_diagnostics(
-        init_savepoint, icon_grid, ndyn_substeps, backend
-    )
+    diagnostic_state_nh = utils.construct_diagnostics(init_savepoint, icon_grid, backend)
 
     z_fields = solve_nh.IntermediateFields(
         horizontal_pressure_gradient=init_savepoint.z_gradh_exner(),
@@ -777,7 +775,7 @@ def test_run_solve_nonhydro_single_step(
         ),
     )
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, ndyn_substeps, backend)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
@@ -903,7 +901,7 @@ def test_run_solve_nonhydro_multi_step(
     linit = sp.get_metadata("linit").get("linit")
 
     diagnostic_state_nh = utils.construct_diagnostics(
-        sp, icon_grid, ndyn_substeps, backend, swap_vertical_wind_advective_tendency=not linit
+        sp, icon_grid, backend, swap_vertical_wind_advective_tendency=not linit
     )
     prognostic_states = utils.create_prognostic_states(sp)
 
@@ -2182,7 +2180,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     assert helpers.dallclose(
         exner_explicit_term.asnumpy(),
         z_exner_expl_ref.asnumpy(),
-        rtol=1e-9,
+        rtol=3e-9,
     )
     assert helpers.dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]

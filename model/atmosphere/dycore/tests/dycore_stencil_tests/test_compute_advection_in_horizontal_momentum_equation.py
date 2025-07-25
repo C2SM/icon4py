@@ -162,7 +162,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         cfl_w_limit: ta.wpfloat,
         scalfac_exdiff: ta.wpfloat,
         dtime: ta.wpfloat,
-        max_vertical_cfl: ta.wpfloat,
+        apply_extra_diffusion_on_vn: bool,
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
@@ -192,9 +192,9 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             ddqz_z_full_e,
         )
 
-        condition = (np.maximum(3, end_index_of_damping_layer - 2) - 1 <= k) & (k < nlev - 4)
+        condition = (np.maximum(2, end_index_of_damping_layer - 2) <= k) & (k < nlev - 4)
 
-        if max_vertical_cfl > cfl_w_limit * dtime:
+        if apply_extra_diffusion_on_vn:
             normal_wind_advective_tendency_extra_diffu = _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(
                 connectivities,
                 c_lin_e,
@@ -258,7 +258,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         scalfac_exdiff = 0.6
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime
-        max_vertical_cfl = 0.85
+        apply_extra_diffusion_on_vn = True
 
         end_index_of_damping_layer = 5
         edge_domain = h_grid.domain(dims.EdgeDim)
@@ -285,7 +285,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
-            max_vertical_cfl=max_vertical_cfl,
+            apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
             end_index_of_damping_layer=end_index_of_damping_layer,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,

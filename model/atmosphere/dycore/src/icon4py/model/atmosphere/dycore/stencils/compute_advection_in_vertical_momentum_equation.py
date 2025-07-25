@@ -102,8 +102,8 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> tuple[
-    fa.CellKField[bool],
     fa.CellKField[ta.vpfloat],
+    fa.CellKField[bool],
     fa.CellKField[ta.vpfloat],
 ]:
     contravariant_corrected_w_at_cells_on_half_levels_wp, ddqz_z_half_wp = astype(
@@ -119,7 +119,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     vertical_cfl = where(
         cfl_clipping,
         contravariant_corrected_w_at_cells_on_half_levels_wp * dtime / ddqz_z_half_wp,
-        wpfloat("0.0"),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
     vertical_cfl_vp = astype(vertical_cfl, vpfloat)
 
@@ -136,9 +136,9 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     )
 
     return (
+        astype(contravariant_corrected_w_at_cells_on_half_levels_wp, vpfloat),
         cfl_clipping,
         vertical_cfl_vp,
-        astype(contravariant_corrected_w_at_cells_on_half_levels_wp, vpfloat),
     )
 
 
@@ -146,13 +146,9 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 def _compute_contravariant_corrected_w(
     w: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    nflatlev: gtx.int32,
 ) -> fa.CellKField[ta.vpfloat]:
-    # TODO (Chia Rui): contravariant_correction_at_cells_on_half_levels is already zero when k < nflatlev + 1 and k == nlev, we may not need this concat_where
-    contravariant_corrected_w_at_cells_on_half_levels = concat_where(
-        nflatlev + 1 <= dims.KDim,
-        astype(w, vpfloat) - contravariant_correction_at_cells_on_half_levels,
-        astype(w, vpfloat),
+    contravariant_corrected_w_at_cells_on_half_levels = (
+        astype(w, vpfloat) - contravariant_correction_at_cells_on_half_levels
     )
 
     return contravariant_corrected_w_at_cells_on_half_levels
@@ -165,17 +161,16 @@ def _compute_contravariant_corrected_w_and_cfl(
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
-    nflatlev: gtx.int32,
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
 ) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[bool], fa.CellKField[ta.vpfloat]]:
     #: intermediate variable contravariant_corrected_w_at_cells_on_half_levels is originally declared as z_w_con_c in ICON
     contravariant_corrected_w_at_cells_on_half_levels = _compute_contravariant_corrected_w(
-        w, contravariant_correction_at_cells_on_half_levels, nflatlev
+        w, contravariant_correction_at_cells_on_half_levels
     )
 
-    (cfl_clipping, vertical_cfl, contravariant_corrected_w_at_cells_on_half_levels) = concat_where(
-        (dims.KDim >= maximum(3, end_index_of_damping_layer - 2) - 1) & (dims.KDim < nlev - 3),
+    (contravariant_corrected_w_at_cells_on_half_levels, cfl_clipping, vertical_cfl) = concat_where(
+        (dims.KDim >= maximum(2, end_index_of_damping_layer - 2)) & (dims.KDim < nlev - 3),
         _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half,
             contravariant_corrected_w_at_cells_on_half_levels,
@@ -183,9 +178,9 @@ def _compute_contravariant_corrected_w_and_cfl(
             dtime,
         ),
         (
+            contravariant_corrected_w_at_cells_on_half_levels,
             broadcast(False, (dims.CellDim, dims.KDim)),
             broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
-            contravariant_corrected_w_at_cells_on_half_levels,
         ),
     )
 
@@ -282,7 +277,6 @@ def _compute_advection_in_vertical_momentum_equation(
     scalfac_exdiff: ta.wpfloat,
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
-    nflatlev: gtx.int32,
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
 ) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat]]:
@@ -296,7 +290,6 @@ def _compute_advection_in_vertical_momentum_equation(
         ddqz_z_half,
         cfl_w_limit,
         dtime,
-        nflatlev,
         nlev,
         end_index_of_damping_layer,
     )
@@ -360,7 +353,6 @@ def compute_advection_in_vertical_momentum_equation(
     scalfac_exdiff: ta.wpfloat,
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
-    nflatlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -425,7 +417,6 @@ def compute_advection_in_vertical_momentum_equation(
         scalfac_exdiff,
         cfl_w_limit,
         dtime,
-        nflatlev,
         vertical_end,
         end_index_of_damping_layer,
         out=(
@@ -447,11 +438,8 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
     wgtfac_c: fa.CellKField[ta.vpfloat],
     nflatlev: gtx.int32,
 ) -> fa.CellKField[ta.vpfloat]:
-    # TODO (Chia Rui): contravariant_correction_at_edges_on_model_levels is already zero when k < nflatlev, we may not need this concat_where
-    contravariant_correction_at_cells_model_levels = concat_where(
-        dims.KDim >= nflatlev,
-        _interpolate_to_cell_center(contravariant_correction_at_edges_on_model_levels, e_bln_c_s),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+    contravariant_correction_at_cells_model_levels = _interpolate_to_cell_center(
+        contravariant_correction_at_edges_on_model_levels, e_bln_c_s
     )
     contravariant_correction_at_cells_model_levels = astype(
         contravariant_correction_at_cells_model_levels, vpfloat
@@ -519,7 +507,6 @@ def _compute_contravariant_correction_and_advection_in_vertical_momentum_equatio
         ddqz_z_half,
         cfl_w_limit,
         dtime,
-        nflatlev,
         nlev,
         end_index_of_damping_layer,
     )

@@ -218,8 +218,7 @@ def _compute_advection_in_horizontal_momentum_equation(
 
     if apply_extra_diffusion_on_vn:
         normal_wind_advective_tendency = concat_where(
-            ((maximum(3, end_index_of_damping_layer - 2) - 1) <= dims.KDim)
-            & (dims.KDim < (nlev - 4)),
+            ((maximum(2, end_index_of_damping_layer - 2)) <= dims.KDim) & (dims.KDim < (nlev - 4)),
             _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask(
                 c_lin_e,
                 contravariant_corrected_w_at_cells_on_model_levels,

@@ -124,7 +124,6 @@ def create_vertical_params(
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     grid: icon_grid.IconGrid,
-    ndyn_substeps: int,
     backend: Optional[gtx_backend.Backend],
     swap_vertical_wind_advective_tendency: bool = False,
 ):

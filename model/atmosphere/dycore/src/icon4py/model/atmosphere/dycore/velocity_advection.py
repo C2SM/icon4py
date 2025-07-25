@@ -88,7 +88,6 @@ class VelocityAdvection:
             compute_advection_in_vertical_momentum_equation.with_backend(self._backend).compile(
                 enable_jit=False,
                 end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
-                nflatlev=[self.vertical_params.nflatlev],
                 vertical_start=[gtx.int32(0)],
                 vertical_end=[self.grid.num_levels],
                 offset_provider=self.grid.connectivities,
@@ -235,7 +234,13 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        max_vertical_cfl = float(self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray))
+        max_vertical_cfl = float(
+            self.vertical_cfl.array_ns.max(
+                self.vertical_cfl.ndarray[
+                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo
+                ]
+            )
+        )
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
         apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
         self._compute_advection_in_horizontal_momentum_equation(
@@ -318,7 +323,6 @@ class VelocityAdvection:
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
-            nflatlev=self.vertical_params.nflatlev,
             end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
@@ -327,7 +331,13 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        max_vertical_cfl = float(self.vertical_cfl.array_ns.max(self.vertical_cfl.ndarray))
+        max_vertical_cfl = float(
+            self.vertical_cfl.array_ns.max(
+                self.vertical_cfl.ndarray[
+                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo
+                ]
+            )
+        )
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
         apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
         self._compute_advection_in_horizontal_momentum_equation(

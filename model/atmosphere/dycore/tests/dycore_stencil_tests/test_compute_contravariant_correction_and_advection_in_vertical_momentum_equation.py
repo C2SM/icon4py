@@ -44,18 +44,13 @@ def interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
 ) -> np.ndarray:
     k = np.arange(nlev)
 
-    condition1 = k >= nflatlev
-    contravariant_correction_at_cells_model_levels = np.where(
-        condition1,
-        interpolate_to_cell_center_numpy(
-            connectivities, contravariant_correction_at_edges_on_model_levels, e_bln_c_s
-        ),
-        np.zeros_like(contravariant_correction_at_cells_on_half_levels),
+    contravariant_correction_at_cells_model_levels = interpolate_to_cell_center_numpy(
+        connectivities, contravariant_correction_at_edges_on_model_levels, e_bln_c_s
     )
 
-    condition2 = k >= nflatlev + 1
+    condition = k >= nflatlev + 1
     contravariant_correction_at_cells_on_half_levels = np.where(
-        condition2,
+        condition,
         interpolate_cell_field_to_half_levels_vp_numpy(
             wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
         ),
@@ -139,7 +134,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
             ddqz_z_half,
             cfl_w_limit,
             dtime,
-            nflatlev,
             nlev,
             end_index_of_damping_layer,
         )

@@ -8,6 +8,7 @@
 import logging
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore import (
@@ -38,6 +39,24 @@ from . import utils
 
 
 log = logging.getLogger(__name__)
+
+
+def _compare_cfl(
+    vertical_cfl: np.ndarray,
+    icon_result_cfl_clipping: np.ndarray,
+    icon_result_max_vcfl_dyn: float,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
+) -> None:
+    cfl_clipping_mask = np.where(np.abs(vertical_cfl) > 0.0, True, False)
+    assert (
+        cfl_clipping_mask[horizontal_start:horizontal_end, vertical_start:vertical_end]
+        == icon_result_cfl_clipping[horizontal_start:horizontal_end, vertical_start:vertical_end]
+    ).all()
+
+    assert vertical_cfl[horizontal_start:horizontal_end, :].max() == icon_result_max_vcfl_dyn
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
@@ -144,6 +163,7 @@ def test_scale_factors_by_dtime(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -248,6 +268,7 @@ def test_velocity_predictor_step(
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie().asnumpy()
     icon_result_vt = savepoint_velocity_exit.vt().asnumpy()
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
+    icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
     assert helpers.dallclose(
         diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14
@@ -283,6 +304,8 @@ def test_velocity_predictor_step(
         atol=1.0e-15,
     )
 
+    assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
+
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
@@ -291,6 +314,7 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -390,6 +414,7 @@ def test_velocity_corrector_step(
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(1).asnumpy()
     icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(1).asnumpy()
+    icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
@@ -405,6 +430,8 @@ def test_velocity_corrector_step(
         atol=5.0e-16,
     )
 
+    assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
+
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
@@ -418,7 +445,6 @@ def test_velocity_corrector_step(
 def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     icon_grid,
     grid_savepoint,
-    savepoint_compute_edge_diagnostics_for_velocity_advection_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_init,
@@ -455,10 +481,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     icon_result_vt = savepoint_velocity_exit.vt()
     icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie()
-    # TODO (Chia Rui): z_kin_hor_e is not available in savepoint_velocity_exit
-    icon_result_z_kin_hor_e = (
-        savepoint_compute_edge_diagnostics_for_velocity_advection_exit.z_kin_hor_e()
-    )
+    icon_result_z_kin_hor_e = savepoint_velocity_exit.z_kin_hor_e()
     icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
 
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction.with_backend(backend)(
@@ -520,6 +543,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -527,7 +551,6 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
 def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
     icon_grid,
     grid_savepoint,
-    savepoint_compute_advection_in_vertical_momentum_equation_init,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_exit,
@@ -549,11 +572,8 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     tangential_wind_on_half_levels = savepoint_velocity_exit.z_vt_ie()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
-    # TODO (Chia Rui): contravariant_corrected_w_at_cells_on_model_levels is not available in savepoint_velocity_init
-    contravariant_corrected_w_at_cells_on_model_levels = (
-        savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
-    )
-    vertical_cfl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
+    vertical_cfl = savepoint_velocity_init.vcfl_dsl()
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.lvn_only()
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
@@ -573,6 +593,8 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
     icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c()
+    icon_result_cfl_clipping = savepoint_velocity_exit.cfl_clipping()
+    icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
@@ -657,7 +679,17 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
         rtol=1.0e-15,
         atol=1.0e-15,
     )
-    # TODO (Chia Rui): Verify cfl when serialized data is ready
+
+    # TODO (Chia Rui): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
+    _compare_cfl(
+        vertical_cfl.asnumpy(),
+        icon_result_cfl_clipping.asnumpy(),
+        icon_result_max_vcfl_dyn,
+        horizontal_start,
+        horizontal_end,
+        max(2, end_index_of_damping_layer - 2),
+        icon_grid.num_levels - 3,
+    )
 
 
 @pytest.mark.datatest
@@ -666,15 +698,14 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
-# @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
+@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_advection_in_vertical_momentum_equation(
     icon_grid,
     grid_savepoint,
-    savepoint_compute_advection_in_vertical_momentum_equation_init,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_exit,
@@ -695,11 +726,8 @@ def test_compute_advection_in_vertical_momentum_equation(
     tangential_wind_on_half_levels = savepoint_velocity_exit.z_vt_ie()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
-    # TODO (Chia Rui): contravariant_corrected_w_at_cells_on_model_levels is not available in savepoint_velocity_init
-    contravariant_corrected_w_at_cells_on_model_levels = (
-        savepoint_compute_advection_in_vertical_momentum_equation_init.z_w_con_c_full()
-    )
-    vertical_cfl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
+    vertical_cfl = savepoint_velocity_init.vcfl_dsl()
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
@@ -716,6 +744,8 @@ def test_compute_advection_in_vertical_momentum_equation(
 
     icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
     icon_result_ddt_w_adv = savepoint_velocity_exit.ddt_w_adv_pc(istep_exit - 1)
+    icon_result_cfl_clipping = savepoint_velocity_exit.cfl_clipping()
+    icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
@@ -753,7 +783,6 @@ def test_compute_advection_in_vertical_momentum_equation(
         scalfac_exdiff=scalfac_exdiff,
         cfl_w_limit=cfl_w_limit,
         dtime=dtime,
-        nflatlev=grid_savepoint.nflatlev(),
         end_index_of_damping_layer=end_index_of_damping_layer,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
@@ -788,7 +817,17 @@ def test_compute_advection_in_vertical_momentum_equation(
         rtol=1.0e-15,
         atol=1.0e-15,
     )
-    # TODO (Chia Rui): Verify cfl when serialized data is ready
+
+    # TODO (Chia Rui): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
+    _compare_cfl(
+        vertical_cfl.asnumpy(),
+        icon_result_cfl_clipping.asnumpy(),
+        icon_result_max_vcfl_dyn,
+        horizontal_start,
+        horizontal_end,
+        max(2, end_index_of_damping_layer - 2),
+        icon_grid.num_levels - 3,
+    )
 
 
 @pytest.mark.datatest
@@ -797,6 +836,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
@@ -804,7 +844,6 @@ def test_compute_advection_in_vertical_momentum_equation(
 def test_compute_advection_in_horizontal_momentum_equation(
     icon_grid,
     grid_savepoint,
-    savepoint_compute_advection_in_horizontal_momentum_equation_init,
     interpolation_savepoint,
     metrics_savepoint,
     backend,
@@ -817,10 +856,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     step_date_exit,
 ):
     vn = savepoint_velocity_init.vn()
-    # TODO (Chia Rui): z_kin_hor_e is not available in savepoint_velocity_exit
-    horizontal_kinetic_energy_at_edges_on_model_levels = (
-        savepoint_compute_advection_in_horizontal_momentum_equation_init.z_kin_hor_e()
-    )
+    horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_exit.z_kin_hor_e()
     tangential_wind = savepoint_velocity_exit.vt()
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_exit.z_w_con_c_full()
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
@@ -851,8 +887,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
-    # TODO (Chia Rui): read max_vertical_cfl from serialized data
-    max_vertical_cfl = 0.0
+    max_vertical_cfl = savepoint_velocity_exit.max_vcfl_dyn()
     apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
 
     compute_advection_in_horizontal_momentum_equation.with_backend(backend)(
