@@ -17,14 +17,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 from icon4py.model.testing.fixtures import (
     backend,
+    damping_height,
     data_provider,
     download_ser_data,
-    processor_props,
-    ranked_data_path,
-)
-
-from ..fixtures import (
-    damping_height,
     experiment,
     flat_height,
     grid_savepoint,
@@ -35,6 +30,8 @@ from ..fixtures import (
     maximal_layer_thickness,
     metrics_savepoint,
     model_top_height,
+    processor_props,
+    ranked_data_path,
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,

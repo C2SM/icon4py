@@ -12,12 +12,24 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    data_provider,
+    download_ser_data,
+    experiment,
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+    metrics_savepoint,
+    processor_props,
+    ranked_data_path,
+)
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_wgtfac_c(icon_grid, metrics_savepoint, backend):
+def test_compute_wgtfac_c(icon_grid, metrics_savepoint, experiment, backend):
     wgtfac_c = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}, backend=backend
     )
@@ -58,7 +70,7 @@ def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_wgtfacq_c_dsl(icon_grid, metrics_savepoint, backend):
+def test_compute_wgtfacq_c_dsl(icon_grid, metrics_savepoint, experiment, backend):
     wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
 
     xp = data_alloc.import_array_ns(backend)

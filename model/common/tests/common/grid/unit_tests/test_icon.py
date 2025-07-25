@@ -25,12 +25,14 @@ from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
+    grid_savepoint,
+    icon_grid,
     processor_props,
     ranked_data_path,
 )
 
 from .. import utils
-from ..fixtures import experiment, grid_savepoint, icon_grid
 
 
 @functools.cache

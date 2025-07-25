@@ -13,6 +13,7 @@ from icon4py.model.common.decomposition.definitions import (
     create_exchange,
 )
 from icon4py.model.testing.fixtures.datatest import (  # import fixtures form test_utils
+    backend,
     data_provider,
     download_ser_data,
     experiment,

@@ -15,12 +15,12 @@ from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
     download_ser_data,
+    grid_savepoint,
     processor_props,
     ranked_data_path,
 )
 
 from .. import utils
-from ..fixtures import grid_savepoint
 
 
 @pytest.mark.with_netcdf

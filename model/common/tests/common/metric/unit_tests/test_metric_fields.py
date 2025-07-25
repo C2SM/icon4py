@@ -15,6 +15,17 @@ from icon4py.model.common.grid import horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers as testing_helpers
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    data_provider,
+    download_ser_data,
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+    metrics_savepoint,
+    processor_props,
+    ranked_data_path,
+)
 
 
 cell_domain = horizontal.domain(dims.CellDim)
@@ -26,7 +37,7 @@ vertex_domain = horizontal.domain(dims.VertexDim)
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
+def test_compute_ddq_z_half(icon_grid, metrics_savepoint, experiment, backend):
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
 
@@ -54,7 +65,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
+def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, experiment, backend):
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
     ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
@@ -78,7 +89,7 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_scaling_factor_for_3d_divdamp(
-    icon_grid, metrics_savepoint, grid_savepoint, backend
+    icon_grid, metrics_savepoint, grid_savepoint, experiment, backend
 ):
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
     scaling_factor_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
@@ -133,7 +144,7 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backend):
+def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, experiment, backend):
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
@@ -164,7 +175,9 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_exner_w_explicit_weight_parameter(icon_grid, metrics_savepoint, backend):
+def test_compute_exner_w_explicit_weight_parameter(
+    icon_grid, metrics_savepoint, experiment, backend
+):
     exner_w_explicit_weight_parameter_full = data_alloc.zero_field(
         icon_grid, dims.CellDim, backend=backend
     )
@@ -291,7 +304,9 @@ def test_compute_exner_w_implicit_weight_parameter(
 # TODO (@halungge) add test in test_metric_factory.py?
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_wgtfac_e(
+    metrics_savepoint, interpolation_savepoint, icon_grid, experiment, backend
+):
     wgtfac_e = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
@@ -315,7 +330,7 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
-    metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
+    metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, experiment, backend
 ):
     xp = data_alloc.import_array_ns(backend)
     pg_exdist_ref = metrics_savepoint.pg_exdist()
@@ -391,7 +406,9 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backend):
+def test_compute_mask_prog_halo_c(
+    metrics_savepoint, icon_grid, grid_savepoint, experiment, backend
+):
     mask_prog_halo_c_full = data_alloc.zero_field(
         icon_grid, dims.CellDim, dtype=bool, backend=backend
     )
@@ -413,7 +430,7 @@ def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backend):
+def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, experiment, backend):
     bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, backend=backend)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
@@ -435,7 +452,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_horizontal_mask_for_3d_divdamp(
-    metrics_savepoint, icon_grid, grid_savepoint, backend
+    metrics_savepoint, icon_grid, grid_savepoint, experiment, backend
 ):
     horizontal_mask_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.EdgeDim, backend=backend)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
@@ -459,7 +476,7 @@ def test_compute_horizontal_mask_for_3d_divdamp(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
+def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, experiment, backend):
     exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     t0sl_bg = constants.SEA_LEVEL_TEMPERATURE
