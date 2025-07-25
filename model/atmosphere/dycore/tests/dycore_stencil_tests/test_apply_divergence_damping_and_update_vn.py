@@ -51,19 +51,14 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         inv_dual_edge_length: np.ndarray,
         nudgecoeff_e: np.ndarray,
         geofac_grdiv: np.ndarray,
-        fourth_order_divdamp_factor: ta.wpfloat,
-        second_order_divdamp_factor: ta.wpfloat,
         advection_explicit_weight_parameter: ta.wpfloat,
         advection_implicit_weight_parameter: ta.wpfloat,
         dtime: ta.wpfloat,
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
-        divdamp_order: gtx.int32,
-        end_edge_halo_level_2: gtx.int32,
-        start_edge_lateral_boundary_level_7: gtx.int32,
-        start_edge_nudging_level_2: gtx.int32,
-        end_edge_local: gtx.int32,
+        apply_2nd_order_divergence_damping: bool,
+        apply_4th_order_divergence_damping: bool,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
@@ -81,20 +76,15 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             dwdz_at_edges_on_model_levels[:, 1] - dwdz_at_edges_on_model_levels[:, 0]
         )
 
-        horizontal_gradient_of_total_divergence = np.where(
-            (start_edge_lateral_boundary_level_7 <= horz_idx) & (horz_idx < end_edge_halo_level_2),
-            horizontal_gradient_of_normal_wind_divergence
-            + (
-                horizontal_mask_for_3d_divdamp
-                * scaling_factor_for_3d_divdamp
-                * inv_dual_edge_length
-                * weighted_dwdz_at_edges_on_model_levels
-            ),
-            horizontal_gradient_of_normal_wind_divergence,
+        horizontal_gradient_of_total_divergence = horizontal_gradient_of_normal_wind_divergence + (
+            horizontal_mask_for_3d_divdamp
+            * scaling_factor_for_3d_divdamp
+            * inv_dual_edge_length
+            * weighted_dwdz_at_edges_on_model_levels
         )
 
         next_vn = np.where(
-            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             current_vn
             + dtime
             * (
@@ -106,14 +96,11 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             next_vn,
         )
 
-        if (
-            divdamp_order == divergence_damp_order.COMBINED
-            or divdamp_order == divergence_damp_order.FOURTH_ORDER
-        ):
+        if apply_4th_order_divergence_damping:
             e2c2eO = connectivities[dims.E2C2EODim]
             # verified for e-10
             squared_horizontal_gradient_of_total_divergence = np.where(
-                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
                 np.sum(
                     np.where(
                         (e2c2eO != -1)[:, :, np.newaxis],
@@ -126,24 +113,18 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 np.zeros_like(horizontal_gradient_of_total_divergence),
             )
 
-        if (
-            divdamp_order == divergence_damp_order.COMBINED
-            and second_order_divdamp_scaling_coeff > 1.0e-6
-        ):
+        if apply_2nd_order_divergence_damping:
             next_vn = np.where(
-                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
                 next_vn
                 + (second_order_divdamp_scaling_coeff * horizontal_gradient_of_total_divergence),
                 next_vn,
             )
 
-        if (
-            divdamp_order == divergence_damp_order.COMBINED
-            and second_order_divdamp_factor <= 4 * fourth_order_divdamp_factor
-        ):
+        if apply_4th_order_divergence_damping:
             if limited_area:
                 next_vn = np.where(
-                    (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+                    (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
                     next_vn
                     + (
                         fourth_order_divdamp_scaling_coeff
@@ -155,7 +136,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 )
             else:
                 next_vn = np.where(
-                    (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+                    (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
                     next_vn
                     + (
                         np.expand_dims(fourth_order_divdamp_scaling_coeff, axis=0)
@@ -166,7 +147,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
         if is_iau_active:
             next_vn = np.where(
-                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
                 next_vn + (iau_wgt_dyn * normal_wind_iau_increment),
                 next_vn,
             )
@@ -174,7 +155,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         return dict(next_vn=next_vn)
 
     @pytest.fixture(params=[True, False])
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
         scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim)
@@ -212,13 +193,19 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         second_order_divdamp_factor = 0.012
         divdamp_order = 24
         second_order_divdamp_scaling_coeff = 194588.14247428576
-        limited_area = True
+        apply_2nd_order_divergence_damping = (divdamp_order == divergence_damp_order.COMBINED) and (
+            second_order_divdamp_scaling_coeff > 1.0e-6
+        )
+        apply_4th_order_divergence_damping = (
+            divdamp_order == divergence_damp_order.FOURTH_ORDER
+        ) or (
+            (divdamp_order == divergence_damp_order.COMBINED)
+            and (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
+        )
+
+        limited_area = request.param
         edge_domain = h_grid.domain(dims.EdgeDim)
 
-        end_edge_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-        start_edge_lateral_boundary_level_7 = grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
-        )
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
@@ -241,21 +228,16 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             inv_dual_edge_length=inv_dual_edge_length,
             nudgecoeff_e=nudgecoeff_e,
             geofac_grdiv=geofac_grdiv,
-            fourth_order_divdamp_factor=fourth_order_divdamp_factor,
-            second_order_divdamp_factor=second_order_divdamp_factor,
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
             dtime=dtime,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
             limited_area=limited_area,
-            divdamp_order=divdamp_order,
-            end_edge_halo_level_2=end_edge_halo_level_2,
-            start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
-            start_edge_nudging_level_2=start_edge_nudging_level_2,
-            end_edge_local=end_edge_local,
-            horizontal_start=0,
-            horizontal_end=grid.num_edges,
+            apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
+            apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
+            horizontal_start=start_edge_nudging_level_2,
+            horizontal_end=end_edge_local,
             vertical_start=0,
             vertical_end=grid.num_levels,
         )

@@ -169,7 +169,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim

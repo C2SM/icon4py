@@ -103,7 +103,7 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
     MARKERS = (pytest.mark.embedded_remap_error,)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         levelmask = data_alloc.random_mask(grid, dims.KDim, extend={dims.KDim: 1})
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
         z_w_con_c_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

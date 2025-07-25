@@ -45,7 +45,7 @@ def test_filter_by_standard_name_non_existing_name():
 
 def initialized_writer(
     test_path, random_name, grid=test_io.simple_grid
-) -> tuple[NETCDFWriter, grid_def.BaseGrid]:
+) -> tuple[NETCDFWriter, grid_def.Grid]:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
