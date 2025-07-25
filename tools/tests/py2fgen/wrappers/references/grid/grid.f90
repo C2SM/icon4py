@@ -114,6 +114,7 @@ module grid
                                  num_edges, &
                                  vertical_size, &
                                  limited_area, &
+                                 backend, &
                                  on_gpu) bind(c, name="grid_init_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -334,6 +335,8 @@ module grid
 
          logical(c_int), value, target :: limited_area
 
+         integer(c_int), value, target :: backend
+
          logical(c_int), value :: on_gpu
 
       end function grid_init_wrapper
@@ -391,6 +394,7 @@ contains
                         num_edges, &
                         vertical_size, &
                         limited_area, &
+                        backend, &
                         rc)
       use, intrinsic :: iso_c_binding
 
@@ -491,6 +495,8 @@ contains
       integer(c_int), value, target :: vertical_size
 
       logical(c_int), value, target :: limited_area
+
+      integer(c_int), value, target :: backend
 
       logical(c_int) :: on_gpu
 
@@ -861,6 +867,7 @@ contains
                              num_edges=num_edges, &
                              vertical_size=vertical_size, &
                              limited_area=limited_area, &
+                             backend=backend, &
                              on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data

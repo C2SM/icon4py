@@ -77,9 +77,8 @@ _H_SCAL_BG: Final[ta.wpfloat] = HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
 DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 
 # Implementation constants
-#: default physics to dynamics time step ratio
-# TODO (magdalena) not a constant, this is a default config parameter
-DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
+#: default dynamics to physics time step ratio
+DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[float] = 5.0
 
 #: average earth radius in [m]
 EARTH_RADIUS: Final[ta.wpfloat] = 6.371229e6

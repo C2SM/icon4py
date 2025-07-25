@@ -96,7 +96,7 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config():
         divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
-        max_nudging_coeff=0.075,
+        max_nudging_coefficient=0.375,
     )
     return config
 

@@ -57,7 +57,7 @@ def solve_nh_init(
     l_vert_nested = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
-    nudge_max_coeff = 0.375
+    max_nudging_coefficient = 0.375
     divdamp_fac = 0.004
     divdamp_fac2 = 0.004
     divdamp_fac3 = 0.004
@@ -232,7 +232,7 @@ def solve_nh_init(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        nudge_max_coeff=nudge_max_coeff,
+        nudge_max_coeff=max_nudging_coefficient,
         divdamp_fac=divdamp_fac,
         divdamp_fac2=divdamp_fac2,
         divdamp_fac3=divdamp_fac3,
@@ -311,7 +311,7 @@ def test_dycore_wrapper_granule_inputs(
     l_vert_nested = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
-    nudge_max_coeff = 0.375  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
+    max_nudging_coefficient = 0.375
     divdamp_fac = 0.004
     divdamp_fac2 = 0.004
     divdamp_fac3 = 0.004
@@ -687,7 +687,7 @@ def test_dycore_wrapper_granule_inputs(
             l_vert_nested=l_vert_nested,
             rhotheta_offctr=rhotheta_offctr,
             veladv_offctr=veladv_offctr,
-            nudge_max_coeff=nudge_max_coeff,
+            nudge_max_coeff=max_nudging_coefficient,
             divdamp_fac=divdamp_fac,
             divdamp_fac2=divdamp_fac2,
             divdamp_fac3=divdamp_fac3,
@@ -715,7 +715,7 @@ def test_dycore_wrapper_granule_inputs(
             assert result, f"Grid comparison failed: {error_message}"
         except AssertionError as e:
             error_message = str(e)
-            if "object._neighbor_tables" not in error_message:
+            if "icon_grid != " not in error_message:
                 raise
             else:
                 pass

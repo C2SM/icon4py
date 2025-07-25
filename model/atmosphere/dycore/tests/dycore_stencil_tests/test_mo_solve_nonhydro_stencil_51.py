@@ -75,7 +75,7 @@ class TestMoSolveNonHydroStencil51(StencilTest):
         return dict(z_q=z_q, w_nnew=w_nnew)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_q = zero_field(grid, dims.CellDim, dims.KDim)
         w_nnew = zero_field(grid, dims.CellDim, dims.KDim)
         vwind_impl_wgt = random_field(grid, dims.CellDim)

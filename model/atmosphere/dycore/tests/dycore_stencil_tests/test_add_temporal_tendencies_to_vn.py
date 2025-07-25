@@ -60,7 +60,7 @@ class TestAddTemporalTendenciesToVn(StencilTest):
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = wpfloat("10.0")
         vn_nnow = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ddt_vn_apc_ntl1 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

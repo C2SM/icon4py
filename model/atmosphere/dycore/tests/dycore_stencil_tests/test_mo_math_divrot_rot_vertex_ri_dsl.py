@@ -46,7 +46,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
         return dict(rot_vec=rot_vec)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vec_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         geofac_rot = random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
         rot_vec = zero_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
