@@ -22,27 +22,7 @@ from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-@dataclasses.dataclass
-class _ConnectivityConceptFixer:
-    """
-    This works around a misuse of dimensions as an identifier for connectivities.
-    Since GT4Py might change the way the mesh is represented, we could
-    keep this for a while, otherwise we need to touch all StencilTests.
-    """
-
-    _grid: base.Grid
-
-    def __getitem__(self, dim: gtx.Dimension | str) -> np.ndarray:
-        if isinstance(dim, gtx.Dimension):
-            dim = dim.value
-        return self._grid.connectivities[dim].asnumpy()
-
-
-@pytest.fixture(scope="session")
-def connectivities_as_numpy(grid: base.Grid) -> dict[gtx.Dimension, np.ndarray]:
-    return _ConnectivityConceptFixer(grid)
+from icon4py.model.testing import fixtures
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
@@ -235,6 +215,11 @@ class StencilTest:
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: typing.Optional[tuple] = None
+
+    # Helper fixtures
+    grid = staticmethod(fixtures.grid)
+    backend = staticmethod(fixtures.backend)
+    connectivities_as_numpy = staticmethod(fixtures.connectivities_as_numpy)
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that
