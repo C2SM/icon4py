@@ -468,7 +468,7 @@ class IconGridSavepoint(IconSavepoint):
         edge_ends = self.edge_end_index()
 
         config = base.GridConfig(
-            horizontal_config=base.HorizontalGridSize(
+            horizontal_size=base.HorizontalGridSize(
                 num_vertices=self.num(dims.VertexDim),
                 num_cells=self.num(dims.CellDim),
                 num_edges=self.num(dims.EdgeDim),

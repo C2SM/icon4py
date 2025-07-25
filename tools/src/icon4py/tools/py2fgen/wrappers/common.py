@@ -209,7 +209,7 @@ def construct_icon_grid(
     e2c2e0 = add_origin(xp, e2c2e)
 
     config = base.GridConfig(
-        horizontal_config=base.HorizontalGridSize(
+        horizontal_size=base.HorizontalGridSize(
             num_vertices=num_vertices,
             num_cells=num_cells,
             num_edges=num_edges,

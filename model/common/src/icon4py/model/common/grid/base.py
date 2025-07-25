@@ -12,7 +12,7 @@ import logging
 import math
 import uuid
 from types import ModuleType
-from typing import Callable, Dict, Mapping, Sequence, Optional
+from typing import Callable, Dict, Mapping, Sequence
 
 import gt4py.next as gtx
 import numpy as np
@@ -50,7 +50,7 @@ class HorizontalGridSize:
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
-    horizontal_config: HorizontalGridSize
+    horizontal_size: HorizontalGridSize
     # TODO (Magdalena): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
@@ -65,15 +65,15 @@ class GridConfig:
 
     @property
     def num_vertices(self):
-        return self.horizontal_config.num_vertices
+        return self.horizontal_size.num_vertices
 
     @property
     def num_edges(self):
-        return self.horizontal_config.num_edges
+        return self.horizontal_size.num_edges
 
     @property
     def num_cells(self):
-        return self.horizontal_config.num_cells
+        return self.horizontal_size.num_cells
 
 
 def _1d_size(connectivity: gtx_common.NeighborTable) -> int:

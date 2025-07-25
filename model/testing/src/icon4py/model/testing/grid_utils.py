@@ -136,7 +136,7 @@ def get_grid_geometry(
         )
         grid = gm.grid
         dummy_halo_constructor = halo.NoHalos(
-            horizontal_size=grid.config.horizontal_config, num_levels=num_levels, backend=backend
+            horizontal_size=grid.config.horizontal_size, num_levels=num_levels, backend=backend
         )
         decomposition_info = dummy_halo_constructor(xp.zeros((grid.num_levels,), dtype=int))
         geometry_source = geometry.GridGeometry(

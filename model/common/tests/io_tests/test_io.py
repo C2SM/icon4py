@@ -143,7 +143,7 @@ def test_io_monitor_create_output_path(test_path):
     monitor = IOMonitor(
         config,
         vertical_params,
-        simple_grid.config.horizontal_config,
+        simple_grid.config.horizontal_size,
         grid_file,
         simple_grid.id,
     )
@@ -164,7 +164,7 @@ def test_io_monitor_write_ugrid_file(test_path):
     monitor = IOMonitor(
         config,
         vertical_params,
-        simple_grid.config.horizontal_config,
+        simple_grid.config.horizontal_size,
         grid_file,
         "simple_grid",
     )
@@ -207,7 +207,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     monitor = IOMonitor(
         config,
         vertical_params,
-        grid.config.horizontal_config,
+        grid.config.horizontal_size,
         grid_file,
         grid.id,
     )
@@ -257,7 +257,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     monitor = FieldGroupMonitor(
         config,
         vertical=vertical_params,
-        horizontal=grid.config.horizontal_config,
+        horizontal=grid.config.horizontal_size,
         grid_id=grid.id,
         output_path=test_path,
     )
@@ -371,7 +371,7 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
     group_monitor = FieldGroupMonitor(
         config,
         vertical=vertical_params,
-        horizontal=grid.config.horizontal_config,
+        horizontal=grid.config.horizontal_size,
         grid_id=grid.id,
         output_path=test_path,
     )
@@ -430,7 +430,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
         variables=["exner_function", "air_density"],
     )
     vertical_size = simple_grid.config.vertical_size
-    horizontal_size = simple_grid.config.horizontal_config
+    horizontal_size = simple_grid.config.horizontal_size
     group_monitor = FieldGroupMonitor(
         config,
         vertical=vertical_size,
@@ -452,7 +452,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
         variables=["exner_function", "air_density", "foo"],
     )
     vertical_size = simple_grid.config.vertical_size
-    horizontal_size = simple_grid.config.horizontal_config
+    horizontal_size = simple_grid.config.horizontal_size
     group_monitor = FieldGroupMonitor(
         config,
         vertical=vertical_size,

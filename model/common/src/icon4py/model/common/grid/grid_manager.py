@@ -9,7 +9,7 @@ import functools
 import logging
 import pathlib
 from types import ModuleType
-from typing import Literal, Optional, Protocol, TypeAlias, Union
+from typing import Callable, Literal, Optional, Protocol, TypeAlias, Union
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -28,6 +28,7 @@ from icon4py.model.common.grid import (
     refinement,
     vertical as v_grid,
 )
+from icon4py.model.common.grid.base import HorizontalGridSize
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -107,8 +108,8 @@ class GridManager:
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
         self._geometry: GeometryDict = {}
-        self._reader = None
         self._coordinates: CoordinateDict = {}
+        self._reader = None
 
     def close(self):
         """close the gridfile resource."""
@@ -353,9 +354,21 @@ class GridManager:
 
         """
         xp = data_alloc.import_array_ns(backend)
-        grid_size = self._read_horizontal_grid_size()
-        global_connectivities_for_halo_construction = {
-            dims.C2E2C: self._get_index_field(gridfile.ConnectivityName.C2E2C),
+
+        uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
+        global_grid_size = self._read_full_grid_size()
+        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
+        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+
+        cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
+        cells_to_rank_mapping = self._decompose(
+            cell_to_cell_neighbors,
+            self._run_properties.comm_size,
+        )
+        # TODO: (magdalena) reduce the set of neighbor tables used in the halo construction
+        # TODO: (magdalena) this is all numpy currently!
+        neighbor_tables_for_halo_construction = {
+            dims.C2E2C: cell_to_cell_neighbors,
             dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
             dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C),
             dims.V2E: self._get_index_field(gridfile.ConnectivityName.V2E),
@@ -363,55 +376,47 @@ class GridManager:
             dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
         }
-        cells_to_rank_mapping = self._decompose(
-            global_connectivities_for_halo_construction[dims.C2E2C],
-            self._run_properties.comm_size,
-        )
+        # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
         halo_constructor = self._initialize_halo_constructor(
-            grid_size, global_connectivities_for_halo_construction, backend
+            global_grid_size, neighbor_tables_for_halo_construction, backend
         )
         decomposition_info = halo_constructor(cells_to_rank_mapping)
 
         ## TODO from here do local reads (and halo exchanges!!)
-        uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
 
-        global_connectivities = {
-            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
-        }
+        neighbor_tables = neighbor_tables_for_halo_construction
+        neighbor_tables[dims.E2V] = self._get_index_field(gridfile.ConnectivityName.E2V)
+        neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
         _derived_connectivities = functools.partial(
             _get_derived_connectivities,
             array_ns=xp,
         )
+
         refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
         limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
-        grid = self._initialize_global(
-            grid_size, with_skip_values=with_skip_values, limited_area=limited_area, on_gpu=on_gpu
-        )
-        grid.set_refinement_control(refinement_fields)
-
-        global_connectivities.update(global_connectivities_for_halo_construction)
-
-        grid.set_neighbor_tables(
-            {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
-        )
-
-        _derived_connectivities(grid)
+        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
         start, end, _ = self._read_start_end_indices()
-        for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
-            grid.set_start_end_indices(dim, start[dim], end[dim])
-
+        grid_config = base.GridConfig(
+            horizontal_size=global_grid_size,
+            vertical_size=self._vertical_config.num_levels,
+            limited_area=limited_area,
+        )
+        grid = icon.icon_grid(
+            uuid_,
+            allocator=backend,
+            config=grid_config,
+            neighbor_tables=neighbor_tables,
+            start_indices=start,
+            end_indices=end,
+            global_properties=global_params,
+            refinement_control=refinement_fields,
+        )
         return grid
 
-    def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
-        field = self._reader.int_variable(field, transpose=transpose)
-        if apply_offset:
-            field = field + self._transformation(field)
-        return field
-
     def _initialize_global(
-        self, with_skip_values: bool, limited_area: bool, backend:gtx_backend.Backend
+        self, with_skip_values: bool, limited_area: bool, backend: gtx_backend.Backend
     ) -> icon.IconGrid:
         """
         Read basic information from the grid file:
@@ -429,16 +434,13 @@ class GridManager:
 
         """
         xp = data_alloc.import_array_ns(backend)
-        grid_size = self._read_horizontal_grid_size()
-        num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
-        num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
-        num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
+        grid_size = self._read_full_grid_size()
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
         config = base.GridConfig(
-            horizontal_config=grid_size,
+            horizontal_size=grid_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
@@ -457,8 +459,10 @@ class GridManager:
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
         start, end, _ = self._read_start_end_indices()
+        # TODO is this necessary?
         start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
         end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
+        refinement_fields = self._read_grid_refinement_fields()
 
         return icon.icon_grid(
             id_=uuid_,
@@ -476,19 +480,26 @@ class GridManager:
         if apply_offset:
             field = field + self._transformation(field)
         return field
-    def _read_horizontal_grid_size(self):
+
+    def _read_full_grid_size(self) -> HorizontalGridSize:
+        """
+        Read the grid size propertes (cells, edges, vertices) from the grid file.
+
+        As the grid file contains the _full_ (non-distributed) grid, these are the sizes of prior to distribution.
+
+        """
         num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
         num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
         num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
-        grid_size = base.HorizontalGridSize(
+        full_grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
-        return grid_size
+        return full_grid_size
 
     def _initialize_halo_constructor(
         self,
         grid_size: base.HorizontalGridSize,
-        connectivities: dict,
+        connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
         backend=Optional[gtx_backend.Backend],
     ) -> HaloConstructor:
         if self._run_properties.single_node():
@@ -504,7 +515,6 @@ class GridManager:
                 num_levels=self._vertical_config.num_levels,
                 backend=backend,
             )
-
 
 
 def _get_derived_connectivities(
