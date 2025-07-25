@@ -97,7 +97,11 @@ def read_icon_grid(
 
 
 def model_initialization_serialbox(
-    grid: icon_grid.IconGrid, path: pathlib.Path, backend: gtx_backend.Backend, rank=0
+    grid: icon_grid.IconGrid,
+    path: pathlib.Path,
+    backend: gtx_backend.Backend,
+    ndyn_substeps,
+    rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
     dycore_states.DiagnosticStateNonHydro,
@@ -135,6 +139,7 @@ def model_initialization_serialbox(
         diffusion_init_savepoint,
     )
     solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
+        max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=solve_nonhydro_init_savepoint.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=solve_nonhydro_init_savepoint.exner_pr(),
         rho_at_cells_on_half_levels=solve_nonhydro_init_savepoint.rho_ic(),
@@ -235,6 +240,7 @@ def read_initial_state(
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gtx_backend.Backend,
+    ndyn_substeps: int,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -277,6 +283,7 @@ def read_initial_state(
             edge_param=edge_param,
             path=path,
             backend=backend,
+            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     elif experiment_type == ExperimentType.GAUSS3D:
@@ -293,6 +300,7 @@ def read_initial_state(
             edge_param=edge_param,
             path=path,
             backend=backend,
+            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     elif experiment_type == ExperimentType.ANY:
@@ -308,6 +316,7 @@ def read_initial_state(
             grid=grid,
             path=path,
             backend=backend,
+            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     else:
