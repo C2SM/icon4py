@@ -12,7 +12,6 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.driver import icon4py_configuration as driver_config
-
 from icon4py.model.testing.fixtures import (
     damping_height,
     data_provider,

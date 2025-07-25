@@ -23,9 +23,10 @@ from icon4py.model.testing import (
     grid_utils as gridtest_utils,
     helpers as test_helpers,
 )
-
 from icon4py.model.testing.fixtures import (
-    backend, decomposition_info, experiment, 
+    backend,
+    decomposition_info,
+    experiment,
 )
 
 from ..fixtures import grid_file

@@ -10,6 +10,7 @@ import pytest
 
 from icon4py.model.driver.testcases import gauss3d
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
 

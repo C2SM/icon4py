@@ -22,6 +22,7 @@ from icon4py.model.driver import (
     serialbox_helpers as driver_sb,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
 from ..utils import (
