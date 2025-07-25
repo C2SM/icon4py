@@ -11,6 +11,8 @@ import logging
 import dataclasses
 from typing import Final, Optional
 
+import nvtx
+
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
@@ -83,6 +85,10 @@ from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 # flake8: noqa
 log = logging.getLogger(__name__)
+
+# nvtx traces
+DYCORE_COLOR = "orange"
+ICON4PY_LABEL = "icon4py"
 
 
 @dataclasses.dataclass
@@ -859,6 +865,7 @@ class SolveNonhydro:
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
+    @nvtx.annotate(color=DYCORE_COLOR, category=ICON4PY_LABEL, message="solve_nh-time_step")
     def time_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
@@ -964,6 +971,7 @@ class SolveNonhydro:
         )
 
     # flake8: noqa: C901
+    @nvtx.annotate(color=DYCORE_COLOR, category=ICON4PY_LABEL, message="solve_nh-run_predictor_step")
     def run_predictor_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
@@ -1288,6 +1296,7 @@ class SolveNonhydro:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(dims.CellDim, prognostic_states.next.w)
 
+    @nvtx.annotate(color=DYCORE_COLOR, category=ICON4PY_LABEL, message="solve_nh-run_corrector_step")
     def run_corrector_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,

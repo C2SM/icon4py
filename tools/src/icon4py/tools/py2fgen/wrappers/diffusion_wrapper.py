@@ -22,6 +22,8 @@ import dataclasses
 import pstats
 from typing import Callable, Optional
 
+import nvtx
+
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import backend as gtx_backend
@@ -48,6 +50,10 @@ from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrappe
 
 logger = setup_logger(__name__)
 
+# nvtx traces
+DIFF_COLOR = "blue"
+ICON4PY_LABEL = "icon4py"
+
 
 @dataclasses.dataclass
 class DiffusionGranule:
@@ -73,6 +79,7 @@ def profile_disable():
 
 
 @icon4py_export.export
+@nvtx.annotate(color=DIFF_COLOR, category=ICON4PY_LABEL, message="diff-diffusion_init")
 def diffusion_init(
     vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
@@ -228,6 +235,7 @@ def diffusion_init(
 
 
 @icon4py_export.export
+@nvtx.annotate(color=DIFF_COLOR, category=ICON4PY_LABEL, message="diff-diffusion_run")
 def diffusion_run(
     w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],
