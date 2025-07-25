@@ -39,6 +39,9 @@ try:
             Allocate temporary arrays at SDFG initialization, when it is loaded
             from the binary library. The memory will be persistent across all SDFG
             calls and released only at application exit.
+        use_memory_pool:
+            Allocate temporaries in memory pool, currently only supported for GPU
+            (based on CUDA memory pool).
         use_zero_origin:
             When set to `True`, the SDFG lowering will not generate the start symbol
             of the field range. Select this option if all fields have zero origin.
@@ -59,6 +62,7 @@ try:
             blocking_dim=dims.KDim,
             blocking_size=10,
             make_persistent=False,
+            use_memory_pool=(True if gpu else False),
             use_zero_origin=True,
         )
 
