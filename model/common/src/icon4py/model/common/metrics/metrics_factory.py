@@ -59,8 +59,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
-        e_refin_ctrl: gtx.Field,
-        c_refin_ctrl: gtx.Field,
         rayleigh_type: int,
         rayleigh_coeff: float,
         exner_expol: float,
@@ -108,18 +106,24 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         c_owner_mask = gtx.as_field(
             (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
         )
-
+        c_refin_ctrl= gtx.as_field(
+            (dims.CellDim,), self._grid.refinement_control[dims.CellDim].ndarray
+        )
+        e_refin_ctrl= gtx.as_field(
+            (dims.EdgeDim,), self._grid.refinement_control[dims.EdgeDim].ndarray
+        )
+        # TODO : here need to check () or []
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
                     "topography": topography,
                     "vct_a": vct_a,
-                    "c_refin_ctrl": c_refin_ctrl,
-                    "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
                     "c_owner_mask": c_owner_mask,
                     "k_lev": k_index,
                     "e_lev": e_lev,
+                    "c_refin_ctrl": c_refin_ctrl,
+                    "e_refin_ctrl": e_refin_ctrl,
                 }
             )
         )
@@ -527,9 +531,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
                 ),
             },
             fields={attrs.WGTFAC_C: attrs.WGTFAC_C},
@@ -620,6 +624,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
+
             deps={
                 "c_refin_ctrl": "c_refin_ctrl",
             },
@@ -782,9 +787,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_max_nbhgt)
 
-        compute_diffusion_metrics_np = factory.NumpyFieldsProvider(
+        compute_diffusion_mask_and_coef = factory.NumpyFieldsProvider(
             func=functools.partial(
-                compute_diffusion_metrics.compute_diffusion_metrics, array_ns=self._xp
+                compute_diffusion_metrics.compute_diffusion_mask_and_coef, array_ns=self._xp
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -798,6 +803,33 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields=(
                 attrs.MASK_HDIFF,
                 attrs.ZD_DIFFCOEF_DSL,
+            ),
+            params={
+                "thslp_zdiffu": self._config["thslp_zdiffu"],
+                "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],
+                "cell_nudging": self._grid.start_index(
+                    h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING)
+                ),
+                "nlev": self._grid.num_levels,
+            },
+        )
+        self.register_provider(compute_diffusion_mask_and_coef)
+
+        compute_diffusion_intcoef_and_vertoffset = factory.NumpyFieldsProvider(
+            func=functools.partial(
+                compute_diffusion_metrics.compute_diffusion_intcoef_and_vertoffset,
+                array_ns=self._xp,
+            ),
+            deps={
+                "z_mc": attrs.Z_MC,
+                "max_nbhgt": attrs.MAX_NBHGT,
+                "c_owner_mask": "c_owner_mask",
+                "maxslp_avg": attrs.MAXSLP_AVG,
+                "maxhgtd_avg": attrs.MAXHGTD_AVG,
+            },
+            connectivities={"c2e2c": dims.C2E2CDim},
+            domain=(dims.C2E2CDim, dims.KDim),
+            fields=(
                 attrs.ZD_INTCOEF_DSL,
                 attrs.ZD_VERTOFFSET_DSL,
             ),
@@ -810,8 +842,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "nlev": self._grid.num_levels,
             },
         )
-
-        self.register_provider(compute_diffusion_metrics_np)
+        self.register_provider(compute_diffusion_intcoef_and_vertoffset)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
