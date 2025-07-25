@@ -9,9 +9,6 @@ import gt4py.next as gtx
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import astype, where
 
-from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
-    _mo_math_gradients_grad_green_gauss_cell_dsl,  # TODO should this be inlined here?
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2EC
 from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
