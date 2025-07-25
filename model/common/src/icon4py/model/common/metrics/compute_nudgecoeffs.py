@@ -18,13 +18,13 @@ from icon4py.model.common.type_alias import wpfloat
 def _compute_nudgecoeffs(
     refin_ctrl: fa.EdgeField[gtx.int32],
     grf_nudge_start_e: gtx.int32,
-    nudge_max_coeffs: wpfloat,
+    max_nudging_coefficient: wpfloat,
     nudge_efold_width: wpfloat,
     nudge_zone_width: gtx.int32,
 ) -> fa.EdgeField[wpfloat]:
     return where(
         ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
-        nudge_max_coeffs
+        max_nudging_coefficient
         * exp((-(astype(refin_ctrl - grf_nudge_start_e, wpfloat))) / (2.0 * nudge_efold_width)),
         0.0,
     )
@@ -36,7 +36,7 @@ def compute_nudgecoeffs(
     nudging_coefficients_for_edges: fa.EdgeField[wpfloat],
     refin_ctrl: fa.EdgeField[gtx.int32],
     grf_nudge_start_e: gtx.int32,
-    nudge_max_coeffs: wpfloat,
+    max_nudging_coefficient: wpfloat,
     nudge_efold_width: wpfloat,
     nudge_zone_width: gtx.int32,
     horizontal_start: gtx.int32,
@@ -46,7 +46,7 @@ def compute_nudgecoeffs(
     _compute_nudgecoeffs(
         refin_ctrl,
         grf_nudge_start_e,
-        nudge_max_coeffs,
+        max_nudging_coefficient,
         nudge_efold_width,
         nudge_zone_width,
         out=nudging_coefficients_for_edges,

@@ -219,7 +219,8 @@ class NonHydrostaticConfig:
         l_vert_nested: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
-        max_nudging_coeff: float = 0.02,
+        _nudge_max_coeff: float = None,  # default is set in __init__
+        max_nudging_coefficient: float = None,  # default is set in __init__
         fourth_order_divdamp_factor: float = 0.0025,
         fourth_order_divdamp_factor2: float = 0.004,
         fourth_order_divdamp_factor3: float = 0.004,
@@ -311,7 +312,30 @@ class NonHydrostaticConfig:
         #: parameters from other namelists:
 
         #: from mo_interpol_nml.f90
-        self.nudge_max_coeff: float = max_nudging_coeff
+
+        #: Parameter describing the lateral boundary nudging in limited area mode.
+        #:
+        #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
+        #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
+        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
+        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_nudge_max_coeff` or
+        #: the properly scaled one as `max_nudging_coefficient`,
+        #: see the comment in mo_interpol_nml.f90
+        #: TODO: This code is duplicated in `diffusion.py`, clean this up when implementing proper configuration handling.
+        if _nudge_max_coeff is not None and max_nudging_coefficient is not None:
+            raise ValueError(
+                "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
+            )
+        elif max_nudging_coefficient is not None:
+            self.max_nudging_coefficient: float = max_nudging_coefficient
+        elif _nudge_max_coeff is not None:
+            self.max_nudging_coefficient: float = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _nudge_max_coeff
+            )
+        else:  # default value in ICON
+            self.max_nudging_coefficient: float = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
+            )
 
         #: from mo_run_nml.f90
         #: use vertical nesting
@@ -1297,7 +1321,7 @@ class SolveNonhydro:
             gtx.int32(self._config.divdamp_order),
             self._grid.global_properties.mean_cell_area,
             second_order_divdamp_factor,
-            self._config.nudge_max_coeff,
+            self._config.max_nudging_coefficient,
             constants.DBL_EPS,
             out=(
                 self.fourth_order_divdamp_scaling_coeff,
