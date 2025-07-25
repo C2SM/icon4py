@@ -97,7 +97,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         zdiff_gradp = random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat)

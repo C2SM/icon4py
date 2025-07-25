@@ -55,7 +55,7 @@ class TestComputeMassFlux(StencilTest):
         return dict(mass_fl_e=mass_fl_e, z_theta_v_fl_e=z_theta_v_fl_e)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_rho_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ddqz_z_full_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

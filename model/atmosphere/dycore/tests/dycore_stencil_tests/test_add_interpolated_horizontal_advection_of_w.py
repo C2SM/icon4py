@@ -57,7 +57,7 @@ class TestAddInterpolatedHorizontalAdvectionOfW(helpers.StencilTest):
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_v_grad_w = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
         ddt_w_adv = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

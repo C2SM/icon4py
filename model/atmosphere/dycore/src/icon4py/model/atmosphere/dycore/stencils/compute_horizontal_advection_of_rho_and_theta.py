@@ -14,11 +14,14 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2EC
+from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
+    cell_horizontal_gradients_by_green_gauss_method,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_btraj(
+def _compute_backward_trajectory_from_edge_center(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
@@ -60,7 +63,7 @@ def _compute_btraj(
 
 
 @field_operator
-def _sten_16(
+def _compute_upwind_values_of_rho_and_theta_v_at_edges(
     p_vn: fa.EdgeKField[wpfloat],
     rho_ref_me: fa.EdgeKField[vpfloat],
     theta_ref_me: fa.EdgeKField[vpfloat],
@@ -143,18 +146,21 @@ def _compute_horizontal_advection_of_rho_and_theta(
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1."""
     (
-        z_grad_rth_1,
-        z_grad_rth_2,
-        z_grad_rth_3,
-        z_grad_rth_4,
-    ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
-        p_ccpr1=perturbed_rho_at_cells_on_model_levels,
-        p_ccpr2=perturbed_theta_v_at_cells_on_model_levels,
+        ddx_perturbed_theta_v,
+        ddy_perturbed_theta_v,
+    ) = cell_horizontal_gradients_by_green_gauss_method(
+        scalar_field=perturbed_theta_v_at_cells_on_model_levels,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
     )
 
-    (p_distv_bary_1, p_distv_bary_2) = _compute_btraj(
+    (ddx_perturbed_rho, ddy_perturbed_rho) = cell_horizontal_gradients_by_green_gauss_method(
+        scalar_field=perturbed_rho_at_cells_on_model_levels,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
+    )
+
+    (p_distv_bary_1, p_distv_bary_2) = _compute_backward_trajectory_from_edge_center(
         p_vn,
         p_vt,
         pos_on_tplane_e_1,
@@ -166,18 +172,21 @@ def _compute_horizontal_advection_of_rho_and_theta(
         p_dthalf,
     )
 
-    z_rho_e, z_theta_v_e = _sten_16(
+    (
+        rho_at_edges_on_model_levels,
+        theta_at_edges_on_model_levels,
+    ) = _compute_upwind_values_of_rho_and_theta_v_at_edges(
         p_vn,
         rho_ref_me,
         theta_ref_me,
         p_distv_bary_1,
         p_distv_bary_2,
-        z_grad_rth_1,
-        z_grad_rth_2,
-        z_grad_rth_3,
-        z_grad_rth_4,
+        ddx_perturbed_rho,
+        ddy_perturbed_rho,
+        ddx_perturbed_theta_v,
+        ddy_perturbed_theta_v,
         perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels,
     )
 
-    return z_rho_e, z_theta_v_e
+    return rho_at_edges_on_model_levels, theta_at_edges_on_model_levels

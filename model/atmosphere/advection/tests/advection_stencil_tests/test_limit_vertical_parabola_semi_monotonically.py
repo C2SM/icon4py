@@ -48,7 +48,7 @@ class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):
         return dict(p_face_up=q_face_up, p_face_low=q_face_low)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         l_limit = data_alloc.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})

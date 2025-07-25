@@ -123,7 +123,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         return dict(z_hydro_corr=z_hydro_corr)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32).asnumpy()
         rng = np.random.default_rng()
         for k in range(grid.num_levels):

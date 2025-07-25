@@ -83,7 +83,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         backend
     )(
         fourth_order_divdamp_scaling_coeff,
-        config.nudge_max_coeff,
+        config.max_nudging_coefficient,
         constants.DBL_EPS,
         out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
         offset_provider={},
@@ -1625,6 +1625,18 @@ def test_apply_divergence_damping_and_update_vn(
     second_order_divdamp_scaling_coeff = (
         sp_nh_init.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
     )
+    second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()
+    apply_2nd_order_divergence_damping = (
+        divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
+        and second_order_divdamp_scaling_coeff > 1.0e-6
+    )
+    apply_4th_order_divergence_damping = (
+        divdamp_order == dycore_states.DivergenceDampingOrder.FOURTH_ORDER
+        or (
+            divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
+            and second_order_divdamp_factor <= (4.0 * config.fourth_order_divdamp_factor)
+        )
+    )
     is_iau_active = config.is_iau_active
 
     vn_ref = sp_nh_exit.vn_new()
@@ -1650,15 +1662,14 @@ def test_apply_divergence_damping_and_update_vn(
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
-        fourth_order_divdamp_factor=config.fourth_order_divdamp_factor,
-        second_order_divdamp_factor=savepoint_nonhydro_init.divdamp_fac_o2(),
         advection_explicit_weight_parameter=savepoint_nonhydro_init.wgt_nnow_vel(),
         advection_implicit_weight_parameter=savepoint_nonhydro_init.wgt_nnew_vel(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
-        divdamp_order=divdamp_order,
+        apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
+        apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
         vertical_start=gtx.int32(0),
