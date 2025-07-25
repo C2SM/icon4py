@@ -16,7 +16,7 @@ from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 
 import numpy as np
-from gt4py.next import Dimension
+import  gt4py.next as gtx
 
 from icon4py.model.common import utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -108,18 +108,6 @@ class DecompositionInfo:
     def klevels(self):
         return self._klevels
 
-    @property
-    def num_cells(self):
-        return self._num_cells
-
-    @property
-    def num_edges(self):
-        return self._num_edges
-
-    @property
-    def num_vertices(self):
-        return self._num_vertices
-
     def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
@@ -144,10 +132,12 @@ class DecompositionInfo:
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
+    def global_to_local(self, dim:gtx.Dimension):
+
+    def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
-    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def global_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._global_index[dim]
@@ -158,10 +148,10 @@ class DecompositionInfo:
             case _:
                 raise NotImplementedError()
 
-    def halo_levels(self, dim: Dimension):
+    def halo_levels(self, dim: gtx.Dimension):
         return self._halo_levels[dim]
 
-    def halo_level_mask(self, dim: Dimension, level: DecompositionFlag):
+    def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag):
         return np.where(self._halo_levels[dim] == level, True, False)
 
 

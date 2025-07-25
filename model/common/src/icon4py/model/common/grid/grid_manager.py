@@ -74,6 +74,21 @@ CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 
+def _reduce_to_rank_local_size(full_size_neighbor_tables: dict[dims.FieldOffset, data_alloc.NDArray], decomposition_info:decomposition.DecompositionInfo)->dict[dims.FieldOffset, data_alloc.NDArray]:
+
+    def get_rank_local_values(k:gtx.FieldOffset, v:data_alloc.NDArray):
+        index_target_dim = k.source
+        index_source_dim = k.target[0]
+
+        index = decomposition_info.global_index(index_source_dim)
+        return v[index, :]
+
+    return {k: get_rank_local_values(k, v) for k, v in full_size_neighbor_tables.items()}
+
+
+
+
+
 class GridManager:
     """
     Read ICON grid file and set up grid topology, refinement information and geometry fields.
@@ -354,17 +369,22 @@ class GridManager:
 
         """
         xp = data_alloc.import_array_ns(backend)
-
+        ## FULL GRID PROPERTIES
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         global_grid_size = self._read_full_grid_size()
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
+        refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
+        limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
 
+        # DECOMPOSITION
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
         cells_to_rank_mapping = self._decompose(
             cell_to_cell_neighbors,
             self._run_properties.comm_size,
         )
+        # HALO CONSTRUCTION
         # TODO: (magdalena) reduce the set of neighbor tables used in the halo construction
         # TODO: (magdalena) this is all numpy currently!
         neighbor_tables_for_halo_construction = {
@@ -383,19 +403,21 @@ class GridManager:
         decomposition_info = halo_constructor(cells_to_rank_mapping)
 
         ## TODO from here do local reads (and halo exchanges!!)
+        # CONSTRUCT LOCAL PATCH
 
-        neighbor_tables = neighbor_tables_for_halo_construction
-        neighbor_tables[dims.E2V] = self._get_index_field(gridfile.ConnectivityName.E2V)
+        neighbor_tables = _reduce_to_rank_local_size(neighbor_tables_for_halo_construction) # reduce locally? or read again
+        edge_index = decomposition_info.global_index(dims.EdgeDim)
+        neighbor_tables[dims.E2V] = self._get_index_field(gridfile.ConnectivityName.E2V, indices = edge_index)
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
-        _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
+
+
         _derived_connectivities = functools.partial(
             _get_derived_connectivities,
             array_ns=xp,
         )
 
-        refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
-        limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
+
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
         start, end, _ = self._read_start_end_indices()
         grid_config = base.GridConfig(
@@ -475,8 +497,8 @@ class GridManager:
             refinement_control=refinement_fields,
         )
 
-    def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
-        field = self._reader.int_variable(field, transpose=transpose)
+    def _get_index_field(self, field: gridfile.GridFileName, indices: np.ndarray|None = None, transpose=True, apply_offset=True):
+        field = self._reader.int_variable(field, indices=indices, transpose=transpose)
         if apply_offset:
             field = field + self._transformation(field)
         return field
