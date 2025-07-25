@@ -54,7 +54,7 @@ def initialized_writer(
         vct_a=gtx.as_field((dims.KDim,), heights),
         vct_b=None,
     )
-    horizontal = grid.config.horizontal_config
+    horizontal = grid.config.horizontal_size
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
     writer = NETCDFWriter(
         fname,

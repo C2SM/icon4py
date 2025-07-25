@@ -12,10 +12,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.testing.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
-    check_comm_size,
-    processor_props,
-)
+from icon4py.model.testing import parallel_helpers
 
 from .. import utils
 
@@ -28,7 +25,7 @@ except ImportError:
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props):  # noqa: F811  # fixture
+def test_props(processor_props):
     """dummy test to check whether the MPI initialization and GHEX setup works."""
     import ghex.context as ghex
 
@@ -59,9 +56,9 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_distributed_local(processor_props, dim, icon_grid, caplog):  # noqa: F811  # fixture
+def test_distributed_local(processor_props, dim, icon_grid, caplog):
     caplog.set_level(logging.INFO)
-    check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     # local still runs entire field:
     assert icon_grid.start_index(domain) == 0
@@ -117,8 +114,8 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
-def test_distributed_halo(processor_props, dim, marker, icon_grid):  # noqa: F811  # fixture
-    check_comm_size(processor_props)
+def test_distributed_halo(processor_props, dim, marker, icon_grid):
+    parallel_helpers.check_comm_size(processor_props)
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     domain = h_grid.domain(dim)(marker)
     start_index = icon_grid.start_index(domain)

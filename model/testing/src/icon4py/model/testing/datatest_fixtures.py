@@ -17,9 +17,11 @@ def experiment():
     return dt_utils.REGIONAL_EXPERIMENT
 
 
-@pytest.fixture(params=[False], scope="session")
+@pytest.fixture(scope="session", params=[False])
 def processor_props(request):
-    return dt_utils.get_processor_properties_for_run(decomposition.SingleNodeRun())
+    with_mpi = request.param
+    runtype = decomposition.get_runtype(with_mpi=with_mpi)
+    yield decomposition.get_processor_properties(runtype)
 
 
 @pytest.fixture(scope="session")
@@ -61,7 +63,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             processor_props.comm.barrier()
     except KeyError as err:
         raise AssertionError(
-            f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
+            f"No data URL for experiment {experiment} and comm size {processor_props.comm_size} available."
         ) from err
 
 
