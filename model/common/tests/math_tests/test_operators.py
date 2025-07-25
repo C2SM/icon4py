@@ -65,7 +65,7 @@ class TestNabla2OnCellK(StencilTest):
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         psi_c = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
         nabla2_psi_c = zero_field(grid, dims.CellDim, dims.KDim)

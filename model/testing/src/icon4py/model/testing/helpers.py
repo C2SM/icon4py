@@ -6,10 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import dataclasses
 import functools
 import hashlib
 import typing
-from dataclasses import dataclass, field
 from typing import Callable, ClassVar, Optional
 
 import gt4py.next as gtx
@@ -24,9 +24,25 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+@dataclasses.dataclass
+class _ConnectivityConceptFixer:
+    """
+    This works around a misuse of dimensions as an identifier for connectivities.
+    Since GT4Py might change the way the mesh is represented, we could
+    keep this for a while, otherwise we need to touch all StencilTests.
+    """
+
+    _grid: base.Grid
+
+    def __getitem__(self, dim: gtx.Dimension | str) -> np.ndarray:
+        if isinstance(dim, gtx.Dimension):
+            dim = dim.value
+        return self._grid.connectivities[dim].asnumpy()
+
+
 @pytest.fixture(scope="session")
-def connectivities_as_numpy(grid) -> dict[gtx.Dimension, np.ndarray]:
-    return {dim: data_alloc.as_numpy(table) for dim, table in grid.neighbor_tables.items()}
+def connectivities_as_numpy(grid: base.Grid) -> dict[gtx.Dimension, np.ndarray]:
+    return _ConnectivityConceptFixer(grid)
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
@@ -77,7 +93,7 @@ def allocate_data(
 
 def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
-    grid: base.BaseGrid,
+    grid: base.Grid,
     backend: gtx_backend.Backend | None,
 ):
     for marker in markers:
@@ -103,11 +119,11 @@ def apply_markers(
                     )
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Output:
     name: str
-    refslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
-    gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
+    refslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
+    gtslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
 
 
 def run_verify_and_benchmark(
@@ -164,7 +180,7 @@ def _verify_stencil_test(
 
 def _test_and_benchmark(
     self,
-    grid: base.BaseGrid,
+    grid: base.Grid,
     backend: gtx_backend.Backend,
     connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field],

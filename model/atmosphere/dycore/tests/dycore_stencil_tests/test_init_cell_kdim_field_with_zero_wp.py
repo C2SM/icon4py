@@ -36,7 +36,7 @@ class TestInitCellKdimFieldWithZeroWp(StencilTest):
         return dict(field_with_zero_wp=field_with_zero_wp)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         field_with_zero_wp = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(

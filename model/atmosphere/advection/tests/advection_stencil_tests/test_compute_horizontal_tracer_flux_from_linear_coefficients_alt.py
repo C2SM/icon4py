@@ -58,7 +58,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTe
         return dict(p_out_e=p_out_e)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         z_lsq_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_lsq_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_lsq_coeff_3 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

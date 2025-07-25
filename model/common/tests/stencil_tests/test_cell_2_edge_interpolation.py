@@ -41,7 +41,7 @@ class TestCell2EdgeInterpolation(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         in_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         coeff = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
         out_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
