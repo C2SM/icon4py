@@ -32,8 +32,10 @@ from icon4py.model.common.states import data
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils, grid_utils
 
-
 # setting backend to fieldview embedded here.
+from ..fixtures import test_path
+
+
 backend = None
 UNLIMITED = None
 simple_grid = simple.simple_grid()

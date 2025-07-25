@@ -16,6 +16,7 @@ from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers as test_helpers, helpers as testing_helpers
+from icon4py.model.testing.fixtures.datatest import backend
 
 
 def test_cross_product(backend):

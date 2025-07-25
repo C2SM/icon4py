@@ -21,6 +21,13 @@ from icon4py.model.common.metrics.metric_fields import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+    metrics_savepoint,
+)
 
 
 @pytest.mark.level("unit")

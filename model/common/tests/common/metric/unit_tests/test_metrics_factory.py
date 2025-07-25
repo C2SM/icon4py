@@ -25,6 +25,13 @@ from icon4py.model.testing import (
     helpers as test_helpers,
     serialbox,
 )
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    grid_savepoint,
+    icon_grid,
+    metrics_savepoint,
+    topography_savepoint,
+)
 
 
 metrics_factories = {}

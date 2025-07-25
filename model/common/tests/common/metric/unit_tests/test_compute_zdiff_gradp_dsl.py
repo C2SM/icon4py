@@ -16,6 +16,12 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_flat_idx,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    icon_grid,
+    interpolation_savepoint,
+    metrics_savepoint,
+)
 from icon4py.model.testing.helpers import (
     dallclose,
 )

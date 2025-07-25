@@ -24,6 +24,12 @@ from icon4py.model.testing import (
     grid_utils as gridtest_utils,
     helpers as test_helpers,
 )
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+)
 
 
 @pytest.mark.level("unit")
