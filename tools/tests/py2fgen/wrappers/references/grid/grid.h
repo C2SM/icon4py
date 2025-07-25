@@ -38,4 +38,4 @@ extern int grid_init_wrapper(
     int primal_normal_x_size_0, double *primal_normal_y,
     int primal_normal_y_size_0, double mean_cell_area, int comm_id,
     int num_vertices, int num_cells, int num_edges, int vertical_size,
-    int limited_area, int on_gpu);
+    int limited_area, int backend, int on_gpu);
