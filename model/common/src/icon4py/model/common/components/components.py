@@ -46,8 +46,7 @@ class Component(Protocol[Ins, Outs]):
         ...
         ...     def __call__(
         ...         self, state: dict[RequiredInputs, model.DataField], time_step: datetime.datetime
-        ...     ) -> dict[ProducedOutputs, model.DataField]:
-        ...         ...
+        ...     ) -> dict[ProducedOutputs, model.DataField]: ...
 
 
     TODO (@halungge): add more consistency checks.

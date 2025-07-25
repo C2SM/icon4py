@@ -11,14 +11,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import (
-    E2C,
-    E2EC,
-    E2V,
-    E2CDim,
-    E2VDim,
-    Koff,
-)
+from icon4py.model.common.dimension import E2C, E2EC, E2V, E2CDim, E2VDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

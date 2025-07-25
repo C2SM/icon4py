@@ -85,9 +85,9 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
         horizontal_kinetic_energy_at_cells_on_model_levels_cp[
             horizontal_start:horizontal_end, :
         ] = horizontal_kinetic_energy_at_cells_on_model_levels[horizontal_start:horizontal_end, :]
-        contravariant_corrected_w_at_cells_on_half_levels_cp[
-            horizontal_start:horizontal_end, :
-        ] = contravariant_corrected_w_at_cells_on_half_levels[horizontal_start:horizontal_end, :]
+        contravariant_corrected_w_at_cells_on_half_levels_cp[horizontal_start:horizontal_end, :] = (
+            contravariant_corrected_w_at_cells_on_half_levels[horizontal_start:horizontal_end, :]
+        )
 
         return dict(
             horizontal_kinetic_energy_at_cells_on_model_levels=horizontal_kinetic_energy_at_cells_on_model_levels_cp,

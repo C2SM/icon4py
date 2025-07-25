@@ -17,10 +17,7 @@ import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
 from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn_cached,
-    run_gtfn_gpu_cached,
-)
+from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition

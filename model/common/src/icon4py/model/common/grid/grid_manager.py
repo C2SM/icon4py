@@ -15,16 +15,8 @@ import gt4py.next.backend as gtx_backend
 import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import (
-    definitions as decomposition,
-)
-from icon4py.model.common.grid import (
-    base,
-    gridfile,
-    icon,
-    refinement,
-    vertical as v_grid,
-)
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import base, gridfile, icon, refinement, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -41,8 +33,7 @@ class IndexTransformation(Protocol):
     def __call__(
         self,
         array: data_alloc.NDArray,
-    ) -> data_alloc.NDArray:
-        ...
+    ) -> data_alloc.NDArray: ...
 
 
 class NoTransformation(IndexTransformation):
