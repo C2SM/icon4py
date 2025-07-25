@@ -12,13 +12,13 @@ import logging as log
 from types import ModuleType
 from typing import TYPE_CHECKING, Optional, TypeAlias, Union
 
-import gt4py._core.definitions as gtx_core_defs  # TODO(havogt): avoid this private import
 import numpy as np
 import numpy.typing as npt
 from gt4py import next as gtx
 from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 
 from icon4py.model.common import type_alias as ta
+from icon4py.model.common.utils import device_utils
 
 
 if TYPE_CHECKING:
@@ -49,16 +49,6 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
         return cp.asnumpy(array)
 
 
-def is_cupy_device(
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-) -> bool:
-    # TODO(havogt): Add to gt4py `gtx_allocators.is_field_buffer_allocation_util_for(...)`
-    # and consider exposing CUPY_DEVICE_TYPE or move this function to gt4py.
-    if (allocator := gtx_allocators.get_allocator(allocator, default=None)) is not None:
-        return allocator.__gt_device_type__ is gtx_core_defs.CUPY_DEVICE_TYPE
-    return False
-
-
 def array_ns(try_cupy: bool) -> ModuleType:
     if try_cupy:
         try:
@@ -74,7 +64,7 @@ def array_ns(try_cupy: bool) -> ModuleType:
 
 def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
-    return array_ns(is_cupy_device(allocator))
+    return array_ns(device_utils.is_cupy_device(allocator))
 
 
 def as_field(
