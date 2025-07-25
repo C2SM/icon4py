@@ -67,6 +67,71 @@ horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType(
 dycore_consts: Final = constants.PhysicsConstants()
 
 
+# TODO better name
+@gtx.field_operator
+def level_switch(
+    nflatlev: gtx.int32,
+    nflat_gradp: gtx.int32,
+    on_flatlevels: fa.EdgeKField[ta.wpfloat],
+    between_flat_and_flatgradp: fa.EdgeKField[ta.wpfloat],
+    below_flatgradp: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
+    return concat_where(
+        dims.KDim < nflatlev,
+        on_flatlevels,
+        concat_where(nflat_gradp + 1 <= dims.KDim, below_flatgradp, between_flat_and_flatgradp),
+    )
+
+
+@gtx.field_operator
+def _compute_horizontal_pressure_gradient(
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
+    hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
+    ddxn_z_full: fa.EdgeKField[ta.vpfloat],
+    c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    ikoffset: gtx.Field[[dims.ECDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[[dims.ECDim, dims.KDim], ta.vpfloat],
+    ipeidx_dsl: fa.EdgeKField[bool],
+    pg_exdist: fa.EdgeKField[ta.vpfloat],
+    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
+    nflatlev: gtx.int32,
+    nflat_gradp: gtx.int32,
+) -> fa.EdgeKField[ta.wpfloat]:
+    # Note: we only support `TAYLOR_HYDRO`
+    horizontal_pressure_gradient = level_switch(
+        nflatlev,
+        nflat_gradp,
+        _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+        ),
+        _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+            ddxn_z_full=ddxn_z_full,
+            c_lin_e=c_lin_e,
+            z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        ),
+        _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+            zdiff_gradp=zdiff_gradp,
+            ikoffset=ikoffset,
+            z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            z_dexner_dz_c_2=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        ),
+    )
+
+    return _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
+        ipeidx_dsl=ipeidx_dsl,
+        pg_exdist=pg_exdist,
+        z_hydro_corr=hydrostatic_correction_on_lowest_level,
+        z_gradh_exner=horizontal_pressure_gradient,
+    )
+
+
 @gtx.field_operator
 def apply_on_vertical_level(
     nflatlev: gtx.int32,

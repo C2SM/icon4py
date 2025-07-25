@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -20,6 +19,20 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_avg_vn_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    e_flx_avg: np.ndarray,
+    vn: np.ndarray,
+) -> np.ndarray:
+    e2c2eO = connectivities[dims.E2C2EODim]
+    geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
+    z_vn_avg = np.sum(
+        np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0), axis=1
+    )
+
+    return z_vn_avg
+
+
 class TestComputeAvgVn(StencilTest):
     PROGRAM = compute_avg_vn
     OUTPUTS = ("z_vn_avg",)
@@ -30,13 +43,9 @@ class TestComputeAvgVn(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         e_flx_avg: np.ndarray,
         vn: np.ndarray,
-        **kwargs: Any,
     ) -> dict:
-        e2c2eO = connectivities[dims.E2C2EODim]
-        geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
-        z_vn_avg = np.sum(
-            np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0), axis=1
-        )
+        z_vn_avg = compute_avg_vn_numpy(connectivities, e_flx_avg, vn)
+
         return dict(z_vn_avg=z_vn_avg)
 
     @pytest.fixture
