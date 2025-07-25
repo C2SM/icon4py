@@ -103,7 +103,7 @@ def test_calculate_divdamp_fields(backend):
     divdamp_order = gtx.int32(24)
     mean_cell_area = 1000.0
     second_order_divdamp_factor = 0.7
-    nudge_max_coeff = 0.3
+    max_nudging_coefficient = 0.3
 
     scaled_ref = fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
         divdamp_field.asnumpy(), second_order_divdamp_factor, mean_cell_area
@@ -111,7 +111,7 @@ def test_calculate_divdamp_fields(backend):
 
     reduced_fourth_order_divdamp_coeff_at_nest_boundary_ref = (
         calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
-            nudge_max_coeff, scaled_ref
+            max_nudging_coefficient, scaled_ref
         )
     )
 
@@ -120,7 +120,7 @@ def test_calculate_divdamp_fields(backend):
         divdamp_order,
         mean_cell_area,
         second_order_divdamp_factor,
-        nudge_max_coeff,
+        max_nudging_coefficient,
         constants.DBL_EPS,
         out=(
             fourth_order_divdamp_scaling_coeff,

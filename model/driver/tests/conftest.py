@@ -110,7 +110,7 @@ def r04b09_diffusion_config(ndyn_substeps) -> diffusion.DiffusionConfig:
         smagorinski_scaling_factor=0.025,
         zdiffu_t=True,
         velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
+        _nudge_max_coeff=0.075,
         n_substeps=ndyn_substeps,
     )
 
