@@ -11,33 +11,34 @@ import random
 
 import pytest
 
-from icon4py.model.testing.fixtures import (
-    backend,
-    connectivities_as_numpy,
-    decomposition_info,
-    experiment,
-    grid,
-)
-from icon4py.model.testing.fixtures.datatest import (
-    damping_height,
-    data_provider,
-    download_ser_data,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    istep_exit,
-    istep_init,
-    metrics_savepoint,
-    ndyn_substeps,
-    processor_props,
-    ranked_data_path,
-    savepoint_nonhydro_exit,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_step_final,
-    savepoint_velocity_init,
-    step_date_exit,
-    step_date_init,
-)
+
+# from icon4py.model.testing.fixtures import (
+#     backend,
+#     connectivities_as_numpy,
+#     decomposition_info,
+#     experiment,
+#     grid,
+# )
+# from icon4py.model.testing.fixtures.datatest import (
+#     damping_height,
+#     data_provider,
+#     download_ser_data,
+#     grid_savepoint,
+#     icon_grid,
+#     interpolation_savepoint,
+#     istep_exit,
+#     istep_init,
+#     metrics_savepoint,
+#     ndyn_substeps,
+#     processor_props,
+#     ranked_data_path,
+#     savepoint_nonhydro_exit,
+#     savepoint_nonhydro_init,
+#     savepoint_nonhydro_step_final,
+#     savepoint_velocity_init,
+#     step_date_exit,
+#     step_date_init,
+# )
 
 
 @pytest.fixture

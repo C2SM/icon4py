@@ -23,29 +23,29 @@ from icon4py.model.common.states import data, metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from ...fixtures import random_name, test_path
-from . import test_io
+from .. import utils as test_io_utils
 
 
 @pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])
 def test_filter_by_standard_name(value):
-    state = test_io.model_state(test_io.simple_grid)
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
     assert filter_by_standard_name(state, value) == {value: state[value]}
 
 
 def test_filter_by_standard_name_key_differs_from_name():
-    state = test_io.model_state(test_io.simple_grid)
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
     assert filter_by_standard_name(state, "virtual_potential_temperature") == {
         "theta_v": state["theta_v"]
     }
 
 
 def test_filter_by_standard_name_non_existing_name():
-    state = test_io.model_state(test_io.simple_grid)
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
     assert filter_by_standard_name(state, "does_not_exist") == {}
 
 
 def initialized_writer(
-    test_path, random_name, grid=test_io.simple_grid
+    test_path, random_name, grid=test_io_utils.simple_grid
 ) -> tuple[NETCDFWriter, grid_def.Grid]:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
@@ -141,7 +141,7 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
     assert len(dataset.variables[writers.TIME]) == 0
     assert "air_density" not in dataset.variables
 
-    state = dict(air_density=test_io.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
     dataset.append(state, time)
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
@@ -161,7 +161,7 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
 def test_writer_append_timeslice_to_existing_var(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
-    state = dict(air_density=test_io.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
     dataset.append(state, time)
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
