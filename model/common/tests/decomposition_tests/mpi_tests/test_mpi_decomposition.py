@@ -39,7 +39,7 @@ mpirun -np 2 pytest -v --with-mpi -k mpi_tests/
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props):  # fixture
+def test_props(processor_props):
     assert processor_props.comm
 
 
@@ -216,16 +216,16 @@ def test_create_single_node_runtime_without_mpi(
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
 def test_exchange_on_dummy_data(
-    processor_props,  # fixture
-    decomposition_info,  # fixture
-    grid_savepoint,  # fixture
-    metrics_savepoint,  # fixture
+    processor_props,
+    decomposition_info,
+    grid_savepoint,
+    metrics_savepoint,
     dimension,
     caplog,
 ):
     caplog.set_level(logging.WARN, __name__)
     exchange = definitions.create_exchange(processor_props, decomposition_info)
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    grid = grid_savepoint.construct_icon_grid()
 
     number = processor_props.rank + 10.0
     input_field = data_alloc.constant_field(

@@ -45,7 +45,7 @@ class TestComputeTangentialWind(StencilTest):
         return dict(vt=vt)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
         vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

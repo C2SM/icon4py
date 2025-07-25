@@ -255,7 +255,7 @@ def test_grid_manager_eval_c2e2c(caplog, grid_savepoint, grid_file, experiment, 
 def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
-    serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    serialized_grid = grid_savepoint.construct_icon_grid()
     assert np.allclose(
         grid.get_connectivity("C2E2CO").asnumpy(),
         serialized_grid.get_connectivity("C2E2CO").asnumpy(),
@@ -275,7 +275,7 @@ def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment,
 def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, backend):
     caplog.set_level(logging.DEBUG)
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
-    serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    serialized_grid = grid_savepoint.construct_icon_grid()
     serialized_e2c2e = serialized_grid.get_connectivity("E2C2E").asnumpy()
     serialized_e2c2eO = serialized_grid.get_connectivity("E2C2EO").asnumpy()
     assert has_invalid_index(serialized_e2c2e) == grid.limited_area
@@ -393,7 +393,7 @@ def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
         global_num_cells
         == utils.run_grid_manager(
             grid_file, keep_skip_values=True, backend=backend
-        ).grid.global_num_cells
+        ).grid.global_properties.num_cells
     )
 
 
@@ -406,7 +406,7 @@ def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
 def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
     caplog.set_level(logging.DEBUG)
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
-    serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    serialized_grid = grid_savepoint.construct_icon_grid()
     assert np.allclose(
         grid.get_connectivity("C2E2C2E").asnumpy(),
         serialized_grid.get_connectivity("C2E2C2E").asnumpy(),
