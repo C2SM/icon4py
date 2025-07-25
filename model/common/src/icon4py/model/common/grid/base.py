@@ -127,7 +127,8 @@ class Grid:
             [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
             gtx_common.NeighborTable,
         ]
-    ] = _default_1d_sparse_connectivity_constructor
+        | None
+    ] = None
 
     def __post_init__(
         self,
@@ -135,8 +136,11 @@ class Grid:
         sparse_1d_connectivity_constructor: Callable[
             [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
             gtx_common.NeighborTable,
-        ],
+        ]
+        | None,
     ):
+        if sparse_1d_connectivity_constructor is None:
+            sparse_1d_connectivity_constructor = _default_1d_sparse_connectivity_constructor
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
         # 1d sparse connectivities
@@ -175,11 +179,10 @@ class Grid:
             if gtx_common.is_neighbor_table(connectivity):
                 for dim, size in zip(connectivity.domain.dims, connectivity.shape, strict=True):
                     if dim in sizes:
-                        ...
-                        # TODO(havogt) currently the blueline granules violates the following assumption on sizes
-                        # because connectivities have `nproma` size. Will be re-enabled in a follow-up commit.
-                        # if sizes[dim] != size:
-                        #     raise ValueError(f"Inconsistent sizes for {dim}: expected {sizes[dim]}, got {size}.")  # noqa: ERA001
+                        if sizes[dim] != size:
+                            raise ValueError(
+                                f"Inconsistent sizes for {dim}: expected {sizes[dim]}, got {size}."
+                            )
                     else:
                         sizes[dim] = size
             elif isinstance(connectivity, gtx.Dimension):

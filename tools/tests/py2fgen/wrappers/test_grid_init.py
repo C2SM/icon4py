@@ -12,7 +12,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.tools.py2fgen import test_utils
-from icon4py.tools.py2fgen.wrappers import grid_wrapper
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper
 
 
 @pytest.fixture
@@ -144,6 +144,7 @@ def grid_init(grid_savepoint):
         e_owner_mask=e_owner_mask,
         v_owner_mask=v_owner_mask,
         comm_id=None,
+        backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 
 

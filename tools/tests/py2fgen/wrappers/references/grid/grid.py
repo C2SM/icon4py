@@ -126,6 +126,7 @@ def grid_init_wrapper(
     num_edges,
     vertical_size,
     limited_area,
+    backend,
     on_gpu,
 ):
     try:
@@ -429,6 +430,7 @@ def grid_init_wrapper(
             num_edges=num_edges,
             vertical_size=vertical_size,
             limited_area=limited_area,
+            backend=backend,
         )
 
         if __debug__:
