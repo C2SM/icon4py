@@ -147,18 +147,10 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        first_timer = (
-            Timer("first_time_step", dp=6)
-            if profiling is not None and profiling.skip_first_timestep
-            else None
-        )
-        rest_timer = Timer(self._full_name(self._integrate_one_time_step), dp=6)
+        timer_first_timestep = Timer("TimeLoop: first time step", dp=6)
+        timer_after_first_timestep = Timer("TimeLoop: after first time step", dp=6)
         for time_step in range(self._n_time_steps):
-            timer = (
-                first_timer
-                if (time_step == 0 and profiling is not None and profiling.skip_first_timestep)
-                else rest_timer
-            )
+            timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
             if profiling is not None:
                 if not profiling.skip_first_timestep or time_step > 0:
                     gtx_config.COLLECT_METRICS_LEVEL = profiling.gt4py_metrics_level
@@ -197,9 +189,8 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
-        if first_timer is not None:
-            first_timer.summary(True)
-        rest_timer.summary(True)
+        timer_first_timestep.summary(True)
+        timer_after_first_timestep.summary(True)
         if profiling is not None and profiling.gt4py_metrics_level > gtx_metrics.DISABLED:
             print(gtx_metrics.dumps())
             gtx_metrics.dump_json(profiling.gt4py_metrics_output_file)
