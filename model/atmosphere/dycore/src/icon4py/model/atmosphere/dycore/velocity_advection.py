@@ -237,7 +237,7 @@ class VelocityAdvection:
         max_vertical_cfl = float(
             self.vertical_cfl.array_ns.max(
                 self.vertical_cfl.ndarray[
-                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo
+                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
                 ]
             )
         )
@@ -334,7 +334,7 @@ class VelocityAdvection:
         max_vertical_cfl = float(
             self.vertical_cfl.array_ns.max(
                 self.vertical_cfl.ndarray[
-                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo
+                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
                 ]
             )
         )
