@@ -624,6 +624,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
+
             deps={
                 "c_refin_ctrl": "c_refin_ctrl",
             },

@@ -38,7 +38,6 @@ from .utils import (
 )
 import icon4py.model.common.states.prognostic_state as prognostics
 
-# TODO (Yilu)
 from icon4py.model.common.grid import geometry as grid_geometry
 
 grid_functionality = {dt_utils.R02B04_GLOBAL: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
@@ -156,9 +155,8 @@ def metrics_factory_params(
 @pytest.mark.parametrize(
     "grid_file",
     [
-        (
-            dt_utils.R02B04_GLOBAL
-        ),
+        #(dt_utils.R02B04_GLOBAL),
+        (dt_utils.REGIONAL_GRIDFILE),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])  # TODO: the default value is 5
@@ -181,22 +179,27 @@ def test_run_diffusion_benchmark(
     dtime = 10
     orchestration = False
     # TODO (Yilu): for now we use the default configuration, later we can add more configurations
+    # TODO (Yilu): later we will use the configuration from the grid file
     config=diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
-        zdiffu_t=False,
         type_t_diffu=2,
         type_vn_diffu=1,
         hdiff_efdt_ratio=24.0,
+        hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        hdiff_temp=True,
+        zdiffu_t=True,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
+        velocity_boundary_diffusion_denom=150.0,
+        max_nudging_coeff=0.075,
         n_substeps=ndyn_substeps,
+        shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
+
     #config = construct_diffusion_config(grid_file, ndyn_substeps)
     diffusion_parameters = diffusion.DiffusionParams(config)
-
-    #nc4.Dataset(grid_file, "r", format="NETCDF4")
 
     # run the grid manager to get the grid, coordinates, geometry_fields
     grid_manager = grid_utils.get_grid_manager(grid_file=grid_file, num_levels=num_levels, keep_skip_values=True,backend=backend)

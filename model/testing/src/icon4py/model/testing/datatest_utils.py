@@ -20,6 +20,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 DEFAULT_TEST_DATA_FOLDER = "testdata"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
+REGIONAL_GRIDFILE = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
 R02B07_GLOBAL = "r02b07_global"
 ICON_CH2_SMALL = "mch_opr_r4b7"
