@@ -200,7 +200,7 @@ class TimeLoop:
         if first_timer is not None:
             first_timer.summary(True)
         rest_timer.summary(True)
-        if profiling is not None and profiling.gt4py_metrics_level > gtx_metrics.NONE:
+        if profiling is not None and profiling.gt4py_metrics_level > gtx_metrics.DISABLED:
             print(gtx_metrics.dumps())
             gtx_metrics.dump_json(profiling.gt4py_metrics_output_file)
 
