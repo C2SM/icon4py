@@ -62,7 +62,7 @@ try:
             blocking_dim=dims.KDim,
             blocking_size=10,
             make_persistent=False,
-            use_memory_pool=True,
+            use_memory_pool=(True if gpu else False),
             use_zero_origin=True,
         )
 
