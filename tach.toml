@@ -69,9 +69,7 @@ depends_on = []
 
 [[modules]]
 path = "icon4py.tools.common"
-depends_on = [
-    { path = "icon4py.model.common" },
-]
+
 
 [[modules]]
 path = "icon4py.tools.py2fgen"
