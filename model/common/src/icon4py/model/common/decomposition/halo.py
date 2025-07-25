@@ -23,6 +23,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 
+def _value(k: gtx.FieldOffset | str):
+    return k.value if isinstance(k, gtx.FieldOffset) else k
+
+
 @runtime_checkable
 class HaloConstructor(Protocol):
     """Callable that takes a mapping from faces (aka cells) to ranks"""
@@ -47,9 +51,9 @@ class NoHalos(HaloConstructor):
         create_arrays = functools.partial(_create_dummy_decomposition_arrays, array_ns=xp)
         decomposition_info = defs.DecompositionInfo(klevels=self._num_levels)
 
-        decomposition_info.with_dimension(dims.EdgeDim, *create_arrays(self._size.num_edges))
-        decomposition_info.with_dimension(dims.CellDim, *create_arrays(self._size.num_cells))
-        decomposition_info.with_dimension(dims.VertexDim, *create_arrays(self._size.num_vertices))
+        decomposition_info.set_dimension(dims.EdgeDim, *create_arrays(self._size.num_edges))
+        decomposition_info.set_dimension(dims.CellDim, *create_arrays(self._size.num_cells))
+        decomposition_info.set_dimension(dims.VertexDim, *create_arrays(self._size.num_vertices))
         return decomposition_info
 
 
@@ -66,7 +70,7 @@ class IconLikeHaloConstructor(HaloConstructor):
     def __init__(
         self,
         run_properties: defs.ProcessProperties,
-        connectivities: dict[gtx.Dimension, data_alloc.NDArray],
+        connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
         num_levels,
         backend: Optional[gtx_backend.Backend] = None,
     ):
@@ -81,32 +85,33 @@ class IconLikeHaloConstructor(HaloConstructor):
         self._xp = data_alloc.import_array_ns(backend)
         self._num_levels = num_levels
         self._props = run_properties
-        self._connectivities = connectivities
+
+        self._connectivities = {_value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
 
     @property
     def face_face_connectivity(self):
-        return self._connectivity(dims.C2E2CDim)
+        return self._connectivity(dims.C2E2C.value)
 
     @property
     def edge_face_connectivity(self):
-        return self._connectivity(dims.E2CDim)
+        return self._connectivity(dims.E2C)
 
     @property
     def face_edge_connectivity(self):
-        return self._connectivity(dims.C2EDim)
+        return self._connectivity(dims.C2E)
 
     @property
     def node_edge_connectivity(self):
-        return self._connectivity(dims.V2EDim)
+        return self._connectivity(dims.V2E)
 
     @property
     def node_face_connectivity(self):
-        return self._connectivity(dims.V2CDim)
+        return self._connectivity(dims.V2C)
 
     @property
     def face_node_connectivity(self):
-        return self._connectivity(dims.C2VDim)
+        return self._connectivity(dims.C2V)
 
     def _validate_mapping(self, face_to_rank_mapping: data_alloc.NDArray):
         # validate the distribution mapping:
@@ -128,51 +133,50 @@ class IconLikeHaloConstructor(HaloConstructor):
     def _assert_all_neighbor_tables(self):
         # make sure we have all connectivity arrays used in the halo construction
         relevant_dimension = [
-            dims.C2E2CDim,
-            dims.E2CDim,
-            dims.C2EDim,
-            dims.C2VDim,
-            dims.V2CDim,
-            dims.V2EDim,
+            dims.C2E2C,
+            dims.E2C,
+            dims.C2E,
+            dims.C2V,
+            dims.V2C,
+            dims.V2E,
         ]
         for d in relevant_dimension:
             assert (
-                d in self._connectivities.keys()
+                d.value in self._connectivities.keys()
             ), f"Table for {d} is missing from the neighbor table array."
 
-    def _connectivity(self, dim: gtx.Dimension) -> data_alloc.NDArray:
+    def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
         try:
-            conn_table = self._connectivities[dim]
-            return conn_table
+            conn_table = self._connectivities.get(_value(offset))
             return conn_table
         except KeyError as err:
             raise exceptions.MissingConnectivity(
-                f"Connectivity for offset {dim} is not available"
+                f"Connectivity for offset {offset} is not available"
             ) from err
 
-    def next_halo_line(self, cell_line: data_alloc.NDArray, depot=None):
-        """Returns the global indices of the next halo line.
+    def next_halo_line(self, cells: data_alloc.NDArray, depot: data_alloc.NDArray | None = None):
+        """Returns the full-grid indices of the next halo line.
+
+        If a depot is given the function only return indices that are not in the depot
 
         Args:
-            cell_line: global indices of cells we want to find the neighbors of
-            depot: global indices that have already been collected
+            cells: 1d array, full-grid indices of cells we want to find the neighbors of
+            depot: full-grid indices that have already been collected
         Returns:
-            next_halo_cells: global indices of the next halo line
+            next_halo_cells: full-grid indices of the next halo line
         """
-        cell_neighbors = self._cell_neighbors(cell_line)
+        assert cells.ndim == 1, "input should be 1d array"  # TODO: otherwise reshape instead
+        cell_neighbors = self._find_cell_neighbors(cells)
 
         if depot is not None:
-            cells_so_far = self._xp.hstack((depot, cell_line))
+            cells_so_far = self._xp.hstack((depot, cells))
         else:
-            cells_so_far = cell_line
+            cells_so_far = cells
 
         next_halo_cells = self._xp.setdiff1d(
             self._xp.unique(cell_neighbors), cells_so_far, assume_unique=True
         )
         return next_halo_cells
-
-    def _cell_neighbors(self, cells: data_alloc.NDArray):
-        return self._xp.unique(self.face_face_connectivity[cells, :])
 
     def _find_neighbors(
         self, source_indices: data_alloc.NDArray, connectivity: data_alloc.NDArray
@@ -182,6 +186,10 @@ class IconLikeHaloConstructor(HaloConstructor):
         shp = neighbors.shape
         unique_neighbors = self._xp.unique(neighbors.reshape(shp[0] * shp[1]))
         return unique_neighbors
+
+    def _find_cell_neighbors(self, cells: data_alloc.NDArray):
+        """Find all neighboring cells of a list of cells."""
+        return self._find_neighbors(cells, connectivity=self.face_face_connectivity)
 
     def find_edge_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
         return self._find_neighbors(cell_line, connectivity=self.face_edge_connectivity)
@@ -195,7 +203,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)
 
     def owned_cells(self, face_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
-        """Returns the global indices of the cells owned by this rank"""
+        """Returns the full-grid indices of the cells owned by this rank"""
         owned_cells = face_to_rank == self._props.rank
         return self._xp.asarray(owned_cells).nonzero()[0]
 
@@ -233,24 +241,39 @@ class IconLikeHaloConstructor(HaloConstructor):
                 owner_mask[local_index] = True
         return owner_mask
 
-    # TODO (@halungge): move out of halo generator?
     def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         """
         Constructs the DecompositionInfo for the current rank.
 
         The DecompositionInfo object is constructed for all horizontal dimension starting from the
         cell distribution. Edges and vertices are then handled through their connectivity to the distributed cells.
+
         """
+        #: icon does hard coding of 2 halo lines for cells, make this dynamic!
+
+        num_cell_halo_lines = 2
+
         self._validate_mapping(face_to_rank)
         #: cells
+
         owned_cells = self.owned_cells(face_to_rank)  # global indices of owned cells
+        # cell_halos = []
+        # current = owned_cells
+        # depot = None
+        # for i in range(num_cell_halo_lines):
+        #    cell_halos[i] = self.next_halo_line(current, depot)
+        #    depot = self._xp.union1d(depot, current)
+        #    current = cell_halos[i]
+        # first_halo_cells = cell_halos[0]
+        # second_halo_cells = cell_halos[1]
+
         first_halo_cells = self.next_halo_line(owned_cells)
         second_halo_cells = self.next_halo_line(first_halo_cells, owned_cells)
-
         total_halo_cells = self._xp.hstack((first_halo_cells, second_halo_cells))
         all_cells = self._xp.hstack((owned_cells, total_halo_cells))
 
         cell_owner_mask = self._xp.isin(all_cells, owned_cells)
+        # initialize cell halo levels
         cell_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
             all_cells.size, dtype=int
         )
@@ -261,7 +284,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         cell_halo_levels[
             self._xp.isin(all_cells, second_halo_cells)
         ] = defs.DecompositionFlag.SECOND_HALO_LINE
-        decomp_info = defs.DecompositionInfo(klevels=self._num_levels).with_dimension(
+        decomp_info = defs.DecompositionInfo(klevels=self._num_levels).set_dimension(
             dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels
         )
 
@@ -281,7 +304,7 @@ class IconLikeHaloConstructor(HaloConstructor):
             self._xp.hstack((vertex_on_owned_cells, vertex_on_first_halo_line))
         )
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
-        vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
+        vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(  # icon specific
             face_to_rank,
             vertex_owner_mask,
             all_vertices,
@@ -302,7 +325,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         vertex_halo_levels[
             self._xp.isin(all_vertices, vertex_second_level)
         ] = defs.DecompositionFlag.SECOND_HALO_LINE
-        decomp_info.with_dimension(
+        decomp_info.set_dimension(
             dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
         )
 
@@ -352,7 +375,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         edge_halo_levels[
             self._xp.isin(all_edges, level_two_edges)
         ] = defs.DecompositionFlag.SECOND_HALO_LINE
-        decomp_info.with_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
+        decomp_info.set_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
 
         return decomp_info
 

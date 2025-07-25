@@ -25,6 +25,8 @@ try:
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
+from gt4py.next import common as gtx_common
+
 from icon4py.model.common.decomposition import halo
 from icon4py.model.common.grid import (
     base as base_grid,
@@ -191,6 +193,15 @@ SECOND_HALO_LINE = {
 }
 
 
+@pytest.fixture(scope="session")
+def simple_neighbor_tables():
+    grid = simple.simple_grid()
+    neighbor_tables = {
+        k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
+    }
+    return neighbor_tables
+
+
 def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(), str(file), v_grid.VerticalGridConfig(num_levels=1)
@@ -200,11 +211,9 @@ def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
 
 
 @pytest.mark.mpi(min_size=4)
-def test_halo_constructor_owned_cells(processor_props):  # F811 # fixture
-    grid = simple.SimpleGrid()
-
+def test_halo_constructor_owned_cells(processor_props, simple_neighbor_tables):  # F811 # fixture
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=grid.neighbor_tables,
+        connectivities=simple_neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
         backend=backend,
@@ -217,12 +226,12 @@ def test_halo_constructor_owned_cells(processor_props):  # F811 # fixture
 
 
 @pytest.mark.parametrize("processor_props", [True, False], indirect=True)
-def test_halo_constructor_validate_number_of_node_mismatch(processor_props):
-    grid = simple.SimpleGrid()
-    distribution = (processor_props.comm_size + 1) * np.ones((grid.num_cells,), dtype=int)
+def test_halo_constructor_validate_number_of_node_mismatch(processor_props, simple_neighbor_tables):
+    num_cells = simple_neighbor_tables["C2E2C"].shape[0]
+    distribution = (processor_props.comm_size + 1) * np.ones((num_cells,), dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
-            connectivities=grid.neighbor_tables,
+            connectivities=simple_neighbor_tables,
             run_properties=processor_props,
             num_levels=1,
         )
@@ -231,32 +240,35 @@ def test_halo_constructor_validate_number_of_node_mismatch(processor_props):
 
 
 @pytest.mark.parametrize("processor_props", [True, False], indirect=True)
-@pytest.mark.parametrize("shape", [(simple.SimpleGrid._CELLS, 3), (2,)])
-def test_halo_constructor_validate_rank_mapping_wrong_shape(processor_props, shape):
-    grid = simple.SimpleGrid()
+def test_halo_constructor_validate_rank_mapping_wrong_shape(
+    processor_props, simple_neighbor_tables
+):
+    num_cells = simple_neighbor_tables["C2E2C"].shape[0]
     with pytest.raises(exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
-            connectivities=grid.neighbor_tables,
+            connectivities=simple_neighbor_tables,
             run_properties=processor_props,
             num_levels=1,
         )
-        halo_generator(np.zeros((grid.num_cells, 3), dtype=int))
-    assert f"should have shape ({grid.num_cells},)" in e.value.args[0]
+        halo_generator(np.zeros((num_cells, 3), dtype=int))
+    assert f"should have shape ({num_cells},)" in e.value.args[0]
 
 
 def global_indices(dim: gtx.Dimension) -> np.ndarray:
-    mesh = simple.SimpleGrid()
+    mesh = simple.simple_grid()
     return np.arange(mesh.size[dim], dtype=gtx.int32)
 
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 @pytest.mark.mpi(min_size=4)
-def test_element_ownership_is_unique(dim, processor_props):  # F811 # fixture
+def test_element_ownership_is_unique(
+    dim, processor_props, simple_neighbor_tables
+):  # F811 # fixture
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
-    grid = simple.SimpleGrid()
+
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=grid.neighbor_tables,
+        connectivities=simple_neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
         backend=backend,
@@ -295,12 +307,13 @@ def test_element_ownership_is_unique(dim, processor_props):  # F811 # fixture
 
 @pytest.mark.mpi(min_size=4)
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
-def test_halo_constructor_decomposition_info_global_indices(processor_props, dim):  # F811 # fixture
+def test_halo_constructor_decomposition_info_global_indices(
+    processor_props, simple_neighbor_tables, dim
+):  # F811 # fixture
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
-    grid = simple.SimpleGrid()
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=grid.neighbor_tables,
+        connectivities=simple_neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
     )
@@ -325,10 +338,11 @@ def assert_same_entries(
 @pytest.mark.mpi(min_size=4)
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_halo_constructor_decomposition_info_halo_levels(processor_props, dim):  # F811 # fixture
-    grid = simple.SimpleGrid()
+def test_halo_constructor_decomposition_info_halo_levels(
+    processor_props, dim, simple_neighbor_tables
+):  # F811 # fixture
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=grid.neighbor_tables,
+        connectivities=simple_neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
     )
@@ -395,9 +409,11 @@ def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
     return local_sizes, recv_buffer
 
 
-def decompose(grid: base_grid.BaseGrid, processor_props):  # F811 # fixture
+def decompose(grid: base_grid.Grid, processor_props):  # F811 # fixture
     partitioner = halo.SimpleMetisDecomposer()
-    labels = partitioner(grid.neighbor_tables[dims.C2E2CDim], n_part=processor_props.comm_size)
+    labels = partitioner(
+        grid.connectivities[dims.C2E2C].asnumpy(), n_part=processor_props.comm_size
+    )
     return labels
 
 
@@ -407,6 +423,7 @@ def test_distributed_fields(processor_props):  # F811 # fixture
     grid_manager = grid_file_manager(GRID_FILE)
 
     global_grid = grid_manager.grid
+
     global_cell_area = grid_manager.geometry[grid_file.GeometryName.CELL_AREA]
     global_edge_lat = grid_manager.coordinates[dims.EdgeDim]["lat"]
     global_vertex_lon = grid_manager.coordinates[dims.VertexDim]["lon"]

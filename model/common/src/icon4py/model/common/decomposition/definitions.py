@@ -84,7 +84,7 @@ class DecompositionInfo:
         HALO = 2
 
     @utils.chainable
-    def with_dimension(
+    def set_dimension(
         self,
         dim: Dimension,
         global_index: data_alloc.NDArray,
@@ -98,18 +98,11 @@ class DecompositionInfo:
     def __init__(
         self,
         klevels: int,
-        # TODO @halungge those were added for py2fgen, are they still needed
-        num_cells: Optional[int] = None,
-        num_edges: Optional[int] = None,
-        num_vertices: Optional[int] = None,
     ):
+        self._klevels = klevels
         self._global_index = {}
         self._halo_levels = {}
-        self._klevels = klevels
         self._owner_mask = {}
-        self._num_vertices = num_vertices
-        self._num_cells = num_cells
-        self._num_edges = num_edges
 
     @property
     def klevels(self):
