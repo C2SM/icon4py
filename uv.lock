@@ -1658,6 +1658,7 @@ lint = [
     { name = "tach" },
 ]
 scripts = [
+    { name = "pytest" },
     { name = "typer" },
 ]
 test = [
@@ -1716,6 +1717,7 @@ dev = [
     { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
     { name = "pip", specifier = ">=22.1.1" },
     { name = "pre-commit", specifier = ">=4.0.1" },
+    { name = "pytest" },
     { name = "pytest", specifier = ">=8.0.1" },
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-cache", specifier = ">=1.0" },
@@ -1751,7 +1753,10 @@ lint = [
     { name = "ruff", specifier = ">=0.8.0" },
     { name = "tach", specifier = ">=0.16.0" },
 ]
-scripts = [{ name = "typer", specifier = ">=0.12.3" }]
+scripts = [
+    { name = "pytest" },
+    { name = "typer", specifier = ">=0.12.3" },
+]
 test = [
     { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
     { name = "icon4py-testing", editable = "model/testing" },

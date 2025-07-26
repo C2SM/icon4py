@@ -31,6 +31,19 @@ class ExitCode(enum.IntEnum):
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
+_INIT_PY_DEFAULT_CONTENT = (
+    "\n".join(
+        f"# {line}" if line.strip() else "#"
+        for line in [*(common.REPO_ROOT / "HEADER.txt").read_text().splitlines(), "\n"]
+    )
+    + "\n"
+)
+_NS_INIT_PY_DEFAULT_CONTENT = (
+    _INIT_PY_DEFAULT_CONTENT + "# Build on-the-fly a (legacy) namespace package for 'tests' using pkgutil\n"
+    '__path__ = __import__("pkgutil").extend_path(__path__, __name__)\n'
+)
+_NS_INIT_PY_AST = ast.parse(_NS_INIT_PY_DEFAULT_CONTENT)
+
 
 @cli.command(name="check-layout")
 def check_layout(
@@ -41,22 +54,7 @@ def check_layout(
     """Check if all 'tests' subpackages have proper '__init__.py' files."""
     root_dirs: list[pathlib.Path] = [common.REPO_ROOT / "model", common.REPO_ROOT / "tools"]
     violations = 0
-    ns_init_py_content = init_py_content = ""
 
-    if fix:
-        init_py_content = (
-            "\n".join(
-                f"# {line}" if line.strip() else "#"
-                for line in [*(common.REPO_ROOT / "HEADER.txt").read_text().splitlines(), "\n"]
-            )
-            + "\n"
-        )
-        ns_init_py_content = (
-            init_py_content + "# legacy namespace package for tests\n"
-            '__path__ = __import__("pkgutil").extend_path(__path__, __name__)\n'
-        )
-
-    ns_init_ast = ast.parse('__path__ = __import__("pkgutil").extend_path(__path__, __name__)')
     ast_dump = functools.partial(ast.dump, annotate_fields=False, include_attributes=False)
 
     for root_dir in root_dirs:
@@ -69,25 +67,30 @@ def check_layout(
 
             local_parts = dir_path.parts[prefix_len:]
             if "tests" in local_parts:
-                if local_parts[-1] == "tests":
+                if local_parts[-1] == "tests":  # 'tests' directory itself
                     rich.print(f"Checking '{'/'.join(local_parts)}' (namespace package)")
-                    try:
-                        wrong_ns_init = ast_dump(
-                            ast.parse((dir_path / "__init__.py").read_text())
-                        ) != ast_dump(ns_init_ast)
-                    except SyntaxError:
-                        wrong_ns_init = True
-                    if "__init__.py" not in file_names or wrong_ns_init:
+
+                    is_ns_init_ok = False
+                    if "__init__.py" in file_names:
+                        try:
+                            is_ns_init_ok = ast_dump(
+                                ast.parse((dir_path / "__init__.py").read_text())
+                            ) == ast_dump(_NS_INIT_PY_AST)
+                        except SyntaxError:
+                            pass
+
+                    if not is_ns_init_ok:
                         violations += 1
                         rich.print(
                             "  [red]-> unknown or invalid '__init__.py' for namespace package[/red]"
                         )
                         if fix:
                             rich.print(f"  [yellow]-> Fixing '__init__.py' in {dir_path}[/yellow]")
-                            (dir_path / "__init__.py").write_text(ns_init_py_content)
+                            (dir_path / "__init__.py").write_text(_NS_INIT_PY_DEFAULT_CONTENT)
 
                 else:
                     rich.print(f"Checking '{'/'.join(local_parts)}'")
+                    
                     if "__init__.py" not in file_names:
                         violations += 1
                         rich.print("  [red]-> unknown '__init__.py' file[/red]")
@@ -95,7 +98,7 @@ def check_layout(
                             rich.print(
                                 f"  [yellow]-> Creating '__init__.py' in {dir_path}[/yellow]"
                             )
-                            (dir_path / "__init__.py").write_text(init_py_content)
+                            (dir_path / "__init__.py").write_text(_INIT_PY_DEFAULT_CONTENT)
 
     rich.print()
     if violations:
