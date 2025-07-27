@@ -168,9 +168,13 @@ Example:
             ...
 ````
 
-Test suites inside a `stencil_tests` folder are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) and should only contain tests for the GT4Py stencils that might be integrated into ICON.
+The `scripts-cli` tool contains commands to check some of these points. 
 
-The `scripts-cli` tool contains commands to check some of the `tests` structure points.
+For further explanations about the trade-offs of using Python packages for tests organization, the [`pytest` import mechanisms](https://docs.pytest.org/en/stable/explanation/pythonpath.html#import-modes) documentation is a helpful reference. For further explanations about the parametrization of fixtures and tests, the [basics](https://docs.pytest.org/en/stable/how-to/parametrize.html#parametrize-basics) and [advanced](https://docs.pytest.org/en/stable/example/parametrize.html#parametrization-with-multiple-fixtures) `parametrize` examples in the pytest documentation are also very helpful.
+
+### Stencil tests
+
+Test suites inside a `stencil_tests` folder are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) and should only contain tests for the GT4Py stencils that might be integrated into ICON.
 
 <!--
 
