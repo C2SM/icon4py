@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+
 import datetime as dt
 import pathlib
 import re
@@ -14,7 +16,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 import uxarray as ux
-import xarray as xr
+import xarray as xa
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims

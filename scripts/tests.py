@@ -12,8 +12,9 @@ import ast
 import enum
 import functools
 import os
+import shlex
 import pathlib
-from typing import Annotated
+from typing import Annotated, NamedTuple, TypeAlias
 
 import rich
 import typer
@@ -31,6 +32,8 @@ class ExitCode(enum.IntEnum):
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
+
+# -- check-layout --
 _INIT_PY_DEFAULT_CONTENT = (
     "\n".join(
         f"# {line}" if line.strip() else "#"
@@ -39,7 +42,8 @@ _INIT_PY_DEFAULT_CONTENT = (
     + "\n"
 )
 _NS_INIT_PY_DEFAULT_CONTENT = (
-    _INIT_PY_DEFAULT_CONTENT + "# Build on-the-fly a (legacy) namespace package for 'tests' using pkgutil\n"
+    _INIT_PY_DEFAULT_CONTENT
+    + "# Build on-the-fly a (legacy) namespace package for 'tests' using pkgutil\n"
     '__path__ = __import__("pkgutil").extend_path(__path__, __name__)\n'
 )
 _NS_INIT_PY_AST = ast.parse(_NS_INIT_PY_DEFAULT_CONTENT)
@@ -90,7 +94,7 @@ def check_layout(
 
                 else:
                     rich.print(f"Checking '{'/'.join(local_parts)}'")
-                    
+
                     if "__init__.py" not in file_names:
                         violations += 1
                         rich.print("  [red]-> unknown '__init__.py' file[/red]")
@@ -112,11 +116,25 @@ def check_layout(
         rich.print(f"[green]OK:[/green] Tests structure seems correct.")
 
 
+# -- fixture-requests --
+FixtureRequest: TypeAlias = tuple[pathlib.Path, str]
+
+
+class RequestedFixtures(NamedTuple):
+    """A named tuple to hold all requested fixture names in a file."""
+
+    all: set[str]
+    unknown: set[str]
+
+
+RequestedFixturesPerFile = dict[pathlib.Path, RequestedFixtures]
+
+
 def _collect_fixture_requests(
-    test_path: pathlib.Path,
-) -> dict[pathlib.Path, tuple[set[str], set[str]]]:
+    test_path: pathlib.Path | None = None, with_args: str = ""
+) -> RequestedFixturesPerFile:
     """Collect all pytest fixtures from the specified test path."""
-    collected_fixtures: dict[pathlib.Path, tuple[set[str], set[str]]] = {}
+    collected_fixtures: RequestedFixturesPerFile = {}
 
     class CollectorPlugin:
         def pytest_collection_finish(self, session):
@@ -124,7 +142,7 @@ def _collect_fixture_requests(
                 item_fixtures = set(item.fixturenames)
 
                 if item.path not in collected_fixtures:
-                    collected_fixtures[item.path] = (set(), set())
+                    collected_fixtures[item.path] = RequestedFixtures(set(), set())
                 all, unknown = collected_fixtures[item.path]
                 all.update(item_fixtures)
                 unknown.update(
@@ -132,14 +150,19 @@ def _collect_fixture_requests(
                 )
 
     os.chdir(str(common.REPO_ROOT))
+    test_path_arg = (
+        [str(test_path.resolve().relative_to(common.REPO_ROOT))] if test_path is not None else []
+    )
+    pytest_cmd = [
+        *test_path_arg,
+        *shlex.split(with_args),
+        "-q",
+        "--no-header",
+        "--no-summary",
+        "--collect-only",
+    ]
     pytest.main(
-        [
-            str(test_path.resolve().relative_to(common.REPO_ROOT)),
-            "-q",
-            "--no-header",
-            "--no-summary",
-            "--collect-only",
-        ],
+        pytest_cmd,
         plugins=[CollectorPlugin()],
     )
     return collected_fixtures
@@ -235,9 +258,9 @@ def _find_closest_fixture_import_path(
 
 
 def _fix_fixture_requests(
-    fixture_requests: dict[pathlib.Path, tuple[set[str], set[str]]],
+    fixture_requests: RequestedFixturesPerFile,
     test_path: pathlib.Path,
-) -> tuple[list[tuple[str, pathlib.Path]], list[tuple[str, pathlib.Path]]]:
+) -> tuple[list[FixtureRequest], list[FixtureRequest]]:
     """Fix unknown fixture requests by creating __init__.py files."""
     rich.print(f"[yellow]Adding missing fixtures...[/yellow]")
 
@@ -259,10 +282,10 @@ def _fix_fixture_requests(
             if fixture not in fixture_definitions or not (
                 import_path := _find_closest_fixture_import_path(path, fixture_definitions[fixture])
             ):
-                errors += (fixture, path)
+                errors += (path, fixture)
                 continue
             assert import_path
-            fixed += (fixture, path)
+            fixed += (path, fixture)
             new_imports.append(f"from {import_path} import {fixture}\n")
 
         lines = path.read_text().splitlines(keepends=True)
@@ -287,8 +310,12 @@ def _fix_fixture_requests(
 @cli.command(name="fixture-requests", help=_collect_fixture_requests.__doc__)
 def fixture_requests(
     test_path: Annotated[
-        pathlib.Path, typer.Argument(help="The path to collect fixture requests for.")
-    ],
+        pathlib.Path | None,
+        typer.Argument(help="The path to collect fixture requests for (default: pytest default)."),
+    ] = None,
+    with_args: Annotated[
+        str, typer.Option("--with-args", "-w", help="Pass additional arguments to pytest.")
+    ] = "",
     fix: Annotated[
         bool,
         typer.Option(
@@ -298,23 +325,32 @@ def fixture_requests(
         ),
     ] = False,
 ):
-    fixture_requests = _collect_fixture_requests(test_path)
-    report = [
-        f"- {path}:\n"
-        f"    + {len(all)} requested{':' if all else ''} {', '.join(sorted(all))}\n"
-        f"    + {len(unknown)} unknown{':' if unknown else ''} {', '.join(sorted(unknown))}\n"
-        for path, (all, unknown) in fixture_requests.items()
-    ]
-    rich.print("\n".join(report))
-    errors = [(fixture, path) for path, unknown in fixture_requests.items() for fixture in unknown]
+    fixture_requests: RequestedFixturesPerFile = _collect_fixture_requests(test_path, with_args)
+
+    report = []
+    errors: list[FixtureRequest] = []
     fixes = None
+    for path, (all, unknown) in fixture_requests.items():
+        all_list = sorted(all)
+        unknown_list = sorted(unknown)
+        report.append(
+            f"- {path}:\n"
+            f"    + {len(all)} requested{':' if all else ''} {', '.join(all_list)}\n"
+            f"    + {len(unknown)} unknown{':' if unknown else ''} {', '.join(unknown_list)}\n"
+        )
+        if unknown_list:
+            errors.extend((path, fixture) for fixture in unknown_list)
+
+    rich.print("\n".join(report))
 
     if errors and fix:
         fixes, errors = _fix_fixture_requests(fixture_requests, test_path)
+
     if errors:
         rich.print(
             f"[red]ERROR:[/red] {len(errors)} fixtures were requested but not found in the test files."
         )
+        rich.print(errors)
         raise typer.Exit(code=ExitCode.MISSING_OR_INVALID_INIT_FILES)
     elif fixes:
         rich.print(
