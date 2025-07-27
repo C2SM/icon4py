@@ -1626,8 +1626,10 @@ dev = [
     { name = "pytest-benchmark" },
     { name = "pytest-cache" },
     { name = "pytest-cov" },
+    { name = "pytest-deadfixtures" },
     { name = "pytest-factoryboy" },
     { name = "pytest-mpi" },
+    { name = "pytest-unused-fixtures" },
     { name = "pytest-xdist", extra = ["psutil"] },
     { name = "ruff" },
     { name = "setuptools" },
@@ -1669,8 +1671,10 @@ test = [
     { name = "pytest-benchmark" },
     { name = "pytest-cache" },
     { name = "pytest-cov" },
+    { name = "pytest-deadfixtures" },
     { name = "pytest-factoryboy" },
     { name = "pytest-mpi" },
+    { name = "pytest-unused-fixtures" },
     { name = "pytest-xdist", extra = ["psutil"] },
 ]
 typing = [
@@ -1722,8 +1726,10 @@ dev = [
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-cache", specifier = ">=1.0" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
+    { name = "pytest-deadfixtures", specifier = ">=2.2.1" },
     { name = "pytest-factoryboy", specifier = ">=2.6.1" },
     { name = "pytest-mpi", specifier = ">=0.6" },
+    { name = "pytest-unused-fixtures", specifier = ">=0.2.0" },
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0" },
     { name = "ruff", specifier = ">=0.8.0" },
     { name = "setuptools", specifier = ">=70.1.1" },
@@ -1765,8 +1771,10 @@ test = [
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-cache", specifier = ">=1.0" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
+    { name = "pytest-deadfixtures", specifier = ">=2.2.1" },
     { name = "pytest-factoryboy", specifier = ">=2.6.1" },
     { name = "pytest-mpi", specifier = ">=0.6" },
+    { name = "pytest-unused-fixtures", specifier = ">=0.2.0" },
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0" },
 ]
 typing = [
@@ -3696,6 +3704,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-deadfixtures"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c5/d5/0472e7dd4c5794cd720f8add3ba59b35e45c1bb7482e04b6d6e60ff4eed0/pytest-deadfixtures-2.2.1.tar.gz", hash = "sha256:ca15938a4e8330993ccec9c6c847383d88b3cd574729530647dc6b492daa9c1e", size = 6616, upload-time = "2020-07-23T11:58:09.465Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4a/c7/d8c3fa6d2de6814c92161fcce984a7d38a63186590a66238e7b749f7fe37/pytest_deadfixtures-2.2.1-py2.py3-none-any.whl", hash = "sha256:db71533f2d9456227084e00a1231e732973e299ccb7c37ab92e95032ab6c083e", size = 5059, upload-time = "2020-07-23T11:58:11.538Z" },
+]
+
+[[package]]
 name = "pytest-factoryboy"
 version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3721,6 +3741,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6c/db/b9d4b23750eb91865787656dce02a2864397aa1ee130df00ec73d3954e7e/pytest-mpi-0.6.tar.gz", hash = "sha256:09b3cd3511f8f3cd4d205f54d4a7223724fed0ab68b872ed1123d312152325a9", size = 35329, upload-time = "2022-01-08T02:19:26.461Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a6/2b/0ed49de84e96ebf771c86a16d88b48c08d291627cfcdce30973f8538c99e/pytest_mpi-0.6-py2.py3-none-any.whl", hash = "sha256:1b7e193fb3be31d08c8e4dd7435e8e13e14b17ead6a6fc6aa07a6d3c7145590b", size = 5907, upload-time = "2022-01-08T02:19:24.8Z" },
+]
+
+[[package]]
+name = "pytest-unused-fixtures"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/54/66/8e28c1a69251229e429045cbccced1e0adf96d1be1e21108c104c5f067d0/pytest_unused_fixtures-0.2.0.tar.gz", hash = "sha256:c1271648f2bb452a54545df0601e687a1a575990c1eda5d73909548aad6d2363", size = 6195, upload-time = "2025-03-15T12:24:43.297Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/d8/916e39f3b55e6336dce1e1bd4fff39756db4218609f69a07e814fb2c9465/pytest_unused_fixtures-0.2.0-py3-none-any.whl", hash = "sha256:a1cf3d4979a724bc981fc6730d2547e25b103fb8e488c9e6644cbfea11e6a113", size = 7879, upload-time = "2025-03-15T12:24:41.735Z" },
 ]
 
 [[package]]

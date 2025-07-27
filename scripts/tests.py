@@ -8,6 +8,10 @@
 
 """Manage test infrastructure."""
 
+# TODO(egparedes): This module is still experimental. The code style is not great,
+# it only has minimal documentation and it lacks proper tests, but it seems to
+# work fine for the current needs, and it is already quite useful.
+
 import ast
 import enum
 import functools
