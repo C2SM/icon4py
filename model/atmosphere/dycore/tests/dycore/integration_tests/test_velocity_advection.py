@@ -31,6 +31,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from .. import utils
+from ..fixtures import *  # noqa: F403
 
 
 log = logging.getLogger(__name__)
