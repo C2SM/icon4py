@@ -10,7 +10,7 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.grid.refinement as refin
-import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing.fixtures import backend
 
@@ -68,7 +68,7 @@ def test_valid_refinement_values(dim):
 )
 def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
     grid = grid_utils.get_grid_manager(grid_file, 1, True, backend).grid
-    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
+    xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     refinement_field = grid.refinement_control[dim]
     limited_area = refin.is_limited_area_grid(refinement_field.ndarray, array_ns=xp)
     assert isinstance(limited_area, bool)
