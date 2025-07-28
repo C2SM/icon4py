@@ -159,7 +159,9 @@ def data_provider(
 
 
 @pytest.fixture
-def grid_savepoint(data_provider, experiment):
+def grid_savepoint(
+    data_provider: serialbox.IconSerialDataProvider, experiment: str
+) -> serialbox.IconGridSavepoint:
     root, level = dt_utils.get_global_grid_params(experiment)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(grid_id, root, level)
@@ -170,13 +172,15 @@ def is_regional(experiment_name):
 
 
 @pytest.fixture
-def icon_grid(grid_savepoint, backend):
+def icon_grid(
+    grid_savepoint: serialbox.IconGridSavepoint, backend: gtx_backend.Backend
+) -> base_grid.Grid:
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.construct_icon_grid(keep_skip_values=False)
+    return grid_savepoint.construct_icon_grid(keep_skip_values=False, backend=backend)
 
 
 @pytest.fixture
