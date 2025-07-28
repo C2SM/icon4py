@@ -68,7 +68,7 @@ def profile_disable():
 
 
 @icon4py_export.export
-@nvtx.annotate(color=DYCORE_COLOR category=ICON4PY_LABEL, message="dycore-solve_nh_init")
+@nvtx.annotate(color=DYCORE_COLOR, category=ICON4PY_LABEL, message="dycore-solve_nh_init")
 def solve_nh_init(
     vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
