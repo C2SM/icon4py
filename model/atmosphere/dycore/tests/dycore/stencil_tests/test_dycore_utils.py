@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import TYPE_CHECKING
+
 import gt4py.next as gtx
 import numpy as np
 
@@ -17,12 +19,15 @@ from icon4py.model.testing import helpers
 from ..fixtures import backend
 
 
+if TYPE_CHECKING:
+    from gt4py.next import backend as gtx_backend
+
 # TODO: apply StencilTest structure to this test
 
 
 def fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
     a: np.ndarray, factor: float, mean_cell_area: float
-):
+) -> np.ndarray:
     a = np.maximum(0.0, a - 0.25 * factor)
     return -a * mean_cell_area**2
 
@@ -33,7 +38,9 @@ def calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
     return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
-def test_calculate_fourth_order_divdamp_scaling_coeff_order_24(backend):
+def test_calculate_fourth_order_divdamp_scaling_coeff_order_24(
+    backend: gtx_backend.Backend,
+) -> None:
     second_order_divdamp_factor = 3.0
     divdamp_order = 24
     mean_cell_area = 1000.0
@@ -60,7 +67,9 @@ def test_calculate_fourth_order_divdamp_scaling_coeff_order_24(backend):
     assert helpers.dallclose(ref, out.asnumpy())
 
 
-def test_calculate_fourth_order_divdamp_scaling_coeff_any_order(backend):
+def test_calculate_fourth_order_divdamp_scaling_coeff_any_order(
+    backend: gtx_backend.Backend,
+) -> None:
     second_order_divdamp_factor = 4.2
     divdamp_order = 3
     mean_cell_area = 1000.0
@@ -82,7 +91,9 @@ def test_calculate_fourth_order_divdamp_scaling_coeff_any_order(backend):
     assert helpers.dallclose(enhanced_factor, out.asnumpy())
 
 
-def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(backend):
+def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
+    backend: gtx_backend.Backend,
+) -> None:
     grid = simple_grid.simple_grid(backend=backend)
     fourth_order_divdamp_scaling_coeff = data_alloc.random_field(grid, dims.KDim, backend=backend)
     out = data_alloc.zero_field(grid, dims.KDim, backend=backend)
@@ -98,7 +109,7 @@ def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(backend):
     )
 
 
-def test_calculate_divdamp_fields(backend):
+def test_calculate_divdamp_fields(backend: gtx_backend.Backend) -> None:
     grid = simple_grid.simple_grid(backend=backend)
     divdamp_field = data_alloc.random_field(grid, dims.KDim, backend=backend)
     fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(grid, dims.KDim, backend=backend)

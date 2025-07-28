@@ -167,9 +167,6 @@ explicit_package_bases = true
 namespace_packages = true
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
-# exclude = [
-#   '^tests/py2fgen/*.py',
-# ]
 ignore_missing_imports = false
 implicit_reexport = true
 install_types = true
@@ -182,7 +179,7 @@ warn_unused_ignores = true
 # TODO fix gtx.int32 export in gt4py
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
-module = '*.dycore_stencil_tests.*'
+module = '*.stencil_tests.*'
 
 
 # -- ruff --
@@ -236,12 +233,12 @@ known-third-party = ['gt4py', 'packaging', 'setuptools']
 lines-after-imports = 2
 order-by-type = true
 section-order = [
-  'future',
-  'standard-library',
-  'third-party',
-  'first-party',
-  'tests',
-  'local-folder'
+    'future',
+    'standard-library',
+    'third-party',
+    'first-party',
+    'tests',
+    'local-folder',
 ]
 
 [tool.ruff.lint.isort.sections]
@@ -254,8 +251,8 @@ max-complexity = 15
 # Ignore spurious errors when explicitly importing fixtures in tests.
 #   Check: https://github.com/astral-sh/ruff/issues/10662
 "**/tests/**/test_*.py" = ["F401", "F811"]
-"**/tests/**/*_test.py" =  ["F401", "F811"]
-"**/tests/**/fixtures.py" =  ["F401", "F811"]
+"**/tests/**/*_test.py" = ["F401", "F811"]
+"**/tests/**/fixtures.py" = ["F401", "F811"]
 
 # -- setuptools --
 [tool.setuptools]
