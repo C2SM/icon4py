@@ -11,12 +11,7 @@ import pytest
 from icon4py.model.common.grid import geometry, topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4py.model.testing.fixtures import (
-    backend,
-    grid_savepoint,
-    interpolation_savepoint,
-    topography_savepoint,
-)
+from icon4py.model.testing.fixtures import *  # noqa: F403
 
 
 @pytest.mark.embedded_remap_error
