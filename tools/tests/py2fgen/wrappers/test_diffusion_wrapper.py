@@ -36,6 +36,7 @@ from .test_grid_init import grid_init
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -296,6 +297,7 @@ def test_diffusion_wrapper_granule_inputs(
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
