@@ -16,6 +16,8 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
+from ..fixtures import *  # noqa: F403
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
