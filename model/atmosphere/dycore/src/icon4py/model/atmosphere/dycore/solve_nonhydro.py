@@ -971,7 +971,9 @@ class SolveNonhydro:
         )
 
     # flake8: noqa: C901
-    @nvtx.annotate(color=DYCORE_COLOR, category=ICON4PY_LABEL, message="solve_nh-run_predictor_step")
+    @nvtx.annotate(
+        color=DYCORE_COLOR, category=ICON4PY_LABEL, message="solve_nh-run_predictor_step"
+    )
     def run_predictor_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
@@ -1296,7 +1298,9 @@ class SolveNonhydro:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(dims.CellDim, prognostic_states.next.w)
 
-    @nvtx.annotate(color=DYCORE_COLOR, category=ICON4PY_LABEL, message="solve_nh-run_corrector_step")
+    @nvtx.annotate(
+        color=DYCORE_COLOR, category=ICON4PY_LABEL, message="solve_nh-run_corrector_step"
+    )
     def run_corrector_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,

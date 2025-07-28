@@ -22,10 +22,9 @@ import dataclasses
 import pstats
 from typing import Callable, Optional
 
-import nvtx
-
 import gt4py.next as gtx
 import numpy as np
+import nvtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion.diffusion import (

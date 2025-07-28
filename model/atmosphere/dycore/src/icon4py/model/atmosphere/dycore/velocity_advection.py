@@ -11,9 +11,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-import nvtx
-
 import gt4py.next as gtx
+import nvtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -37,9 +36,11 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 # nvtx traces
 VELOCITY_ADV_COLOR = "red"
 ICON4PY_LABEL = "icon4py"
+
 
 class VelocityAdvection:
     def __init__(
@@ -204,7 +205,9 @@ class VelocityAdvection:
         self._end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-    @nvtx.annotate(color=VELOCITY_ADV_COLOR, category=ICON4PY_LABEL, message="adv-run_predictor_step")
+    @nvtx.annotate(
+        color=VELOCITY_ADV_COLOR, category=ICON4PY_LABEL, message="adv-run_predictor_step"
+    )
     def run_predictor_step(
         self,
         skip_compute_predictor_vertical_advection: bool,
@@ -363,7 +366,9 @@ class VelocityAdvection:
         scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
         return scaled_cfl_w_limit, scalfac_exdiff
 
-    @nvtx.annotate(color=VELOCITY_ADV_COLOR, category=ICON4PY_LABEL, message="adv-run_corrector_step")
+    @nvtx.annotate(
+        color=VELOCITY_ADV_COLOR, category=ICON4PY_LABEL, message="adv-run_corrector_step"
+    )
     def run_corrector_step(
         self,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
