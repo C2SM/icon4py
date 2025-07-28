@@ -190,7 +190,7 @@ class TimeLoop:
             # TODO (Chia Rui): simple IO enough for JW test
 
         timer_first_timestep.summary(True)
-        if self.n_time_steps <= 1:  # in case only one time step was run
+        if self.n_time_steps > 1:  # in case only one time step was run
             timer_after_first_timestep.summary(True)
         if profiling is not None and profiling.gt4py_metrics_level > gtx_metrics.DISABLED:
             print(gtx_metrics.dumps())
