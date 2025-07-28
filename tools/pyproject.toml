@@ -47,9 +47,6 @@ cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
 
 [project.scripts]
-f2ser = 'icon4py.tools.f2ser.cli:main'
-icon4pygen = 'icon4py.tools.icon4pygen.cli:main'
-icon_liskov = 'icon4py.tools.liskov.cli:main'
 py2fgen = 'icon4py.tools.py2fgen._cli:main'
 
 [project.urls]
