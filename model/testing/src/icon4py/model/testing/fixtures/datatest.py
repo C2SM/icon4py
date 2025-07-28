@@ -334,7 +334,12 @@ def savepoint_compute_advection_in_horizontal_momentum_equation_init(
 
 
 @pytest.fixture
-def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_init):
+def savepoint_nonhydro_init(
+    data_provider: serialbox.IconSerialDataProvider,
+    step_date_init: str,
+    istep_init: int,
+    substep_init: int,
+) -> serialbox.IconNonHydroInitSavepoint:
     """
     Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
 

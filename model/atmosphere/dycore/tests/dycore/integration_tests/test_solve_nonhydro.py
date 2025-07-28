@@ -33,6 +33,7 @@ from icon4py.model.testing import (
 )
 
 from .. import utils
+from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.datatest
