@@ -17,7 +17,7 @@ from icon4py.model.testing import cases, helpers
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_wgtfac_c(icon_grid, metrics_savepoint, backend):  # fixture
     wgtfac_c = data_alloc.zero_field(
@@ -60,7 +60,7 @@ def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_wgtfacq_c_dsl(icon_grid, metrics_savepoint, backend):
     wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()

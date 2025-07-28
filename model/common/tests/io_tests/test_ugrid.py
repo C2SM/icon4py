@@ -9,8 +9,6 @@
 from __future__ import annotations
 
 import pathlib
-from collections.abc import Sequence
-from typing import Final
 
 import numpy as np
 import pytest
@@ -24,12 +22,18 @@ from icon4py.model.common.io.ugrid import (
     load_data_file,
 )
 from icon4py.model.testing import cases
-from icon4py.model.testing.datatest_fixtures import grid, downloaded_grid_file
 
 
-@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
-def test_convert_to_ugrid(downloaded_grid_file: pathlib.Path):
-    with load_data_file(downloaded_grid_file) as ds:
+@pytest.fixture(params=(params:=cases.get_grids_with_file(max_cells=10000)), ids=[p.file_name for p in params])
+def test_grid_file(request)-> pathlib.Path:
+    """
+    Fixture to provide a test grid file path.
+    This is used to parametrize tests that require a grid file.
+    """
+    return request.param
+
+def test_convert_to_ugrid(test_grid_file: pathlib.Path):
+    with load_data_file(test_grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds, validate=True)
         assert uxds.attrs["title"] == "ICON grid description"
@@ -43,19 +47,17 @@ def test_convert_to_ugrid(downloaded_grid_file: pathlib.Path):
         assert uxds["mesh"].attrs["face_node_connectivity"] == "vertex_of_cell"
 
 
-@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
-def test_icon_ugrid_writer_writes_ugrid_file(downloaded_grid_file: pathlib.Path, tmp_io_tests_path: pathlib.Path):
+def test_icon_ugrid_writer_writes_ugrid_file(test_grid_file: pathlib.Path, tmp_io_tests_path: pathlib.Path):
     output_dir = tmp_io_tests_path.joinpath("output")
     output_dir.mkdir(0o755, exist_ok=True)
-    writer = IconUGridWriter(downloaded_grid_file, output_dir)
+    writer = IconUGridWriter(small_grid_file, output_dir)
     writer(validate=False)
     fname = output_dir.iterdir().__next__().name
-    assert fname == downloaded_grid_file.stem + "_ugrid.nc"
+    assert fname == small_grid_file.stem + "_ugrid.nc"
 
 
-@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
-def test_icon_ugrid_patch_index_transformation(downloaded_grid_file: pathlib.Path):
-    with load_data_file(downloaded_grid_file) as ds:
+def test_icon_ugrid_patch_index_transformation(small_grid_file: pathlib.Path):
+    with load_data_file(small_grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
         for name in patch.index_lists:
@@ -63,9 +65,8 @@ def test_icon_ugrid_patch_index_transformation(downloaded_grid_file: pathlib.Pat
             assert uxds[name].dtype == "int32"
 
 
-@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
-def test_icon_ugrid_patch_transposed_index_lists(downloaded_grid_file: pathlib.Path):
-    with load_data_file(downloaded_grid_file) as ds:
+def test_icon_ugrid_patch_transposed_index_lists(small_grid_file: pathlib.Path):
+    with load_data_file(small_grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
         horizontal_dims = ("cell", "edge", "vertex")
@@ -77,9 +78,8 @@ def test_icon_ugrid_patch_transposed_index_lists(downloaded_grid_file: pathlib.P
             assert uxds[name].shape[0] in horizontal_sizes
 
 
-@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
-def test_icon_ugrid_patch_fill_value(downloaded_grid_file: pathlib.Path):
-    with load_data_file(downloaded_grid_file) as ds:
+def test_icon_ugrid_patch_fill_value(small_grid_file: pathlib.Path):
+    with load_data_file(small_grid_file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
         patch._set_fill_value(uxds)
@@ -92,9 +92,8 @@ def assert_start_index(uxds: xa.Dataset, name: str):
     assert np.min(np.where(uxds[name].data > FILL_VALUE)) == 0
 
 
-@pytest.mark.parametrize("grid", cases.SMALL_GRIDS_WITH_FILES, indirect=True)
-def test_extract_horizontal_coordinates(downloaded_grid_file: pathlib.Path):
-    with load_data_file(downloaded_grid_file) as ds:
+def test_extract_horizontal_coordinates(small_grid_file: pathlib.Path):
+    with load_data_file(small_grid_file) as ds:
         dim_sizes = ds.sizes
         coords = extract_horizontal_coordinates(ds)
         # TODO (halungge) fix:

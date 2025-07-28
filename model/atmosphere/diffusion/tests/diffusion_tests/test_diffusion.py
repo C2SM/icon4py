@@ -35,7 +35,7 @@ from .utils import (
 )
 
 
-grid_functionality = {cases.Experiment.EXCLAIM_APE: {}, cases.Experiment.MCH_CH_R04B09: {}}
+grid_functionality = {cases.SerializedExperiment.EXCLAIM_APE: {}, cases.SerializedExperiment.MCH_CH_R04B09: {}}
 
 
 def get_grid_for_experiment(experiment, backend):
@@ -52,8 +52,8 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 def _get_or_initialize(experiment, backend, name):
     grid_file = (
-        cases.Experiment.MCH_CH_R04B09
-        if experiment == cases.Experiment.MCH_CH_R04B09
+        cases.SerializedExperiment.MCH_CH_R04B09
+        if experiment == cases.SerializedExperiment.MCH_CH_R04B09
         else dt_utils.R02B04_GLOBAL
     )
 
@@ -113,7 +113,7 @@ def _get_or_initialize(experiment, backend, name):
     return grid_functionality[experiment].get(name)
 
 
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 def diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
     config = configuration_builders.build_diffusion_config(experiment, ndyn_substeps=5)
     config.hdiff_efdt_ratio = 1.0
@@ -127,7 +127,7 @@ def diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
     assert params.K4W == pytest.approx(1.0 / 72.0, abs=1e-12)
 
 
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 def diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
     config = configuration_builders.build_diffusion_config(experiment)
     config.hdiff_efdt_ratio = 0.0
@@ -141,7 +141,7 @@ def diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
     assert params.K4W == 0.0
 
 
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 def smagorinski_factor_for_diffusion_type_4(experiment):
     config = configuration_builders.build_diffusion_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
@@ -153,7 +153,7 @@ def smagorinski_factor_for_diffusion_type_4(experiment):
     assert params.smagorinski_height is None
 
 
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 def test_smagorinski_heights_diffusion_type_5_are_consistent(experiment):
     config = configuration_builders.build_diffusion_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
@@ -169,7 +169,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(experiment):
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 def smagorinski_factor_diffusion_type_5(experiment):
     params = diffusion.DiffusionParams(
         configuration_builders.build_diffusion_config(experiment, ndyn_substeps=5)
@@ -181,7 +181,7 @@ def smagorinski_factor_diffusion_type_5(experiment):
 
 @pytest.mark.infinite_concat_where
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 def test_diffusion_init(
     savepoint_diffusion_init,
     interpolation_savepoint,
@@ -333,10 +333,10 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.parametrize(
     "experiment,step_date_init",
     [
-        (cases.Experiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
-        (cases.Experiment.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
-        (cases.Experiment.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
-        (cases.Experiment.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
+        (cases.SerializedExperiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (cases.SerializedExperiment.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
+        (cases.SerializedExperiment.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
+        (cases.SerializedExperiment.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -418,8 +418,8 @@ def test_verify_diffusion_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (cases.Experiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (cases.Experiment.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (cases.SerializedExperiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (cases.SerializedExperiment.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
@@ -444,7 +444,7 @@ def test_run_diffusion_single_step(
     if orchestration and data_alloc.is_cupy_device(backend):
         pytest.xfail("GPU compilation fails.")
 
-    if experiment == cases.Experiment.MCH_CH_R04B09:
+    if experiment == cases.SerializedExperiment.MCH_CH_R04B09:
         # Skip benchmarks for this experiment
         benchmark = None
 
@@ -543,7 +543,7 @@ def test_run_diffusion_single_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (cases.Experiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (cases.SerializedExperiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -694,7 +694,7 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
 @pytest.mark.parametrize("orchestration", [False, True])
 def test_run_diffusion_initial_step(

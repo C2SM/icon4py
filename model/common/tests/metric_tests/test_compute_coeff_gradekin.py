@@ -17,7 +17,7 @@ from icon4py.model.testing import cases, helpers
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_coeff_gradekin(icon_grid, icon_grid_savepoint, metrics_savepoint):
     edge_cell_length = icon_grid_savepoint.edge_cell_length().asnumpy()

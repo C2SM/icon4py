@@ -144,7 +144,7 @@ def test_io_monitor_write_ugrid_file(tmp_io_tests_path):
 def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: Sequence[str]):
     path_name = tmp_io_tests_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_grid_manager_for_experiment(
-        cases.Experiment.EXCLAIM_APE, definitions.BACKEND
+        cases.SerializedExperiment.EXCLAIM_APE, definitions.BACKEND
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -196,7 +196,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(tmp_io_tests_path, variables: S
 
 def test_fieldgroup_monitor_write_dataset_file_roll(tmp_io_tests_path):
     grid = grid_utils.get_grid_manager_for_experiment(
-        cases.Experiment.EXCLAIM_APE, definitions.BACKEND
+        cases.SerializedExperiment.EXCLAIM_APE, definitions.BACKEND
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(

@@ -13,5 +13,6 @@ import pytest
 
 if not importlib.util.find_spec("xarray"):
     pytest.fail(
-        "Optional icon4py-common[io] dependencies are missing. Please install them using `pip install icon4py-common[io]`."
+        "Optional icon4py-common[io] dependencies are missing. "
+        "Please install them before running the tests."
     )

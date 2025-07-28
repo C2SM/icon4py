@@ -98,7 +98,7 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):

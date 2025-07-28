@@ -27,7 +27,7 @@ from icon4py.model.testing import cases
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     icon_grid, metrics_savepoint, backend
@@ -74,7 +74,7 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_reference_atmosphere_on_half_level_mass_points(
     icon_grid, metrics_savepoint, backend
@@ -116,7 +116,7 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
@@ -137,7 +137,7 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_reference_atmosphere_on_full_level_edge_fields(
     icon_grid, interpolation_savepoint, metrics_savepoint, backend
@@ -191,7 +191,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, icon_grid_savepoint, backend):
     z_mc = metrics_savepoint.z_mc()

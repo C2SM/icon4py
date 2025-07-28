@@ -46,7 +46,7 @@ def test_damping_layer_calculation(max_h, damping_height, delta, flat_height):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_damping_layer_calculation_from_icon_input(
     icon_grid_savepoint, experiment, damping_height, flat_height
@@ -121,7 +121,7 @@ def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, expected_moist_level",
-    [(cases.Experiment.MCH_CH_R04B09, 0), (cases.Experiment.EXCLAIM_APE, 25)],
+    [(cases.SerializedExperiment.MCH_CH_R04B09, 0), (cases.SerializedExperiment.EXCLAIM_APE, 25)],
 )
 def test_moist_level_calculation(icon_grid_savepoint, experiment, expected_moist_level):
     threshold = 22500.0
@@ -140,7 +140,7 @@ def test_interface_physical_height(icon_grid_savepoint):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_flat_level_calculation(icon_grid_savepoint, experiment, flat_height):
     vertical_grid = configure_vertical_grid(icon_grid_savepoint)
@@ -178,7 +178,7 @@ def test_grid_index_top(icon_grid_savepoint, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(cases.Experiment.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment, levels", [(cases.SerializedExperiment.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(icon_grid_savepoint, experiment, levels, dim, offset):
@@ -193,7 +193,7 @@ def test_grid_index_damping(icon_grid_savepoint, experiment, levels, dim, offset
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(cases.Experiment.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment, levels", [(cases.SerializedExperiment.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(icon_grid_savepoint, experiment, levels, dim, offset):
@@ -208,7 +208,7 @@ def test_grid_index_moist(icon_grid_savepoint, experiment, levels, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(cases.Experiment.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment, levels", [(cases.SerializedExperiment.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(icon_grid_savepoint, experiment, levels, dim, offset):
@@ -225,7 +225,7 @@ def test_grid_index_flat(icon_grid_savepoint, experiment, levels, dim, offset):
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, levels",
-    [(cases.Experiment.MCH_CH_R04B09, NUM_LEVELS), (cases.Experiment.EXCLAIM_APE, 60)],
+    [(cases.SerializedExperiment.MCH_CH_R04B09, NUM_LEVELS), (cases.SerializedExperiment.EXCLAIM_APE, 60)],
 )
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -238,7 +238,7 @@ def test_grid_index_bottom(icon_grid_savepoint, experiment, levels, dim, offset)
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(cases.Experiment.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment, levels", [(cases.SerializedExperiment.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -254,7 +254,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(cases.Experiment.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment, levels", [(cases.SerializedExperiment.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -271,7 +271,7 @@ def test_grid_index_raises_if_index_below_zero(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", (cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE)
+    "experiment", (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE)
 )
 def test_vct_a_vct_b_calculation_from_icon_input(
     icon_grid_savepoint,
@@ -305,7 +305,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, cases.Experiment.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, cases.SerializedExperiment.EXCLAIM_APE])
 def test_compute_vertical_coordinate(
     icon_grid_savepoint,
     metrics_savepoint,
@@ -329,7 +329,7 @@ def test_compute_vertical_coordinate(
     )
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
         topography = topography_savepoint.topo_c()
-    elif experiment == cases.Experiment.EXCLAIM_APE:
+    elif experiment == cases.SerializedExperiment.EXCLAIM_APE:
         topography = data_alloc.zero_field(
             icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
         )

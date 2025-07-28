@@ -24,7 +24,7 @@ from icon4py.model.testing import cases, datatest_utils as dt_utils, grid_utils,
 
 def test_geometry_raises_for_unknown_field(backend):
     geometry = grid_utils.get_grid_geometry(
-        cases.Experiment.EXCLAIM_APE,
+        cases.SerializedExperiment.EXCLAIM_APE,
         backend,
     )
     with pytest.raises(ValueError) as e:
@@ -36,8 +36,8 @@ def test_geometry_raises_for_unknown_field(backend):
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 1e-7),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 3e-12),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 1e-7),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 3e-12),
     ],
 )
 @pytest.mark.datatest
@@ -51,8 +51,8 @@ def test_edge_control_area(backend, icon_grid_savepoint, grid_file, experiment, 
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -67,8 +67,8 @@ def test_coriolis_parameter(backend, icon_grid_savepoint, grid_file, experiment)
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 1e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-12),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 1e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-12),
     ],
 )
 @pytest.mark.datatest
@@ -82,8 +82,8 @@ def test_compute_edge_length(backend, icon_grid_savepoint, grid_file, experiment
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 1e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-12),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 1e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-12),
     ],
 )
 @pytest.mark.datatest
@@ -98,8 +98,8 @@ def test_compute_inverse_edge_length(backend, icon_grid_savepoint, grid_file, ex
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 1e-7),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 1e-7),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -114,8 +114,8 @@ def test_compute_dual_edge_length(backend, icon_grid_savepoint, grid_file, exper
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -137,8 +137,8 @@ def test_compute_inverse_dual_edge_length(
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-10),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-12),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-10),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-12),
     ],
 )
 @pytest.mark.datatest
@@ -156,8 +156,8 @@ def test_compute_inverse_vertex_vertex_length(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_compute_coordinates_of_edge_tangent_and_normal(
@@ -189,8 +189,8 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_compute_primal_normals(backend, icon_grid_savepoint, grid_file, experiment):
@@ -209,8 +209,8 @@ def test_compute_primal_normals(backend, icon_grid_savepoint, grid_file, experim
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_tangent_orientation(backend, icon_grid_savepoint, grid_file, experiment):
@@ -225,8 +225,8 @@ def test_tangent_orientation(backend, icon_grid_savepoint, grid_file, experiment
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_cell_area(backend, icon_grid_savepoint, experiment, grid_file):
@@ -241,8 +241,8 @@ def test_cell_area(backend, icon_grid_savepoint, experiment, grid_file):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_primal_normal_cell(backend, icon_grid_savepoint, grid_file, experiment):
@@ -260,8 +260,8 @@ def test_primal_normal_cell(backend, icon_grid_savepoint, grid_file, experiment)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_dual_normal_cell(backend, icon_grid_savepoint, grid_file, experiment):
@@ -279,8 +279,8 @@ def test_dual_normal_cell(backend, icon_grid_savepoint, grid_file, experiment):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_primal_normal_vert(backend, icon_grid_savepoint, grid_file, experiment):
@@ -298,8 +298,8 @@ def test_primal_normal_vert(backend, icon_grid_savepoint, grid_file, experiment)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_dual_normal_vert(backend, icon_grid_savepoint, grid_file, experiment):
@@ -332,8 +332,8 @@ def test_sparse_fields_creator():
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_create_auxiliary_orientation_coordinates(backend, icon_grid_savepoint, grid_file):

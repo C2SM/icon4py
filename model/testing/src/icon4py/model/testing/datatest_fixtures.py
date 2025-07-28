@@ -16,13 +16,13 @@ import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.testing import cases, data_utils, serialbox as ser
 
 
-@pytest.fixture(params=[*cases.Experiment])
-def experiment(request) -> cases.Experiment:
+@pytest.fixture(params=[*cases.SerializedExperiment])
+def test_experiment(request) -> cases.SerializedExperiment:
     """
-    Define the experiment to be used in the test.
+    Test experiment.
 
     By default this fixture is parametrized over all available experiments
-    defined in `testing.definitions.Experiment`, but most likely you will
+    defined in `testing.cases.Experiment`, but most likely you will
     want to override it in your test module or as a parameter of the test
     to use a specific experiment.
     """
@@ -30,12 +30,12 @@ def experiment(request) -> cases.Experiment:
 
 
 @pytest.fixture(params=[*cases.Grid])
-def grid(request) -> cases.Grid:
+def test_grid(request) -> cases.Grid:
     """
-    Define the grid to be used in the test.
+    Test grid.
 
     By default this fixture is parametrized over all available grids
-    defined in `testing.definitions.Grid`, but most likely you will
+    defined in `testing.cases.Grid`, but most likely you will
     want to override it in your test module or as a parameter of the test
     to use a specific grid.
     """
@@ -43,9 +43,14 @@ def grid(request) -> cases.Grid:
 
 
 @pytest.fixture
-def downloaded_grid_file(grid: cases.Grid) -> pathlib.Path:
-    assert grid.file_name
-    return data_utils.download_grid(grid)
+def test_grid_file(test_grid: cases.Grid) -> pathlib.Path:
+    """Downloaded file with a valid ICON grid."""
+    return data_utils.get_grid(test_grid)
+
+@pytest.fixture(params=cases.SMALL_GRIDS_WITH_FILES)
+def small_grid_file(request) -> pathlib.Path:
+    """Downloaded file with a valid ICON grid."""
+    return data_utils.get_grid(request.param)
 
 
 @pytest.fixture(params=[False], scope="session")
@@ -59,7 +64,7 @@ def ranked_data_path(processor_props):
 
 
 @pytest.fixture
-def experiment_data_files(request, processor_props, ranked_data_path, experiment: cases.Experiment):
+def experiment_data_files(request, processor_props, ranked_data_path, experiment: cases.SerializedExperiment):
     """
     Get the binary ICON data from a remote server.
 
@@ -98,7 +103,7 @@ def data_provider(experiment_data_files, ranked_data_path, experiment, processor
 
 @pytest.fixture
 def icon_grid_savepoint(
-    data_provider: ser.IconSerialDataProvider, experiment: cases.Experiment
+    data_provider: ser.IconSerialDataProvider, experiment: cases.SerializedExperiment
 ) -> ser.IconGridSavepoint:
     assert experiment.grid.R_B_numbers, f"Grid {experiment.grid.name} used in experiment {experiment.name} does not have R_B_numbers defined."
     assert experiment.grid.uuid, f"Grid {experiment.grid.name} used in experiment {experiment.name} does not have a grid uuid defined."
@@ -499,7 +504,7 @@ def istep_exit():
 
 @pytest.fixture
 def lowest_layer_thickness(experiment):
-    if experiment == cases.Experiment.MCH_CH_R04B09:
+    if experiment == cases.SerializedExperiment.MCH_CH_R04B09:
         return 20.0
     else:
         return 50.0
@@ -507,9 +512,9 @@ def lowest_layer_thickness(experiment):
 
 @pytest.fixture
 def model_top_height(experiment):
-    if experiment == cases.Experiment.MCH_CH_R04B09:
+    if experiment == cases.SerializedExperiment.MCH_CH_R04B09:
         return 23000.0
-    elif experiment == cases.Experiment.EXCLAIM_APE:
+    elif experiment == cases.SerializedExperiment.EXCLAIM_APE:
         return 75000.0
     else:
         return 23500.0
@@ -522,9 +527,9 @@ def flat_height():
 
 @pytest.fixture
 def stretch_factor(experiment):
-    if experiment == cases.Experiment.MCH_CH_R04B09:
+    if experiment == cases.SerializedExperiment.MCH_CH_R04B09:
         return 0.65
-    elif experiment == cases.Experiment.EXCLAIM_APE:
+    elif experiment == cases.SerializedExperiment.EXCLAIM_APE:
         return 0.9
     else:
         return 1.0
@@ -532,9 +537,9 @@ def stretch_factor(experiment):
 
 @pytest.fixture
 def damping_height(experiment):
-    if experiment == cases.Experiment.MCH_CH_R04B09:
+    if experiment == cases.SerializedExperiment.MCH_CH_R04B09:
         return 12500.0
-    elif experiment == cases.Experiment.EXCLAIM_APE:
+    elif experiment == cases.SerializedExperiment.EXCLAIM_APE:
         return 50000.0
     else:
         return 45000.0

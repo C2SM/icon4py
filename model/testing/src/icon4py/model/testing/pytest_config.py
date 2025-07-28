@@ -16,75 +16,12 @@ from icon4py.model.common.grid import base as base_grid, simple as simple_grid
 from icon4py.model.testing import cases, helpers
 
 
-REGIONAL_EXPERIMENT: Final[cases.Experiment] = cases.Experiment.MCH_CH_R04B09
-GLOBAL_EXPERIMENT: Final[cases.Experiment] = cases.Experiment.EXCLAIM_APE
+REGIONAL_EXPERIMENT: Final[cases.SerializedExperiment] = cases.SerializedExperiment.MCH_CH_R04B09
+GLOBAL_EXPERIMENT: Final[cases.SerializedExperiment] = cases.SerializedExperiment.EXCLAIM_APE
 
 
 TEST_LEVELS = ("any", "unit", "integration")
 DEFAULT_GRID: Final[str] = "simple_grid"
-
-
-def _check_backend_validity(backend_name: str) -> None:
-    if backend_name not in model_backends.BACKENDS:
-        available_backends = ", ".join([f"'{k}'" for k in model_backends.BACKENDS.keys()])
-        raise Exception(
-            "Need to select a backend. Select from: ["
-            + available_backends
-            + "] and pass it as an argument to --backend when invoking pytest."
-        )
-
-
-def _get_grid(
-    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
-) -> base_grid.BaseGrid:
-    match selected_grid_type:
-        case "icon_grid":
-            from icon4py.model.testing.grid_utils import (
-                get_grid_manager_for_experiment,
-            )
-
-            grid_instance = get_grid_manager_for_experiment(
-                REGIONAL_EXPERIMENT, backend=selected_backend
-            ).grid
-            return grid_instance
-        case "icon_grid_global":
-            from icon4py.model.testing.grid_utils import (
-                get_grid_manager_for_experiment,
-            )
-
-            grid_instance = get_grid_manager_for_experiment(
-                GLOBAL_EXPERIMENT, backend=selected_backend
-            ).grid
-            return grid_instance
-        case _:
-            return simple_grid.SimpleGrid(selected_backend)
-
-
-@pytest.fixture(scope="session")
-def backend(request):
-    try:
-        backend_option = request.config.getoption("backend")
-    except ValueError:
-        backend_option = model_backends.DEFAULT_BACKEND
-    else:
-        _check_backend_validity(backend_option)
-
-    selected_backend = model_backends.BACKENDS[backend_option]
-    return selected_backend
-
-
-@pytest.fixture(scope="session")
-def validation_grid(request, backend):
-    grid_option = (
-         request.config.getoption("grid", DEFAULT_GRID)
-    )
-    try:
-        grid = cases.Grid[grid_option]
-    except KeyError:
-        f"Invalid value for '--grid' option - possible names are {cases.Grid.__members__.keys()}"
-
-    grid = _get_grid(grid_option, backend)
-    return grid
 
 
 def pytest_configure(config):
@@ -101,9 +38,9 @@ def pytest_configure(config):
     if config.getoption("--enable-mixed-precision"):
         os.environ["FLOAT_PRECISION"] = "mixed"
 
-    if config.getoption("--backend"):
-        backend_option = config.getoption("--backend")
-        _check_backend_validity(backend_option)
+    # if config.getoption("--backend"):
+    #     backend_option = config.getoption("--backend")
+    #     _check_backend_validity(backend_option)
 
     # Handle datatest options: --datatest-only  and --datatest-skip
     if m_option := config.getoption("-m", []):

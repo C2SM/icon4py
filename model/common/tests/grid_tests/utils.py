@@ -14,7 +14,7 @@ from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing import cases, datatest_utils as dt_utils
 
 
-r04b09_dsl_grid_path = cases.GRIDS_PATH.joinpath(cases.Experiment.MCH_CH_R04B09)
+r04b09_dsl_grid_path = cases.GRIDS_PATH.joinpath(cases.SerializedExperiment.MCH_CH_R04B09)
 r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1.tar.gz").name
 
 r02b04_global_grid_path = cases.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL)

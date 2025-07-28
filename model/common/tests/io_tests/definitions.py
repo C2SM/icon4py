@@ -25,8 +25,8 @@ from icon4py.model.testing import cases, grid_utils
 BACKEND: Final = None  # Setting backend to fieldview embedded here
 UNLIMITED: Final = None
 SIMPLE_GRID_INSTANCE: Final = simple.SimpleGrid()
-GRID: Final = grid_utils.get_grid_manager_for_experiment(cases.Experiment.EXCLAIM_APE, BACKEND).grid
-GRID_FILE: Final = cases.Experiment.EXCLAIM_APE.grid.file_name
+GRID: Final = grid_utils.get_grid_manager_for_experiment(cases.SerializedExperiment.EXCLAIM_APE, BACKEND).grid
+GRID_FILE: Final = cases.SerializedExperiment.EXCLAIM_APE.grid.file_name
 
 assert GRID_FILE is not None
 

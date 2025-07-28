@@ -27,7 +27,7 @@ from icon4py.model.testing import cases, helpers
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_diffusion_metrics(
     metrics_savepoint,
@@ -37,7 +37,7 @@ def test_compute_diffusion_metrics(
     icon_grid_savepoint,
     backend,
 ):
-    if experiment == cases.Experiment.EXCLAIM_APE:
+    if experiment == cases.SerializedExperiment.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
 
     maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)

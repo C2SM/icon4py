@@ -41,12 +41,12 @@ def metrics_config(experiment: str) -> tuple:
     stretch_factor = 1.0
     damping_height = 45000.0
     match experiment:
-        case cases.Experiment.MCH_CH_R04B09:
+        case cases.SerializedExperiment.MCH_CH_R04B09:
             lowest_layer_thickness = 20.0
             model_top_height = 23000.0
             stretch_factor = 0.65
             damping_height = 12500.0
-        case cases.Experiment.EXCLAIM_APE:
+        case cases.SerializedExperiment.EXCLAIM_APE:
             model_top_height = 75000.0
             stretch_factor = 0.9
             damping_height = 50000.0
@@ -131,8 +131,8 @@ def _get_metrics_factory(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -153,8 +153,8 @@ def test_factory_z_mc(icon_grid_savepoint, metrics_savepoint, grid_file, experim
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -179,8 +179,8 @@ def test_factory_ddqz_z_and_inverse(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -203,8 +203,8 @@ def test_factory_ddqz_full_e(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -227,8 +227,8 @@ def test_factory_ddqz_z_half(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -251,8 +251,8 @@ def test_factory_scaling_factor_for_3d_divdamp(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -273,8 +273,8 @@ def test_factory_rayleigh_w(icon_grid_savepoint, metrics_savepoint, grid_file, e
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -300,8 +300,8 @@ def test_factory_coeffs_dwdz(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -325,8 +325,8 @@ def test_factory_ref_mc(icon_grid_savepoint, metrics_savepoint, grid_file, exper
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -351,8 +351,8 @@ def test_factory_d2dexdz2_facs_mc(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -375,8 +375,8 @@ def test_factory_ddxn_z_full(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -402,10 +402,10 @@ def test_factory_ddxt_z_full(
     "grid_file, experiment",
     [
         (
-            cases.Experiment.MCH_CH_R04B09,
-            cases.Experiment.MCH_CH_R04B09,
+            cases.SerializedExperiment.MCH_CH_R04B09,
+            cases.SerializedExperiment.MCH_CH_R04B09,
         ),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -429,10 +429,10 @@ def test_factory_exner_w_implicit_weight_parameter(
     "grid_file, experiment",
     [
         (
-            cases.Experiment.MCH_CH_R04B09,
-            cases.Experiment.MCH_CH_R04B09,
+            cases.SerializedExperiment.MCH_CH_R04B09,
+            cases.SerializedExperiment.MCH_CH_R04B09,
         ),  # TODO: check vwind_offctr value for regional
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -456,8 +456,8 @@ def test_factory_exner_w_explicit_weight_parameter(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -481,8 +481,8 @@ def test_factory_exner_exfac(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -507,8 +507,8 @@ def test_factory_pressure_gradient_fields(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -534,8 +534,8 @@ def test_factory_mask_bdy_prog_halo_c(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -560,8 +560,8 @@ def test_factory_horizontal_mask_for_3d_divdamp(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -584,8 +584,8 @@ def test_factory_zdiff_gradp(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -608,8 +608,8 @@ def test_factory_coeff_gradekin(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -631,7 +631,7 @@ def test_factory_wgtfacq_e(icon_grid_savepoint, metrics_savepoint, grid_file, ex
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
     ],
 )
 @pytest.mark.datatest

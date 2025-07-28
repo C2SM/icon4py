@@ -25,7 +25,7 @@ from .. import utils
 
 @pytest.skip("FIXME: Need updated test data yet", allow_module_level=True)
 @pytest.mark.mpi
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
 @pytest.mark.parametrize("orchestration", [False, True])
@@ -55,7 +55,7 @@ def test_parallel_diffusion(
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{cases.Experiment.MCH_CH_R04B09}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{cases.SerializedExperiment.MCH_CH_R04B09}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
@@ -163,7 +163,7 @@ def test_parallel_diffusion(
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("experiment", [cases.Experiment.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [cases.SerializedExperiment.MCH_CH_R04B09])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True])
 def test_parallel_diffusion_multiple_steps(
@@ -194,7 +194,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{cases.Experiment.MCH_CH_R04B09}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{cases.SerializedExperiment.MCH_CH_R04B09}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "

@@ -64,16 +64,11 @@ def download_and_extract(
 
 
 
-
-def get_grid_file_path(grid_file_path: pathlib.Path | str) -> pathlib.Path:
-    return cases.GRIDS_PATH / grid_file_path
-
-
-def download_grid(grid: cases.Grid) -> pathlib.Path:
-    assert grid.file_name
+def get_grid(grid: cases.Grid) -> pathlib.Path:
+    assert grid.download_file_path
     assert grid.uri
 
-    grid_file_path = get_grid_file_path(grid.file_name)
+    grid_file_path = grid.download_file_path
     if not grid_file_path.exists():
         download_and_extract(grid.uri, grid_file_path)
 
@@ -84,11 +79,11 @@ def get_processor_properties_for_run(run_instance):
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_ranked_data_path(base_path, processor_properties):
+def get_ranked_data_path(base_path, processor_properties) -> pathlib.Path:
     return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
 
 
-def get_datapath_for_experiment(ranked_base_path, experiment):
+def get_datapath_for_experiment(ranked_base_path, experiment) -> pathlib.Path:
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 

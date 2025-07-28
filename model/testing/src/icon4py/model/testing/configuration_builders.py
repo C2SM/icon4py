@@ -12,14 +12,14 @@ from icon4py.model.testing import cases
 
 
 def build_diffusion_config(
-    experiment: cases.Experiment, ndyn_substeps: int = 5
+    experiment: cases.SerializedExperiment, ndyn_substeps: int = 5
 ) -> "icon4py.model.atmosphere.diffusion.diffusion.DiffusionConfig":
     """Create a DiffusionConfig instance with the settings needed for the given experiment."""
 
     from icon4py.model.atmosphere.diffusion import diffusion
 
     match experiment:
-        case cases.Experiment.MCH_CH_R04B09:
+        case cases.SerializedExperiment.MCH_CH_R04B09:
             config = diffusion.DiffusionConfig(
                 diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
                 hdiff_w=True,
@@ -38,7 +38,7 @@ def build_diffusion_config(
                 shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
             )
 
-        case cases.Experiment.EXCLAIM_APE:
+        case cases.SerializedExperiment.EXCLAIM_APE:
             config = diffusion.DiffusionConfig(
                 diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
                 hdiff_w=True,

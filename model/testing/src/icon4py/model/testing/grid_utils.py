@@ -47,7 +47,7 @@ def download_grid(grid: cases.Grid) -> pathlib.Path:
 
 
 def get_grid_manager_for_experiment(
-    experiment: cases.Experiment, backend: Optional[gtx_backend.Backend] = None
+    experiment: cases.SerializedExperiment, backend: Optional[gtx_backend.Backend] = None
 ) -> gm.GridManager:
     return get_grid_manager(experiment.grid, experiment.num_levels, backend)
 
@@ -65,7 +65,7 @@ def get_grid_file_path(grid_file_path: pathlib.Path | str) -> pathlib.Path:
 
 
 def get_grid_geometry(
-    experiment: cases.Experiment, backend: Optional[gtx_backend.Backend]
+    experiment: cases.SerializedExperiment, backend: Optional[gtx_backend.Backend]
 ) -> geometry.GridGeometry:
     register_name = f"{experiment.name}_{data_alloc.backend_name(backend)}"
     if register_name not in grid_geometries:
@@ -113,7 +113,7 @@ def _construct_dummy_decomposition_info(
 
 
 def _construct_grid_geometry(
-    experiment: cases.Experiment, backend: Optional[gtx_backend.Backend]
+    experiment: cases.SerializedExperiment, backend: Optional[gtx_backend.Backend]
 ) -> geometry.GridGeometry:
     gm = get_grid_manager_for_experiment(experiment, backend=backend)
     grid = gm.grid

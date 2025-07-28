@@ -39,7 +39,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
     ],
 )
 @pytest.mark.datatest
@@ -61,8 +61,8 @@ def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, d
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -98,8 +98,8 @@ def _get_interpolation_factory(
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 1e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-12),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 1e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-12),
     ],
 )
 @pytest.mark.datatest
@@ -118,8 +118,8 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -147,8 +147,8 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -168,8 +168,8 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -186,8 +186,8 @@ def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend,
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -219,8 +219,8 @@ def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend)
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -244,7 +244,7 @@ def test_get_mass_conserving_cell_average_weight(
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
     ],
 )
 @pytest.mark.datatest
@@ -262,8 +262,8 @@ def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -280,8 +280,8 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest
@@ -299,8 +299,8 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09, 5e-9),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE, 1e-11),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09, 5e-9),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE, 1e-11),
     ],
 )
 @pytest.mark.datatest

@@ -32,7 +32,7 @@ from .test_grid_init import grid_init  # noqa: F401
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (cases.Experiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (cases.SerializedExperiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -291,7 +291,7 @@ def test_diffusion_wrapper_granule_inputs(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (cases.Experiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (cases.SerializedExperiment.MCH_CH_R04B09, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))

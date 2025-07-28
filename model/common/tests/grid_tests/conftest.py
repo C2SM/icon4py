@@ -33,6 +33,6 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
 
 @pytest.fixture
 def grid_file():
-    grid_file_path = cases.Experiment.MCH_CH_R04B09.grid.file_name
+    grid_file_path = cases.SerializedExperiment.MCH_CH_R04B09.grid.file_name
     assert grid_file_path, "Grid file name must be defined in the experiment."
     return grid_utils.get_grid_file_path(grid_file_path)

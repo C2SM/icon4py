@@ -88,8 +88,8 @@ def test_grid_file_dimension(global_grid_file):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_file_vertex_cell_edge_dimensions(icon_grid_savepoint, grid_file):
@@ -111,7 +111,7 @@ def test_grid_file_vertex_cell_edge_dimensions(icon_grid_savepoint, grid_file):
 # TODO is this useful?
 @pytest.mark.skip
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("experiment", (cases.Experiment.EXCLAIM_APE,))
+@pytest.mark.parametrize("experiment", (cases.SerializedExperiment.EXCLAIM_APE,))
 def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
     caplog.set_level(logging.DEBUG)
     parser = gm.GridFile(str(global_grid_file))
@@ -146,8 +146,8 @@ def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_v2e(caplog, icon_grid_savepoint, experiment, grid_file, backend):
@@ -169,8 +169,8 @@ def test_grid_manager_eval_v2e(caplog, icon_grid_savepoint, experiment, grid_fil
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
@@ -189,8 +189,8 @@ def test_grid_manager_refin_ctrl(icon_grid_savepoint, grid_file, experiment, dim
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_v2c(caplog, icon_grid_savepoint, experiment, grid_file, backend):
@@ -242,8 +242,8 @@ def reset_invalid_index(index_array: np.ndarray):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_e2v(caplog, icon_grid_savepoint, grid_file, experiment, backend):
@@ -273,8 +273,8 @@ def invalid_index(ar: np.ndarray):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_e2c(caplog, icon_grid_savepoint, grid_file, experiment, backend):
@@ -294,8 +294,8 @@ def test_grid_manager_eval_e2c(caplog, icon_grid_savepoint, grid_file, experimen
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_c2e(caplog, icon_grid_savepoint, grid_file, experiment, backend):
@@ -318,8 +318,8 @@ def test_grid_manager_eval_c2e(caplog, icon_grid_savepoint, grid_file, experimen
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_c2e2c(caplog, icon_grid_savepoint, grid_file, experiment, backend):
@@ -336,8 +336,8 @@ def test_grid_manager_eval_c2e2c(caplog, icon_grid_savepoint, grid_file, experim
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_c2e2cO(caplog, icon_grid_savepoint, grid_file, experiment, backend):
@@ -356,8 +356,8 @@ def test_grid_manager_eval_c2e2cO(caplog, icon_grid_savepoint, grid_file, experi
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_e2c2e(caplog, icon_grid_savepoint, grid_file, experiment, backend):
@@ -386,8 +386,8 @@ def test_grid_manager_eval_e2c2e(caplog, icon_grid_savepoint, grid_file, experim
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_e2c2v(caplog, icon_grid_savepoint, grid_file, backend):
@@ -410,8 +410,8 @@ def test_grid_manager_eval_e2c2v(caplog, icon_grid_savepoint, grid_file, backend
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_grid_manager_eval_c2v(caplog, icon_grid_savepoint, grid_file, backend):
@@ -471,7 +471,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
     "grid_file, global_num_cells",
     [
         (dt_utils.R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
-        (cases.Experiment.MCH_CH_R04B09, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (cases.SerializedExperiment.MCH_CH_R04B09, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )
 def test_grid_manager_grid_level_and_root(grid_file, global_num_cells, backend):
@@ -500,8 +500,8 @@ def test_grid_manager_eval_c2e2c2e(caplog, icon_grid_savepoint, grid_file, backe
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
     ],
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
@@ -513,7 +513,7 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
         if (
             dim == dims.EdgeDim
             and domain.zone == h_grid.Zone.END
-            and experiment == cases.Experiment.EXCLAIM_APE
+            and experiment == cases.SerializedExperiment.EXCLAIM_APE
         ):
             pytest.xfail(
                 "FIXME: start_index in serialized data changed to 0 with unknown consequences, see also icon-exclaim output"
@@ -541,8 +541,8 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_read_geometry_fields(icon_grid_savepoint, grid_file, backend):
@@ -560,8 +560,8 @@ def test_read_geometry_fields(icon_grid_savepoint, grid_file, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 @pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
@@ -577,8 +577,8 @@ def test_coordinates(icon_grid_savepoint, grid_file, experiment, dim, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_tangent_orientation(grid_file, icon_grid_savepoint, backend):
@@ -594,8 +594,8 @@ def test_tangent_orientation(grid_file, icon_grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_edge_orientation_on_vertex(grid_file, icon_grid_savepoint, backend):
@@ -611,8 +611,8 @@ def test_edge_orientation_on_vertex(grid_file, icon_grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_dual_area(grid_file, icon_grid_savepoint, backend):
@@ -626,8 +626,8 @@ def test_dual_area(grid_file, icon_grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_edge_cell_distance(grid_file, icon_grid_savepoint, backend):
@@ -646,8 +646,8 @@ def test_edge_cell_distance(grid_file, icon_grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_cell_normal_orientation(grid_file, icon_grid_savepoint, backend):
@@ -663,8 +663,8 @@ def test_cell_normal_orientation(grid_file, icon_grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (cases.Experiment.MCH_CH_R04B09, cases.Experiment.MCH_CH_R04B09),
-        (dt_utils.R02B04_GLOBAL, cases.Experiment.EXCLAIM_APE),
+        (cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.MCH_CH_R04B09),
+        (dt_utils.R02B04_GLOBAL, cases.SerializedExperiment.EXCLAIM_APE),
     ],
 )
 def test_edge_vertex_distance(grid_file, icon_grid_savepoint, backend):
@@ -680,7 +680,7 @@ def test_edge_vertex_distance(grid_file, icon_grid_savepoint, backend):
 
 
 @pytest.mark.parametrize(
-    "grid_file, expected", [(cases.Experiment.MCH_CH_R04B09, True), (dt_utils.R02B04_GLOBAL, False)]
+    "grid_file, expected", [(cases.SerializedExperiment.MCH_CH_R04B09, True), (dt_utils.R02B04_GLOBAL, False)]
 )
 def test_limited_area_on_grid(grid_file, expected):
     grid = _run_grid_manager(grid_file, backend=None).grid

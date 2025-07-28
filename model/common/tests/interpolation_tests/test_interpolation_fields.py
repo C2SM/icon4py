@@ -44,7 +44,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_c_lin_e(
     icon_grid_savepoint, interpolation_savepoint, icon_grid, backend
@@ -80,7 +80,7 @@ def test_compute_c_lin_e(
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_geofac_div(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     mesh = icon_grid
@@ -103,7 +103,7 @@ def test_compute_geofac_div(icon_grid_savepoint, interpolation_savepoint, icon_g
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_geofac_rot(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     mesh = icon_grid
@@ -130,7 +130,7 @@ def test_compute_geofac_rot(icon_grid_savepoint, interpolation_savepoint, icon_g
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_geofac_n2s(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
@@ -155,7 +155,7 @@ def test_compute_geofac_n2s(icon_grid_savepoint, interpolation_savepoint, icon_g
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_geofac_grg(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
@@ -198,7 +198,7 @@ def test_compute_geofac_grg(icon_grid_savepoint, interpolation_savepoint, icon_g
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_geofac_grdiv(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
@@ -226,7 +226,7 @@ def test_compute_geofac_grdiv(icon_grid_savepoint, interpolation_savepoint, icon
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, atol",
-    [(cases.Experiment.MCH_CH_R04B09, 1e-10), (cases.Experiment.EXCLAIM_APE, 1e-10)],
+    [(cases.SerializedExperiment.MCH_CH_R04B09, 1e-10), (cases.SerializedExperiment.EXCLAIM_APE, 1e-10)],
 )
 def test_compute_c_bln_avg(icon_grid_savepoint, interpolation_savepoint, icon_grid, atol, backend):
     xp = data_alloc.import_array_ns(backend)
@@ -261,7 +261,7 @@ def test_compute_c_bln_avg(icon_grid_savepoint, interpolation_savepoint, icon_gr
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_e_flx_avg(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
@@ -299,7 +299,7 @@ def test_compute_e_flx_avg(icon_grid_savepoint, interpolation_savepoint, icon_gr
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_cells_aw_verts(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
@@ -331,7 +331,7 @@ def test_compute_cells_aw_verts(icon_grid_savepoint, interpolation_savepoint, ic
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_e_bln_c_s(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s()
@@ -353,7 +353,7 @@ def test_compute_e_bln_c_s(icon_grid_savepoint, interpolation_savepoint, icon_gr
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment", [cases.Experiment.MCH_CH_R04B09, cases.Experiment.EXCLAIM_APE]
+    "experiment", [cases.SerializedExperiment.MCH_CH_R04B09, cases.SerializedExperiment.EXCLAIM_APE]
 )
 def test_compute_pos_on_tplane_e(icon_grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
