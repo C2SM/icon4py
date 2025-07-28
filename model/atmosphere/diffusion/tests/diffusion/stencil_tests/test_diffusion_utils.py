@@ -18,6 +18,9 @@ from ..fixtures import *  # noqa: F403
 from ..utils import construct_diffusion_config, diff_multfac_vn_numpy, smag_limit_numpy
 
 
+# TODO: apply StencilTest structure to this test
+
+
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
     return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
 

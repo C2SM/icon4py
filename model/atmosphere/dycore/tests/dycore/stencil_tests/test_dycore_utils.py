@@ -17,6 +17,9 @@ from icon4py.model.testing import helpers
 from ..fixtures import backend
 
 
+# TODO: apply StencilTest structure to this test
+
+
 def fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
     a: np.ndarray, factor: float, mean_cell_area: float
 ):
