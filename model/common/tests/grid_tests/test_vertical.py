@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 
 
@@ -313,7 +313,7 @@ def test_compute_vertical_coordinate(
     model_top_height,
     backend,
 ):
-    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
+    xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     cell_geometry = grid_savepoint.construct_cell_geometry()

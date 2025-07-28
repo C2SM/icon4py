@@ -21,7 +21,7 @@ from gt4py.next.ffront.decorator import FieldOperator, Program
 from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import device_utils
 
 
 @dataclasses.dataclass
@@ -98,7 +98,7 @@ def apply_markers(
 ):
     for marker in markers:
         match marker.name:
-            case "cpu_only" if data_alloc.is_cupy_device(backend):
+            case "cpu_only" if device_utils.is_cupy_device(backend):
                 pytest.xfail("currently only runs on CPU")
             case "embedded_only" if not is_embedded(backend):
                 pytest.skip("stencil runs only on embedded backend")
