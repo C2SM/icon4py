@@ -10,7 +10,7 @@ include:
   rules:
     - if: $COMPONENT == 'dycore' || $COMPONENT == 'diffusion'
       variables:
-        SLURM_TIMELIMIT: '00:30:00'
+        SLURM_TIMELIMIT: '00:20:00'
     - when: on_success
   parallel:
     matrix:

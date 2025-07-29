@@ -11,6 +11,12 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import simple as simple_grid
+from icon4py.model.testing.fixtures import (
+    # Note: has to be used from pytest_hooks, otherwise StencilTest will not respect the session scope
+    backend,  # noqa: F401
+    connectivities_as_numpy,  # noqa: F401
+    grid,  # noqa: F401
+)
 from icon4py.model.testing.helpers import apply_markers
 
 
@@ -127,16 +133,16 @@ def pytest_collection_modifyitems(config, items):
 
 
 def pytest_runtest_setup(item):
-    backend = model_backends.BACKENDS[item.config.getoption("--backend")]
+    selected_backend = model_backends.BACKENDS[item.config.getoption("--backend")]
     if "grid" in item.funcargs:
         grid = item.funcargs["grid"]
     else:
         # use the default grid
-        grid = simple_grid.simple_grid(backend)
+        grid = simple_grid.simple_grid(selected_backend)
     apply_markers(
         item.own_markers,
         grid,
-        backend,
+        selected_backend,
     )
 
 

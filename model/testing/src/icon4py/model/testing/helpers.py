@@ -22,7 +22,6 @@ from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
-from icon4py.model.testing import fixtures
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
@@ -215,11 +214,6 @@ class StencilTest:
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: typing.Optional[tuple] = None
-
-    # Helper fixtures
-    grid = staticmethod(fixtures.grid)
-    backend = staticmethod(fixtures.backend)
-    connectivities_as_numpy = staticmethod(fixtures.connectivities_as_numpy)
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that
