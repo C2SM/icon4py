@@ -34,7 +34,8 @@ dependencies = [
   "numpy>=1.23.3",
   'packaging>=20.0',
   'click>=8.1.7',
-  'fprettify>=v0.3.7'
+  'fprettify>=v0.3.7',
+  'configargparse>=1.7.1'
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 license = {text = "BSD-3 License"}
