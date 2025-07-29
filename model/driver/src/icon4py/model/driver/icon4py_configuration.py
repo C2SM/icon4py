@@ -10,7 +10,7 @@ import datetime
 import functools
 import logging
 
-from gt4py.next import backend as gtx_backend
+from gt4py.next import backend as gtx_backend, metrics as gtx_metrics
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
@@ -219,3 +219,10 @@ def read_config(
         diffusion_config=diffusion_config,
         solve_nonhydro_config=nonhydro_config,
     )
+
+
+@dataclasses.dataclass
+class ProfilingConfig:
+    gt4py_metrics_level: int = gtx_metrics.ALL
+    gt4py_metrics_output_file: str = "gt4py_metrics.json"
+    skip_first_timestep: bool = True
