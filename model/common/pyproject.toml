@@ -23,11 +23,12 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-  "gt4py==1.0.5",
+  'gt4py[next]==1.0.5',
   'packaging>=20.0',
-  "serialbox4py>=2.6.2",
   'packaging>=20.0',
-  "typing-extensions>=4.11.0"
+  'typing-extensions>=4.11.0',
+  'numpy>=1.23.3',
+  'scipy>=1.14.1'
 ]
 description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}

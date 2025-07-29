@@ -31,8 +31,9 @@ dependencies = [
   # external dependencies
   "click>=8.0.1",
   "devtools>=0.12",
-  "gt4py==1.0.5",
-  'packaging>=20.0'
+  "gt4py[next]==1.0.5",
+  "packaging>=20.0",
+  "numpy>=1.23.3"
 ]
 description = "ICON model driver."
 license = {text = "BSD-3 License"}

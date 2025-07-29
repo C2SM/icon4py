@@ -30,10 +30,11 @@ dependencies = [
   'icon4py-common>=0.0.6',
   # external dependencies
   'cffi>=1.5',
-  'fprettify>=0.3.7',
   'gt4py==1.0.5',
   "numpy>=1.23.3",
-  'packaging>=20.0'
+  'packaging>=20.0',
+  'click>=8.1.7',
+  'fprettify>=v0.3.7'
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 license = {text = "BSD-3 License"}

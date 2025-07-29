@@ -95,7 +95,7 @@ repos:
       - <<: *uv-managed-hook
         id: tach
         name: tach module dependency checker
-        entry: uv run --group dev --frozen --isolated tach check
+        entry: uv run --group dev --frozen --isolated tach check-external
         pass_filenames: false
 
       - <<: *uv-managed-hook
