@@ -15,8 +15,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 
+import gt4py.next as gtx
 import numpy as np
-import  gt4py.next as gtx
 
 from icon4py.model.common import utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -132,7 +132,8 @@ class DecompositionInfo:
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
 
-    def global_to_local(self, dim:gtx.Dimension):
+    def global_to_local(self, dim: gtx.Dimension):
+        ...
 
     def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]

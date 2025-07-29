@@ -74,9 +74,11 @@ CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 
-def _reduce_to_rank_local_size(full_size_neighbor_tables: dict[dims.FieldOffset, data_alloc.NDArray], decomposition_info:decomposition.DecompositionInfo)->dict[dims.FieldOffset, data_alloc.NDArray]:
-
-    def get_rank_local_values(k:gtx.FieldOffset, v:data_alloc.NDArray):
+def _reduce_to_rank_local_size(
+    full_size_neighbor_tables: dict[dims.FieldOffset, data_alloc.NDArray],
+    decomposition_info: decomposition.DecompositionInfo,
+) -> dict[dims.FieldOffset, data_alloc.NDArray]:
+    def get_rank_local_values(k: gtx.FieldOffset, v: data_alloc.NDArray):
         index_target_dim = k.source
         index_source_dim = k.target[0]
 
@@ -84,9 +86,6 @@ def _reduce_to_rank_local_size(full_size_neighbor_tables: dict[dims.FieldOffset,
         return v[index, :]
 
     return {k: get_rank_local_values(k, v) for k, v in full_size_neighbor_tables.items()}
-
-
-
 
 
 class GridManager:
@@ -405,18 +404,19 @@ class GridManager:
         ## TODO from here do local reads (and halo exchanges!!)
         # CONSTRUCT LOCAL PATCH
 
-        neighbor_tables = _reduce_to_rank_local_size(neighbor_tables_for_halo_construction) # reduce locally? or read again
+        neighbor_tables = _reduce_to_rank_local_size(
+            neighbor_tables_for_halo_construction
+        )  # reduce locally? or read again
         edge_index = decomposition_info.global_index(dims.EdgeDim)
-        neighbor_tables[dims.E2V] = self._get_index_field(gridfile.ConnectivityName.E2V, indices = edge_index)
+        neighbor_tables[dims.E2V] = self._get_index_field(
+            gridfile.ConnectivityName.E2V, indices=edge_index
+        )
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
-
-
 
         _derived_connectivities = functools.partial(
             _get_derived_connectivities,
             array_ns=xp,
         )
-
 
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
         start, end, _ = self._read_start_end_indices()
@@ -497,7 +497,13 @@ class GridManager:
             refinement_control=refinement_fields,
         )
 
-    def _get_index_field(self, field: gridfile.GridFileName, indices: np.ndarray|None = None, transpose=True, apply_offset=True):
+    def _get_index_field(
+        self,
+        field: gridfile.GridFileName,
+        indices: np.ndarray | None = None,
+        transpose=True,
+        apply_offset=True,
+    ):
         field = self._reader.int_variable(field, indices=indices, transpose=transpose)
         if apply_offset:
             field = field + self._transformation(field)
