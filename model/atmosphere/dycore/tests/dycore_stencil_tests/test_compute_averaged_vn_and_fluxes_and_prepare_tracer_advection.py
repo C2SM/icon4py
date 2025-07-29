@@ -66,20 +66,19 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
             theta_v_at_edges_on_model_levels,
         )
 
-        substep_and_spatially_averaged_vn, substep_averaged_mass_flux = (
+        if prepare_advection:
+         substep_and_spatially_averaged_vn, substep_averaged_mass_flux = (
             (
-                (r_nsubsteps * spatially_averaged_vn, r_nsubsteps * mass_fl_e)
+                (r_nsubsteps * spatially_averaged_vn, r_nsubsteps * mass_flux_at_edges_on_model_levels)
                 if at_first_substep
-                else accumulate_prep_adv_fields_numpy(
+                else _accumulate_prep_adv_fields(
                     spatially_averaged_vn,
-                    mass_fl_e,
+                    mass_flux_at_edges_on_model_levels,
                     substep_and_spatially_averaged_vn,
                     substep_averaged_mass_flux,
                     r_nsubsteps,
                 )
             )
-            if prepare_advection
-            else (substep_and_spatially_averaged_vn, substep_averaged_mass_flux)
         )
 
         return dict(
