@@ -164,10 +164,7 @@ namespace_packages = true
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
 # exclude = [
-#   '^tests/f2ser/*.py',
-#   '^tests/icon4pygen/*.py',
-#   '^tests/liskov/*.py',
-#   '^tests/py2f/*.py',
+#   '^tests/py2fgen/*.py',
 # ]
 ignore_missing_imports = false
 implicit_reexport = true
