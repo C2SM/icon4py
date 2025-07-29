@@ -43,6 +43,7 @@ repos:
       - id: check-yaml
         args: [--unsafe]
       - id: debug-statements
+      - id: end-of-file-fixer
       - id: pretty-format-json
         args: [--autofix, --indent, "2"]
 
@@ -111,4 +112,3 @@ repos:
         entry: uv run --group dev --frozen --isolated validate-pyproject pyproject.toml
         files: ^pyproject\.toml$
         pass_filenames: false
-
