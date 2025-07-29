@@ -127,6 +127,50 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """
+    This program computes a variety of diagnostic quantities and fluxes
+    related to horizontal wind including
+    tangential wind, mass and virtual potential temperature fluxes, horizontal
+    kinetic energy, and divergence-related terms. It also performs extrapolation
+    of wind quantities to half levels near the model top.
+    Args:
+        - spatially_averaged_vn: spatial average of the normal wind at edges on model levels [m s⁻¹]
+        - horizontal_gradient_of_normal_wind_divergence: horizontal gradient of the divergence of normal wind [s⁻²]
+        - tangential_wind: tangential component of the horizontal wind [m s⁻¹]
+        - mass_flux_at_edges_on_model_levels: mass flux at edges (ρ * vn) on model levels [kg m⁻² s⁻¹]
+        - theta_v_flux_at_edges_on_model_levels: virtual potential temperature flux (ρ * θ_v * vn) on model levels [K kg m⁻² s⁻¹]
+        - tangential_wind_on_half_levels: tangential wind at vertical half levels [m s⁻¹]
+        - vn_on_half_levels: normal wind at vertical half levels [m s⁻¹]
+        - horizontal_kinetic_energy_at_edges_on_model_levels: kinetic energy per unit mass at edges on model levels [m² s⁻²]
+        - contravariant_correction_at_edges_on_model_levels: contravariant correction term at edges on model levels [m s⁻¹]
+        - vn: normal wind component at edges on model levels [m s⁻¹]
+        - e_flx_avg: average energy flux across edge-to-cell transitions
+        - geofac_grdiv: geometric factor for gradient/divergence at edges
+        - rbf_vec_coeff_e: radial basis function coefficients for edge vector interpolation
+        - rho_at_edges_on_model_levels: air density at edges on model levels [kg m⁻³]
+        - theta_v_at_edges_on_model_levels: virtual potential temperature at edges on model levels [K]
+        - ddqz_z_full_e: vertical derivative of qz field at edges [1/m]
+        - ddxn_z_full: zonal horizontal derivative of scalar field at edges [1/m]
+        - ddxt_z_full: meridional horizontal derivative of scalar field at edges [1/m]
+        - wgtfac_e: metrics field
+        - wgtfacq_e: metrics field
+        - nflatlev: number of flat vertical levels near the model top
+        - horizontal_start: start index of the horizontal domain
+        - horizontal_end: end index of the horizontal domain
+        - vertical_start: start index of the vertical domain
+        - vertical_end: end index of the vertical domain
+    Returns:
+        - spatially_averaged_vn
+        - horizontal_gradient_of_normal_wind_divergence
+        - tangential_wind
+        - mass_flux_at_edges_on_model_levels
+        - theta_v_flux_at_edges_on_model_levels
+        - vn_on_half_levels
+        - tangential_wind_on_half_levels
+        - horizontal_kinetic_energy_at_edges_on_model_levels
+        - contravariant_correction_at_edges_on_model_levels
+    """
+
     _compute_horizontal_velocity_quantities_and_fluxes(
         contravariant_correction_at_edges_on_model_levels,
         vn,
@@ -244,6 +288,38 @@ def compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """
+        This program performs:
+        - Averaging the normal wind component across substeps
+        - Calculating mass flux and theta_v flux on edges
+        - Optional initialization of tracer advection preparation
+        depending on current substep and solver configuration.
+        Args:
+            - spatially_averaged_vn: temporally averaged normal wind at edges [m s⁻¹]
+            - mass_flux_at_edges_on_model_levels: temporally averaged mass flux at edges [kg m⁻² s⁻¹]
+            - theta_v_flux_at_edges_on_model_levels: temporally averaged θ_v flux at edges [K kg m⁻² s⁻¹]
+            - substep_and_spatially_averaged_vn: combined substep and spatially averaged vn [m s⁻¹]
+            - substep_averaged_mass_flux: substep-averaged mass flux field [kg m⁻² s⁻¹]
+            - e_flx_avg: average energy flux
+            - vn: normal wind component at edges [m s⁻¹]
+            - rho_at_edges_on_model_levels: air density at edges on model levels [kg m⁻³]
+            - ddqz_z_full_e: vertical derivative of qz at edges [1/m]
+            - theta_v_at_edges_on_model_levels: virtual potential temperature at edges [K]
+            - prepare_advection: whether to prepare fields for tracer advection (True if in preparation phase)
+            - at_first_substep: True if currently at the first substep of the time integration
+            - r_nsubsteps: reciprocal of the total number of substeps (1 / N)
+            - horizontal_start: start index of the horizontal domain
+            - horizontal_end: end index of the horizontal domain
+            - vertical_start: start index of the vertical domain
+            - vertical_end: end index of the vertical domain
+        Returns:
+            - spatially_averaged_vn
+            - mass_flux_at_edges_on_model_levels
+            - theta_v_flux_at_edges_on_model_levels
+            - substep_and_spatially_averaged_vn
+            - substep_averaged_mass_flux
+    """
+
     _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
         substep_and_spatially_averaged_vn,
         substep_averaged_mass_flux,
