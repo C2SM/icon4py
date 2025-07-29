@@ -53,7 +53,7 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
         return dict(w=w_new)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         h_start = 0

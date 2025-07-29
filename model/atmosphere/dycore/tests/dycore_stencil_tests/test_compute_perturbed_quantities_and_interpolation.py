@@ -88,7 +88,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         "pressure_buoyancy_acceleration_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
-    MARKERS = (pytest.mark.infinite_concat_where,)
+    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -338,7 +338,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         reference_rho_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )

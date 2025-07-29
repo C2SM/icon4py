@@ -156,7 +156,7 @@ def pytest_addoption(parser):
 
 def _get_grid(
     selected_grid_type: str, selected_backend: gtx_backend.Backend | None
-) -> base_grid.BaseGrid:
+) -> base_grid.Grid:
     match selected_grid_type:
         case "icon_grid":
             from icon4py.model.testing.grid_utils import (
@@ -177,7 +177,7 @@ def _get_grid(
             ).grid
             return grid_instance
         case _:
-            return simple_grid.SimpleGrid(selected_backend)
+            return simple_grid.simple_grid(selected_backend)
 
 
 def pytest_collection_modifyitems(config, items):
@@ -203,7 +203,7 @@ def pytest_runtest_setup(item):
         grid = item.funcargs["grid"]
     else:
         # use the default grid
-        grid = simple_grid.SimpleGrid(backend)
+        grid = simple_grid.simple_grid(backend)
     apply_markers(
         item.own_markers,
         grid,

@@ -9,18 +9,17 @@ import dataclasses
 import enum
 import functools
 import logging
+import math
 import uuid
-import warnings
-from abc import ABC, abstractmethod
 from types import ModuleType
-from typing import Callable, Dict, Sequence
+from typing import Callable, Dict, Mapping, Sequence
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import common as gtx_common
+from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
-from icon4py.model.common import dimension as dims, utils
-from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -58,7 +57,6 @@ class GridConfig:
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
     lvertnest: bool = False
-    on_gpu: bool = False
     keep_skip_values: bool = True
 
     @property
@@ -78,180 +76,207 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
-class BaseGrid(ABC):
-    def __init__(self):
-        self.config: GridConfig = None
-        self._neighbor_tables: Dict[gtx.Dimension, data_alloc.NDArray] = {}
-        self.size: Dict[gtx.Dimension, int] = {}
-        self._connectivity_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
+def _1d_size(connectivity: gtx_common.NeighborTable) -> int:
+    return math.prod(connectivity.shape)
 
-    @property
-    @abstractmethod
-    def id(self) -> uuid.UUID:
-        """Unique identifier of the horizontal grid.
 
-        ICON grid files contain a UUID that uniquely identifies the horizontal grid described in the file (global attribute `uuidOfHGrid`).
-        UUID from icon grid files are UUID v1.
-        """
-        pass
+def _default_1d_sparse_connectivity_constructor(
+    offset: gtx.FieldOffset,
+    shape2d: tuple[int, int],
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> data_alloc.NDArray:
+    return gtx.as_connectivity(
+        domain=offset.target,
+        codomain=offset.source,
+        data=np.arange(shape2d[0] * shape2d[1], dtype=gtx.int32).reshape(shape2d),
+        allocator=allocator,
+    )
 
-    @property
-    @abstractmethod
-    def num_cells(self) -> int:
-        pass
 
-    @property
-    @abstractmethod
-    def num_vertices(self) -> int:
-        pass
+@dataclasses.dataclass(frozen=True)
+class Grid:
+    """
+    Contains core features of a grid.
 
-    @property
-    @abstractmethod
-    def num_edges(self) -> int:
-        pass
+    The 'Grid' is ICON4Py specific: it expects certain connectivities to be present
+    to construct derived (1D sparse) connectivities.
 
-    @property
-    @abstractmethod
-    def num_levels(self) -> int:
-        pass
+    Note: A 'Grid' can be used in 'StencilTest's, while some components of ICON4Py may
+    require an 'IconGrid'.
+    """
 
-    @property
-    @abstractmethod
-    def geometry_type(self) -> GeometryType:
-        ...
+    id: uuid.UUID
+    """
+    Unique identifier of the horizontal grid.
+
+    ICON grid files contain a UUID that uniquely identifies the horizontal grid
+    described in the file (global attribute `uuidOfHGrid`).
+    UUID from icon grid files are UUID v1.
+    """
+    config: GridConfig
+    connectivities: gtx_common.OffsetProvider
+    geometry_type: GeometryType
+    # only used internally for `start_index` and `end_index` public interface:
+    # TODO(havogt): consider refactoring to `Mapping[h_grid.Zone, gtx.int32]`
+    _start_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
+    _end_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
+    # for construction:
+    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocationUtil | None]
+    sparse_1d_connectivity_constructor: dataclasses.InitVar[
+        Callable[
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
+            gtx_common.NeighborTable,
+        ]
+        | None
+    ] = None
+
+    def __post_init__(
+        self,
+        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
+        sparse_1d_connectivity_constructor: Callable[
+            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
+            gtx_common.NeighborTable,
+        ]
+        | None,
+    ):
+        if sparse_1d_connectivity_constructor is None:
+            sparse_1d_connectivity_constructor = _default_1d_sparse_connectivity_constructor
+        # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
+        self.connectivities[dims.Koff.value] = dims.KDim
+        # 1d sparse connectivities
+        self.connectivities[dims.C2CE.value] = sparse_1d_connectivity_constructor(
+            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=allocator
+        )
+        self.connectivities[dims.E2ECV.value] = sparse_1d_connectivity_constructor(
+            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=allocator
+        )
+        self.connectivities[dims.E2EC.value] = sparse_1d_connectivity_constructor(
+            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=allocator
+        )
+        self.connectivities[dims.C2CEC.value] = sparse_1d_connectivity_constructor(
+            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=allocator
+        )
+        if dims.C2E2C2E2C.value in self.connectivities:  # TODO is this optional?
+            self.connectivities[dims.C2CECEC.value] = sparse_1d_connectivity_constructor(
+                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=allocator
+            )
 
     @functools.cached_property
-    def neighbor_tables(self) -> Dict[gtx.Dimension, data_alloc.NDArray]:
-        return {
-            dim: v.ndarray
-            for k, v in self.connectivities.items()
-            if (dim := dims.DIMENSIONS_BY_OFFSET_NAME.get(k)) is not None
-            and gtx_common.is_neighbor_connectivity(v)
+    def size(self) -> Dict[gtx.Dimension, int]:
+        sizes = {
+            dims.KDim: self.config.num_levels,
+            dims.CellDim: self.config.num_cells,
+            dims.EdgeDim: self.config.num_edges,
+            dims.VertexDim: self.config.num_vertices,
+            # 1d sparse sizes cannot be deduced from their connectivity
+            dims.ECVDim: _1d_size(self.get_connectivity(dims.E2C2V)),
+            dims.CEDim: _1d_size(self.get_connectivity(dims.C2E)),
+            dims.ECDim: _1d_size(self.get_connectivity(dims.E2C)),
         }
 
-    @functools.cached_property
+        # extract sizes from connectivities
+        for offset, connectivity in self.connectivities.items():
+            if gtx_common.is_neighbor_table(connectivity):
+                for dim, size in zip(connectivity.domain.dims, connectivity.shape, strict=True):
+                    if dim in sizes:
+                        if sizes[dim] != size:
+                            raise ValueError(
+                                f"Inconsistent sizes for {dim}: expected {sizes[dim]}, got {size}."
+                            )
+                    else:
+                        sizes[dim] = size
+            elif isinstance(connectivity, gtx.Dimension):
+                ...
+            else:
+                raise TypeError(
+                    f"Unsupported connectivity type {type(connectivity)} for offset {offset}."
+                )
+        return sizes
+
+    @property
+    def num_cells(self) -> int:
+        return self.config.num_cells
+
+    @property
+    def num_vertices(self) -> int:
+        return self.config.num_vertices
+
+    @property
+    def num_edges(self) -> int:
+        return self.config.num_edges
+
+    @property
+    def num_levels(self) -> int:
+        return self.config.num_levels
+
+    @property
     def limited_area(self) -> bool:
         return self.config.limited_area
 
-    @abstractmethod
-    def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
-        """Determine whether a sparse dimension has skip values."""
-        ...
-
-    @functools.cached_property
-    def connectivities(self) -> Dict[str, gtx.Connectivity]:
-        connectivity_map = {}
-        for key, value in self._connectivity_mapping.items():
-            try:
-                method, *args = value
-                connectivity_map[key] = method(*args) if args else method()
-            except MissingConnectivity:
-                warnings.warn(f"{key} connectivity is missing from grid.", stacklevel=2)
-
-        return connectivity_map
-
-    @utils.chainable
-    def set_neighbor_tables(self, connectivity: Dict[gtx.Dimension, data_alloc.NDArray]):
-        self._neighbor_tables.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
-        self.size.update({d: t.shape[1] for d, t in connectivity.items()})
-
-    @utils.chainable
-    def set_config(self, config: GridConfig):
-        self.config = config
-        self._update_size()
-
-    def _update_size(self):
-        self.size[dims.VertexDim] = self.config.num_vertices
-        self.size[dims.CellDim] = self.config.num_cells
-        self.size[dims.EdgeDim] = self.config.num_edges
-        self.size[dims.KDim] = self.config.num_levels
-
-    def _construct_connectivity(self, dim, from_dim, to_dim):
-        if dim not in self._neighbor_tables:
-            raise MissingConnectivity(f"no neighbor_table for dimension {dim}.")
-        assert (
-            self._neighbor_tables[dim].dtype == gtx.int32
-        ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
-            dim, self._neighbor_tables[dim].dtype
-        )
-        skip_value = -1 if self._has_skip_values(dim) else None
-        if self._do_replace_skip_values_in_table(dim):
-            _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
-            skip_value = None
-            neighbor_table = replace_skip_values(
-                dim, self._neighbor_tables[dim], array_ns=data_alloc.array_ns(self.config.on_gpu)
+    def get_connectivity(self, offset: str | gtx.FieldOffset) -> gtx_common.NeighborTable:
+        """Get the connectivity by its name."""
+        if isinstance(offset, gtx.FieldOffset):
+            offset = offset.value
+        if offset not in self.connectivities:
+            raise MissingConnectivity(
+                f"Missing connectivity for offset {offset} in grid {self.id}."
             )
-        else:
-            neighbor_table = self._neighbor_tables[dim]
-        connectivity = gtx.as_connectivity(
-            [from_dim, dim],
-            to_dim,
-            data=neighbor_table,
-            skip_value=skip_value,
-        )
+        connectivity = self.connectivities[offset]
+        assert gtx_common.is_neighbor_table(connectivity)
         return connectivity
 
-    def _do_replace_skip_values_in_table(self, dim: gtx.Dimension) -> bool:
-        """
-        Check if the skip_values in a neighbor table  should be replaced.
-
-        There are various reasons for skip_values in neighbor tables depending on the type of grid:
-            - pentagon points (icosahedral grid),
-            - boundary layers of limited area grids,
-            - halos for distributed grids.
-
-        There is config flag to evaluate whether skip_value replacement should be done at all.
-        If so, we replace skip_values for halos and boundary layers of limited area grids.
-
-        Even though by specifying the correct output domain of a stencil, access to
-        invalid indices is avoided in the output fields, temporary computations
-        inside a stencil do run over the entire data buffer including halos and boundaries
-        as the output domain is unknown at that point.
-
-        Args:
-            dim: The (local) dimension for which the neighbor table is checked.
-        Returns:
-            bool: True if the skip values in the neighbor table should be replaced, False otherwise.
-
-        """
-        return not self.config.keep_skip_values and (
-            self.limited_area or not self._has_skip_values(dim)
-        )
-
-    def _get_connectivity_sparse_fields(self, dim, from_dim, to_dim):
-        if dim not in self._neighbor_tables:
-            raise MissingConnectivity(f"No neighbor table for dimension {dim}.")
-        xp = data_alloc.array_ns(self.config.on_gpu)
-        return grid_utils.connectivity_for_1d_sparse_fields(
-            dim,
-            self._neighbor_tables[dim].shape,
-            from_dim,
-            to_dim,
-            has_skip_values=False,
-            array_ns=xp,
-        )
-
-    def get_connectivity(self, name: str) -> gtx.Connectivity:
-        if name in self._connectivity_mapping:
-            method, *args = self._connectivity_mapping[name]
-            return method(*args)
-        else:
-            raise MissingConnectivity(f"Offset provider for {name} not found.")
-
-    def update_size_connectivities(self, new_sizes):
-        self.size.update(new_sizes)
-
-    @abstractmethod
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
-        ...
+        """
+        Use to specify lower end of domains of a field for field_operators.
 
-    @abstractmethod
+        For a given dimension, returns the start index of the
+        horizontal region in a field given by the marker.
+        """
+        if domain.local:
+            # special treatment because this value is not set properly in the underlying data.
+            return gtx.int32(0)
+        return gtx.int32(self._start_indices[domain.dim][domain()])
+
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
-        ...
+        """
+        Use to specify upper end of domains of a field for field_operators.
+
+        For a given dimension, returns the end index of the
+        horizontal region in a field given by the marker.
+        """
+        if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
+            # special treatment because this value is not set properly in the underlying data, for a global grid
+            return gtx.int32(self.size[domain.dim])
+        return gtx.int32(self._end_indices[domain.dim][domain()])
 
 
-def replace_skip_values(
-    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, array_ns: ModuleType = np
+def construct_connectivity(
+    offset: gtx.FieldOffset,
+    table: data_alloc.NDArray,
+    skip_value: int | None = None,
+    *,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    replace_skip_values: bool = False,
+):
+    from_dim, dim = offset.target
+    to_dim = offset.source
+    if replace_skip_values:
+        _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
+        skip_value = None
+        table = _replace_skip_values(dim, table, array_ns=data_alloc.import_array_ns(allocator))
+
+    return gtx.as_connectivity(
+        [from_dim, dim],
+        to_dim,
+        data=table,
+        dtype=gtx.int32,
+        skip_value=skip_value,
+        allocator=allocator,
+    )
+
+
+def _replace_skip_values(
+    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray, array_ns: ModuleType
 ) -> data_alloc.NDArray:
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.
@@ -285,9 +310,6 @@ def replace_skip_values(
     Returns:
         NDArray without skip values
     """
-    # TODO @halungge: neighbour tables are copied, when constructing the Connectivity: should the original be discarded from the grid?
-    #   Would that work for the wrapper?
-
     if _has_skip_values_in_table(neighbor_table, array_ns):
         _log.info(f"Found invalid indices in {domain}. Replacing...")
         max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)

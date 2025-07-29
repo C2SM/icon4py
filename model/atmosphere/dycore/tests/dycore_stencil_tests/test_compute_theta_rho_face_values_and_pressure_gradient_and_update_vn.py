@@ -156,6 +156,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         predictor_normal_wind_advective_tendency: np.ndarray,
         normal_wind_tendency_due_to_slow_physics_process: np.ndarray,
         normal_wind_iau_increment: np.ndarray,
+        grf_tend_vn: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
         pos_on_tplane_e_x: np.ndarray,
@@ -175,16 +176,11 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         iau_wgt_dyn: ta.wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
-        iadv_rhotheta: gtx.int32,
-        igradp_method: gtx.int32,
-        start_edge_halo_level_2: gtx.int32,
-        end_edge_halo_level_2: gtx.int32,
         start_edge_lateral_boundary: gtx.int32,
-        end_edge_halo: gtx.int32,
         start_edge_lateral_boundary_level_7: gtx.int32,
         start_edge_nudging_level_2: gtx.int32,
-        end_edge_local: gtx.int32,
-        end_edge_end: gtx.int32,
+        end_edge_nudging: gtx.int32,
+        end_edge_halo: gtx.int32,
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
         horizontal_end: gtx.int32,
@@ -200,50 +196,49 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         ddx_perturbed_theta_v = np.zeros(default_shape)
         ddy_perturbed_theta_v = np.zeros(default_shape)
 
-        if iadv_rhotheta == rhotheta_avd_type.MIURA:
-            # Compute Green-Gauss gradients for rho and theta
-            c2e2cO = connectivities[dims.C2E2CODim]
+        # Compute Green-Gauss gradients for rho and theta
+        c2e2cO = connectivities[dims.C2E2CODim]
 
-            geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-            ddx_perturbed_rho = np.sum(
-                np.where(
-                    (c2e2cO != -1)[:, :, np.newaxis],
-                    geofac_grg_x * perturbed_rho_at_cells_on_model_levels[c2e2cO],
-                    0,
-                ),
-                axis=1,
-            )
-            ddx_perturbed_theta_v = np.sum(
-                np.where(
-                    (c2e2cO != -1)[:, :, np.newaxis],
-                    geofac_grg_x * perturbed_theta_v_at_cells_on_model_levels[c2e2cO],
-                    0,
-                ),
-                axis=1,
-            )
+        geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
+        ddx_perturbed_rho = np.sum(
+            np.where(
+                (c2e2cO != -1)[:, :, np.newaxis],
+                geofac_grg_x * perturbed_rho_at_cells_on_model_levels[c2e2cO],
+                0,
+            ),
+            axis=1,
+        )
+        ddx_perturbed_theta_v = np.sum(
+            np.where(
+                (c2e2cO != -1)[:, :, np.newaxis],
+                geofac_grg_x * perturbed_theta_v_at_cells_on_model_levels[c2e2cO],
+                0,
+            ),
+            axis=1,
+        )
 
-            geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-            ddy_perturbed_rho = np.sum(
-                np.where(
-                    (c2e2cO != -1)[:, :, np.newaxis],
-                    geofac_grg_y * perturbed_rho_at_cells_on_model_levels[c2e2cO],
-                    0,
-                ),
-                axis=1,
-            )
-            ddy_perturbed_theta_v = np.sum(
-                np.where(
-                    (c2e2cO != -1)[:, :, np.newaxis],
-                    geofac_grg_y * perturbed_theta_v_at_cells_on_model_levels[c2e2cO],
-                    0,
-                ),
-                axis=1,
-            )
+        geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
+        ddy_perturbed_rho = np.sum(
+            np.where(
+                (c2e2cO != -1)[:, :, np.newaxis],
+                geofac_grg_y * perturbed_rho_at_cells_on_model_levels[c2e2cO],
+                0,
+            ),
+            axis=1,
+        )
+        ddy_perturbed_theta_v = np.sum(
+            np.where(
+                (c2e2cO != -1)[:, :, np.newaxis],
+                geofac_grg_y * perturbed_theta_v_at_cells_on_model_levels[c2e2cO],
+                0,
+            ),
+            axis=1,
+        )
 
-        if iadv_rhotheta <= 2:
-            # if idiv_method == 1:
+        # initialize also nest boundary points with zero
+        if limited_area:
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = np.where(
-                (horz_idx >= start_edge_halo_level_2) & (horz_idx < end_edge_halo_level_2),
+                (horz_idx >= start_edge_lateral_boundary) & (horz_idx < end_edge_halo),
                 (
                     np.zeros_like(rho_at_edges_on_model_levels),
                     np.zeros_like(theta_v_at_edges_on_model_levels),
@@ -251,45 +246,33 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
                 (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
             )
 
-            # initialize also nest boundary points with zero
-            if limited_area:
-                (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = np.where(
-                    (horz_idx >= start_edge_lateral_boundary) & (horz_idx < end_edge_halo),
-                    (
-                        np.zeros_like(rho_at_edges_on_model_levels),
-                        np.zeros_like(theta_v_at_edges_on_model_levels),
-                    ),
-                    (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
-                )
-
-            if iadv_rhotheta == rhotheta_avd_type.MIURA:
-                # Compute upwind-biased values for rho and theta starting from centered differences
-                # Note: the length of the backward trajectory should be 0.5*dtime*(vn,tangential_wind) in order to arrive
-                # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
-                (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = np.where(
-                    (start_edge_lateral_boundary_level_7 <= horz_idx) & (horz_idx < end_edge_halo),
-                    compute_theta_rho_face_value_by_miura_scheme_numpy(
-                        connectivities=connectivities,
-                        vn=current_vn,
-                        tangential_wind=tangential_wind,
-                        pos_on_tplane_e_x=pos_on_tplane_e_x,
-                        pos_on_tplane_e_y=pos_on_tplane_e_y,
-                        primal_normal_cell_x=primal_normal_cell_x,
-                        dual_normal_cell_x=dual_normal_cell_x,
-                        primal_normal_cell_y=primal_normal_cell_y,
-                        dual_normal_cell_y=dual_normal_cell_y,
-                        p_dthalf=float(0.5 * dtime),
-                        reference_rho_at_edges_on_model_levels=reference_rho_at_edges_on_model_levels,
-                        reference_theta_at_edges_on_model_levels=reference_theta_at_edges_on_model_levels,
-                        ddx_perturbed_rho=ddx_perturbed_rho,
-                        ddy_perturbed_rho=ddy_perturbed_rho,
-                        ddx_perturbed_theta_v=ddx_perturbed_theta_v,
-                        ddy_perturbed_theta_v=ddy_perturbed_theta_v,
-                        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
-                        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
-                    ),
-                    (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
-                )
+        # Compute upwind-biased values for rho and theta starting from centered differences
+        # Note: the length of the backward trajectory should be 0.5*dtime*(vn,tangential_wind) in order to arrive
+        # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
+        (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = np.where(
+            (start_edge_lateral_boundary_level_7 <= horz_idx) & (horz_idx < end_edge_halo),
+            compute_theta_rho_face_value_by_miura_scheme_numpy(
+                connectivities=connectivities,
+                vn=current_vn,
+                tangential_wind=tangential_wind,
+                pos_on_tplane_e_x=pos_on_tplane_e_x,
+                pos_on_tplane_e_y=pos_on_tplane_e_y,
+                primal_normal_cell_x=primal_normal_cell_x,
+                dual_normal_cell_x=dual_normal_cell_x,
+                primal_normal_cell_y=primal_normal_cell_y,
+                dual_normal_cell_y=dual_normal_cell_y,
+                p_dthalf=float(0.5 * dtime),
+                reference_rho_at_edges_on_model_levels=reference_rho_at_edges_on_model_levels,
+                reference_theta_at_edges_on_model_levels=reference_theta_at_edges_on_model_levels,
+                ddx_perturbed_rho=ddx_perturbed_rho,
+                ddy_perturbed_rho=ddy_perturbed_rho,
+                ddx_perturbed_theta_v=ddx_perturbed_theta_v,
+                ddy_perturbed_theta_v=ddy_perturbed_theta_v,
+                perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+                perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+            ),
+            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
+        )
 
         # Remaining computations at edge points
         e2c = connectivities[dims.E2CDim]
@@ -303,113 +286,98 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
         horizontal_pressure_gradient = np.where(
-            (start_edge_nudging_level_2 <= horz_idx)
-            & (horz_idx < end_edge_local)
-            & (vert_idx < nflatlev),
+            (vert_idx < nflatlev),
             inv_dual_edge_length * weighted_temporal_extrapolation_of_perturbed_exner_at_edges,
             horizontal_pressure_gradient,
         )
 
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO:
+        def _apply_index_field_for_multi_level_pressure_gradient(
+            shape: tuple,
+            to_index: np.ndarray,
+            neighbor_table: np.ndarray,
+            offset_field: np.ndarray,
+        ) -> np.ndarray:
+            indexed = np.zeros(shape)
+            for iprimary in range(shape[0]):
+                for isparse in range(shape[1]):
+                    for ik in range(shape[2]):
+                        indexed[iprimary, isparse, ik] = to_index[
+                            neighbor_table[iprimary, isparse],
+                            ik + offset_field[iprimary, isparse, ik],
+                        ]
+            return indexed
 
-            def _apply_index_field_for_multi_level_pressure_gradient(
-                shape: tuple,
-                to_index: np.ndarray,
-                neighbor_table: np.ndarray,
-                offset_field: np.ndarray,
-            ) -> np.ndarray:
-                indexed = np.zeros(shape)
-                for iprimary in range(shape[0]):
-                    for isparse in range(shape[1]):
-                        for ik in range(shape[2]):
-                            indexed[iprimary, isparse, ik] = to_index[
-                                neighbor_table[iprimary, isparse],
-                                ik + offset_field[iprimary, isparse, ik],
-                            ]
-                return indexed
-
-            def at_neighbor(i: int) -> np.ndarray:
-                return temporal_extrapolation_of_perturbed_exner_at_kidx[:, i, :] + zdiff_gradp[
+        def at_neighbor(i: int) -> np.ndarray:
+            return temporal_extrapolation_of_perturbed_exner_at_kidx[:, i, :] + zdiff_gradp[
+                :, i, :
+            ] * (
+                ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx[:, i, :]
+                + zdiff_gradp[:, i, :]
+                * d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx[
                     :, i, :
-                ] * (
-                    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx[
-                        :, i, :
-                    ]
-                    + zdiff_gradp[:, i, :]
-                    * d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx[
-                        :, i, :
-                    ]
-                )
-
-            c_lin_e = np.expand_dims(c_lin_e, axis=-1)
-
-            # horizontal gradient of Exner pressure, including metric correction
-            # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
-            horizontal_pressure_gradient = np.where(
-                (start_edge_nudging_level_2 <= horz_idx)
-                & (horz_idx < end_edge_local)
-                & (vert_idx >= nflatlev)
-                & (vert_idx < (nflat_gradp + gtx.int32(1))),
-                inv_dual_edge_length * weighted_temporal_extrapolation_of_perturbed_exner_at_edges
-                - ddxn_z_full
-                * np.sum(
-                    c_lin_e * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels[e2c],
-                    axis=1,
-                ),
-                horizontal_pressure_gradient,
+                ]
             )
 
-            full_shape = e2c.shape + zdiff_gradp.shape[1:]
-            zdiff_gradp = zdiff_gradp.reshape(full_shape)
-            ikoffset = ikoffset.reshape(full_shape)
+        c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 
-            temporal_extrapolation_of_perturbed_exner_at_kidx = (
-                _apply_index_field_for_multi_level_pressure_gradient(
-                    full_shape, temporal_extrapolation_of_perturbed_exner, e2c, ikoffset
-                )
-            )
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx = (
-                _apply_index_field_for_multi_level_pressure_gradient(
-                    full_shape,
-                    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-                    e2c,
-                    ikoffset,
-                )
-            )
-            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx = (
-                _apply_index_field_for_multi_level_pressure_gradient(
-                    full_shape,
-                    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-                    e2c,
-                    ikoffset,
-                )
-            )
-            sum_expr = at_neighbor(1) - at_neighbor(0)
-            horizontal_pressure_gradient = np.where(
-                (start_edge_nudging_level_2 <= horz_idx)
-                & (horz_idx < end_edge_local)
-                & (vert_idx >= (nflat_gradp + gtx.int32(1))),
-                inv_dual_edge_length * sum_expr,
-                horizontal_pressure_gradient,
-            )
-
-            hydrostatic_correction = np.repeat(
-                np.expand_dims(hydrostatic_correction_on_lowest_level, axis=-1),
-                horizontal_pressure_gradient.shape[1],
+        # horizontal gradient of Exner pressure, including metric correction
+        # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
+        horizontal_pressure_gradient = np.where(
+            (vert_idx >= nflatlev) & (vert_idx < (nflat_gradp + gtx.int32(1))),
+            inv_dual_edge_length * weighted_temporal_extrapolation_of_perturbed_exner_at_edges
+            - ddxn_z_full
+            * np.sum(
+                c_lin_e * ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels[e2c],
                 axis=1,
+            ),
+            horizontal_pressure_gradient,
+        )
+
+        full_shape = e2c.shape + zdiff_gradp.shape[1:]
+        zdiff_gradp = zdiff_gradp.reshape(full_shape)
+        ikoffset = ikoffset.reshape(full_shape)
+
+        temporal_extrapolation_of_perturbed_exner_at_kidx = (
+            _apply_index_field_for_multi_level_pressure_gradient(
+                full_shape, temporal_extrapolation_of_perturbed_exner, e2c, ikoffset
             )
-            horizontal_pressure_gradient = np.where(
-                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_end),
-                np.where(
-                    ipeidx_dsl,
-                    horizontal_pressure_gradient + hydrostatic_correction * pg_exdist,
-                    horizontal_pressure_gradient,
-                ),
-                horizontal_pressure_gradient,
+        )
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx = (
+            _apply_index_field_for_multi_level_pressure_gradient(
+                full_shape,
+                ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                e2c,
+                ikoffset,
             )
+        )
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels_at_kidx = (
+            _apply_index_field_for_multi_level_pressure_gradient(
+                full_shape,
+                d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+                e2c,
+                ikoffset,
+            )
+        )
+        sum_expr = at_neighbor(1) - at_neighbor(0)
+        horizontal_pressure_gradient = np.where(
+            (vert_idx >= (nflat_gradp + gtx.int32(1))),
+            inv_dual_edge_length * sum_expr,
+            horizontal_pressure_gradient,
+        )
+
+        hydrostatic_correction = np.repeat(
+            np.expand_dims(hydrostatic_correction_on_lowest_level, axis=-1),
+            horizontal_pressure_gradient.shape[1],
+            axis=1,
+        )
+        horizontal_pressure_gradient = np.where(
+            ipeidx_dsl,
+            horizontal_pressure_gradient + hydrostatic_correction * pg_exdist,
+            horizontal_pressure_gradient,
+        )
 
         next_vn = np.where(
-            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+            start_edge_nudging_level_2 <= horz_idx,
             current_vn
             + dtime
             * (
@@ -422,8 +390,15 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
 
         if is_iau_active:
             next_vn = np.where(
-                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+                start_edge_nudging_level_2 <= horz_idx,
                 next_vn + (iau_wgt_dyn * normal_wind_iau_increment),
+                next_vn,
+            )
+
+        if limited_area:
+            next_vn = np.where(
+                (start_edge_lateral_boundary <= horz_idx) & (horz_idx < end_edge_nudging),
+                current_vn + dtime * grf_tend_vn,
                 next_vn,
             )
 
@@ -435,7 +410,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
+    def input_data(self, grid: base.Grid) -> dict:
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -481,6 +456,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             grid, dims.EdgeDim, dims.KDim
         )
         normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        grf_tend_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         next_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_pressure_gradient = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -506,20 +482,15 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         iau_wgt_dyn = 1.0
         is_iau_active = True
         limited_area = True
-        iadv_rhotheta = 2
-        igradp_method = 3
         edge_domain = h_grid.domain(dims.EdgeDim)
 
-        start_edge_halo_level_2 = grid.start_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-        end_edge_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
         start_edge_lateral_boundary = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
-        end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
         start_edge_lateral_boundary_level_7 = grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
         )
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
-        end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-        end_edge_end = grid.num_edges
+        end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING))
+        end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
         nflatlev = 4
         nflat_gradp = 27
 
@@ -541,6 +512,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
             normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=normal_wind_iau_increment,
+            grf_tend_vn=grf_tend_vn,
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
             pos_on_tplane_e_x=pos_on_tplane_e_x,
@@ -560,18 +532,13 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
             limited_area=limited_area,
-            iadv_rhotheta=iadv_rhotheta,
-            igradp_method=igradp_method,
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
-            start_edge_halo_level_2=start_edge_halo_level_2,
-            end_edge_halo_level_2=end_edge_halo_level_2,
             start_edge_lateral_boundary=start_edge_lateral_boundary,
-            end_edge_halo=end_edge_halo,
             start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
             start_edge_nudging_level_2=start_edge_nudging_level_2,
-            end_edge_local=end_edge_local,
-            end_edge_end=end_edge_end,
+            end_edge_nudging=end_edge_nudging,
+            end_edge_halo=end_edge_halo,
             horizontal_start=0,
             horizontal_end=grid.num_edges,
             vertical_start=0,

@@ -79,7 +79,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         nflatlev: int,
         nlevp1: int,
     ) -> tuple[np.ndarray, ...]:
-        k = np.arange(nlevp1)
+        k: np.ndarray = np.arange(nlevp1)
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
@@ -259,7 +259,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim
         )

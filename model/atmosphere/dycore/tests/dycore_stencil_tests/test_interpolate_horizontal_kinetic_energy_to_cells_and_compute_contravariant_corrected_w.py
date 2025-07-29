@@ -32,7 +32,7 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
         "horizontal_kinetic_energy_at_cells_on_model_levels",
         "contravariant_corrected_w_at_cells_on_half_levels",
     )
-    MARKERS = (pytest.mark.infinite_concat_where,)
+    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -95,7 +95,7 @@ class TestInterpolateHorizontalKineticEnergyToCellsAndComputeContravariantCorrec
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         horizontal_kinetic_energy_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )
