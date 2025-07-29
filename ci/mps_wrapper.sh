@@ -11,13 +11,13 @@ if [[ $SLURM_LOCALID -eq 0 ]]; then
 fi
 
 # set cuda device
-numa_nodes=$(hwloc-calc --physical --intersect NUMAnode $(taskset -p $$ | awk '{print "0x"$6}'))
-export CUDA_VISIBLE_DEVICES=$numa_nodes
+# TODO(iomaganaris): this needs to be adapted when we have node sharing and for `pytest-xdist`
+export CUDA_VISIBLE_DEVICES=$(($SLURM_LOCALID / 4))
 
 # Wait for MPS to start
 sleep 1
 # Run the command
-numactl --membind=$numa_nodes "$@"
+"$@"
 result=$?
 # Quit MPS control daemon before exiting
 if [[ $SLURM_LOCALID -eq 0 ]]; then
