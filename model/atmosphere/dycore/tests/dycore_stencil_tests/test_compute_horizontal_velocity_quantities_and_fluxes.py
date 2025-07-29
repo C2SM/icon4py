@@ -252,5 +252,5 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels + 1),
+            vertical_end=grid.num_levels + 1,
         )

@@ -16,7 +16,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _compute_avg_vn(
+def _spatially_average_flux_or_velocity(
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
@@ -26,7 +26,7 @@ def _compute_avg_vn(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_avg_vn(
+def spatially_average_flux_or_velocity(
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
@@ -35,7 +35,7 @@ def compute_avg_vn(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_avg_vn(
+    _spatially_average_flux_or_velocity(
         e_flx_avg,
         vn,
         out=z_vn_avg,

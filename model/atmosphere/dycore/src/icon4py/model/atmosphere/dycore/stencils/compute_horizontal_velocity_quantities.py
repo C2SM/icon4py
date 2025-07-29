@@ -12,7 +12,7 @@ from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     _accumulate_prep_adv_fields,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import _compute_avg_vn
+from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import _spatially_average_flux_or_velocity
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
@@ -57,7 +57,7 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    spatially_averaged_vn = _compute_avg_vn(e_flx_avg=e_flx_avg, vn=vn)
+    spatially_averaged_vn = _spatially_average_flux_or_velocity(e_flx_avg=e_flx_avg, vn=vn)
     horizontal_gradient_of_normal_wind_divergence = astype(
         neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim), vpfloat
     )
@@ -187,7 +187,7 @@ def _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
 ]:
-    spatially_averaged_vn = _compute_avg_vn(e_flx_avg, vn)
+    spatially_averaged_vn = _spatially_average_flux_or_velocity(e_flx_avg, vn)
 
     (
         mass_flux_at_edges_on_model_levels,

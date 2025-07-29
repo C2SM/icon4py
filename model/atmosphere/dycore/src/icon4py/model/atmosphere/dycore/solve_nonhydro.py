@@ -38,7 +38,7 @@ from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import 
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import compute_avg_vn
+from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import spatially_average_flux_or_velocity
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
@@ -558,7 +558,7 @@ class SolveNonhydro:
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
         )
-        self._compute_avg_vn = compute_avg_vn.with_backend(self._backend).compile(
+        self._compute_avg_vn = spatially_average_flux_or_velocity.with_backend(self._backend).compile(
             enable_jit=False,
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],

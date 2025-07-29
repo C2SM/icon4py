@@ -24,7 +24,7 @@ from .test_accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields_numpy,
 )
 from .test_compute_avg_vn import (
-    compute_avg_vn_numpy,
+    spatially_average_flux_or_velocity_numpy,
 )
 from .test_compute_mass_flux import (
     compute_mass_flux_numpy,
@@ -57,7 +57,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
         r_nsubsteps: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        spatially_averaged_vn = compute_avg_vn_numpy(connectivities, e_flx_avg, vn)
+        spatially_averaged_vn = spatially_average_flux_or_velocity_numpy(connectivities, e_flx_avg, vn)
 
         mass_fl_e, z_theta_v_fl_e = compute_mass_flux_numpy(
             rho_at_edges_on_model_levels,
@@ -127,5 +127,5 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=grid.num_levels,
         )

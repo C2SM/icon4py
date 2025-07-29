@@ -1807,7 +1807,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     z_theta_v_fl_e = savepoint_dycore_30_to_38_init.z_theta_v_fl_e()
     z_vt_ie = savepoint_dycore_30_to_38_init.z_vt_ie()
     vn_ie = savepoint_dycore_30_to_38_init.vn_ie()
-    z_kin_hor_e = savepoint_dycore_30_to_38_init.vn()
+    z_kin_hor_e = savepoint_dycore_30_to_38_init.z_kin_hor_e()
     z_w_concorr_me = savepoint_dycore_30_to_38_init.z_w_concorr_me()
 
     e_flx_avg = interpolation_savepoint.e_flx_avg()
@@ -1854,8 +1854,8 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         nflatlev=nflatlev,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(icon_grid.num_levels + 1),
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels + 1,
         offset_provider={
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "E2C2E": icon_grid.get_connectivity("E2C2E"),
@@ -1864,58 +1864,58 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     )
 
     assert helpers.dallclose(
-        z_vn_avg_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_vn_avg.asnumpy()[horizontal_start:horizontal_end, :],
+        z_vn_avg_ref.asnumpy()[:, :],
+        z_vn_avg.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     # same tolerances as in Liskov
     assert helpers.dallclose(
-        z_graddiv_vn_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_graddiv_vn.asnumpy()[horizontal_start:horizontal_end, :],
+        z_graddiv_vn_ref.asnumpy()[:, :],
+        z_graddiv_vn.asnumpy()[:, :],
         rtol=1.0e-2,
         atol=1.0e-20,
     )
 
     assert helpers.dallclose(
-        vt_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        vt.asnumpy()[horizontal_start:horizontal_end, :],
+        vt_ref.asnumpy()[:, :],
+        vt.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        mass_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        mass_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
+        mass_fl_e_ref.asnumpy()[:, :],
+        mass_fl_e.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        z_theta_v_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_theta_v_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
+        z_theta_v_fl_e_ref.asnumpy()[:, :],
+        z_theta_v_fl_e.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        vn_ie_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        vn_ie.asnumpy()[horizontal_start:horizontal_end, :],
+        vn_ie_ref.asnumpy()[:, :],
+        vn_ie.asnumpy()[:, :],
         rtol=1.0e-5,
     )
 
     assert helpers.dallclose(
-        z_vt_ie_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_vt_ie.asnumpy()[horizontal_start:horizontal_end, :],
+        z_vt_ie_ref.asnumpy()[:, :],
+        z_vt_ie.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        z_kin_hor_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_kin_hor_e.asnumpy()[horizontal_start:horizontal_end, :],
+        z_kin_hor_e_ref.asnumpy()[:, :],
+        z_kin_hor_e.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        z_w_concorr_me_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_w_concorr_me.asnumpy()[horizontal_start:horizontal_end, :],
+        z_w_concorr_me_ref.asnumpy()[:, :],
+        z_w_concorr_me.asnumpy()[:, :],
         rtol=1.0e-7,
     )
 
@@ -2001,8 +2001,8 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
         r_nsubsteps=r_nsubsteps,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(icon_grid.num_levels),
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "Koff": dims.KDim,
@@ -2010,32 +2010,32 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     )
 
     assert helpers.dallclose(
-        z_vn_avg_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_vn_avg.asnumpy()[horizontal_start:horizontal_end, :],
+        z_vn_avg_ref.asnumpy()[:, :],
+        z_vn_avg.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        mass_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        mass_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
+        mass_fl_e_ref.asnumpy()[:, :],
+        mass_fl_e.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        z_theta_v_fl_e_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        z_theta_v_fl_e.asnumpy()[horizontal_start:horizontal_end, :],
+        z_theta_v_fl_e_ref.asnumpy()[:, :],
+        z_theta_v_fl_e.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        vn_traj_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        vn_traj.asnumpy()[horizontal_start:horizontal_end, :],
+        vn_traj_ref.asnumpy()[:, :],
+        vn_traj.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
     assert helpers.dallclose(
-        mass_flx_me_ref.asnumpy()[horizontal_start:horizontal_end, :],
-        mass_flx_me.asnumpy()[horizontal_start:horizontal_end, :],
+        mass_flx_me_ref.asnumpy()[:, :],
+        mass_flx_me.asnumpy()[:, :],
         rtol=1.0e-6,
     )
 
