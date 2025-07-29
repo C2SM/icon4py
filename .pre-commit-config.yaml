@@ -44,6 +44,7 @@ repos:
         args: [--unsafe]
       - id: debug-statements
       - id: end-of-file-fixer
+        exclude: ^tools/tests/py2fgen/wrappers/references/
       - id: pretty-format-json
         args: [--autofix, --indent, "2"]
 
