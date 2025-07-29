@@ -17,7 +17,7 @@ from icon4py.model.common.grid import (
     grid_manager as gm,
     vertical as v_grid,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import data_handling, datatest_utils as dt_utils
 
 
@@ -125,7 +125,7 @@ def get_num_levels(experiment: str):
 def get_grid_geometry(
     backend: Optional[gtx_backend.Backend], experiment: str, grid_file: str
 ) -> geometry.GridGeometry:
-    on_gpu = data_alloc.is_cupy_device(backend)
+    on_gpu = device_utils.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
     register_name = "_".join((experiment, data_alloc.backend_name(backend)))
