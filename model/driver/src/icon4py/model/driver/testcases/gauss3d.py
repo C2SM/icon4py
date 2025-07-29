@@ -113,7 +113,7 @@ def model_initialization_gauss3d(
     primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
 
     # Define test case parameters
-    setup = "channel_flow" # gauss3d_mountain
+    setup = "else" # gauss3d_mountain
     if setup == "channel_flow":
         # Lee & Moser data: Re_tau = 5200
         channel_height = 100
@@ -129,10 +129,11 @@ def model_initialization_gauss3d(
         nh_u0 = xp.zeros((num_edges, num_levels), dtype=float)
         for j in range(num_levels):
             LM_j = xp.argmin(xp.abs(LM_y - full_level_heights[j]))
-            nh_u0[:, j] = LM_u[LM_j] #* xp.ones(num_edges, dtype=float)
+            nh_u0[:, j] = LM_u[LM_j]
         #
-        nh_t0 = 300.0
-        nh_brunt_vais = 0.0
+        theta_v_ndarray = 300.0 * xp.ones((num_cells, num_levels), dtype=float)
+        rho_ndarray = 1.0 * xp.ones((num_cells, num_levels), dtype=float)
+        exner_ndarray = 1.0 * xp.ones((num_cells, num_levels), dtype=float)
 
     else:
         # gauss3d_mountain
@@ -148,16 +149,6 @@ def model_initialization_gauss3d(
         nh_brunt_vais = 0.01
         log.info("Topography can only be read from serialized data for now.")
 
-
-    u = xp.where(mask, nh_u0, 0.0)
-    vn_ndarray = u * primal_normal_x
-    log.info("Wind profile assigned.")
-
-    if setup == "channel_flow":
-        theta_v_ndarray = 300.0 * xp.ones((num_cells, num_levels), dtype=float)
-        rho_ndarray = 1.0 * xp.ones((num_cells, num_levels), dtype=float)
-        exner_ndarray = 1.0 * xp.ones((num_cells, num_levels), dtype=float)
-    else:
         # Vertical temperature profile
         for k_index in range(num_levels - 1, -1, -1):
             z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
@@ -188,6 +179,10 @@ def model_initialization_gauss3d(
             num_levels,
         )
         log.info("Hydrostatic adjustment computation completed.")
+
+    u = xp.where(mask, nh_u0, 0.0)
+    vn_ndarray = u * primal_normal_x
+    log.info("Wind profile assigned.")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
     eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend)
