@@ -30,7 +30,7 @@ dependencies = [
   # external dependencies
   'cffi>=1.5',
   'fprettify>=0.3.7',
-  'gt4py==1.0.5',
+  'gt4py==1.0.6',
   "numpy>=1.23.3",
   'packaging>=20.0',
 ]
