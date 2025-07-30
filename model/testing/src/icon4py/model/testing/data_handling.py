@@ -27,23 +27,19 @@ def download_and_extract(
 
     """
     destination_path.mkdir(parents=True, exist_ok=True)
-    for file in destination_path.iterdir():
-        print(f"found file {file} in {destination_path}")
-    if not any(destination_path.iterdir()):
+    if True:  # not any(destination_path.iterdir()):
         try:
             import wget
-
-            print(
-                f"directory {destination_path} is empty: downloading data from {uri} and extracting"
-            )
-            wget.download(uri, out=data_file)
-            # extract downloaded file
-            if not tarfile.is_tarfile(data_file):
-                raise NotImplementedError(f"{data_file} needs to be a valid tar file")
-            with tarfile.open(data_file, mode="r:*") as tf:
-                tf.extractall(path=base_path)
-            Path(data_file).unlink(missing_ok=True)
         except ImportError as err:
             raise FileNotFoundError(
                 f" To download data file from {uri}, please install `wget`"
             ) from err
+
+        print(f"directory {destination_path} is empty: downloading data from {uri} and extracting")
+        wget.download(uri, out=data_file)
+        # extract downloaded file
+        if not tarfile.is_tarfile(data_file):
+            raise NotImplementedError(f"{data_file} needs to be a valid tar file")
+        with tarfile.open(data_file, mode="r:*") as tf:
+            tf.extractall(path=base_path)
+        Path(data_file).unlink(missing_ok=True)
