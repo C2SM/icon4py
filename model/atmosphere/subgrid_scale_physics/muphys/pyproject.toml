@@ -22,7 +22,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-  "gt4py>=1.0.1",
+  "gt4py==1.0.6",
   "icon4py-common[io]>=0.0.6",
   "packaging>=20.0"
 ]
