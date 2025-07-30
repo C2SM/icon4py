@@ -100,6 +100,8 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
                 grid_directory,
                 grid_directory,
             )
+        else:
+            print(f"gridfile {full_name} exists", flush=True)
     return full_name
 
 
