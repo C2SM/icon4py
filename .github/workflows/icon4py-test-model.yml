@@ -48,7 +48,7 @@ jobs:
             - name: Upload cached folder as artifact
               uses: actions/upload-artifact@v4
               with:
-                name: debug-grid-cache
+                name: debug-grid-cache-${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}
                 path: testdata/grids
 
             - name: download grids
