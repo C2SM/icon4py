@@ -138,7 +138,7 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
         session.run(
-            *f"pytest -s -v --benchmark-disable".split(),
+            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
