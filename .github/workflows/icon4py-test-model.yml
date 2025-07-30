@@ -44,6 +44,12 @@ jobs:
               with:
                   path: testdata/grids
                   key: ${{ steps.cache-key.outputs.key }}
+            
+            - name: Upload cached folder as artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: debug-grid-cache
+                path: testdata/grids
 
             - name: download grids
               if: steps.grid-cache.outputs.cache-hit != 'true'
