@@ -11,4 +11,5 @@ from __future__ import annotations
 import pathlib
 from typing import Final
 
+
 REPO_ROOT: Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.resolve().absolute()

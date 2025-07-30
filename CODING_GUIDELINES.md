@@ -141,14 +141,14 @@ Testing components is a critical part of a software development project. We foll
 
 Each software component project in the repository should place tests inside a folder named `tests`, which should be a proper Python package structured with the following content:
 
-- a `__init__.py` file at root level adding subfolders as members of a virtual `tests.` package 
-- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_advection` for the `icon4py.model.atmosphere.advection` component). 
+- a `__init__.py` file at root level adding subfolders as members of a virtual `tests.` package
+- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_advection` for the `icon4py.model.atmosphere.advection` component).
 
 The `<component>` folder should be a Python package and contain subfolders for every kind of test (e.g. `unit_tests`, `integration_tests`, ...). If needed, it may contain at any level of the file tree a `conftests.py` module for changing the pytest configuration, a `fixtures.py` module with shared fixture definitions and a `utils.py`python modules testing utilities used in the tests.
 
 Example:
 
-````text
+```text
 /model/system/subsystem/component/
    src/
       ...
@@ -170,9 +170,9 @@ Example:
          unit_test/
             test_bar.py
             ...
-````
+```
 
-The `scripts-cli` tool contains commands to check some of these points. 
+The `scripts-cli` tool contains commands to check some of these points.
 
 For further explanations about the trade-offs of using Python packages for tests organization, the [`pytest` import mechanisms](https://docs.pytest.org/en/stable/explanation/pythonpath.html#import-modes) documentation is a helpful reference. For further explanations about the parametrization of fixtures and tests, the [basics](https://docs.pytest.org/en/stable/how-to/parametrize.html#parametrize-basics) and [advanced](https://docs.pytest.org/en/stable/example/parametrize.html#parametrization-with-multiple-fixtures) `parametrize` examples in the pytest documentation are also very helpful.
 
