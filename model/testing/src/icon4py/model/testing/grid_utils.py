@@ -94,6 +94,7 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
     grid_directory.mkdir(parents=True, exist_ok=True)
     with locking.lock(grid_directory):
         if not full_name.exists():
+            print(f"downloading {full_name}", flush=True)
             data_handling.download_and_extract(
                 dt_utils.GRID_URIS[file_path],
                 grid_directory,
