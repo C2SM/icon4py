@@ -27,6 +27,8 @@ def download_and_extract(
 
     """
     destination_path.mkdir(parents=True, exist_ok=True)
+    for file in destination_path.iterdir():
+        print(f"found file {file} in {destination_path}")
     if not any(destination_path.iterdir()):
         try:
             import wget
