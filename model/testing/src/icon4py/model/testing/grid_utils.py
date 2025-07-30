@@ -10,6 +10,7 @@ from typing import Optional
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
+from gt4py._core import locking
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -89,12 +90,13 @@ def resolve_full_grid_file_name(grid_file_str: str) -> pathlib.Path:
 
 def _download_grid_file(file_path: str) -> pathlib.Path:
     full_name = resolve_full_grid_file_name(file_path)
-    if not full_name.exists():
-        data_handling.download_and_extract(
-            dt_utils.GRID_URIS[file_path],
-            full_name.parent,
-            full_name.parent,
-        )
+    with locking.lock(full_name):
+        if not full_name.exists():
+            data_handling.download_and_extract(
+                dt_utils.GRID_URIS[file_path],
+                full_name.parent,
+                full_name.parent,
+            )
     return full_name
 
 
