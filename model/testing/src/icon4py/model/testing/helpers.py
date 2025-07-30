@@ -90,6 +90,8 @@ def apply_markers(
                 pytest.xfail("Embedded backend does not support as_offset.")
             case "uses_concat_where" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support concat_where.")
+            case "gtfn_too_slow" if is_gtfn_backend(backend):
+                pytest.skip("GTFN compilation is too slow for this test.")
             case "skip_value_error":
                 if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses

@@ -270,5 +270,6 @@ markers = [
     "embedded_only",
     "cpu_only",
     "uses_concat_where",
+    "gtfn_too_slow",
 ]
 addopts = ["--import-mode=append", "-p icon4py.model.testing.pytest_hooks"]
