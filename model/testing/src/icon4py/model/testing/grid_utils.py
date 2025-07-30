@@ -90,12 +90,14 @@ def resolve_full_grid_file_name(grid_file_str: str) -> pathlib.Path:
 
 def _download_grid_file(file_path: str) -> pathlib.Path:
     full_name = resolve_full_grid_file_name(file_path)
-    with locking.lock(full_name.parent):
+    grid_directory = full_name.parent
+    grid_directory.mkdir(parents=True, exist_ok=True)
+    with locking.lock(grid_directory):
         if not full_name.exists():
             data_handling.download_and_extract(
                 dt_utils.GRID_URIS[file_path],
-                full_name.parent,
-                full_name.parent,
+                grid_directory,
+                grid_directory,
             )
     return full_name
 
