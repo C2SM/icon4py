@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import os
 import pathlib
 import re
 import uuid
@@ -22,7 +21,6 @@ from icon4py.model.common.decomposition import definitions as decomposition
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
 
-DEFAULT_TEST_DATA_FOLDER = "testdata"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
@@ -80,22 +78,6 @@ GRID_IDS = {
     WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
 }
 
-
-def get_test_data_root_path() -> pathlib.Path:
-    test_utils_path = pathlib.Path(__file__).parent
-    model_path = test_utils_path.parent
-    common_path = model_path.parent.parent.parent.parent
-    env_base_path = os.getenv("TEST_DATA_PATH")
-
-    if env_base_path:
-        return pathlib.Path(env_base_path)
-    else:
-        return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
-
-
-TEST_DATA_ROOT = get_test_data_root_path()
-SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
-GRIDS_PATH = TEST_DATA_ROOT.joinpath("grids")
 
 DATA_URIS = {
     1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",

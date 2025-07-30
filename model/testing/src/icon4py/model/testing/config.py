@@ -27,3 +27,4 @@ def env_flag_to_bool(name: str, default: bool) -> bool:
 
 ENABLE_GRID_DOWNLOAD: bool = env_flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
 ENABLE_TESTDATA_DOWNLOAD: bool = env_flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
+TEST_DATA_PATH: str | None = os.environ.get("ICON4PY_TEST_DATA_PATH", None)

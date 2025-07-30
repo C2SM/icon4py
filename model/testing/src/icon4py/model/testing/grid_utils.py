@@ -13,7 +13,7 @@ import gt4py.next.backend as gtx_backend
 from gt4py._core import locking
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions as decomopsition_defs
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -22,7 +22,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils
+from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -85,7 +85,7 @@ def _file_name(grid_file: str) -> str:
 
 
 def resolve_full_grid_file_name(grid_file_str: str) -> pathlib.Path:
-    return dt_utils.GRIDS_PATH.joinpath(grid_file_str, _file_name(grid_file_str))
+    return definitions.grids_path().joinpath(grid_file_str, _file_name(grid_file_str))
 
 
 def _download_grid_file(file_path: str) -> pathlib.Path:
@@ -141,13 +141,15 @@ def get_grid_geometry(
     num_levels = get_num_levels(experiment)
     register_name = "_".join((experiment, data_alloc.backend_name(backend)))
 
-    def _construct_dummy_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
+    def _construct_dummy_decomposition_info(
+        grid: icon.IconGrid,
+    ) -> decomopsition_defs.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension) -> None:
             indices = data_alloc.index_field(grid, dim, backend=backend)
             owner_mask = xp.ones((grid.size[dim],), dtype=bool)
             decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
-        decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
+        decomposition_info = decomopsition_defs.DecompositionInfo(klevels=grid.num_levels)
         _add_dimension(dims.EdgeDim)
         _add_dimension(dims.VertexDim)
         _add_dimension(dims.CellDim)

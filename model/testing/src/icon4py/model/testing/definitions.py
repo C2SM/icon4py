@@ -8,22 +8,32 @@
 
 import dataclasses
 import enum
-import os
 import pathlib
 from collections.abc import Mapping
 from typing import Final, Literal
 
+from icon4py.model.testing import config
 
-_TEST_UTILS_PATH: Final = pathlib.Path(__file__) / ".."
-_MODEL_PATH: Final = _TEST_UTILS_PATH / ".."
-_COMMON_PATH: Final = _MODEL_PATH / ".." / ".." / ".." / ".."
 
 DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
-TEST_DATA_PATH: Final[pathlib.Path] = pathlib.Path(
-    os.getenv("TEST_DATA_PATH") or (_COMMON_PATH / ".." / DEFAULT_TEST_DATA_FOLDER)
-)
-GRIDS_PATH: Final[pathlib.Path] = TEST_DATA_PATH / "grids"
-SERIALIZED_DATA_PATH: Final[pathlib.Path] = TEST_DATA_PATH / "ser_icondata"
+
+
+def get_test_data_root_path() -> pathlib.Path:
+    if config.TEST_DATA_PATH:
+        return pathlib.Path(config.TEST_DATA_PATH)
+
+    test_utils_path = pathlib.Path(__file__).parent
+    model_path = test_utils_path.parent
+    common_path = model_path.parent.parent.parent.parent
+    return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
+
+
+def serialized_data_path() -> pathlib.Path:
+    return get_test_data_root_path().joinpath("ser_icondata")
+
+
+def grids_path() -> pathlib.Path:
+    return get_test_data_root_path().joinpath("grids")
 
 
 class GridKind(enum.Enum):
