@@ -16,7 +16,12 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
-from icon4py.model.testing import config, data_handling as data, datatest_utils as dt_utils
+from icon4py.model.testing import (
+    config,
+    data_handling as data,
+    datatest_utils as dt_utils,
+    definitions,
+)
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -111,7 +116,9 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathlib.Path:
-    return dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props.comm_size)
+    return dt_utils.get_ranked_data_path(
+        definitions.serialized_data_path(), processor_props.comm_size
+    )
 
 
 def _download_ser_data(
