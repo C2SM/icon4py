@@ -22,7 +22,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils
+from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -33,7 +33,7 @@ GLOBAL_NUM_LEVELS = 60
 
 MCH_CH_R04B09_LEVELS = 65
 
-grid_geometries = {}
+grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
 def get_grid_manager_for_experiment(
@@ -68,7 +68,7 @@ def get_grid_manager(
     )
 
 
-def _file_name(grid_file: str):
+def _file_name(grid_file: str) -> str:
     match grid_file:
         case dt_utils.REGIONAL_EXPERIMENT:
             return REGIONAL_GRIDFILE
@@ -94,14 +94,15 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
     grid_directory.mkdir(parents=True, exist_ok=True)
     with locking.lock(grid_directory):
         if not full_name.exists():
-            print(f"downloading {full_name}", flush=True)
-            data_handling.download_and_extract(
-                dt_utils.GRID_URIS[file_path],
-                grid_directory,
-                grid_directory,
-            )
-        else:
-            print(f"gridfile {full_name} exists", flush=True)
+            if config.ENABLE_GRID_DOWNLOAD:
+                data_handling.download_and_extract(
+                    dt_utils.GRID_URIS[file_path],
+                    grid_directory,
+                )
+            else:
+                raise FileNotFoundError(
+                    f"Grid file {full_name} does not exist and grid download is disabled."
+                )
     return full_name
 
 
@@ -128,7 +129,7 @@ def _download_and_load_gridfile(
     return manager
 
 
-def get_num_levels(experiment: str):
+def get_num_levels(experiment: str) -> int:
     return MCH_CH_R04B09_LEVELS if experiment == dt_utils.REGIONAL_EXPERIMENT else GLOBAL_NUM_LEVELS
 
 
@@ -141,7 +142,7 @@ def get_grid_geometry(
     register_name = "_".join((experiment, data_alloc.backend_name(backend)))
 
     def _construct_dummy_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
-        def _add_dimension(dim: gtx.Dimension):
+        def _add_dimension(dim: gtx.Dimension) -> None:
             indices = data_alloc.index_field(grid, dim, backend=backend)
             owner_mask = xp.ones((grid.size[dim],), dtype=bool)
             decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
@@ -153,7 +154,7 @@ def get_grid_geometry(
 
         return decomposition_info
 
-    def _construct_grid_geometry():
+    def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = _download_and_load_gridfile(
             grid_file, keep_skip_values=True, num_levels=num_levels, backend=backend
         )

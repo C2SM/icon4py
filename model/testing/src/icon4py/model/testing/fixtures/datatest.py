@@ -10,20 +10,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final
 
 import pytest
+from gt4py._core import locking  # TODO(havogt): should we move the locking to gt4py.eve?
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
+from icon4py.model.testing import config, data_handling as data, datatest_utils as dt_utils
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
 
-from .. import data_handling as data, datatest_utils as dt_utils
-
 
 if TYPE_CHECKING:
+    import pathlib
+
     from icon4py.model.testing import serialbox
 
 DEFAULT_GRID: Final[str] = "simple_grid"
@@ -108,12 +110,54 @@ def processor_props(request):
 
 
 @pytest.fixture(scope="session")
-def ranked_data_path(processor_props):
-    return dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props)
+def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathlib.Path:
+    return dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props.comm_size)
+
+
+def _download_ser_data(
+    comm_size: int,
+    _ranked_data_path: pathlib.Path,
+    _experiment: str,
+):
+    # not a fixture to be able to use this function outside of pytest
+    try:
+        destination_path = dt_utils.get_datapath_for_experiment(_ranked_data_path, _experiment)
+        if _experiment == dt_utils.GLOBAL_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_APE[comm_size]
+        elif _experiment == dt_utils.JABW_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_JABW[comm_size]
+        elif _experiment == dt_utils.GAUSS3D_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_GAUSS3D[comm_size]
+        elif _experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_WK[comm_size]
+        else:
+            uri = dt_utils.DATA_URIS[comm_size]
+
+        data_file = _ranked_data_path.joinpath(f"{_experiment}_mpitask{comm_size}.tar.gz").name
+        _ranked_data_path.mkdir(parents=True, exist_ok=True)
+        with locking.lock(_ranked_data_path):
+            # Note: if the lock would be created for `destination_path` it would always exist...
+            if not destination_path.exists():
+                if config.ENABLE_TESTDATA_DOWNLOAD:
+                    data.download_and_extract(uri, _ranked_data_path, data_file)
+                else:
+                    raise RuntimeError(
+                        f"Serialization data {data_file} does not exist, and downloading is disabled."
+                    )
+    except KeyError as err:
+        raise RuntimeError(
+            f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
+        ) from err
 
 
 @pytest.fixture
-def download_ser_data(request, processor_props, ranked_data_path, experiment, pytestconfig):
+def download_ser_data(
+    request,
+    processor_props: decomposition.ProcessProperties,
+    ranked_data_path: pathlib.Path,
+    experiment: str,
+    pytestconfig,
+):
     """
     Get the binary ICON data from a remote server.
 
@@ -123,31 +167,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
-    try:
-        destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        if experiment == dt_utils.GLOBAL_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
-        elif experiment == dt_utils.JABW_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_JABW[processor_props.comm_size]
-        elif experiment == dt_utils.GAUSS3D_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_GAUSS3D[processor_props.comm_size]
-        elif experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
-        else:
-            uri = dt_utils.DATA_URIS[processor_props.comm_size]
-
-        data_file = ranked_data_path.joinpath(
-            f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
-        ).name
-        if processor_props.rank == 0:
-            data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
-
-        if processor_props.comm:
-            processor_props.comm.barrier()
-    except KeyError as err:
-        raise AssertionError(
-            f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
-        ) from err
+    _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
 
 @pytest.fixture

@@ -162,7 +162,7 @@ version = "{new_version}"
 
 # -- mypy --
 [tool.mypy]
-mypy_path = "model/common/src:tools/src"
+mypy_path = "model/common/src:model/testing/src:tools/src"
 explicit_package_bases = true
 namespace_packages = true
 disallow_incomplete_defs = true
@@ -180,6 +180,14 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
 module = '*.stencil_tests.*'
+[[tool.mypy.overrides]]
+# disable_error_code = ["no-untyped-def", "arg-type"]
+ignore_errors = true
+module = [
+    'icon4py.model.testing.fixtures.datatest',
+    'icon4py.model.testing.pytest_hooks',
+    'icon4py.model.testing.serialbox',
+]
 
 
 # -- ruff --

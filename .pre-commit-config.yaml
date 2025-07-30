@@ -75,7 +75,7 @@ repos:
   hooks:
   - id: mypy
     name: mypy static type checker
-    entry: bash -c 'mypy tools/src/icon4py/tools model/atmosphere/dycore/tests/dycore/stencil_tests' # TODO(egparedes): fix and activate mypy hook for all packages
+    entry: bash -c 'mypy tools/src/icon4py/tools model/testing/src model/atmosphere/dycore/tests/dycore/stencil_tests' # TODO(egparedes): fix and activate mypy hook for all packages
     language: system
     types_or: [python, pyi]
     pass_filenames: false

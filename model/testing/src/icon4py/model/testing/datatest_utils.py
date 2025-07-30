@@ -122,7 +122,7 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         return 0, 2
 
     try:
-        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
+        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
         return root, level
     except AttributeError as err:
         raise ValueError(
@@ -130,7 +130,7 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         ) from err
 
 
-def get_grid_id_for_experiment(experiment) -> uuid.UUID:
+def get_grid_id_for_experiment(experiment: str) -> uuid.UUID:
     """Get the unique id of the grid used in the experiment.
 
     These ids are encoded in the original grid file that was used to run the simulation, but not serialized when generating the test data. So we duplicate the information here.
@@ -143,20 +143,26 @@ def get_grid_id_for_experiment(experiment) -> uuid.UUID:
         raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
 
 
-def get_processor_properties_for_run(run_instance):
+def get_processor_properties_for_run(
+    run_instance: decomposition.RunType,
+) -> decomposition.ProcessProperties:
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_ranked_data_path(base_path, processor_properties):
-    return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
+def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Path:
+    return base_path.absolute().joinpath(f"mpitask{comm_size}")
 
 
-def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
+def get_datapath_for_experiment(
+    ranked_base_path: pathlib.Path, experiment: str = REGIONAL_EXPERIMENT
+) -> pathlib.Path:
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
 def create_icon_serial_data_provider(
-    datapath, processor_props, backend: Optional[gtx_backend.Backend]
+    datapath: pathlib.Path,
+    processor_props: decomposition.ProcessProperties,
+    backend: Optional[gtx_backend.Backend],
 ) -> serialbox.IconSerialDataProvider:
     # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.testing.serialbox import IconSerialDataProvider
