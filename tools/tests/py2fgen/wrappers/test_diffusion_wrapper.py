@@ -25,7 +25,7 @@ from icon4py.tools.py2fgen.wrappers import (
 )
 
 from . import utils
-from .test_grid_init import grid_init  # noqa: F401
+from .test_grid_init import grid_init
 
 
 @pytest.mark.datatest
@@ -36,13 +36,14 @@ from .test_grid_init import grid_init  # noqa: F401
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
     lowest_layer_thickness,
@@ -296,13 +297,14 @@ def test_diffusion_wrapper_granule_inputs(
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     experiment,
     lowest_layer_thickness,
     model_top_height,

@@ -135,17 +135,55 @@ return undeclared_symbol  # noqa: F821 [undefined-name] on purpose to trigger bl
 
 ## Testing
 
-Testing components is a critical part of a software development project. We follow standard practices in software development and write unit, integration, and regression tests. Note that even though [doctests][doctest] are great for documentation purposes, they lack many features and are difficult to debug. Hence, they should not be used as replacement for proper unit tests except in trivial cases.
+Testing components is a critical part of a software development project. We follow standard software engineering practices and write unit, integration, and regression tests. [Doctests][doctest] are great for documentation purposes, but they lack features and are difficult to debug, therefore they should not be used as replacement for proper unit tests except in trivial cases.
 
 ### Test suite folder structure
 
-In each package tests are organized under the `tests` folder. The `tests` folder should not be a package but the contained test suites may be python packages.
+Each software component project in the repository should place tests inside a folder named `tests`, which should be a proper Python package structured with the following content:
 
-Test suites in folders `stencil_tests` are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) and should only contain tests for the GT4Py stencils that might be integrated into ICON.
+- a `__init__.py` file at root level adding subfolders as members of a virtual `tests.` package 
+- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_advection` for the `icon4py.model.atmosphere.advection` component). 
 
-## Further
+The `<component>` folder should be a Python package and contain subfolders for every kind of test (e.g. `unit_tests`, `integration_tests`, ...). If needed, it may contain at any level of the file tree a `conftests.py` module for changing the pytest configuration, a `fixtures.py` module with shared fixture definitions and a `utils.py`python modules testing utilities used in the tests.
+
+Example:
+
+````text
+/model/system/subsystem/component/
+   src/
+      ...
+   tests/
+      __init__.py          # REQUIRED to make this folder a Python package
+            # Content of 'tests/__init__.py'
+            # This code adds subfolders as subpackages of the `tests.` namespace package 
+            __path__ = __import__("pkgutil").extend_path(__path__, __name__)
+
+      system_subsystem_component/
+         __init__.py       # REQUIRED to make this folder a Python package
+         conftest.py       # pytest settings only
+         fixtures.py       # fixture definitions (it might be also a package)
+         utils.py          # other shared testing utilities (it might be also a package)
+         stencil_tests/
+            conftest.py    # specific pytest settings for this folder 
+            test_foo.py
+            ...
+         unit_test/
+            test_bar.py
+            ...
+````
+
+The `scripts-cli` tool contains commands to check some of these points. 
+
+For further explanations about the trade-offs of using Python packages for tests organization, the [`pytest` import mechanisms](https://docs.pytest.org/en/stable/explanation/pythonpath.html#import-modes) documentation is a helpful reference. For further explanations about the parametrization of fixtures and tests, the [basics](https://docs.pytest.org/en/stable/how-to/parametrize.html#parametrize-basics) and [advanced](https://docs.pytest.org/en/stable/example/parametrize.html#parametrization-with-multiple-fixtures) `parametrize` examples in the pytest documentation are also very helpful.
+
+### Stencil tests
+
+Test suites inside a `stencil_tests` folder are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) and should only contain tests for the GT4Py stencils that might be integrated into ICON.
 
 <!--
+
+## Further 
+
 TODO: add test conventions:
 TODO:    - to name test functions
 TODO:    - to use pytest features (fixtures, markers, etc.)
