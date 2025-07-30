@@ -95,5 +95,3 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
     assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
-
-
