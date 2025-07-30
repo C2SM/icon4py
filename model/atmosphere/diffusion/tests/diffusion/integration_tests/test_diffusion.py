@@ -7,11 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
+import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid,
@@ -794,3 +796,30 @@ def test_run_diffusion_initial_step(
         prognostic_state=prognostic_state,
         diffusion_savepoint=savepoint_diffusion_exit,
     )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("linit", [True])
+def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
+    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
+):
+    savepoint = savepoint_diffusion_init
+    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+
+    params = diffusion.DiffusionParams(config)
+    expected_diff_multfac_vn = savepoint.diff_multfac_vn()
+    expected_smag_limit = savepoint.smag_limit()
+    exptected_smag_offset = savepoint.smag_offset()
+
+    diff_multfac_vn = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
+    smag_limit = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
+    diffusion_utils.setup_fields_for_initial_step.with_backend(backend)(
+        params.K4,
+        config.hdiff_efdt_ratio,
+        diff_multfac_vn,
+        smag_limit,
+        offset_provider={},
+    )
+    assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
+    assert exptected_smag_offset == 0.0
