@@ -73,9 +73,9 @@ def interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
 ) -> np.ndarray:
     num_rows, num_cols = contravariant_corrected_w_at_cells_on_half_levels.shape
     contravariant_corrected_w_with_surface = np.zeros((num_rows, num_cols + 1))
-    contravariant_corrected_w_with_surface[
-        :, :-1
-    ] = contravariant_corrected_w_at_cells_on_half_levels
+    contravariant_corrected_w_with_surface[:, :-1] = (
+        contravariant_corrected_w_at_cells_on_half_levels
+    )
     contravariant_corrected_w_at_cells_on_model_levels = 0.5 * (
         contravariant_corrected_w_with_surface[:, :-1]
         + contravariant_corrected_w_with_surface[:, 1:]
@@ -385,9 +385,9 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         ] = vertical_wind_advective_tendency[
             horizontal_start:horizontal_end, vertical_start:vertical_end
         ]
-        vertical_cfl_ret[
-            horizontal_start:horizontal_end, vertical_start:vertical_end
-        ] = vertical_cfl[horizontal_start:horizontal_end, vertical_start:vertical_end]
+        vertical_cfl_ret[horizontal_start:horizontal_end, vertical_start:vertical_end] = (
+            vertical_cfl[horizontal_start:horizontal_end, vertical_start:vertical_end]
+        )
 
         return dict(
             vertical_wind_advective_tendency=vertical_wind_advective_tendency_ret,
@@ -592,9 +592,9 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(test_helpers.St
         ] = vertical_wind_advective_tendency[
             horizontal_start:horizontal_end, vertical_start:vertical_end
         ]
-        vertical_cfl_ret[
-            horizontal_start:horizontal_end, vertical_start:vertical_end
-        ] = vertical_cfl[horizontal_start:horizontal_end, vertical_start:vertical_end]
+        vertical_cfl_ret[horizontal_start:horizontal_end, vertical_start:vertical_end] = (
+            vertical_cfl[horizontal_start:horizontal_end, vertical_start:vertical_end]
+        )
 
         return dict(
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels_ret,

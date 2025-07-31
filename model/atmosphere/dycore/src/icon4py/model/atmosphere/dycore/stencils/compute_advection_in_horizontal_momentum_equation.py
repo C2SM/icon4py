@@ -13,16 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import (
-    E2C,
-    E2C2EO,
-    E2EC,
-    E2V,
-    E2C2EODim,
-    E2CDim,
-    E2VDim,
-    Koff,
-)
+from icon4py.model.common.dimension import E2C, E2C2EO, E2EC, E2V, E2C2EODim, E2CDim, E2VDim, Koff
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
