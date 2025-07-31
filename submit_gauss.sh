@@ -54,6 +54,7 @@ export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
 source "$PROJECTS_DIR/icon4py/.venv/bin/activate"
 
 export ICON4PY_OUTPUT_DIR=$SCRATCH/runs_icon4py/$SLURM_JOB_NAME
+#export ICON4PY_SAVEPOINT_PATH="testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
 export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
 export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))

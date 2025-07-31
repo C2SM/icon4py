@@ -113,7 +113,7 @@ def model_initialization_gauss3d(
     primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
 
     # Define test case parameters
-    setup = "else" # gauss3d_mountain
+    setup = "channel_flow" # gauss3d_mountain
     if setup == "channel_flow":
         # Lee & Moser data: Re_tau = 5200
         channel_height = 100
@@ -131,9 +131,8 @@ def model_initialization_gauss3d(
             LM_j = xp.argmin(xp.abs(LM_y - full_level_heights[j]))
             nh_u0[:, j] = LM_u[LM_j]
         #
-        theta_v_ndarray = 300.0 * xp.ones((num_cells, num_levels), dtype=float)
-        rho_ndarray = 1.0 * xp.ones((num_cells, num_levels), dtype=float)
-        exner_ndarray = 1.0 * xp.ones((num_cells, num_levels), dtype=float)
+        nh_t0 = 300.0
+        nh_brunt_vais = 0.0
 
     else:
         # gauss3d_mountain
@@ -149,40 +148,40 @@ def model_initialization_gauss3d(
         nh_brunt_vais = 0.01
         log.info("Topography can only be read from serialized data for now.")
 
-        # Vertical temperature profile
-        for k_index in range(num_levels - 1, -1, -1):
-            z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
-            # profile of theta is explicitly given
-            theta_v_ndarray[:, k_index] = nh_t0 * xp.exp(z_help)
-
-        # Lower boundary condition for exner pressure
-        if nh_brunt_vais != 0.0:
-            z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
-            exner_ndarray[:, num_levels - 1] = (
-                phy_const.GRAV / nh_brunt_vais
-            ) ** 2 / nh_t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
-        else:
-            exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
-        log.info("Vertical computations completed.")
-        # Compute hydrostatically balanced exner, by integrating the (discretized!)
-        # 3rd equation of motion under the assumption thetav=const.
-        rho_ndarray, exner_ndarray = testcases_utils.hydrostatic_adjustment_constant_thetav_ndarray(
-            wgtfac_c,
-            ddqz_z_half,
-            exner_ref_mc,
-            d_exner_dz_ref_ic,
-            theta_ref_mc,
-            theta_ref_ic,
-            rho_ndarray,
-            exner_ndarray,
-            theta_v_ndarray,
-            num_levels,
-        )
-        log.info("Hydrostatic adjustment computation completed.")
-
     u = xp.where(mask, nh_u0, 0.0)
     vn_ndarray = u * primal_normal_x
     log.info("Wind profile assigned.")
+
+    # Vertical temperature profile
+    for k_index in range(num_levels - 1, -1, -1):
+        z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
+        # profile of theta is explicitly given
+        theta_v_ndarray[:, k_index] = nh_t0 * xp.exp(z_help)
+
+    # Lower boundary condition for exner pressure
+    if nh_brunt_vais != 0.0:
+        z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
+        exner_ndarray[:, num_levels - 1] = (
+            phy_const.GRAV / nh_brunt_vais
+        ) ** 2 / nh_t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
+    else:
+        exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
+    log.info("Vertical computations completed.")
+    # Compute hydrostatically balanced exner, by integrating the (discretized!)
+    # 3rd equation of motion under the assumption thetav=const.
+    rho_ndarray, exner_ndarray = testcases_utils.hydrostatic_adjustment_constant_thetav_ndarray(
+        wgtfac_c,
+        ddqz_z_half,
+        exner_ref_mc,
+        d_exner_dz_ref_ic,
+        theta_ref_mc,
+        theta_ref_ic,
+        rho_ndarray,
+        exner_ndarray,
+        theta_v_ndarray,
+        num_levels,
+    )
+    log.info("Hydrostatic adjustment computation completed.")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
     eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend)
