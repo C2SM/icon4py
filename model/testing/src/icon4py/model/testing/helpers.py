@@ -51,7 +51,9 @@ def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
 
-def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
+def dallclose(
+    a: np.ndarray, b: np.ndarray, rtol: float = 1.0e-12, atol: float = 0.0, equal_nan: bool = False
+):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
