@@ -220,7 +220,10 @@ docstring-code-format = true
 # YTT: flake8-2020
 exclude = ["**/tests/**"]
 explicit-preview-rules = true
-extend-select = ["F822"]  # TODO(egparedes): remove when not longer in preview
+extend-select = [
+  'F822',  # TODO(egparedes): remove when not longer in preview
+  'PLW0133'  # [useless-exception-statement]
+]
 ignore = [
   'E501',  # [line-too-long]
   'B905'  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
