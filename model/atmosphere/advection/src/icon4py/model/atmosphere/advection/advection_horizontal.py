@@ -66,8 +66,7 @@ class HorizontalFluxLimiter:
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        ...
+    ): ...
 
 
 class PositiveDefinite(HorizontalFluxLimiter):
@@ -180,8 +179,7 @@ class SemiLagrangianTracerFlux(ABC):
         p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        ...
+    ): ...
 
 
 class SecondOrderMiura(SemiLagrangianTracerFlux):
@@ -413,8 +411,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        ...
+    ): ...
 
     @abstractmethod
     def _update_unknowns(
@@ -425,8 +422,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        ...
+    ): ...
 
 
 class SemiLagrangian(FiniteVolume):

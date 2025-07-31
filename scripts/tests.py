@@ -16,13 +16,13 @@ import ast
 import enum
 import functools
 import os
-import shlex
 import pathlib
+import shlex
 from typing import Annotated, NamedTuple, TypeAlias
 
+import pytest
 import rich
 import typer
-import pytest
 
 from . import _common as common
 
@@ -117,7 +117,7 @@ def check_layout(
             raise typer.Exit(code=ExitCode.MISSING_OR_INVALID_INIT_FILES)
 
     else:
-        rich.print(f"[green]OK:[/green] Tests structure seems correct.")
+        rich.print("[green]OK:[/green] Tests structure seems correct.")
 
 
 # -- fixture-requests --
@@ -147,8 +147,8 @@ def _collect_fixture_requests(
 
                 if item.path not in collected_fixtures:
                     collected_fixtures[item.path] = RequestedFixtures(set(), set())
-                all, unknown = collected_fixtures[item.path]
-                all.update(item_fixtures)
+                all_, unknown = collected_fixtures[item.path]
+                all_.update(item_fixtures)
                 unknown.update(
                     item_fixtures - (item._fixtureinfo.name2fixturedefs.keys() | {"request"})
                 )
@@ -241,7 +241,7 @@ def _find_closest_fixture_import_path(
     up_levels = 100
     fixture_import = None
 
-    for i, def_path in enumerate(fixture_definitions):
+    for _, def_path in enumerate(fixture_definitions):
         if (
             "tests" in def_path.parts
             and def_path.parts[def_path.parts.index("tests") + 1] == test_file_component
@@ -266,7 +266,7 @@ def _fix_fixture_requests(
     test_path: pathlib.Path,
 ) -> tuple[list[FixtureRequest], list[FixtureRequest]]:
     """Fix unknown fixture requests by creating __init__.py files."""
-    rich.print(f"[yellow]Adding missing fixtures...[/yellow]")
+    rich.print("[yellow]Adding missing fixtures...[/yellow]")
 
     fixed = []
     errors = []
@@ -280,9 +280,8 @@ def _fix_fixture_requests(
         new_imports = []
         for fixture in unknown_fixtures:
             rich.print(f"    + fixture: '{fixture}'")
-            rich.print(
-                f"    + matching definitions: {', '.join(f'\'{f!s}\'' for f in fixture_definitions.get(fixture, []))}"
-            )
+            matching_defs = {", ".join(f"'{f!s}'" for f in fixture_definitions.get(fixture, []))}
+            rich.print(f"    + matching definitions: {matching_defs} ")
             if fixture not in fixture_definitions or not (
                 import_path := _find_closest_fixture_import_path(path, fixture_definitions[fixture])
             ):
@@ -334,12 +333,12 @@ def fixture_requests(
     report = []
     errors: list[FixtureRequest] = []
     fixes = None
-    for path, (all, unknown) in fixture_requests.items():
-        all_list = sorted(all)
+    for path, (all_, unknown) in fixture_requests.items():
+        all_list = sorted(all_)
         unknown_list = sorted(unknown)
         report.append(
             f"- {path}:\n"
-            f"    + {len(all)} requested{':' if all else ''} {', '.join(all_list)}\n"
+            f"    + {len(all_)} requested{':' if all_ else ''} {', '.join(all_list)}\n"
             f"    + {len(unknown)} unknown{':' if unknown else ''} {', '.join(unknown_list)}\n"
         )
         if unknown_list:

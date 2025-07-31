@@ -18,10 +18,7 @@ from devtools import Timer
 from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import (
-    diffusion,
-    diffusion_states,
-)
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -415,7 +412,7 @@ def initialize(
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
-        diagnostic_metric_state,
+        _,
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,

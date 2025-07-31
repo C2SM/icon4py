@@ -35,12 +35,12 @@ DDXT_Z_HALF_E: Final[str] = "ddxt_z_half_e"
 DDXN_Z_HALF_E: Final[str] = "ddxn_z_half_e"
 DDXN_Z_FULL: Final[str] = "ddxn_z_full"
 DDXT_Z_FULL: Final[str] = "ddxt_z_full"
-EXNER_W_IMPLICIT_WEIGHT_PARAMETER: Final[
-    str
-] = "implicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
-EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[
-    str
-] = "explicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+EXNER_W_IMPLICIT_WEIGHT_PARAMETER: Final[str] = (
+    "implicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+)
+EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[str] = (
+    "explicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+)
 EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"

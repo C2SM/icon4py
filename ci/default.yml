@@ -14,23 +14,13 @@ include:
     - when: on_success
   parallel:
     matrix:
-    - COMPONENT: [diffusion, dycore, microphysics, common, driver]
-      BACKEND: [gtfn_gpu]
-      GRID: [simple_grid, icon_grid]
+      - COMPONENT: [diffusion, dycore, microphysics, common, driver]
+        BACKEND: [gtfn_gpu]
+        GRID: [simple_grid, icon_grid]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
-
-
-test_model_stencils_dycore_gtfn_cpu_aarch64:
-  # TODO: move back to github actions, temporarily here because of increased resource usage
-  extends: [.test_template_aarch64]
-  stage: test
-  variables:
-    SLURM_TIMELIMIT: '00:10:00'
-  script:
-    - nox -s "test_model-3.10(stencils, dycore)" -- --backend=gtfn_cpu --grid=icon_grid
 
 
 .test_tools_datatests:
@@ -58,11 +48,10 @@ test_tools_datatests_aarch64:
     - when: on_success
   parallel:
     matrix:
-    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
-      BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
-      LEVEL: [integration]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+        BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+        LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
-
