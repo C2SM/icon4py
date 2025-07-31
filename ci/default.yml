@@ -37,9 +37,9 @@ test_tools_datatests_aarch64:
   variables:
     SLURM_TIMELIMIT: '00:30:00'
   script:
-    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=integration
+    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
-    - if: $COMPONENT == 'common' && $BACKEND == 'gtfn_gpu'
+    - if: $COMPONENT == 'common' && $BACKEND == 'gtfn_gpu' && $LEVEL == 'integration'
       variables:
         SLURM_TIMELIMIT: '01:30:00'
     - if: $BACKEND == 'embedded'
@@ -48,10 +48,10 @@ test_tools_datatests_aarch64:
     - when: on_success
   parallel:
     matrix:
-      # TODO(edopao): Switch to dace gpu backend (not 100% stable, check results in daily CI)
+      # TODO(edopao): Switch to dace gpu backend (not stable, check results in daily CI)
       - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
         BACKEND: [embedded, dace_cpu, gtfn_cpu, gtfn_gpu]
-
+        LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
