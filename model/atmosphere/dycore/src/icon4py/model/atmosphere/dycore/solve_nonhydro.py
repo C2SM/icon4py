@@ -96,7 +96,7 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    horizontal_pressure_gradient: fa.EdgeKField[float]
+    horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat]
     """
     Declared as z_gradh_exner in ICON.
     """
@@ -207,7 +207,6 @@ class NonHydrostaticConfig:
         itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
-        ndyn_substeps_var: float = 5.0,
         rayleigh_type: model_options.RayleighType = model_options.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
@@ -239,11 +238,8 @@ class NonHydrostaticConfig:
         #: stability without heavy orography smoothing
         self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
 
-        #: number of dynamics substeps per fast-physics timestep
-        self.ndyn_substeps_var: float = ndyn_substeps_var
-
         #: type of Rayleigh damping
-        self.rayleigh_type: constants.RayleighType = rayleigh_type
+        self.rayleigh_type: model_options.RayleighType = rayleigh_type
         # used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
         self.rayleigh_coeff: float = rayleigh_coeff
 
@@ -545,7 +541,6 @@ class SolveNonhydro:
             self._backend
         ).compile(
             enable_jit=False,
-            ndyn_substeps_var=[float(self._config.ndyn_substeps_var)],
             iau_wgt_dyn=[self._config.iau_wgt_dyn],
             is_iau_active=[self._config.is_iau_active],
             rayleigh_type=[self._config.rayleigh_type],
@@ -866,6 +861,7 @@ class SolveNonhydro:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         dtime: float,
+        ndyn_substeps_var: int,
         at_initial_timestep: bool,
         lprep_adv: bool,
         at_first_substep: bool,
@@ -879,6 +875,7 @@ class SolveNonhydro:
             prep_adv: variables for tracer advection
             second_order_divdamp_factor: Originally declared as divdamp_fac_o2 in ICON. Second order (nabla2) divergence damping coefficient.
             dtime: time step
+            ndyn_substeps_var: number of dynamical substeps
             at_initial_timestep: initial time step of the model run
             lprep_adv: Preparation for tracer advection
             at_first_substep: first substep
@@ -918,6 +915,7 @@ class SolveNonhydro:
             prep_adv=prep_adv,
             second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=dtime,
+            ndyn_substeps_var=ndyn_substeps_var,
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
@@ -1296,6 +1294,7 @@ class SolveNonhydro:
         second_order_divdamp_factor: float,
         prep_adv: dycore_states.PrepAdvection,
         dtime: float,
+        ndyn_substeps_var: int,
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
@@ -1305,10 +1304,8 @@ class SolveNonhydro:
             f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
         )
 
-        # TODO (magdalena) is it correct to to use a config parameter here? the actual number of substeps can vary dynmically...
-        #                  should this config parameter exist at all in SolveNonHydro?
         # Inverse value of ndyn_substeps for tracer advection precomputations
-        r_nsubsteps = 1.0 / self._config.ndyn_substeps_var
+        r_nsubsteps = 1.0 / ndyn_substeps_var
 
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
@@ -1513,7 +1510,7 @@ class SolveNonhydro:
             advection_implicit_weight_parameter=self._params.advection_implicit_weight_parameter,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
-            ndyn_substeps_var=float(self._config.ndyn_substeps_var),
+            ndyn_substeps_var=float(ndyn_substeps_var),
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
             is_iau_active=self._config.is_iau_active,

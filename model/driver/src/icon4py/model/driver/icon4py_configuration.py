@@ -114,11 +114,10 @@ def read_config(
             velocity_boundary_diffusion_denom=200.0,
         )
 
-    def _jabw_nonhydro_config(n_substeps: int):
+    def _jabw_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             # original igradp_method is 2
             # original divdamp_order is 4
-            ndyn_substeps_var=n_substeps,
             fourth_order_divdamp_factor=0.0025,
         )
 
@@ -147,7 +146,7 @@ def read_config(
         )
         jabw_vertical_config = _jabw_vertical_config()
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
-        jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
+        jabw_nonhydro_config = _jabw_nonhydro_config()
         return (
             icon_run_config,
             jabw_vertical_config,
@@ -162,12 +161,13 @@ def read_config(
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
-        return diffusion.DiffusionConfig()
+        return diffusion.DiffusionConfig(
+            n_substeps=n_substeps,
+        )
 
-    def _gauss3d_nonhydro_config(n_substeps: int):
+    def _gauss3d_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             igradp_method=3,
-            ndyn_substeps_var=n_substeps,
             fourth_order_divdamp_factor=0.0025,
         )
 
@@ -181,7 +181,7 @@ def read_config(
         )
         vertical_config = _gauss3d_vertical_config()
         diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)
-        nonhydro_config = _gauss3d_nonhydro_config(icon_run_config.n_substeps)
+        nonhydro_config = _gauss3d_nonhydro_config()
         return (
             icon_run_config,
             vertical_config,
