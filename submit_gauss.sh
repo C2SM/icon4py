@@ -11,10 +11,10 @@
 #SBATCH --partition=debug
 #SBATCH --time=00:30:00
 
-#SBATCH --job-name=runyf_test_wiggles
+#SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser
 
-#SBATCH --output=logs/torus.%x.log
-#SBATCH --error=logs/torus.%x.log
+#SBATCH --output=../runs_icon4py/logs/%x.log
+#SBATCH --error=../runs_icon4py/logs/%x.log
 
 case $CLUSTER_NAME in
 balfrin)
@@ -48,9 +48,10 @@ export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
 
 source "$PROJECTS_DIR/icon4py/.venv/bin/activate"
 
-export ICON4PY_OUTPUT_DIR=$SLURM_JOB_NAME
-export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_gauss3d_250x250x250.uniform200_flat/ser_data"
-export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Torus_Triangles_250m_x_250m_res1.25m.nc"
+export ICON4PY_OUTPUT_DIR=$SCRATCH/runs_icon4py/$SLURM_JOB_NAME
+#export ICON4PY_SAVEPOINT_PATH="testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
+export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
+export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
 python \
@@ -60,7 +61,7 @@ python \
 	--experiment_type=gauss3d_torus \
 	--grid_root=2 --grid_level=0 --enable_output
 
-# generate vtu files
-python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+## generate vtu files
+#python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
 
 echo "Finished running job: $SLURM_JOB_NAME, one way or another"

@@ -341,10 +341,16 @@ class ImmersedBoundaryMethod:
         #     #[490, 510, 485, 510, 120], # on hill top
         # ]
 
-        # on Torus_Triangles_250m_x_250m_res2.5m / res1.25m
+        # # on Torus_Triangles_250m_x_250m_res2.5m / res1.25m
+        # blocks = [
+        #     #
+        #     [75, 175, 78, 178, 100],  # 1x1 100x100x100
+        # ]
+
+        # on Channel_950m_x_350m_res5m
         blocks = [
             #
-            [75, 175, 78, 178, 100],  # 1x1 100x100x100
+            [150, 200, 150, 199, 50],  # 1x1 50x50x50
         ]
 
         grid_file = xr.open_dataset(grid_file_path)
