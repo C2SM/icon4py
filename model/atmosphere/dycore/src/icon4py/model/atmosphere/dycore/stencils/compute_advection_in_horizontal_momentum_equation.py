@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import abs, astype, maximum, minimum, neighbor_sum, where
+from gt4py.next.ffront.fbuiltins import abs, astype, maximum, minimum, neighbor_sum, where  # noqa: A004
 
 from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
     _mo_math_divrot_rot_vertex_ri_dsl,
