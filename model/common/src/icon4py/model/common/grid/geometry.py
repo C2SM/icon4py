@@ -7,16 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Mapping,
-    Optional,
-    Sequence,
-    TypeAlias,
-    TypeVar,
-)
+from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
@@ -39,7 +30,7 @@ from icon4py.model.common.grid import (
     icon,
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
@@ -625,7 +616,7 @@ def as_sparse_field(
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL
-    on_gpu = data_alloc.is_cupy_device(backend)
+    on_gpu = device_utils.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
     fields = []
     for t in data:
@@ -670,7 +661,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
         latitude of second neighbor
         longitude of second neighbor
     """
-    xp = data_alloc.array_ns(data_alloc.is_cupy_device(backend))
+    xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     e2c_table = grid.get_connectivity(dims.E2C).ndarray
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
