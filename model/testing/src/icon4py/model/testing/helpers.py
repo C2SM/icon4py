@@ -114,7 +114,9 @@ class Output:
 def run_verify_and_benchmark(
     test_func: Callable[[], None],
     verification_func: Callable[[], None],
-    benchmark_fixture: Optional[pytest.FixtureRequest],  # TODO(havogt): this type seems wrong
+    benchmark_fixture: Optional[
+        Any
+    ],  # should be pytest_benchmark.fixture.BenchmarkFixture pytest_benchmark is not typed
 ) -> None:
     """
     Function to perform verification and benchmarking of test_func (along with normally executing it).
@@ -130,8 +132,8 @@ def run_verify_and_benchmark(
     test_func()
     verification_func()
 
-    if benchmark_fixture is not None and benchmark_fixture.enabled:  # type: ignore[attr-defined] # TODO figure out what benchmark_fixture's type is
-        benchmark_fixture(test_func)  # type: ignore[operator] # TODO figure out what benchmark_fixture's type is
+    if benchmark_fixture is not None and benchmark_fixture.enabled:
+        benchmark_fixture(test_func)
 
 
 def _verify_stencil_test(
