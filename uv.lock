@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -2012,7 +2012,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
     { name = "pytest", specifier = ">=8.0.1" },
-    { name = "serialbox4py", specifier = ">=2.6.2", index = "https://test.pypi.org/simple" },
+    { name = "serialbox4py", specifier = ">=2.6.2", index = "https://test.pypi.org/simple/" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
     { name = "wget", specifier = ">=3.2" },
 ]
@@ -4111,7 +4111,7 @@ wheels = [
 [[package]]
 name = "serialbox4py"
 version = "2.6.2"
-source = { registry = "https://test.pypi.org/simple" }
+source = { registry = "https://test.pypi.org/simple/" }
 dependencies = [
     { name = "numpy" },
     { name = "packaging" },
