@@ -96,7 +96,7 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    horizontal_pressure_gradient: fa.EdgeKField[float]
+    horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat]
     """
     Declared as z_gradh_exner in ICON.
     """

@@ -170,16 +170,15 @@ def test_scale_factors_by_dtime(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("substep_init, substep_exit", [(1, 1), (2, 2)])
 def test_velocity_predictor_step(
     experiment,
     step_date_init,
     step_date_exit,
-    substep_init,
-    substep_exit,
     *,
     istep_init,
     istep_exit,
+    substep_init,
+    substep_exit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -472,7 +471,11 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     tangential_wind = savepoint_velocity_init.vt()
     vn_on_half_levels = savepoint_velocity_init.vn_ie()
     horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_init.z_kin_hor_e()
+    horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+    )
     vn = savepoint_velocity_init.vn()
+    w = savepoint_velocity_init.w()
 
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     wgtfac_e = metrics_savepoint.wgtfac_e()
@@ -481,6 +484,10 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     contravariant_correction_at_edges_on_model_levels = savepoint_velocity_init.z_w_concorr_me()
     wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
     nflatlev = grid_savepoint.nflatlev()
+    c_intp = interpolation_savepoint.c_intp()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
+    tangent_orientation = grid_savepoint.tangent_orientation()
 
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.vn_only()
     # TODO(havogt): we need a test where skip_compute_predictor_vertical_advection is True!
@@ -493,6 +500,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie()
     icon_result_z_kin_hor_e = savepoint_velocity_exit.z_kin_hor_e()
     icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
+    icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w()
 
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction.with_backend(backend)(
         tangential_wind=tangential_wind,
@@ -500,12 +508,18 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
         vn_on_half_levels=vn_on_half_levels,
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         vn=vn,
+        w=w,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         wgtfac_e=wgtfac_e,
         ddxn_z_full=ddxn_z_full,
         ddxt_z_full=ddxt_z_full,
         wgtfacq_e=wgtfacq_e,
+        c_intp=c_intp,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
         nflatlev=gtx.int32(nflatlev),
         horizontal_start=horizontal_start,
@@ -545,6 +559,15 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
         rtol=1.0e-15,
         atol=1.0e-15,
     )
+    # the restriction is ok, as this is a velocity advection temporary
+    lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+    halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
+    assert helpers.dallclose(
+        icon_result_z_v_grad_w.asnumpy()[lateral_boundary_7:halo_1, :],
+        horizontal_advection_of_w_at_edges_on_half_levels.asnumpy()[lateral_boundary_7:halo_1, :],
+        rtol=1.0e-15,
+        atol=1.0e-15,
+    )
 
 
 @pytest.mark.datatest
@@ -581,8 +604,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     contravariant_correction_at_edges_on_model_levels = savepoint_velocity_exit.z_w_concorr_me()
     contravariant_correction_at_cells_on_half_levels = savepoint_velocity_init.w_concorr_c()
     w = savepoint_velocity_init.w()
-    tangential_wind_on_half_levels = savepoint_velocity_exit.z_vt_ie()
-    vn_on_half_levels = savepoint_velocity_exit.vn_ie()
+    horizontal_advection_of_w_at_edges_on_half_levels = savepoint_velocity_exit.z_v_grad_w()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = savepoint_velocity_init.vcfl_dsl()
@@ -590,10 +612,6 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
-    c_intp = interpolation_savepoint.c_intp()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    tangent_orientation = grid_savepoint.tangent_orientation()
     e_bln_c_s = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
     )
@@ -630,15 +648,10 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
         contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
         vertical_cfl=vertical_cfl,
         w=w,
-        tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-        vn_on_half_levels=vn_on_half_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        c_intp=c_intp,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_primal_edge_length=inv_primal_edge_length,
-        tangent_orientation=tangent_orientation,
         e_bln_c_s=e_bln_c_s,
         wgtfac_c=wgtfac_c,
         ddqz_z_half=ddqz_z_half,

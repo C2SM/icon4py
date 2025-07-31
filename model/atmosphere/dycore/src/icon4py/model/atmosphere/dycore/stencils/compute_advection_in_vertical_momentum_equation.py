@@ -191,16 +191,11 @@ def _compute_contravariant_corrected_w_and_cfl(
 def _compute_advective_vertical_wind_tendency(
     vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     cfl_clipping: fa.CellKField[bool],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
-    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
-    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
-    tangent_orientation: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
@@ -210,17 +205,6 @@ def _compute_advective_vertical_wind_tendency(
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.vpfloat]:
-    #: intermediate variable horizontal_advection_of_w_at_edges_on_half_levels is originally declared as z_v_grad_w in ICON
-    horizontal_advection_of_w_at_edges_on_half_levels = _compute_horizontal_advection_of_w(
-        w,
-        tangential_wind_on_half_levels,
-        vn_on_half_levels,
-        c_intp,
-        inv_dual_edge_length,
-        inv_primal_edge_length,
-        tangent_orientation,
-    )
-
     vertical_wind_advective_tendency = concat_where(
         1 <= dims.KDim,
         _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
@@ -280,6 +264,17 @@ def _compute_advection_in_vertical_momentum_equation(
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
 ) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat]]:
+    #: intermediate variable horizontal_advection_of_w_at_edges_on_half_levels is originally declared as z_v_grad_w in ICON
+    horizontal_advection_of_w_at_edges_on_half_levels = _compute_horizontal_advection_of_w(
+        w,
+        tangential_wind_on_half_levels,
+        vn_on_half_levels,
+        c_intp,
+        inv_dual_edge_length,
+        inv_primal_edge_length,
+        tangent_orientation,
+    )
+
     (
         contravariant_corrected_w_at_cells_on_half_levels,
         cfl_clipping,
@@ -297,16 +292,11 @@ def _compute_advection_in_vertical_momentum_equation(
     vertical_wind_advective_tendency = _compute_advective_vertical_wind_tendency(
         vertical_wind_advective_tendency,
         w,
-        tangential_wind_on_half_levels,
-        vn_on_half_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels,
         contravariant_corrected_w_at_cells_on_half_levels,
         cfl_clipping,
         coeff1_dwdz,
         coeff2_dwdz,
-        c_intp,
-        inv_dual_edge_length,
-        inv_primal_edge_length,
-        tangent_orientation,
         e_bln_c_s,
         ddqz_z_half,
         area,
@@ -460,15 +450,10 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
 def _compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
     vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
-    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
-    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
-    tangent_orientation: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     wgtfac_c: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
@@ -515,16 +500,11 @@ def _compute_contravariant_correction_and_advection_in_vertical_momentum_equatio
         vertical_wind_advective_tendency = _compute_advective_vertical_wind_tendency(
             vertical_wind_advective_tendency,
             w,
-            tangential_wind_on_half_levels,
-            vn_on_half_levels,
+            horizontal_advection_of_w_at_edges_on_half_levels,
             contravariant_corrected_w_at_cells_on_half_levels,
             cfl_clipping,
             coeff1_dwdz,
             coeff2_dwdz,
-            c_intp,
-            inv_dual_edge_length,
-            inv_primal_edge_length,
-            tangent_orientation,
             e_bln_c_s,
             ddqz_z_half,
             area,
@@ -556,15 +536,10 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     vertical_cfl: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
-    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
-    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
-    tangent_orientation: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     wgtfac_c: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
@@ -591,15 +566,10 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
         - contravariant_corrected_w_at_cells_on_model_levels: contravariant-corrected vertical velocity at cells on model levels
         - vertical_cfl: vertical cfl number at cells on half levels
         - w: vertical wind at cells on half levels
-        - tangential_wind: tangential wind at edges on model levels
-        - vn_on_half_levels: normal wind at edges on half levels
+        - horizontal_advection_of_w_at_edges_on_half_levels: horizontal advection of w at edges on half levels
         - contravariant_correction_at_edges_on_model_levels: contravariant correction at edges on model levels
         - coeff1_dwdz: metrics field (first coefficient for vertical derivative of vertical wind)
         - coeff2_dwdz: metrics field (second coefficient for vertical derivative of vertical wind)
-        - c_intp: interpolation field for cell-to-vertex interpolation
-        - inv_dual_edge_length: inverse dual edge length
-        - inv_primal_edge_length: inverse primal edge length
-        - tangent_orientation: orientation of the edge with respect to the grid
         - e_bln_c_s: interpolation field (edge-to-cell interpolation weights)
         - wgtfac_c: metric coefficient for interpolating a cell variable from full to half levels
         - ddqz_z_half: metrics field
@@ -627,15 +597,10 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
     _compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
         vertical_wind_advective_tendency,
         w,
-        tangential_wind_on_half_levels,
-        vn_on_half_levels,
+        horizontal_advection_of_w_at_edges_on_half_levels,
         contravariant_correction_at_edges_on_model_levels,
         coeff1_dwdz,
         coeff2_dwdz,
-        c_intp,
-        inv_dual_edge_length,
-        inv_primal_edge_length,
-        tangent_orientation,
         e_bln_c_s,
         wgtfac_c,
         ddqz_z_half,
