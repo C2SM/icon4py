@@ -12,7 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py.next import (
     GridType,
-    abs,
+    abs,  # noqa: A004
     astype,
     broadcast,
     exp,
@@ -31,14 +31,7 @@ from gt4py.next import (
 from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_options
-from icon4py.model.common.dimension import (
-    C2E,
-    C2E2C,
-    C2E2CO,
-    E2C,
-    C2E2CODim,
-    Koff,
-)
+from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )

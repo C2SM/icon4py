@@ -31,7 +31,7 @@ from icon4py.tools.py2fgen.wrappers import (
 )
 
 from . import utils
-from .test_grid_init import grid_init  # noqa: F401
+from .test_grid_init import grid_init
 
 
 logging.basicConfig(level=logging.INFO)
@@ -267,9 +267,10 @@ def solve_nh_init(
         ),
     ],
 )
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_dycore_wrapper_granule_inputs(
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     istep_init,
     istep_exit,
     substep_init,
@@ -855,6 +856,7 @@ def test_dycore_wrapper_granule_inputs(
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
 )
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit",
     [
@@ -866,7 +868,7 @@ def test_dycore_wrapper_granule_inputs(
     ],
 )
 def test_granule_solve_nonhydro_single_step_regional(
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     istep_init,
     istep_exit,
@@ -1041,8 +1043,9 @@ def test_granule_solve_nonhydro_single_step_regional(
         (1, 1, "2021-06-20T12:00:20.000", 2, 2, "2021-06-20T12:00:20.000", True, False),
     ],
 )
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_granule_solve_nonhydro_multi_step_regional(
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     step_date_init,
     step_date_exit,

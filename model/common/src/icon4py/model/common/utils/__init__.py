@@ -19,14 +19,12 @@ from ._common import (
 
 
 __all__ = [
-    # Classes
     "DoubleBuffering",
     "Pair",
-    "TimeStepPair",
     "PredictorCorrectorPair",
-    "named_property",
+    "TimeStepPair",
     # Functions
     "chainable",
-    # Modules
-    "serialbox",
+    # Classes
+    "named_property",
 ]

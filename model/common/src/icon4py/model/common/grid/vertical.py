@@ -495,11 +495,11 @@ def _compute_vct_a_and_vct_b(
                         )
                 if modified_vct_a[0] == vct_a[0]:
                     vct_a[0:2] = modified_vct_a[0:2]
-                    vct_a[
-                        lowest_level_unmodified_thickness + 1 : vertical_config.num_levels
-                    ] = modified_vct_a[
-                        lowest_level_unmodified_thickness + 1 : vertical_config.num_levels
-                    ]
+                    vct_a[lowest_level_unmodified_thickness + 1 : vertical_config.num_levels] = (
+                        modified_vct_a[
+                            lowest_level_unmodified_thickness + 1 : vertical_config.num_levels
+                        ]
+                    )
                     vct_a[2 : lowest_level_unmodified_thickness + 1] = 0.5 * (
                         modified_vct_a[1:lowest_level_unmodified_thickness]
                         + modified_vct_a[3 : lowest_level_unmodified_thickness + 2]

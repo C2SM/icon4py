@@ -352,8 +352,7 @@ class Domain(Protocol):
         return f"Domain (dim = {self.dim}: zone = {self._marker} /[ {self._index}])"
 
     @abstractmethod
-    def _valid(self, marker: Zone) -> bool:
-        ...
+    def _valid(self, marker: Zone) -> bool: ...
 
     @property
     def zone(self) -> Zone:

@@ -162,8 +162,7 @@ class VerticalLimiter(ABC):
         z_slope: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
-        ...
+    ): ...
 
     def limit_parabola(
         self,
@@ -173,15 +172,13 @@ class VerticalLimiter(ABC):
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
-        ...
+    ): ...
 
     def limit_fluxes(
         self,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
-        ...
+    ): ...
 
 
 class NoLimiter(VerticalLimiter):
@@ -209,8 +206,7 @@ class NoLimiter(VerticalLimiter):
         z_slope: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
-        ...
+    ): ...
 
     def limit_parabola(
         self,
@@ -250,8 +246,7 @@ class NoLimiter(VerticalLimiter):
         self,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
-        ...
+    ): ...
 
 
 class SemiMonotonicLimiter(VerticalLimiter):
@@ -345,8 +340,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
         self,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
-        ...
+    ): ...
 
 
 class VerticalAdvection(ABC):
@@ -499,8 +493,7 @@ class FiniteVolume(VerticalAdvection):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool,
-    ):
-        ...
+    ): ...
 
     @abstractmethod
     def _update_unknowns(
@@ -512,8 +505,7 @@ class FiniteVolume(VerticalAdvection):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool,
-    ):
-        ...
+    ): ...
 
 
 class FirstOrderUpwind(FiniteVolume):

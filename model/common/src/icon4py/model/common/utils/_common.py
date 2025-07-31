@@ -29,8 +29,7 @@ from typing import (
 @runtime_checkable
 class DoubleBuffering(Protocol):
     @abc.abstractmethod
-    def swap_buffers(self) -> None:
-        ...
+    def swap_buffers(self) -> None: ...
 
 
 T = TypeVar("T")
