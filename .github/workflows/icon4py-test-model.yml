@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
-        backend: ["embedded", "gtfn_cpu"]         # TODO add dace-cpu?
+        backend: ["embedded", "dace_cpu", "gtfn_cpu"]
         component: ["advection", "diffusion", "dycore", "microphysics", "muphys", "driver", "common"]
     steps:
       - name: Checkout
