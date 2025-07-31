@@ -24,6 +24,10 @@ jobs:
 
             * `cscs-ci run benchmark-bencher`
 
+            To run tests and benchmarks with the DaCe backend you can use:
+
+            * `cscs-ci run dace`
+
             To run test levels ignored by the default test suite (mostly simple datatest for static fields computations) you can use:
              * `cscs-ci run extra`
 
