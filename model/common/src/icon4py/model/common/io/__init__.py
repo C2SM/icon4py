@@ -197,4 +197,4 @@ import importlib
 
 if not importlib.util.find_spec("xarray"):
     print("Optional icon4py-common[io] dependencies are missing!")
-    SystemExit(1)
+    raise SystemExit(1)
