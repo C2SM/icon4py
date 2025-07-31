@@ -79,6 +79,11 @@ class RhoThetaAdvectionType(FrozenNamespace[int]):
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
+    max_vertical_cfl: ta.wpfloat
+    """
+    Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.
+    """
+
     tangential_wind: fa.EdgeKField[ta.vpfloat]
     """
     Declared as vt in ICON. Tangential wind at edge.
