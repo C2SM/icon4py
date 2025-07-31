@@ -134,7 +134,8 @@ class DiffusionConfig:
         thhgtd_zdiffu: float = 200.0,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
-        max_nudging_coeff: float = 0.02,
+        _nudge_max_coeff: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float | None = None,  # default is set in __init__
         nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         ltkeshs: bool = True,
@@ -194,11 +195,6 @@ class DiffusionConfig:
 
         #: Number of dynamics substeps per fast-physics step
         #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
-
-        # TODO (magdalena) ndyn_substeps may dynamically increase during a model run in order to
-        #       reduce instabilities. Need to figure out whether the parameter is the configured
-        #       (constant!) one or the dynamical one. In the latter case it should be removed from
-        #       DiffusionConfig and init()
         self.ndyn_substeps: int = n_substeps
 
         # namelist mo_gridref_nml.f90
@@ -219,8 +215,25 @@ class DiffusionConfig:
         #:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90
-        self.nudge_max_coeff: float = max_nudging_coeff
+        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
+        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_nudge_max_coeff` or
+        #: the properly scaled one as `max_nudging_coefficient`,
+        #: see the comment in mo_interpol_nml.f90
+        #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
+        if _nudge_max_coeff is not None and max_nudging_coefficient is not None:
+            raise ValueError(
+                "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
+            )
+        elif max_nudging_coefficient is not None:
+            self.max_nudging_coefficient: float = max_nudging_coefficient
+        elif _nudge_max_coeff is not None:
+            self.max_nudging_coefficient: float = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _nudge_max_coeff
+            )
+        else:  # default value in ICON
+            self.max_nudging_coefficient: float = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
+            )
 
         #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
         #: Called 'nudge_efold_width' in mo_interpol_nml.f90
@@ -275,7 +288,6 @@ class DiffusionParams:
     K4W: Final[float] = dataclasses.field(init=False)
     smagorinski_factor: Final[float] = dataclasses.field(init=False)
     smagorinski_height: Final[float] = dataclasses.field(init=False)
-    scaled_nudge_max_coeff: Final[float] = dataclasses.field(init=False)
 
     def __post_init__(self, config):
         object.__setattr__(
@@ -297,12 +309,6 @@ class DiffusionParams:
         ) = self._determine_smagorinski_factor(config)
         object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
         object.__setattr__(self, "smagorinski_height", smagorinski_height)
-        # see mo_interpol_nml.f90:
-        object.__setattr__(
-            self,
-            "scaled_nudge_max_coeff",
-            config.nudge_max_coeff * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
-        )
 
     def _determine_smagorinski_factor(self, config: DiffusionConfig):
         """Enhanced Smagorinsky diffusion factor.
@@ -388,8 +394,10 @@ class Diffusion:
         self.thresh_tdiff: float = -5.0
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
-        self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
-        self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
+        self.nudgezone_diff: float = 0.04 / (
+            config.max_nudging_coefficient + sys.float_info.epsilon
+        )
+        self.bdy_diff: float = 0.015 / (config.max_nudging_coefficient + sys.float_info.epsilon)
         self.fac_bdydiff_v: float = (
             math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
         )

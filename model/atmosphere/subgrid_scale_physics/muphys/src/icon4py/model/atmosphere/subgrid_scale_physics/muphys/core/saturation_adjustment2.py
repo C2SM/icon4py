@@ -16,7 +16,6 @@ thermo.py implementation, in the hope that the gtfn compilation problems will
 disappear soon.
 """
 
-
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import maximum, where
 

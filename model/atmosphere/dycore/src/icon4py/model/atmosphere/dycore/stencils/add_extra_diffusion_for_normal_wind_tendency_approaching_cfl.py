@@ -8,23 +8,10 @@
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (
-    abs,
-    astype,
-    minimum,
-    neighbor_sum,
-    where,
-)
+from gt4py.next.ffront.fbuiltins import abs, astype, minimum, neighbor_sum, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import (
-    E2C,
-    E2C2EO,
-    E2V,
-    E2C2EODim,
-    E2CDim,
-    Koff,
-)
+from icon4py.model.common.dimension import E2C, E2C2EO, E2V, E2C2EODim, E2CDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

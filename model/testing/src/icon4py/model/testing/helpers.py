@@ -6,10 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import dataclasses
 import functools
 import hashlib
 import typing
-from dataclasses import dataclass, field
 from typing import Callable, ClassVar, Optional
 
 import gt4py.next as gtx
@@ -21,12 +21,7 @@ from gt4py.next.ffront.decorator import FieldOperator, Program
 from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-@pytest.fixture(scope="session")
-def connectivities_as_numpy(grid) -> dict[gtx.Dimension, np.ndarray]:
-    return {dim: data_alloc.as_numpy(table) for dim, table in grid.neighbor_tables.items()}
+from icon4py.model.common.utils import device_utils
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
@@ -56,7 +51,9 @@ def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
 
-def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
+def dallclose(
+    a: np.ndarray, b: np.ndarray, rtol: float = 1.0e-12, atol: float = 0.0, equal_nan: bool = False
+):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
@@ -77,12 +74,12 @@ def allocate_data(
 
 def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
-    grid: base.BaseGrid,
+    grid: base.Grid,
     backend: gtx_backend.Backend | None,
 ):
     for marker in markers:
         match marker.name:
-            case "cpu_only" if data_alloc.is_cupy_device(backend):
+            case "cpu_only" if device_utils.is_cupy_device(backend):
                 pytest.xfail("currently only runs on CPU")
             case "embedded_only" if not is_embedded(backend):
                 pytest.skip("stencil runs only on embedded backend")
@@ -91,10 +88,10 @@ def apply_markers(
                 pytest.xfail("Embedded backend currently fails in remap function.")
             case "embedded_static_args" if is_embedded(backend):
                 pytest.xfail(" gt4py _compiled_programs returns error when backend is None.")
-            case "infinite_concat_where" if is_embedded(backend):
-                pytest.xfail("Embedded backend does not support infinite concat_where.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
+            case "uses_concat_where" if is_embedded(backend):
+                pytest.xfail("Embedded backend does not support concat_where.")
             case "skip_value_error":
                 if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
@@ -103,11 +100,11 @@ def apply_markers(
                     )
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Output:
     name: str
-    refslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
-    gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
+    refslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
+    gtslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
 
 
 def run_verify_and_benchmark(
@@ -164,7 +161,7 @@ def _verify_stencil_test(
 
 def _test_and_benchmark(
     self,
-    grid: base.BaseGrid,
+    grid: base.Grid,
     backend: gtx_backend.Backend,
     connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field],

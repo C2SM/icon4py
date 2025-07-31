@@ -42,9 +42,9 @@ build_baseimage_aarch64:
   stage: image
   variables:
       # Unique image name based on commit SHA
-      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-      DOCKERFILE: ci/docker/checkout.Dockerfile
-      DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+    DOCKERFILE: ci/docker/checkout.Dockerfile
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
 # build_image_x86_64:
 #   extends: [.container-builder-cscs-zen2, .build_image]
 #   needs: [build_baseimage_x86_64]
@@ -84,7 +84,7 @@ build_image_aarch64:
   variables:
     RUNNER: "ci-runner"
     SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
-    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_003:$TEST_DATA_PATH"]'
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_004:$TEST_DATA_PATH"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"

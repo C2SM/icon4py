@@ -11,20 +11,11 @@ from typing import Final, Optional
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
 from gt4py.next import backend as gtx_backend
-from gt4py.next.ffront.fbuiltins import (
-    abs,
-    exp,
-    maximum,
-    where,
-)
+from gt4py.next.ffront.fbuiltins import abs, exp, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common import (
-    constants as phy_const,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
+from icon4py.model.common import constants as phy_const, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc

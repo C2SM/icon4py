@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
@@ -25,7 +25,7 @@ from icon4py.tools.py2fgen.wrappers import (
 )
 
 from . import utils
-from .test_grid_init import grid_init  # noqa: F401
+from .test_grid_init import grid_init
 
 
 @pytest.mark.datatest
@@ -36,13 +36,14 @@ from .test_grid_init import grid_init  # noqa: F401
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
     lowest_layer_thickness,
@@ -65,7 +66,7 @@ def test_diffusion_wrapper_granule_inputs(
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
-    nudge_max_coeff = 0.075 * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+    max_nudging_coefficient = 0.375
     itype_sher = (
         diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
@@ -205,7 +206,7 @@ def test_diffusion_wrapper_granule_inputs(
             thslp_zdiffu=thslp_zdiffu,
             thhgtd_zdiffu=thhgtd_zdiffu,
             denom_diffu_v=denom_diffu_v,
-            nudge_max_coeff=nudge_max_coeff,
+            nudge_max_coeff=max_nudging_coefficient,
             itype_sher=itype_sher.value,
             ltkeshs=ltkeshs,
             lowest_layer_thickness=lowest_layer_thickness,
@@ -225,7 +226,7 @@ def test_diffusion_wrapper_granule_inputs(
             assert result, f"Grid comparison failed: {error_message}"
         except AssertionError as e:
             error_message = str(e)
-            if "object._neighbor_tables" not in error_message:
+            if "icon_grid != " not in error_message:
                 raise
             else:
                 pass
@@ -296,13 +297,14 @@ def test_diffusion_wrapper_granule_inputs(
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     experiment,
     lowest_layer_thickness,
     model_top_height,
@@ -326,9 +328,7 @@ def test_diffusion_wrapper_single_step(
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
-    nudge_max_coeff = (
-        0.075 * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-    )  # this is done in ICON, so we replicate it here
+    max_nudging_coefficient = 0.375
     itype_sher = (
         diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
@@ -418,7 +418,7 @@ def test_diffusion_wrapper_single_step(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         denom_diffu_v=denom_diffu_v,
-        nudge_max_coeff=nudge_max_coeff,
+        nudge_max_coeff=max_nudging_coefficient,
         itype_sher=itype_sher.value,
         ltkeshs=ltkeshs,
         lowest_layer_thickness=lowest_layer_thickness,

@@ -1,36 +1,36 @@
 on:
-    pull_request:
+  pull_request:
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-        permissions:
-            pull-requests: write
-        steps:
-            - uses: mshick/add-pr-comment@v2
-              with:
-                  refresh-message-position: true
-                  message: |
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: mshick/add-pr-comment@v2
+        with:
+          refresh-message-position: true
+          message: |2
 
-                      **Mandatory Tests**
+            **Mandatory Tests**
 
-                      Please make sure you run these tests via comment before you merge!
+            Please make sure you run these tests via comment before you merge!
 
-                      * `cscs-ci run default`
+            * `cscs-ci run default`
 
-                      **Optional Tests**
+            **Optional Tests**
 
-                      To run benchmarks you can use:
+            To run benchmarks you can use:
 
-                      * `cscs-ci run benchmark-bencher`
+            * `cscs-ci run benchmark-bencher`
 
-                      To run tests and benchmarks with the DaCe backend you can use:
+            To run tests and benchmarks with the DaCe backend you can use:
 
-                      * `cscs-ci run dace`
+            * `cscs-ci run dace`
 
-                      To run test levels ignored by the default test suite (mostly simple datatest for static fields computations) you can use:
-                       * `cscs-ci run extra`
+            To run test levels ignored by the default test suite (mostly simple datatest for static fields computations) you can use:
+             * `cscs-ci run extra`
 
 
 
-                      For more detailed information please look at [CI in the EXCLAIM universe](https://github.com/C2SM/icon-exclaim/wiki).
+            For more detailed information please look at [CI in the EXCLAIM universe](https://github.com/C2SM/icon-exclaim/wiki).

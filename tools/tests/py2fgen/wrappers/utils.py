@@ -23,9 +23,8 @@ except ImportError:
 def compare_values_shallow(value1, value2, obj_name="value"):
     # Handle comparison of NdArrayField objects
     if isinstance(value1, NdArrayField) and isinstance(value2, NdArrayField):
-        xp = value1.array_ns
         try:
-            xp.testing.assert_equal(value1.ndarray, value2.ndarray)  # Compare arrays for equality
+            np.testing.assert_equal(value1.asnumpy(), value2.asnumpy())
             return True, None
         except AssertionError:
             return False, f"Array mismatch for {obj_name}"
@@ -150,7 +149,7 @@ def r04b09_diffusion_config(
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
+        max_nudging_coefficient=0.375,
         n_substeps=ndyn_substeps,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
@@ -186,11 +185,10 @@ def construct_solve_nh_config(name: str, ndyn_substeps: int = 5):
 def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
-        ndyn_substeps_var=ndyn_substeps,
         divdamp_order=24,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
-        max_nudging_coeff=0.075,
+        max_nudging_coefficient=0.375,
     )
     return config
 
@@ -200,5 +198,4 @@ def _exclaim_ape_nonhydrostatic_config(ndyn_substeps):
     return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
         divdamp_order=24,
-        ndyn_substeps_var=ndyn_substeps,
     )

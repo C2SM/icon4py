@@ -124,7 +124,7 @@ def compute_diffusion_metrics(
     zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
-    k_start, k_end, mask = _compute_k_start_end(
+    k_start, k_end, _ = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
         maxslp_avg=maxslp_avg,
