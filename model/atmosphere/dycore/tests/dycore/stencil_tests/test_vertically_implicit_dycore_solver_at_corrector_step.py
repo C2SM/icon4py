@@ -211,9 +211,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
                 tridiagonal_alpha_coeff_at_cells_on_half_levels[:, :n_lev],
             ),
         )
-        tridiagonal_alpha_coeff_at_cells_on_half_levels[
-            horizontal_start:horizontal_end, n_lev
-        ] = 0.0
+        tridiagonal_alpha_coeff_at_cells_on_half_levels[horizontal_start:horizontal_end, n_lev] = (
+            0.0
+        )
         tridiagonal_intermediate_result[horizontal_start:horizontal_end, 0] = 0.0
 
         next_w[horizontal_start:horizontal_end, 0] = 0.0

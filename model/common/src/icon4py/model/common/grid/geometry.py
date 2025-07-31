@@ -7,16 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Mapping,
-    Optional,
-    Sequence,
-    TypeAlias,
-    TypeVar,
-)
+from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend

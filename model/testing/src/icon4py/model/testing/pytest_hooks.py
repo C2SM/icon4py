@@ -21,11 +21,11 @@ from icon4py.model.testing.helpers import apply_markers
 
 
 __all__ = [
-    "pytest_configure",
     "pytest_addoption",
-    "pytest_collection_modifyitems",
-    "pytest_runtest_setup",
     "pytest_benchmark_update_json",
+    "pytest_collection_modifyitems",
+    "pytest_configure",
+    "pytest_runtest_setup",
 ]
 
 _TEST_LEVELS = ("any", "unit", "integration")
