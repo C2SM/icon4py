@@ -144,7 +144,7 @@ def test_nudging(grid, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_interior(grid, source, dim):
+def test_interior(grid, dim):
     domain = h_grid.domain(dim)(h_grid.Zone.INTERIOR)
     start_index = grid.start_index(domain)
     end_index = grid.end_index(domain)
