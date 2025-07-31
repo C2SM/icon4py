@@ -5,12 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import dataclasses
 import functools
 import hashlib
 import typing
-from typing import Callable, ClassVar, Optional
+from typing import Any, Callable, ClassVar, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -48,19 +49,20 @@ def is_roundtrip(backend: gtx_backend.Backend | None) -> bool:
 
 
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
-    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
+    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
 
 
 def dallclose(
     a: np.ndarray, b: np.ndarray, rtol: float = 1.0e-12, atol: float = 0.0, equal_nan: bool = False
-):
+) -> bool:
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
 def allocate_data(
-    backend: Optional[gtx_backend.Backend], input_data: dict[str, gtx.Field]
-) -> dict[str, gtx.Field]:
-    _allocate_field = constructors.as_field.partial(allocator=backend)
+    backend: Optional[gtx_backend.Backend],
+    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
+    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO: check why it does understand the fluid_partial
     input_data = {
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
@@ -76,7 +78,7 @@ def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
     grid: base.Grid,
     backend: gtx_backend.Backend | None,
-):
+) -> None:
     for marker in markers:
         match marker.name:
             case "cpu_only" if device_utils.is_cupy_device(backend):
@@ -92,6 +94,8 @@ def apply_markers(
                 pytest.xfail("Embedded backend does not support as_offset.")
             case "uses_concat_where" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support concat_where.")
+            case "gtfn_too_slow" if is_gtfn_backend(backend):
+                pytest.skip("GTFN compilation is too slow for this test.")
             case "skip_value_error":
                 if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
                     # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
@@ -110,7 +114,9 @@ class Output:
 def run_verify_and_benchmark(
     test_func: Callable[[], None],
     verification_func: Callable[[], None],
-    benchmark_fixture: Optional[pytest.FixtureRequest],
+    benchmark_fixture: Optional[
+        Any
+    ],  # should be pytest_benchmark.fixture.BenchmarkFixture pytest_benchmark is not typed
 ) -> None:
     """
     Function to perform verification and benchmarking of test_func (along with normally executing it).
@@ -131,9 +137,9 @@ def run_verify_and_benchmark(
 
 
 def _verify_stencil_test(
-    self,
-    input_data: dict[str, gtx.Field],
-    reference_outputs: dict[str, np.ndarray],
+    self: StencilTest,
+    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    reference_outputs: dict[str, np.ndarray | tuple[np.ndarray, ...]],
 ) -> None:
     for out in self.OUTPUTS:
         name, refslice, gtslice = (
@@ -142,8 +148,9 @@ def _verify_stencil_test(
             else (out, (slice(None),), (slice(None),))
         )
 
-        if isinstance(input_data[name], tuple):
-            for i_out_field, out_field in enumerate(input_data[name]):
+        input_data_name = input_data[name]  # for mypy
+        if isinstance(input_data_name, tuple):
+            for i_out_field, out_field in enumerate(input_data_name):
                 np.testing.assert_allclose(
                     out_field.asnumpy()[gtslice],
                     reference_outputs[name][i_out_field][refslice],
@@ -151,20 +158,22 @@ def _verify_stencil_test(
                     err_msg=f"Verification failed for '{name}[{i_out_field}]'",
                 )
         else:
+            reference_outputs_name = reference_outputs[name]  # for mypy
+            assert isinstance(reference_outputs_name, np.ndarray)
             np.testing.assert_allclose(
-                input_data[name].asnumpy()[gtslice],
-                reference_outputs[name][refslice],
+                input_data_name.asnumpy()[gtslice],
+                reference_outputs_name[refslice],
                 equal_nan=True,
                 err_msg=f"Verification failed for '{name}'",
             )
 
 
 def _test_and_benchmark(
-    self,
+    self: StencilTest,
     grid: base.Grid,
-    backend: gtx_backend.Backend,
+    backend: gtx_backend.Backend | None,
     connectivities_as_numpy: dict[str, np.ndarray],
-    input_data: dict[str, gtx.Field],
+    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
     benchmark: pytest.FixtureRequest,
 ) -> None:
     if self.MARKERS is not None:
@@ -180,8 +189,8 @@ def _test_and_benchmark(
 
     run_verify_and_benchmark(
         functools.partial(
-            self.PROGRAM.with_backend(backend),
-            **input_data,
+            self.PROGRAM.with_backend(backend),  # type: ignore[arg-type] # TODO: gt4py should accept `None` in with_backend
+            **input_data,  # type: ignore[arg-type]
             offset_provider=grid.connectivities,
         ),
         functools.partial(
@@ -215,9 +224,11 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKERS: typing.Optional[tuple] = None
+    MARKERS: ClassVar[typing.Optional[tuple]] = None
 
-    def __init_subclass__(cls, **kwargs):
+    reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         # Add two methods for verification and benchmarking. In order to have names that
         # reflect the name of the test we do this dynamically here instead of using regular
         # inheritance.
@@ -231,4 +242,4 @@ def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
 
 def as_1d_connectivity(connectivity: np.ndarray) -> np.ndarray:
     old_shape = connectivity.shape
-    return np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)
+    return np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)  # type: ignore[attr-defined] # fix gtx.int32

@@ -14,7 +14,7 @@ from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import utils
 from icon4py.model.common.states import data
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils, grid_utils
+from icon4py.model.testing import datatest_utils, definitions, grid_utils
 
 
 # setting backend to fieldview embedded here.
@@ -22,7 +22,7 @@ backend = None
 UNLIMITED = None
 simple_grid = simple.simple_grid()
 
-grid_file = datatest_utils.GRIDS_PATH.joinpath(
+grid_file = definitions.grids_path().joinpath(
     datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE
 )
 global_grid = grid_utils.get_grid_manager_for_experiment(

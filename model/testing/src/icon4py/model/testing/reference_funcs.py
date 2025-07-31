@@ -12,7 +12,9 @@ import numpy as np
 from icon4py.model.common import dimension as dims
 
 
-def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):
+def enhanced_smagorinski_factor_numpy(
+    factor_in: np.ndarray, heigths_in: np.ndarray, a_vec: np.ndarray
+) -> float:
     alin = (factor_in[1] - factor_in[0]) / (heigths_in[1] - heigths_in[0])
     df32 = factor_in[2] - factor_in[1]
     df42 = factor_in[3] - factor_in[1]
@@ -29,7 +31,7 @@ def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):
 
 
 def nabla2_on_cell_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], psi_c: np.array, geofac_n2s: np.array
+    connectivities: dict[gtx.Dimension, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
 ) -> np.ndarray:
     c2e2cO = connectivities[dims.C2E2CODim]
     nabla2_psi_c = np.sum(np.where((c2e2cO != -1), psi_c[c2e2cO] * geofac_n2s, 0), axis=1)
@@ -37,7 +39,7 @@ def nabla2_on_cell_numpy(
 
 
 def nabla2_on_cell_k_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], psi_c: np.array, geofac_n2s: np.array
+    connectivities: dict[gtx.Dimension, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
 ) -> np.ndarray:
     c2e2cO = connectivities[dims.C2E2CODim]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)

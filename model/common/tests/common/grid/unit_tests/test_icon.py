@@ -14,11 +14,9 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
-    grid_manager as gm,
     gridfile,
     horizontal as h_grid,
     icon,
-    vertical as v_grid,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
@@ -37,12 +35,9 @@ from .. import utils
 
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
-    file_name = gridtest_utils.resolve_full_grid_file_name(dt_utils.REGIONAL_EXPERIMENT)
-    manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
-    )
-    manager(keep_skip_values=True, backend=None)
-    return manager.grid
+    return gridtest_utils.get_grid_manager_for_experiment(
+        dt_utils.REGIONAL_EXPERIMENT, keep_skip_values=True, backend=None
+    ).grid
 
 
 def lateral_boundary():
@@ -79,13 +74,18 @@ INTERIOR_IDX = {
 }
 
 
+@pytest.fixture(params=["serialbox", "file"])
+def grid(icon_grid, request):
+    if request.param == "serialbox":
+        return icon_grid
+    else:
+        return grid_from_limited_area_grid_file()
+
+
 @pytest.mark.datatest
-@pytest.mark.parametrize("source", ("serialbox", "file"))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
-def test_halo(icon_grid, source, dim, marker):
-    # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
+def test_halo(grid, dim, marker):
     # For single node this returns an empty region - start and end index are the same see  also ./mpi_tests/test_icon.py
     domain = h_grid.domain(dim)(marker)
     assert grid.start_index(domain) == HALO_IDX[dim][0]
@@ -93,23 +93,17 @@ def test_halo(icon_grid, source, dim, marker):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("source", ("serialbox", "file"))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_local(dim, source, icon_grid):
-    # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
+def test_local(dim, grid):
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     assert grid.start_index(domain) == 0
     assert grid.end_index(domain) == grid.size[dim]
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("source", ("serialbox", "file"))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", lateral_boundary())
-def test_lateral_boundary(icon_grid, source, dim, marker):
-    # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
+def test_lateral_boundary(grid, dim, marker):
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if num > 4 and dim in (dims.VertexDim, dims.CellDim):
         with pytest.raises(AssertionError) as e:
@@ -124,23 +118,17 @@ def test_lateral_boundary(icon_grid, source, dim, marker):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("source", ("serialbox", "file"))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_end(icon_grid, source, dim):
-    # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
+def test_end(grid, dim):
     domain = h_grid.domain(dim)(h_grid.Zone.END)
     assert grid.start_index(domain) == grid.size[dim]
     assert grid.end_index(domain) == grid.size[dim]
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("source", ("serialbox", "file"))
 @pytest.mark.parametrize("marker", nudging())
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_nudging(icon_grid, source, dim, marker):
-    # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
+def test_nudging(grid, dim, marker):
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if dim == dims.VertexDim or (dim == dims.CellDim and num > 1):
         with pytest.raises(AssertionError) as e:
@@ -155,11 +143,8 @@ def test_nudging(icon_grid, source, dim, marker):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("source", ("serialbox", "file"))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_interior(icon_grid, source, dim):
-    # working around the fact that fixtures cannot be used in parametrized functions
-    grid = icon_grid if source == "serialbox" else grid_from_limited_area_grid_file()
+def test_interior(grid, dim):
     domain = h_grid.domain(dim)(h_grid.Zone.INTERIOR)
     start_index = grid.start_index(domain)
     end_index = grid.end_index(domain)

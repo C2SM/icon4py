@@ -103,7 +103,7 @@ repos:
       - <<: *uv-managed-hook
         id: mypy
         name: mypy static type checker
-        entry: uv run --group dev --frozen --isolated mypy tools/src/icon4py/tools model/atmosphere/dycore/tests/dycore/stencil_tests # model/common/src/icon4py/model/common # TODO(egparedes): fix and activate mypy hook for all packages
+        entry: uv run --group dev --frozen --isolated mypy tools/src/icon4py/tools model/testing/src model/atmosphere/dycore/tests/dycore/stencil_tests # model/common/src/icon4py/model/common # TODO(egparedes): fix and activate mypy hook for all packages
         types_or: [python, pyi]
         pass_filenames: false
 

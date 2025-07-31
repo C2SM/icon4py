@@ -17,7 +17,7 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.testing import datatest_utils, grid_utils
+from icon4py.model.testing import datatest_utils, definitions, grid_utils
 
 from ...fixtures import test_path
 
@@ -29,7 +29,7 @@ def grid_files():
     ]
 
     for ff in files:
-        yield datatest_utils.GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
+        yield definitions.grids_path().joinpath(ff[0]).joinpath(ff[1])
 
 
 @pytest.mark.parametrize("file", grid_files())
