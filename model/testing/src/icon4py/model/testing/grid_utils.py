@@ -10,7 +10,6 @@ from typing import Optional
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
-from gt4py._core import locking
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition_defs
@@ -22,7 +21,13 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
+from icon4py.model.testing import (
+    config,
+    data_handling,
+    datatest_utils as dt_utils,
+    definitions,
+    locking,
+)
 
 
 REGIONAL_GRIDFILE = "grid.nc"

@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final
 
 import pytest
-from gt4py._core import locking  # TODO(havogt): should we move the locking to gt4py.eve?
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -21,6 +20,7 @@ from icon4py.model.testing import (
     data_handling as data,
     datatest_utils as dt_utils,
     definitions,
+    locking,
 )
 from icon4py.model.testing.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 
