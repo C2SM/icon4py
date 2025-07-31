@@ -318,18 +318,16 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("substep_init, substep_exit", [(1, 1), (2, 2)])
 def test_velocity_corrector_step(
     istep_init,
     istep_exit,
     experiment,
     step_date_init,
     step_date_exit,
-    substep_init,
-    substep_exit,
     *,
     lowest_layer_thickness,
     model_top_height,
@@ -342,6 +340,8 @@ def test_velocity_corrector_step(
     interpolation_savepoint,
     metrics_savepoint,
     ndyn_substeps,
+    substep_init,
+    substep_exit,
     backend,
 ):
     init_savepoint = savepoint_velocity_init
@@ -723,27 +723,27 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
-@pytest.mark.parametrize("substep_init, substep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_vertical_momentum_equation(
     experiment,
     step_date_init,
     step_date_exit,
     istep_init,
     istep_exit,
-    substep_init,
-    substep_exit,
     *,
     icon_grid,
     grid_savepoint,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_exit,
-    backend,
     savepoint_velocity_init,
+    substep_init,
+    substep_exit,
+    backend,
 ):
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
