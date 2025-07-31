@@ -169,7 +169,7 @@ def _verify_stencil_test(
 def _test_and_benchmark(
     self: StencilTest,
     grid: base.Grid,
-    backend: gtx_backend.Backend,
+    backend: gtx_backend.Backend | None,
     connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
     benchmark: pytest.FixtureRequest,
@@ -187,7 +187,7 @@ def _test_and_benchmark(
 
     run_verify_and_benchmark(
         functools.partial(
-            self.PROGRAM.with_backend(backend),
+            self.PROGRAM.with_backend(backend),  # type: ignore[arg-type] # TODO: gt4py should accept `None` in with_backend
             **input_data,  # type: ignore[arg-type]
             offset_provider=grid.connectivities,
         ),

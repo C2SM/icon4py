@@ -18,6 +18,7 @@ from icon4py.model.testing import config
 DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
 
 
+# TODO(havogt): The following are not definitions, refactor or move to a different place
 def get_test_data_root_path() -> pathlib.Path:
     if config.TEST_DATA_PATH:
         return pathlib.Path(config.TEST_DATA_PATH)

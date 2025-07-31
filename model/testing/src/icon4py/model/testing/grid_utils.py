@@ -13,7 +13,7 @@ import gt4py.next.backend as gtx_backend
 from gt4py._core import locking
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomopsition_defs
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -143,13 +143,13 @@ def get_grid_geometry(
 
     def _construct_dummy_decomposition_info(
         grid: icon.IconGrid,
-    ) -> decomopsition_defs.DecompositionInfo:
+    ) -> decomposition_defs.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension) -> None:
             indices = data_alloc.index_field(grid, dim, backend=backend)
             owner_mask = xp.ones((grid.size[dim],), dtype=bool)
             decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
-        decomposition_info = decomopsition_defs.DecompositionInfo(klevels=grid.num_levels)
+        decomposition_info = decomposition_defs.DecompositionInfo(klevels=grid.num_levels)
         _add_dimension(dims.EdgeDim)
         _add_dimension(dims.VertexDim)
         _add_dimension(dims.CellDim)
