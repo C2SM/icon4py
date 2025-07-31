@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -932,7 +932,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_07_16#ff441fe0fa21c9f30ab0b08d8cc3681253b82877" }
+source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_07_29#74bb66ac28b7e3965024bac080995136ce855f4e" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1428,7 +1428,7 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.5"
+version = "1.0.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1460,9 +1460,9 @@ dependencies = [
     { name = "versioningit" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/89/d48a6bfa9c67436eb2751f691f94fee4932ebcd9516eb2562bce6a018bc7/gt4py-1.0.5.tar.gz", hash = "sha256:4f7ee04d8b3c9a99fc1283effee7eecb488c9e07ec97f6faafcace5b28935263", size = 736342, upload-time = "2025-07-21T18:05:45.282Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/aa/74/f4714967ba0391c54fc4e07acc32a179633149b74607744acf01fb2f1049/gt4py-1.0.6.tar.gz", hash = "sha256:a6c072d69cf3b28238076de49291c1de8f1f39b64cd31f9997b0407dfe520552", size = 717318, upload-time = "2025-07-30T11:03:52.796Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/56/9ded6dcb1d7c94ef4172160e4b4990eef84083375ce967eb7c1773b583ff/gt4py-1.0.5-py3-none-any.whl", hash = "sha256:5cd67a83245219cb71e816bda3ff2ed7ed5fb3e1eb2df05c0f3da7e5872701f2", size = 940015, upload-time = "2025-07-21T18:05:43.754Z" },
+    { url = "https://files.pythonhosted.org/packages/62/0b/ff85ecbf455dba6cc6808ef4aba2025cf9b823e04d2ae337a82b526addf7/gt4py-1.0.6-py3-none-any.whl", hash = "sha256:8c89105f6a7cb64b98a6c436b7188772cf11ca475e1cde742969ad2633a6bdde", size = 918412, upload-time = "2025-07-30T11:03:51.024Z" },
 ]
 
 [package.optional-dependencies]
@@ -1805,7 +1805,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1822,7 +1822,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1839,7 +1839,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1856,7 +1856,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1872,7 +1872,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1939,10 +1939,10 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_07_16" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_07_29" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
     { name = "gt4py", extras = ["next"], marker = "extra == 'dace'" },
@@ -1981,7 +1981,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2007,7 +2007,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2053,7 +2053,7 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.0.5" },
+    { name = "gt4py", specifier = "==1.0.6" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
@@ -4134,11 +4134,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "75.6.0"
+version = "80.9.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/43/54/292f26c208734e9a7f067aea4a7e282c080750c4546559b58e2e45413ca0/setuptools-75.6.0.tar.gz", hash = "sha256:8199222558df7c86216af4f84c30e9b34a61d8ba19366cc914424cdbd28252f6", size = 1337429, upload-time = "2024-11-20T18:16:13.378Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958, upload-time = "2025-05-27T00:56:51.443Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/55/21/47d163f615df1d30c094f6c8bbb353619274edccf0327b185cc2493c2c33/setuptools-75.6.0-py3-none-any.whl", hash = "sha256:ce74b49e8f7110f9bf04883b730f4765b774ef3ef28f722cce7c273d253aaf7d", size = 1224032, upload-time = "2024-11-20T18:16:10.861Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
 ]
 
 [[package]]

@@ -58,8 +58,6 @@ jobs:
           uvx nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
 
       - name: run nox session - stencil tests
-              # dycore stencil test fails in github actions on standard runner, see https://github.com/actions/runner-images/issues/6680
-        if: ${{ (matrix.backend != 'gtfn_cpu') || (matrix.component != 'dycore') }}
         shell: bash
         env:
           NUM_PROCESSES: auto
