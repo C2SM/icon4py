@@ -2,7 +2,6 @@
 [![Nox](https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg)](https://github.com/wntrblm/nox)
 [![Open the docs](https://readthedocs.org/projects/docs/badge/?version=latest)](https://c2sm.github.io/icon4py)
 
-
 # ICON4Py
 
 This repository hosts a work-in-progress Python implementation of the ICON climate and weather model. Additionally, it includes `icon4py.tools`, a collection of command-line interfaces (CLIs), and utilities required for the integration of ICON4Py code into the ICON Fortran model. ICON4Py leverages [GT4Py](https://github.com/GridTools/gt4py) to ensure efficient and performance portable implementations of these components.
@@ -33,13 +32,13 @@ ICON4Py uses the [`uv`](https://docs.astral.sh/uv/) project manager for developm
 $ curl -LsSf https://astral.sh/uv/install.sh | sh 
 ```
 
-Finally, make sure **_boost >= 1.85.0_** is installed in your system, which is required by `gt4py` to compile generated C++ code. 
+Finally, make sure **_boost >= 1.85.0_** is installed in your system, which is required by `gt4py` to compile generated C++ code.
 
 ### ICON4Py Development Environment
 
-Once `uv` is installed in your system, it is enough to clone this repository and let `uv` handling the installation of the development environment. 
+Once `uv` is installed in your system, it is enough to clone this repository and let `uv` handling the installation of the development environment.
 
-**Important**: the `uv sync` command should always be executed from the **root folder** of the repository, to make sure it installs all the workspace dependencies and not only the dependencies of a subproject. 
+**Important**: the `uv sync` command should always be executed from the **root folder** of the repository, to make sure it installs all the workspace dependencies and not only the dependencies of a subproject.
 
 ```bash
 # Clone the repository
@@ -64,13 +63,11 @@ To install new packages, use the `uv pip` subcommand, which emulates the `pip` i
 
 The `pyproject.toml` file at the root folder contains both the definition of the `icon4py` Python distribution package and the settings of the development tools used in this project, most notably `uv`, `ruff`, `mypy` and `pytest`. It also contains _dependency groups_ (see [PEP 735](https://peps.python.org/pep-0735/) for further reference) with the development requirements listed in different groups (`build`, `docs`, `lint`, `test`, `typing`, ...) and collected together in the general `dev` group which gets installed by default by `uv`.
 
-
 ## Development Instructions
 
 By following the installation instructions above, the source files are imported directly by the Python interpreter meaning that any code change is available and executed by the interpreter.
 
 To add new dependencies to the project, either core/optional run-time or development-only dependencies, it is possible to use the `uv` cli direcly or to modify by hand the appropriate tables in the corresponding `pyproject.toml` (check `uv` documentation for more information [https://docs.astral.sh/uv/concepts/projects/dependencies/](https://docs.astral.sh/uv/concepts/projects/dependencies/)).
-
 
 ### Code Quality Checks
 
@@ -120,7 +117,7 @@ Ongoing efforts to document the dycore can be viewed at [c2sm.github.io/icon4py]
 
 You can install the required packages by using the provided `docs` dependency group, which is included in the `dev` installed by default by `uv sync` if no dependency groups are specified.
 
-To build the html documentation in your local repository copy starting from the most upwards directory, apply the following commands: 
+To build the html documentation in your local repository copy starting from the most upwards directory, apply the following commands:
 
 ```bash
 cd model/atmosphere/dycore/docs

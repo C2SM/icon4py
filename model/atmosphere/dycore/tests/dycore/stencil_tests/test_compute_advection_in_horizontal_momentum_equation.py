@@ -108,12 +108,12 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
             condition, normal_wind_advective_tendency_extra_diffu, normal_wind_advective_tendency
         )
         # restriction of execution domain
-        normal_wind_advective_tendency[
-            0 : kwargs["horizontal_start"], :
-        ] = normal_wind_advective_tendency_cp[0 : kwargs["horizontal_start"], :]
-        normal_wind_advective_tendency[
-            kwargs["horizontal_end"] :, :
-        ] = normal_wind_advective_tendency_cp[kwargs["horizontal_end"] :, :]
+        normal_wind_advective_tendency[0 : kwargs["horizontal_start"], :] = (
+            normal_wind_advective_tendency_cp[0 : kwargs["horizontal_start"], :]
+        )
+        normal_wind_advective_tendency[kwargs["horizontal_end"] :, :] = (
+            normal_wind_advective_tendency_cp[kwargs["horizontal_end"] :, :]
+        )
 
         return dict(normal_wind_advective_tendency=normal_wind_advective_tendency)
 

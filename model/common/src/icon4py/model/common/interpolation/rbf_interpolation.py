@@ -14,10 +14,7 @@ import gt4py.next as gtx
 import numpy as np
 import scipy.linalg as sla
 
-from icon4py.model.common import (
-    dimension as dims,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 

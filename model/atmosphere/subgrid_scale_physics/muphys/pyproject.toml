@@ -22,7 +22,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-  "gt4py>=1.0.1",
+  "gt4py==1.0.5",
   "icon4py-common[io]>=0.0.6",
   "packaging>=20.0"
 ]
@@ -35,6 +35,7 @@ requires-python = ">=3.10"
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
+
 # -- bumpversion --
 [tool.bumpversion]
 allow_dirty = false
@@ -48,13 +49,13 @@ tag = false
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
-search = '''
-# managed by bump-my-version:
-version = "{current_version}"
-'''
 replace = '''
 # managed by bump-my-version:
 version = "{new_version}"
+'''
+search = '''
+# managed by bump-my-version:
+version = "{current_version}"
 '''
 
 [[tool.bumpversion.files]]

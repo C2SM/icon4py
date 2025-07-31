@@ -13,6 +13,11 @@ source_roots = [
 ]
 exact = true
 forbid_circular_dependencies = true
+# exclude optional external dependencies
+[external]
+exclude = ["fprettify", "configargparse", "cupy","ghex", "dace", "mpi4py", "netcdf4","xarray", "uxarray",
+    "cftime"]
+rename = ["serialbox:serialbox4py"]
 
 [[modules]]
 path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys"
