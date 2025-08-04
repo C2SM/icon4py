@@ -58,22 +58,22 @@ be instantiated as Python dataclasses for now. A valid configuration could look 
 
 ```python
 prognostic_group = FieldGroupIOConfig(
-            start_time="2024-01-01T12:00:00",
-            output_interval="2 HOURS",
-            filename="icon4py_prognostics",
-            timsteps_per_file=12,
-            variables=["air_density", "dimensionless_exner_function", "upward_air_velocity"],
-            nc_title="prognostics from my experiment",
-            nc_comment="Writing prognostic fields data from icon4py ",
-        )
+    start_time="2024-01-01T12:00:00",
+    output_interval="2 HOURS",
+    filename="icon4py_prognostics",
+    timsteps_per_file=12,
+    variables=["air_density", "dimensionless_exner_function", "upward_air_velocity"],
+    nc_title="prognostics from my experiment",
+    nc_comment="Writing prognostic fields data from icon4py ",
+)
 
 wind_group = FieldGroupIOConfig(
-            output_interval="1 HOUR",
-            filename="icon4py_diagnostics",
-            timsteps_per_file=24,
-            variables=["eastward_wind","tendency_of_eastward_wind" ],
-            nc_comment="Writing additional wind fields data from icon4py",
-        )
+    output_interval="1 HOUR",
+    filename="icon4py_diagnostics",
+    timsteps_per_file=24,
+    variables=["eastward_wind", "tendency_of_eastward_wind"],
+    nc_comment="Writing additional wind fields data from icon4py",
+)
 
 io_config = IOConfig(
     output_path="simulation1/output",
@@ -149,22 +149,22 @@ be instantiated as Python dataclasses for now. A valid configuration could look 
 
 ```python
 prognostic_group = FieldGroupIOConfig(
-            start_time="2024-01-01T12:00:00",
-            output_interval="2 HOURS",
-            filename="icon4py_prognostics",
-            timsteps_per_file=12,
-            variables=["air_density", "dimensionless_exner_function", "upward_air_velocity"],
-            nc_title="prognostics from my experiment",
-            nc_comment="Writing prognostic fields data from icon4py ",
-        )
+    start_time="2024-01-01T12:00:00",
+    output_interval="2 HOURS",
+    filename="icon4py_prognostics",
+    timsteps_per_file=12,
+    variables=["air_density", "dimensionless_exner_function", "upward_air_velocity"],
+    nc_title="prognostics from my experiment",
+    nc_comment="Writing prognostic fields data from icon4py ",
+)
 
 wind_group = FieldGroupIOConfig(
-            output_interval="1 HOUR",
-            filename="icon4py_diagnostics",
-            timsteps_per_file=24,
-            variables=["eastward_wind","tendency_of_eastward_wind" ],
-            nc_comment="Writing additional wind fields data from icon4py",
-        )
+    output_interval="1 HOUR",
+    filename="icon4py_diagnostics",
+    timsteps_per_file=24,
+    variables=["eastward_wind", "tendency_of_eastward_wind"],
+    nc_comment="Writing additional wind fields data from icon4py",
+)
 
 io_config = IOConfig(
     output_path="simulation1/output",
@@ -191,6 +191,7 @@ monitor.store(model_state, time)
 - Global attributes of the datafiles and field metadata is only scarcely available and needs to be augmented.
 
 """
+
 import importlib
 
 

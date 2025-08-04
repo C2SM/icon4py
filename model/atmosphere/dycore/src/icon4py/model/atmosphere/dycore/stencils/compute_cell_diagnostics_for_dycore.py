@@ -26,11 +26,9 @@ from gt4py.next import program
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import astype, bool, broadcast, maximum
+from gt4py.next.ffront.fbuiltins import astype, bool, broadcast, maximum  # noqa: A004
 
-from icon4py.model.atmosphere.dycore.dycore_states import (
-    HorizontalPressureDiscretizationType,
-)
+from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures,
 )

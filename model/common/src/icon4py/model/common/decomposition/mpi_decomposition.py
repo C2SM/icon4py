@@ -128,9 +128,9 @@ class MPICommProcessProperties(definitions.ProcessProperties):
 
 
 class GHexMultiNodeExchange:
-    max_num_of_fields_to_communicate_dace: Final[
-        int
-    ] = 10  # maximum number of fields to perform halo exchange on (DaCe-related)
+    max_num_of_fields_to_communicate_dace: Final[int] = (
+        10  # maximum number of fields to perform halo exchange on (DaCe-related)
+    )
 
     def __init__(
         self,
@@ -243,6 +243,10 @@ class GHexMultiNodeExchange:
             )
             for f in sliced_fields
         ]
+        if hasattr(fields[0].array_ns, "cuda"):
+            # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
+            # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
+            fields[0].array_ns.cuda.runtime.deviceSynchronize()
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)

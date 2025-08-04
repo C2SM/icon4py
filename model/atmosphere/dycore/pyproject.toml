@@ -1,4 +1,5 @@
 # -- Build system requirements (PEP 518) --
+
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = ["setuptools>=61.0", "wheel>=0.40.0"]
@@ -25,8 +26,8 @@ dependencies = [
   # workspace members
   "icon4py-common>=0.0.6",
   # external dependencies
-  "gt4py>=1.0.4",
-  'packaging>=20.0',
+  "gt4py==1.0.6",
+  'packaging>=20.0'
 ]
 description = "ICON dynamical core."
 license = {text = "BSD-3 License"}
@@ -38,7 +39,6 @@ version = "0.0.6"
 
 [project.urls]
 Homepage = "https://github.com/C2SM/icon4py"
-
 
 # -- bumpversion --
 [tool.bumpversion]
@@ -53,40 +53,17 @@ tag = false
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
-search = '''
-# managed by bump-my-version:
-version = "{current_version}"
-'''
 replace = '''
 # managed by bump-my-version:
 version = "{new_version}"
 '''
+search = '''
+# managed by bump-my-version:
+version = "{current_version}"
+'''
 
 [[tool.bumpversion.files]]
 filename = "src/icon4py/model/atmosphere/dycore/__init__.py"
-
-# # -- coverage --
-# [tool.coverage]
-
-# [tool.coverage.html]
-# directory = 'tests/_reports/coverage_html'
-
-# [tool.coverage.paths]
-# source = ['src/icon4py/model/']
-
-# [tool.coverage.report]
-# exclude_lines = [
-#   'raise AssertionError',  # Don't complain if tests don't hit defensive assertion code
-#   'raise NotImplementedError',  # Don't complain if tests don't hit defensive assertion code
-#   'if 0:',  # Don't complain if non-runnable code isn't run
-#   'if __name__ == .__main__.:'  # Don't complain if non-runnable code isn't run
-# ]
-# ignore_errors = true
-
-# [tool.coverage.run]
-# branch = true
-# parallel = true
-# source_pkgs = ['driver']
 
 # --ruff --
 [tool.ruff]

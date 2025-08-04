@@ -28,7 +28,6 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -120,7 +119,6 @@ def solve_nh_init(
     itime_scheme: gtx.int32,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
-    ndyn_substeps: gtx.float64,
     rayleigh_type: gtx.int32,
     rayleigh_coeff: gtx.float64,
     divdamp_order: gtx.int32,
@@ -132,7 +130,7 @@ def solve_nh_init(
     l_vert_nested: bool,
     rhotheta_offctr: gtx.float64,
     veladv_offctr: gtx.float64,
-    nudge_max_coeff: gtx.float64,  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
+    nudge_max_coeff: gtx.float64,  # note: this is the scaled ICON value, i.e. not the namelist value
     divdamp_fac: gtx.float64,
     divdamp_fac2: gtx.float64,
     divdamp_fac3: gtx.float64,
@@ -164,7 +162,6 @@ def solve_nh_init(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
-        ndyn_substeps_var=ndyn_substeps,
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
@@ -176,7 +173,7 @@ def solve_nh_init(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+        max_nudging_coefficient=nudge_max_coeff,
         fourth_order_divdamp_factor=divdamp_fac,
         fourth_order_divdamp_factor2=divdamp_fac2,
         fourth_order_divdamp_factor3=divdamp_fac3,
@@ -326,10 +323,11 @@ def solve_nh_run(
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     dtime: gtx.float64,
+    max_vcfl: gtx.float64,
     lprep_adv: bool,
     at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
-    ndyn_substeps: gtx.float64,
+    ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
 ):
     global granule
@@ -357,6 +355,7 @@ def solve_nh_run(
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        max_vertical_cfl=max_vcfl,
         theta_v_at_cells_on_half_levels=theta_v_ic,
         perturbed_exner_at_cells_on_model_levels=exner_pr,
         rho_at_cells_on_half_levels=rho_ic,
@@ -407,8 +406,9 @@ def solve_nh_run(
         prep_adv=prep_adv,
         second_order_divdamp_factor=divdamp_fac_o2,
         dtime=dtime,
+        ndyn_substeps_var=ndyn_substeps_var,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
-        at_last_substep=idyn_timestep == (ndyn_substeps - 1),
+        at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
     )

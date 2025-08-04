@@ -458,7 +458,9 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, on_gpu: bool, keep_skip_values: bool = True) -> icon.IconGrid:
+    def construct_icon_grid(
+        self, backend: gtx_backend.Backend | None = None, keep_skip_values: bool = True
+    ) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -474,52 +476,48 @@ class IconGridSavepoint(IconSavepoint):
             ),
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
-            on_gpu=on_gpu,
             keep_skip_values=keep_skip_values,
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
-        xp = data_alloc.array_ns(on_gpu)
-        grid = (
-            icon.IconGrid(self._grid_id)
-            .set_config(config)
-            .set_global_params(self.global_grid_params)
-            .set_start_end_indices(dims.VertexDim, vertex_starts, vertex_ends)
-            .set_start_end_indices(dims.EdgeDim, edge_starts, edge_ends)
-            .set_start_end_indices(dims.CellDim, cell_starts, cell_ends)
-            .set_neighbor_tables(
-                {
-                    dims.C2EDim: xp.asarray(self.c2e()),
-                    dims.E2CDim: xp.asarray(self.e2c()),
-                    dims.C2E2CDim: xp.asarray(c2e2c),
-                    dims.C2E2CODim: xp.asarray(c2e2c0),
-                    dims.C2E2C2EDim: xp.asarray(self.c2e2c2e()),
-                    dims.E2C2EDim: xp.asarray(e2c2e),
-                    dims.E2C2EODim: xp.asarray(e2c2e0),
-                }
-            )
-            .set_neighbor_tables(
-                {
-                    dims.E2VDim: xp.asarray(self.e2v()),
-                    dims.V2EDim: xp.asarray(self.v2e()),
-                    dims.V2CDim: xp.asarray(self.v2c()),
-                    dims.E2C2VDim: xp.asarray(self.e2c2v()),
-                    dims.C2VDim: xp.asarray(self.c2v()),
-                }
-            )
-        )
 
-        grid.update_size_connectivities(
-            {
-                dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
-                dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
-                dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
-            }
-        )
+        start_indices = {
+            dims.VertexDim: vertex_starts,
+            dims.EdgeDim: edge_starts,
+            dims.CellDim: cell_starts,
+        }
+        end_indices = {
+            dims.VertexDim: vertex_ends,
+            dims.EdgeDim: edge_ends,
+            dims.CellDim: cell_ends,
+        }
 
-        return grid
+        neighbor_tables = {
+            dims.C2E: self.c2e(),
+            dims.E2C: self.e2c(),
+            dims.C2E2C: c2e2c,
+            dims.C2E2CO: c2e2c0,
+            dims.C2E2C2E: self.c2e2c2e(),
+            dims.E2C2E: e2c2e,
+            dims.E2C2EO: e2c2e0,
+            dims.E2V: self.e2v(),
+            dims.V2E: self.v2e(),
+            dims.V2C: self.v2c(),
+            dims.E2C2V: self.e2c2v(),
+            dims.C2V: self.c2v(),
+        }
+
+        return icon.icon_grid(
+            id_=self._grid_id,
+            allocator=backend,
+            config=config,
+            neighbor_tables=neighbor_tables,
+            global_properties=self.global_grid_params,
+            start_indices=start_indices,
+            end_indices=end_indices,
+        )
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:
         primal_normal_vert: tuple[
@@ -1577,77 +1575,14 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def w_concorr_c(self):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
 
-
-class VelocityAdvectionCellDiagnosticsInitSavepoint(IconSavepoint):
-    def z_kin_hor_e(self):
-        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
-
-    def z_w_concorr_me(self):
-        return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
-
-    def w(self):
-        return self._get_field("w", dims.CellDim, dims.KDim)
-
-    def z_w_concorr_mc(self):
-        return self._get_field("z_w_concorr_mc", dims.CellDim, dims.KDim)
-
-    def w_concorr_c(self):
-        return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
-
-    def z_ekinh(self):
-        return self._get_field("z_ekinh", dims.CellDim, dims.KDim)
-
-    def z_w_con_c(self):
-        return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
-
-
-class VelocityAdvectionVerticalMomentumInitSavepoint(IconSavepoint):
-    def z_w_con_c(self):
-        return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
-
-    def w(self):
-        return self._get_field("w", dims.CellDim, dims.KDim)
-
-    def ddt_w_adv(self):
-        return self._get_field("ddt_w_adv", dims.CellDim, dims.KDim)
-
-    def z_v_grad_w(self):
-        return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
-
-    def levmask(self):
-        return self._get_field("levmask", dims.KDim, dtype=bool)
-
-    def z_w_con_c_full(self):
-        return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
-
     def lvn_only(self) -> bool:
         return bool(self.serializer.read("vn_only", self.savepoint)[0])
 
-
-class VelocityAdvectionHorizontalMomentumInitSavepoint(IconSavepoint):
-    def vn(self):
-        return self._get_field("vn", dims.EdgeDim, dims.KDim)
-
-    def z_kin_hor_e(self):
-        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
-
-    def z_ekinh(self):
-        return self._get_field("z_ekinh", dims.CellDim, dims.KDim)
-
-    def vt(self):
-        return self._get_field("vt", dims.EdgeDim, dims.KDim)
-
     def z_w_con_c_full(self):
         return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
 
-    def vn_ie(self):
-        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
-
-    def levelmask(self):
-        return self._get_field("levelmask", dims.KDim, dtype=bool)
-
-    def ddt_vn_apc(self):
-        return self._get_field("ddt_vn_apc", dims.EdgeDim, dims.KDim)
+    def vcfl_dsl(self):
+        return self._get_field("vcfl_dsl", dims.CellDim, dims.KDim)
 
 
 class IconVelocityExitSavepoint(IconSavepoint):
@@ -1700,48 +1635,10 @@ class IconVelocityExitSavepoint(IconSavepoint):
         return self._get_field("cfl_clipping", dims.CellDim, dims.KDim, dtype=bool)
 
     def vcfl_dsl(self):
-        return self._get_field("vcfl_dsl", dims.KDim)
-
-
-class VelocityAdvectionEdgeDiagnosticsExitSavepoint(IconSavepoint):
-    def vt(self):
-        return self._get_field("vt", dims.EdgeDim, dims.KDim)
-
-    def vn_ie(self):
-        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
+        return self._get_field("vcfl_dsl", dims.CellDim, dims.KDim)
 
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
-
-    def z_w_concorr_me(self):
-        return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
-
-    def z_v_grad_w(self):
-        return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
-
-
-class VelocityAdvectionCellDiagnosticsExitSavepoint(IconSavepoint):
-    def z_ekinh(self):
-        return self._get_field("z_ekinh", dims.CellDim, dims.KDim)
-
-    def w_concorr_c(self):
-        return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
-
-    def z_w_con_c(self):
-        return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
-
-
-class VelocityAdvectionVerticalMomentumExitSavepoint(IconSavepoint):
-    def z_w_con_c_full(self):
-        return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
-
-    def ddt_w_adv(self):
-        return self._get_field("ddt_w_adv", dims.CellDim, dims.KDim)
-
-
-class VelocityAdvectionHorizontalMomentumExitSavepoint(IconSavepoint):
-    def ddt_vn_apc(self):
-        return self._get_field("ddt_vn_apc", dims.EdgeDim, dims.KDim)
 
 
 class IconJabwExitSavepoint(IconSavepoint):
@@ -2018,48 +1915,6 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-        self, istep: int, date: str, substep: int
-    ) -> VelocityAdvectionCellDiagnosticsInitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-8to14-init"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep]
-            .as_savepoint()
-        )
-        return VelocityAdvectionCellDiagnosticsInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_compute_advection_in_vertical_momentum_equation_init(
-        self, istep: int, date: str, substep: int
-    ) -> VelocityAdvectionVerticalMomentumInitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-15to18-init"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep]
-            .as_savepoint()
-        )
-        return VelocityAdvectionVerticalMomentumInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
-        self, istep: int, date: str, substep: int
-    ) -> VelocityAdvectionHorizontalMomentumInitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-19to20-init"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep]
-            .as_savepoint()
-        )
-        return VelocityAdvectionHorizontalMomentumInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
     def from_savepoint_nonhydro_init(
         self, istep: int, date: str, substep: int
     ) -> IconNonHydroInitSavepoint:
@@ -2161,62 +2016,6 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconVelocityExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-        self, istep: int, date: str, substep: int
-    ) -> VelocityAdvectionEdgeDiagnosticsExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-1to7-exit"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep]
-            .as_savepoint()
-        )
-        return VelocityAdvectionEdgeDiagnosticsExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-        self, istep: int, date: str, substep: int
-    ) -> VelocityAdvectionCellDiagnosticsExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-8to13-exit"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep]
-            .as_savepoint()
-        )
-        return VelocityAdvectionCellDiagnosticsExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
-        self, istep: int, date: str, substep: int
-    ) -> VelocityAdvectionVerticalMomentumExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-15to18-exit"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep]
-            .as_savepoint()
-        )
-        return VelocityAdvectionVerticalMomentumExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-        self, istep: int, date: str, substep: int
-    ) -> VelocityAdvectionHorizontalMomentumExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["velocity-tendencies-19to20-exit"]
-            .istep[istep]
-            .date[date]
-            .dyn_timestep[substep]
-            .as_savepoint()
-        )
-        return VelocityAdvectionHorizontalMomentumExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
