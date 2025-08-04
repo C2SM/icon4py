@@ -217,14 +217,17 @@ def decomposition_info(data_provider, experiment):
 
 
 @pytest.fixture
-def ndyn_substeps() -> int:
+def ndyn_substeps(experiment) -> int:
     """
     Return number of dynamical substeps.
 
-    Serialized data uses a reduced number (2 instead of the default 5) in order to reduce the amount
-    of data generated.
+    Serialized data of global and regional experiments uses a reduced number
+    (2 instead of the default 5) in order to reduce the amount of data generated.
     """
-    return 2
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        return 5
+    else:
+        return 2
 
 
 @pytest.fixture
@@ -307,57 +310,6 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_i
 
 
 @pytest.fixture
-def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-    data_provider, step_date_init, istep_init, substep_init
-):  # F811
-    """
-    Load data from ICON savepoint at start of velocity_advection module for cell diagnostics computations.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-        istep=istep_init, date=step_date_init, substep=substep_init
-    )
-
-
-@pytest.fixture
-def savepoint_compute_advection_in_vertical_momentum_equation_init(
-    data_provider, step_date_init, istep_init, substep_init
-):  # F811
-    """
-    Load data from ICON savepoint at start of velocity_advection module for vertical momentum equation.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_init(
-        istep=istep_init, date=step_date_init, substep=substep_init
-    )
-
-
-@pytest.fixture
-def savepoint_compute_advection_in_horizontal_momentum_equation_init(
-    data_provider, step_date_init, istep_init, substep_init
-):  # F811
-    """
-    Load data from ICON savepoint at start of velocity_advection module for horizontal momentum equation.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
-        istep=istep_init, date=step_date_init, substep=substep_init
-    )
-
-
-@pytest.fixture
 def savepoint_nonhydro_init(
     data_provider: serialbox.IconSerialDataProvider,
     step_date_init: str,
@@ -423,74 +375,6 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_e
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
-def savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-    data_provider, step_date_exit, istep_exit, substep_exit
-):  # F811
-    """
-    Load data from ICON savepoint at exist of velocity_advection module for edge diagnostics computations.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
-def savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-    data_provider, step_date_exit, istep_exit, substep_exit
-):  # F811
-    """
-    Load data from ICON savepoint at exit of velocity_advection module for cell diagnostics computations.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
-def savepoint_compute_advection_in_vertical_momentum_equation_exit(
-    data_provider, step_date_exit, istep_exit, substep_exit
-):  # F811
-    """
-    Load data from ICON savepoint at exit of velocity_advection module for vertical momentum equation.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
-def savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-    data_provider, step_date_exit, istep_exit, substep_exit
-):  # F811
-    """
-    Load data from ICON savepoint at exit of velocity_advection module for horizontal momentum equation.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
         istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 

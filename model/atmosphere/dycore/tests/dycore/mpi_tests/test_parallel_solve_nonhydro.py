@@ -75,7 +75,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = utils.construct_solve_nh_config(experiment, ndyn=ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = nh.NonHydrostaticParams(config)
@@ -109,6 +109,7 @@ def test_run_solve_nonhydro_single_step(
     # linit = sp_v.get_metadata("linit").get("linit")  # noqa: ERA001 [commented-out-code]
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
         rho_at_cells_on_half_levels=sp.rho_ic(),
@@ -168,6 +169,7 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
+        ndyn_substeps_var=ndyn_substeps,
         at_initial_timestep=recompute,
         lprep_adv=lprep_adv,
         at_first_substep=jstep_init == 0,

@@ -9,8 +9,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
-    compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction,
+from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
+    compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -51,7 +51,7 @@ def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.nd
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
     test_helpers.StencilTest
 ):
-    PROGRAM = compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction
+    PROGRAM = compute_derived_horizontal_winds_and_ke_and_contravariant_correction
     OUTPUTS = (
         "tangential_wind",
         "tangential_wind_on_half_levels",
