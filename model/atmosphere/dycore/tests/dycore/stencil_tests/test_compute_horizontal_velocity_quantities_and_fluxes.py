@@ -26,7 +26,7 @@ from .test_compute_avg_vn_and_graddiv_vn_and_vt import (
 from .test_compute_contravariant_correction import (
     compute_contravariant_correction_numpy,
 )
-from .test_compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction import (
+from .test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     extrapolate_to_surface_numpy,
 )
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy

@@ -57,7 +57,9 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
         r_nsubsteps: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        spatially_averaged_vn = spatially_average_flux_or_velocity_numpy(connectivities, e_flx_avg, vn)
+        spatially_averaged_vn = spatially_average_flux_or_velocity_numpy(
+            connectivities, e_flx_avg, vn
+        )
 
         mass_fl_e, z_theta_v_fl_e = compute_mass_flux_numpy(
             rho_at_edges_on_model_levels,
@@ -67,9 +69,11 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
         )
 
         if prepare_advection:
-         substep_and_spatially_averaged_vn, substep_averaged_mass_flux = (
-            (
-                (r_nsubsteps * spatially_averaged_vn, r_nsubsteps * mass_flux_at_edges_on_model_levels)
+            substep_and_spatially_averaged_vn, substep_averaged_mass_flux = (
+                (
+                    r_nsubsteps * spatially_averaged_vn,
+                    r_nsubsteps * mass_flux_at_edges_on_model_levels,
+                )
                 if at_first_substep
                 else _accumulate_prep_adv_fields(
                     spatially_averaged_vn,
@@ -79,7 +83,6 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
                     r_nsubsteps,
                 )
             )
-        )
 
         return dict(
             spatially_averaged_vn=spatially_averaged_vn,

@@ -10,7 +10,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import spatially_average_flux_or_velocity
+from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import (
+    spatially_average_flux_or_velocity,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
@@ -26,9 +28,7 @@ def spatially_average_flux_or_velocity_numpy(
 ) -> np.ndarray:
     e2c2eO = connectivities[dims.E2C2EODim]
     e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
-    z_vn_avg = np.sum(
-        np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1
-    )
+    z_vn_avg = np.sum(np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1)
 
     return z_vn_avg
 
