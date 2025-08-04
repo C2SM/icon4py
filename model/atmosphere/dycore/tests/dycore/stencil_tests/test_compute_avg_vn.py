@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -43,6 +45,7 @@ class TestSpatiallyAverageFluxOrVelocity(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         e_flx_avg: np.ndarray,
         vn: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         z_vn_avg = spatially_average_flux_or_velocity_numpy(connectivities, e_flx_avg, vn)
 
