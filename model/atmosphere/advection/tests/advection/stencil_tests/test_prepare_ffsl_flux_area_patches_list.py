@@ -141,6 +141,7 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
         "dreg_patch2_4_lon_vmask",
         "dreg_patch2_4_lat_vmask",
     )
+    MARKERS = (pytest.mark.gtfn_too_slow,)
 
     @staticmethod
     def _generate_flux_area_geometry(
