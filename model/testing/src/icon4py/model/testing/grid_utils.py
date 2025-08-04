@@ -97,17 +97,21 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
     full_name = resolve_full_grid_file_name(file_path)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
-    with locking.lock(grid_directory):
-        if not full_name.exists():
-            if config.ENABLE_GRID_DOWNLOAD:
+    if config.ENABLE_GRID_DOWNLOAD:
+        with locking.lock(grid_directory):
+            if not full_name.exists():
                 data_handling.download_and_extract(
                     dt_utils.GRID_URIS[file_path],
                     grid_directory,
                 )
-            else:
-                raise FileNotFoundError(
-                    f"Grid file {full_name} does not exist and grid download is disabled."
-                )
+    else:
+        # If grid download is disabled, we check if the file exists
+        # without locking. We assume the location is managed by the user
+        # and avoid locking shared directories (e.g. on CI).
+        if not full_name.exists():
+            raise FileNotFoundError(
+                f"Grid file {full_name} does not exist and grid download is disabled."
+            )
     return full_name
 
 
