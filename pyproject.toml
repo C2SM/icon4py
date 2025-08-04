@@ -29,7 +29,12 @@ docs = [
   "sphinx-toolbox>=3.8.1",
   "TexSoup>=0.3.1"
 ]
-lint = ["pre-commit>=4.0.1", "ruff>=0.8.0", "tach>=0.23.0", 'validate-pyproject-schema-store[all]>=2025.06.13']
+lint = [
+  "pre-commit>=4.0.1",
+  "ruff>=0.8.0",
+  "tach>=0.23.0",
+  'validate-pyproject-schema-store[all]>=2025.06.13'
+]
 scripts = ["typer>=0.12.3", "pytest"]
 test = [
   # workspace members
@@ -133,7 +138,7 @@ explicit_package_bases = true
 # ]
 ignore_missing_imports = false
 implicit_reexport = true
-mypy_path = "model/common/src:tools/src"
+mypy_path = "model/common/src:model/testing/src:tools/src"
 namespace_packages = true
 # install_types = true
 # non_interactive = true
@@ -147,6 +152,14 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
 module = '*.stencil_tests.*'
+
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = [
+  'icon4py.model.testing.fixtures.datatest',
+  'icon4py.model.testing.pytest_hooks',
+  'icon4py.model.testing.serialbox'
+]
 
 # -- pytest --
 [tool.pytest]
@@ -162,7 +175,8 @@ markers = [
   "embedded_only",
   "uses_concat_where",
   "cpu_only",
-  "infinite_concat_where"
+  "infinite_concat_where",
+  "gtfn_too_slow"
 ]
 
 # -- ruff --
@@ -212,7 +226,22 @@ ignore = [
   'B905'  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
 ]
 preview = true  # use only with explicit-preview-rules=true
-select = ['A', 'B', 'CPY', 'E', 'ERA', 'F', 'FA100', 'I', 'ISC', 'NPY', 'Q', 'RUF', 'T10', 'YTT']
+select = [
+  'A',
+  'B',
+  'CPY',
+  'E',
+  'ERA',
+  'F',
+  'FA100',
+  'I',
+  'ISC',
+  'NPY',
+  'Q',
+  'RUF',
+  'T10',
+  'YTT'
+]
 typing-modules = ['gt4py.eve.extended_typing']
 unfixable = []
 
@@ -251,12 +280,7 @@ packages = []
 
 # -- uv: packages & workspace --
 [tool.uv]
-conflicts = [
-  [
-    {extra = "cuda11"},
-    {extra = "cuda12"}
-  ]
-]
+conflicts = [[{extra = "cuda11"}, {extra = "cuda12"}]]
 
 [[tool.uv.index]]
 explicit = true
