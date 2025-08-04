@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import (
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
+from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     _compute_horizontal_kinetic_energy,
     _interpolate_to_half_levels,
 )
