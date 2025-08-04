@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -1863,6 +1863,7 @@ requires-dist = [
 
 [[package]]
 name = "icon4py-atmosphere-muphys"
+version = "0.0.6"
 source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
 dependencies = [
     { name = "gt4py" },
