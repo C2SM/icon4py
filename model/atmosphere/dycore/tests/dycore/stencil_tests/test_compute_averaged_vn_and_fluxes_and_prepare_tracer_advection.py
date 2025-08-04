@@ -61,11 +61,13 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
             connectivities, e_flx_avg, vn
         )
 
-        mass_fl_e, z_theta_v_fl_e = compute_mass_flux_numpy(
-            rho_at_edges_on_model_levels,
-            spatially_averaged_vn,
-            ddqz_z_full_e,
-            theta_v_at_edges_on_model_levels,
+        mass_flux_at_edges_on_model_levels, theta_v_flux_at_edges_on_model_levels = (
+            compute_mass_flux_numpy(
+                rho_at_edges_on_model_levels,
+                spatially_averaged_vn,
+                ddqz_z_full_e,
+                theta_v_at_edges_on_model_levels,
+            )
         )
 
         if prepare_advection:
@@ -75,7 +77,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
                     r_nsubsteps * mass_flux_at_edges_on_model_levels,
                 )
                 if at_first_substep
-                else _accumulate_prep_adv_fields(
+                else accumulate_prep_adv_fields_numpy(
                     spatially_averaged_vn,
                     mass_flux_at_edges_on_model_levels,
                     substep_and_spatially_averaged_vn,
@@ -86,14 +88,14 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
 
         return dict(
             spatially_averaged_vn=spatially_averaged_vn,
-            mass_flux_at_edges_on_model_levels=mass_fl_e,
-            theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
+            mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn,
             substep_averaged_mass_flux=substep_averaged_mass_flux,
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)

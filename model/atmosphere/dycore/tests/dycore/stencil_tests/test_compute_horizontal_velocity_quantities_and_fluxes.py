@@ -190,7 +190,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim
