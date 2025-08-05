@@ -2,7 +2,6 @@ import logging, os
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
