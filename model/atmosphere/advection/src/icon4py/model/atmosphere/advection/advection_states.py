@@ -52,7 +52,7 @@ class AdvectionInterpolationState:
     """Represents the interpolation state needed in advection."""
 
     #: factor for divergence
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat]
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat]
 
     #: coefficients used for rbf interpolation of the tangential velocity component
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat]

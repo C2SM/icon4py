@@ -612,9 +612,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
-    e_bln_c_s = data_alloc.flatten_first_two_dims(
-        dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
-    )
+    e_bln_c_s = (interpolation_savepoint.e_bln_c_s(),)
     wgtfac_c = metrics_savepoint.wgtfac_c()
     owner_mask = grid_savepoint.c_owner_mask()
     area = grid_savepoint.cell_areas()
@@ -762,9 +760,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
-    e_bln_c_s = data_alloc.flatten_first_two_dims(
-        dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
-    )
+    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
     owner_mask = grid_savepoint.c_owner_mask()
     area = grid_savepoint.cell_areas()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
@@ -890,9 +886,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
     normal_wind_advective_tendency = savepoint_velocity_init.ddt_vn_apc_pc(istep_init - 1)
 
-    e_bln_c_s = data_alloc.flatten_first_two_dims(
-        dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
-    )
+    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
     geofac_rot = interpolation_savepoint.geofac_rot()
     coeff_gradekin = metrics_savepoint.coeff_gradekin()
     coriolis_frequency = grid_savepoint.f_e()

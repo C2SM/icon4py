@@ -1859,9 +1859,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     z_dwdz_dd_ref = sp_nh_exit.z_dwdz_dd()
     exner_dyn_incr_ref = sp_nh_exit.exner_dyn_incr()
 
-    geofac_div = data_alloc.flatten_first_two_dims(
-        dims.CEDim, field=interpolation_savepoint.geofac_div()
-    )
+    geofac_div = interpolation_savepoint.geofac_div()
 
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
@@ -1914,9 +1912,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         rayleigh_damping_factor=rayleigh_damping_factor,
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
-        ),
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
         iau_wgt_dyn=iau_wgt_dyn,
@@ -2102,9 +2098,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     mass_flx_ic_ref = sp_nh_exit.mass_flx_ic()
     vol_flx_ic_ref = sp_nh_exit.vol_flx_ic()
 
-    geofac_div = data_alloc.flatten_first_two_dims(
-        dims.CEDim, field=interpolation_savepoint.geofac_div()
-    )
+    geofac_div = interpolation_savepoint.geofac_div()
 
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))

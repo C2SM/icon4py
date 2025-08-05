@@ -197,10 +197,10 @@ def diffusion_init(
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=e_bln_c_s),
+        e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=geofac_div),
+        geofac_div=geofac_div,
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,

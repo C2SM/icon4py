@@ -144,9 +144,6 @@ class Grid:
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
         # 1d sparse connectivities
-        self.connectivities[dims.C2CE.value] = sparse_1d_connectivity_constructor(
-            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=allocator
-        )
         self.connectivities[dims.E2ECV.value] = sparse_1d_connectivity_constructor(
             dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=allocator
         )
@@ -156,10 +153,6 @@ class Grid:
         self.connectivities[dims.C2CEC.value] = sparse_1d_connectivity_constructor(
             dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=allocator
         )
-        if dims.C2E2C2E2C.value in self.connectivities:  # TODO is this optional?
-            self.connectivities[dims.C2CECEC.value] = sparse_1d_connectivity_constructor(
-                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=allocator
-            )
 
     @functools.cached_property
     def size(self) -> Dict[gtx.Dimension, int]:
@@ -170,7 +163,6 @@ class Grid:
             dims.VertexDim: self.config.num_vertices,
             # 1d sparse sizes cannot be deduced from their connectivity
             dims.ECVDim: _1d_size(self.get_connectivity(dims.E2C2V)),
-            dims.CEDim: _1d_size(self.get_connectivity(dims.C2E)),
             dims.ECDim: _1d_size(self.get_connectivity(dims.E2C)),
         }
 

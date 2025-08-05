@@ -47,25 +47,25 @@ class DiffusionInterpolationState:
     """Represents the ICON interpolation state needed in diffusion."""
 
     e_bln_c_s: gtx.Field[
-        [dims.CEDim], float
+        gtx.Dims[dims.CellDim, dims.C2EDim], float
     ]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: gtx.Field[
-        [dims.VertexDim, dims.V2EDim], float
+        gtx.Dims[dims.VertexDim, dims.V2EDim], float
     ]  # rbf_vec_coeff_v_1(nproma, rbf_vec_dim_v, nblks_v)
     rbf_coeff_2: gtx.Field[
-        [dims.VertexDim, dims.V2EDim], float
+        gtx.Dims[dims.VertexDim, dims.V2EDim], float
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
     geofac_div: gtx.Field[
-        gtx.Dims[dims.CEDim], float
+        gtx.Dims[dims.CellDim, dims.C2EDim], float
     ]  # factor for divergence (nproma,cell_type,nblks_c)
 
     geofac_n2s: gtx.Field[
-        [dims.CellDim, dims.C2E2CODim], float
+        gtx.Dims[dims.CellDim, dims.C2E2CODim], float
     ]  # factor for nabla2-scalar (nproma,cell_type+1,nblks_c)
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], float]
     geofac_grg_y: gtx.Field[
-        [dims.CellDim, dims.C2E2CODim], float
+        gtx.Dims[dims.CellDim, dims.C2E2CODim], float
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
     nudgecoeff_e: fa.EdgeField[float]  # Nudgeing coeffients for edges
 

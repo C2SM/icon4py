@@ -94,7 +94,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim)
         theta_v_in = random_field(grid, dims.CellDim, dims.KDim)
-        geofac_div = random_field(grid, dims.CEDim)
+        geofac_div = random_field(grid, dims.CellDim, dims.C2EDim)
         mask = random_mask(grid, dims.CellDim, dims.KDim)
         zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()

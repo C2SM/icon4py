@@ -65,7 +65,7 @@ rayleigh_damping_options: Final = model_options.RayleighType()
 @gtx.field_operator
 def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
     nlev: gtx.int32,
@@ -188,7 +188,7 @@ def _compute_solver_coefficients_matrix(
 def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     next_w: fa.CellKField[ta.wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
@@ -433,7 +433,7 @@ def _vertically_implicit_solver_at_predictor_step_after_solving_w(
 def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     next_w: fa.CellKField[ta.wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
@@ -729,7 +729,7 @@ def vertically_implicit_solver_at_predictor_step(
     next_theta_v: fa.CellKField[ta.wpfloat],
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     exner_dynamical_increment: fa.CellKField[ta.vpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
@@ -751,7 +751,7 @@ def vertically_implicit_solver_at_predictor_step(
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     rayleigh_damping_factor: fa.KField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
     iau_wgt_dyn: ta.wpfloat,
@@ -890,7 +890,7 @@ def vertically_implicit_solver_at_corrector_step(
     dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_dynamical_increment: fa.CellKField[ta.wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],

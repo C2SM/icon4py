@@ -478,6 +478,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_icon_grid = icon_grid
     expected_edge_geometry = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry = grid_savepoint.construct_cell_geometry()
+    # TODO fixture
     expected_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
@@ -487,14 +488,10 @@ def test_dycore_wrapper_granule_inputs(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
-        ),
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.geofac_div()
-        ),
+        geofac_div=interpolation_savepoint.geofac_div(),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
