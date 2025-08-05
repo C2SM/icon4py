@@ -243,7 +243,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         vn_on_half_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
-        coeff_gradekin = data_alloc.random_field(grid, dims.ECDim)
+        coeff_gradekin = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         ddqz_z_full_e = data_alloc.random_field(

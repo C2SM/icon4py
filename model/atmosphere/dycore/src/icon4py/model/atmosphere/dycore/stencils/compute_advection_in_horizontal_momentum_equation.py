@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2EO, E2EC, E2V, E2C2EODim, E2CDim, E2VDim, Koff
+from icon4py.model.common.dimension import E2C, E2C2EO, E2V, E2C2EODim, E2CDim, E2VDim, Koff
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
@@ -37,7 +37,7 @@ def _compute_advective_normal_wind_tendency(
     coriolis_frequency: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
-    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], ta.vpfloat],
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
 ) -> fa.EdgeKField[ta.vpfloat]:
     #: intermediate variable horizontal_kinetic_energy_at_cells_on_model_levels is originally declared as z_ekinh in ICON
@@ -59,9 +59,9 @@ def _compute_advective_normal_wind_tendency(
 
     horizontal_advection = (
         horizontal_kinetic_energy_at_edges_on_model_levels
-        * (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1]))
-        + coeff_gradekin(E2EC[1]) * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[1])
-        - coeff_gradekin(E2EC[0]) * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[0])
+        * (coeff_gradekin[E2CDim(0)] - coeff_gradekin[E2CDim(1)])
+        + coeff_gradekin[E2CDim(1)] * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[1])
+        - coeff_gradekin[E2CDim(0)] * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[0])
     )
 
     vertical_advection = (
@@ -182,7 +182,7 @@ def _compute_advection_in_horizontal_momentum_equation(
     vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
-    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], ta.vpfloat],
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     area_edge: fa.EdgeField[ta.wpfloat],
@@ -249,7 +249,7 @@ def compute_advection_in_horizontal_momentum_equation(
     vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
-    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], ta.vpfloat],
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     area_edge: fa.EdgeField[ta.wpfloat],

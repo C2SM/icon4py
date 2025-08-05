@@ -30,7 +30,6 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
@@ -191,12 +190,8 @@ def solve_nh_init(
         e_flx_avg=e_flx_avg,
         geofac_grdiv=geofac_grdiv,
         geofac_rot=geofac_rot,
-        pos_on_tplane_e_1=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=pos_on_tplane_e_1[:, 0:2]
-        ),
-        pos_on_tplane_e_2=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=pos_on_tplane_e_2[:, 0:2]
-        ),
+        pos_on_tplane_e_1=pos_on_tplane_e_1[:, 0:2],
+        pos_on_tplane_e_2=pos_on_tplane_e_2[:, 0:2],
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
@@ -228,10 +223,8 @@ def solve_nh_init(
         reference_rho_at_edges_on_model_levels=rho_ref_me,
         reference_theta_at_edges_on_model_levels=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
-        zdiff_gradp=data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=zdiff_gradp),
-        vertoffset_gradp=data_alloc.flatten_first_two_dims(
-            dims.ECDim, dims.KDim, field=vertoffset_gradp
-        ),
+        zdiff_gradp=zdiff_gradp,
+        vertoffset_gradp=vertoffset_gradp,
         pg_edgeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
@@ -243,7 +236,7 @@ def solve_nh_init(
         scaling_factor_for_3d_divdamp=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        coeff_gradekin=data_alloc.flatten_first_two_dims(dims.ECDim, field=coeff_gradekin),
+        coeff_gradekin=coeff_gradekin,
     )
 
     # datatest config

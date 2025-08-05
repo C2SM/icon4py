@@ -58,10 +58,10 @@ class AdvectionInterpolationState:
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat]
 
     #: x-components of positions of various points on local plane tangential to the edge midpoint
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
 
     #: y-components of positions of various points on local plane tangential to the edge midpoint
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)

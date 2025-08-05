@@ -685,7 +685,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin, array_ns=self._xp
             ),
-            domain=(dims.ECDim,),
+            domain=(dims.EdgeDim, dims.E2CDim),
             fields=(attrs.COEFF_GRADEKIN,),
             deps={
                 "edge_cell_length": geometry_attrs.EDGE_CELL_DISTANCE,

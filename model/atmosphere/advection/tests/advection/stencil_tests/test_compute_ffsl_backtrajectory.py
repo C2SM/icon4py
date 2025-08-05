@@ -58,12 +58,6 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
         **kwargs,
     ) -> dict:
         e2c_shape = connectivities[dims.E2CDim].shape
-        cell_idx = helpers.reshape(cell_idx, e2c_shape)
-        cell_blk = helpers.reshape(cell_blk, e2c_shape)
-        primal_normal_cell_x = helpers.reshape(primal_normal_cell_x, e2c_shape)
-        dual_normal_cell_x = helpers.reshape(dual_normal_cell_x, e2c_shape)
-        primal_normal_cell_y = helpers.reshape(primal_normal_cell_y, e2c_shape)
-        dual_normal_cell_y = helpers.reshape(dual_normal_cell_y, e2c_shape)
 
         lvn_pos = p_vn >= 0.0
         cell_idx = np.expand_dims(cell_idx, axis=-1)
@@ -157,10 +151,8 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=grid.get_connectivity("E2C").ndarray
-        )
-        cell_blk = data_alloc.constant_field(grid, 1, dims.ECDim, dtype=gtx.int32)
+        cell_idx = grid.get_connectivity("E2C")
+        cell_blk = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
 
         edge_verts_1_x = data_alloc.random_field(grid, dims.EdgeDim)
         edge_verts_2_x = data_alloc.random_field(grid, dims.EdgeDim)
@@ -170,10 +162,10 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
         pos_on_tplane_e_2_x = data_alloc.random_field(grid, dims.EdgeDim)
         pos_on_tplane_e_1_y = data_alloc.random_field(grid, dims.EdgeDim)
         pos_on_tplane_e_2_y = data_alloc.random_field(grid, dims.EdgeDim)
-        primal_normal_cell_x = data_alloc.random_field(grid, dims.ECDim)
-        dual_normal_cell_x = data_alloc.random_field(grid, dims.ECDim)
-        primal_normal_cell_y = data_alloc.random_field(grid, dims.ECDim)
-        dual_normal_cell_y = data_alloc.random_field(grid, dims.ECDim)
+        primal_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         lvn_sys_pos = data_alloc.constant_field(grid, True, dims.EdgeDim, dims.KDim, dtype=bool)
         p_dt = 2.0
         p_cell_idx = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)

@@ -940,7 +940,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "V2E": icon_grid.get_connectivity("V2E"),
-            "E2EC": icon_grid.get_connectivity("E2EC"),
             "E2V": icon_grid.get_connectivity("E2V"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),

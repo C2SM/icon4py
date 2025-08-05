@@ -728,8 +728,7 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("coeff2_dwdz", dims.CellDim, dims.KDim)
 
     def coeff_gradekin(self):
-        field = self._get_field("coeff_gradekin", dims.EdgeDim, dims.E2CDim)
-        return data_alloc.flatten_first_two_dims(dims.ECDim, field=field)
+        return self._get_field("coeff_gradekin", dims.EdgeDim, dims.E2CDim)
 
     def ddqz_z_full_e(self):
         return self._get_field("ddqz_z_full_e", dims.EdgeDim, dims.KDim)

@@ -196,8 +196,8 @@ class InterpolationState:
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat]
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat]
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat]
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat]
 
 
@@ -255,8 +255,8 @@ class MetricStateNonHydro:
     ddxt_z_full: fa.EdgeKField[ta.vpfloat]
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat]
 
-    vertoffset_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], gtx.int32]
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], ta.vpfloat]
+    vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32]
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat]
     pg_edgeidx_dsl: fa.EdgeKField[bool]
     pg_exdist: fa.EdgeKField[ta.vpfloat]
 
@@ -286,7 +286,7 @@ class MetricStateNonHydro:
 
     coeff1_dwdz: fa.CellKField[ta.vpfloat]
     coeff2_dwdz: fa.CellKField[ta.vpfloat]
-    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], ta.vpfloat]
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat]
 
 
 @dataclasses.dataclass
