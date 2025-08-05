@@ -165,8 +165,6 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
     grid_file, offset, backend, caplog
 ):
     caplog.set_level(logging.DEBUG)
-    if offset.source in utils.one_dimensional_sparse_dims():
-        pytest.skip("Sparse 1d connectivities never have skip_values in our setup.")
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
     connectivity = grid.get_connectivity(offset)
 

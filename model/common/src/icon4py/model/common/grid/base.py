@@ -9,13 +9,11 @@ import dataclasses
 import enum
 import functools
 import logging
-import math
 import uuid
 from types import ModuleType
 from typing import Dict, Mapping, Sequence
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 from icon4py.model.common import dimension as dims
@@ -74,23 +72,6 @@ class GridConfig:
     @property
     def num_cells(self):
         return self.horizontal_config.num_cells
-
-
-def _1d_size(connectivity: gtx_common.NeighborTable) -> int:
-    return math.prod(connectivity.shape)
-
-
-def _default_1d_sparse_connectivity_constructor(
-    offset: gtx.FieldOffset,
-    shape2d: tuple[int, int],
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
-) -> data_alloc.NDArray:
-    return gtx.as_connectivity(
-        domain=offset.target,
-        codomain=offset.source,
-        data=np.arange(shape2d[0] * shape2d[1], dtype=gtx.int32).reshape(shape2d),
-        allocator=allocator,
-    )
 
 
 @dataclasses.dataclass(frozen=True)
