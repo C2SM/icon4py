@@ -30,7 +30,7 @@ def spatially_average_flux_or_velocity_numpy(
 ) -> np.ndarray:
     e2c2eO = connectivities[dims.E2C2EODim]
     e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
-    z_vn_avg = np.sum(np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1)
+    z_vn_avg = np.sum(vn[e2c2eO] * e_flx_avg, axis=1)
 
     return z_vn_avg
 

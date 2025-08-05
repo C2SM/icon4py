@@ -32,7 +32,7 @@ def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
     e2c2eO = connectivities[dims.E2C2EODim]
     e2c2e = connectivities[dims.E2C2EDim]
     e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
-    z_vn_avg = np.sum(np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1)
+    z_vn_avg = np.sum(vn[e2c2eO] * e_flx_avg, axis=1)
     geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
     z_graddiv_vn = np.sum(
         np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0), axis=1
