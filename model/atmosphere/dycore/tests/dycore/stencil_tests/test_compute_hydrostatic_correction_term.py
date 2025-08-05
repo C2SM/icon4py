@@ -19,7 +19,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import (
-    flatten_first_two_dims,
     random_field,
     zero_field,
 )
