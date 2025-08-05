@@ -37,6 +37,9 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
+    # TODO(havogt): Note that `concat_where(dims.KDim == nlev-1, ...)` is currently broken
+    # because of insufficiency in the domain inference of GT4Py,
+    # see https://github.com/GridTools/gt4py/issues/2205.
     return concat_where(
         dims.KDim < nlev - 1,
         vpfloat("0.5")
