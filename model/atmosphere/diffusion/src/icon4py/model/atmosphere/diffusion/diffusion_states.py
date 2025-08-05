@@ -37,9 +37,9 @@ class DiffusionMetricState:
         float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: fa.CellKField[bool]
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32]
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32]
     zd_diffcoef: fa.CellKField[float]
-    zd_intcoef: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], float]
+    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], float]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -74,12 +74,6 @@ class DiffusionInterpolationState:
         return gtx.as_field((dims.CellDim,), data=self.geofac_n2s.ndarray[:, 0])
 
     @functools.cached_property
-    def geofac_n2s_nbh(self) -> gtx.Field[gtx.Dims[dims.CECDim], float]:
+    def geofac_n2s_nbh(self) -> gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], float]:
         geofac_nbh_ar = self.geofac_n2s.ndarray[:, 1:]
-        old_shape = geofac_nbh_ar.shape
-        return gtx.as_field(
-            (dims.CECDim,),
-            geofac_nbh_ar.reshape(
-                old_shape[0] * old_shape[1],
-            ),
-        )
+        return gtx.as_field((dims.CellDim, dims.C2E2CDim), geofac_nbh_ar)

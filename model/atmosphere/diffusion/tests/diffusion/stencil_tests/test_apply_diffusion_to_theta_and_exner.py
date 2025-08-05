@@ -68,9 +68,6 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         )
         z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
 
-        geofac_n2s_nbh = unflatten_first_two_dims(geofac_n2s_nbh)
-        zd_vertoffset = unflatten_first_two_dims(zd_vertoffset)
-
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
             connectivities,
             mask,
@@ -114,9 +111,6 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         exner = random_field(grid, dims.CellDim, dims.KDim)
         rd_o_cvd = 5.0
 
-        vcoef_new = flatten_first_two_dims(dims.CECDim, dims.KDim, field=vcoef)
-        zd_vertoffset_new = flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset)
-        geofac_n2s_nbh_new = flatten_first_two_dims(dims.CECDim, field=geofac_n2s_nbh)
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
@@ -128,11 +122,11 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
             theta_v_in=theta_v_in,
             geofac_div=geofac_div,
             mask=mask,
-            zd_vertoffset=zd_vertoffset_new,
+            zd_vertoffset=zd_vertoffset,
             zd_diffcoef=zd_diffcoef,
             geofac_n2s_c=geofac_n2s_c,
-            geofac_n2s_nbh=geofac_n2s_nbh_new,
-            vcoef=vcoef_new,
+            geofac_n2s_nbh=geofac_n2s_nbh,
+            vcoef=vcoef,
             area=area,
             theta_v=theta_v,
             exner=exner,

@@ -36,10 +36,6 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     **kwargs,
 ) -> np.ndarray:
     c2e2c = connectivities[dims.C2E2CDim]
-    shape = c2e2c.shape + vcoef.shape[1:]
-    vcoef = vcoef.reshape(shape)
-    zd_vertoffset = zd_vertoffset.reshape(shape)
-    geofac_n2s_nbh = geofac_n2s_nbh.reshape(c2e2c.shape)
     full_shape = vcoef.shape
 
     geofac_n2s_nbh = np.expand_dims(geofac_n2s_nbh, axis=2)
@@ -118,19 +114,15 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
-        vcoef_new = flatten_first_two_dims(dims.CECDim, dims.KDim, field=vcoef)
-        zd_vertoffset_new = flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset)
-        geofac_n2s_nbh_new = flatten_first_two_dims(dims.CECDim, field=geofac_n2s_nbh)
-
         return dict(
             mask=mask,
-            zd_vertoffset=zd_vertoffset_new,
+            zd_vertoffset=zd_vertoffset,
             zd_diffcoef=zd_diffcoef,
             geofac_n2s_c=geofac_n2s_c,
-            geofac_n2s_nbh=geofac_n2s_nbh_new,
+            geofac_n2s_nbh=geofac_n2s_nbh,
             theta_v=theta_v,
             z_temp=z_temp,
-            vcoef=vcoef_new,
+            vcoef=vcoef,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

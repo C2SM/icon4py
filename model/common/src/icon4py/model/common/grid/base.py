@@ -143,10 +143,6 @@ class Grid:
             sparse_1d_connectivity_constructor = _default_1d_sparse_connectivity_constructor
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
-        # 1d sparse connectivities
-        self.connectivities[dims.C2CEC.value] = sparse_1d_connectivity_constructor(
-            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=allocator
-        )
 
     @functools.cached_property
     def size(self) -> Dict[gtx.Dimension, int]:

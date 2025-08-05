@@ -32,7 +32,5 @@ def test_verify_geofac_n2s_field_manipulation(interpolation_savepoint, icon_grid
     geofac_c = interpolation_state.geofac_n2s_c.asnumpy()
     geofac_nbh = interpolation_state.geofac_n2s_nbh.asnumpy()
     assert np.count_nonzero(geofac_nbh) > 0
-    cec_table = icon_grid.get_connectivity("C2CEC").asnumpy()
     assert np.allclose(geofac_c, geofac_n2s[:, 0])
-    assert geofac_nbh[cec_table].shape == geofac_n2s[:, 1:].shape
-    assert np.allclose(geofac_nbh[cec_table], geofac_n2s[:, 1:])
+    assert np.allclose(geofac_nbh, geofac_n2s[:, 1:])

@@ -634,12 +634,10 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("rbf_vec_idx_v", dims.VertexDim, dims.V2EDim)
 
     def lsq_pseudoinv_1(self):
-        field = self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
-        return data_alloc.flatten_first_two_dims(dims.CECDim, field=field)
+        return self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
 
     def lsq_pseudoinv_2(self):
-        field = self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
-        return data_alloc.flatten_first_two_dims(dims.CECDim, field=field)
+        return self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
 
 
 class MetricSavepoint(IconSavepoint):
@@ -765,7 +763,7 @@ class MetricSavepoint(IconSavepoint):
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", dims.CellDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CECDim, dims.KDim)
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
@@ -778,22 +776,11 @@ class MetricSavepoint(IconSavepoint):
         if ser_input.shape[1] != sparse_size:
             ser_input = np.moveaxis(ser_input, 1, -1)
 
-        return self._linearize_first_2dims(
-            ser_input, sparse_size=sparse_size, target_dims=(dims.CECDim, dims.KDim)
-        )
-
-    def _linearize_first_2dims(
-        self, data: data_alloc.NDArray, sparse_size: int, target_dims: tuple[gtx.Dimension, ...]
-    ):
-        old_shape = data.shape
-        assert old_shape[1] == sparse_size
         return gtx.as_field(
-            target_dims,
-            data.reshape(old_shape[0] * old_shape[1], old_shape[2]),
-            allocator=self.backend,
+            (dims.CellDim, dims.C2E2CDim, dims.KDim), ser_input, allocator=self.backend
         )
 
-    @IconSavepoint.optionally_registered(dims.CECDim, dims.KDim, dtype=gtx.int32)
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 

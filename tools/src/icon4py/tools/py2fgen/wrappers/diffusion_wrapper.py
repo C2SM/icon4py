@@ -41,7 +41,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
@@ -188,10 +187,8 @@ def diffusion_init(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=data_alloc.flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
-        zd_vertoffset=data_alloc.flatten_first_two_dims(
-            dims.CECDim, dims.KDim, field=zd_vertoffset
-        ),
+        zd_intcoef=zd_intcoef,
+        zd_vertoffset=zd_vertoffset,
         zd_diffcoef=zd_diffcoef,
     )
 

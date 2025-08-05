@@ -69,8 +69,8 @@ class AdvectionLeastSquaresState:
     """Represents the least squares state needed in advection."""
 
     #: pseudo (or Moore-Penrose) inverse of lsq design matrix A
-    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CECDim], ta.wpfloat]
-    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CECDim], ta.wpfloat]
+    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
+    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
