@@ -12,7 +12,7 @@ import logging
 import math
 import uuid
 from types import ModuleType
-from typing import Callable, Dict, Mapping, Sequence
+from typing import Dict, Mapping, Sequence
 
 import gt4py.next as gtx
 import numpy as np
@@ -120,27 +120,8 @@ class Grid:
     # TODO(havogt): consider refactoring to `Mapping[h_grid.Zone, gtx.int32]`
     _start_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
     _end_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
-    # for construction:
-    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocationUtil | None]
-    sparse_1d_connectivity_constructor: dataclasses.InitVar[
-        Callable[
-            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
-            gtx_common.NeighborTable,
-        ]
-        | None
-    ] = None
 
-    def __post_init__(
-        self,
-        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-        sparse_1d_connectivity_constructor: Callable[
-            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
-            gtx_common.NeighborTable,
-        ]
-        | None,
-    ):
-        if sparse_1d_connectivity_constructor is None:
-            sparse_1d_connectivity_constructor = _default_1d_sparse_connectivity_constructor
+    def __post_init__(self):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
 
