@@ -144,9 +144,6 @@ class Grid:
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
         # 1d sparse connectivities
-        self.connectivities[dims.E2ECV.value] = sparse_1d_connectivity_constructor(
-            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=allocator
-        )
         self.connectivities[dims.E2EC.value] = sparse_1d_connectivity_constructor(
             dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=allocator
         )
@@ -162,7 +159,6 @@ class Grid:
             dims.EdgeDim: self.config.num_edges,
             dims.VertexDim: self.config.num_vertices,
             # 1d sparse sizes cannot be deduced from their connectivity
-            dims.ECVDim: _1d_size(self.get_connectivity(dims.E2C2V)),
             dims.ECDim: _1d_size(self.get_connectivity(dims.E2C)),
         }
 

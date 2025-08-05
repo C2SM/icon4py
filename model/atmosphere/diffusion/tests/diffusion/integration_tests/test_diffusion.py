@@ -85,28 +85,12 @@ def _get_or_initialize(experiment, backend, name):
             primal_normal_y=geometry_.get(geometry_meta.EDGE_NORMAL_V),
             primal_normal_cell_x=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
             primal_normal_cell_y=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
-            primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=(geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U)),
-                backend=backend,
-            ),
-            primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=(geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V)),
-                backend=backend,
-            ),
+            primal_normal_vert_x=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            primal_normal_vert_y=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
             dual_normal_cell_x=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
             dual_normal_cell_y=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
-            dual_normal_vert_x=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-                backend=backend,
-            ),
-            dual_normal_vert_y=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
-                backend=backend,
-            ),
+            dual_normal_vert_x=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            dual_normal_vert_y=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
         )
         grid_functionality[experiment]["grid"] = grid
         grid_functionality[experiment]["edge_geometry"] = edge_params
