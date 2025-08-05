@@ -478,7 +478,6 @@ def test_dycore_wrapper_granule_inputs(
     expected_icon_grid = icon_grid
     expected_edge_geometry = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry = grid_savepoint.construct_cell_geometry()
-    # TODO fixture
     expected_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),

@@ -41,7 +41,6 @@ def _compute_advective_normal_wind_tendency_numpy(
     horizontal_kinetic_energy_at_cells_on_model_levels_e2c = (
         horizontal_kinetic_energy_at_cells_on_model_levels[e2c]
     )
-    coeff_gradekin = coeff_gradekin.reshape(e2c.shape)
     coeff_gradekin = np.expand_dims(coeff_gradekin, axis=-1)
     coriolis_frequency = np.expand_dims(coriolis_frequency, axis=-1)
     c_lin_e = np.expand_dims(c_lin_e, axis=-1)
