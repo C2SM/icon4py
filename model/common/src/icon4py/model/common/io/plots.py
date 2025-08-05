@@ -20,7 +20,6 @@ import pickle
 import numpy as np
 import xarray as xr
 
-#mpl.use('tkagg')
 
 # Prevent matplotlib logging spam
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
