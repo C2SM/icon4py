@@ -38,13 +38,13 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
     return concat_where(
-        dims.KDim >= nlev - 1,
-        vpfloat("0.5") * contravariant_corrected_w_at_cells_on_half_levels,
+        dims.KDim < nlev - 1,
         vpfloat("0.5")
         * (
             contravariant_corrected_w_at_cells_on_half_levels
             + contravariant_corrected_w_at_cells_on_half_levels(Koff[1])
         ),
+        vpfloat("0.5") * contravariant_corrected_w_at_cells_on_half_levels,
     )
 
 
