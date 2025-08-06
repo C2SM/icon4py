@@ -174,13 +174,12 @@ def read_config(
     def _gauss3d_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             igradp_method=3,
-            fourth_order_divdamp_factor=0.0025,
         )
 
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
-            dtime=datetime.timedelta(seconds=0.01),
-            end_date=datetime.datetime(1, 1, 1, 0, 0, 5),
+            dtime=datetime.timedelta(seconds=0.04),
+            end_date=datetime.datetime(1, 1, 1, 0, 2, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend=backend,
