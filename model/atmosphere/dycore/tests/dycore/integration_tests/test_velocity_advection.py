@@ -612,7 +612,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
-    e_bln_c_s = (interpolation_savepoint.e_bln_c_s(),)
+    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
     wgtfac_c = metrics_savepoint.wgtfac_c()
     owner_mask = grid_savepoint.c_owner_mask()
     area = grid_savepoint.cell_areas()
