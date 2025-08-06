@@ -31,8 +31,7 @@ def _value(k: gtx.FieldOffset | str):
 class HaloConstructor(Protocol):
     """Callable that takes a mapping from faces (aka cells) to ranks"""
 
-    def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
-        ...
+    def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo: ...
 
 
 class NoHalos(HaloConstructor):
@@ -251,7 +250,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         """
         #: icon does hard coding of 2 halo lines for cells, make this dynamic!
 
-        num_cell_halo_lines = 2
+        # TODO make number of halo lines a parameter
 
         self._validate_mapping(face_to_rank)
         #: cells
@@ -278,12 +277,12 @@ class IconLikeHaloConstructor(HaloConstructor):
             all_cells.size, dtype=int
         )
         cell_halo_levels[cell_owner_mask] = defs.DecompositionFlag.OWNED
-        cell_halo_levels[
-            self._xp.isin(all_cells, first_halo_cells)
-        ] = defs.DecompositionFlag.FIRST_HALO_LINE
-        cell_halo_levels[
-            self._xp.isin(all_cells, second_halo_cells)
-        ] = defs.DecompositionFlag.SECOND_HALO_LINE
+        cell_halo_levels[self._xp.isin(all_cells, first_halo_cells)] = (
+            defs.DecompositionFlag.FIRST_HALO_LINE
+        )
+        cell_halo_levels[self._xp.isin(all_cells, second_halo_cells)] = (
+            defs.DecompositionFlag.SECOND_HALO_LINE
+        )
         decomp_info = defs.DecompositionInfo(klevels=self._num_levels).set_dimension(
             dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels
         )
@@ -322,9 +321,9 @@ class IconLikeHaloConstructor(HaloConstructor):
                 self._xp.isin(all_vertices, vertex_on_cutting_line),
             )
         ] = defs.DecompositionFlag.FIRST_HALO_LINE
-        vertex_halo_levels[
-            self._xp.isin(all_vertices, vertex_second_level)
-        ] = defs.DecompositionFlag.SECOND_HALO_LINE
+        vertex_halo_levels[self._xp.isin(all_vertices, vertex_second_level)] = (
+            defs.DecompositionFlag.SECOND_HALO_LINE
+        )
         decomp_info.set_dimension(
             dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
         )
@@ -370,9 +369,9 @@ class IconLikeHaloConstructor(HaloConstructor):
         ] = defs.DecompositionFlag.FIRST_HALO_LINE
 
         # LEVEL_TWO edges share exactly one vertext with an owned cell, they are on the first halo-line cells, but not on the cutting line
-        edge_halo_levels[
-            self._xp.isin(all_edges, level_two_edges)
-        ] = defs.DecompositionFlag.SECOND_HALO_LINE
+        edge_halo_levels[self._xp.isin(all_edges, level_two_edges)] = (
+            defs.DecompositionFlag.SECOND_HALO_LINE
+        )
         decomp_info.set_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
 
         return decomp_info

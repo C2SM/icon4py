@@ -16,7 +16,7 @@ forbid_circular_dependencies = true
 # exclude optional external dependencies
 [external]
 exclude = ["fprettify", "configargparse", "cupy","ghex", "dace", "mpi4py", "netcdf4","xarray", "uxarray",
-    "cftime"]
+    "cftime", "pymetis"]
 rename = ["serialbox:serialbox4py"]
 
 [[modules]]

@@ -14,6 +14,7 @@ import uuid
 from typing import TYPE_CHECKING, Optional
 
 from gt4py.next import backend as gtx_backend
+
 from icon4py.model.common.decomposition import definitions as decomposition
 
 
@@ -130,7 +131,9 @@ def get_processor_properties_for_run(
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_ranked_data_path(base_path, processor_properties:decomposition.ProcessProperties):
+def get_ranked_data_path(
+    base_path: pathlib.Path, processor_properties: decomposition.ProcessProperties
+) -> pathlib.Path:
     return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
 
 

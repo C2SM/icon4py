@@ -16,18 +16,9 @@ import gt4py.next.backend as gtx_backend
 import numpy as np
 
 from icon4py.model.common import dimension as dims, exceptions, type_alias as ta, utils
-from icon4py.model.common.decomposition import (
-    definitions as decomposition,
-    halo,
-)
+from icon4py.model.common.decomposition import definitions as decomposition, halo
 from icon4py.model.common.decomposition.halo import HaloConstructor
-from icon4py.model.common.grid import (
-    base,
-    gridfile,
-    icon,
-    refinement,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import base, gridfile, icon, refinement, vertical as v_grid
 from icon4py.model.common.grid.base import HorizontalGridSize
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -71,6 +62,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
 
 CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
+
 
 # TODO delete?
 def _reduce_to_rank_local_size(

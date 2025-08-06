@@ -11,8 +11,6 @@ from typing import Optional
 import gt4py.next.backend as gtx_backend
 
 from icon4py.model.common.decomposition import halo
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -149,7 +147,7 @@ def get_grid_geometry(
     num_levels = get_num_levels(experiment)
     register_name = "_".join((experiment, data_alloc.backend_name(backend)))
 
-    def _construct_grid_geometry():
+    def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = _download_and_load_gridfile(
             grid_file, keep_skip_values=True, num_levels=num_levels, backend=backend
         )
