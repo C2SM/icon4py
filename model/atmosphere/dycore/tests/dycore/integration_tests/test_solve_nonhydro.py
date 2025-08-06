@@ -1860,7 +1860,6 @@ def test_vertically_implicit_solver_at_predictor_step(
 
     offset_provider = {
         "C2E": icon_grid.get_connectivity("C2E"),
-        "C2CE": icon_grid.get_connectivity("C2CE"),
         "Koff": dims.KDim,
     }
 
@@ -2095,7 +2094,6 @@ def test_vertically_implicit_solver_at_corrector_step(
 
     offset_provider = {
         "C2E": icon_grid.get_connectivity("C2E"),
-        "C2CE": icon_grid.get_connectivity("C2CE"),
         "Koff": dims.KDim,
     }
 

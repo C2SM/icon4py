@@ -667,7 +667,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "topography": "topography",
             },
             connectivities={"e2c": dims.E2CDim},
-            domain=(dims.EdgeDim, dims.KDim),
+            domain=(dims.EdgeDim, dims.E2CDim, dims.KDim),
             fields=(attrs.ZDIFF_GRADP,),
             params={
                 "nlev": self._grid.num_levels,

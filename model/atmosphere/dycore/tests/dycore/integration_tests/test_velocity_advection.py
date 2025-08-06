@@ -668,7 +668,6 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
         vertical_end=vertical_end,
         offset_provider={
             "C2E": icon_grid.get_connectivity("C2E"),
-            "C2CE": icon_grid.get_connectivity("C2CE"),
             "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
             "V2C": icon_grid.get_connectivity("V2C"),
             "E2C": icon_grid.get_connectivity("E2C"),
@@ -813,7 +812,6 @@ def test_compute_advection_in_vertical_momentum_equation(
         vertical_end=vertical_end,
         offset_provider={
             "C2E": icon_grid.get_connectivity("C2E"),
-            "C2CE": icon_grid.get_connectivity("C2CE"),
             "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
             "V2C": icon_grid.get_connectivity("V2C"),
             "E2C": icon_grid.get_connectivity("E2C"),
@@ -943,7 +941,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
             "E2V": icon_grid.get_connectivity("E2V"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "C2CE": icon_grid.get_connectivity("C2CE"),
             "C2E": icon_grid.get_connectivity("C2E"),
             "Koff": dims.KDim,
         },
