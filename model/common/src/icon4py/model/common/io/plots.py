@@ -1,12 +1,16 @@
 import logging, os
 
 import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import edge_2_cell_vector_rbf_interpolation
-from icon4py.model.common.dimension import Koff
+from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
+    mo_math_divrot_rot_vertex_ri_dsl,
+)
+from icon4py.model.common.dimension import Koff, C2V, C2VDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.testing import serialbox as sb
@@ -53,6 +57,29 @@ def interpolate_from_half_to_full_levels(
     _interpolate_from_half_to_full_levels(
         half_field,
         out=full_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+@gtx.field_operator
+def _interpolate_from_vertices_to_cell(
+    vertex_field: fa.VertexKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    cell_field = 1./3. * neighbor_sum(vertex_field(C2V), axis=C2VDim)
+    return cell_field
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def interpolate_from_vertices_to_cell(
+    vertex_field: fa.VertexKField[ta.wpfloat],
+    cell_field: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _interpolate_from_vertices_to_cell(
+        vertex_field,
+        out=cell_field,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -111,7 +138,9 @@ class Plot:
         self.interpolation_savepoint = data_provider.from_interpolation_savepoint()
 
         self._edge_2_cell_vector_rbf_interpolation = edge_2_cell_vector_rbf_interpolation.with_backend(self._backend)
+        self._mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(self._backend)
         self._interpolate_to_full_levels = interpolate_from_half_to_full_levels.with_backend(self._backend)
+        self._interpolate_from_vertices_to_cell = interpolate_from_vertices_to_cell.with_backend(self._backend)
         self._compute_tangential_wind = compute_tangential_wind.with_backend(self._backend)
 
         if grid_file_path != "":
@@ -369,6 +398,34 @@ class Plot:
             offset_provider=self.grid.offset_providers,
         )
         return vt_gtx.asnumpy()
+
+    def _compute_vorticity(self, vn):
+        if type(vn) is np.ndarray:
+            vn_gtx = gtx.as_field((dims.EdgeDim, dims.KDim), vn)
+        else:
+            vn_gtx = vn
+        vertvort_gtx = data_alloc.zero_field(self.grid, dims.VertexDim, dims.KDim, backend=self._backend)
+        cellvort_gtx = data_alloc.zero_field(self.grid, dims.CellDim, dims.KDim, backend=self._backend)
+        self._mo_math_divrot_rot_vertex_ri_dsl(
+            vec_e=vn_gtx,
+            geofac_rot=self.interpolation_savepoint.geofac_rot(),
+            rot_vec=vertvort_gtx,
+            horizontal_start=0,
+            horizontal_end=self.grid.num_vertices,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
+        self._interpolate_from_vertices_to_cell(
+            vertex_field=vertvort_gtx,
+            cell_field=cellvort_gtx,
+            horizontal_start=0,
+            horizontal_end=self.grid.num_cells,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
+        return cellvort_gtx.asnumpy()
 
     def _scal_interpolate_to_full_levels(self, w_half):
         if type(w_half) is np.ndarray:
