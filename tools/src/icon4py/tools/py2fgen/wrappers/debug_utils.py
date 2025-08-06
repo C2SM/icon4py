@@ -6,17 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from gt4py.next import common as gtx_common
+
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import (
-    C2E2CDim,
-    C2EDim,
-    CellDim,
-    E2C2VDim,
-    E2CDim,
-    EdgeDim,
-    V2EDim,
-    VertexDim,
-)
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.tools.common.logger import setup_logger
 
@@ -32,18 +25,6 @@ def print_grid_decomp_info(
     num_edges: int,
     num_verts: int,
 ) -> None:
-    log.info("icon_grid:cell_start%s", icon_grid._start_indices[CellDim])
-    log.info("icon_grid:cell_end:%s", icon_grid._end_indices[CellDim])
-    log.info("icon_grid:vert_start:%s", icon_grid._start_indices[VertexDim])
-    log.info("icon_grid:vert_end:%s", icon_grid._end_indices[VertexDim])
-    log.info("icon_grid:edge_start:%s", icon_grid._start_indices[EdgeDim])
-    log.info("icon_grid:edge_end:%s", icon_grid._end_indices[EdgeDim])
-    log.info("icon_grid:c2e:%s", icon_grid.neighbor_tables[C2EDim])
-    log.info("icon_grid:c2e2c:%s", icon_grid.neighbor_tables[C2E2CDim])
-    log.info("icon_grid:v2e:%s", icon_grid.neighbor_tables[V2EDim])
-    log.info("icon_grid:e2c2v:%s", icon_grid.neighbor_tables[E2C2VDim])
-    log.info("icon_grid:e2c:%s", icon_grid.neighbor_tables[E2CDim])
-
     log.info(
         "icon_grid:cell_start for rank %s is.... %s",
         processor_props.rank,
@@ -74,31 +55,12 @@ def print_grid_decomp_info(
         processor_props.rank,
         icon_grid._end_indices[EdgeDim],
     )
-    log.info(
-        "icon_grid:c2e for rank %s is.... %s",
-        processor_props.rank,
-        icon_grid.neighbor_tables[C2EDim],
-    )
-    log.info(
-        "icon_grid:c2e2c for rank %s is.... %s",
-        processor_props.rank,
-        icon_grid.neighbor_tables[C2E2CDim],
-    )
-    log.info(
-        "icon_grid:v2e for rank %s is.... %s",
-        processor_props.rank,
-        icon_grid.neighbor_tables[V2EDim],
-    )
-    log.info(
-        "icon_grid:e2c2v for rank %s is.... %s",
-        processor_props.rank,
-        icon_grid.neighbor_tables[E2C2VDim],
-    )
-    log.info(
-        "icon_grid:e2c for rank %s is.... %s",
-        processor_props.rank,
-        icon_grid.neighbor_tables[E2CDim],
-    )
+
+    for offset, connectivity in icon_grid.connectivities.items():
+        if gtx_common.is_neighbor_table(connectivity):
+            log.debug(
+                f"icon_grid:{offset} for rank {processor_props.rank} is.... {connectivity.asnumpy()}"
+            )
 
     log.info(
         "c_glb_index for rank %s is.... %s",

@@ -38,6 +38,7 @@ val = factory.get("foo", RetrievalType.DATA_ARRAY)
 TODO: @halungge: allow to read configuration data
 
 """
+
 import collections
 import enum
 import functools
@@ -79,12 +80,10 @@ DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
 
 class GridProvider(Protocol):
     @property
-    def grid(self) -> Optional[icon_grid.IconGrid]:
-        ...
+    def grid(self) -> Optional[icon_grid.IconGrid]: ...
 
     @property
-    def vertical_grid(self) -> Optional[v_grid.VerticalGrid]:
-        ...
+    def vertical_grid(self) -> Optional[v_grid.VerticalGrid]: ...
 
 
 class FieldProvider(Protocol):
@@ -107,20 +106,16 @@ class FieldProvider(Protocol):
         field_src: Optional["FieldSource"],
         backend: Optional[gtx_backend.Backend],
         grid: Optional[GridProvider],
-    ) -> state_utils.FieldType:
-        ...
+    ) -> state_utils.FieldType: ...
 
     @property
-    def dependencies(self) -> Sequence[str]:
-        ...
+    def dependencies(self) -> Sequence[str]: ...
 
     @property
-    def fields(self) -> Mapping[str, Any]:
-        ...
+    def fields(self) -> Mapping[str, Any]: ...
 
     @property
-    def func(self) -> Callable:
-        ...
+    def func(self) -> Callable: ...
 
 
 class RetrievalType(enum.Enum):
@@ -151,8 +146,7 @@ class FieldSource(GridProvider, Protocol):
     #      there are fields which need to be computed on a specific backend, which can be different from the
     #      general run backend
     @property
-    def backend(self) -> gtx_backend.Backend:
-        ...
+    def backend(self) -> gtx_backend.Backend: ...
 
     def _backend_name(self) -> str:
         return "embedded" if self.backend is None else self.backend.name
@@ -449,10 +443,10 @@ class ProgramFieldProvider(FieldProvider):
     def _allocate(
         self,
         backend: Optional[gtx_backend.Backend],
-        grid: base_grid.BaseGrid,  # TODO @halungge: change to vertical grid
+        grid: base_grid.Grid,  # TODO @halungge: change to vertical grid
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
-        def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:
+        def _map_size(dim: gtx.Dimension, grid: base_grid.Grid) -> int:
             if dim == dims.KHalfDim:
                 return grid.num_levels + 1
             return grid.size[dim]

@@ -8,31 +8,32 @@
 
 
 """
- This module handles several aspects of the horizontal grid in ICON.
+This module handles several aspects of the horizontal grid in ICON.
 
- Among which most importantly:
+Among which most importantly:
 
- Horizontal domain zones
- -------------------------
- ICON provides three routines `get_indices_c`, `get_indices_e` and `get_indices_v` which return indices into Fields of the given dimension
- that mark the start and end of specific horizontal grid domains such as the lateral boundaries, nudging zones etc.
+Horizontal domain zones
+-------------------------
+ICON provides three routines `get_indices_c`, `get_indices_e` and `get_indices_v` which return indices into Fields of the given dimension
+that mark the start and end of specific horizontal grid domains such as the lateral boundaries, nudging zones etc.
 
- Those routines get passed an integer value normally called `rl_start` or `rl_end`. The values ranges over a custom index range
- for each dimension, some of which are denoted by constants defined in `mo_impl_constants.f90` and `mo_impl_constants_grf.f90`.
+Those routines get passed an integer value normally called `rl_start` or `rl_end`. The values ranges over a custom index range
+for each dimension, some of which are denoted by constants defined in `mo_impl_constants.f90` and `mo_impl_constants_grf.f90`.
 
- Internally ICON uses a double indexing scheme for those start and end indices. They are
- stored in arrays `start_idx` and `end_idx` originally read from the grid file ICON accesses those indices by a custom index range
- denoted by the constants mentioned above. However, some entries into these arrays contain invalid Field indices and must not
- be used ever.
+Internally ICON uses a double indexing scheme for those start and end indices. They are
+stored in arrays `start_idx` and `end_idx` originally read from the grid file ICON accesses those indices by a custom index range
+denoted by the constants mentioned above. However, some entries into these arrays contain invalid Field indices and must not
+be used ever.
 
- horizontal.py provides an interface to a Python port of constants wrapped in a custom `Domain` class, which takes care of the
- custom index range and makes sure that for each dimension only legal values can be passed.
+horizontal.py provides an interface to a Python port of constants wrapped in a custom `Domain` class, which takes care of the
+custom index range and makes sure that for each dimension only legal values can be passed.
 
- The horizontal domain zones are denoted by a set of named enums for the different zones:
- see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nwv_icon_tutorial/pdf_einzelbaende/icon_tutorial2024.html).
+The horizontal domain zones are denoted by a set of named enums for the different zones:
+see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nwv_icon_tutorial/pdf_einzelbaende/icon_tutorial2024.html).
 
 
 """
+
 import enum
 import functools
 from abc import abstractmethod
@@ -351,8 +352,7 @@ class Domain(Protocol):
         return f"Domain (dim = {self.dim}: zone = {self._marker} /[ {self._index}])"
 
     @abstractmethod
-    def _valid(self, marker: Zone) -> bool:
-        ...
+    def _valid(self, marker: Zone) -> bool: ...
 
     @property
     def zone(self) -> Zone:
@@ -417,23 +417,40 @@ class EdgeDomain(Domain):
         return True
 
 
+VERTEX_ZONES = (
+    Zone.END,
+    Zone.INTERIOR,
+    Zone.HALO,
+    Zone.HALO_LEVEL_2,
+    Zone.LOCAL,
+    Zone.LATERAL_BOUNDARY,
+    Zone.LATERAL_BOUNDARY_LEVEL_2,
+    Zone.LATERAL_BOUNDARY_LEVEL_3,
+    Zone.LATERAL_BOUNDARY_LEVEL_4,
+)
+
+
 class VertexDomain(Domain):
     """Domain object for the Vertex dimension."""
 
     _dim = dims.VertexDim
 
     def _valid(self, marker: Zone):
-        return marker in (
-            Zone.END,
-            Zone.INTERIOR,
-            Zone.HALO,
-            Zone.HALO_LEVEL_2,
-            Zone.LOCAL,
-            Zone.LATERAL_BOUNDARY,
-            Zone.LATERAL_BOUNDARY_LEVEL_2,
-            Zone.LATERAL_BOUNDARY_LEVEL_3,
-            Zone.LATERAL_BOUNDARY_LEVEL_4,
-        )
+        return marker in VERTEX_ZONES
+
+
+CELL_ZONES = (
+    Zone.END,
+    Zone.INTERIOR,
+    Zone.HALO,
+    Zone.HALO_LEVEL_2,
+    Zone.LOCAL,
+    Zone.LATERAL_BOUNDARY,
+    Zone.LATERAL_BOUNDARY_LEVEL_2,
+    Zone.LATERAL_BOUNDARY_LEVEL_3,
+    Zone.LATERAL_BOUNDARY_LEVEL_4,
+    Zone.NUDGING,
+)
 
 
 class CellDomain(Domain):
@@ -442,15 +459,4 @@ class CellDomain(Domain):
     _dim = dims.CellDim
 
     def _valid(self, marker: Zone):
-        return marker in (
-            Zone.END,
-            Zone.INTERIOR,
-            Zone.HALO,
-            Zone.HALO_LEVEL_2,
-            Zone.LOCAL,
-            Zone.LATERAL_BOUNDARY,
-            Zone.LATERAL_BOUNDARY_LEVEL_2,
-            Zone.LATERAL_BOUNDARY_LEVEL_3,
-            Zone.LATERAL_BOUNDARY_LEVEL_4,
-            Zone.NUDGING,
-        )
+        return marker in CELL_ZONES

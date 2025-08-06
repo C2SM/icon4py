@@ -15,13 +15,10 @@ from typing import Callable, NamedTuple
 import click
 import numpy as np
 from devtools import Timer
-from gt4py.next import backend as gtx_backend
+from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import (
-    diffusion,
-    diffusion_states,
-)
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -29,6 +26,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.utils import device_utils
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
@@ -119,6 +117,7 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
+        profiling: driver_config.ProfilingConfig | None = None,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -158,21 +157,27 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-
-        timer = Timer(self._full_name(self._integrate_one_time_step))
+        timer_first_timestep = Timer("TimeLoop: first time step", dp=6)
+        timer_after_first_timestep = Timer("TimeLoop: after first time step", dp=6)
         for time_step in range(self._n_time_steps):
+            timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
+            if profiling is not None:
+                if not profiling.skip_first_timestep or time_step > 0:
+                    gtx_config.COLLECT_METRICS_LEVEL = profiling.gt4py_metrics_level
+
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.debug(
-                f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
-            )
-            log.debug(
-                f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
-            )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
+            if log.isEnabledFor(logging.DEBUG):
+                log.debug(
+                    f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
+                )
+                log.debug(
+                    f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
+                )
+                # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
-            # update boundary condition
+            # update boundary conditions
 
             timer.start()
             self._integrate_one_time_step(
@@ -183,6 +188,7 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
+            device_utils.sync(self.run_config.backend)
             timer.capture()
             state_dict = {
                 "vn": prognostic_states.current.vn.asnumpy(),
@@ -204,7 +210,12 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
-        timer.summary(True)
+        timer_first_timestep.summary(True)
+        if self.n_time_steps > 1:  # in case only one time step was run
+            timer_after_first_timestep.summary(True)
+        if profiling is not None and profiling.gt4py_metrics_level > gtx_metrics.DISABLED:
+            print(gtx_metrics.dumps())
+            gtx_metrics.dump_json(profiling.gt4py_metrics_output_file)
 
     def _integrate_one_time_step(
         self,
@@ -285,7 +296,7 @@ class TimeLoop:
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
-        for dyn_substep in range(self._n_substeps_var):
+        for dyn_substep in range(self.n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
@@ -303,6 +314,7 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
+                ndyn_substeps_var=self.n_substeps_var,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
@@ -381,7 +393,7 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type, backend)
+    config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
 
     decomp_info = driver_init.read_decomp_info(
         file_path,
@@ -424,7 +436,7 @@ def initialize(
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
-        diagnostic_metric_state,
+        _,
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,
@@ -478,6 +490,7 @@ def initialize(
         edge_geometry,
         file_path,
         backend=backend,
+        ndyn_substeps=config.run_config.n_substeps,
         rank=props.rank,
         experiment_type=experiment_type,
     )
@@ -552,6 +565,12 @@ def initialize(
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
+    "--enable_profiling",
+    is_flag=True,
+    default=False,
+    help="Enable detailed profiling with GT4Py metrics.",
+)
+@click.option(
     "--icon4py_driver_backend",
     "-b",
     required=True,
@@ -567,6 +586,7 @@ def icon4py_driver(
     grid_root,
     grid_level,
     enable_output,
+    enable_profiling,
     icon4py_driver_backend,
 ) -> None:
     """
@@ -631,6 +651,7 @@ def icon4py_driver(
         ds.prep_advection_prognostic,
         dp.second_order_divdamp_factor,
         do_prep_adv=False,
+        profiling=driver_config.ProfilingConfig() if enable_profiling else None,
     )
 
     log.info("time loop:  DONE")
