@@ -102,7 +102,7 @@ def _compute_k_start_end(
     return kstart, kend, cell_index_mask
 
 
-def compute_diffusion_metrics(
+def compute_zd_intcoeff_dsl_and_zd_vertoffset_dsl(
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     max_nbhgt: data_alloc.NDArray,
@@ -120,10 +120,8 @@ def compute_diffusion_metrics(
     z_mc_off = z_mc[c2e2c]
     nbidx = array_ns.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
     z_vintcoeff = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
-    mask_hdiff = array_ns.zeros(shape=(n_cells, nlev), dtype=bool)
     zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
-    zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
     k_start, k_end, _ = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
@@ -151,6 +149,45 @@ def compute_diffusion_metrics(
             zd_vertoffset_dsl[jc, :, k_range] = (
                 nbidx[jc, :, k_range] - array_ns.tile(array_ns.array(k_range), (3, 1)).T
             )
+
+    return zd_intcoef_dsl, zd_vertoffset_dsl
+
+
+def compute_mask_hdiff_and_zd_diffcoef_dsl(
+    c2e2c: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    max_nbhgt: data_alloc.NDArray,
+    c_owner_mask: data_alloc.NDArray,
+    maxslp_avg: data_alloc.NDArray,
+    maxhgtd_avg: data_alloc.NDArray,
+    thslp_zdiffu: float,
+    thhgtd_zdiffu: float,
+    cell_nudging: int,
+    nlev: int,
+    array_ns: ModuleType = np,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    n_cells = c2e2c.shape[0]
+    mask_hdiff = array_ns.zeros(shape=(n_cells, nlev), dtype=bool)
+    zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
+    k_start, k_end, _ = _compute_k_start_end(
+        z_mc=z_mc,
+        max_nbhgt=max_nbhgt,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
+        c_owner_mask=c_owner_mask,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        nlev=nlev,
+        array_ns=array_ns,
+    )
+
+    # go back to loop for now... fix _compute_nbidx, _compute_z_vintcoeff later
+    for jc in range(cell_nudging, n_cells):
+        kend = k_end[jc].item()
+        kstart = k_start[jc].item()
+        if kend > kstart:
+            k_range = range(kstart, kend)
+
             mask_hdiff[jc, k_range] = True
 
             zd_diffcoef_dsl_var = array_ns.maximum(
@@ -166,12 +203,4 @@ def compute_diffusion_metrics(
             )
             zd_diffcoef_dsl[jc, k_range] = array_ns.minimum(0.002, zd_diffcoef_dsl_var)
 
-    # flatten first two dims:
-    zd_intcoef_dsl = zd_intcoef_dsl.reshape(
-        (zd_intcoef_dsl.shape[0] * zd_intcoef_dsl.shape[1],) + zd_intcoef_dsl.shape[2:]
-    )
-    zd_vertoffset_dsl = zd_vertoffset_dsl.reshape(
-        (zd_vertoffset_dsl.shape[0] * zd_vertoffset_dsl.shape[1],) + zd_vertoffset_dsl.shape[2:]
-    )
-
-    return mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl
+    return mask_hdiff, zd_diffcoef_dsl
