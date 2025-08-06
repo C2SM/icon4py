@@ -13,8 +13,8 @@
 
 #SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser
 
-#SBATCH --output=../runs_icon4py/logs/torus.%x.log
-#SBATCH --error=../runs_icon4py/logs/torus.%x.log
+#SBATCH --output=../runs_icon4py/logs/%x.log
+#SBATCH --error=../runs_icon4py/logs/%x.log
 
 case $CLUSTER_NAME in
 balfrin)
