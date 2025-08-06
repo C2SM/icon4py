@@ -190,17 +190,19 @@ class TimeLoop:
             )
             device_utils.sync(self.run_config.backend)
             timer.capture()
-            state_dict = {
-                "vn": prognostic_states.current.vn.asnumpy(),
-                "w": prognostic_states.current.w.asnumpy(),
-                "rho": prognostic_states.current.rho.asnumpy(),
-                "exner": prognostic_states.current.exner.asnumpy(),
-                "theta_v": prognostic_states.current.theta_v.asnumpy(),
-            }
-            file_name = f"{PLOT_IMGS_DIR}/end_of_timestep_{time_step:06d}.pkl"
-            with open(file_name, "wb") as f:
-                pickle.dump(state_dict, f)
-                log.debug(f"PLOTS: saved {file_name}")
+
+            if time_step % 25 == 0:
+                state_dict = {
+                    "vn": prognostic_states.current.vn.asnumpy(),
+                    "w": prognostic_states.current.w.asnumpy(),
+                    "rho": prognostic_states.current.rho.asnumpy(),
+                    "exner": prognostic_states.current.exner.asnumpy(),
+                    "theta_v": prognostic_states.current.theta_v.asnumpy(),
+                }
+                file_name = f"{PLOT_IMGS_DIR}/end_of_timestep_{time_step:09d}.pkl"
+                with open(file_name, "wb") as f:
+                    pickle.dump(state_dict, f)
+                    log.debug(f"PLOTS: saved {file_name}")
 
             self._is_first_step_in_simulation = False
 
