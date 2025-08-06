@@ -11,6 +11,8 @@ from typing import Optional
 import gt4py.next.backend as gtx_backend
 
 from icon4py.model.common.decomposition import halo
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -18,7 +20,13 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils
+from icon4py.model.testing import (
+    config,
+    data_handling,
+    datatest_utils as dt_utils,
+    definitions,
+    locking,
+)
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -29,7 +37,7 @@ GLOBAL_NUM_LEVELS = 60
 
 MCH_CH_R04B09_LEVELS = 65
 
-grid_geometries = {}
+grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
 def get_grid_manager_for_experiment(
@@ -64,7 +72,7 @@ def get_grid_manager(
     )
 
 
-def _file_name(grid_file: str):
+def _file_name(grid_file: str) -> str:
     match grid_file:
         case dt_utils.REGIONAL_EXPERIMENT:
             return REGIONAL_GRIDFILE
@@ -81,17 +89,28 @@ def _file_name(grid_file: str):
 
 
 def resolve_full_grid_file_name(grid_file_str: str) -> pathlib.Path:
-    return dt_utils.GRIDS_PATH.joinpath(grid_file_str, _file_name(grid_file_str))
+    return definitions.grids_path().joinpath(grid_file_str, _file_name(grid_file_str))
 
 
 def _download_grid_file(file_path: str) -> pathlib.Path:
     full_name = resolve_full_grid_file_name(file_path)
-    if not full_name.exists():
-        data_handling.download_and_extract(
-            dt_utils.GRID_URIS[file_path],
-            full_name.parent,
-            full_name.parent,
-        )
+    grid_directory = full_name.parent
+    grid_directory.mkdir(parents=True, exist_ok=True)
+    if config.ENABLE_GRID_DOWNLOAD:
+        with locking.lock(grid_directory):
+            if not full_name.exists():
+                data_handling.download_and_extract(
+                    dt_utils.GRID_URIS[file_path],
+                    grid_directory,
+                )
+    else:
+        # If grid download is disabled, we check if the file exists
+        # without locking. We assume the location is managed by the user
+        # and avoid locking shared directories (e.g. on CI).
+        if not full_name.exists():
+            raise FileNotFoundError(
+                f"Grid file {full_name} does not exist and grid download is disabled."
+            )
     return full_name
 
 
@@ -118,7 +137,7 @@ def _download_and_load_gridfile(
     return manager
 
 
-def get_num_levels(experiment: str):
+def get_num_levels(experiment: str) -> int:
     return MCH_CH_R04B09_LEVELS if experiment == dt_utils.REGIONAL_EXPERIMENT else GLOBAL_NUM_LEVELS
 
 

@@ -43,8 +43,7 @@ class OptionalPropertyName(GridFileName):
     MAX_CHILD_DOMAINS = "max_child_dom"
 
 
-class PropertyName(GridFileName):
-    ...
+class PropertyName(GridFileName): ...
 
 
 class LAMPropertyName(PropertyName):
@@ -140,8 +139,7 @@ class DimensionName(GridFileName):
     VERTEX_GRF = "vert_grf"
 
 
-class FieldName(GridFileName):
-    ...
+class FieldName(GridFileName): ...
 
 
 class ConnectivityName(FieldName):

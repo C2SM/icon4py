@@ -13,7 +13,7 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
+from typing import Any, Literal, Optional, Protocol, Sequence, overload, runtime_checkable
 
 import gt4py.next as gtx
 import numpy as np
@@ -94,7 +94,6 @@ class DecompositionInfo:
     ):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
-        self._halo_levels[dim] = halo_levels
 
     def __init__(
         self,
@@ -176,26 +175,24 @@ class DecompositionInfo:
 
 
 class ExchangeResult(Protocol):
-    def wait(self):
-        ...
+    def wait(self): ...
 
-    def is_ready(self) -> bool:
-        ...
+    def is_ready(self) -> bool: ...
 
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
+    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult: ...
     def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         ...
 
+    def exchange_and_wait(self, dim: Dimension, *fields: tuple): ...
     def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
         ...
 
-    def get_size(self):
-        ...
+    def get_size(self): ...
 
-    def my_rank(self):
-        ...
+    def my_rank(self): ...
 
 
 @dataclass
@@ -383,6 +380,14 @@ class SingleNodeRun(RunType):
     pass
 
 
+@overload
+def get_runtype(with_mpi: Literal[True]) -> MultiNodeRun: ...
+
+
+@overload
+def get_runtype(with_mpi: Literal[False]) -> SingleNodeRun: ...
+
+
 def get_runtype(with_mpi: bool = False) -> RunType:
     if with_mpi:
         return MultiNodeRun()
@@ -391,12 +396,12 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime: RunType, comm_id: Union[int, None]) -> ProcessProperties:
+def get_processor_properties(runtime: RunType, comm_id: int | None = None) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 
 @get_processor_properties.register(SingleNodeRun)
-def get_single_node_properties(s: SingleNodeRun, comm_id=None) -> ProcessProperties:
+def get_single_node_properties(s: SingleNodeRun, comm_id: int | None = None) -> ProcessProperties:
     return SingleNodeProcessProperties()
 
 

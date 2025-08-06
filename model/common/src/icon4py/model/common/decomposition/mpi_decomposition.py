@@ -129,9 +129,9 @@ class MPICommProcessProperties(definitions.ProcessProperties):
 
 
 class GHexMultiNodeExchange:
-    max_num_of_fields_to_communicate_dace: Final[
-        int
-    ] = 10  # maximum number of fields to perform halo exchange on (DaCe-related)
+    max_num_of_fields_to_communicate_dace: Final[int] = (
+        10  # maximum number of fields to perform halo exchange on (DaCe-related)
+    )
 
     def __init__(
         self,

@@ -9,11 +9,7 @@
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import (
-    CellDim,
-    EdgeDim,
-    VertexDim,
-)
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.tools.common.logger import setup_logger
 

@@ -18,10 +18,7 @@ from devtools import Timer
 from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import (
-    diffusion,
-    diffusion_states,
-)
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -275,7 +272,7 @@ class TimeLoop:
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
-        for dyn_substep in range(self._n_substeps_var):
+        for dyn_substep in range(self.n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
@@ -293,6 +290,7 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
+                ndyn_substeps_var=self.n_substeps_var,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
@@ -414,7 +412,7 @@ def initialize(
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
-        diagnostic_metric_state,
+        _,
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,
@@ -468,6 +466,7 @@ def initialize(
         edge_geometry,
         file_path,
         backend=backend,
+        ndyn_substeps=config.run_config.n_substeps,
         rank=props.rank,
         experiment_type=experiment_type,
     )

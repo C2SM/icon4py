@@ -46,8 +46,7 @@ class IndexTransformation(Protocol):
     def __call__(
         self,
         array: data_alloc.NDArray,
-    ) -> data_alloc.NDArray:
-        ...
+    ) -> data_alloc.NDArray: ...
 
 
 class NoTransformation(IndexTransformation):
@@ -73,7 +72,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
 CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
-
+# TODO delete?
 def _reduce_to_rank_local_size(
     full_size_neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     decomposition_info: decomposition.DecompositionInfo,

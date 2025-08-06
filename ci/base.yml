@@ -42,9 +42,9 @@ build_baseimage_aarch64:
   stage: image
   variables:
       # Unique image name based on commit SHA
-      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-      DOCKERFILE: ci/docker/checkout.Dockerfile
-      DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+    DOCKERFILE: ci/docker/checkout.Dockerfile
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
 # build_image_x86_64:
 #   extends: [.container-builder-cscs-zen2, .build_image]
 #   needs: [build_baseimage_x86_64]
@@ -66,8 +66,9 @@ build_image_aarch64:
     CSCS_CUDA_MPS: 1
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
-    TEST_DATA_PATH: "/icon4py/ci/testdata"
-    ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
+    TEST_DATA_PATH: "/icon4py/testdata"
+    ICON4PY_ENABLE_GRID_DOWNLOAD: false
+    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
@@ -84,7 +85,7 @@ build_image_aarch64:
   variables:
     RUNNER: "ci-runner"
     SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
-    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_003:$TEST_DATA_PATH"]'
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_004:$TEST_DATA_PATH"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
