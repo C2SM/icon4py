@@ -782,9 +782,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_max_nbhgt)
 
-        compute_mask_hdiff_and_zd_diffcoef_dsl_np_np = factory.NumpyFieldsProvider(
+        compute_diffusion_mask_and_coef = factory.NumpyFieldsProvider(
             func=functools.partial(
-                compute_diffusion_metrics.compute_mask_hdiff_and_zd_diffcoef_dsl, array_ns=self._xp
+                compute_diffusion_metrics.compute_diffusion_mask_and_coef, array_ns=self._xp
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -809,11 +809,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
 
-        self.register_provider(compute_mask_hdiff_and_zd_diffcoef_dsl_np_np)
+        self.register_provider(compute_diffusion_mask_and_coef)
 
-        compute_zd_intcoeff_dsl_and_zd_vertoffset_dsl_np = factory.NumpyFieldsProvider(
+        compute_diffusion_intcoef_and_vertoffset = factory.NumpyFieldsProvider(
             func=functools.partial(
-                compute_diffusion_metrics.compute_zd_intcoeff_dsl_and_zd_vertoffset_dsl,
+                compute_diffusion_metrics.compute_diffusion_intcoef_and_vertoffset,
                 array_ns=self._xp,
             ),
             deps={
@@ -839,7 +839,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
 
-        self.register_provider(compute_zd_intcoeff_dsl_and_zd_vertoffset_dsl_np)
+        self.register_provider(compute_diffusion_intcoef_and_vertoffset)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
