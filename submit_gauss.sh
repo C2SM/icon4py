@@ -8,8 +8,8 @@
 #SBATCH --uenv=icon/25.2:v3
 #SBATCH --view=default
 
-#SBATCH --partition=debug
-#SBATCH --time=00:30:00
+#SBATCH --partition=normal
+#SBATCH --time=12:00:00
 
 #SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser
 
@@ -61,7 +61,7 @@ python \
 	--experiment_type=gauss3d_torus \
 	--grid_root=2 --grid_level=0 --enable_output
 
-## generate vtu files
-#python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+# # generate vtu files
+# python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
 
 echo "Finished running job: $SLURM_JOB_NAME, one way or another"
