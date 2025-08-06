@@ -16,6 +16,8 @@ import icon4py.model.common.dimension as dims
 from icon4py.model.common import exceptions
 from icon4py.model.common.decomposition import definitions as defs, mpi_decomposition
 
+from .. import utils
+
 
 try:
     import mpi4py  # import mpi4py to check for optional mpi dependency
@@ -46,152 +48,6 @@ GRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
 )
 backend = None
 
-"""
-TESTDATA using the [SimpleGrid](../../../src/icon4py/model/common/grid/simple.py)
-The distribution maps all of the 18 cells of the simple grid to ranks 0..3
-
-the dictionaries contain the mapping from rank to global (in the simple grid) index of the dimension:
-_CELL_OWN: rank -> owned cells, essentially the inversion of the SIMPLE_DISTRIBUTION
-_EDGE_OWN: rank -> owned edges
-_VERTEX_OWN: rank -> owned vertices
-
-the decision as to whether a "secondary" dimension (edge, vertices) is owned by a rank are made according to the
-rules and conventions described in (../../../src/icon4py/model/common/decomposition/halo.py)
-
-
-_CELL_FIRST_HALO_LINE:
-_CELL_SECON_HALO_LINE:
-_EDGE_FIRST_HALO_LINE:
-_EDGE_SECOND_HALO_LINE:
-_VERTEX_FIRST_HALO_LINE:
-_VERTEX_SECOND_HALO_LINE: :mapping of rank to global indices that belongs to a ranks halo lines.
-"""
-
-SIMPLE_DISTRIBUTION = np.asarray(
-    [
-        0,  # 0c
-        1,  # 1c
-        1,  # 2c
-        0,  # 3c
-        0,  # 4c
-        1,  # 5c
-        0,  # 6c
-        0,  # 7c
-        2,  # 8c
-        2,  # 9c
-        0,  # 10c
-        2,  # 11c
-        3,  # 12c
-        3,  # 13c
-        1,  # 14c
-        3,  # 15c
-        3,  # 16c
-        1,  # 17c
-    ]
-)
-_CELL_OWN = {0: [0, 3, 4, 6, 7, 10], 1: [1, 2, 5, 14, 17], 2: [8, 9, 11], 3: [12, 13, 15, 16]}
-
-_CELL_FIRST_HALO_LINE = {
-    0: [1, 11, 13, 9, 2, 15],
-    1: [3, 8, 4, 11, 16, 13, 15],
-    2: [5, 7, 6, 12, 14],
-    3: [9, 10, 17, 14, 0, 1],
-}
-
-_CELL_SECOND_HALO_LINE = {
-    0: [17, 5, 12, 14, 8, 16],
-    1: [0, 7, 6, 9, 10, 12],
-    2: [2, 1, 4, 3, 10, 15, 16, 17],
-    3: [6, 7, 8, 2, 3, 4, 5, 11],
-}
-
-_CELL_HALO = {
-    0: _CELL_FIRST_HALO_LINE[0] + _CELL_SECOND_HALO_LINE[0],
-    1: _CELL_FIRST_HALO_LINE[1] + _CELL_SECOND_HALO_LINE[1],
-    2: _CELL_FIRST_HALO_LINE[2] + _CELL_SECOND_HALO_LINE[2],
-    3: _CELL_FIRST_HALO_LINE[3] + _CELL_SECOND_HALO_LINE[3],
-}
-
-_EDGE_OWN = {
-    0: [1, 5, 12, 13, 14, 9],
-    1: [8, 7, 6, 25, 4, 2],
-    2: [16, 11, 15, 17, 10, 24],
-    3: [19, 23, 22, 26, 0, 3, 20, 18, 21],
-}
-
-_EDGE_FIRST_HALO_LINE = {0: [0, 4, 17, 21, 10, 2], 1: [3, 15, 20, 26, 24], 2: [18], 3: []}
-
-_EDGE_SECOND_HALO_LINE = {
-    0: [3, 6, 7, 8, 15, 24, 25, 26, 16, 22, 23, 18, 19, 20, 11],
-    1: [0, 1, 5, 9, 12, 11, 10, 13, 16, 17, 18, 19, 21, 22, 23],
-    2: [2, 9, 12, 4, 8, 7, 14, 21, 13, 19, 20, 22, 23, 25, 26],
-    3: [11, 10, 14, 13, 16, 17, 24, 25, 6, 2, 1, 5, 4, 8, 7],
-}
-
-_EDGE_THIRD_HALO_LINE = {
-    0: [],
-    1: [14],
-    2: [0, 1, 3, 5, 6],
-    3: [9, 12, 15],
-}
-_EDGE_HALO = {
-    0: _EDGE_FIRST_HALO_LINE[0] + _EDGE_SECOND_HALO_LINE[0] + _EDGE_THIRD_HALO_LINE[0],
-    1: _EDGE_FIRST_HALO_LINE[1] + _EDGE_SECOND_HALO_LINE[1] + _EDGE_THIRD_HALO_LINE[1],
-    2: _EDGE_FIRST_HALO_LINE[2] + _EDGE_SECOND_HALO_LINE[2] + _EDGE_THIRD_HALO_LINE[2],
-    3: _EDGE_FIRST_HALO_LINE[3] + _EDGE_SECOND_HALO_LINE[3] + _EDGE_THIRD_HALO_LINE[3],
-}
-
-_VERTEX_OWN = {
-    0: [4],
-    1: [],
-    2: [3, 5],
-    3: [
-        0,
-        1,
-        2,
-        6,
-        7,
-        8,
-    ],
-}
-
-_VERTEX_FIRST_HALO_LINE = {
-    0: [0, 1, 5, 8, 7, 3],
-    1: [1, 2, 0, 5, 3, 8, 6],
-    2: [
-        6,
-        8,
-        7,
-    ],
-    3: [],
-}
-
-_VERTEX_SECOND_HALO_LINE = {
-    0: [2, 6],
-    1: [7, 4],
-    2: [4, 0, 2, 1],
-    3: [3, 4, 5],
-}
-_VERTEX_HALO = {
-    0: _VERTEX_FIRST_HALO_LINE[0] + _VERTEX_SECOND_HALO_LINE[0],
-    1: _VERTEX_FIRST_HALO_LINE[1] + _VERTEX_SECOND_HALO_LINE[1],
-    2: _VERTEX_FIRST_HALO_LINE[2] + _VERTEX_SECOND_HALO_LINE[2],
-    3: _VERTEX_FIRST_HALO_LINE[3] + _VERTEX_SECOND_HALO_LINE[3],
-}
-
-OWNED = {dims.CellDim: _CELL_OWN, dims.EdgeDim: _EDGE_OWN, dims.VertexDim: _VERTEX_OWN}
-HALO = {dims.CellDim: _CELL_HALO, dims.EdgeDim: _EDGE_HALO, dims.VertexDim: _VERTEX_HALO}
-FIRST_HALO_LINE = {
-    dims.CellDim: _CELL_FIRST_HALO_LINE,
-    dims.VertexDim: _VERTEX_FIRST_HALO_LINE,
-    dims.EdgeDim: _EDGE_FIRST_HALO_LINE,
-}
-SECOND_HALO_LINE = {
-    dims.CellDim: _CELL_SECOND_HALO_LINE,
-    dims.VertexDim: _VERTEX_SECOND_HALO_LINE,
-    dims.EdgeDim: _EDGE_SECOND_HALO_LINE,
-}
-
 
 @pytest.fixture(scope="session")
 def simple_neighbor_tables():
@@ -218,11 +74,11 @@ def test_halo_constructor_owned_cells(processor_props, simple_neighbor_tables): 
         num_levels=1,
         backend=backend,
     )
-    my_owned_cells = halo_generator.owned_cells(SIMPLE_DISTRIBUTION)
+    my_owned_cells = halo_generator.owned_cells(utils.SIMPLE_DISTRIBUTION)
 
     print(f"rank {processor_props.rank} owns {my_owned_cells} ")
-    assert my_owned_cells.size == len(_CELL_OWN[processor_props.rank])
-    assert np.setdiff1d(my_owned_cells, _CELL_OWN[processor_props.rank]).size == 0
+    assert my_owned_cells.size == len(utils._CELL_OWN[processor_props.rank])
+    assert np.setdiff1d(my_owned_cells, utils._CELL_OWN[processor_props.rank]).size == 0
 
 
 @pytest.mark.parametrize("processor_props", [True, False], indirect=True)
@@ -274,11 +130,9 @@ def test_element_ownership_is_unique(
         backend=backend,
     )
 
-    decomposition_info = halo_generator(SIMPLE_DISTRIBUTION)
+    decomposition_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     owned = decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
-    if not mpi4py.MPI.Is_initialized():
-        mpi4py.MPI.Init()
     # assert that each cell is only owned by one rank
     comm = processor_props.comm
 
@@ -318,14 +172,16 @@ def test_halo_constructor_decomposition_info_global_indices(
         num_levels=1,
     )
 
-    decomp_info = halo_generator(SIMPLE_DISTRIBUTION)
+    decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo = decomp_info.global_index(dim, defs.DecompositionInfo.EntryType.HALO)
     print(f"rank {processor_props.rank} has halo {dim} : {my_halo}")
-    assert my_halo.size == len(HALO[dim][processor_props.rank])
-    assert np.setdiff1d(my_halo, HALO[dim][processor_props.rank], assume_unique=True).size == 0
+    assert my_halo.size == len(utils.HALO[dim][processor_props.rank])
+    assert (
+        np.setdiff1d(my_halo, utils.HALO[dim][processor_props.rank], assume_unique=True).size == 0
+    )
     my_owned = decomp_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"rank {processor_props.rank} owns {dim} : {my_owned} ")
-    assert_same_entries(dim, my_owned, OWNED, processor_props.rank)
+    assert_same_entries(dim, my_owned, utils.OWNED, processor_props.rank)
 
 
 def assert_same_entries(
@@ -346,7 +202,7 @@ def test_halo_constructor_decomposition_info_halo_levels(
         run_properties=processor_props,
         num_levels=1,
     )
-    decomp_info = halo_generator(SIMPLE_DISTRIBUTION)
+    decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo_levels = decomp_info.halo_levels(dim)
     print(f"{dim.value}: rank {processor_props.rank} has halo levels {my_halo_levels} ")
     if dim != dims.EdgeDim:
@@ -356,7 +212,7 @@ def test_halo_constructor_decomposition_info_halo_levels(
             "All indices should have a defined DecompositionFlag"
         )  # THIS WILL CURRENTLY FAIL FOR EDGES
     assert np.where(my_halo_levels == defs.DecompositionFlag.OWNED)[0].size == len(
-        OWNED[dim][processor_props.rank]
+        utils.OWNED[dim][processor_props.rank]
     )
     owned_local_indices = decomp_info.local_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     assert np.all(
@@ -368,14 +224,18 @@ def test_halo_constructor_decomposition_info_halo_levels(
     first_halo_line_global_index = decomp_info.global_index(
         dim, defs.DecompositionInfo.EntryType.ALL
     )[first_halo_line_local_index]
-    assert_same_entries(dim, first_halo_line_global_index, FIRST_HALO_LINE, processor_props.rank)
+    assert_same_entries(
+        dim, first_halo_line_global_index, utils.FIRST_HALO_LINE, processor_props.rank
+    )
     second_halo_line_local_index = np.where(
         my_halo_levels == defs.DecompositionFlag.SECOND_HALO_LINE
     )[0]
     second_halo_line_global_index = decomp_info.global_index(
         dim, defs.DecompositionInfo.EntryType.ALL
     )[second_halo_line_local_index]
-    assert_same_entries(dim, second_halo_line_global_index, SECOND_HALO_LINE, processor_props.rank)
+    assert_same_entries(
+        dim, second_halo_line_global_index, utils.SECOND_HALO_LINE, processor_props.rank
+    )
 
 
 # TODO unused - remove or fix and use?

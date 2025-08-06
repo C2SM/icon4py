@@ -75,9 +75,9 @@ GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 
 def _reduce_to_rank_local_size(
-    full_size_neighbor_tables: dict[dims.FieldOffset, data_alloc.NDArray],
+    full_size_neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     decomposition_info: decomposition.DecompositionInfo,
-) -> dict[dims.FieldOffset, data_alloc.NDArray]:
+) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
     def get_rank_local_values(k: gtx.FieldOffset, v: data_alloc.NDArray):
         index_target_dim = k.source
         index_source_dim = k.target[0]
@@ -404,6 +404,8 @@ class GridManager:
         ## TODO from here do local reads (and halo exchanges!!)
         # CONSTRUCT LOCAL PATCH
 
+        # TODO  first: read local neighbor tables and convert global to local indices
+        # TODO: instead of reading shring existing one to local size and to global to local indices
         neighbor_tables = _reduce_to_rank_local_size(
             neighbor_tables_for_halo_construction
         )  # reduce locally? or read again

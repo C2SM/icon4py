@@ -332,25 +332,18 @@ class IconLikeHaloConstructor(HaloConstructor):
         # edges
         edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
         edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
-        edges_on_second_halo_line = self.find_edge_neighbors_for_cells(second_halo_cells)
-
+        edges_on_cutting_line = self._xp.intersect1d(edges_on_owned_cells, edges_on_first_halo_line)
         level_two_edges = self._xp.setdiff1d(
             self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells
         )
 
-        # level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
-        all_edges = self._xp.hstack(
-            (
-                edges_on_owned_cells,
-                level_two_edges,
-                self._xp.setdiff1d(edges_on_second_halo_line, edges_on_first_halo_line),
+        all_edges = self._xp.unique(
+            self._xp.hstack(
+                (
+                    edges_on_owned_cells,
+                    level_two_edges,
+                )
             )
-        )
-        all_edges = self._xp.unique(all_edges)
-        # We need to reduce the overlap:
-        # `edges_on_owned_cells` and `edges_on_first_halo_line` both contain the edges on the cutting line.
-        edge_intersect_owned_first_line = self._xp.intersect1d(
-            edges_on_owned_cells, edges_on_first_halo_line
         )
 
         # construct the owner mask
@@ -359,19 +352,24 @@ class IconLikeHaloConstructor(HaloConstructor):
             face_to_rank,
             edge_owner_mask,
             all_edges,
-            edge_intersect_owned_first_line,
+            edges_on_cutting_line,
             self.edge_face_connectivity,
         )
+
         edge_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
             all_edges.shape, dtype=int
         )
         edge_halo_levels[edge_owner_mask] = defs.DecompositionFlag.OWNED
+        # LEVEL_ONE edges are on a owned cell but are not owned: these are all edges on the cutting line that are not owned (by the convention)
+
         edge_halo_levels[
             self._xp.logical_and(
                 self._xp.logical_not(edge_owner_mask),
-                self._xp.isin(all_edges, edge_intersect_owned_first_line),
+                self._xp.isin(all_edges, edges_on_cutting_line),
             )
         ] = defs.DecompositionFlag.FIRST_HALO_LINE
+
+        # LEVEL_TWO edges share exactly one vertext with an owned cell, they are on the first halo-line cells, but not on the cutting line
         edge_halo_levels[
             self._xp.isin(all_edges, level_two_edges)
         ] = defs.DecompositionFlag.SECOND_HALO_LINE

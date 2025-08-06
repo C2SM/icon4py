@@ -19,6 +19,7 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common import utils
+from icon4py.model.common.grid import gridfile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -86,7 +87,7 @@ class DecompositionInfo:
     @utils.chainable
     def set_dimension(
         self,
-        dim: Dimension,
+        dim: gtx.Dimension,
         global_index: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         halo_levels: data_alloc.NDArray,
@@ -108,7 +109,7 @@ class DecompositionInfo:
     def klevels(self):
         return self._klevels
 
-    def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def local_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
@@ -132,8 +133,22 @@ class DecompositionInfo:
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
 
-    def global_to_local(self, dim: gtx.Dimension):
-        ...
+    def global_to_local(
+        self, dim: gtx.Dimension, indices_to_translate: data_alloc.NDArray
+    ) -> data_alloc.NDArray:
+        global_indices = self.global_index(dim)
+        sorter = np.argsort(global_indices)
+
+        mask = np.isin(indices_to_translate, global_indices)
+        # Find the positions of `values_to_find` in the sorted `global_indices`.
+        # The `sorter` argument tells searchsorted to work with the sorted version
+        # of `global_indices` without creating an explicit sorted copy.
+        local_neighbors = np.where(
+            mask,
+            sorter[np.searchsorted(global_indices, indices_to_translate, sorter=sorter)],
+            gridfile.GridFile.INVALID_INDEX,
+        )
+        return local_neighbors
 
     def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
@@ -155,6 +170,10 @@ class DecompositionInfo:
     def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag):
         return np.where(self._halo_levels[dim] == level, True, False)
 
+    # TODO unused - delete
+    def is_on_node(self, dim, index: int, entryType: EntryType = EntryType.ALL) -> bool:
+        return np.isin(index, self.global_index(dim, entry_type=entryType)).item()
+
 
 class ExchangeResult(Protocol):
     def wait(self):
@@ -166,10 +185,10 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         ...
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
         ...
 
     def get_size(self):
@@ -181,10 +200,10 @@ class ExchangeRuntime(Protocol):
 
 @dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
         return
 
     def my_rank(self):
@@ -407,8 +426,8 @@ class DecompositionFlag(enum.IntEnum):
     """
     used for:
     - cells that share 1 edge with an OWNED cell
-    - vertices that are on OWNED cell
-    - edges that are on OWNED cell
+    - vertices that are on OWNED cell, but not owned
+    - edges that are on OWNED cell, but not owned
     """
 
     SECOND_HALO_LINE = 2
