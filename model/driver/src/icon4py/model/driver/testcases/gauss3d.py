@@ -130,7 +130,7 @@ def model_initialization_gauss3d(
         nh_u0 = xp.zeros((num_edges, num_levels), dtype=float)
         for j in range(num_levels):
             LM_j = xp.argmin(xp.abs(LM_y - full_level_heights[j]))
-            nh_u0[:, j] = LM_u[LM_j]
+            nh_u0[:, j] = LM_u[LM_j] + xp.random.normal(loc=0, scale=0.05, size=num_edges)
         #
         nh_t0 = 300.0
         nh_brunt_vais = 0.0
