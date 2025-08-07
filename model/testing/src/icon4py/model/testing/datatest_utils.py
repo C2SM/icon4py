@@ -131,10 +131,8 @@ def get_processor_properties_for_run(
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_ranked_data_path(
-    base_path: pathlib.Path, processor_properties: decomposition.ProcessProperties
-) -> pathlib.Path:
-    return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
+def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Path:
+    return base_path.absolute().joinpath(f"mpitask{comm_size}")
 
 
 def get_datapath_for_experiment(

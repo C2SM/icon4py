@@ -398,7 +398,7 @@ class GridManager:
         # TODO  first: read local neighbor tables and convert global to local indices
         # TODO: instead of reading shring existing one to local size and to global to local indices
         neighbor_tables = _reduce_to_rank_local_size(
-            neighbor_tables_for_halo_construction
+            neighbor_tables_for_halo_construction, decomposition_info
         )  # reduce locally? or read again
         edge_index = decomposition_info.global_index(dims.EdgeDim)
         neighbor_tables[dims.E2V] = self._get_index_field(

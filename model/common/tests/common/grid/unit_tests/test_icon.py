@@ -85,7 +85,7 @@ def grid(icon_grid, request):
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
-def test_halo(grid, dim, marker):
+def test_halo(icon_grid, dim, marker):
     # For single node this returns an empty region - start and end index are the same see  also ./mpi_tests/test_icon.py
     domain = h_grid.domain(dim)(marker)
     assert grid.start_index(domain) == HALO_IDX[dim][0]
