@@ -34,7 +34,7 @@ def _interpolate_to_half_levels(
 ) -> fa.EdgeKField[ta.vpfloat]:
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
     x_ie_wp = wgtfac_e_wp * x + (wpfloat("1.0") - wgtfac_e_wp) * x(Koff[-1])
-    return concat_where(dims.KDim > 0, astype(x_ie_wp, vpfloat), x)
+    return concat_where(dims.KDim > 0, astype(x_ie_wp, vpfloat), astype(x, vpfloat))
 
 
 @gtx.field_operator
