@@ -95,7 +95,7 @@ class GridType:
             else:
                 if subdivision.root < 1 or subdivision.level < 0:
                     raise ValueError(
-                        "Root must be >= 1 and level must be >= 0 if geometry_type is not specified (assuming icosahedron)"
+                        f"Root must be >= 1 and level must be >= 0 if geometry_type is not specified (assuming icosahedron), got {subdivision.root=} and {subdivision.level=}"
                     )
                 geometry_type = base.GeometryType.ICOSAHEDRON
 
