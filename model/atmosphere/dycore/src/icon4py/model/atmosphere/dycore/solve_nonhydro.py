@@ -1101,10 +1101,8 @@ class SolveNonhydro:
             dual_normal_cell_y=self._edge_geometry.dual_normal_cell[1],
             ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
             c_lin_e=self._interpolation_state.c_lin_e,
-            # TODO
             ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
             zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,
-            # TODO end
             ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
             pg_exdist=self._metric_state_nonhydro.pg_exdist,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
