@@ -8,7 +8,7 @@
 
 import enum
 import logging
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 from gt4py import next as gtx
@@ -249,6 +249,14 @@ class GridFile:
     def attribute(self, name: PropertyName) -> Union[str, int, float]:
         "Read a global attribute with name 'name' from the grid file."
         return self._dataset.getncattr(name)
+
+    def try_attribute(self, name: PropertyName) -> Optional[Union[str, int, float]]:
+        """Try reading a global attribute with name 'name' from the grid file.
+        Return None if the attribute does not exist."""
+        if name in self._dataset.ncattrs():
+            return self._dataset.getncattr(name)
+        else:
+            return None
 
     def int_variable(
         self, name: FieldName, indices: np.ndarray = None, transpose: bool = True
