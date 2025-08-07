@@ -114,7 +114,8 @@ module dycore
                                     vn_traj_size_0, &
                                     vn_traj_size_1, &
                                     dtime, &
-                                    max_vcfl, &
+                                    max_vcfl_size1_array, &
+                                    max_vcfl_size1_array_size_0, &
                                     lprep_adv, &
                                     at_initial_timestep, &
                                     divdamp_fac_o2, &
@@ -336,7 +337,9 @@ module dycore
 
          real(c_double), value, target :: dtime
 
-         real(c_double), value, target :: max_vcfl
+         type(c_ptr), value, target :: max_vcfl_size1_array
+
+         integer(c_int), value :: max_vcfl_size1_array_size_0
 
          logical(c_int), value, target :: lprep_adv
 
@@ -931,7 +934,7 @@ contains
                            vol_flx_ic, &
                            vn_traj, &
                            dtime, &
-                           max_vcfl, &
+                           max_vcfl_size1_array, &
                            lprep_adv, &
                            at_initial_timestep, &
                            divdamp_fac_o2, &
@@ -1012,7 +1015,7 @@ contains
 
       real(c_double), value, target :: dtime
 
-      real(c_double), value, target :: max_vcfl
+      real(c_double), dimension(:), target :: max_vcfl_size1_array
 
       logical(c_int), value, target :: lprep_adv
 
@@ -1165,6 +1168,8 @@ contains
       integer(c_int) :: vn_traj_size_0
 
       integer(c_int) :: vn_traj_size_1
+
+      integer(c_int) :: max_vcfl_size1_array_size_0
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
@@ -1319,6 +1324,8 @@ contains
       vn_traj_size_0 = SIZE(vn_traj, 1)
       vn_traj_size_1 = SIZE(vn_traj, 2)
 
+      max_vcfl_size1_array_size_0 = SIZE(max_vcfl_size1_array, 1)
+
       if (associated(vn_incr)) then
          vn_incr_ptr = c_loc(vn_incr)
          vn_incr_size_0 = SIZE(vn_incr, 1)
@@ -1443,7 +1450,8 @@ contains
                                 vn_traj_size_0=vn_traj_size_0, &
                                 vn_traj_size_1=vn_traj_size_1, &
                                 dtime=dtime, &
-                                max_vcfl=max_vcfl, &
+                                max_vcfl_size1_array=c_loc(max_vcfl_size1_array), &
+                                max_vcfl_size1_array_size_0=max_vcfl_size1_array_size_0, &
                                 lprep_adv=lprep_adv, &
                                 at_initial_timestep=at_initial_timestep, &
                                 divdamp_fac_o2=divdamp_fac_o2, &
