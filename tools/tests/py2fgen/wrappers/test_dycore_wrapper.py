@@ -557,7 +557,6 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        # TODO (Chia Rui): read from serialized data
         max_vertical_cfl=max_vertical_cfl,
         tangential_wind=sp.vt(),
         vn_on_half_levels=sp.vn_ie(),
