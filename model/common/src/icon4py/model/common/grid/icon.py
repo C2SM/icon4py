@@ -35,64 +35,156 @@ CONNECTIVITIES_ON_BOUNDARIES = (
 CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 
-@dataclasses.dataclass(frozen=True)
+# TODO: name
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class GridSubdivisionParams:
+    root: int
+    level: int
+
+
+# TODO: name
+@dataclasses.dataclass(kw_only=True)  # TODO: frozen?
+class GridType:
+    geometry_type: base.GeometryType
+    subdivision: GridSubdivisionParams
+
+    def __init__(
+        self,
+        geometry_type: Optional[base.GeometryType] = None,
+        subdivision: Optional[GridSubdivisionParams] = None,
+    ) -> None:
+        if geometry_type is None and subdivision is None:
+            raise ValueError("Either geometry_type or subdivision must be provided")
+
+        # Validate that geometry type and the subdivision parameters are
+        # consistent. Torus should have root=2 and level=0. If both are given,
+        # check for consistency. If only one is given, infer the other.
+        # Otherwise assume dealing with icosahedron and check that values are
+        # sane.
+        if geometry_type:
+            match geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    if subdivision is None:
+                        raise ValueError(
+                            "Subdivision must be provided for icosahedron geometry type"
+                        )
+
+                    if subdivision.root < 1 or subdivision.level < 0:
+                        raise ValueError(
+                            f"Root must be >= 1 and level must be >= 0 for icosahedron geometry type, got {subdivision.root=} and {subdivision.level=}"
+                        )
+                case base.GeometryType.TORUS:
+                    if subdivision is None:
+                        # This is convention
+                        subdivision = GridSubdivisionParams(root=2, level=0)
+                    else:
+                        if subdivision.root != 2 or subdivision.level != 0:
+                            raise ValueError(
+                                f"For torus geometry type, root must be 0 and level must be 2, got {subdivision.root=} and {subdivision.level=}"
+                            )
+                case _:
+                    print(f"{base.GeometryType.ICOSAHEDRON=}")
+                    print(f"{base.GeometryType.TORUS=}")
+                    print(f"{geometry_type=}")
+                    print(f"{(geometry_type == base.GeometryType.ICOSAHEDRON)=}")
+                    print(f"{(geometry_type == base.GeometryType.TORUS)=}")
+                    raise ValueError(f"Unknown geometry type {geometry_type}")
+        else:
+            if subdivision.root == 0 and subdivision.level == 2:
+                geometry_type = base.GeometryType.TORUS
+            else:
+                if subdivision.root < 1 or subdivision.level < 0:
+                    raise ValueError(
+                        "Root must be >= 1 and level must be >= 0 if geometry_type is not specified (assuming icosahedron)"
+                    )
+                geometry_type = base.GeometryType.ICOSAHEDRON
+
+        self.geometry_type = geometry_type
+        self.subdivision = subdivision
+
+
+@dataclasses.dataclass  # TODO: Keep frozen=True?
 class GlobalGridParams:
-    root: Optional[int] = None
-    level: Optional[int] = None
+    grid_type: Final[Optional[GridType]] = None
     _num_cells: Optional[int] = None
     _mean_cell_area: Optional[float] = None
-    geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
     radius: float = constants.EARTH_RADIUS
+
+    def __init__(
+        self,
+        grid_type: Optional[GridType] = None,
+        num_cells: Optional[int] = None,
+        mean_cell_area: Optional[float] = None,
+        radius: float = constants.EARTH_RADIUS,
+    ) -> None:
+        self.grid_type = grid_type
+        self._num_cells = num_cells
+        self._mean_cell_area = mean_cell_area
+        self.radius = radius
 
     @classmethod
     def from_mean_cell_area(
         cls,
         mean_cell_area: float,
-        root: Optional[int] = None,
+        grid_type: Optional[GridType] = None,
         level: Optional[int] = None,
         num_cells: Optional[int] = None,
-        geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
         radius: float = constants.EARTH_RADIUS,
     ):
-        return cls(root, level, num_cells, mean_cell_area, geometry_type)
+        return cls(
+            grid_type,
+            num_cells,
+            mean_cell_area,
+            radius,
+        )
 
     @functools.cached_property
-    def num_cells(self):
+    def num_cells(self) -> int:
         if self._num_cells is None:
-            match self.geometry_type:
+            match self.grid_type.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    assert self.root is not None and self.level is not None
-                    return compute_icosahedron_num_cells(self.root, self.level)
+                    assert self.grid_type.subdivision is not None
+                    return compute_icosahedron_num_cells(self.grid_type.subdivision)
                 case base.GeometryType.TORUS:
                     raise NotImplementedError("TODO : lookup torus cell number computation")
                 case _:
-                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    raise NotImplementedError(
+                        f"Unknown geometry type {self.grid_type.geometry_type}"
+                    )
 
         return self._num_cells
 
     @functools.cached_property
-    def characteristic_length(self):
+    def characteristic_length(self) -> float:
         return math.sqrt(self.mean_cell_area)
 
     @functools.cached_property
-    def mean_cell_area(self):
+    def mean_cell_area(self) -> float:
         if self._mean_cell_area is None:
-            match self.geometry_type:
+            match self.grid_type.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
+                    return compute_mean_cell_area_for_sphere(self.radius, self.num_cells)
                 case base.GeometryType.TORUS:
-                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+                    raise NotImplementedError(
+                        f"mean_cell_area not implemented for {self.grid_type.geometry_type}"
+                    )
                 case _:
-                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    raise NotImplementedError(
+                        f"Unknown geometry type {self.grid_type.geometry_type}"
+                    )
 
         return self._mean_cell_area
 
 
-def compute_icosahedron_num_cells(root: int, level: int):
-    return 20.0 * root**2 * 4.0**level
+def compute_icosahedron_num_cells(subdivision: GridSubdivisionParams) -> int:
+    return 20 * subdivision.root**2 * 4**subdivision.level
 
 
-def compute_mean_cell_area_for_sphere(radius, num_cells):
+def compute_torus_num_cells(subdivision: GridSubdivisionParams) -> int:
+    return 20 * subdivision.root**2 * 4**subdivision.level
+
+
+def compute_mean_cell_area_for_sphere(radius, num_cells) -> float:
     """
     Compute the mean cell area.
 
@@ -104,7 +196,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
         num_cells: number of cells on the global grid
     Returns: mean area of one cell [m^2]
     """
-    return 4.0 * math.pi * radius**2 / num_cells
+    return 4.0 * math.pi * radius**2.0 / num_cells
 
 
 @dataclasses.dataclass(frozen=True)
@@ -190,7 +282,7 @@ def icon_grid(
         allocator=allocator,
         config=config,
         connectivities=connectivities,
-        geometry_type=global_properties.geometry_type,
+        geometry_type=global_properties.grid_type.geometry_type,
         _start_indices=start_indices,
         _end_indices=end_indices,
         global_properties=global_properties,

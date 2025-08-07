@@ -102,7 +102,7 @@ class GridGeometry(factory.FieldSource):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
+        self._geometry_type: base.GeometryType = grid.global_properties.grid_type.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         log.info(
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"

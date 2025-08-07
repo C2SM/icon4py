@@ -225,7 +225,11 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(grid_file, di
 def test_global_grid_params(
     grid_root, grid_level, num_cells, mean_cell_area, expected_num_cells, expected_mean_cell_area
 ):
-    params = icon.GlobalGridParams(grid_root, grid_level, num_cells, mean_cell_area)
+    params = icon.GlobalGridParams(
+        icon.GridType(subdivision=icon.GridSubdivisionParams(root=grid_root, level=grid_level)),
+        num_cells,
+        mean_cell_area,
+    )
     assert expected_num_cells == params.num_cells
     assert expected_mean_cell_area == params.mean_cell_area
 
@@ -243,7 +247,13 @@ def test_global_grid_params_from_mean_cell_area(
     grid_root, grid_level, num_cells, mean_cell_area, expected_num_cells, expected_mean_cell_area
 ):
     params = icon.GlobalGridParams.from_mean_cell_area(
-        mean_cell_area, num_cells=num_cells, root=grid_root, level=grid_level
+        mean_cell_area,
+        num_cells=num_cells,
+        grid_type=icon.GridType(
+            subdivision=icon.GridSubdivisionParams(root=grid_root, level=grid_level)
+        )
+        if grid_root is not None and grid_level is not None
+        else None,
     )
     assert expected_num_cells == params.num_cells
     assert expected_mean_cell_area == params.mean_cell_area
