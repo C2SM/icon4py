@@ -19,7 +19,7 @@ from icon4py.model.common import (
 from icon4py.model.driver.testcases import utils as testcases_utils
 
 
-def load_channel_data(
+def load_initial_condition(
     num_cells: int,
     num_edges: int,
     num_levels: int,
@@ -32,7 +32,7 @@ def load_channel_data(
     theta_ref_ic: data_alloc.NDArray,
     geopot: data_alloc.NDArray,
     primal_normal_x: data_alloc.NDArray,
-    mask: data_alloc.NDArray,
+    u0_mask: data_alloc.NDArray,
     backend: gtx_backend.Backend,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
@@ -62,10 +62,10 @@ def load_channel_data(
     # Interpolate LM_u onto the ICON grid
     nh_u0 = xp.zeros((num_edges, num_levels), dtype=float)
     for j in range(num_levels):
-        LM_j = xp.argmin(xp.abs(LM_y - full_level_heights[j]))
+        LM_j = xp.argmin(xp.abs(LM_y - full_level_heights[0,j])) # NOTE: full_level_heights should be identical for all edges because the channel is flat
         nh_u0[:, j] = LM_u[LM_j] + xp.random.normal(loc=0, scale=0.05, size=num_edges)
 
-    u = xp.where(mask, nh_u0, 0.0)
+    u = xp.where(u0_mask, nh_u0, 0.0)
     vn_ndarray = u * primal_normal_x
 
     w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)

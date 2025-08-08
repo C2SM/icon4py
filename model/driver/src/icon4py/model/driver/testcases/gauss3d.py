@@ -26,6 +26,7 @@ from icon4py.model.common.states import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import utils as testcases_utils
+from icon4py.model.driver.testcases import channel
 from icon4py.model.testing import serialbox as sb
 
 
@@ -205,6 +206,29 @@ def model_initialization_gauss3d(
         pressure_ndarray,
         pressure_ifc_ndarray,
         grid=grid,
+        backend=backend,
+    )
+
+    (
+        vn,
+        w,
+        rho,
+        exner,
+        theta_v
+    ) = channel.load_initial_condition(
+        num_cells=num_cells,
+        num_edges=num_edges,
+        num_levels=num_levels,
+        full_level_heights=data_provider.from_metrics_savepoint().z_mc().ndarray,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        geopot=geopot,
+        primal_normal_x=primal_normal_x,
+        u0_mask=mask,
         backend=backend,
     )
 
