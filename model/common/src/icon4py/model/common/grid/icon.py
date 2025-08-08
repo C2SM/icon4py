@@ -82,7 +82,7 @@ class GridParams:
                 case _:
                     raise ValueError(f"Unknown geometry type {geometry_type}")
         else:
-            if subdivision.root == 0 and subdivision.level == 2:
+            if subdivision.root == 2 and subdivision.level == 0:
                 geometry_type = base.GeometryType.TORUS
             else:
                 if subdivision.root < 1 or subdivision.level < 0:
