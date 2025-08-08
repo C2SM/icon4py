@@ -42,7 +42,7 @@ class GridSubdivision:
 
 
 # TODO: name
-@dataclasses.dataclass(kw_only=True)  # TODO: frozen?
+@dataclasses.dataclass(kw_only=True)
 class GridType:
     geometry_type: base.GeometryType
     subdivision: GridSubdivision
@@ -82,11 +82,6 @@ class GridType:
                                 f"For torus geometry type, root must be 0 and level must be 2, got {subdivision.root=} and {subdivision.level=}"
                             )
                 case _:
-                    print(f"{base.GeometryType.ICOSAHEDRON=}")
-                    print(f"{base.GeometryType.TORUS=}")
-                    print(f"{geometry_type=}")
-                    print(f"{(geometry_type == base.GeometryType.ICOSAHEDRON)=}")
-                    print(f"{(geometry_type == base.GeometryType.TORUS)=}")
                     raise ValueError(f"Unknown geometry type {geometry_type}")
         else:
             if subdivision.root == 0 and subdivision.level == 2:
@@ -102,7 +97,7 @@ class GridType:
         self.subdivision = subdivision
 
 
-@dataclasses.dataclass  # TODO: Keep frozen=True?
+@dataclasses.dataclass
 class GlobalGridParams:
     grid_type: Final[Optional[GridType]] = None
     _num_cells: Optional[int] = None
