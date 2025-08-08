@@ -71,7 +71,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     z_nabla2_e_wp = (
         astype(tmp2[E2C2VDim(0)] + tmp2[E2C2VDim(1)], wpfloat) - wpfloat("2.0") * vn
     ) * (inv_primal_edge_length * inv_primal_edge_length) + (
-        astype(tmp[E2C2VDim(2)] + tmp[E2C2VDim(3)], wpfloat) - wpfloat("2.0") * vn
+        astype(tmp2[E2C2VDim(2)] + tmp2[E2C2VDim(3)], wpfloat) - wpfloat("2.0") * vn
     ) * (inv_vert_vert_length * inv_vert_vert_length)
 
     z_nabla2_e_wp = wpfloat("4.0") * z_nabla2_e_wp
