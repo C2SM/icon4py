@@ -9,6 +9,7 @@
 import logging
 
 import gt4py.next as gtx
+import xarray as xr
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import (
@@ -17,6 +18,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     type_alias as ta,
 )
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import utils as testcases_utils
@@ -83,6 +85,44 @@ class ChannelFlow:
         channel_U = data[:, 2] * 4.14872e-02  # <U> * u_tau (that's how it's normalized in the file)
 
         return channel_y, channel_U
+
+    def make_masks(
+        self,
+        backend: gtx_backend.Backend,
+        grid: icon_grid.IconGrid,
+        grid_file_path: str,
+
+    ) -> None:
+
+        xp = data_alloc.import_array_ns(backend)
+
+        num_cells = grid.num_cells
+        num_edges = grid.num_edges
+        num_levels = grid.num_levels
+
+        half_cell_mask_np = xp.zeros((num_cells, num_levels + 1), dtype=float)
+        full_cell_mask_np = xp.zeros((num_cells, num_levels),     dtype=float)
+        full_edge_mask_np = xp.zeros((num_edges, num_levels),     dtype=float)
+
+        grid_file = xr.open_dataset(grid_file_path)
+        cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
+        edge_x = xp.asarray(grid_file.edge_middle_cartesian_x.values)
+
+        x_inflow = xp.unique(cell_x)[1] # second cell centre from left
+        sponge_length = 20
+        for k in range(num_levels):
+            # inflow
+            full_cell_mask_np[:, k] = xp.where(cell_x <= x_inflow, 1.0, 0.0)
+            full_edge_mask_np[:, k] = xp.where(edge_x <= x_inflow, 1.0, 0.0)
+
+        half_cell_mask_np[:, :-1] = full_cell_mask_np
+        half_cell_mask_np[:, -1] = half_cell_mask_np[:, -2]
+
+
+        self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
+        self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
+        self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
+
 
     def compute_channel_fields(
         self,
