@@ -29,135 +29,6 @@ DO_CHANNEL = True
 DEBUG_LEVEL = 4
 
 
-def load_channel_data(
-    backend: gtx_backend.Backend,
-) -> tuple[
-    data_alloc.NDArray,
-    data_alloc.NDArray,
-]:
-    xp = data_alloc.import_array_ns(backend)
-
-    # Lee & Moser data: Re_tau = 5200
-    data = xp.loadtxt("../python-scripts/data/LeeMoser_chan5200.mean", skiprows=72)
-
-    channel_y = data[:, 0]
-    channel_U = data[:, 2] * 4.14872e-02  # <U> * u_tau (that's how it's normalized in the file)
-
-    return channel_y, channel_U
-
-
-def compute_channel_fields(
-    channel_y: data_alloc.NDArray,
-    channel_U: data_alloc.NDArray,
-    grid: icon_grid.IconGrid,
-    data_provider: sb.IconSerialDataProvider,
-    grid_savepoint: sb.IconGridSavepoint,
-    backend: gtx_backend.Backend,
-) -> tuple[
-    fa.EdgeKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-]:
-    channel_height = 100
-    nh_t0 = 300.0
-    nh_brunt_vais = 0.0
-
-    xp = data_alloc.import_array_ns(backend)
-
-    num_cells = grid.num_cells
-    num_edges = grid.num_edges
-    num_levels = grid.num_levels
-    edge_domain = h_grid.domain(dims.EdgeDim)
-    end_edge_lateral_boundary_level_2 = grid.end_index(
-        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-
-    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
-    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
-    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
-    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
-    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
-    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
-    geopot = data_provider.from_metrics_savepoint().geopot().ndarray
-    full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray
-
-    edge_geometry = grid_savepoint.construct_edge_geometry()
-    primal_normal_x = edge_geometry.primal_normal[0].ndarray
-    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
-    mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
-    mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
-    u0_mask = xp.repeat(
-        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
-        num_levels,
-        axis=1,
-    )
-
-    # Rescale the channel data to the ICON grid and mirror y to full channel height
-    channel_y = channel_y * channel_height / 2
-    channel_y = xp.concatenate((channel_y, channel_height - channel_y[::-1]), axis=0)
-    channel_U = xp.concatenate((channel_U, channel_U[::-1]), axis=0)
-
-    # Interpolate LM_u onto the ICON grid
-    nh_u0 = xp.zeros((num_edges, num_levels), dtype=float)
-    for j in range(num_levels):
-        LM_j = xp.argmin(
-            xp.abs(channel_y - full_level_heights[0, j])
-        )  # NOTE: full_level_heights should be identical for all edges because the channel is flat
-        nh_u0[:, j] = channel_U[LM_j] + xp.random.normal(loc=0, scale=0.05, size=num_edges)
-
-    u = xp.where(u0_mask, nh_u0, 0.0)
-    vn_ndarray = u * primal_normal_x
-
-    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
-
-    # ---------------------------------------------------------------------------
-    # The following is from the Gauss3D experiment
-
-    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-
-    # Vertical temperature profile
-    for k_index in range(num_levels - 1, -1, -1):
-        z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
-        # profile of theta is explicitly given
-        theta_v_ndarray[:, k_index] = nh_t0 * xp.exp(z_help)
-
-    # Lower boundary condition for exner pressure
-    if nh_brunt_vais != 0.0:
-        z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
-        exner_ndarray[:, num_levels - 1] = (
-            phy_const.GRAV / nh_brunt_vais
-        ) ** 2 / nh_t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
-    else:
-        exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
-
-    # Compute hydrostatically balanced exner, by integrating the (discretized!)
-    # 3rd equation of motion under the assumption thetav=const.
-    rho_ndarray, exner_ndarray = testcases_utils.hydrostatic_adjustment_constant_thetav_ndarray(
-        wgtfac_c,
-        ddqz_z_half,
-        exner_ref_mc,
-        d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
-        rho_ndarray,
-        exner_ndarray,
-        theta_v_ndarray,
-        num_levels,
-    )
-
-    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
-    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
-    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
-    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
-    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
-
-    return vn, w, rho, exner, theta_v
-
-
 class ChannelFlow:
     """
     Main class for channel flow
@@ -183,9 +54,9 @@ class ChannelFlow:
         )
         grid_savepoint = data_provider.from_savepoint_grid("aa", 0, 2)
 
-        self.channel_y, self.channel_U = load_channel_data(backend)
+        self.channel_y, self.channel_U = self.load_channel_data(backend)
 
-        self.vn, self.w, self.rho, self.exner, self.theta_v = compute_channel_fields(
+        self.vn, self.w, self.rho, self.exner, self.theta_v = self.compute_channel_fields(
             channel_y=self.channel_y,
             channel_U=self.channel_U,
             grid=grid,
@@ -195,6 +66,137 @@ class ChannelFlow:
         )
 
         log.info("Channel flow initialized")
+
+    def load_channel_data(
+        self,
+        backend: gtx_backend.Backend,
+    ) -> tuple[
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+    ]:
+        xp = data_alloc.import_array_ns(backend)
+
+        # Lee & Moser data: Re_tau = 5200
+        data = xp.loadtxt("../python-scripts/data/LeeMoser_chan5200.mean", skiprows=72)
+
+        channel_y = data[:, 0]
+        channel_U = data[:, 2] * 4.14872e-02  # <U> * u_tau (that's how it's normalized in the file)
+
+        return channel_y, channel_U
+
+    def compute_channel_fields(
+        self,
+        channel_y: data_alloc.NDArray,
+        channel_U: data_alloc.NDArray,
+        grid: icon_grid.IconGrid,
+        data_provider: sb.IconSerialDataProvider,
+        grid_savepoint: sb.IconGridSavepoint,
+        backend: gtx_backend.Backend,
+    ) -> tuple[
+        fa.EdgeKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+    ]:
+        channel_height = 100
+        nh_t0 = 300.0
+        nh_brunt_vais = 0.0
+
+        xp = data_alloc.import_array_ns(backend)
+
+        num_cells = grid.num_cells
+        num_edges = grid.num_edges
+        num_levels = grid.num_levels
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        end_edge_lateral_boundary_level_2 = grid.end_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+
+        wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
+        ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
+        theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
+        theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
+        exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+        d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
+        geopot = data_provider.from_metrics_savepoint().geopot().ndarray
+        full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray
+
+        edge_geometry = grid_savepoint.construct_edge_geometry()
+        primal_normal_x = edge_geometry.primal_normal[0].ndarray
+        primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
+        mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
+        mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
+        u0_mask = xp.repeat(
+            xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
+            num_levels,
+            axis=1,
+        )
+
+        # Rescale the channel data to the ICON grid and mirror y to full channel height
+        channel_y = channel_y * channel_height / 2
+        channel_y = xp.concatenate((channel_y, channel_height - channel_y[::-1]), axis=0)
+        channel_U = xp.concatenate((channel_U, channel_U[::-1]), axis=0)
+
+        # Interpolate LM_u onto the ICON grid
+        nh_u0 = xp.zeros((num_edges, num_levels), dtype=float)
+        for j in range(num_levels):
+            LM_j = xp.argmin(
+                xp.abs(channel_y - full_level_heights[0, j])
+            )  # NOTE: full_level_heights should be identical for all edges because the channel is flat
+            nh_u0[:, j] = channel_U[LM_j] + xp.random.normal(loc=0, scale=0.05, size=num_edges)
+
+        u = xp.where(u0_mask, nh_u0, 0.0)
+        vn_ndarray = u * primal_normal_x
+
+        w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+
+        # ---------------------------------------------------------------------------
+        # The following is from the Gauss3D experiment
+
+        theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+        exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+        rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+
+        # Vertical temperature profile
+        for k_index in range(num_levels - 1, -1, -1):
+            z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
+            # profile of theta is explicitly given
+            theta_v_ndarray[:, k_index] = nh_t0 * xp.exp(z_help)
+
+        # Lower boundary condition for exner pressure
+        if nh_brunt_vais != 0.0:
+            z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
+            exner_ndarray[:, num_levels - 1] = (
+                phy_const.GRAV / nh_brunt_vais
+            ) ** 2 / nh_t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
+        else:
+            exner_ndarray[:, num_levels - 1] = (
+                1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
+            )
+
+        # Compute hydrostatically balanced exner, by integrating the (discretized!)
+        # 3rd equation of motion under the assumption thetav=const.
+        rho_ndarray, exner_ndarray = testcases_utils.hydrostatic_adjustment_constant_thetav_ndarray(
+            wgtfac_c,
+            ddqz_z_half,
+            exner_ref_mc,
+            d_exner_dz_ref_ic,
+            theta_ref_mc,
+            theta_ref_ic,
+            rho_ndarray,
+            exner_ndarray,
+            theta_v_ndarray,
+            num_levels,
+        )
+
+        vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
+        w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
+        exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
+        rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
+        theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
+
+        return vn, w, rho, exner, theta_v
 
     def set_initial_conditions(
         self,
