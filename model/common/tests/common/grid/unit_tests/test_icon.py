@@ -276,7 +276,7 @@ def test_global_grid_params(
         num_cells,
         mean_cell_area,
     )
-    assert geometry_type == params.grid_params.geometry_type
+    assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
         assert icon.GridSubdivision(root=2, level=0) == params.grid_params.subdivision
     else:
