@@ -349,8 +349,6 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-
-
     def _construct_grid_distributed(
         self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
     ) -> icon.IconGrid:
@@ -387,7 +385,9 @@ class GridManager:
             dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
             dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
-            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V) # TODO this one is not used in the halo construction
+            dims.E2V: self._get_index_field(
+                gridfile.ConnectivityName.E2V
+            ),  # TODO this one is not used in the halo construction
         }
         # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
         halo_constructor = self._initialize_halo_constructor(
@@ -400,15 +400,14 @@ class GridManager:
 
         # TODO  first: read local neighbor tables and convert global to local indices
         # TODO: instead of reading shring existing one to local size and to global to local indices
-        #neighbor_tables = _reduce_to_rank_local_size(
-         #   neighbor_tables_for_halo_construction, decomposition_info
-        #)  # reduce locally? or read again
-        #edge_index = decomposition_info.global_index(dims.EdgeDim)
-        #neighbor_tables[dims.E2V] = self._get_index_field(
+        # neighbor_tables = _reduce_to_rank_local_size(
+        #   neighbor_tables_for_halo_construction, decomposition_info
+        # )  # reduce locally? or read again
+        # edge_index = decomposition_info.global_index(dims.EdgeDim)
+        # neighbor_tables[dims.E2V] = self._get_index_field(
         #    gridfile.ConnectivityName.E2V, indices=edge_index
-        #)
+        # )
         neighbor_tables = neighbor_tables_for_halo_construction
-
 
         _derived_connectivities = functools.partial(
             _get_derived_connectivities,
