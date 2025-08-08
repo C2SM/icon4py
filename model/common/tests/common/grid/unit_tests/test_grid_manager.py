@@ -36,17 +36,8 @@ except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
 
-from icon4py.model.testing.fixtures import (
-    backend,
-    data_provider,
-    download_ser_data,
-    grid_savepoint,
-    processor_props,
-    ranked_data_path,
-)
-
 from .. import utils
-
+from ..fixtures import *
 
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 

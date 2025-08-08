@@ -349,7 +349,9 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-    def _construct_grid_distributed(
+
+
+    def _construct_grid(
         self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
@@ -364,9 +366,16 @@ class GridManager:
         global_grid_size = self._read_full_grid_size()
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
         _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
         refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
         limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
+        grid_config = base.GridConfig(
+            horizontal_size=global_grid_size,
+            vertical_size=self._vertical_config.num_levels,
+            limited_area=limited_area,
+            keep_skip_values=with_skip_values,
+        )
 
         # DECOMPOSITION
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
@@ -376,7 +385,7 @@ class GridManager:
         )
         # HALO CONSTRUCTION
         # TODO: (magdalena) reduce the set of neighbor tables used in the halo construction
-        # TODO: (magdalena) this is all numpy currently!
+        # TODO: (magdalena) figure out where to do the host to device copies (xp.asarray...)
         neighbor_tables_for_halo_construction = {
             dims.C2E2C: cell_to_cell_neighbors,
             dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
@@ -385,43 +394,39 @@ class GridManager:
             dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
             dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
-            dims.E2V: self._get_index_field(
-                gridfile.ConnectivityName.E2V
-            ),  # TODO this one is not used in the halo construction
-        }
+            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
+                    }
         # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
         halo_constructor = self._initialize_halo_constructor(
             global_grid_size, neighbor_tables_for_halo_construction, backend
         )
         decomposition_info = halo_constructor(cells_to_rank_mapping)
+        self._decomposition_info = decomposition_info
+        my_cells = decomposition_info.global_index(dims.CellDim)
+        my_edges = decomposition_info.global_index(dims.EdgeDim)
+        my_vertices = decomposition_info.global_index(dims.VertexDim)
 
-        ## TODO from here do local reads (and halo exchanges!!)
+
+        ## TODO do local reads (and halo exchanges!!) FIX: my_cells etc are in 0 base python coding - reading from file fails...
+        ##
         # CONSTRUCT LOCAL PATCH
 
-        # TODO  first: read local neighbor tables and convert global to local indices
-        # TODO: instead of reading shring existing one to local size and to global to local indices
-        # neighbor_tables = _reduce_to_rank_local_size(
-        #   neighbor_tables_for_halo_construction, decomposition_info
-        # )  # reduce locally? or read again
-        # edge_index = decomposition_info.global_index(dims.EdgeDim)
-        # neighbor_tables[dims.E2V] = self._get_index_field(
-        #    gridfile.ConnectivityName.E2V, indices=edge_index
-        # )
-        neighbor_tables = neighbor_tables_for_halo_construction
+        if not self._run_properties.single_node():
+            neighbor_tables = {
+                k: decomposition_info.global_to_local(
+                k.target[0], v[decomposition_info.global_index(k.target[0])]
+                ) for k,v in neighbor_tables_for_halo_construction.items()
+            }
+        else:
+            neighbor_tables = neighbor_tables_for_halo_construction
 
-        _derived_connectivities = functools.partial(
-            _get_derived_connectivities,
-            array_ns=xp,
-        )
-        neighbor_tables.update(_derived_connectivities(neighbor_tables, array_ns=xp))
 
-        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
+        # COMPUTE remaining derived connectivities
+
+        neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
+        # TODO compute for local patch
         start, end, _ = self._read_start_end_indices()
-        grid_config = base.GridConfig(
-            horizontal_size=global_grid_size,
-            vertical_size=self._vertical_config.num_levels,
-            limited_area=limited_area,
-        )
+
         grid = icon.icon_grid(
             uuid_,
             allocator=backend,
@@ -434,64 +439,6 @@ class GridManager:
         )
         return grid
 
-    def _construct_grid(
-        self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
-    ) -> icon.IconGrid:
-        """Construct the grid topology from the icon grid file.
-
-        Reads connectivity fields from the grid file and constructs derived connectivities needed in
-        Icon4py from them. Adds constructed start/end index information to the grid.
-
-        """
-        xp = data_alloc.import_array_ns(backend)
-        refinement_fields = self._read_grid_refinement_fields(backend=backend)
-        limited_area = refinement.is_limited_area_grid(
-            refinement_fields[dims.CellDim].ndarray, array_ns=xp
-        )
-
-        num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
-        num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
-        num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
-        uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
-        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
-        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
-        grid_size = base.HorizontalGridSize(
-            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
-        )
-        config = base.GridConfig(
-            horizontal_size=grid_size,
-            vertical_size=self._vertical_config.num_levels,
-            limited_area=limited_area,
-            keep_skip_values=with_skip_values,
-        )
-
-        neighbor_tables = {
-            dims.C2E2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2E2C)),
-            dims.C2E: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2E)),
-            dims.E2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.E2C)),
-            dims.V2E: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E)),
-            dims.E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.E2V)),
-            dims.V2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2C)),
-            dims.C2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2V)),
-            dims.V2E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E2V)),
-        }
-        neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
-
-        start, end, _ = self._read_start_end_indices()
-        start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
-        end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
-
-        return icon.icon_grid(
-            id_=uuid_,
-            allocator=backend,
-            config=config,
-            neighbor_tables=neighbor_tables,
-            start_indices=start_indices,
-            end_indices=end_indices,
-            global_properties=global_params,
-            refinement_control=refinement_fields,
-        )
 
     def _get_index_field(
         self,
