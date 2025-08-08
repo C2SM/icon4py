@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
+from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 
@@ -146,3 +147,10 @@ SECOND_HALO_LINE = {
     dims.VertexDim: _VERTEX_SECOND_HALO_LINE,
     dims.EdgeDim: _EDGE_SECOND_HALO_LINE,
 }
+
+
+def assert_same_entries(
+    dim: gtx.Dimension, my_owned: np.ndarray, reference: dict[gtx.Dimension, dict], rank: int
+):
+    assert my_owned.size == len(reference[dim][rank])
+    assert np.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0

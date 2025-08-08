@@ -16,23 +16,13 @@ import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common.decomposition import definitions, halo
 from icon4py.model.common.grid import simple
 
-from . import utils
-from .mpi_tests.test_halo import assert_same_entries
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    SingleNodeExchange,
-    create_exchange,
-)
-from icon4py.model.testing.fixtures.datatest import (  # import fixtures form test_utils
-    backend,
-    data_provider,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
+
+from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     processor_props,
-    ranked_data_path,
+
 )
+from .. import utils
 
 
 @pytest.mark.datatest
@@ -125,4 +115,4 @@ def test_halo_constructor_decomposition_info_global_indices(dim, rank):
     assert np.setdiff1d(my_halo, utils.HALO[dim][props.rank], assume_unique=True).size == 0
     my_owned = decomp_info.global_index(dim, definitions.DecompositionInfo.EntryType.OWNED)
     print(f"rank {props.rank} owns {dim} : {my_owned} ")
-    assert_same_entries(dim, my_owned, utils.OWNED, props.rank)
+    utils.assert_same_entries(dim, my_owned, utils.OWNED, props.rank)

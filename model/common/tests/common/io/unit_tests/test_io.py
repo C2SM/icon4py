@@ -106,7 +106,7 @@ def test_io_monitor_create_output_path(test_path):
     monitor = IOMonitor(
         config,
         vertical_params,
-        test_io_utils.simple_grid.config.horizontal_config,
+        test_io_utils.simple_grid.config.horizontal_size,
         test_io_utils.grid_file,
         test_io_utils.simple_grid.id,
     )
@@ -129,7 +129,7 @@ def test_io_monitor_write_ugrid_file(test_path):
     monitor = IOMonitor(
         config,
         vertical_params,
-        test_io_utils.simple_grid.config.horizontal_config,
+        test_io_utils.simple_grid.config.horizontal_size,
         test_io_utils.grid_file,
         "simple_grid",
     )
@@ -172,7 +172,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     monitor = IOMonitor(
         config,
         vertical_params,
-        grid.config.horizontal_config,
+        grid.config.horizontal_size,
         test_io_utils.grid_file,
         grid.id,
     )

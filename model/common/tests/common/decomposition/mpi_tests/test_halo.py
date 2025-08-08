@@ -17,7 +17,7 @@ from icon4py.model.common import exceptions
 from icon4py.model.common.decomposition import definitions as defs, mpi_decomposition
 
 from .. import utils
-
+from ..utils import assert_same_entries
 
 try:
     import mpi4py  # import mpi4py to check for optional mpi dependency
@@ -37,13 +37,13 @@ from icon4py.model.common.grid import (
     simple,
     vertical as v_grid,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, helpers, definitions as test_defs
 
 
-UGRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
+UGRID_FILE = test_defs.grids_path().joinpath(dt_utils.R02B04_GLOBAL).joinpath(
     "icon_grid_0013_R02B04_R_ugrid.nc"
 )
-GRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
+GRID_FILE = test_defs.grids_path().joinpath(dt_utils.R02B04_GLOBAL).joinpath(
     "icon_grid_0013_R02B04_R.nc"
 )
 backend = None
@@ -182,13 +182,6 @@ def test_halo_constructor_decomposition_info_global_indices(
     my_owned = decomp_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"rank {processor_props.rank} owns {dim} : {my_owned} ")
     assert_same_entries(dim, my_owned, utils.OWNED, processor_props.rank)
-
-
-def assert_same_entries(
-    dim: gtx.Dimension, my_owned: np.ndarray, reference: dict[gtx.Dimension, dict], rank: int
-):
-    assert my_owned.size == len(reference[dim][rank])
-    assert np.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0
 
 
 @pytest.mark.mpi(min_size=4)
