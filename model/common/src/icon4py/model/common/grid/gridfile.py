@@ -251,7 +251,7 @@ class GridFile:
         return self._dataset.getncattr(name)
 
     def int_variable(
-        self, name: FieldName, indices: np.ndarray = None, transpose: bool = True
+        self, name: FieldName, indices: np.ndarray | None = None, transpose: bool = True
     ) -> np.ndarray:
         """Read a integer field from the grid file.
 
@@ -259,6 +259,7 @@ class GridFile:
 
         Args:
             name: name of the field to read
+            indices: list of indices to read
             transpose: flag to indicate whether the file should be transposed (for 2d fields)
         Returns:
             NDArray: field data
@@ -270,7 +271,7 @@ class GridFile:
     def variable(
         self,
         name: FieldName,
-        indices: np.ndarray = None,
+        indices: np.ndarray | None = None,
         transpose=False,
         dtype: np.dtype = gtx.float64,
     ) -> np.ndarray:

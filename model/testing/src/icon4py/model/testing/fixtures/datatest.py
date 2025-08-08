@@ -102,9 +102,11 @@ def experiment():
     return dt_utils.REGIONAL_EXPERIMENT
 
 
-@pytest.fixture(params=[False], scope="session")
+@pytest.fixture(scope="session", params=[False])
 def processor_props(request):
-    return dt_utils.get_processor_properties_for_run(decomposition.SingleNodeRun())
+    with_mpi = request.param
+    runtype = decomposition.get_runtype(with_mpi=with_mpi)
+    yield decomposition.get_processor_properties(runtype)
 
 
 @pytest.fixture(scope="session")
@@ -208,7 +210,9 @@ def icon_grid(
 
 
 @pytest.fixture
-def decomposition_info(data_provider, experiment):
+def decomposition_info(
+    data_provider: serialbox.IconSerialDataProvider, experiment: str
+) -> definitions.DecompositionInfo:
     root, level = dt_utils.get_global_grid_params(experiment)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(

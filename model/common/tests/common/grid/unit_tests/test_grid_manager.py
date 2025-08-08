@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as defs, halo
 from icon4py.model.common.grid import (
     grid_manager as gm,
     gridfile,
@@ -35,22 +36,14 @@ except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
 
-from icon4py.model.testing.fixtures import (
-    backend,
-    data_provider,
-    download_ser_data,
-    grid_savepoint,
-    processor_props,
-    ranked_data_path,
-)
-
 from .. import utils
-
+from ..fixtures import *
 
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
 ZERO_BASE = gm.ToZeroBasedIndexTransformation()
+vertical = v_grid.VerticalGridConfig(num_levels=80)
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -614,3 +607,41 @@ def test_edge_vertex_distance(grid_file, grid_savepoint, experiment, backend):
 def test_limited_area_on_grid(grid_file, expected):
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=None).grid
     assert expected == grid.limited_area
+
+
+# TODO move to mpi_tests folder
+@pytest.mark.mpi
+@pytest.mark.parametrize(
+    "field_offset",
+    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
+)
+def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
+    caplog.set_level(logging.INFO)
+    grid = utils.run_grid_manager(dt_utils.R02B04_GLOBAL, keep_skip_values=True, backend=None).grid
+    partitioner = halo.SimpleMetisDecomposer()
+    face_face_connectivity = grid.neighbor_tables[dims.C2E2CDim]
+    labels = partitioner(face_face_connectivity, n_part=processor_props.comm_size)
+    halo_generator = halo.IconLikeHaloConstructor(
+        connectivities=grid.neighbor_tables,
+        run_properties=processor_props,
+        num_levels=1,
+    )
+
+    decomposition_info = halo_generator(labels)
+
+    connectivity = gm.construct_local_connectivity(
+        field_offset, decomposition_info, connectivity=grid.neighbor_tables[field_offset.target[1]]
+    )
+    # there is an neighbor list for each index of the target dimension on the node
+    assert (
+        connectivity.shape[0]
+        == decomposition_info.global_index(
+            field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
+        ).size
+    )
+    # all neighbor indices are valid local indices
+    assert np.max(connectivity) == np.max(
+        decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
+    )
+    # TODO what else to assert?
+    # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)

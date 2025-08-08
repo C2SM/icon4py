@@ -5,22 +5,26 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 import logging
 import pathlib
 from types import ModuleType
-from typing import Literal, Optional, Protocol, TypeAlias, Union
+from typing import Callable, Literal, Optional, Protocol, TypeAlias, Union
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import numpy as np
 
-from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common import dimension as dims, exceptions, type_alias as ta, utils
+from icon4py.model.common.decomposition import definitions as decomposition, halo
+from icon4py.model.common.decomposition.halo import HaloConstructor
 from icon4py.model.common.grid import base, gridfile, icon, refinement, vertical as v_grid
+from icon4py.model.common.grid.base import HorizontalGridSize
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _log = logging.getLogger(__name__)
+_single_node_properties = decomposition.SingleNodeProcessProperties()
 
 
 class IconGridError(RuntimeError):
@@ -60,6 +64,21 @@ CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 
+# TODO delete?
+def _reduce_to_rank_local_size(
+    full_size_neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
+    decomposition_info: decomposition.DecompositionInfo,
+) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
+    def get_rank_local_values(k: gtx.FieldOffset, v: data_alloc.NDArray):
+        index_target_dim = k.source
+        index_source_dim = k.target[0]
+
+        index = decomposition_info.global_index(index_source_dim)
+        return v[index, :]
+
+    return {k: get_rank_local_values(k, v) for k, v in full_size_neighbor_tables.items()}
+
+
 class GridManager:
     """
     Read ICON grid file and set up grid topology, refinement information and geometry fields.
@@ -72,25 +91,30 @@ class GridManager:
 
     """
 
-    def __init__(
-        self,
-        transformation: IndexTransformation,
-        grid_file: Union[pathlib.Path, str],
-        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove to separate vertical and horizontal grid
-    ):
-        self._transformation = transformation
-        self._file_name = str(grid_file)
-        self._vertical_config = config
-        self._grid: Optional[icon.IconGrid] = None
-        self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
-        self._geometry: GeometryDict = {}
-        self._reader = None
-        self._coordinates: CoordinateDict = {}
-
     def open(self):
         """Open the gridfile resource for reading."""
         self._reader = gridfile.GridFile(self._file_name)
         self._reader.open()
+
+    def __init__(
+        self,
+        transformation: IndexTransformation,
+        grid_file: Union[pathlib.Path, str],
+        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove: - separate vertical from horizontal grid
+        decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
+        run_properties: decomposition.ProcessProperties = _single_node_properties,
+    ):
+        self._run_properties = run_properties
+        self._transformation = transformation
+        self._file_name = str(grid_file)
+        self._decompose = decomposer
+        self._halo_constructor = None
+        self._vertical_config = config
+        self._grid: Optional[icon.IconGrid] = None
+        self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
+        self._geometry: GeometryDict = {}
+        self._coordinates: CoordinateDict = {}
+        self._reader = None
 
     def close(self):
         """close the gridfile resource."""
@@ -109,9 +133,25 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
+    @utils.chainable  # TODO split into to functions
+    def set_decomposer(
+        self,
+        decomposer: Callable[[np.ndarray, int], np.ndarray],
+    ):
+        self._decompose = decomposer
+        self._validate_decomposer()
+
+    def _validate_decomposer(self):
+        if not self._decompose or (
+            isinstance(self._decompose, halo.SingleNodeDecomposer)
+            and not self._run_properties.single_node()
+        ):
+            raise exceptions.InvalidConfigError("Need a Decomposer for for multi node run.")
+
     def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool):
         if not self._reader:
             self.open()
+
         self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
@@ -309,6 +349,8 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
+
+
     def _construct_grid(
         self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
     ) -> icon.IconGrid:
@@ -319,60 +361,131 @@ class GridManager:
 
         """
         xp = data_alloc.import_array_ns(backend)
-        refinement_fields = self._read_grid_refinement_fields(backend=backend)
-        limited_area = refinement.is_limited_area_grid(
-            refinement_fields[dims.CellDim].ndarray, array_ns=xp
-        )
-
-        num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
-        num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
-        num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
+        ## FULL GRID PROPERTIES
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
+        global_grid_size = self._read_full_grid_size()
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
-        grid_size = base.HorizontalGridSize(
-            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
-        )
-        config = base.GridConfig(
-            horizontal_config=grid_size,
+        _determine_limited_area = functools.partial(refinement.is_limited_area_grid, array_ns=xp)
+        refinement_fields = functools.partial(self._read_grid_refinement_fields, backend=backend)()
+        limited_area = _determine_limited_area(refinement_fields[dims.CellDim].ndarray)
+        grid_config = base.GridConfig(
+            horizontal_size=global_grid_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )
 
-        neighbor_tables = {
-            dims.C2E2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2E2C)),
-            dims.C2E: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2E)),
-            dims.E2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.E2C)),
-            dims.V2E: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E)),
-            dims.E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.E2V)),
-            dims.V2C: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2C)),
-            dims.C2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.C2V)),
-            dims.V2E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E2V)),
-        }
+        # DECOMPOSITION
+        cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
+        cells_to_rank_mapping = self._decompose(
+            cell_to_cell_neighbors,
+            self._run_properties.comm_size,
+        )
+        # HALO CONSTRUCTION
+        # TODO: (magdalena) reduce the set of neighbor tables used in the halo construction
+        # TODO: (magdalena) figure out where to do the host to device copies (xp.asarray...)
+        neighbor_tables_for_halo_construction = {
+            dims.C2E2C: cell_to_cell_neighbors,
+            dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
+            dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C),
+            dims.V2E: self._get_index_field(gridfile.ConnectivityName.V2E),
+            dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
+            dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
+            dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
+            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
+                    }
+        # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
+        halo_constructor = self._initialize_halo_constructor(
+            global_grid_size, neighbor_tables_for_halo_construction, backend
+        )
+        decomposition_info = halo_constructor(cells_to_rank_mapping)
+        self._decomposition_info = decomposition_info
+        my_cells = decomposition_info.global_index(dims.CellDim)
+        my_edges = decomposition_info.global_index(dims.EdgeDim)
+        my_vertices = decomposition_info.global_index(dims.VertexDim)
+
+
+        ## TODO do local reads (and halo exchanges!!) FIX: my_cells etc are in 0 base python coding - reading from file fails...
+        ##
+        # CONSTRUCT LOCAL PATCH
+
+        if not self._run_properties.single_node():
+            neighbor_tables = {
+                k: decomposition_info.global_to_local(
+                k.target[0], v[decomposition_info.global_index(k.target[0])]
+                ) for k,v in neighbor_tables_for_halo_construction.items()
+            }
+        else:
+            neighbor_tables = neighbor_tables_for_halo_construction
+
+
+        # COMPUTE remaining derived connectivities
+
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
-
+        # TODO compute for local patch
         start, end, _ = self._read_start_end_indices()
-        start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
-        end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
 
-        return icon.icon_grid(
-            id_=uuid_,
+        grid = icon.icon_grid(
+            uuid_,
             allocator=backend,
-            config=config,
+            config=grid_config,
             neighbor_tables=neighbor_tables,
-            start_indices=start_indices,
-            end_indices=end_indices,
+            start_indices=start,
+            end_indices=end,
             global_properties=global_params,
             refinement_control=refinement_fields,
         )
+        return grid
 
-    def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
-        field = self._reader.int_variable(field, transpose=transpose)
+
+    def _get_index_field(
+        self,
+        field: gridfile.GridFileName,
+        indices: np.ndarray | None = None,
+        transpose=True,
+        apply_offset=True,
+    ):
+        field = self._reader.int_variable(field, indices=indices, transpose=transpose)
         if apply_offset:
             field = field + self._transformation(field)
         return field
+
+    def _read_full_grid_size(self) -> HorizontalGridSize:
+        """
+        Read the grid size propertes (cells, edges, vertices) from the grid file.
+
+        As the grid file contains the _full_ (non-distributed) grid, these are the sizes of prior to distribution.
+
+        """
+        num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
+        num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
+        num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
+        full_grid_size = base.HorizontalGridSize(
+            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
+        )
+        return full_grid_size
+
+    def _initialize_halo_constructor(
+        self,
+        grid_size: base.HorizontalGridSize,
+        connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
+        backend=Optional[gtx_backend.Backend],
+    ) -> HaloConstructor:
+        if self._run_properties.single_node():
+            return halo.NoHalos(
+                num_levels=self._vertical_config.num_levels,
+                horizontal_size=grid_size,
+                backend=backend,
+            )
+        else:
+            return halo.IconLikeHaloConstructor(
+                run_properties=self._run_properties,
+                connectivities=connectivities,
+                num_levels=self._vertical_config.num_levels,
+                backend=backend,
+            )
 
 
 def _get_derived_connectivities(
@@ -586,3 +699,52 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
         axis=0,
     )
     return patched_ar
+
+
+def construct_local_connectivity(
+    field_offset: gtx.FieldOffset,
+    decomposition_info: decomposition.DecompositionInfo,
+    connectivity: np.ndarray,
+) -> np.ndarray:
+    """
+    Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
+
+    Starting from the connectivity table on the global grid
+    - we reduce it to the lines for the locally present entries of the the target dimension
+    - the reduced connectivity then still maps to global source dimension indices:
+        we replace those source dimension indices not present on the node to SKIP_VALUE and replace the rest with the local indices
+
+    Args:
+        field_offset: FieldOffset for which we want to construct the local connectivity table
+        decomposition_info: DecompositionInfo for the current rank.
+        connectivity:
+
+    Returns:
+        connectivity are for the same FieldOffset but mapping from local target dimension indices to local source dimension indices.
+    """
+    source_dim = field_offset.source
+    target_dim = field_offset.target[0]
+    sliced_connectivity = connectivity[
+        decomposition_info.global_index(target_dim, decomposition.DecompositionInfo.EntryType.ALL)
+    ]
+
+    global_idx = decomposition_info.global_index(
+        source_dim, decomposition.DecompositionInfo.EntryType.ALL
+    )
+
+    # replace indices in the connectivity that do not exist on the local node by the SKIP_VALUE (those are for example neighbors of the outermost halo points)
+    local_connectivity = np.where(
+        np.isin(sliced_connectivity, global_idx),
+        sliced_connectivity,
+        gridfile.GridFile.INVALID_INDEX,
+    )
+
+    # map to local source indices
+    sorted_index_of_global_idx = np.argsort(global_idx)
+    global_idx_sorted = global_idx[sorted_index_of_global_idx]
+    for i in np.arange(local_connectivity.shape[0]):
+        valid_neighbor_mask = local_connectivity[i, :] != gridfile.GridFile.INVALID_INDEX
+        positions = np.searchsorted(global_idx_sorted, local_connectivity[i, valid_neighbor_mask])
+        indices = sorted_index_of_global_idx[positions]
+        local_connectivity[i, valid_neighbor_mask] = indices
+    return local_connectivity
