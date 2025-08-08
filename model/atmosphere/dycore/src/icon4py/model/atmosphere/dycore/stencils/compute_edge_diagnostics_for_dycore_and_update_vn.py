@@ -146,12 +146,12 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         )
     )
 
-    # --> IBM
+    #---> IBM
     ddx_perturbed_rho = where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_rho)
     ddy_perturbed_rho = where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_rho)
     ddx_perturbed_theta_v = where(ibm_green_gauss_gradient_mask, 0.0, ddx_perturbed_theta_v)
     ddy_perturbed_theta_v = where(ibm_green_gauss_gradient_mask, 0.0, ddy_perturbed_theta_v)
-    # <-- IBM
+    #<--- IBM
 
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = (
         concat_where(
