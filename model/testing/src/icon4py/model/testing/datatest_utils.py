@@ -107,7 +107,7 @@ def guess_grid_type(experiment: str) -> icon.GridType:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
         return icon.GridType(
             geometry_type=base.GeometryType.ICOSAHEDRON,
-            subdivision=icon.GridSubdivisionParams(root=root, level=level),
+            subdivision=icon.GridSubdivision(root=root, level=level),
         )
     except AttributeError as err:
         raise ValueError(

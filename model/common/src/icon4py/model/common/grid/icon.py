@@ -35,9 +35,8 @@ CONNECTIVITIES_ON_BOUNDARIES = (
 CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 
-# TODO: name
 @dataclasses.dataclass(frozen=True, kw_only=True)
-class GridSubdivisionParams:
+class GridSubdivision:
     root: int
     level: int
 
@@ -46,12 +45,12 @@ class GridSubdivisionParams:
 @dataclasses.dataclass(kw_only=True)  # TODO: frozen?
 class GridType:
     geometry_type: base.GeometryType
-    subdivision: GridSubdivisionParams
+    subdivision: GridSubdivision
 
     def __init__(
         self,
         geometry_type: Optional[base.GeometryType] = None,
-        subdivision: Optional[GridSubdivisionParams] = None,
+        subdivision: Optional[GridSubdivision] = None,
     ) -> None:
         if geometry_type is None and subdivision is None:
             raise ValueError("Either geometry_type or subdivision must be provided")
@@ -76,7 +75,7 @@ class GridType:
                 case base.GeometryType.TORUS:
                     if subdivision is None:
                         # This is convention
-                        subdivision = GridSubdivisionParams(root=2, level=0)
+                        subdivision = GridSubdivision(root=2, level=0)
                     else:
                         if subdivision.root != 2 or subdivision.level != 0:
                             raise ValueError(
@@ -176,11 +175,11 @@ class GlobalGridParams:
         return self._mean_cell_area
 
 
-def compute_icosahedron_num_cells(subdivision: GridSubdivisionParams) -> int:
+def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:
     return 20 * subdivision.root**2 * 4**subdivision.level
 
 
-def compute_torus_num_cells(subdivision: GridSubdivisionParams) -> int:
+def compute_torus_num_cells(subdivision: GridSubdivision) -> int:
     return 20 * subdivision.root**2 * 4**subdivision.level
 
 

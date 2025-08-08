@@ -336,7 +336,7 @@ class GridManager:
         global_params = icon.GlobalGridParams(
             icon.GridType(
                 geometry_type=geometry_type,
-                subdivision=icon.GridSubdivisionParams(root=grid_root, level=grid_level),
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             )
         )
         grid_size = base.HorizontalGridSize(

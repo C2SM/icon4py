@@ -268,7 +268,7 @@ def test_global_grid_params(
     params = icon.GlobalGridParams(
         icon.GridType(
             geometry_type=geometry_type,
-            subdivision=icon.GridSubdivisionParams(root=grid_root, level=grid_level),
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         ),
         num_cells,
         mean_cell_area,
@@ -294,7 +294,7 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells
         _ = icon.GlobalGridParams(
             icon.GridType(
                 geometry_type=geometry_type,
-                subdivision=icon.GridSubdivisionParams(root=grid_root, level=grid_level),
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             ),
             mean_cell_area,
             num_cells,
@@ -324,7 +324,7 @@ def test_global_grid_params_from_mean_cell_area(
         num_cells=num_cells,
         grid_type=icon.GridType(
             geometry_type=geometry_type,
-            subdivision=icon.GridSubdivisionParams(root=grid_root, level=grid_level),
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         )
         if grid_root is not None and grid_level is not None
         else None,
