@@ -179,10 +179,6 @@ def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:
     return 20 * subdivision.root**2 * 4**subdivision.level
 
 
-def compute_torus_num_cells(subdivision: GridSubdivision) -> int:
-    return 20 * subdivision.root**2 * 4**subdivision.level
-
-
 def compute_mean_cell_area_for_sphere(radius, num_cells) -> float:
     """
     Compute the mean cell area.
