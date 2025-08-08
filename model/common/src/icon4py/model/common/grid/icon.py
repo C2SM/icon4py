@@ -69,7 +69,7 @@ class GridParams:
 
                     if subdivision.root < 1 or subdivision.level < 0:
                         raise ValueError(
-                            f"Root must be >= 1 and level must be >= 0 for icosahedron geometry type, got {subdivision.root=} and {subdivision.level=}"
+                            f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
                         )
                 case base.GeometryType.TORUS:
                     if subdivision is None:
@@ -77,7 +77,7 @@ class GridParams:
                     else:
                         if subdivision.root != 2 or subdivision.level != 0:
                             raise ValueError(
-                                f"For torus geometry type, root must be 0 and level must be 2, got {subdivision.root=} and {subdivision.level=}"
+                                f"For torus geometry type, root must be 2 and level must be 0, got {subdivision.root=} and {subdivision.level=}"
                             )
                 case _:
                     raise ValueError(f"Unknown geometry type {geometry_type}")
@@ -87,7 +87,7 @@ class GridParams:
             else:
                 if subdivision.root < 1 or subdivision.level < 0:
                     raise ValueError(
-                        f"Root must be >= 1 and level must be >= 0 if geometry_type is not specified (assuming icosahedron), got {subdivision.root=} and {subdivision.level=}"
+                        f"If geometry_type is not specified (assuming icosahedron), root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
                     )
                 geometry_type = base.GeometryType.ICOSAHEDRON
 
