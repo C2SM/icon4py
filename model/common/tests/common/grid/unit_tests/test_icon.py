@@ -266,7 +266,7 @@ def test_global_grid_params(
     expected_mean_cell_area,
 ):
     params = icon.GlobalGridParams(
-        icon.GridType(
+        icon.GridParams(
             geometry_type=geometry_type,
             subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         ),
@@ -292,7 +292,7 @@ def test_global_grid_params(
 def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells, mean_cell_area):
     with pytest.raises(ValueError) as e:
         _ = icon.GlobalGridParams(
-            icon.GridType(
+            icon.GridParams(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             ),
@@ -322,7 +322,7 @@ def test_global_grid_params_from_mean_cell_area(
     params = icon.GlobalGridParams.from_mean_cell_area(
         mean_cell_area,
         num_cells=num_cells,
-        grid_type=icon.GridType(
+        grid_params=icon.GridParams(
             geometry_type=geometry_type,
             subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         )

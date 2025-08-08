@@ -334,7 +334,7 @@ class GridManager:
         if geometry_type:
             geometry_type = base.GeometryType(geometry_type)
         global_params = icon.GlobalGridParams(
-            icon.GridType(
+            icon.GridParams(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             )

@@ -147,13 +147,13 @@ class IconGridSavepoint(IconSavepoint):
         ser: serialbox.Serializer,
         grid_id: uuid.UUID,
         size: dict,
-        grid_type: icon.GridType,
+        grid_params: icon.GridParams,
         backend: Optional[gtx_backend.Backend],
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
         self.global_grid_params = icon.GlobalGridParams.from_mean_cell_area(
-            self.mean_cell_area(), grid_type
+            self.mean_cell_area(), grid_params
         )
 
     def verts_vertex_lat(self):
@@ -1802,7 +1802,7 @@ class IconSerialDataProvider:
         return grid_sizes
 
     def from_savepoint_grid(
-        self, grid_id: uuid.UUID, grid_type: icon.GridType
+        self, grid_id: uuid.UUID, grid_params: icon.GridParams
     ) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
@@ -1810,7 +1810,7 @@ class IconSerialDataProvider:
             self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
-            grid_type=grid_type,
+            grid_params=grid_params,
             backend=self.backend,
         )
 
