@@ -11,7 +11,7 @@ include:
     - if: $COMPONENT == 'common' && $BACKEND == 'gtfn_gpu' && $LEVEL == 'integration'
       variables:
         SLURM_TIMELIMIT: '01:30:00'
-        NUM_PROCESSES: 4
+        NUM_PROCESSES: 2
     - when: on_success
   parallel:
     matrix:
