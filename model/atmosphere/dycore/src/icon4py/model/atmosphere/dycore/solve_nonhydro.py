@@ -414,6 +414,7 @@ class SolveNonhydro:
         owner_mask: fa.CellField[bool],
         backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        extras: dict = {},
     ):
         self._exchange = exchange
         self._backend = backend
@@ -668,6 +669,11 @@ class SolveNonhydro:
 
         self.p_test_run = True
 
+        #---> Channel
+        if "channel" in extras:
+            self._channel = extras["channel"]
+        #<--- Channel
+
     def _allocate_local_fields(self):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
@@ -899,6 +905,32 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
             )
 
+        #---> Channel
+        if at_initial_timestep and at_first_substep:
+            log.info(" ***Channel fixing initial condition")
+            (
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            ) = self._channel.set_initial_conditions()
+        else:
+            (
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            ) = self._channel.set_boundary_conditions(
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            )
+        #<--- Channel
+
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -907,6 +939,22 @@ class SolveNonhydro:
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
         )
+
+        #---> Channel
+        (
+            prognostic_states.current.vn,
+            prognostic_states.current.w,
+            prognostic_states.current.rho,
+            prognostic_states.current.exner,
+            prognostic_states.current.theta_v,
+        ) = self._channel.set_boundary_conditions(
+            prognostic_states.current.vn,
+            prognostic_states.current.w,
+            prognostic_states.current.rho,
+            prognostic_states.current.exner,
+            prognostic_states.current.theta_v,
+        )
+        #<--- Channel
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,

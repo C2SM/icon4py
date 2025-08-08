@@ -6,33 +6,52 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
+
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
     field_type_aliases as fa,
     type_alias as ta,
 )
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import utils as testcases_utils
+from icon4py.model.testing import serialbox as sb
 
 
-def load_initial_condition(
-    num_cells: int,
-    num_edges: int,
-    num_levels: int,
-    full_level_heights: data_alloc.NDArray,
-    wgtfac_c: data_alloc.NDArray,
-    ddqz_z_half: data_alloc.NDArray,
-    exner_ref_mc: data_alloc.NDArray,
-    d_exner_dz_ref_ic: data_alloc.NDArray,
-    theta_ref_mc: data_alloc.NDArray,
-    theta_ref_ic: data_alloc.NDArray,
-    geopot: data_alloc.NDArray,
-    primal_normal_x: data_alloc.NDArray,
-    u0_mask: data_alloc.NDArray,
+log = logging.getLogger(__name__)
+
+DO_CHANNEL = True
+DEBUG_LEVEL = 4
+
+
+def load_channel_data(
+    backend: gtx_backend.Backend,
+) -> tuple[
+    data_alloc.NDArray,
+    data_alloc.NDArray,
+]:
+    xp = data_alloc.import_array_ns(backend)
+
+    # Lee & Moser data: Re_tau = 5200
+    data = xp.loadtxt("../python-scripts/data/LeeMoser_chan5200.mean", skiprows=72)
+
+    channel_y = data[:, 0]
+    channel_U = data[:, 2] * 4.14872e-02  # <U> * u_tau (that's how it's normalized in the file)
+
+    return channel_y, channel_U
+
+
+def compute_channel_fields(
+    channel_y: data_alloc.NDArray,
+    channel_U: data_alloc.NDArray,
+    grid: icon_grid.IconGrid,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_backend.Backend,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
@@ -41,36 +60,59 @@ def load_initial_condition(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
+    channel_height = 100
+    nh_t0 = 300.0
+    nh_brunt_vais = 0.0
 
     xp = data_alloc.import_array_ns(backend)
 
-    # Lee & Moser data: Re_tau = 5200
-    data = xp.loadtxt("../python-scripts/data/LeeMoser_chan5200.mean", skiprows=72)
-    #
-    nh_t0 = 300.0
-    nh_brunt_vais = 0.0
-    channel_height = 100
+    num_cells = grid.num_cells
+    num_edges = grid.num_edges
+    num_levels = grid.num_levels
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    end_edge_lateral_boundary_level_2 = grid.end_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
 
-    LM_y = data[:,0]
-    LM_u = data[:,2] * 4.14872e-02 # <U> * u_tau (that's how it's normalized in the file)
+    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
+    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
+    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
+    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
+    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
+    geopot = data_provider.from_metrics_savepoint().geopot().ndarray
+    full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray
 
-    # Rescale to the ICON grid and mirror y to full channel height
-    LM_y = LM_y * channel_height / 2
-    LM_y = xp.concatenate((LM_y, channel_height - LM_y[::-1]), axis=0)
-    LM_u = xp.concatenate((LM_u,                  LM_u[::-1]), axis=0)
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    primal_normal_x = edge_geometry.primal_normal[0].ndarray
+    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
+    mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
+    mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
+    u0_mask = xp.repeat(
+        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
+        num_levels,
+        axis=1,
+    )
+
+    # Rescale the channel data to the ICON grid and mirror y to full channel height
+    channel_y = channel_y * channel_height / 2
+    channel_y = xp.concatenate((channel_y, channel_height - channel_y[::-1]), axis=0)
+    channel_U = xp.concatenate((channel_U, channel_U[::-1]), axis=0)
 
     # Interpolate LM_u onto the ICON grid
     nh_u0 = xp.zeros((num_edges, num_levels), dtype=float)
     for j in range(num_levels):
-        LM_j = xp.argmin(xp.abs(LM_y - full_level_heights[0,j])) # NOTE: full_level_heights should be identical for all edges because the channel is flat
-        nh_u0[:, j] = LM_u[LM_j] + xp.random.normal(loc=0, scale=0.05, size=num_edges)
+        LM_j = xp.argmin(
+            xp.abs(channel_y - full_level_heights[0, j])
+        )  # NOTE: full_level_heights should be identical for all edges because the channel is flat
+        nh_u0[:, j] = channel_U[LM_j] + xp.random.normal(loc=0, scale=0.05, size=num_edges)
 
     u = xp.where(u0_mask, nh_u0, 0.0)
     vn_ndarray = u * primal_normal_x
 
     w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
 
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # The following is from the Gauss3D experiment
 
     theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
@@ -113,4 +155,76 @@ def load_initial_condition(
     rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
     theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
 
-    return vn, w, exner, rho, theta_v
+    return vn, w, rho, exner, theta_v
+
+
+class ChannelFlow:
+    """
+    Main class for channel flow
+    """
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        savepoint_path: str,
+        grid_file_path: str,
+        backend: gtx_backend.Backend = gtx.gtfn_cpu,
+    ):
+        """
+        Initialize the channel
+        """
+        self.DO_CHANNEL = DO_CHANNEL
+        self.DEBUG_LEVEL = DEBUG_LEVEL
+
+        data_provider = sb.IconSerialDataProvider(
+            backend=backend,
+            fname_prefix="icon_pydycore",
+            path=savepoint_path,
+        )
+        grid_savepoint = data_provider.from_savepoint_grid("aa", 0, 2)
+
+        self.channel_y, self.channel_U = load_channel_data(backend)
+
+        self.vn, self.w, self.rho, self.exner, self.theta_v = compute_channel_fields(
+            channel_y=self.channel_y,
+            channel_U=self.channel_U,
+            grid=grid,
+            data_provider=data_provider,
+            grid_savepoint=grid_savepoint,
+            backend=backend,
+        )
+
+        log.info("Channel flow initialized")
+
+    def set_initial_conditions(
+        self,
+    ) -> tuple[
+        fa.EdgeKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+    ]:
+        """
+        Set the initial conditions for the channel flow
+        """
+        return self.vn, self.w, self.rho, self.exner, self.theta_v
+
+    def set_boundary_conditions(
+        self,
+        vn: fa.EdgeKField[ta.wpfloat],
+        w: fa.CellKField[ta.wpfloat],
+        rho: fa.CellKField[ta.wpfloat],
+        exner: fa.CellKField[ta.wpfloat],
+        theta_v: fa.CellKField[ta.wpfloat],
+    ) -> tuple[
+        fa.EdgeKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+    ]:
+        """
+        Set the boundary conditions for the channel flow
+        """
+        return vn, w, rho, exner, theta_v

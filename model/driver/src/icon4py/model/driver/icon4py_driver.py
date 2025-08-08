@@ -32,6 +32,7 @@ from icon4py.model.driver import (
     initialization_utils as driver_init,
 )
 
+from icon4py.model.driver.testcases import channel
 import pickle, os
 PLOT_IMGS_DIR = os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output")
 
@@ -143,6 +144,8 @@ class TimeLoop:
                 prognostic_states.current,
                 self.dtime_in_seconds,
             )
+
+        #---> Channel
         state_dict = {
             "vn": prognostic_states.current.vn.asnumpy(),
             "w": prognostic_states.current.w.asnumpy(),
@@ -154,6 +157,8 @@ class TimeLoop:
         with open(file_name, "wb") as f:
             pickle.dump(state_dict, f)
             log.debug(f"PLOTS: saved {file_name}")
+        #<--- Channel
+
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
@@ -191,6 +196,7 @@ class TimeLoop:
             device_utils.sync(self.run_config.backend)
             timer.capture()
 
+            #---> Channel
             if time_step % 25 == 0:
                 state_dict = {
                     "vn": prognostic_states.current.vn.asnumpy(),
@@ -203,6 +209,7 @@ class TimeLoop:
                 with open(file_name, "wb") as f:
                     pickle.dump(state_dict, f)
                     log.debug(f"PLOTS: saved {file_name}")
+            #<--- Channel
 
             self._is_first_step_in_simulation = False
 
@@ -447,6 +454,20 @@ def initialize(
         ser_type=serialization_type,
     )
 
+    #---> Channel
+    import os
+    savepoint_path = os.environ.get("ICON4PY_SAVEPOINT_PATH", "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data")
+    grid_file_path = os.environ.get("ICON4PY_GRID_FILE_PATH", "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc")
+    _channel = channel.ChannelFlow(
+        grid=icon_grid,
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        backend = config.run_config.backend,
+        )
+    #<--- Channel
+
+
+
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
@@ -476,6 +497,9 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        extras={
+            "channel": _channel,
+        }
     )
 
     (
