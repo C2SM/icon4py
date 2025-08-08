@@ -1054,8 +1054,8 @@ class SolveNonhydro:
         )
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
-            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,  # TODO
-            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,  # TODO
+            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
+            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
