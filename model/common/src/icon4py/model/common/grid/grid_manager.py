@@ -349,7 +349,9 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-    def _construct_grid(
+
+
+    def _construct_grid_distributed(
         self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
@@ -385,6 +387,7 @@ class GridManager:
             dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
             dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
+            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V) # TODO this one is not used in the halo construction
         }
         # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
         halo_constructor = self._initialize_halo_constructor(
@@ -397,19 +400,21 @@ class GridManager:
 
         # TODO  first: read local neighbor tables and convert global to local indices
         # TODO: instead of reading shring existing one to local size and to global to local indices
-        neighbor_tables = _reduce_to_rank_local_size(
-            neighbor_tables_for_halo_construction, decomposition_info
-        )  # reduce locally? or read again
-        edge_index = decomposition_info.global_index(dims.EdgeDim)
-        neighbor_tables[dims.E2V] = self._get_index_field(
-            gridfile.ConnectivityName.E2V, indices=edge_index
-        )
-        neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
+        #neighbor_tables = _reduce_to_rank_local_size(
+         #   neighbor_tables_for_halo_construction, decomposition_info
+        #)  # reduce locally? or read again
+        #edge_index = decomposition_info.global_index(dims.EdgeDim)
+        #neighbor_tables[dims.E2V] = self._get_index_field(
+        #    gridfile.ConnectivityName.E2V, indices=edge_index
+        #)
+        neighbor_tables = neighbor_tables_for_halo_construction
+
 
         _derived_connectivities = functools.partial(
             _get_derived_connectivities,
             array_ns=xp,
         )
+        neighbor_tables.update(_derived_connectivities(neighbor_tables, array_ns=xp))
 
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
         start, end, _ = self._read_start_end_indices()
@@ -430,30 +435,31 @@ class GridManager:
         )
         return grid
 
-    def _initialize_global(
-        self, with_skip_values: bool, limited_area: bool, backend: gtx_backend.Backend
+    def _construct_grid(
+        self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
     ) -> icon.IconGrid:
-        """
-        Read basic information from the grid file:
-        Mostly reads global grid file parameters and dimensions.
+        """Construct the grid topology from the icon grid file.
 
-        Args:
-            with_skip_values: bool whether or not to remove skip values in neighbor tables
-            limited_area: bool whether or not the produced grid is a limited area grid.
-            # TODO (@halungge) this is not directly encoded in the grid, which is why we passed it in. It could be determined from the refinement fields though.
-
-            on_gpu: bool, whether or not we run on GPU. # TODO (@halungge) can this be removed and defined differently.
-
-        Returns:
-            IconGrid: basic grid, setup only with id and config information.
+        Reads connectivity fields from the grid file and constructs derived connectivities needed in
+        Icon4py from them. Adds constructed start/end index information to the grid.
 
         """
         xp = data_alloc.import_array_ns(backend)
-        grid_size = self._read_full_grid_size()
+        refinement_fields = self._read_grid_refinement_fields(backend=backend)
+        limited_area = refinement.is_limited_area_grid(
+            refinement_fields[dims.CellDim].ndarray, array_ns=xp
+        )
+
+        num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
+        num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
+        num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
+        grid_size = base.HorizontalGridSize(
+            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
+        )
         config = base.GridConfig(
             horizontal_size=grid_size,
             vertical_size=self._vertical_config.num_levels,
@@ -474,10 +480,8 @@ class GridManager:
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
         start, end, _ = self._read_start_end_indices()
-        # TODO is this necessary?
         start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
         end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
-        refinement_fields = self._read_grid_refinement_fields()
 
         return icon.icon_grid(
             id_=uuid_,
