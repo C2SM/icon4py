@@ -29,7 +29,6 @@ from icon4py.model.common.decomposition import definitions, mpi_decomposition
 _log = logging.getLogger(__name__)
 
 
-
 """
 running tests with mpi:
 
@@ -203,16 +202,6 @@ def test_create_multi_node_runtime_with_mpi(
         assert isinstance(exchange, mpi_decomposition.GHexMultiNodeExchange)
     else:
         assert isinstance(exchange, definitions.SingleNodeExchange)
-
-
-@pytest.mark.parametrize("processor_props", [False], indirect=True)
-@pytest.mark.mpi_skip()
-def test_create_single_node_runtime_without_mpi(
-    processor_props,
-    decomposition_info,
-):
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
-    assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
 @pytest.mark.mpi

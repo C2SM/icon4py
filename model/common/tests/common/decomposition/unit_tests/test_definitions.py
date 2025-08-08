@@ -17,13 +17,12 @@ from icon4py.model.common.decomposition import definitions, halo
 from icon4py.model.common.grid import simple
 
 
-
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-@pytest.mark.datatest
-def test_create_single_node_runtime_without_mpi(icon_grid, processor_props):  # fixture
+@pytest.mark.parametrize("processor_props", [False], indirect=True)
+def test_create_single_node_runtime_without_mpi(processor_props):  # fixture
     decomposition_info = definitions.DecompositionInfo(
         klevels=10,
     )

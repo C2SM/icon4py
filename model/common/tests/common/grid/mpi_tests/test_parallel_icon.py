@@ -14,11 +14,11 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.testing.parallel_helpers import (
     check_comm_size,
-    processor_props,
 )
 from icon4py.model.testing import parallel_helpers
 
 from .. import utils
+from .. import fixtures  # noqa F403
 
 
 try:

@@ -41,11 +41,13 @@ from icon4py.model.common.grid import (
 from icon4py.model.testing import datatest_utils as dt_utils, helpers, definitions as test_defs
 
 
-UGRID_FILE = test_defs.grids_path().joinpath(dt_utils.R02B04_GLOBAL).joinpath(
-    "icon_grid_0013_R02B04_R_ugrid.nc"
+UGRID_FILE = (
+    test_defs.grids_path()
+    .joinpath(dt_utils.R02B04_GLOBAL)
+    .joinpath("icon_grid_0013_R02B04_R_ugrid.nc")
 )
-GRID_FILE = test_defs.grids_path().joinpath(dt_utils.R02B04_GLOBAL).joinpath(
-    "icon_grid_0013_R02B04_R.nc"
+GRID_FILE = (
+    test_defs.grids_path().joinpath(dt_utils.R02B04_GLOBAL).joinpath("icon_grid_0013_R02B04_R.nc")
 )
 backend = None
 
