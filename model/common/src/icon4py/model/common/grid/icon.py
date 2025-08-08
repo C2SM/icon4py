@@ -73,7 +73,6 @@ class GridParams:
                         )
                 case base.GeometryType.TORUS:
                     if subdivision is None:
-                        # This is convention
                         subdivision = GridSubdivision(root=2, level=0)
                     else:
                         if subdivision.root != 2 or subdivision.level != 0:
