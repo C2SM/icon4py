@@ -254,6 +254,7 @@ def _sphere_area(radius: float) -> float:
         (base.GeometryType.ICOSAHEDRON, 4, 9, None, 123.456, 83886080, 123.456),
         (base.GeometryType.ICOSAHEDRON, 4, 9, 42, None, 42, 12145265243042.658),
         (base.GeometryType.TORUS, 2, 0, 42, None, 42, None),
+        (base.GeometryType.TORUS, None, None, 42, None, 42, None),
     ],
 )
 def test_global_grid_params(
@@ -268,11 +269,20 @@ def test_global_grid_params(
     params = icon.GlobalGridParams(
         icon.GridParams(
             geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)
+            if grid_root is not None
+            else None,
         ),
         num_cells,
         mean_cell_area,
     )
+    assert geometry_type == params.grid_params.geometry_type
+    if geometry_type == base.GeometryType.TORUS:
+        assert icon.GridSubdivision(root=2, level=0) == params.grid_params.subdivision
+    else:
+        assert (
+            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_params.subdivision
+        )
     assert expected_num_cells == params.num_cells
     if geometry_type == base.GeometryType.TORUS:
         with pytest.raises(NotImplementedError) as e:
