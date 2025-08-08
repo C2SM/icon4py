@@ -39,9 +39,9 @@ test_tools_datatests_aarch64:
   script:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
-    - if: $COMPONENT == 'common' && $BACKEND == 'gtfn_gpu' && $LEVEL == 'integration'
+    - if: $COMPONENT == 'common' && $LEVEL == 'integration'
       variables:
-        SLURM_TIMELIMIT: '01:30:00'
+        NUM_PROCESSES: 1
     - if: $BACKEND == 'embedded'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
