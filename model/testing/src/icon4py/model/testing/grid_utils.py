@@ -79,6 +79,10 @@ def _file_name(grid_file: str):
             return "mch_opr_r4b7_DOM01.nc"
         case dt_utils.REGIONAL_BENCHMARK:
             return "domain1_DOM01.nc"
+        case dt_utils.GAUSS3D_EXPERIMENT:
+            return "Torus_Triangles_50000m_x_5000m_res500m.nc"
+        case dt_utils.WEISMAN_KLEMP_EXPERIMENT:
+            return "Torus_Triangles_50000m_x_5000m_res500m.nc"
         case _:
             raise NotImplementedError(f"Add grid path for experiment '{grid_file}'")
 
