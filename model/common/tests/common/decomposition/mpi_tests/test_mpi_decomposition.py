@@ -11,6 +11,7 @@ import pytest
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import parallel_helpers
+from ..fixtures import *  # noqa: F403
 
 
 try:
@@ -27,16 +28,6 @@ from icon4py.model.common.decomposition import definitions, mpi_decomposition
 
 _log = logging.getLogger(__name__)
 
-
-from icon4py.model.testing.fixtures.datatest import (  # import fixtures from test_utils
-    decomposition_info,
-    grid_savepoint,
-    icon_grid,
-    metrics_savepoint,
-)
-from icon4py.model.testing.parallel_helpers import (
-    processor_props,
-)
 
 
 """

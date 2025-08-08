@@ -210,7 +210,7 @@ def icon_grid(
 
 
 @pytest.fixture
-def decomposition_info(data_provider, experiment):
+def decomposition_info(data_provider:serialbox.IconSerialDataProvider, experiment:str)->definitions.DecompositionInfo:
     root, level = dt_utils.get_global_grid_params(experiment)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(

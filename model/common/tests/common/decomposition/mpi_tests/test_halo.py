@@ -11,6 +11,7 @@ import pathlib
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from ..fixtures import *  # noqa: F403
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.common import exceptions

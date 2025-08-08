@@ -94,6 +94,7 @@ class DecompositionInfo:
     ):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
+        self._halo_levels[dim] = halo_levels
 
     def __init__(
         self,

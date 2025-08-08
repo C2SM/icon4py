@@ -17,12 +17,9 @@ from icon4py.model.common.decomposition import definitions, halo
 from icon4py.model.common.grid import simple
 
 
-from icon4py.model.testing.fixtures.datatest import (
-    icon_grid,
-    processor_props,
 
-)
 from .. import utils
+from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.datatest
