@@ -29,9 +29,6 @@ def calculate_nabla4_numpy(
     u_vert_e2c2v = u_vert[e2c2v]
     v_vert_e2c2v = v_vert[e2c2v]
 
-    primal_normal_vert_v1 = primal_normal_vert_v1.reshape(e2c2v.shape)
-    primal_normal_vert_v2 = primal_normal_vert_v2.reshape(e2c2v.shape)
-
     primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
     primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)
     inv_vert_vert_length = np.expand_dims(inv_vert_vert_length, axis=-1)
@@ -92,8 +89,12 @@ class TestCalculateNabla4(StencilTest):
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
 
-        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
-        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
+        primal_normal_vert_v1 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        )
+        primal_normal_vert_v2 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        )
 
         z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)

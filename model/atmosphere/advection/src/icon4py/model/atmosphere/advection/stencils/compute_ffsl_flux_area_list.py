@@ -12,7 +12,7 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2EC
+from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -26,10 +26,10 @@ sys.setrecursionlimit(5500)
 def _compute_ffsl_flux_area_list(
     famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[ta.wpfloat],
-    bf_cc_patch1_lon: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
-    bf_cc_patch1_lat: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
-    bf_cc_patch2_lon: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
-    bf_cc_patch2_lat: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    bf_cc_patch1_lon: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    bf_cc_patch1_lat: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    bf_cc_patch2_lon: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    bf_cc_patch2_lat: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     butterfly_idx_patch1_vnpos: fa.EdgeField[gtx.int32],
     butterfly_idx_patch1_vnneg: fa.EdgeField[gtx.int32],
     butterfly_blk_patch1_vnpos: fa.EdgeField[gtx.int32],
@@ -81,22 +81,22 @@ def _compute_ffsl_flux_area_list(
     # Translation of patch 1 and patch 2 in system relative to respective cell
     bf_cc_patch1_lon = where(
         famask_bool,
-        where(lvn_pos, bf_cc_patch1_lon(E2EC[0]), bf_cc_patch1_lon(E2EC[1])),
+        where(lvn_pos, bf_cc_patch1_lon[E2CDim(0)], bf_cc_patch1_lon[E2CDim(1)]),
         0.0,
     )
     bf_cc_patch1_lat = where(
         famask_bool,
-        where(lvn_pos, bf_cc_patch1_lat(E2EC[0]), bf_cc_patch1_lat(E2EC[1])),
+        where(lvn_pos, bf_cc_patch1_lat[E2CDim(0)], bf_cc_patch1_lat[E2CDim(1)]),
         0.0,
     )
     bf_cc_patch2_lon = where(
         famask_bool,
-        where(lvn_pos, bf_cc_patch2_lon(E2EC[0]), bf_cc_patch2_lon(E2EC[1])),
+        where(lvn_pos, bf_cc_patch2_lon[E2CDim(0)], bf_cc_patch2_lon[E2CDim(1)]),
         0.0,
     )
     bf_cc_patch2_lat = where(
         famask_bool,
-        where(lvn_pos, bf_cc_patch2_lat(E2EC[0]), bf_cc_patch2_lat(E2EC[1])),
+        where(lvn_pos, bf_cc_patch2_lat[E2CDim(0)], bf_cc_patch2_lat[E2CDim(1)]),
         0.0,
     )
 
@@ -178,10 +178,10 @@ def _compute_ffsl_flux_area_list(
 def compute_ffsl_flux_area_list(
     famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[ta.wpfloat],
-    bf_cc_patch1_lon: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
-    bf_cc_patch1_lat: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
-    bf_cc_patch2_lon: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
-    bf_cc_patch2_lat: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    bf_cc_patch1_lon: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    bf_cc_patch1_lat: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    bf_cc_patch2_lon: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    bf_cc_patch2_lat: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     butterfly_idx_patch1_vnpos: fa.EdgeField[gtx.int32],
     butterfly_idx_patch1_vnneg: fa.EdgeField[gtx.int32],
     butterfly_blk_patch1_vnpos: fa.EdgeField[gtx.int32],

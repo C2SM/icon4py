@@ -22,6 +22,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     helpers as test_helpers,
+    serialbox as sb,
 )
 from icon4py.model.testing.fixtures import (
     backend,
@@ -301,7 +302,9 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
     ],
 )
 @pytest.mark.datatest
-def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, backend, rtol):
+def test_pos_on_tplane_e_x_y(
+    interpolation_savepoint: sb.InterpolationSavepoint, grid_file, experiment, backend, rtol
+):
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
     field_ref_2 = interpolation_savepoint.pos_on_tplane_e_y()
     factory = _get_interpolation_factory(backend, experiment, grid_file)

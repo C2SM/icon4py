@@ -85,28 +85,12 @@ def _get_or_initialize(experiment, backend, name):
             primal_normal_y=geometry_.get(geometry_meta.EDGE_NORMAL_V),
             primal_normal_cell_x=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
             primal_normal_cell_y=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
-            primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=(geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U)),
-                backend=backend,
-            ),
-            primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=(geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V)),
-                backend=backend,
-            ),
+            primal_normal_vert_x=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            primal_normal_vert_y=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
             dual_normal_cell_x=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
             dual_normal_cell_y=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
-            dual_normal_vert_x=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-                backend=backend,
-            ),
-            dual_normal_vert_y=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
-                backend=backend,
-            ),
+            dual_normal_vert_x=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            dual_normal_vert_y=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
         )
         grid_functionality[experiment]["grid"] = grid
         grid_functionality[experiment]["edge_geometry"] = edge_params
@@ -179,8 +163,8 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
 @pytest.mark.datatest
 def test_diffusion_init(
     savepoint_diffusion_init,
-    interpolation_savepoint,
-    metrics_savepoint,
+    interpolation_state: diffusion_states.DiffusionInterpolationState,
+    metric_state: diffusion_states.DiffusionMetricState,
     experiment,
     step_date_init,
     lowest_layer_thickness,
@@ -215,32 +199,6 @@ def test_diffusion_init(
 
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
-
-    interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
-        ),
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.e_bln_c_s(),
-            backend=backend,
-        ),
-        geofac_n2s=interpolation_savepoint.geofac_n2s(),
-        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
-        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-    )
-
-    metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        wgtfac_c=metrics_savepoint.wgtfac_c(),
-        zd_intcoef=metrics_savepoint.zd_intcoef(),
-        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
-        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
-    )
 
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
@@ -339,8 +297,8 @@ def test_verify_diffusion_init_against_savepoint(
     experiment,
     step_date_init,
     *,
-    interpolation_savepoint,
-    metrics_savepoint,
+    interpolation_state: diffusion_states.DiffusionInterpolationState,
+    metric_state: diffusion_states.DiffusionMetricState,
     savepoint_diffusion_init,
     lowest_layer_thickness,
     model_top_height,
@@ -366,32 +324,6 @@ def test_verify_diffusion_init_against_savepoint(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-    )
-    interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.e_bln_c_s(),
-            backend=backend,
-        ),
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.geofac_div(),
-            backend=backend,
-        ),
-        geofac_n2s=interpolation_savepoint.geofac_n2s(),
-        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
-        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-    )
-    metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        wgtfac_c=metrics_savepoint.wgtfac_c(),
-        zd_intcoef=metrics_savepoint.zd_intcoef(),
-        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
-        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
 
     diffusion_granule = diffusion.Diffusion(
@@ -429,8 +361,8 @@ def test_run_diffusion_single_step(
     *,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
+    interpolation_state: diffusion_states.DiffusionInterpolationState,
+    metric_state: diffusion_states.DiffusionMetricState,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -452,33 +384,6 @@ def test_run_diffusion_single_step(
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
 
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-
-    interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.e_bln_c_s(),
-            backend=backend,
-        ),
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.geofac_div(),
-            backend=backend,
-        ),
-        geofac_n2s=interpolation_savepoint.geofac_n2s(),
-        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
-        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-    )
-    metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        wgtfac_c=metrics_savepoint.wgtfac_c(),
-        zd_intcoef=metrics_savepoint.zd_intcoef(),
-        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
-        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
-    )
 
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -553,8 +458,8 @@ def test_run_diffusion_multiple_steps(
     *,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
+    interpolation_state: diffusion_states.DiffusionInterpolationState,
+    metric_state: diffusion_states.DiffusionMetricState,
     grid_savepoint,
     lowest_layer_thickness,
     model_top_height,
@@ -573,32 +478,6 @@ def test_run_diffusion_multiple_steps(
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.e_bln_c_s(),
-            backend=backend,
-        ),
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.geofac_div(),
-            backend=backend,
-        ),
-        geofac_n2s=interpolation_savepoint.geofac_n2s(),
-        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
-        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-    )
-    metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        wgtfac_c=metrics_savepoint.wgtfac_c(),
-        zd_intcoef=metrics_savepoint.zd_intcoef(),
-        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
-        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
-    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -708,8 +587,8 @@ def test_run_diffusion_initial_step(
     damping_height,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
+    interpolation_state: diffusion_states.DiffusionInterpolationState,
+    metric_state: diffusion_states.DiffusionMetricState,
     backend,
     orchestration,
 ):
@@ -732,32 +611,6 @@ def test_run_diffusion_initial_step(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-    )
-    interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.e_bln_c_s(),
-            backend=backend,
-        ),
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.geofac_div(),
-            backend=backend,
-        ),
-        geofac_n2s=interpolation_savepoint.geofac_n2s(),
-        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
-        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-    )
-    metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        wgtfac_c=metrics_savepoint.wgtfac_c(),
-        zd_intcoef=metrics_savepoint.zd_intcoef(),
-        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
-        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),

@@ -12,7 +12,8 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_diffusion_metrics import (
-    compute_diffusion_metrics,
+    compute_diffusion_intcoef_and_vertoffset,
+    compute_diffusion_mask_and_coef,
 )
 from icon4py.model.common.metrics.metric_fields import (
     compute_max_nbhgt,
@@ -103,7 +104,19 @@ def test_compute_diffusion_metrics(
         offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
     )
 
-    mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_metrics(
+    mask_hdiff, zd_diffcoef_dsl = compute_diffusion_mask_and_coef(
+        c2e2c=c2e2c,
+        z_mc=z_mc.asnumpy(),
+        max_nbhgt=max_nbhgt.asnumpy(),
+        c_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
+        maxslp_avg=maxslp_avg.asnumpy(),
+        maxhgtd_avg=maxhgtd_avg.asnumpy(),
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        cell_nudging=cell_nudging,
+        nlev=nlev,
+    )
+    zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_intcoef_and_vertoffset(
         c2e2c=c2e2c,
         z_mc=z_mc.asnumpy(),
         max_nbhgt=max_nbhgt.asnumpy(),

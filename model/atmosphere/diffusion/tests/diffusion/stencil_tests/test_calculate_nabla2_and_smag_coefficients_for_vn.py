@@ -42,10 +42,6 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(helpers.StencilTest):
         **kwargs,
     ) -> dict:
         e2c2v = connectivities[dims.E2C2VDim]
-        primal_normal_vert_x = primal_normal_vert_x.reshape(e2c2v.shape)
-        primal_normal_vert_y = primal_normal_vert_y.reshape(e2c2v.shape)
-        dual_normal_vert_x = dual_normal_vert_x.reshape(e2c2v.shape)
-        dual_normal_vert_y = dual_normal_vert_y.reshape(e2c2v.shape)
 
         u_vert_e2c2v = u_vert[e2c2v]
         v_vert_e2c2v = v_vert[e2c2v]
@@ -159,10 +155,18 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(helpers.StencilTest):
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
 
-        primal_normal_vert_x = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
-        primal_normal_vert_y = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
-        dual_normal_vert_x = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
-        dual_normal_vert_y = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
+        primal_normal_vert_x = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        )
+        primal_normal_vert_y = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        )
+        dual_normal_vert_x = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        )
+        dual_normal_vert_y = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        )
 
         z_nabla2_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         kh_smag_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)

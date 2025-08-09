@@ -42,9 +42,7 @@ def construct_interpolation_state(
     savepoint: sb.InterpolationSavepoint, backend: Optional[gtx_backend.Backend]
 ) -> advection_states.AdvectionInterpolationState:
     return advection_states.AdvectionInterpolationState(
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=savepoint.geofac_div(), backend=backend
-        ),
+        geofac_div=savepoint.geofac_div(),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),

@@ -1111,10 +1111,4 @@ def compute_pos_on_tplane_e_x_y(
             pos_on_tplane_e[llb:, 6 + nv, 1],
         )
 
-    pos_on_tplane_e_x = array_ns.reshape(
-        pos_on_tplane_e[:, 0:2, 0], (array_ns.size(pos_on_tplane_e[:, 0:2, 0]))
-    )
-    pos_on_tplane_e_y = array_ns.reshape(
-        pos_on_tplane_e[:, 0:2, 1], (array_ns.size(pos_on_tplane_e[:, 0:2, 1]))
-    )
-    return pos_on_tplane_e_x, pos_on_tplane_e_y
+    return pos_on_tplane_e[:, 0:2, 0], pos_on_tplane_e[:, 0:2, 1]

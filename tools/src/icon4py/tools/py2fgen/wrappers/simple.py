@@ -39,30 +39,30 @@ def profile_disable():
 
 @field_operator
 def _square(
-    inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
-) -> gtx.Field[[dims.CEDim, dims.KDim], gtx.float64]:
+    inp: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
+) -> gtx.Field[[dims.CellDim, dims.KDim], gtx.float64]:
     return inp**2
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def square(
-    inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
-    result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
+    inp: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
+    result: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
 ):
     _square(inp, out=result)
 
 
 @export
 def square_from_function(
-    inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
-    result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
+    inp: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
+    result: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
 ):
     square(inp, result, offset_provider={})
 
 
 @export
 def square_error(
-    inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
-    result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
+    inp: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
+    result: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
 ):
     raise Exception("Exception foo occurred")

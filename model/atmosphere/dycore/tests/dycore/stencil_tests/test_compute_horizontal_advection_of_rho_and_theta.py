@@ -162,14 +162,6 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    e2c = connectivities[dims.E2CDim]
-    pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
-    pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
-    primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
-    dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
-    primal_normal_cell_2 = primal_normal_cell_2.reshape(e2c.shape)
-    dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
-
     (
         z_grad_rth_1,
         z_grad_rth_2,
@@ -262,12 +254,24 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(helpers.StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
-        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
-        primal_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
-        dual_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
-        primal_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
-        dual_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
+        pos_on_tplane_e_1 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        )
+        pos_on_tplane_e_2 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        )
+        primal_normal_cell_1 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        )
+        dual_normal_cell_1 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        )
+        primal_normal_cell_2 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        )
+        dual_normal_cell_2 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
+        )
         p_dthalf = 2.0
 
         rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)

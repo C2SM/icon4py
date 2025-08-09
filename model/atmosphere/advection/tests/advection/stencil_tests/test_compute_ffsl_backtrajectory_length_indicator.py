@@ -32,12 +32,10 @@ class TestComputeFfslBacktrajectoryLengthIndicator(helpers.StencilTest):
         **kwargs,
     ) -> dict:
         lvn_pos = p_vn >= 0.0
-        e2c = connectivities[dims.E2CDim]
-        e2ec = helpers.as_1d_connectivity(e2c)
         traj_length = np.sqrt(p_vn**2 + p_vt**2) * p_dt
 
-        ec_length_0 = np.expand_dims(edge_cell_length[e2ec[:, 0]], axis=-1)
-        ec_length_1 = np.expand_dims(edge_cell_length[e2ec[:, 1]], axis=-1)
+        ec_length_0 = np.expand_dims(edge_cell_length[:, 0], axis=-1)
+        ec_length_1 = np.expand_dims(edge_cell_length[:, 1], axis=-1)
         e2c_length = np.where(lvn_pos, ec_length_0, ec_length_1)
 
         opt_famask_dsl = np.where(
@@ -52,7 +50,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        edge_cell_length = data_alloc.random_field(grid, dims.ECDim)
+        edge_cell_length = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         opt_famask_dsl = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_dt = 1.0
 

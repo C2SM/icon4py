@@ -10,7 +10,7 @@ from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2EC
+from icon4py.model.common.dimension import E2C, E2CDim
 from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
     cell_horizontal_gradients_by_green_gauss_method,
 )
@@ -21,39 +21,39 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_backward_trajectory_from_edge_center(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     p_dthalf: wpfloat,
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     lvn_pos = where(p_vn >= wpfloat("0.0"), True, False)
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1(E2EC[0]), pos_on_tplane_e_1(E2EC[1]))
+        p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1[E2CDim(0)], pos_on_tplane_e_1[E2CDim(1)])
     )
 
     z_ntdistv_bary_2 = -(
         astype(p_vt, wpfloat) * p_dthalf
-        + where(lvn_pos, pos_on_tplane_e_2(E2EC[0]), pos_on_tplane_e_2(E2EC[1]))
+        + where(lvn_pos, pos_on_tplane_e_2[E2CDim(0)], pos_on_tplane_e_2[E2CDim(1)])
     )
 
     p_distv_bary_1 = where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_1(E2EC[0])
-        + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[0]),
-        z_ntdistv_bary_1 * primal_normal_cell_1(E2EC[1])
-        + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[1]),
+        z_ntdistv_bary_1 * primal_normal_cell_1[E2CDim(0)]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[E2CDim(0)],
+        z_ntdistv_bary_1 * primal_normal_cell_1[E2CDim(1)]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[E2CDim(1)],
     )
 
     p_distv_bary_2 = where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_2(E2EC[0])
-        + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[0]),
-        z_ntdistv_bary_1 * primal_normal_cell_2(E2EC[1])
-        + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1]),
+        z_ntdistv_bary_1 * primal_normal_cell_2[E2CDim(0)]
+        + z_ntdistv_bary_2 * dual_normal_cell_2[E2CDim(0)],
+        z_ntdistv_bary_1 * primal_normal_cell_2[E2CDim(1)]
+        + z_ntdistv_bary_2 * dual_normal_cell_2[E2CDim(1)],
     )
 
     return p_distv_bary_1, p_distv_bary_2
@@ -127,12 +127,12 @@ def _compute_upwind_values_of_rho_and_theta_v_at_edges(
 def _compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     p_dthalf: wpfloat,
     rho_ref_me: fa.EdgeKField[vpfloat],
     theta_ref_me: fa.EdgeKField[vpfloat],

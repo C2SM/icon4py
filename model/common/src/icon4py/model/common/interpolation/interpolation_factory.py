@@ -297,7 +297,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
             ),
             fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
-            domain=(dims.ECDim,),
+            domain=(dims.EdgeDim, dims.E2CDim),
             deps={
                 "primal_normal_v1": geometry_attrs.EDGE_NORMAL_U,
                 "primal_normal_v2": geometry_attrs.EDGE_NORMAL_V,

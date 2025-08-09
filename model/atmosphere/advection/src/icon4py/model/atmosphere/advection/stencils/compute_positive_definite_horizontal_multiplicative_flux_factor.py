@@ -10,21 +10,21 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import maximum, minimum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2CE, C2E
+from icon4py.model.common.dimension import C2E, C2EDim
 
 
 @gtx.field_operator
 def _compute_positive_definite_horizontal_multiplicative_flux_factor(
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
     p_rhodz_now: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
     dbl_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    pm_0 = maximum(0.0, p_mflx_tracer_h(C2E[0]) * geofac_div(C2CE[0]) * p_dtime)
-    pm_1 = maximum(0.0, p_mflx_tracer_h(C2E[1]) * geofac_div(C2CE[1]) * p_dtime)
-    pm_2 = maximum(0.0, p_mflx_tracer_h(C2E[2]) * geofac_div(C2CE[2]) * p_dtime)
+    pm_0 = maximum(0.0, p_mflx_tracer_h(C2E[0]) * geofac_div[C2EDim(0)] * p_dtime)
+    pm_1 = maximum(0.0, p_mflx_tracer_h(C2E[1]) * geofac_div[C2EDim(1)] * p_dtime)
+    pm_2 = maximum(0.0, p_mflx_tracer_h(C2E[2]) * geofac_div[C2EDim(2)] * p_dtime)
     p_m = pm_0 + pm_1 + pm_2
     r_m = minimum(1.0, (p_cc * p_rhodz_now) / (p_m + dbl_eps))
     return r_m
@@ -32,7 +32,7 @@ def _compute_positive_definite_horizontal_multiplicative_flux_factor(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_positive_definite_horizontal_multiplicative_flux_factor(
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
     p_rhodz_now: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],

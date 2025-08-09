@@ -30,10 +30,9 @@ def add_interpolated_horizontal_advection_of_w_numpy(
 ) -> np.ndarray:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     c2e = connectivities[dims.C2EDim]
-    c2ce = helpers.as_1d_connectivity(c2e)
 
     ddt_w_adv = ddt_w_adv + np.sum(
-        z_v_grad_w[c2e] * e_bln_c_s[c2ce],
+        z_v_grad_w[c2e] * e_bln_c_s,
         axis=1,
     )
     return ddt_w_adv
@@ -59,7 +58,7 @@ class TestAddInterpolatedHorizontalAdvectionOfW(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_v_grad_w = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
         ddt_w_adv = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(

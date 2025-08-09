@@ -169,7 +169,7 @@ class InterpolationState:
     """Represents the ICON interpolation state used in the dynamical core (SolveNonhydro)."""
 
     e_bln_c_s: gtx.Field[
-        gtx.Dims[dims.CEDim], ta.wpfloat
+        gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat
     ]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: gtx.Field[
         gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat
@@ -179,7 +179,7 @@ class InterpolationState:
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
     geofac_div: gtx.Field[
-        gtx.Dims[dims.CEDim], ta.wpfloat
+        gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat
     ]  # factor for divergence (nproma,cell_type,nblks_c)
 
     geofac_n2s: gtx.Field[
@@ -196,8 +196,8 @@ class InterpolationState:
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat]
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat]
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat]
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat]
 
 
@@ -255,8 +255,8 @@ class MetricStateNonHydro:
     ddxt_z_full: fa.EdgeKField[ta.vpfloat]
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat]
 
-    vertoffset_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], gtx.int32]
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], ta.vpfloat]
+    vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32]
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat]
     pg_edgeidx_dsl: fa.EdgeKField[bool]
     pg_exdist: fa.EdgeKField[ta.vpfloat]
 
@@ -286,7 +286,7 @@ class MetricStateNonHydro:
 
     coeff1_dwdz: fa.CellKField[ta.vpfloat]
     coeff2_dwdz: fa.CellKField[ta.vpfloat]
-    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], ta.vpfloat]
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat]
 
 
 @dataclasses.dataclass
