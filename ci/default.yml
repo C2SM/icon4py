@@ -3,8 +3,6 @@ include:
 
 .test_model_stencils:
   stage: test
-  variables:
-    SLURM_TIMELIMIT: '00:10:00'
   script:
     - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   rules:
@@ -12,6 +10,8 @@ include:
       variables:
         SLURM_TIMELIMIT: '00:20:00'
     - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:10:00'
   parallel:
     matrix:
       - COMPONENT: [diffusion, dycore, microphysics, common, driver]
@@ -34,18 +34,19 @@ test_tools_datatests_aarch64:
 
 .test_model_datatests:
   stage: test
-  variables:
-    SLURM_TIMELIMIT: '00:30:00'
   script:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
     - if: $COMPONENT == 'common' && $LEVEL == 'integration'
       variables:
-        NUM_PROCESSES: 1
+        NUM_PROCESSES: 2
+        SLURM_TIMELIMIT: '00:30:00'
     - if: $BACKEND == 'embedded'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
