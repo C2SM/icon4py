@@ -58,6 +58,12 @@ class ChannelFlow:
 
         self.channel_y, self.channel_U = self.load_channel_data(backend)
 
+        self.full_cell_mask, self.half_cell_mask, self.full_edge_mask = self.make_masks(
+            grid=grid,
+            grid_file_path=grid_file_path,
+            backend=backend,
+        )
+
         self.vn, self.w, self.rho, self.exner, self.theta_v = self.compute_channel_fields(
             channel_y=self.channel_y,
             channel_U=self.channel_U,
@@ -88,41 +94,59 @@ class ChannelFlow:
 
     def make_masks(
         self,
-        backend: gtx_backend.Backend,
         grid: icon_grid.IconGrid,
         grid_file_path: str,
-
-    ) -> None:
-
+        backend: gtx_backend.Backend,
+    ) -> tuple[
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.EdgeKField[ta.wpfloat],
+    ]:
         xp = data_alloc.import_array_ns(backend)
+
+        sponge_length = 50
 
         num_cells = grid.num_cells
         num_edges = grid.num_edges
         num_levels = grid.num_levels
 
-        half_cell_mask_np = xp.zeros((num_cells, num_levels + 1), dtype=float)
-        full_cell_mask_np = xp.zeros((num_cells, num_levels),     dtype=float)
-        full_edge_mask_np = xp.zeros((num_edges, num_levels),     dtype=float)
-
         grid_file = xr.open_dataset(grid_file_path)
+        domain_length = grid_file.domain_length
         cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
         edge_x = xp.asarray(grid_file.edge_middle_cartesian_x.values)
 
-        x_inflow = xp.unique(cell_x)[1] # second cell centre from left
-        sponge_length = 20
+        # Cleanup the grid
+        # Adjust x values to coincide with the periodic boundary
+        cell_x = xp.where(xp.abs(cell_x - 0.0) < 1e-9, 0.0, cell_x)
+        cell_x = xp.where(xp.abs(cell_x - domain_length) < 1e-9, 0.0, cell_x)
+
+        half_cell_mask_np = xp.zeros((num_cells, num_levels + 1), dtype=float)
+        full_cell_mask_np = xp.zeros((num_cells, num_levels), dtype=float)
+        full_edge_mask_np = xp.zeros((num_edges, num_levels), dtype=float)
+
+        x_inflow = xp.unique(cell_x)[0]  # first cell centre from left
         for k in range(num_levels):
-            # inflow
-            full_cell_mask_np[:, k] = xp.where(cell_x <= x_inflow, 1.0, 0.0)
-            full_edge_mask_np[:, k] = xp.where(edge_x <= x_inflow, 1.0, 0.0)
+            # outflow: tanh sponge
+            full_cell_mask_np[:, k] = (
+                1
+                + xp.tanh((cell_x + sponge_length / 2 - domain_length) * 2 * xp.pi / sponge_length)
+            ) / 2
+            full_edge_mask_np[:, k] = (
+                1
+                + xp.tanh((edge_x + sponge_length / 2 - domain_length) * 2 * xp.pi / sponge_length)
+            ) / 2
+            # inflow: Dirichlet on first cell
+            full_cell_mask_np[:, k] = xp.where(cell_x <= x_inflow, 1.0, full_cell_mask_np[:, k])
+            full_edge_mask_np[:, k] = xp.where(edge_x <= x_inflow, 1.0, full_edge_mask_np[:, k])
 
         half_cell_mask_np[:, :-1] = full_cell_mask_np
         half_cell_mask_np[:, -1] = half_cell_mask_np[:, -2]
 
+        full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
+        half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
+        full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
 
-        self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
-        self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
-        self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
-
+        return full_cell_mask, half_cell_mask, full_edge_mask
 
     def compute_channel_fields(
         self,
