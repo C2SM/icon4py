@@ -98,7 +98,6 @@ def model_initialization_serialbox(
     grid: icon_grid.IconGrid,
     path: pathlib.Path,
     backend: gtx_backend.Backend,
-    ndyn_substeps,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
@@ -238,7 +237,6 @@ def read_initial_state(
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gtx_backend.Backend,
-    ndyn_substeps: int,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -281,7 +279,6 @@ def read_initial_state(
             edge_param=edge_param,
             path=path,
             backend=backend,
-            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     elif experiment_type == ExperimentType.GAUSS3D:
@@ -298,7 +295,6 @@ def read_initial_state(
             edge_param=edge_param,
             path=path,
             backend=backend,
-            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     elif experiment_type == ExperimentType.ANY:
@@ -314,7 +310,6 @@ def read_initial_state(
             grid=grid,
             path=path,
             backend=backend,
-            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     else:
