@@ -16,7 +16,7 @@ import math
 import pstats
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 
 import click
 import netCDF4 as nf4
@@ -1338,10 +1338,8 @@ def initialize(
     grid_level,
     enable_output: bool,
     enable_debug_message: bool,
-    dtime_seconds: float = None,
-    end_date=None,
-    output_seconds_interval: float = None,
-    div_wave: DivWave = None,
+    div_wave: DivWave,
+    **kwargs: Any,
 ):
     """
     Inititalize the driver run.
@@ -1369,7 +1367,17 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = read_config(experiment_type, dtime_seconds, end_date, output_seconds_interval)
+    config = read_config(
+        experiment_type,
+        **kwargs,
+        # dtime_seconds=kwargs["dtime_seconds"],
+        # end_date=kwargs["end_date"],
+        # output_seconds_interval=kwargs["output_seconds_interval"],
+        # do_o2_divdamp=kwargs["do_o2_divdamp"],
+        # do_3d_divergence_damping=kwargs["do_3d_divergence_damping"],
+        # divergence_order=kwargs["divergence_order"],
+        # divdamp_fac=kwargs["divdamp_fac"],
+    )
     print_config(config)
     decomp_info = read_decomp_info(file_path, props, serialization_type, grid_root, grid_level)
 
@@ -1788,6 +1796,7 @@ def main(
         grid_level,
         enable_output,
         enable_debug_message,
+        div_wave=None,
     )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(

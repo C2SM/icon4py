@@ -14,6 +14,8 @@ import logging
 from dataclasses import dataclass
 from typing import Final, Optional
 
+import numpy as np
+
 import icon4py.model.common.constants as constants
 from gt4py.next import as_field
 from gt4py.next.common import Field
@@ -211,6 +213,9 @@ class IntermediateFields:
     z_graddiv_w_concorr_me: Field[[EdgeDim, KDim], float]
     z_graddiv_w_concorr_me_residual: Field[[EdgeDim, KDim], float]
 
+    total_divergence: list[float]
+    total_windspeed: list[float]
+
     @classmethod
     def allocate(cls, grid: BaseGrid):
         return IntermediateFields(
@@ -248,6 +253,8 @@ class IntermediateFields:
             z_graddiv_vt_residual=_allocate(EdgeDim, KDim, grid=grid),
             z_graddiv_w_concorr_me=_allocate(EdgeDim, KDim, grid=grid),
             z_graddiv_w_concorr_me_residual=_allocate(EdgeDim, KDim, grid=grid),
+            total_divergence=[],
+            total_windspeed=[],
         )
 
 
@@ -3021,6 +3028,41 @@ class SolveNonhydro:
             self.config.do_o2_divdamp,
             self.config.do_3d_divergence_damping,
         )
+
+        if self.config.do_3d_divergence_damping:
+            cell_volume = np.repeat(np.expand_dims(self.cell_params.area.asnumpy(), axis=-1), repeats=self.grid.num_levels, axis=-1) / self.metric_state_nonhydro.inv_ddqz_z_full.asnumpy()
+            edge_area = np.repeat(np.expand_dims(self.edge_geometry.primal_edge_lengths.asnumpy(), axis=-1), repeats=self.grid.num_levels, axis=-1) * self.metric_state_nonhydro.ddqz_z_full_e.asnumpy()
+            face_area = self.cell_params.area.asnumpy()
+            self.intermediate_fields.total_divergence.append(
+                np.sum(
+                    np.abs(self.output_intermediate_fields.output_after_flxdiv1_vn.asnumpy()) * cell_volume
+                ) / np.sum(cell_volume)
+            )
+            total_vn = np.sum(
+                np.abs(prognostic_state[nnew].vn.asnumpy()) * edge_area
+            ) / np.sum(edge_area)
+            
+            total_w = np.sum(
+                np.abs(prognostic_state[nnew].w.asnumpy())
+                * np.repeat(np.expand_dims(face_area, axis=-1), repeats=self.grid.num_levels + 1, axis=-1)
+            ) / np.sum(np.repeat(np.expand_dims(face_area, axis=-1), repeats=self.grid.num_levels + 1, axis=-1))
+            self.intermediate_fields.total_windspeed.append(total_vn + total_w)
+        else:
+            self.intermediate_fields.total_divergence.append(
+                np.sum(
+                    np.abs(self.output_intermediate_fields.output_after_flxdiv1_vn.asnumpy())
+                    * np.repeat(np.expand_dims(self.cell_params.area.asnumpy(), axis=-1), repeats=self.grid.num_levels, axis=-1)
+                )
+                / float(self.grid.num_levels)
+                / np.sum(np.repeat(np.expand_dims(self.cell_params.area.asnumpy(), axis=-1), repeats=self.grid.num_levels, axis=-1))
+            )
+            self.intermediate_fields.total_windspeed.append(
+                np.sum(
+                    np.abs(prognostic_state[nnew].vn.asnumpy()[:, 0]) * self.edge_geometry.primal_edge_lengths.asnumpy()
+                )
+                / np.sum(self.edge_geometry.primal_edge_lengths.asnumpy())
+            )
+
 
     def run_corrector_step(
         self,

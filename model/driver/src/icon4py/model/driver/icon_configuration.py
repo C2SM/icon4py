@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
@@ -216,10 +217,8 @@ class IconConfig:
 
 
 def read_config(
-    experiment_type: ExperimentType = ExperimentType.ANY,
-    dtime_seconds: float = None,
-    end_date=None,
-    output_seconds_interval: float = None,
+    experiment_type: ExperimentType,
+    **kwargs: Any,
 ) -> IconConfig:
     def _mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
@@ -1054,24 +1053,25 @@ def read_config(
             workaround_boundary_index_for_torus=True,
         )
 
-    def _div_converge_nonhydro_config(n_substeps: int):
+    def _div_converge_nonhydro_config(n_substeps: int, do_o2_divdamp: bool, do_3d_divergence_damping: bool, divergence_order: int, divdamp_fac: float):
+        log.critical(f"debugging: {n_substeps} {divdamp_fac} {do_3d_divergence_damping} {divergence_order}")
         return NonHydrostaticConfig(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
-            divdamp_fac=1.8,  # 0.025, 0.1 for o2, 0.01 for 04
-            divdamp_z=40000.0,
-            divdamp_z2=50000.0,
+            divdamp_fac=divdamp_fac,  # 0.025, 0.1 for o2, 0.01 for 04
+            divdamp_z=4000000.0,
+            divdamp_z2=5000000.0,
             scal_divsign=1.0,
             first_order_div_threshold=0.0,
-            do_o2_divdamp=True,
-            do_3d_divergence_damping=True,
-            divergence_order=2,
+            do_o2_divdamp=do_o2_divdamp,
+            do_3d_divergence_damping=do_3d_divergence_damping,
+            divergence_order=divergence_order,
             do_multiple_divdamp=False,
             number_of_divdamp_step=100,
             do_proper_diagnostics_divdamp=True,
             do_only_divdamp=True,
             do_proper_contravariant_divdamp=False,
-            suppress_vertical_in_3d_divdamp=True,
+            suppress_vertical_in_3d_divdamp=False,
         )
 
     def _jablownoski_Williamson_config():
@@ -1112,18 +1112,24 @@ def read_config(
             gauss3d_nonhydro_config,
         )
 
-    def _div_converge_config(dtime_seconds: float, end_date, output_seconds_interval: float):
+    def _div_converge_config(**kwargs: Any):
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=dtime_seconds),
-            end_date=end_date,
+            dtime=timedelta(seconds=kwargs["dtime_seconds"]),
+            end_date=kwargs["end_date"],
             damping_height=25000.0,
             apply_initial_stabilization=False,
             n_substeps=1,
             update_diagnostic=False,
         )
-        div_converge_output_config = _output_config(output_seconds_interval)
+        div_converge_output_config = _output_config(kwargs["output_seconds_interval"])
         div_converge_diffusion_config = _div_converge_diffusion_config(icon_run_config.n_substeps)
-        div_converge_nonhydro_config = _div_converge_nonhydro_config(icon_run_config.n_substeps)
+        div_converge_nonhydro_config = _div_converge_nonhydro_config(
+            icon_run_config.n_substeps,
+            kwargs["do_o2_divdamp"],
+            kwargs["do_3d_divergence_damping"],
+            kwargs["divergence_order"],
+            kwargs["divdamp_fac"]
+        )
         return (
             icon_run_config,
             div_converge_output_config,
@@ -1131,16 +1137,16 @@ def read_config(
             div_converge_nonhydro_config,
         )
 
-    def _globe_div_converge_config(dtime_seconds: float, end_date, output_seconds_interval: float):
+    def _globe_div_converge_config(**kwargs: Any):
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=dtime_seconds),
-            end_date=end_date,
+            dtime=timedelta(seconds=kwargs["dtime_seconds"]),
+            end_date=kwargs["end_date"],
             damping_height=25000.0,
             apply_initial_stabilization=False,
             n_substeps=1,
             update_diagnostic=False,
         )
-        globe_div_converge_output_config = _output_config(output_seconds_interval)
+        globe_div_converge_output_config = _output_config(kwargs["output_seconds_interval"])
         globe_div_converge_diffusion_config = _div_converge_diffusion_config(
             icon_run_config.n_substeps
         )
@@ -1174,14 +1180,14 @@ def read_config(
             output_config,
             diffusion_config,
             nonhydro_config,
-        ) = _div_converge_config(dtime_seconds, end_date, output_seconds_interval)
+        ) = _div_converge_config(**kwargs)
     elif experiment_type == ExperimentType.GLOBEDIVCONVERGE:
         (
             model_run_config,
             output_config,
             diffusion_config,
             nonhydro_config,
-        ) = _globe_div_converge_config(dtime_seconds, end_date, output_seconds_interval)
+        ) = _globe_div_converge_config(**kwargs)
     else:
         log.warning(
             "Experiment name is not specified, default configuration for mch_ch_r04b09_dsl is used."

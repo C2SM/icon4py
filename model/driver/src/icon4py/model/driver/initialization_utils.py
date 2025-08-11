@@ -114,6 +114,9 @@ class WAVETYPE(int, Enum):
     X_WAVE = 2
     Y_WAVE = 3
     X_AND_Y_WAVE = 4
+    Z_WAVE = 5
+    X_AND_Z_WAVE = 6
+    Y_AND_Z_WAVE = 7
 
 
 @dataclass(frozen=True)
@@ -121,6 +124,7 @@ class DivWave:
     wave_type: WAVETYPE = WAVETYPE.SPHERICAL_HARMONICS
     x_wavenumber_factor: float = 1.0
     y_wavenumber_factor: float = 1.0
+    z_wavenumber_factor: float = 1.0
 
 
 def read_icon_grid(
@@ -152,9 +156,13 @@ def read_icon_grid(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def determine_u_v_in_div_converge_experiment(
-    lat: xp.ndarray, lon: xp.ndarray, div_wave: DivWave
+def determine_u_v_w_in_div_converge_experiment(
+    lat: xp.ndarray, lon: xp.ndarray, zifc: xp.ndarray, nz: int, div_wave: DivWave
 ) -> tuple[xp.ndarray, xp.ndarray]:
+    assert zifc.shape[1] == nz + 1
+    top_height = xp.mean(zifc[:, 0])
+    height_in_theta = zifc * math.pi / top_height
+    height_in_theta_full = 0.5 * (xp.mean(zifc[:, :], axis=0)[1:] + xp.mean(zifc[:, :], axis=0)[:-1]) * math.pi / top_height
     if div_wave.wave_type == WAVETYPE.SPHERICAL_HARMONICS:
         u_factor = 0.25 * xp.sqrt(0.5 * 105.0 / math.pi)
         v_factor = -0.5 * xp.sqrt(0.5 * 15.0 / math.pi)
@@ -172,21 +180,43 @@ def determine_u_v_in_div_converge_experiment(
             * xp.cos(lat * v_scale * div_wave.y_wavenumber_factor)
             * xp.sin(lat * v_scale * div_wave.y_wavenumber_factor)
         )
+        w = xp.zeros((zifc.shape[0], nz+1), dtype=float)
     elif div_wave.wave_type == WAVETYPE.X_WAVE:
-        u_edge = xp.cos(lon * div_wave.x_wavenumber_factor) / div_wave.x_wavenumber_factor
+        u_edge = xp.cos(lon * float(div_wave.x_wavenumber_factor) ) / div_wave.x_wavenumber_factor
         v_edge = xp.zeros(lon.shape[0], dtype=float)
+        w = xp.zeros((zifc.shape[0], nz+1), dtype=float)
     elif div_wave.wave_type == WAVETYPE.Y_WAVE:
         v_scale = 180.0 / 7.5
         u_edge = xp.zeros(lon.shape[0], dtype=float)
         v_edge = xp.cos(v_scale * lat * div_wave.y_wavenumber_factor) / div_wave.y_wavenumber_factor
+        w = xp.zeros((zifc.shape[0], nz+1), dtype=float)
     elif div_wave.wave_type == WAVETYPE.X_AND_Y_WAVE:
         u_edge = xp.cos(lon * div_wave.x_wavenumber_factor) / div_wave.x_wavenumber_factor
         v_scale = 180.0 / 7.5
         v_edge = xp.cos(v_scale * lat * div_wave.y_wavenumber_factor) / div_wave.y_wavenumber_factor
+        w = xp.zeros((zifc.shape[0], nz+1), dtype=float)
+    elif div_wave.wave_type == WAVETYPE.Z_WAVE:
+        u_edge = xp.zeros(lon.shape[0], dtype=float)
+        v_edge = xp.zeros(lon.shape[0], dtype=float)
+        # w_factor = math.pi * div_wave.z_wavenumber_factor / top_height
+        # w = xp.sin(zifc * w_factor) / w_factor
+        w = xp.sin(height_in_theta * div_wave.z_wavenumber_factor) / div_wave.z_wavenumber_factor
+    elif div_wave.wave_type == WAVETYPE.X_AND_Z_WAVE:
+        u_edge = xp.cos(lon * float(div_wave.x_wavenumber_factor) ) / div_wave.x_wavenumber_factor
+        v_edge = xp.zeros(lon.shape[0], dtype=float)
+        w = xp.sin(height_in_theta * div_wave.z_wavenumber_factor) / div_wave.z_wavenumber_factor
+    elif div_wave.wave_type == WAVETYPE.Y_AND_Z_WAVE:
+        v_scale = 180.0 / 7.5
+        u_edge = xp.zeros(lon.shape[0], dtype=float)
+        # v_edge = xp.cos(v_scale * lat * div_wave.y_wavenumber_factor) / div_wave.y_wavenumber_factor
+        v_edge = xp.zeros((lon.shape[0], nz), dtype=float)
+        for k in range(nz):
+            v_edge[:, k] = xp.sin(height_in_theta_full[k] * div_wave.z_wavenumber_factor) / div_wave.z_wavenumber_factor
+        w = xp.sin(height_in_theta * div_wave.z_wavenumber_factor) / div_wave.z_wavenumber_factor
     else:
         raise NotImplementedError(f"Wave type {div_wave.wave_type} not implemented")
 
-    return u_edge, v_edge
+    return u_edge, v_edge, w
 
 
 def model_initialization_div_converge(
@@ -221,6 +251,7 @@ def model_initialization_div_converge(
     data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
+    z_ifc = data_provider.from_metrics_savepoint().z_ifc().ndarray
 
     primal_normal_x = edge_param.primal_normal[0].ndarray
     primal_normal_y = edge_param.primal_normal[1].ndarray
@@ -248,10 +279,15 @@ def model_initialization_div_converge(
     # primal_normal_y = xp.repeat(xp.expand_dims(primal_normal_y, axis=-1), num_levels, axis=1)
 
     # Horizontal wind field
-    u_edge, v_edge = determine_u_v_in_div_converge_experiment(edge_lat, edge_lon, div_wave)
+    u_edge, v_edge, w_ndarray = determine_u_v_w_in_div_converge_experiment(edge_lat, edge_lon, z_ifc, num_levels, div_wave)
+    log.critical(f" Debug max u and v: {div_wave.wave_type} {div_wave.x_wavenumber_factor} {div_wave.y_wavenumber_factor}")
+    log.critical(f" Debug max u and v: {xp.abs(u_edge).max()} {xp.abs(v_edge).max()}")
     vn_ndarray = xp.zeros((num_edges, num_levels), dtype=float)
     for k in range(num_levels):
-        vn_ndarray[:, k] = u_edge[:] * primal_normal_x[:] + v_edge[:] * primal_normal_y[:]
+        if len(v_edge.shape) == 2:
+            vn_ndarray[:, k] = u_edge[:] * primal_normal_x[:] + v_edge[:, k] * primal_normal_y[:]
+        else:
+            vn_ndarray[:, k] = u_edge[:] * primal_normal_x[:] + v_edge[:] * primal_normal_y[:]
         if k == 0:
             log.critical(
                 f"Debug vn component1: {vn_ndarray[500, k]} {vn_ndarray[501, k]} {vn_ndarray[502, k]} {vn_ndarray[503, k]} {vn_ndarray[504, k]} {vn_ndarray[505, k]}"
@@ -262,7 +298,6 @@ def model_initialization_div_converge(
     log.info("Wind profile assigned.")
 
     zero_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
     vn = as_field((EdgeDim, KDim), vn_ndarray)
     w = as_field((CellDim, KDim), w_ndarray)
     exner = as_field((CellDim, KDim), zero_ndarray)
@@ -282,9 +317,12 @@ def model_initialization_div_converge(
     exner_pr = as_field((CellDim, KDim), zero_ndarray)
     log.info("exner_pr initialization completed.")
 
-    u_cell, v_cell = determine_u_v_in_div_converge_experiment(cell_lat, cell_lon, div_wave)
+    u_cell, v_cell, _  = determine_u_v_w_in_div_converge_experiment(cell_lat, cell_lon, z_ifc, num_levels, div_wave)
     u = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(u_cell, axis=-1), num_levels, axis=1))
-    v = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(v_cell, axis=-1), num_levels, axis=1))
+    if len(v_cell.shape) == 2:
+        v = as_field((CellDim, KDim), v_cell)
+    else:
+        v = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(v_cell, axis=-1), num_levels, axis=1))
     diagnostic_state = DiagnosticState(
         pressure=pressure,
         pressure_ifc=pressure_ifc,
