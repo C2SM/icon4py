@@ -418,7 +418,7 @@ class SimpleMetisDecomposer(Decomposer):
 
         import pymetis
 
-        cut_count, partition_index = pymetis.part_graph(nparts=n_part, adjacency=adjacency_matrix)
+        _, partition_index = pymetis.part_graph(nparts=n_part, adjacency=adjacency_matrix)
         return np.array(partition_index)
 
 

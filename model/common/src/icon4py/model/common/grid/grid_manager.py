@@ -64,21 +64,6 @@ CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 
-# TODO delete?
-def _reduce_to_rank_local_size(
-    full_size_neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    decomposition_info: decomposition.DecompositionInfo,
-) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
-    def get_rank_local_values(k: gtx.FieldOffset, v: data_alloc.NDArray):
-        index_target_dim = k.source
-        index_source_dim = k.target[0]
-
-        index = decomposition_info.global_index(index_source_dim)
-        return v[index, :]
-
-    return {k: get_rank_local_values(k, v) for k, v in full_size_neighbor_tables.items()}
-
-
 class GridManager:
     """
     Read ICON grid file and set up grid topology, refinement information and geometry fields.
@@ -349,8 +334,6 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-
-
     def _construct_grid(
         self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
     ) -> icon.IconGrid:
@@ -395,31 +378,25 @@ class GridManager:
             dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
             dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
-                    }
+        }
         # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
         halo_constructor = self._initialize_halo_constructor(
             global_grid_size, neighbor_tables_for_halo_construction, backend
         )
         decomposition_info = halo_constructor(cells_to_rank_mapping)
         self._decomposition_info = decomposition_info
-        my_cells = decomposition_info.global_index(dims.CellDim)
-        my_edges = decomposition_info.global_index(dims.EdgeDim)
-        my_vertices = decomposition_info.global_index(dims.VertexDim)
-
 
         ## TODO do local reads (and halo exchanges!!) FIX: my_cells etc are in 0 base python coding - reading from file fails...
         ##
         # CONSTRUCT LOCAL PATCH
 
-        if not self._run_properties.single_node():
-            neighbor_tables = {
-                k: decomposition_info.global_to_local(
-                k.target[0], v[decomposition_info.global_index(k.target[0])]
-                ) for k,v in neighbor_tables_for_halo_construction.items()
-            }
-        else:
-            neighbor_tables = neighbor_tables_for_halo_construction
-
+        # TODO run this onlz for distrbuted grids otherwise to nothing internally
+        neighbor_tables = {
+            k: decomposition_info.global_to_local(
+                k.source, v[decomposition_info.global_index(k.target[0])]
+            )
+            for k, v in neighbor_tables_for_halo_construction.items()
+        }
 
         # COMPUTE remaining derived connectivities
 
@@ -438,7 +415,6 @@ class GridManager:
             refinement_control=refinement_fields,
         )
         return grid
-
 
     def _get_index_field(
         self,
