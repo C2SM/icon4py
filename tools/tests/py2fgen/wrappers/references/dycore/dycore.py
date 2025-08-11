@@ -125,7 +125,8 @@ def solve_nh_run_wrapper(
     vn_traj_size_0,
     vn_traj_size_1,
     dtime,
-    max_vcfl,
+    max_vcfl_size1_array,
+    max_vcfl_size1_array_size_0,
     lprep_adv,
     at_initial_timestep,
     divdamp_fac_o2,
@@ -493,6 +494,8 @@ def solve_nh_run_wrapper(
             False,
         )
 
+        max_vcfl_size1_array = (max_vcfl_size1_array, (max_vcfl_size1_array_size_0,), False, False)
+
         if __debug__:
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
@@ -546,7 +549,7 @@ def solve_nh_run_wrapper(
             vol_flx_ic=vol_flx_ic,
             vn_traj=vn_traj,
             dtime=dtime,
-            max_vcfl=max_vcfl,
+            max_vcfl_size1_array=max_vcfl_size1_array,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=divdamp_fac_o2,
@@ -1112,6 +1115,22 @@ def solve_nh_run_wrapper(
                 msg = (
                     "vn_traj after computation: %s" % str(vn_traj_arr)
                     if vn_traj is not None
+                    else "None"
+                )
+                logger.debug(msg)
+
+                max_vcfl_size1_array_arr = (
+                    _conversion.as_array(ffi, max_vcfl_size1_array, _definitions.FLOAT64)
+                    if max_vcfl_size1_array is not None
+                    else None
+                )
+                msg = "shape of max_vcfl_size1_array after computation = %s" % str(
+                    max_vcfl_size1_array_arr.shape if max_vcfl_size1_array is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "max_vcfl_size1_array after computation: %s" % str(max_vcfl_size1_array_arr)
+                    if max_vcfl_size1_array is not None
                     else "None"
                 )
                 logger.debug(msg)
