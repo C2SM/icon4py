@@ -21,7 +21,7 @@ from icon4py.model.common import (
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver.testcases import utils as testcases_utils
+from icon4py.model.driver.test_cases import utils as testcases_utils
 from icon4py.model.testing import serialbox as sb
 
 
