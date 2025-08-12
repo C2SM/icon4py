@@ -9,7 +9,7 @@
 #SBATCH --view=default
 
 #SBATCH --partition=normal
-#SBATCH --time=17:00:00
+#SBATCH --time=16:40:00
 
 #SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser
 
@@ -56,13 +56,17 @@ export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm
 export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
 
+echo ""
+echo ""
 echo "Running on cluster: $CLUSTER_NAME"
 echo ""
-echo "icon4py directory: $ICON4PY_DIR"
-echo "icon4py backend: $ICON4PY_BACKEND"
-echo "icon4py output directory: $ICON4PY_OUTPUT_DIR"
+echo "ICON4PY:"
+echo "    backend: $ICON4PY_BACKEND"
+echo "    run directory:    $ICON4PY_DIR"
+echo "    output directory: $ICON4PY_OUTPUT_DIR"
 echo ""
-echo "scripts directory: $SCRIPTS_DIR"
+echo "SCRIPTS:"
+echo "    run directory:    $SCRIPTS_DIR"
 
 # ==============================================================================
 # Run simulation
