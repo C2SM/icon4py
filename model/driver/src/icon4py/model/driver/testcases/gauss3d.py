@@ -14,7 +14,7 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import constants as phy_const, dimension as dims
+from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
@@ -37,7 +37,6 @@ def model_initialization_gauss3d(
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: Optional[gtx_backend.Backend],
-    ndyn_substeps: int,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
@@ -96,13 +95,13 @@ def model_initialization_gauss3d(
     )
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
+    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
 
     mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
@@ -177,7 +176,7 @@ def model_initialization_gauss3d(
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
-    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
     (
         vn,
         w,
@@ -266,7 +265,6 @@ def model_initialization_gauss3d(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner,
         grid=grid,
         backend=backend,
-        ndyn_substeps=ndyn_substeps,
     )
 
     prep_adv = testcases_utils.initialize_prep_advection(grid=grid, backend=backend)

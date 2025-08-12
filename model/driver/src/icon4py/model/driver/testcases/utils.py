@@ -241,7 +241,6 @@ def initialize_solve_nonhydro_diagnostic_state(
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     grid: icon_grid.IconGrid,
     backend: Optional[gtx_backend.Backend],
-    ndyn_substeps: int,
 ) -> dycore_states.DiagnosticStateNonHydro:
     normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
         data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
@@ -326,12 +325,12 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     grid: icon_grid.IconGrid,
     backend: Optional[gtx_backend.Backend],
 ) -> tuple[
+    fa.EdgeKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    fa.EdgeKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
