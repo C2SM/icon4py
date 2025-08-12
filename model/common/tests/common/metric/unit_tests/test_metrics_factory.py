@@ -852,7 +852,7 @@ def test_vertical_coordinates_on_half_levels(
 @pytest.mark.datatest
 def test_factory_compute_diffusion_metrics(
     grid_savepoint,
-    metrics_savepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint,
     grid_file,
     icon_grid,

@@ -419,7 +419,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
 
         vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         owner_mask = data_alloc.random_mask(grid, dims.CellDim)
@@ -623,7 +623,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(test_helpers.St
         coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
         vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)

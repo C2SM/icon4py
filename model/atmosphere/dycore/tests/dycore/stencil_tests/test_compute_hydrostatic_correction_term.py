@@ -19,7 +19,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import (
-    flatten_first_two_dims,
     random_field,
     zero_field,
 )
@@ -54,9 +53,7 @@ def compute_hydrostatic_correction_term_numpy(
         return indexed, indexed_p1
 
     e2c = connectivities[dims.E2CDim]
-    full_shape = e2c.shape + zdiff_gradp.shape[1:]
-    zdiff_gradp = zdiff_gradp.reshape(full_shape)
-    ikoffset = ikoffset.reshape(full_shape)
+    full_shape = ikoffset.shape
 
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
@@ -124,11 +121,11 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32).asnumpy()
+        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            ikoffset[:, :, k] = rng.integers(
+            ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
                 low=0 - k,
                 high=grid.num_levels - k - 1,
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
@@ -141,16 +138,13 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         grav_o_cpd = wpfloat("10.0")
 
-        zdiff_gradp_new = flatten_first_two_dims(dims.ECDim, dims.KDim, field=zdiff_gradp)
-        ikoffset_new = flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset)
-
         z_hydro_corr = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             theta_v=theta_v,
-            ikoffset=ikoffset_new,
+            ikoffset=ikoffset,
             z_hydro_corr=z_hydro_corr,
-            zdiff_gradp=zdiff_gradp_new,
+            zdiff_gradp=zdiff_gradp,
             theta_v_ic=theta_v_ic,
             inv_ddqz_z_full=inv_ddqz_z_full,
             inv_dual_edge_length=inv_dual_edge_length,
