@@ -9,8 +9,8 @@ SLURM_NODES=1
 SLURM_UENV="icon/25.2:v3"
 SLURM_UENV_VIEW="default"
 
-SLURM_PARTITION="debug"
-SLURM_TIME="00:30:00"
+SLURM_PARTITION="normal"
+SLURM_TIME="14:50:00"
 
 SLURM_JOBNAME="channel_950x350x100_5m_nlev20_leeMoser"
 SLURM_LOGDIR="../runs_icon4py/logs"
@@ -44,6 +44,12 @@ if [ -z "$SLURM_JOB_ID" ]; then
 		log_suffix="post"
 	else
 		log_suffix="idle"
+	fi
+
+	# override to debug queue if only postprocessing
+	if [ "$run_postprocess" = true ] && [ "$run_simulation" = false ]; then
+		SLURM_PARTITION="debug"
+		SLURM_TIME="00:30:00"
 	fi
 
 	# Submit self to Slurm with parameters preserved
