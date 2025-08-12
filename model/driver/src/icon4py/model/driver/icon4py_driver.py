@@ -21,6 +21,7 @@ from icon4py.model.atmosphere.diffusion import (
     diffusion,
     diffusion_states,
 )
+from icon4py.model.driver.test_cases import channel
 from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.io import plots
@@ -427,6 +428,14 @@ def initialize(
         backend = config.run_config.backend,
         )
     #<--- IBM
+    #---> Channel
+    _channel = channel.ChannelFlow(
+        grid=icon_grid,
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        backend = config.run_config.backend,
+        )
+    #<--- Channel
 
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
@@ -462,6 +471,7 @@ def initialize(
         owner_mask=c_owner_mask,
         extras={
             "ibm": _ibm,
+            "channel": _channel,
         }
     )
 

@@ -570,6 +570,10 @@ class SolveNonhydro:
             self._ibm = extras["ibm"]
             self._ibm_set_bcs_dvndz = ibm.set_bcs_dvndz.with_backend(self._backend)
         #<--- IBM
+        #---> Channel
+        if "channel" in extras:
+            self._channel = extras["channel"]
+        #<--- Channel
 
     def _allocate_local_fields(self):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
@@ -774,6 +778,31 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        #---> Channel
+        if at_initial_timestep and at_first_substep:
+            log.info(" ***Channel fixing initial condition")
+            (
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            ) = self._channel.set_initial_conditions()
+        else:
+            (
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            ) = self._channel.set_boundary_conditions(
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            )
+        #<--- Channel
         #---> IBM
         if at_initial_timestep and at_first_substep:
             log.info(" ***IBM fixing initial conditions")
@@ -793,10 +822,26 @@ class SolveNonhydro:
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
         )
+
         #---> IBM
         if self._ibm.DEBUG_LEVEL >= 3:
             plots.pickle_data(prognostic_states.next, f"end_of_predictor")
         #<--- IBM
+        #---> Channel
+        (
+            prognostic_states.current.vn,
+            prognostic_states.current.w,
+            prognostic_states.current.rho,
+            prognostic_states.current.exner,
+            prognostic_states.current.theta_v,
+        ) = self._channel.set_boundary_conditions(
+            prognostic_states.current.vn,
+            prognostic_states.current.w,
+            prognostic_states.current.rho,
+            prognostic_states.current.exner,
+            prognostic_states.current.theta_v,
+        )
+        #<--- Channel
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -809,6 +854,7 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
+
         #---> IBM
         if self._ibm.DEBUG_LEVEL >= 3:
             plots.pickle_data(prognostic_states.next, f"end_of_corrector")
