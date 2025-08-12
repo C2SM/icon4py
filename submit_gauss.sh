@@ -8,10 +8,10 @@
 #SBATCH --uenv=icon/25.2:v3
 #SBATCH --view=default
 
-#SBATCH --partition=normal
-#SBATCH --time=12:00:00
+#SBATCH --partition=debug
+#SBATCH --time=00:30:00
 
-#SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser
+#SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser_debug
 
 #SBATCH --output=../runs_icon4py/logs/%x.log
 #SBATCH --error=../runs_icon4py/logs/%x.log
@@ -31,8 +31,13 @@ santis)
 	export ICON4PY_BACKEND="gtfn_gpu"
 	;;
 squirrel)
-	export SCRATCH=/scratch/l_jcanton/
-	export PROJECTS_DIR=/home/l_jcanton/projects/
+	export SCRATCH=/scratch/l_jcanton
+	export PROJECTS_DIR=/home/l_jcanton/projects
+	export ICON4PY_BACKEND="gtfn_cpu"
+	;;
+mac)
+	export SCRATCH=/Users/jcanton/projects
+	export PROJECTS_DIR=/Users/jcanton/projects
 	export ICON4PY_BACKEND="gtfn_cpu"
 	;;
 *)
@@ -54,6 +59,9 @@ export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/se
 export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
 export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
 
+# ==============================================================================
+# Run simulation
+#
 python \
 	model/driver/src/icon4py/model/driver/icon4py_driver.py \
 	$ICON4PY_SAVEPOINT_PATH \
@@ -61,7 +69,16 @@ python \
 	--experiment_type=gauss3d_torus \
 	--grid_root=2 --grid_level=0 --enable_output
 
-# # generate vtu files
-# python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+# ==============================================================================
+# Postprocess
+#
+deactivate
+source "$PROJECTS_DIR/python-scripts/.venv/bin/activate"
+
+# generate vtu files
+python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+
+# compute temporal averages
+python ../python-scripts/temporal_average.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR"
 
 echo "Finished running job: $SLURM_JOB_NAME, one way or another"
