@@ -182,7 +182,7 @@ def read_config(
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=0.04),
-            end_date = datetime.datetime(year=1, month=1, day=2, hour=0, minute=0, second=0, microsecond=0),
+            end_date = datetime.datetime(year=1, month=1, day=1, hour=10, minute=0, second=0, microsecond=0),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend_name=icon4py_driver_backend,

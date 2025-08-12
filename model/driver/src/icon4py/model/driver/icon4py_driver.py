@@ -176,7 +176,7 @@ class TimeLoop:
             )
             timer.capture()
             #---> IBM
-            if time_step % 1000 == 0:
+            if time_step % 25 == 0:
                 plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:06d}")
             #<--- IBM
 
