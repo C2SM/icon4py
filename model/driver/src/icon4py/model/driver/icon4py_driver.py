@@ -466,7 +466,6 @@ def initialize(
         edge_geometry,
         file_path,
         backend=backend,
-        ndyn_substeps=config.run_config.n_substeps,
         rank=props.rank,
         experiment_type=experiment_type,
     )
