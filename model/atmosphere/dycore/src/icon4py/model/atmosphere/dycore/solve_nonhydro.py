@@ -829,17 +829,17 @@ class SolveNonhydro:
         #<--- IBM
         #---> Channel
         (
-            prognostic_states.current.vn,
-            prognostic_states.current.w,
-            prognostic_states.current.rho,
-            prognostic_states.current.exner,
-            prognostic_states.current.theta_v,
+            prognostic_states.next.vn,
+            prognostic_states.next.w,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.theta_v,
         ) = self._channel.set_boundary_conditions(
-            prognostic_states.current.vn,
-            prognostic_states.current.w,
-            prognostic_states.current.rho,
-            prognostic_states.current.exner,
-            prognostic_states.current.theta_v,
+            prognostic_states.next.vn,
+            prognostic_states.next.w,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.theta_v,
         )
         #<--- Channel
 
