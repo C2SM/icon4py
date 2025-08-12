@@ -78,9 +78,7 @@ def compute_barycentric_backtrajectory(
     p_vn: fa.EdgeKField[ta.wpfloat],
     p_vt: fa.EdgeKField[ta.wpfloat],
     cell_idx: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
-    cell_blk: gtx.Field[  # TODO remove from program as it will always be 1
-        gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32
-    ],
+    cell_blk: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],

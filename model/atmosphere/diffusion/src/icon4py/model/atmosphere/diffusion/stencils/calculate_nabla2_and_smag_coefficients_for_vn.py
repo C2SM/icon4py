@@ -39,15 +39,41 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
         (diff_multfac_smag, u_vert, v_vert, smag_offset), wpfloat
     )
 
-    tmp = u_vert_wp(E2C2V) * dual_normal_vert_x + v_vert_wp(E2C2V) * dual_normal_vert_y
-
-    dvt_tang_wp = -tmp[E2C2VDim(0)] + tmp[E2C2VDim(1)]
-    dvt_norm_vp = astype((-tmp[E2C2VDim(2)]) + tmp[E2C2VDim(3)], vpfloat)
-
-    tmp2 = astype(
-        u_vert_wp(E2C2V) * primal_normal_vert_x + v_vert_wp(E2C2V) * primal_normal_vert_y, vpfloat
+    dvt_tang_wp = (
+        -(
+            u_vert_wp(E2C2V[0]) * dual_normal_vert_x[E2C2VDim(0)]
+            + v_vert_wp(E2C2V[0]) * dual_normal_vert_y[E2C2VDim(0)]
+        )
+    ) + (
+        u_vert_wp(E2C2V[1]) * dual_normal_vert_x[E2C2VDim(1)]
+        + v_vert_wp(E2C2V[1]) * dual_normal_vert_y[E2C2VDim(1)]
     )
-    kh_smag_1_vp = -tmp2[E2C2VDim(0)] + tmp2[E2C2VDim(1)]
+
+    dvt_norm_vp = astype(
+        (
+            -(
+                u_vert_wp(E2C2V[2]) * dual_normal_vert_x[E2C2VDim(2)]
+                + v_vert_wp(E2C2V[2]) * dual_normal_vert_y[E2C2VDim(2)]
+            )
+        )
+        + (
+            u_vert_wp(E2C2V[3]) * dual_normal_vert_x[E2C2VDim(3)]
+            + v_vert_wp(E2C2V[3]) * dual_normal_vert_y[E2C2VDim(3)]
+        ),
+        vpfloat,
+    )
+
+    kh_smag_1_vp = (
+        -astype(
+            u_vert_wp(E2C2V[0]) * primal_normal_vert_x[E2C2VDim(0)]
+            + v_vert_wp(E2C2V[0]) * primal_normal_vert_y[E2C2VDim(0)],
+            vpfloat,
+        )
+    ) + astype(
+        u_vert_wp(E2C2V[1]) * primal_normal_vert_x[E2C2VDim(1)]
+        + v_vert_wp(E2C2V[1]) * primal_normal_vert_y[E2C2VDim(1)],
+        vpfloat,
+    )
 
     dvt_tang_vp = astype(dvt_tang_wp * tangent_orientation, vpfloat)
 
@@ -58,7 +84,17 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 
     kh_smag_1_wp = kh_smag_1_wp * kh_smag_1_wp
 
-    kh_smag_2_vp = -tmp2[E2C2VDim(2)] + tmp2[E2C2VDim(3)]
+    kh_smag_2_vp = (
+        -astype(
+            u_vert_wp(E2C2V[2]) * primal_normal_vert_x[E2C2VDim(2)]
+            + v_vert_wp(E2C2V[2]) * primal_normal_vert_y[E2C2VDim(2)],
+            vpfloat,
+        )
+    ) + astype(
+        u_vert_wp(E2C2V[3]) * primal_normal_vert_x[E2C2VDim(3)]
+        + v_vert_wp(E2C2V[3]) * primal_normal_vert_y[E2C2VDim(3)],
+        vpfloat,
+    )
 
     kh_smag_2_wp = astype(kh_smag_2_vp, wpfloat)
     kh_smag_2_wp = (kh_smag_2_wp * inv_vert_vert_length) - (
@@ -69,9 +105,36 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 
     kh_smag_e_wp = diff_multfac_smag_wp * sqrt(kh_smag_2_wp + kh_smag_1_wp)
     z_nabla2_e_wp = (
-        astype(tmp2[E2C2VDim(0)] + tmp2[E2C2VDim(1)], wpfloat) - wpfloat("2.0") * vn
-    ) * (inv_primal_edge_length * inv_primal_edge_length) + (
-        astype(tmp[E2C2VDim(2)] + tmp[E2C2VDim(3)], wpfloat) - wpfloat("2.0") * vn
+        astype(
+            astype(
+                u_vert_wp(E2C2V[0]) * primal_normal_vert_x[E2C2VDim(0)]
+                + v_vert_wp(E2C2V[0]) * primal_normal_vert_y[E2C2VDim(0)],
+                vpfloat,
+            )
+            + astype(
+                u_vert_wp(E2C2V[1]) * primal_normal_vert_x[E2C2VDim(1)]
+                + v_vert_wp(E2C2V[1]) * primal_normal_vert_y[E2C2VDim(1)],
+                vpfloat,
+            ),
+            wpfloat,
+        )
+        - wpfloat("2.0") * vn
+    ) * (inv_primal_edge_length * inv_primal_edge_length)
+    z_nabla2_e_wp = z_nabla2_e_wp + (
+        astype(
+            astype(
+                u_vert_wp(E2C2V[2]) * primal_normal_vert_x[E2C2VDim(2)]
+                + v_vert_wp(E2C2V[2]) * primal_normal_vert_y[E2C2VDim(2)],
+                vpfloat,
+            )
+            + astype(
+                u_vert_wp(E2C2V[3]) * primal_normal_vert_x[E2C2VDim(3)]
+                + v_vert_wp(E2C2V[3]) * primal_normal_vert_y[E2C2VDim(3)],
+                vpfloat,
+            ),
+            wpfloat,
+        )
+        - wpfloat("2.0") * vn
     ) * (inv_vert_vert_length * inv_vert_vert_length)
 
     z_nabla2_e_wp = wpfloat("4.0") * z_nabla2_e_wp

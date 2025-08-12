@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import maximum, minimum, neighbor_sum
+from gt4py.next.ffront.fbuiltins import maximum, minimum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E, C2EDim
@@ -22,7 +22,10 @@ def _compute_positive_definite_horizontal_multiplicative_flux_factor(
     p_dtime: ta.wpfloat,
     dbl_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    p_m = neighbor_sum(maximum(0.0, p_mflx_tracer_h(C2E) * geofac_div * p_dtime), axis=C2EDim)
+    pm_0 = maximum(0.0, p_mflx_tracer_h(C2E[0]) * geofac_div[C2EDim(0)] * p_dtime)
+    pm_1 = maximum(0.0, p_mflx_tracer_h(C2E[1]) * geofac_div[C2EDim(1)] * p_dtime)
+    pm_2 = maximum(0.0, p_mflx_tracer_h(C2E[2]) * geofac_div[C2EDim(2)] * p_dtime)
+    p_m = pm_0 + pm_1 + pm_2
     r_m = minimum(1.0, (p_cc * p_rhodz_now) / (p_m + dbl_eps))
     return r_m
 

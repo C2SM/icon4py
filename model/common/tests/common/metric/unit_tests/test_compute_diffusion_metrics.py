@@ -39,7 +39,7 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_diffusion_mask_and_coeff(
+def test_compute_diffusion_metrics(
     metrics_savepoint,
     experiment,
     interpolation_savepoint,
@@ -116,81 +116,6 @@ def test_compute_diffusion_mask_and_coeff(
         cell_nudging=cell_nudging,
         nlev=nlev,
     )
-    assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
-    assert helpers.dallclose(
-        zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
-    )
-
-
-@pytest.mark.level("unit")
-@pytest.mark.embedded_remap_error
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_diffusion_intcoef_and_vertoffset(
-    metrics_savepoint,
-    experiment,
-    interpolation_savepoint,
-    icon_grid,
-    grid_savepoint,
-    backend,
-):
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
-        pytest.skip(f"Fields not computed for {experiment}")
-
-    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
-
-    c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
-    c_bln_avg = interpolation_savepoint.c_bln_avg()
-    z_mc = metrics_savepoint.z_mc()
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125.0
-    cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
-
-    cell_lateral = icon_grid.start_index(
-        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-
-    nlev = icon_grid.num_levels
-
-    compute_maxslp_maxhgtd.with_backend(backend)(
-        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
-        dual_edge_length=grid_savepoint.dual_edge_length(),
-        maxslp=maxslp,
-        maxhgtd=maxhgtd,
-        horizontal_start=cell_lateral,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
-    )
-
-    compute_weighted_cell_neighbor_sum.with_backend(backend)(
-        maxslp=maxslp,
-        maxhgtd=maxhgtd,
-        c_bln_avg=c_bln_avg,
-        maxslp_avg=maxslp_avg,
-        maxhgtd_avg=maxhgtd_avg,
-        horizontal_start=cell_lateral,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={
-            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
-        },
-    )
-
-    compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
-        max_nbhgt=max_nbhgt,
-        horizontal_start=cell_nudging,
-        horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
-    )
-
     zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_intcoef_and_vertoffset(
         c2e2c=c2e2c,
         z_mc=z_mc.asnumpy(),
@@ -202,6 +127,10 @@ def test_compute_diffusion_intcoef_and_vertoffset(
         thhgtd_zdiffu=thhgtd_zdiffu,
         cell_nudging=cell_nudging,
         nlev=nlev,
+    )
+    assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
+    assert helpers.dallclose(
+        zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
     )
     assert helpers.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
     assert helpers.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())
