@@ -31,6 +31,26 @@ DO_CHANNEL = True
 DEBUG_LEVEL = 4
 
 
+@gtx.field_operator
+def _set_boundary_conditions_cell(
+    field: fa.CellKField[ta.wpfloat],
+    channel_field: fa.CellKField[ta.wpfloat],
+    mask: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    field = (1.0 - mask) * field + mask * channel_field
+    return field
+
+
+@gtx.field_operator
+def _set_boundary_conditions_edge(
+    field: fa.EdgeKField[ta.wpfloat],
+    channel_field: fa.EdgeKField[ta.wpfloat],
+    mask: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
+    field = (1.0 - mask) * field + mask * channel_field
+    return field
+
+
 class ChannelFlow:
     """
     Main class for channel flow
@@ -49,19 +69,30 @@ class ChannelFlow:
         self.DO_CHANNEL = DO_CHANNEL
         self.DEBUG_LEVEL = DEBUG_LEVEL
 
+        self.backend = backend
+        xp = data_alloc.import_array_ns(self.backend)
+
+        self.num_cells = grid.num_cells
+        self.num_edges = grid.num_edges
+        self.num_levels = grid.num_levels
+
+        self.random_perturbation_magnitude = 0.001  # perturbation magnitude for velocity profile
+
+        # Allocate here so it's not re-allocated every BC call
+        self.random_field_full_edge_np = xp.random.normal(loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels))
+        self.random_field_full_edge = gtx.as_field((dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend)
+
         data_provider = sb.IconSerialDataProvider(
-            backend=backend,
+            backend=self.backend,
             fname_prefix="icon_pydycore",
             path=savepoint_path,
         )
         grid_savepoint = data_provider.from_savepoint_grid("aa", 0, 2)
 
-        self.channel_y, self.channel_U = self.load_channel_data(backend)
+        self.channel_y, self.channel_U = self.load_channel_data()
 
         self.full_cell_mask, self.half_cell_mask, self.full_edge_mask = self.make_masks(
-            grid=grid,
             grid_file_path=grid_file_path,
-            backend=backend,
         )
 
         self.vn, self.w, self.rho, self.exner, self.theta_v = self.compute_channel_fields(
@@ -70,19 +101,17 @@ class ChannelFlow:
             grid=grid,
             data_provider=data_provider,
             grid_savepoint=grid_savepoint,
-            backend=backend,
         )
 
         log.info("Channel flow initialized")
 
     def load_channel_data(
         self,
-        backend: gtx_backend.Backend,
     ) -> tuple[
         data_alloc.NDArray,
         data_alloc.NDArray,
     ]:
-        xp = data_alloc.import_array_ns(backend)
+        xp = data_alloc.import_array_ns(self.backend)
 
         # Lee & Moser data: Re_tau = 5200
         data = xp.loadtxt("../python-scripts/data/LeeMoser_chan5200.mean", skiprows=72)
@@ -94,21 +123,15 @@ class ChannelFlow:
 
     def make_masks(
         self,
-        grid: icon_grid.IconGrid,
         grid_file_path: str,
-        backend: gtx_backend.Backend,
     ) -> tuple[
         fa.CellKField[ta.wpfloat],
         fa.CellKField[ta.wpfloat],
         fa.EdgeKField[ta.wpfloat],
     ]:
-        xp = data_alloc.import_array_ns(backend)
+        xp = data_alloc.import_array_ns(self.backend)
 
         sponge_length = 50
-
-        num_cells = grid.num_cells
-        num_edges = grid.num_edges
-        num_levels = grid.num_levels
 
         grid_file = xr.open_dataset(grid_file_path)
         domain_length = grid_file.domain_length
@@ -120,12 +143,12 @@ class ChannelFlow:
         cell_x = xp.where(xp.abs(cell_x - 0.0) < 1e-9, 0.0, cell_x)
         cell_x = xp.where(xp.abs(cell_x - domain_length) < 1e-9, 0.0, cell_x)
 
-        half_cell_mask_np = xp.zeros((num_cells, num_levels + 1), dtype=float)
-        full_cell_mask_np = xp.zeros((num_cells, num_levels), dtype=float)
-        full_edge_mask_np = xp.zeros((num_edges, num_levels), dtype=float)
+        half_cell_mask_np = xp.zeros((self.num_cells, self.num_levels + 1), dtype=float)
+        full_cell_mask_np = xp.zeros((self.num_cells, self.num_levels), dtype=float)
+        full_edge_mask_np = xp.zeros((self.num_edges, self.num_levels), dtype=float)
 
         x_inflow = xp.unique(cell_x)[0]  # first cell centre from left
-        for k in range(num_levels):
+        for k in range(self.num_levels):
             # outflow: tanh sponge
             full_cell_mask_np[:, k] = (
                 1
@@ -155,7 +178,6 @@ class ChannelFlow:
         grid: icon_grid.IconGrid,
         data_provider: sb.IconSerialDataProvider,
         grid_savepoint: sb.IconGridSavepoint,
-        backend: gtx_backend.Backend,
     ) -> tuple[
         fa.EdgeKField[ta.wpfloat],
         fa.CellKField[ta.wpfloat],
@@ -167,11 +189,8 @@ class ChannelFlow:
         nh_t0 = 300.0
         nh_brunt_vais = 0.0
 
-        xp = data_alloc.import_array_ns(backend)
+        xp = data_alloc.import_array_ns(self.backend)
 
-        num_cells = grid.num_cells
-        num_edges = grid.num_edges
-        num_levels = grid.num_levels
         edge_domain = h_grid.domain(dims.EdgeDim)
         end_edge_lateral_boundary_level_2 = grid.end_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -188,12 +207,12 @@ class ChannelFlow:
 
         edge_geometry = grid_savepoint.construct_edge_geometry()
         primal_normal_x = edge_geometry.primal_normal[0].ndarray
-        primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
-        mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
+        primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), self.num_levels, axis=1)
+        mask_array_edge_start_plus1_to_edge_end = xp.ones(self.num_edges, dtype=bool)
         mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
         u0_mask = xp.repeat(
             xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
-            num_levels,
+            self.num_levels,
             axis=1,
         )
 
@@ -203,40 +222,40 @@ class ChannelFlow:
         channel_U = xp.concatenate((channel_U, channel_U[::-1]), axis=0)
 
         # Interpolate LM_u onto the ICON grid
-        nh_u0 = xp.zeros((num_edges, num_levels), dtype=float)
-        for j in range(num_levels):
+        nh_u0 = xp.zeros((self.num_edges, self.num_levels), dtype=float)
+        for j in range(self.num_levels):
             LM_j = xp.argmin(
                 xp.abs(channel_y - full_level_heights[0, j])
             )  # NOTE: full_level_heights should be identical for all edges because the channel is flat
-            nh_u0[:, j] = channel_U[LM_j] + xp.random.normal(loc=0, scale=0.05, size=num_edges)
+            nh_u0[:, j] = channel_U[LM_j] + xp.random.normal(loc=0, scale=self.random_perturbation_magnitude, size=self.num_edges)
 
         u = xp.where(u0_mask, nh_u0, 0.0)
         vn_ndarray = u * primal_normal_x
 
-        w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+        w_ndarray = xp.zeros((self.num_cells, self.num_levels + 1), dtype=float)
 
         # ---------------------------------------------------------------------------
         # The following is from the Gauss3D experiment
 
-        theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-        exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-        rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+        theta_v_ndarray = xp.zeros((self.num_cells, self.num_levels), dtype=float)
+        exner_ndarray = xp.zeros((self.num_cells, self.num_levels), dtype=float)
+        rho_ndarray = xp.zeros((self.num_cells, self.num_levels), dtype=float)
 
         # Vertical temperature profile
-        for k_index in range(num_levels - 1, -1, -1):
+        for k_index in range(self.num_levels - 1, -1, -1):
             z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
             # profile of theta is explicitly given
             theta_v_ndarray[:, k_index] = nh_t0 * xp.exp(z_help)
 
         # Lower boundary condition for exner pressure
         if nh_brunt_vais != 0.0:
-            z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
-            exner_ndarray[:, num_levels - 1] = (
+            z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, self.num_levels - 1]
+            exner_ndarray[:, self.num_levels - 1] = (
                 phy_const.GRAV / nh_brunt_vais
             ) ** 2 / nh_t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
         else:
-            exner_ndarray[:, num_levels - 1] = (
-                1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
+            exner_ndarray[:, self.num_levels - 1] = (
+                1.0 - geopot[:, self.num_levels - 1] / phy_const.CPD / nh_t0
             )
 
         # Compute hydrostatically balanced exner, by integrating the (discretized!)
@@ -251,14 +270,14 @@ class ChannelFlow:
             rho_ndarray,
             exner_ndarray,
             theta_v_ndarray,
-            num_levels,
+            self.num_levels,
         )
 
-        vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
-        w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
-        exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
-        rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
-        theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
+        vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=self.backend)
+        w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=self.backend)
+        exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=self.backend)
+        rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=self.backend)
+        theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=self.backend)
 
         return vn, w, rho, exner, theta_v
 
@@ -293,4 +312,46 @@ class ChannelFlow:
         """
         Set the boundary conditions for the channel flow
         """
+
+        xp = data_alloc.import_array_ns(self.backend)
+
+        self.random_field_full_edge_np = xp.random.normal(loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels))
+        self.random_field_full_edge = gtx.as_field((dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend)
+
+        _set_boundary_conditions_edge(
+            field=vn,
+            channel_field=self.vn + self.random_field_full_edge,
+            mask=self.full_edge_mask,
+            out=vn,
+            offset_provider={},
+        )
+        _set_boundary_conditions_cell(
+            field=w,
+            channel_field=self.w,
+            mask=self.half_cell_mask,
+            out=w,
+            offset_provider={},
+        )
+        _set_boundary_conditions_cell(
+            field=rho,
+            channel_field=self.rho,
+            mask=self.full_cell_mask,
+            out=rho,
+            offset_provider={},
+        )
+        _set_boundary_conditions_cell(
+            field=exner,
+            channel_field=self.exner,
+            mask=self.full_cell_mask,
+            out=exner,
+            offset_provider={},
+        )
+        _set_boundary_conditions_cell(
+            field=theta_v,
+            channel_field=self.theta_v,
+            mask=self.full_cell_mask,
+            out=theta_v,
+            offset_provider={},
+        )
+
         return vn, w, rho, exner, theta_v
