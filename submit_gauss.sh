@@ -8,10 +8,10 @@
 #SBATCH --uenv=icon/25.2:v3
 #SBATCH --view=default
 
-#SBATCH --partition=debug
-#SBATCH --time=00:30:00
+#SBATCH --partition=normal
+#SBATCH --time=17:00:00
 
-#SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser_debug
+#SBATCH --job-name=channel_950x350x100_5m_nlev20_leeMoser
 
 #SBATCH --output=../runs_icon4py/logs/%x.log
 #SBATCH --error=../runs_icon4py/logs/%x.log
@@ -44,24 +44,38 @@ mac)
 	echo "cluster name not recognized: ${CLUSTER_NAME}"
 	;;
 esac
-echo "Running on cluster: ${CLUSTER_NAME}"
+
+# ==============================================================================
+# Environment setup
+#
+export ICON4PY_OUTPUT_DIR=$SCRATCH/runs_icon4py/$SLURM_JOB_NAME
+export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
+export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
+export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
+
+export ICON4PY_DIR=$PROJECTS_DIR/icon4py.ibm
+export SCRIPTS_DIR=$PROJECTS_DIR/python-scripts
+
+echo "Running on cluster: $CLUSTER_NAME"
+echo ""
+echo "icon4py directory: $ICON4PY_DIR"
+echo "icon4py backend: $ICON4PY_BACKEND"
+echo "icon4py output directory: $ICON4PY_OUTPUT_DIR"
+echo ""
+echo "scripts directory: $SCRIPTS_DIR"
+
+# ==============================================================================
+# Run simulation
+#
+cd "$ICON4PY_DIR" || exit
+
+source .venv/bin/activate
 
 export PYTHONOPTIMIZE=2
 export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1
 export GT4PY_BUILD_CACHE_LIFETIME=persistent
 export GT4PY_BUILD_CACHE_DIR=$SCRATCH/gt4py_cache
 
-source "$PROJECTS_DIR/icon4py/.venv/bin/activate"
-
-export ICON4PY_OUTPUT_DIR=$SCRATCH/runs_icon4py/$SLURM_JOB_NAME
-#export ICON4PY_SAVEPOINT_PATH="testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
-export ICON4PY_SAVEPOINT_PATH="ser_data/exclaim_channel_950x350x100_5m_nlev20/ser_data"
-export ICON4PY_GRID_FILE_PATH="testdata/grids/gauss3d_torus/Channel_950m_x_350m_res5m.nc"
-export TOTAL_WORKERS=$((SLURM_NNODES * SLURM_TASKS_PER_NODE))
-
-# ==============================================================================
-# Run simulation
-#
 python \
 	model/driver/src/icon4py/model/driver/icon4py_driver.py \
 	$ICON4PY_SAVEPOINT_PATH \
@@ -73,12 +87,12 @@ python \
 # Postprocess
 #
 deactivate
-source "$PROJECTS_DIR/python-scripts/.venv/bin/activate"
+source "$SCRIPTS_DIR/.venv/bin/activate"
 
 # generate vtu files
-python ../python-scripts/plot_vtk.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
+python "$SCRIPTS_DIR/plot_vtk.py" "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR" "$ICON4PY_SAVEPOINT_PATH" "$ICON4PY_GRID_FILE_PATH"
 
 # compute temporal averages
-python ../python-scripts/temporal_average.py "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR"
+python "$SCRIPTS_DIR/temporal_average.py" "$TOTAL_WORKERS" "$ICON4PY_OUTPUT_DIR"
 
-echo "Finished running job: $SLURM_JOB_NAME, one way or another"
+echo "Finished running job: $SLURM_JOB_NAME"
