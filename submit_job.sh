@@ -152,7 +152,10 @@ if [ "$run_postprocess" = true ]; then
 
 	echo "[INFO] Running postprocess..."
 
-	deactivate
+	if [ -n "$VIRTUAL_ENV" ]; then
+		# deactivate simulation venv if active
+		deactivate
+	fi
 	source "$SCRIPTS_DIR/.venv/bin/activate"
 
 	# generate vtu files
