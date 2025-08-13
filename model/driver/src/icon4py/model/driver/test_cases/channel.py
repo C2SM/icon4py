@@ -11,6 +11,7 @@ import logging
 import gt4py.next as gtx
 import xarray as xr
 from gt4py.next import backend as gtx_backend
+from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -27,9 +28,6 @@ from icon4py.model.testing import serialbox as sb
 
 log = logging.getLogger(__name__)
 
-DO_CHANNEL = True
-DEBUG_LEVEL = 4
-
 
 @gtx.field_operator
 def _set_boundary_conditions_cell(
@@ -37,7 +35,7 @@ def _set_boundary_conditions_cell(
     channel_field: fa.CellKField[ta.wpfloat],
     mask: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    field = (1.0 - mask) * field + mask * channel_field
+    field = (broadcast(1.0, (dims.CellDim, dims.KDim)) - mask) * field + mask * channel_field
     return field
 
 
@@ -47,7 +45,7 @@ def _set_boundary_conditions_edge(
     channel_field: fa.EdgeKField[ta.wpfloat],
     mask: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    field = (1.0 - mask) * field + mask * channel_field
+    field = (broadcast(1.0, (dims.EdgeDim, dims.KDim)) - mask) * field + mask * channel_field
     return field
 
 
@@ -66,8 +64,6 @@ class ChannelFlow:
         """
         Initialize the channel
         """
-        self.DO_CHANNEL = DO_CHANNEL
-        self.DEBUG_LEVEL = DEBUG_LEVEL
 
         self.backend = backend
         xp = data_alloc.import_array_ns(self.backend)
@@ -147,7 +143,8 @@ class ChannelFlow:
         full_cell_mask_np = xp.zeros((self.num_cells, self.num_levels), dtype=float)
         full_edge_mask_np = xp.zeros((self.num_edges, self.num_levels), dtype=float)
 
-        x_inflow = xp.unique(cell_x)[0]  # first cell centre from left
+        x_inflow = xp.unique(cell_x)[1]  # second cell centre from left
+        domain_length = xp.unique(cell_x)[-2] # NOTE: grid_file.domain_length be the right choice, but the sponge would never reach 1
         for k in range(self.num_levels):
             # outflow: tanh sponge
             full_cell_mask_np[:, k] = (
@@ -158,7 +155,7 @@ class ChannelFlow:
                 1
                 + xp.tanh((edge_x + sponge_length / 2 - domain_length) * 2 * xp.pi / sponge_length)
             ) / 2
-            # inflow: Dirichlet on first cell
+            # inflow: Dirichlet on first cell(s?)
             full_cell_mask_np[:, k] = xp.where(cell_x <= x_inflow, 1.0, full_cell_mask_np[:, k])
             full_edge_mask_np[:, k] = xp.where(edge_x <= x_inflow, 1.0, full_edge_mask_np[:, k])
 

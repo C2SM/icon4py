@@ -788,20 +788,6 @@ class SolveNonhydro:
                 prognostic_states.current.exner,
                 prognostic_states.current.theta_v,
             ) = self._channel.set_initial_conditions()
-        else:
-            (
-                prognostic_states.current.vn,
-                prognostic_states.current.w,
-                prognostic_states.current.rho,
-                prognostic_states.current.exner,
-                prognostic_states.current.theta_v,
-            ) = self._channel.set_boundary_conditions(
-                prognostic_states.current.vn,
-                prognostic_states.current.w,
-                prognostic_states.current.rho,
-                prognostic_states.current.exner,
-                prognostic_states.current.theta_v,
-            )
         #<--- Channel
         #---> IBM
         if at_initial_timestep and at_first_substep:
@@ -823,10 +809,6 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
         )
 
-        #---> IBM
-        if self._ibm.DEBUG_LEVEL >= 3:
-            plots.pickle_data(prognostic_states.next, f"end_of_predictor")
-        #<--- IBM
         #---> Channel
         (
             prognostic_states.next.vn,
@@ -842,6 +824,10 @@ class SolveNonhydro:
             prognostic_states.next.theta_v,
         )
         #<--- Channel
+        #---> IBM
+        if self._ibm.DEBUG_LEVEL >= 3:
+            plots.pickle_data(prognostic_states.next, f"end_of_predictor")
+        #<--- IBM
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -855,6 +841,21 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
 
+        #---> Channel
+        (
+            prognostic_states.next.vn,
+            prognostic_states.next.w,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.theta_v,
+        ) = self._channel.set_boundary_conditions(
+            prognostic_states.next.vn,
+            prognostic_states.next.w,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.theta_v,
+        )
+        #<--- Channel
         #---> IBM
         if self._ibm.DEBUG_LEVEL >= 3:
             plots.pickle_data(prognostic_states.next, f"end_of_corrector")
