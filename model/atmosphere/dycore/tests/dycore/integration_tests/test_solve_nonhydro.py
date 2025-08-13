@@ -1977,7 +1977,7 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     vn = savepoint_dycore_30_to_38_init.vn()
     z_rho_e = savepoint_dycore_30_to_38_init.z_rho_e()
     z_theta_v_e = savepoint_dycore_30_to_38_init.z_theta_v_e()
-    r_nsubsteps = 1.0 / config.ndyn_substeps_var
+    r_nsubsteps = 1.0 / ndyn_substeps
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
     horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
