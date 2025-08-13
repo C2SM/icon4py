@@ -14,7 +14,7 @@ from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers, parallel_helpers
+from icon4py.model.testing import parallel_helpers, test_utils
 
 from .. import utils
 
@@ -179,53 +179,53 @@ def test_run_solve_nonhydro_single_step(
 
     expected_theta_v = sp_step_exit.theta_v_new().asnumpy()
     calculated_theta_v = prognostic_states.next.theta_v.asnumpy()
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         expected_theta_v,
         calculated_theta_v,
     )
     expected_exner = sp_step_exit.exner_new().asnumpy()
     calculated_exner = prognostic_states.next.exner.asnumpy()
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         expected_exner,
         calculated_exner,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         prognostic_states.next.vn.asnumpy(),
         rtol=1e-10,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.w_new().asnumpy(),
         prognostic_states.next.w.asnumpy(),
         atol=8e-14,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
         prognostic_states.next.rho.asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
         diagnostic_state_nh.rho_ic.asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         prep_adv.mass_flx_me.asnumpy(),
         rtol=1e-10,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         prep_adv.vn_traj.asnumpy(),
         rtol=1e-10,

@@ -27,7 +27,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.testing.helpers import (
+from icon4py.model.testing.test_utils import (
     dallclose,
 )
 

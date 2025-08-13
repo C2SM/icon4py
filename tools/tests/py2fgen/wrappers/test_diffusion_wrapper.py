@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 from icon4py.tools.py2fgen.wrappers import (
@@ -450,23 +450,25 @@ def test_diffusion_wrapper_single_step(
     dwdx_ = savepoint_diffusion_exit.dwdx()
     dwdy_ = savepoint_diffusion_exit.dwdy()
 
-    assert helpers.dallclose(py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(py2fgen.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(
+    assert test_utils.dallclose(py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12)
+    assert test_utils.dallclose(
+        py2fgen.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12
+    )
+    assert test_utils.dallclose(
         py2fgen.as_array(ffi, exner, py2fgen.FLOAT64), exner_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         py2fgen.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         py2fgen.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         py2fgen.as_array(ffi, div_ic, py2fgen.FLOAT64), div_ic_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         py2fgen.as_array(ffi, dwdx, py2fgen.FLOAT64), dwdx_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         py2fgen.as_array(ffi, dwdy, py2fgen.FLOAT64), dwdy_.asnumpy(), atol=1e-12
     )

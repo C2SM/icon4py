@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_mo
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests as test_helpers
 
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy

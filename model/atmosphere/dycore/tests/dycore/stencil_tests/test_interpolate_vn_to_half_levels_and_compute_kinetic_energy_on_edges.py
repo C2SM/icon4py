@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests as test_helpers
 
 
 def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_numpy(

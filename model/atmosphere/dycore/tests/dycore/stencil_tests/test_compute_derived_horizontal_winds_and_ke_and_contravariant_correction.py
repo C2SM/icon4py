@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests as test_helpers
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (

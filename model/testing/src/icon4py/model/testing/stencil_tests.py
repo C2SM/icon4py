@@ -53,12 +53,6 @@ def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
 
 
-def dallclose(
-    a: np.ndarray, b: np.ndarray, rtol: float = 1.0e-12, atol: float = 0.0, equal_nan: bool = False
-) -> bool:
-    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
-
-
 def allocate_data(
     backend: Optional[gtx_backend.Backend],
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
@@ -290,7 +284,3 @@ class StencilTest:
         # inheritance.
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_and_benchmark)
-
-
-def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
-    return np.reshape(arr, shape)

@@ -17,7 +17,7 @@ from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_na
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_nabla2_on_cell_k
 from icon4py.model.common.utils.data_allocation import constant_field, zero_field
 from icon4py.model.testing import reference_funcs
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 class TestNabla2OnCell(StencilTest):

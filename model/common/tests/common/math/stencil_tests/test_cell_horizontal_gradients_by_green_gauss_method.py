@@ -19,7 +19,7 @@ from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def cell_horizontal_gradients_by_green_gauss_method_numpy(

@@ -11,7 +11,7 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.testing.helpers import apply_markers
+from icon4py.model.testing.stencil_tests import apply_markers
 
 
 __all__ = [

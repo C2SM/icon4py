@@ -18,7 +18,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
     interpolate_to_cell_center,
 )
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_to_cell_center_numpy(
@@ -37,7 +37,7 @@ def interpolate_to_cell_center_numpy(
     return interpolation
 
 
-class TestInterpolateToCellCenter(helpers.StencilTest):
+class TestInterpolateToCellCenter(stencil_tests.StencilTest):
     PROGRAM = interpolate_to_cell_center
     OUTPUTS = ("interpolation",)
 

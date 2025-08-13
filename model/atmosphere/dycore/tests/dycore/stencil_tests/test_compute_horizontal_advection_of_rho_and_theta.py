@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rh
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
 # TODO copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
@@ -205,7 +205,7 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     return (z_rho_e, z_theta_v_e)
 
 
-class TestComputeHorizontalAvectionOfRhoAndTheta(helpers.StencilTest):
+class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
     PROGRAM = _compute_horizontal_advection_of_rho_and_theta
     OUTPUTS = ("out",)
     MARKERS = (pytest.mark.skip_value_error,)

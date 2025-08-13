@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_list_for_cubic_reconstruction import (
     prepare_numerical_quadrature_list_for_cubic_reconstruction,
 )
@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTest):
+class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.StencilTest):
     PROGRAM = prepare_numerical_quadrature_list_for_cubic_reconstruction
     OUTPUTS = (
         "p_quad_vector_sum_1",

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
+import icon4py.model.testing.test_utils
 import numpy as np
 import pytest
 
@@ -22,9 +23,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
-    helpers,
     reference_funcs as ref_funcs,
     serialbox as sb,
+    stencil_tests,
 )
 
 from ..fixtures import *  # noqa: F403
@@ -216,10 +217,10 @@ def test_diffusion_init(
         1.0 / 48.0, additional_parameters.K4W * config.substep_as_float
     )
 
-    assert helpers.dallclose(diffusion_granule.v_vert.asnumpy(), 0.0)
-    assert helpers.dallclose(diffusion_granule.u_vert.asnumpy(), 0.0)
-    assert helpers.dallclose(diffusion_granule.kh_smag_ec.asnumpy(), 0.0)
-    assert helpers.dallclose(diffusion_granule.kh_smag_e.asnumpy(), 0.0)
+    assert icon4py.model.testing.test_utils.dallclose(diffusion_granule.v_vert.asnumpy(), 0.0)
+    assert icon4py.model.testing.test_utils.dallclose(diffusion_granule.u_vert.asnumpy(), 0.0)
+    assert icon4py.model.testing.test_utils.dallclose(diffusion_granule.kh_smag_ec.asnumpy(), 0.0)
+    assert icon4py.model.testing.test_utils.dallclose(diffusion_granule.kh_smag_e.asnumpy(), 0.0)
 
     shape_k = (grid.num_levels,)
     expected_smag_limit = smag_limit_numpy(
@@ -232,19 +233,25 @@ def test_diffusion_init(
     assert (
         diffusion_granule.smag_offset == 0.25 * additional_parameters.K4 * config.substep_as_float
     )
-    assert helpers.dallclose(diffusion_granule.smag_limit.asnumpy(), expected_smag_limit)
+    assert icon4py.model.testing.test_utils.dallclose(
+        diffusion_granule.smag_limit.asnumpy(), expected_smag_limit
+    )
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
         shape_k, additional_parameters.K4, config.substep_as_float
     )
 
-    assert helpers.dallclose(diffusion_granule.diff_multfac_vn.asnumpy(), expected_diff_multfac_vn)
+    assert icon4py.model.testing.test_utils.dallclose(
+        diffusion_granule.diff_multfac_vn.asnumpy(), expected_diff_multfac_vn
+    )
     expected_enh_smag_fac = ref_funcs.enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
         vertical_params.vct_a.ndarray,
     )
-    assert helpers.dallclose(diffusion_granule.enh_smag_fac.asnumpy(), expected_enh_smag_fac)
+    assert icon4py.model.testing.test_utils.dallclose(
+        diffusion_granule.enh_smag_fac.asnumpy(), expected_enh_smag_fac
+    )
 
 
 def _verify_init_values_against_savepoint(
@@ -265,18 +272,20 @@ def _verify_init_values_against_savepoint(
         diffusion_granule.diff_multfac_smag,
         offset_provider={},
     )
-    assert helpers.dallclose(
+    assert icon4py.model.testing.test_utils.dallclose(
         diffusion_granule.enh_smag_fac.asnumpy(), savepoint.enh_smag_fac(), rtol=1e-7
     )
-    assert helpers.dallclose(
+    assert icon4py.model.testing.test_utils.dallclose(
         diffusion_granule.diff_multfac_smag.asnumpy(), savepoint.diff_multfac_smag(), rtol=1e-7
     )
 
-    assert helpers.dallclose(diffusion_granule.smag_limit.asnumpy(), savepoint.smag_limit())
-    assert helpers.dallclose(
+    assert icon4py.model.testing.test_utils.dallclose(
+        diffusion_granule.smag_limit.asnumpy(), savepoint.smag_limit()
+    )
+    assert icon4py.model.testing.test_utils.dallclose(
         diffusion_granule.diff_multfac_n2w.asnumpy(), savepoint.diff_multfac_n2w()
     )
-    assert helpers.dallclose(
+    assert icon4py.model.testing.test_utils.dallclose(
         diffusion_granule.diff_multfac_vn.asnumpy(), savepoint.diff_multfac_vn()
     )
 
@@ -372,7 +381,7 @@ def test_run_diffusion_single_step(
     orchestration,
     benchmark,
 ):
-    if orchestration and not helpers.is_dace(backend):
+    if orchestration and not stencil_tests.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
 
     if experiment == dt_utils.REGIONAL_EXPERIMENT:
@@ -425,7 +434,7 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    helpers.run_verify_and_benchmark(
+    stencil_tests.run_verify_and_benchmark(
         functools.partial(
             diffusion_granule.run,
             diagnostic_state=diagnostic_state,
@@ -470,7 +479,7 @@ def test_run_diffusion_multiple_steps(
     icon_grid,
 ):
     pytest.skip("dace orchestration broken by precompiled programs")
-    if not helpers.is_dace(backend):
+    if not stencil_tests.is_dace(backend):
         raise pytest.skip("This test is only executed for dace backends")
     ######################################################################
     # Diffusion initialization
@@ -592,7 +601,7 @@ def test_run_diffusion_initial_step(
     backend,
     orchestration,
 ):
-    if orchestration and not helpers.is_dace(backend):
+    if orchestration and not stencil_tests.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)

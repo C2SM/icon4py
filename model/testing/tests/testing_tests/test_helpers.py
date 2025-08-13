@@ -10,7 +10,7 @@ from unittest import mock
 
 import pytest
 
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
 def required_args_func(req_arg):
@@ -23,7 +23,7 @@ def test_run_verify_and_benchmark(benchmark_enabled):
     verification_func = mock.Mock()
     benchmark = mock.Mock(enabled=benchmark_enabled)
 
-    helpers.run_verify_and_benchmark(
+    stencil_tests.run_verify_and_benchmark(
         functools.partial(test_func, req_arg=mock.Mock()),
         verification_func,
         benchmark_fixture=benchmark,
@@ -41,7 +41,7 @@ def test_run_verify_and_benchmark_no_fixture():
     test_func = mock.Mock()
     verification_func = mock.Mock()
 
-    helpers.run_verify_and_benchmark(
+    stencil_tests.run_verify_and_benchmark(
         test_func,
         verification_func,
         benchmark_fixture=None,  # No benchmark fixture provided

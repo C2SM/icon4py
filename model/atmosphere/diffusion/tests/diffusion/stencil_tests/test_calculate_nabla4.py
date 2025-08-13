@@ -12,7 +12,7 @@ import pytest
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.testing.helpers import StencilTest, StandardStaticVariants
+from icon4py.model.testing.stencil_tests import StencilTest, StandardStaticVariants
 
 
 def calculate_nabla4_numpy(

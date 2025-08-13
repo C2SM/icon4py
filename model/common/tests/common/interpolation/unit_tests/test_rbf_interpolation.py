@@ -22,7 +22,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
-    helpers as test_helpers,
+    test_utils as test_helpers,
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,

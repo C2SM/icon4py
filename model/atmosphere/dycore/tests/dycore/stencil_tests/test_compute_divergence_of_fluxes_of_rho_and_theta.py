@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rh
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
 def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
@@ -37,7 +37,7 @@ def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
     return (divergence_of_mass_wp, divergence_of_theta_v_wp)
 
 
-class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(helpers.StencilTest):
+class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(stencil_tests.StencilTest):
     PROGRAM = compute_divergence_of_fluxes_of_rho_and_theta
     OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
 
