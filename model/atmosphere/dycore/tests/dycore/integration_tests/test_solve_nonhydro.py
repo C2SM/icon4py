@@ -1966,7 +1966,7 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     edge_domain = h_grid.domain(dims.EdgeDim)
 
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment)
 
     z_vn_avg = savepoint_dycore_30_to_38_init.z_vn_avg()
     mass_fl_e = savepoint_dycore_30_to_38_init.mass_fl_e()
