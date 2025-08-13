@@ -54,25 +54,9 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 )
 from .test_update_dynamical_exner_time_increment import update_dynamical_exner_time_increment_numpy
 from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
-
-
-def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
-    geofac_div: np.ndarray,
-    mass_flux_at_edges_on_model_levels: np.ndarray,
-    theta_v_flux_at_edges_on_model_levels: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
-    c2e = connectivities[dims.C2EDim]
-    c2ce = helpers.as_1d_connectivity(c2e)
-    geofac_div = np.expand_dims(geofac_div, axis=-1)
-
-    divergence_of_mass_wp = np.sum(
-        geofac_div[c2ce] * mass_flux_at_edges_on_model_levels[c2e], axis=1
-    )
-    divergence_of_theta_v_wp = np.sum(
-        geofac_div[c2ce] * theta_v_flux_at_edges_on_model_levels[c2e], axis=1
-    )
-    return (divergence_of_mass_wp, divergence_of_theta_v_wp)
+from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
+    compute_divergence_of_fluxes_of_rho_and_theta_numpy,
+)
 
 
 class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
@@ -399,7 +383,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        geofac_div = data_alloc.random_field(grid, dims.CEDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim

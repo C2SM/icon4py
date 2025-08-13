@@ -238,8 +238,3 @@ class StencilTest:
 
 def reshape(arr: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
     return np.reshape(arr, shape)
-
-
-def as_1d_connectivity(connectivity: np.ndarray) -> np.ndarray:
-    old_shape = connectivity.shape
-    return np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)  # type: ignore[attr-defined] # fix gtx.int32

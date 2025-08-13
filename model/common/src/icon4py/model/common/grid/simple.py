@@ -486,7 +486,6 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
         config=config,
         connectivities=connectivities,
         geometry_type=base.GeometryType.TORUS,
-        allocator=backend,
         _start_indices=start_indices,
         _end_indices=end_indices,
     )

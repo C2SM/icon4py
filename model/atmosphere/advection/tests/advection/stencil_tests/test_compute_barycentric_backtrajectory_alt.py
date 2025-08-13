@@ -36,14 +36,6 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
         p_dthalf: float,
         **kwargs,
     ) -> dict:
-        e2c = connectivities[dims.E2CDim]
-        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
-        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
-        primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
-        primal_normal_cell_2 = primal_normal_cell_2.reshape(e2c.shape)
-        dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
-        dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
-
         lvn_pos = p_vn >= 0.0
         pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
         pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
@@ -84,12 +76,12 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.ECDim)
-        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.ECDim)
-        primal_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim)
-        dual_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim)
-        primal_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim)
-        dual_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim)
+        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         p_distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0

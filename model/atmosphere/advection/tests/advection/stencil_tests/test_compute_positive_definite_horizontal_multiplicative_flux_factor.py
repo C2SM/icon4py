@@ -34,7 +34,6 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
         **kwargs,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]
-        geofac_div = helpers.reshape(geofac_div, c2e.shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         p_m_0 = np.maximum(
             0.0,
@@ -56,7 +55,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        geofac_div = data_alloc.random_field(grid, dims.CEDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

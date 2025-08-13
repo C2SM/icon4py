@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2CE, C2E
+from icon4py.model.common.dimension import C2E
 
 
 @gtx.field_operator
@@ -20,14 +20,14 @@ def _integrate_tracer_horizontally(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     tracer_new_hor = (
         tracer_now * rhodz_now
         - p_dtime
         * deepatmo_divh
-        * neighbor_sum(p_mflx_tracer_h(C2E) * geofac_div(C2CE), axis=dims.C2EDim)
+        * neighbor_sum(p_mflx_tracer_h(C2E) * geofac_div, axis=dims.C2EDim)
     ) / rhodz_new
 
     return tracer_new_hor
@@ -40,7 +40,7 @@ def integrate_tracer_horizontally(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     tracer_new_hor: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,

@@ -125,7 +125,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=POS_ON_TPLANE_E_X,
         long_name="position on tplane x",
         units="",  # TODO check or confirm
-        dims=(dims.ECDim,),
+        dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="pos_on_tplane_e_x",
         dtype=ta.wpfloat,
     ),
@@ -133,7 +133,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=POS_ON_TPLANE_E_Y,
         long_name="position on tplane y",
         units="",  # TODO check or confirm
-        dims=(dims.ECDim,),
+        dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="pos_on_tplane_e_y",
         dtype=ta.wpfloat,
     ),
