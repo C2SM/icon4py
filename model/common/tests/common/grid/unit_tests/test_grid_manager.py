@@ -8,7 +8,8 @@
 import logging
 import typing
 
-
+import gt4py.next as gtx
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -20,12 +21,13 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.testing import (
+    datatest_utils as dt_utils,
     helpers,
 )
 
 
 if typing.TYPE_CHECKING:
-    pass
+    import netCDF4
 
 try:
     import netCDF4
@@ -33,7 +35,14 @@ except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
 
-from icon4py.model.testing.fixtures import *  # noqa: F401
+from icon4py.model.testing.fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    grid_savepoint,
+    processor_props,
+    ranked_data_path,
+)
 
 from .. import utils
 

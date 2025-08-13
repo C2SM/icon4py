@@ -187,7 +187,7 @@ class Grid:
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
-        return gtx.int32(self._end_indices[domain])
+        return self._end_indices[domain]
 
 
 def construct_connectivity(

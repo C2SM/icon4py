@@ -384,7 +384,7 @@ class Domain:
         return hash((self.dim, self.zone))
 
     def __str__(self):
-        return f"Domain (dim = {self.dim}: zone = {self._zone} /[ {_map_to_icon_index(self.dim, self.zone)} ])"
+        return f"Domain (dim = {self.dim}: zone = {self._zone} /ICON index[ {_map_to_icon_index(self.dim, self.zone)} ])"
 
     @property
     def zone(self) -> Zone:
