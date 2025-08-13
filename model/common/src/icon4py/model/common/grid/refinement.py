@@ -16,7 +16,7 @@ from gt4py import next as gtx
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
-
+from icon4py.model.common.utils.data_allocation import zero_field
 
 """
 Refinement control for ICON grid.
@@ -33,6 +33,7 @@ This module only contains functionality related to grid refinement as we use it 
 """
 _log = logging.getLogger(__name__)
 
+#TODO get these from grid file cell_grf, edge_grf, vertex_grf
 _MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 14,
     dims.EdgeDim: 24,
@@ -40,7 +41,6 @@ _MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
 }
 """Lateral boundary points are ordered and have an index indicating the (cell) s distance to the boundary,
 generally the number of ordered rows can be defined in the grid generator, but it will never exceed 14 for cells.
-TODO: Are these the x_grf dimension in the netcdf grid file?
 """
 
 
@@ -63,6 +63,8 @@ _NUDGING_START: Final[dict[gtx.Dimension : int]] = {
 """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
 
 
+
+
 @dataclasses.dataclass(frozen=True)
 class RefinementValue:
     dim: gtx.Dimension
@@ -79,6 +81,7 @@ class RefinementValue:
 
     def is_ordered(self) -> bool:
         return self.value not in _UNORDERED[self.dim]
+
 
 
 def is_unordered_field(
@@ -124,3 +127,17 @@ def is_limited_area_grid(
     The .item() call is needed to get a scalar return for cupy arrays.
     """
     return array_ns.any(refinement_field > 0).item()
+
+
+def compute_start_index(dim: gtx.Dimension, refinement_ctrl: data_alloc.NDArray, array_ns:ModuleType = np) -> data_alloc.NDArray:
+    """Compute the start index for the refinement control field for a given dimension."""
+    assert dim.kind == gtx.DimensionKind.HORIZONTAL, f"dim = {dim=} refinement control values only exist for horizontal dimensions"
+    shape = (_MAX_ORDERED[dim],)
+
+    starts = array_ns.zeros(shape, dtype=gtx.int32)
+    index = array_ns.min(array_ns.where(refinement_ctrl == h_grid.LineNumber.FIRST))
+    starts[h_grid._LATERAL_BOUNDARY[dim]] = index
+    index = array_ns.min(array_ns.where(refinement_ctrl == h_grid.LineNumber.SECOND))
+    starts[h_grid._LATERAL_BOUNDARY[dim] + 1] = index
+
+    return starts

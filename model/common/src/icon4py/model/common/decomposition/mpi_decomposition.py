@@ -105,21 +105,22 @@ class ParallelLogger(logging.Filter):
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
 def get_multinode_properties(
-    s: definitions.MultiNodeRun, comm_id: CommId = None
+    s: definitions.RunType, comm_id: CommId = None
 ) -> definitions.ProcessProperties:
     return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
-@dataclass(frozen=True)
+# TODO (@halungge) changed for dev/testing set back to frozen
+@dataclass(frozen=False)
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
 
     @functools.cached_property
-    def rank(self):
+    def rank(self) -> int:
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self):
+    def comm_name(self) -> str:
         return self.comm.Get_name()
 
     @functools.cached_property

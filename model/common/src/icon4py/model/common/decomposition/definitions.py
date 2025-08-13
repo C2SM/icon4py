@@ -8,16 +8,18 @@
 
 from __future__ import annotations
 
+import enum
 import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Literal, Optional, Protocol, Sequence, overload, runtime_checkable
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next import Dimension
 
 from icon4py.model.common import utils
+from icon4py.model.common.grid import gridfile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -39,6 +41,12 @@ class ProcessProperties(Protocol):
     rank: int
     comm_name: str
     comm_size: int
+
+    def single_node(self) -> bool:
+        return self.comm_size == 1
+
+    def __str__(self):
+        return f"Comm name={self.comm_name}: rank = {self.rank}/{self.comm_size}"
 
 
 @dataclass(frozen=True, init=False)
@@ -77,43 +85,31 @@ class DecompositionInfo:
         HALO = 2
 
     @utils.chainable
-    def with_dimension(
-        self, dim: Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
+    def set_dimension(
+        self,
+        dim: gtx.Dimension,
+        global_index: data_alloc.NDArray,
+        owner_mask: data_alloc.NDArray,
+        halo_levels: data_alloc.NDArray,
     ):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
+        self._halo_levels[dim] = halo_levels
 
     def __init__(
         self,
         klevels: int,
-        num_cells: Optional[int] = None,
-        num_edges: Optional[int] = None,
-        num_vertices: Optional[int] = None,
     ):
-        self._global_index = {}
         self._klevels = klevels
+        self._global_index = {}
+        self._halo_levels = {}
         self._owner_mask = {}
-        self._num_vertices = num_vertices
-        self._num_cells = num_cells
-        self._num_edges = num_edges
 
     @property
     def klevels(self):
         return self._klevels
 
-    @property
-    def num_cells(self):
-        return self._num_cells
-
-    @property
-    def num_edges(self):
-        return self._num_edges
-
-    @property
-    def num_vertices(self):
-        return self._num_vertices
-
-    def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def local_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
@@ -137,10 +133,27 @@ class DecompositionInfo:
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
+    def global_to_local(
+        self, dim: gtx.Dimension, indices_to_translate: data_alloc.NDArray
+    ) -> data_alloc.NDArray:
+        global_indices = self.global_index(dim)
+        sorter = np.argsort(global_indices)
+
+        mask = np.isin(indices_to_translate, global_indices)
+        # Find the positions of `values_to_find` in the sorted `global_indices`.
+        # The `sorter` argument tells searchsorted to work with the sorted version
+        # of `global_indices` without creating an explicit sorted copy.
+        local_neighbors = np.where(
+            mask,
+            sorter[np.searchsorted(global_indices, indices_to_translate, sorter=sorter)],
+            gridfile.GridFile.INVALID_INDEX,
+        )
+        return local_neighbors
+
+    def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
-    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def global_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._global_index[dim]
@@ -151,6 +164,16 @@ class DecompositionInfo:
             case _:
                 raise NotImplementedError()
 
+    def halo_levels(self, dim: gtx.Dimension):
+        return self._halo_levels[dim]
+
+    def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag):
+        return np.where(self._halo_levels[dim] == level, True, False)
+
+    # TODO unused - delete
+    def is_on_node(self, dim, index: int, entryType: EntryType = EntryType.ALL) -> bool:
+        return np.isin(index, self.global_index(dim, entry_type=entryType)).item()
+
 
 class ExchangeResult(Protocol):
     def wait(self): ...
@@ -160,9 +183,9 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult: ...
+    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple): ...
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple): ...
 
     def get_size(self): ...
 
@@ -171,10 +194,10 @@ class ExchangeRuntime(Protocol):
 
 @dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
         return
 
     def my_rank(self):
@@ -394,3 +417,34 @@ def create_single_node_exchange(
     props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
 ) -> ExchangeRuntime:
     return SingleNodeExchange()
+
+
+class DecompositionFlag(enum.IntEnum):
+    UNDEFINED = -1
+    OWNED = 0
+    """used for locally owned cells, vertices, edges"""
+
+    FIRST_HALO_LINE = 1
+    """
+    used for:
+    - cells that share 1 edge with an OWNED cell
+    - vertices that are on OWNED cell, but not owned
+    - edges that are on OWNED cell, but not owned
+    """
+
+    SECOND_HALO_LINE = 2
+    """
+    used for:
+    - cells that share a vertex with an OWNED cell
+    - vertices that are on a cell(FIRST_HALO_LINE) but not on an owned cell
+    - edges that have _exactly_ one vertex shared with and OWNED Cell
+    """
+
+    THIRD_HALO_LINE = 3
+    """
+    This type does not exist in ICON. It denotes the "closing/far" edges of the SECOND_HALO_LINE cells
+    used for:
+    - cells (NOT USED)
+    - vertices (NOT USED)
+    - edges that are only on the cell(SECOND_HALO_LINE)
+    """
