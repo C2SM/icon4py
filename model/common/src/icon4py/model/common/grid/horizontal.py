@@ -330,6 +330,7 @@ CELL_ZONES = (
 
 EDGE_ZONES = tuple(Zone)
 
+
 def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:
     match marker:
         case Zone.END:

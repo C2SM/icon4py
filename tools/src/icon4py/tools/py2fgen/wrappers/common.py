@@ -21,7 +21,7 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.common.grid import base, icon
+from icon4py.model.common.grid import base, horizontal as h_grid, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -220,14 +220,15 @@ def construct_icon_grid(
     )
 
     start_indices = {
-        dims.CellDim: cells_start_index,
-        dims.EdgeDim: edge_start_index,
-        dims.VertexDim: vertex_start_index,
+        **h_grid.map_icon_domain_bounds(dims.CellDim, cells_start_index),
+        **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_start_index),
+        **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_start_index),
     }
+
     end_indices = {
-        dims.CellDim: cells_end_index,
-        dims.EdgeDim: edge_end_index,
-        dims.VertexDim: vertex_end_index,
+        **h_grid.map_icon_domain_bounds(dims.CellDim, cells_end_index),
+        **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_end_index),
+        **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_end_index),
     }
 
     return icon.icon_grid(
