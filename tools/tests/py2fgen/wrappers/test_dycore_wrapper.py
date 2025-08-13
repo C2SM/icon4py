@@ -12,6 +12,7 @@ from unittest import mock
 import cffi
 import gt4py.next as gtx
 import pytest
+import numpy as np
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_options, utils as common_utils
@@ -433,6 +434,9 @@ def test_dycore_wrapper_granule_inputs(
 
     # Diagnostic state parameters
     max_vertical_cfl = 0.0
+    max_vcfl_size1_array = test_utils.array_to_array_info(
+        np.full(1, max_vertical_cfl, dtype=np.float64)
+    )
     theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
     exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
     rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
@@ -487,14 +491,10 @@ def test_dycore_wrapper_granule_inputs(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
-        ),
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.geofac_div()
-        ),
+        geofac_div=interpolation_savepoint.geofac_div(),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -553,8 +553,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        # TODO (Chia Rui): read from serialized data
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=max_vertical_cfl,
         tangential_wind=sp.vt(),
         vn_on_half_levels=sp.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),
@@ -802,7 +801,7 @@ def test_dycore_wrapper_granule_inputs(
             vol_flx_ic=vol_flx_ic,
             vn_traj=vn_traj,
             dtime=dtime,
-            max_vcfl=max_vertical_cfl,
+            max_vcfl_size1_array=max_vcfl_size1_array,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
@@ -909,6 +908,9 @@ def test_granule_solve_nonhydro_single_step_regional(
 
     # Diagnostic state parameters
     max_vertical_cfl = 0.0
+    max_vcfl_size1_array = test_utils.array_to_array_info(
+        np.full(1, max_vertical_cfl, dtype=np.float64)
+    )
     theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
     exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
     rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
@@ -993,7 +995,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         vn_traj=vn_traj,
         vol_flx_ic=vol_flx_ic,
         dtime=dtime,
-        max_vcfl=max_vertical_cfl,
+        max_vcfl_size1_array=max_vcfl_size1_array,
         lprep_adv=lprep_adv,
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
@@ -1086,6 +1088,9 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
     # Diagnostic state parameters
     max_vertical_cfl = 0.0
+    max_vcfl_size1_array = test_utils.array_to_array_info(
+        np.full(1, max_vertical_cfl, dtype=np.float64)
+    )
     theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
     exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
     rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
@@ -1178,7 +1183,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             vn_traj=vn_traj,
             vol_flx_ic=vol_flx_ic,
             dtime=dtime,
-            max_vcfl=max_vertical_cfl,
+            max_vcfl_size1_array=max_vcfl_size1_array,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,

@@ -20,17 +20,18 @@ Fortran granule interfaces:
 import cProfile
 import dataclasses
 import pstats
-from typing import Callable, Optional
+from typing import Annotated, Callable, Optional, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import backend as gtx_backend
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
@@ -191,17 +192,13 @@ def solve_nh_init(
         e_flx_avg=e_flx_avg,
         geofac_grdiv=geofac_grdiv,
         geofac_rot=geofac_rot,
-        pos_on_tplane_e_1=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=pos_on_tplane_e_1[:, 0:2]
-        ),
-        pos_on_tplane_e_2=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=pos_on_tplane_e_2[:, 0:2]
-        ),
+        pos_on_tplane_e_1=pos_on_tplane_e_1[:, 0:2],
+        pos_on_tplane_e_2=pos_on_tplane_e_2[:, 0:2],
         rbf_vec_coeff_e=rbf_vec_coeff_e,
-        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=e_bln_c_s),
+        e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=geofac_div),
+        geofac_div=geofac_div,
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
@@ -228,10 +225,8 @@ def solve_nh_init(
         reference_rho_at_edges_on_model_levels=rho_ref_me,
         reference_theta_at_edges_on_model_levels=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
-        zdiff_gradp=data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=zdiff_gradp),
-        vertoffset_gradp=data_alloc.flatten_first_two_dims(
-            dims.ECDim, dims.KDim, field=vertoffset_gradp
-        ),
+        zdiff_gradp=zdiff_gradp,
+        vertoffset_gradp=vertoffset_gradp,
         pg_edgeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
@@ -243,7 +238,7 @@ def solve_nh_init(
         scaling_factor_for_3d_divdamp=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        coeff_gradekin=data_alloc.flatten_first_two_dims(dims.ECDim, field=coeff_gradekin),
+        coeff_gradekin=coeff_gradekin,
     )
 
     # datatest config
@@ -285,6 +280,17 @@ def solve_nh_init(
     )
 
 
+NumpyFloatArray1D: TypeAlias = Annotated[
+    np.ndarray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.HOST,
+        is_optional=False,
+    ),
+]
+
+
 @icon4py_export.export
 def solve_nh_run(
     rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -323,7 +329,7 @@ def solve_nh_run(
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     dtime: gtx.float64,
-    max_vcfl: gtx.float64,
+    max_vcfl_size1_array: NumpyFloatArray1D,  # receive from Fortran as a single-element array
     lprep_adv: bool,
     at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
@@ -353,6 +359,8 @@ def solve_nh_run(
         dynamical_vertical_mass_flux_at_cells_on_half_levels=mass_flx_ic,
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
     )
+
+    max_vcfl = max_vcfl_size1_array[0]  # Note, needs to be passed back after the timestep
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=max_vcfl,
@@ -412,3 +420,5 @@ def solve_nh_run(
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
     )
+
+    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl  # pass back to Fortran

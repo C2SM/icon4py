@@ -1493,18 +1493,10 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = utils.construct_solve_nh_config(experiment)
-    primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
-        dims.ECDim, field=grid_savepoint.primal_normal_cell_x()
-    )
-    primal_normal_cell_2 = data_alloc.flatten_first_two_dims(
-        dims.ECDim, field=grid_savepoint.primal_normal_cell_y()
-    )
-    dual_normal_cell_1 = data_alloc.flatten_first_two_dims(
-        dims.ECDim, field=grid_savepoint.dual_normal_cell_x()
-    )
-    dual_normal_cell_2 = data_alloc.flatten_first_two_dims(
-        dims.ECDim, field=grid_savepoint.dual_normal_cell_y()
-    )
+    primal_normal_cell_1 = grid_savepoint.primal_normal_cell_x()
+    primal_normal_cell_2 = grid_savepoint.primal_normal_cell_y()
+    dual_normal_cell_1 = grid_savepoint.dual_normal_cell_x()
+    dual_normal_cell_2 = grid_savepoint.dual_normal_cell_y()
 
     iau_wgt_dyn = config.iau_wgt_dyn
     is_iau_active = config.is_iau_active
@@ -1532,7 +1524,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             vertical_start=icon_grid.num_levels - 1,
             vertical_end=icon_grid.num_levels,
             offset_provider={
-                "E2EC": icon_grid.get_connectivity("E2EC"),
                 "E2C": icon_grid.get_connectivity("E2C"),
                 "Koff": dims.KDim,
             },
@@ -1596,7 +1587,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
             "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
-            "E2EC": icon_grid.get_connectivity("E2EC"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "Koff": dims.KDim,
@@ -1742,7 +1732,6 @@ def test_apply_divergence_damping_and_update_vn(
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
             "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
-            "E2EC": icon_grid.get_connectivity("E2EC"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "Koff": dims.KDim,
@@ -1859,9 +1848,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     z_dwdz_dd_ref = sp_nh_exit.z_dwdz_dd()
     exner_dyn_incr_ref = sp_nh_exit.exner_dyn_incr()
 
-    geofac_div = data_alloc.flatten_first_two_dims(
-        dims.CEDim, field=interpolation_savepoint.geofac_div()
-    )
+    geofac_div = interpolation_savepoint.geofac_div()
 
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
@@ -1873,7 +1860,6 @@ def test_vertically_implicit_solver_at_predictor_step(
 
     offset_provider = {
         "C2E": icon_grid.get_connectivity("C2E"),
-        "C2CE": icon_grid.get_connectivity("C2CE"),
         "Koff": dims.KDim,
     }
 
@@ -1914,9 +1900,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         rayleigh_damping_factor=rayleigh_damping_factor,
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
-        ),
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
         iau_wgt_dyn=iau_wgt_dyn,
@@ -2102,9 +2086,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     mass_flx_ic_ref = sp_nh_exit.mass_flx_ic()
     vol_flx_ic_ref = sp_nh_exit.vol_flx_ic()
 
-    geofac_div = data_alloc.flatten_first_two_dims(
-        dims.CEDim, field=interpolation_savepoint.geofac_div()
-    )
+    geofac_div = interpolation_savepoint.geofac_div()
 
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
@@ -2112,7 +2094,6 @@ def test_vertically_implicit_solver_at_corrector_step(
 
     offset_provider = {
         "C2E": icon_grid.get_connectivity("C2E"),
-        "C2CE": icon_grid.get_connectivity("C2CE"),
         "Koff": dims.KDim,
     }
 
