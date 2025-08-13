@@ -138,16 +138,21 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
         k = np.arange(vertical_end)[np.newaxis, :]
         k_nlev = k[:, :-1]
 
-
         initial_spatially_averaged_vn = spatially_averaged_vn.copy()
-        initial_horizontal_gradient_of_normal_wind_divergence = horizontal_gradient_of_normal_wind_divergence.copy()
+        initial_horizontal_gradient_of_normal_wind_divergence = (
+            horizontal_gradient_of_normal_wind_divergence.copy()
+        )
         initial_tangential_wind = tangential_wind.copy()
         initial_mass_flux_at_edges_on_model_levels = mass_flux_at_edges_on_model_levels.copy()
         initial_theta_v_flux_at_edges_on_model_levels = theta_v_flux_at_edges_on_model_levels.copy()
         initial_vn_on_half_levels = vn_on_half_levels.copy()
         initial_tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
-        initial_horizontal_kinetic_energy_at_edges_on_model_levels = horizontal_kinetic_energy_at_edges_on_model_levels.copy()
-        initial_contravariant_correction_at_edges_on_model_levels = contravariant_correction_at_edges_on_model_levels.copy()
+        initial_horizontal_kinetic_energy_at_edges_on_model_levels = (
+            horizontal_kinetic_energy_at_edges_on_model_levels.copy()
+        )
+        initial_contravariant_correction_at_edges_on_model_levels = (
+            contravariant_correction_at_edges_on_model_levels.copy()
+        )
 
         (
             spatially_averaged_vn,
@@ -193,32 +198,60 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest)
             vertical_end,
         )
 
-        spatially_averaged_vn[:horizontal_start, :] = initial_spatially_averaged_vn[:horizontal_start, :]
-        spatially_averaged_vn[horizontal_end:, :]   = initial_spatially_averaged_vn[horizontal_end:, :]
+        spatially_averaged_vn[:horizontal_start, :] = initial_spatially_averaged_vn[
+            :horizontal_start, :
+        ]
+        spatially_averaged_vn[horizontal_end:, :] = initial_spatially_averaged_vn[
+            horizontal_end:, :
+        ]
 
-        horizontal_gradient_of_normal_wind_divergence[:horizontal_start, :] = initial_horizontal_gradient_of_normal_wind_divergence[:horizontal_start, :]
-        horizontal_gradient_of_normal_wind_divergence[horizontal_end:, :]   = initial_horizontal_gradient_of_normal_wind_divergence[horizontal_end:, :]
+        horizontal_gradient_of_normal_wind_divergence[:horizontal_start, :] = (
+            initial_horizontal_gradient_of_normal_wind_divergence[:horizontal_start, :]
+        )
+        horizontal_gradient_of_normal_wind_divergence[horizontal_end:, :] = (
+            initial_horizontal_gradient_of_normal_wind_divergence[horizontal_end:, :]
+        )
 
         tangential_wind[:horizontal_start, :] = initial_tangential_wind[:horizontal_start, :]
-        tangential_wind[horizontal_end:, :]   = initial_tangential_wind[horizontal_end:, :]
+        tangential_wind[horizontal_end:, :] = initial_tangential_wind[horizontal_end:, :]
 
-        mass_flux_at_edges_on_model_levels[:horizontal_start, :] = initial_mass_flux_at_edges_on_model_levels[:horizontal_start, :]
-        mass_flux_at_edges_on_model_levels[horizontal_end:, :]   = initial_mass_flux_at_edges_on_model_levels[horizontal_end:, :]
+        mass_flux_at_edges_on_model_levels[:horizontal_start, :] = (
+            initial_mass_flux_at_edges_on_model_levels[:horizontal_start, :]
+        )
+        mass_flux_at_edges_on_model_levels[horizontal_end:, :] = (
+            initial_mass_flux_at_edges_on_model_levels[horizontal_end:, :]
+        )
 
-        theta_v_flux_at_edges_on_model_levels[:horizontal_start, :] = initial_theta_v_flux_at_edges_on_model_levels[:horizontal_start, :]
-        theta_v_flux_at_edges_on_model_levels[horizontal_end:, :]   = initial_theta_v_flux_at_edges_on_model_levels[horizontal_end:, :]
+        theta_v_flux_at_edges_on_model_levels[:horizontal_start, :] = (
+            initial_theta_v_flux_at_edges_on_model_levels[:horizontal_start, :]
+        )
+        theta_v_flux_at_edges_on_model_levels[horizontal_end:, :] = (
+            initial_theta_v_flux_at_edges_on_model_levels[horizontal_end:, :]
+        )
 
         vn_on_half_levels[:horizontal_start, :] = initial_vn_on_half_levels[:horizontal_start, :]
-        vn_on_half_levels[horizontal_end:, :]   = initial_vn_on_half_levels[horizontal_end:, :]
+        vn_on_half_levels[horizontal_end:, :] = initial_vn_on_half_levels[horizontal_end:, :]
 
-        tangential_wind_on_half_levels[:horizontal_start, :] = initial_tangential_wind_on_half_levels[:horizontal_start, :]
-        tangential_wind_on_half_levels[horizontal_end:, :]   = initial_tangential_wind_on_half_levels[horizontal_end:, :]
+        tangential_wind_on_half_levels[:horizontal_start, :] = (
+            initial_tangential_wind_on_half_levels[:horizontal_start, :]
+        )
+        tangential_wind_on_half_levels[horizontal_end:, :] = initial_tangential_wind_on_half_levels[
+            horizontal_end:, :
+        ]
 
-        horizontal_kinetic_energy_at_edges_on_model_levels[:horizontal_start, :] = initial_horizontal_kinetic_energy_at_edges_on_model_levels[:horizontal_start, :]
-        horizontal_kinetic_energy_at_edges_on_model_levels[horizontal_end:, :]   = initial_horizontal_kinetic_energy_at_edges_on_model_levels[horizontal_end:, :]
+        horizontal_kinetic_energy_at_edges_on_model_levels[:horizontal_start, :] = (
+            initial_horizontal_kinetic_energy_at_edges_on_model_levels[:horizontal_start, :]
+        )
+        horizontal_kinetic_energy_at_edges_on_model_levels[horizontal_end:, :] = (
+            initial_horizontal_kinetic_energy_at_edges_on_model_levels[horizontal_end:, :]
+        )
 
-        contravariant_correction_at_edges_on_model_levels[:horizontal_start, :] = initial_contravariant_correction_at_edges_on_model_levels[:horizontal_start, :]
-        contravariant_correction_at_edges_on_model_levels[horizontal_end:, :]   = initial_contravariant_correction_at_edges_on_model_levels[horizontal_end:, :]
+        contravariant_correction_at_edges_on_model_levels[:horizontal_start, :] = (
+            initial_contravariant_correction_at_edges_on_model_levels[:horizontal_start, :]
+        )
+        contravariant_correction_at_edges_on_model_levels[horizontal_end:, :] = (
+            initial_contravariant_correction_at_edges_on_model_levels[horizontal_end:, :]
+        )
 
         return dict(
             spatially_averaged_vn=spatially_averaged_vn,
