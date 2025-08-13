@@ -11,11 +11,12 @@ import dataclasses
 import functools
 import hashlib
 import typing
-from typing import Any, Callable, ClassVar, Optional
+from typing import Any, Callable, ClassVar, Optional, Sequence
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from gt4py import eve
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import backend as gtx_backend, constructors
 from gt4py.next.ffront.decorator import FieldOperator, Program
@@ -174,6 +175,7 @@ def _test_and_benchmark(
     backend: gtx_backend.Backend | None,
     connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    static_variant: Sequence[str],  # the names of the static parameters
     benchmark: pytest.FixtureRequest,
 ) -> None:
     if self.MARKERS is not None:
@@ -187,9 +189,24 @@ def _test_and_benchmark(
 
     input_data = allocate_data(backend, input_data)
 
+    unused_static_params = set(static_variant) - set(input_data.keys())
+    if unused_static_params:
+        raise ValueError(
+            f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
+        )
+    static_args = {name: [input_data[name]] for name in static_variant}
+
+    program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO: gt4py should accept `None` in with_backend
+    if backend is not None:
+        if isinstance(program, FieldOperator):
+            if len(static_args) > 0:
+                raise NotImplementedError("'FieldOperator's do not support static arguments yet.")
+        else:
+            program.compile(offset_provider=grid.connectivities, enable_jit=False, **static_args)  # type: ignore[arg-type]
+
     run_verify_and_benchmark(
         functools.partial(
-            self.PROGRAM.with_backend(backend),  # type: ignore[arg-type] # TODO: gt4py should accept `None` in with_backend
+            program,
             **input_data,  # type: ignore[arg-type]
             offset_provider=grid.connectivities,
         ),
@@ -201,6 +218,12 @@ def _test_and_benchmark(
         ),
         benchmark,
     )
+
+
+class StandardStaticVariants(eve.StrEnum):
+    DEFAULT = "default"
+    COMPILE_TIME_DOMAIN = "compile_time_domain"
+    COMPILE_TIME_VERTICAL = "compile_time_vertical"
 
 
 class StencilTest:
@@ -222,9 +245,25 @@ class StencilTest:
         ...         return dict(some_output=np.asarray(some_input) * 2)
     """
 
+    @staticmethod
+    def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+        static_params = metafunc.cls.STATIC_PARAMS
+        if not static_params:
+            metafunc.parametrize("static_variant", ((),), ids=["variant=none"], scope="class")
+        else:
+            metafunc.parametrize(
+                "static_variant",
+                (() if v is None else v for v in static_params.values()),
+                ids=(f"variant={k}" for k in static_params.keys()),
+                scope="class",
+            )
+
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: ClassVar[typing.Optional[tuple]] = None
+    STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = (
+        None  # TODO maybe non-dict in case there is only one default
+    )
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
