@@ -59,7 +59,9 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    spatially_averaged_vn = _spatially_average_flux_or_velocity(e_flx_avg=e_flx_avg, vn=vn)
+    spatially_averaged_vn = _spatially_average_flux_or_velocity(
+        e_flx_avg=e_flx_avg, flux_or_velocity=vn
+    )
     horizontal_gradient_of_normal_wind_divergence = astype(
         neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim), vpfloat
     )

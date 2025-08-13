@@ -23,7 +23,7 @@ from icon4py.model.testing import helpers as test_helpers
 from .test_accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields_numpy,
 )
-from .test_compute_avg_vn import (
+from .test_spatially_average_flux_or_velocity import (
     spatially_average_flux_or_velocity_numpy,
 )
 from .test_compute_mass_flux import (

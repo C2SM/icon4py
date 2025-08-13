@@ -32,14 +32,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
-from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
-    accumulate_prep_adv_fields,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
-)
-from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity import (
-    spatially_average_flux_or_velocity,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
@@ -582,22 +576,6 @@ class SolveNonhydro:
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
-        )
-        self._compute_avg_vn = spatially_average_flux_or_velocity.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.connectivities,
-        )
-        self._accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider={},
         )
         self._init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
             self._backend
