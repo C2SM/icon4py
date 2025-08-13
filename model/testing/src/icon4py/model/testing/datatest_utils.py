@@ -16,15 +16,16 @@ from typing import TYPE_CHECKING, Optional
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.testing import definitions
 
 
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
 
-GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
-REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
-R02B04_GLOBAL = "r02b04_global"
-R02B07_GLOBAL = "r02b07_global"
+GLOBAL_EXPERIMENT = definitions.Grids.R02B04_GLOBAL.name
+REGIONAL_EXPERIMENT = definitions.Grids.MCH_CH_R04B09_DSL.name
+R02B04_GLOBAL = definitions.Grids.R02B04_GLOBAL.name
+R02B07_GLOBAL = definitions.Grids.R02B07_GLOBAL.name
 ICON_CH2_SMALL = "mch_opr_r4b7"
 REGIONAL_BENCHMARK = "opr_r19b08"
 JABW_EXPERIMENT = "jabw_R02B04"

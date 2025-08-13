@@ -63,10 +63,13 @@ def get_grid_manager_for_experiment(
 
 
 def get_grid_manager(
-    grid_file: str, num_levels: int, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
+    grid_file_identifier: str,
+    num_levels: int,
+    keep_skip_values: bool,
+    backend: Optional[gtx_backend.Backend],
 ) -> gm.GridManager:
     return _download_and_load_gridfile(
-        file_path=grid_file,
+        grid_file_identifier=grid_file_identifier,
         num_levels=num_levels,
         keep_skip_values=keep_skip_values,
         backend=backend,
@@ -89,19 +92,19 @@ def _file_name(grid_file: str) -> str:
             raise NotImplementedError(f"Add grid path for experiment '{grid_file}'")
 
 
-def resolve_full_grid_file_name(grid_file_str: str) -> pathlib.Path:
-    return definitions.grids_path().joinpath(grid_file_str, _file_name(grid_file_str))
+def resolve_full_grid_file_name(grid_file_identifier: str) -> pathlib.Path:
+    return definitions.grids_path().joinpath(grid_file_identifier, _file_name(grid_file_identifier))
 
 
-def _download_grid_file(file_path: str) -> pathlib.Path:
-    full_name = resolve_full_grid_file_name(file_path)
+def _download_grid_file(grid_file_identifier: str) -> pathlib.Path:
+    full_name = resolve_full_grid_file_name(grid_file_identifier)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:
         with locking.lock(grid_directory):
             if not full_name.exists():
                 data_handling.download_and_extract(
-                    dt_utils.GRID_URIS[file_path],
+                    dt_utils.GRID_URIS[grid_file_identifier],
                     grid_directory,
                 )
     else:
@@ -116,7 +119,10 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
 
 
 def _download_and_load_gridfile(
-    file_path: str, num_levels: int, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
+    grid_file_identifier: str,
+    num_levels: int,
+    keep_skip_values: bool,
+    backend: Optional[gtx_backend.Backend],
 ) -> gm.GridManager:
     """
     Load a grid file.
@@ -128,7 +134,7 @@ def _download_and_load_gridfile(
     Returns:
 
     """
-    grid_file = _download_grid_file(file_path)
+    grid_file = _download_grid_file(grid_file_identifier)
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(),
         grid_file,

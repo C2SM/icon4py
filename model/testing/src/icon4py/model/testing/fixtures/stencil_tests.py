@@ -35,7 +35,7 @@ def _get_grid_manager(
 
     assert descriptor.file_name is not None
     return get_grid_manager(
-        grid_file=descriptor.file_name,
+        grid_file_identifier=descriptor.name,
         num_levels=num_levels,
         keep_skip_values=False,
         backend=backend,
