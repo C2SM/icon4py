@@ -16,7 +16,14 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import base, gridfile, icon, refinement, vertical as v_grid
+from icon4py.model.common.grid import (
+    base,
+    gridfile,
+    horizontal as h_grid,
+    icon,
+    refinement,
+    vertical as v_grid,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -245,9 +252,9 @@ class GridManager:
     def _read_start_end_indices(
         self,
     ) -> tuple[
-        dict[gtx.Dimension : data_alloc.NDArray],
-        dict[gtx.Dimension : data_alloc.NDArray],
-        dict[gtx.Dimension : gtx.int32],
+        dict[gtx.Dimension, data_alloc.NDArray],
+        dict[gtx.Dimension, data_alloc.NDArray],
+        dict[gtx.Dimension, gtx.int32],
     ]:
         """ "
         Read the start/end indices from the grid file.
@@ -354,8 +361,15 @@ class GridManager:
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
         start, end, _ = self._read_start_end_indices()
-        start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
-        end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
+
+        start_indices = {
+            dim: h_grid.map_domain_bounds(dim, start[dim])
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        }
+        end_indices = {
+            dim: h_grid.map_domain_bounds(dim, end[dim])
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        }
 
         return icon.icon_grid(
             id_=uuid_,

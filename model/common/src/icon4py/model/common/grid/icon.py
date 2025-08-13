@@ -10,13 +10,13 @@ import functools
 import logging
 import math
 import uuid
-from typing import Final, Optional
+from typing import Final, Mapping, Optional
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -163,8 +163,8 @@ def icon_grid(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    start_indices: dict[gtx.Dimension, data_alloc.NDArray],
-    end_indices: dict[gtx.Dimension, data_alloc.NDArray],
+    start_indices: dict[gtx.Dimension, Mapping[h_grid.Domain, gtx.int32]],
+    end_indices: dict[gtx.Dimension, Mapping[h_grid.Domain, gtx.int32]],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:

@@ -19,7 +19,7 @@ import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, type_alias
-from icon4py.model.common.grid import base, icon
+from icon4py.model.common.grid import base, horizontal as h_grid, icon
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -488,14 +488,15 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
         start_indices = {
-            dims.VertexDim: vertex_starts,
-            dims.EdgeDim: edge_starts,
-            dims.CellDim: cell_starts,
+            dims.VertexDim: h_grid.map_domain_bounds(dims.VertexDim, vertex_starts),
+            dims.EdgeDim: h_grid.map_domain_bounds(dims.EdgeDim, edge_starts),
+            dims.CellDim: h_grid.map_domain_bounds(dims.CellDim, cell_starts),
         }
+
         end_indices = {
-            dims.VertexDim: vertex_ends,
-            dims.EdgeDim: edge_ends,
-            dims.CellDim: cell_ends,
+            dims.VertexDim: h_grid.map_domain_bounds(dims.VertexDim, vertex_ends),
+            dims.EdgeDim: h_grid.map_domain_bounds(dims.EdgeDim, edge_ends),
+            dims.CellDim: h_grid.map_domain_bounds(dims.CellDim, cell_ends),
         }
 
         neighbor_tables = {

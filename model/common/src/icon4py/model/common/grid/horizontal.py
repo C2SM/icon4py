@@ -37,9 +37,10 @@ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nw
 import enum
 import functools
 from abc import abstractmethod
-from typing import Final, Protocol
+from typing import Final, Protocol, runtime_checkable
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.common import dimension as dims
 
@@ -337,6 +338,7 @@ def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
             raise ValueError(f"Unknown marker {marker}")
 
 
+@runtime_checkable
 class Domain(Protocol):
     """
     Interface for a domain object.
@@ -347,6 +349,14 @@ class Domain(Protocol):
     _dim: gtx.Dimension
     _marker: Zone
     _index: int
+
+    def __eq__(self, other):
+        if isinstance(other, Domain):
+            return self.dim == other.dim and self.zone == other.zone
+        return False
+
+    def __hash__(self):
+        return hash((self.dim, self.zone))
 
     def __str__(self):
         return f"Domain (dim = {self.dim}: zone = {self._marker} /[ {self._index}])"
@@ -460,3 +470,28 @@ class CellDomain(Domain):
 
     def _valid(self, marker: Zone):
         return marker in CELL_ZONES
+
+
+def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
+    """
+    Get the grid zones valid for a given horizontal dimension in ICON .
+    """
+    match dim:
+        case dims.CellDim:
+            return CELL_ZONES
+        case dims.EdgeDim:
+            return tuple(Zone)
+        case dims.VertexDim:
+            return VERTEX_ZONES
+        case _:
+            raise ValueError(
+                f"Dimension should be one of {(dims.MAIN_HORIZONTAL_DIMENSIONS.values())} but was {dim}"
+            )
+
+
+def map_domain_bounds(
+    dim: gtx.Dimension, pre_computed_bounds: np.ndarray
+) -> dict[Domain, gtx.int32]:
+    get_domain = domain(dim)
+    domains = (get_domain(zone) for zone in get_zones_for_dim(dim))
+    return {d: gtx.int32(pre_computed_bounds[d._index].item()) for d in domains}

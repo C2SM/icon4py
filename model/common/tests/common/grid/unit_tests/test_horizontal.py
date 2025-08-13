@@ -9,8 +9,11 @@ import logging
 
 import pytest
 
+import icon4py.model
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
+from icon4py.model.testing import datatest_utils as dt_utils
+import gt4py.next as gtx
 
 from .. import utils
 
@@ -65,3 +68,30 @@ def test_halo_zones(zone):
         assert zone.is_halo()
     else:
         assert not zone.is_halo()
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("grid_file", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL])
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+def test_map_domain_bounds_start_index(grid_file, dim):
+    grid = utils.run_grid_manager(dt_utils.R02B04_GLOBAL, keep_skip_values=True, backend=None).grid
+
+    start_index_array = grid._start_indices[dim]
+    _map_and_assert_array(dim, start_index_array)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("grid_file", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL])
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+def test_map_domain_bounds_end_index(grid_file, dim):
+    grid = utils.run_grid_manager(dt_utils.R02B04_GLOBAL, keep_skip_values=True, backend=None).grid
+
+    end_index_array = grid._end_indices[dim]
+    _map_and_assert_array(dim, end_index_array)
+
+
+def _map_and_assert_array(dim, index_array):
+    index_map = icon4py.model.common.grid.horizontal.map_domain_bounds(dim, index_array)
+    for d, index in index_map.items():
+        assert index == index_array[d._index]
+        assert isinstance(index, gtx.int32)
