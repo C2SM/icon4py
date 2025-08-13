@@ -204,12 +204,15 @@ def _test_and_benchmark(
         else:
             program.compile(offset_provider=grid.connectivities, enable_jit=False, **static_args)  # type: ignore[arg-type]
 
+    test_func = functools.partial(
+        program,
+        **input_data,  # type: ignore[arg-type]
+        offset_provider=grid.connectivities,
+    )
+    test_func = device_utils.synchronized_function(test_func, backend=backend)
+
     run_verify_and_benchmark(
-        functools.partial(
-            program,
-            **input_data,  # type: ignore[arg-type]
-            offset_provider=grid.connectivities,
-        ),
+        test_func,
         functools.partial(
             _verify_stencil_test,
             self=self,
