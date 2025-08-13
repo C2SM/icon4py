@@ -34,7 +34,7 @@ def sync(backend: gtx_backend.Backend | None = None) -> None:
 
     Note: this is and ad-hoc interface, maybe the function should get the device to sync for.
     """
-    if is_cupy_device(backend.allocator):
+    if backend is not None and is_cupy_device(backend.allocator):
         cp.cuda.runtime.deviceSynchronize()
 
 
