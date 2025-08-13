@@ -41,7 +41,7 @@ def test_domain_raises_for_invalid_zones(dim, zone, caplog):
         ):
             with pytest.raises(AssertionError) as e:
                 h_grid.domain(dim)(zone)
-            e.match("not a valid zone")
+            e.match("Invalid zone")
 
 
 @pytest.mark.parametrize("zone", zones())

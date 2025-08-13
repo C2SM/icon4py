@@ -98,8 +98,8 @@ class Grid:
     connectivities: gtx_common.OffsetProvider
     geometry_type: GeometryType
     # only used internally for `start_index` and `end_index` public interface:
-    _start_indices: dict[gtx.Dimension, Mapping[h_grid.Domain, gtx.int32]]
-    _end_indices: dict[gtx.Dimension, Mapping[h_grid.Domain, gtx.int32]]
+    _start_indices: Mapping[h_grid.Domain, gtx.int32]
+    _end_indices: Mapping[h_grid.Domain, gtx.int32]
 
     def __post_init__(self):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
@@ -175,7 +175,7 @@ class Grid:
         if domain.is_local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
-        return self._start_indices[domain.dim][domain]
+        return self._start_indices[domain]
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
@@ -187,7 +187,7 @@ class Grid:
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
-        return gtx.int32(self._end_indices[domain.dim][domain])
+        return gtx.int32(self._end_indices[domain])
 
 
 def construct_connectivity(

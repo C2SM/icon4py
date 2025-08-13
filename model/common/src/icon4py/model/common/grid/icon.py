@@ -163,8 +163,8 @@ def icon_grid(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    start_indices: dict[gtx.Dimension, Mapping[h_grid.Domain, gtx.int32]],
-    end_indices: dict[gtx.Dimension, Mapping[h_grid.Domain, gtx.int32]],
+    start_indices: Mapping[h_grid.Domain, gtx.int32],
+    end_indices: Mapping[h_grid.Domain, gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:

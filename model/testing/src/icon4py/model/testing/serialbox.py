@@ -516,15 +516,15 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
         start_indices = {
-            dims.VertexDim: h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_starts),
-            dims.EdgeDim: h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_starts),
-            dims.CellDim: h_grid.map_icon_domain_bounds(dims.CellDim, cell_starts),
+            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_starts),
+            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_starts),
+            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_starts),
         }
 
         end_indices = {
-            dims.VertexDim: h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_ends),
-            dims.EdgeDim: h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_ends),
-            dims.CellDim: h_grid.map_icon_domain_bounds(dims.CellDim, cell_ends),
+            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_ends),
+            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_ends),
+            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_ends),
         }
 
         neighbor_tables = {

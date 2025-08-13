@@ -451,31 +451,27 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
         for offset, table in neighbor_tables.items()
     }
 
+    cell_domain = h_grid.domain(dims.CellDim)
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    vertex_domain = h_grid.domain(dims.VertexDim)
     start_indices = {
-        dims.CellDim: {
-            h_grid.domain(dims.CellDim)(zone): gtx.int32(0 if not zone.is_halo() else _CELLS)
+        **{
+            cell_domain(zone): gtx.int32(0 if not zone.is_halo() else _CELLS)
             for zone in h_grid.CELL_ZONES
         },
-        dims.EdgeDim: {
-            h_grid.domain(dims.EdgeDim)(zone): gtx.int32(0 if not zone.is_halo() else _EDGES)
-            for zone in h_grid.Zone
+        **{
+            edge_domain(zone): gtx.int32(0 if not zone.is_halo() else _EDGES)
+            for zone in h_grid.EDGE_ZONES
         },
-        dims.VertexDim: {
-            h_grid.domain(dims.VertexDim)(zone): gtx.int32(0 if not zone.is_halo() else _VERTICES)
+        **{
+            vertex_domain(zone): gtx.int32(0 if not zone.is_halo() else _VERTICES)
             for zone in h_grid.VERTEX_ZONES
         },
     }
     end_indices = {
-        dims.CellDim: {
-            h_grid.domain(dims.CellDim)(zone): gtx.int32(_CELLS) for zone in h_grid.CELL_ZONES
-        },
-        dims.EdgeDim: {
-            h_grid.domain(dims.EdgeDim)(zone): gtx.int32(_EDGES) for zone in h_grid.Zone
-        },
-        dims.VertexDim: {
-            h_grid.domain(dims.VertexDim)(zone): gtx.int32(_VERTICES)
-            for zone in h_grid.VERTEX_ZONES
-        },
+        **{cell_domain(zone): gtx.int32(_CELLS) for zone in h_grid.CELL_ZONES},
+        **{edge_domain(zone): gtx.int32(_EDGES) for zone in h_grid.Zone},
+        **{vertex_domain(zone): gtx.int32(_VERTICES) for zone in h_grid.VERTEX_ZONES},
     }
 
     return base.Grid(

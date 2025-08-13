@@ -361,14 +361,15 @@ class GridManager:
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
         start, end, _ = self._read_start_end_indices()
-
         start_indices = {
-            dim: h_grid.map_icon_domain_bounds(dim, start[dim])
+            k: v
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            for k, v in h_grid.map_icon_domain_bounds(dim, start[dim]).items()
         }
         end_indices = {
-            dim: h_grid.map_icon_domain_bounds(dim, end[dim])
+            k: v
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            for k, v in h_grid.map_icon_domain_bounds(dim, end[dim]).items()
         }
 
         return icon.icon_grid(

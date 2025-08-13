@@ -34,10 +34,10 @@ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nw
 
 """
 
+import dataclasses
 import enum
 import functools
-from abc import abstractmethod
-from typing import Final, Protocol, runtime_checkable
+from typing import Callable, Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -302,6 +302,34 @@ class Zone(str, enum.Enum):
         return self in (Zone.HALO, Zone.HALO_LEVEL_2)
 
 
+VERTEX_ZONES = (
+    Zone.END,
+    Zone.INTERIOR,
+    Zone.HALO,
+    Zone.HALO_LEVEL_2,
+    Zone.LOCAL,
+    Zone.LATERAL_BOUNDARY,
+    Zone.LATERAL_BOUNDARY_LEVEL_2,
+    Zone.LATERAL_BOUNDARY_LEVEL_3,
+    Zone.LATERAL_BOUNDARY_LEVEL_4,
+)
+
+
+CELL_ZONES = (
+    Zone.END,
+    Zone.INTERIOR,
+    Zone.HALO,
+    Zone.HALO_LEVEL_2,
+    Zone.LOCAL,
+    Zone.LATERAL_BOUNDARY,
+    Zone.LATERAL_BOUNDARY_LEVEL_2,
+    Zone.LATERAL_BOUNDARY_LEVEL_3,
+    Zone.LATERAL_BOUNDARY_LEVEL_4,
+    Zone.NUDGING,
+)
+
+EDGE_ZONES = tuple(Zone)
+
 def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:
     match marker:
         case Zone.END:
@@ -336,12 +364,11 @@ def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:
             return _nudging(dim, LineNumber.SECOND)
 
 
-@runtime_checkable
-class Domain(Protocol):
+@dataclasses.dataclass(frozen=True)
+class Domain:
     """
-    Interface for a domain object.
-
-    Used to access horizontal domain zones in the ICON grid.
+    Domain Description on the horizontal grid
+    Used to access domain bounds in concrete the ICON grid.
     """
 
     _dim: gtx.Dimension
@@ -358,17 +385,9 @@ class Domain(Protocol):
     def __str__(self):
         return f"Domain (dim = {self.dim}: zone = {self._zone} /[ {_map_to_icon_index(self.dim, self.zone)} ])"
 
-    @abstractmethod
-    def _valid(self, marker: Zone) -> bool: ...
-
     @property
     def zone(self) -> Zone:
         return self._zone
-
-    def set_marker(self, marker: Zone):
-        assert self._valid(marker), f" Domain `{marker}` not a valid zone for use with '{self.dim}'"
-        self._zone = marker
-        return self
 
     @property
     def dim(self) -> gtx.Dimension:
@@ -379,7 +398,7 @@ class Domain(Protocol):
         return self._zone == Zone.LOCAL
 
 
-def domain(dim: gtx.Dimension):
+def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
     """
     Factory function to create a domain object for a given dimension.
 
@@ -395,7 +414,7 @@ def domain(dim: gtx.Dimension):
 
     """
 
-    def _domain(marker: Zone):
+    def _domain(marker: Zone) -> Domain:
         return _domain_factory(dim, marker)
 
     assert dim.kind == gtx.DimensionKind.HORIZONTAL, "Only defined for horizontal dimensions"
@@ -403,66 +422,20 @@ def domain(dim: gtx.Dimension):
 
 
 def _domain_factory(dim: gtx.Dimension, zone: Zone):
-    if dim == dims.CellDim:
-        return CellDomain().set_marker(zone)
-    elif dim == dims.EdgeDim:
-        return EdgeDomain().set_marker(zone)
-    else:
-        return VertexDomain().set_marker(zone)
+    assert _validate(
+        dim, zone
+    ), f"Invalid zone {zone} for dimension {dim}. Valid zones are: {get_zones_for_dim(dim)}"
+    return Domain(dim, zone)
 
 
-class EdgeDomain(Domain):
-    """Domain object for the Edge dimension."""
-
-    _dim = dims.EdgeDim
-
-    def _valid(self, marker: Zone):
-        return True
-
-
-VERTEX_ZONES = (
-    Zone.END,
-    Zone.INTERIOR,
-    Zone.HALO,
-    Zone.HALO_LEVEL_2,
-    Zone.LOCAL,
-    Zone.LATERAL_BOUNDARY,
-    Zone.LATERAL_BOUNDARY_LEVEL_2,
-    Zone.LATERAL_BOUNDARY_LEVEL_3,
-    Zone.LATERAL_BOUNDARY_LEVEL_4,
-)
-
-
-class VertexDomain(Domain):
-    """Domain object for the Vertex dimension."""
-
-    _dim = dims.VertexDim
-
-    def _valid(self, marker: Zone):
-        return marker in VERTEX_ZONES
-
-
-CELL_ZONES = (
-    Zone.END,
-    Zone.INTERIOR,
-    Zone.HALO,
-    Zone.HALO_LEVEL_2,
-    Zone.LOCAL,
-    Zone.LATERAL_BOUNDARY,
-    Zone.LATERAL_BOUNDARY_LEVEL_2,
-    Zone.LATERAL_BOUNDARY_LEVEL_3,
-    Zone.LATERAL_BOUNDARY_LEVEL_4,
-    Zone.NUDGING,
-)
-
-
-class CellDomain(Domain):
-    """Domain object for the Cell dimension."""
-
-    _dim = dims.CellDim
-
-    def _valid(self, marker: Zone):
-        return marker in CELL_ZONES
+def _validate(dim: gtx.Dimension, marker: Zone) -> bool:
+    match dim:
+        case dims.CellDim:
+            return marker in CELL_ZONES
+        case dims.EdgeDim:
+            return marker in tuple(Zone)
+        case dims.VertexDim:
+            return marker in VERTEX_ZONES
 
 
 def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
