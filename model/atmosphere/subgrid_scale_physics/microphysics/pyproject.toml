@@ -28,6 +28,7 @@ dependencies = [
   # external dependencies
   "gt4py==1.0.7",
   'packaging>=20.0'
+  'numpy>=1.23.3',
 ]
 description = "ICON microphysics."
 license = {text = "BSD-3 License"}

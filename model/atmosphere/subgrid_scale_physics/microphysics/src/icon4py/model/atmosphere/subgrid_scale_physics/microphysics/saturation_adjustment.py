@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 from typing import Final, Optional
 
@@ -196,6 +197,11 @@ class SaturationAdjustment:
                 self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
             ]
         )
+
+    def _determine_horizontal_domains(self):
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
     def run(
         self,
