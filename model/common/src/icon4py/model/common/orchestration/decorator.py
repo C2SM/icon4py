@@ -29,7 +29,7 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py._core import definitions as core_defs
 
-from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.orchestration import dtypes as orchestration_dtypes
@@ -55,9 +55,7 @@ except ImportError:
 if dace:
     from dace import hooks
     from dace.transformation.passes.simplify import SimplifyPass
-    from gt4py.next.program_processors.runners.dace_common.utility import (
-        connectivity_identifier,
-    )
+    from gt4py.next.program_processors.runners.dace import utils as gtx_dace_utils
 
 
 P = ParamSpec("P")
@@ -65,15 +63,13 @@ R = TypeVar("R")
 
 
 @overload
-def orchestrate(func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]:
-    ...
+def orchestrate(func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]: ...
 
 
 @overload
 def orchestrate(
     func: None = None, *, method: bool | None = None
-) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
 def orchestrate(
@@ -88,30 +84,27 @@ def orchestrate(
     """
 
     def _decorator(fuse_func: Callable[P, R]) -> Callable[P, R]:
-        if settings.dace_orchestration is not None:
-            orchestrator_cache = {}  # Caching
+        orchestrator_cache = {}  # Caching
+        self_name = next(iter(inspect.signature(fuse_func).parameters))
 
-            if "dace" not in settings.backend.name.lower():
-                raise ValueError(
-                    "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
-                )
+        # If not explicitly set by the user, assume the provided callable is a method
+        # when its first argument is called 'self'
+        func_is_method = method or (self_name == "self")
 
-            self_name = next(iter(inspect.signature(fuse_func).parameters))
+        if not func_is_method:
+            raise NotImplementedError(
+                "The orchestration decorator is only for methods -at least for now-."
+            )
 
-            # If not explicitly set by the user, assume the provided callable is a method
-            # when its first argument is called 'self'
-            func_is_method = method or (self_name == "self")
-
-            if not func_is_method:
-                raise NotImplementedError(
-                    "The orchestration decorator is only for methods -at least for now-."
-                )
-
-            # Add DaCe data types annotations for **all args and kwargs**
-            dace_annotations = to_dace_annotations(fuse_func)
-
-            def wrapper(*args, **kwargs):
-                self = args[0]
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            if self._orchestration:
+                # Add DaCe data types annotations for **all args and kwargs**
+                dace_annotations = to_dace_annotations(fuse_func)
+                if self._backend is None or "dace" not in self._backend.name.lower():
+                    raise ValueError(
+                        "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
+                    )
 
                 exchange_obj = None
                 grid = None
@@ -146,6 +139,7 @@ def orchestrate(
 
                     cache_item = orchestrator_cache[unique_id] = parse_compile_cache_sdfg(
                         default_build_folder,
+                        self._backend,
                         exchange_obj,
                         fuse_func,
                         compile_time_args_kwargs,
@@ -166,7 +160,14 @@ def orchestrate(
                 )
                 updated_kwargs = {
                     **updated_kwargs,
-                    **dace_specific_kwargs(exchange_obj, grid.offset_providers),
+                    **dace_specific_kwargs(
+                        exchange_obj,
+                        {
+                            k: v
+                            for k, v in grid.connectivities.items()
+                            if gtx_dace_utils.connectivity_identifier(k) in sdfg.arrays
+                        },
+                    ),
                 }
                 updated_kwargs = {
                     **updated_kwargs,
@@ -176,25 +177,14 @@ def orchestrate(
                 }
 
                 sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
-                if func_is_method:
-                    del sdfg_args[self_name]
 
                 with dace.config.temporary_config():
-                    configure_dace_temp_env(default_build_folder)
+                    configure_dace_temp_env(default_build_folder, self._backend)
                     return compiled_sdfg(**sdfg_args)
+            else:
+                return fuse_func(*args, **kwargs)
 
-            # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
-            # This leads to corrupted cache and subsequent errors.
-            # To avoid this, we provide a way to clear the cache.
-            def clear_cache():
-                orchestrator_cache.clear()
-
-            wrapper.clear_cache = clear_cache
-
-            return wrapper
-
-        else:
-            return fuse_func
+        return wrapper
 
     return _decorator(func) if func else _decorator
 
@@ -316,21 +306,6 @@ def wait(comm_handle: Union[int, decomposition.ExchangeResult]):
         comm_handle.wait()
 
 
-def build_compile_time_connectivities(
-    offset_providers: dict[str, gtx.common.Connectivity],
-) -> dict[str, gtx.common.Connectivity]:
-    connectivities = {}
-    for k, v in offset_providers.items():
-        if hasattr(v, "table"):
-            connectivities[k] = gtx.otf.arguments.CompileTimeConnectivity(
-                v.max_neighbors, v.has_skip_values, v.origin_axis, v.neighbor_axis, v.table.dtype
-            )
-        else:
-            connectivities[k] = v
-
-    return connectivities
-
-
 if dace:
 
     def to_dace_annotations(fuse_func: Callable) -> dict[str, Any]:
@@ -390,6 +365,7 @@ if dace:
 
     def parse_compile_cache_sdfg(
         default_build_folder: Path,
+        backend,
         exchange_obj: Optional[decomposition.ExchangeRuntime],
         fuse_func: Callable,
         compile_time_args_kwargs: dict[str, Any],
@@ -400,7 +376,7 @@ if dace:
         cache = {}
 
         with dace.config.temporary_config():
-            device_type = configure_dace_temp_env(default_build_folder)
+            device_type = configure_dace_temp_env(default_build_folder, backend)
 
             cache["dace_program"] = dace_program = dace.program(
                 auto_optimize=False,
@@ -496,7 +472,7 @@ if dace:
         value = os.getenv(env_var_name, str(default)).lower()
         return value in ("true", "1")
 
-    def configure_dace_temp_env(default_build_folder: Path) -> core_defs.DeviceType:
+    def configure_dace_temp_env(default_build_folder: Path, backend) -> core_defs.DeviceType:
         dace.config.Config.set("default_build_folder", value=str(default_build_folder))
         dace.config.Config.set(
             "compiler", "allow_view_arguments", value=True
@@ -505,7 +481,7 @@ if dace:
             "optimizer", "automatic_simplification", value=False
         )  # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
         dace.config.Config.set("optimizer", "autooptimize", value=False)
-        device_type = settings.backend.executor.step.translation.device_type
+        device_type = backend.executor.step.translation.step.device_type if backend else None
         if device_type == core_defs.DeviceType.CPU:
             device = "cpu"
             compiler_args = dace.config.Config.get("compiler", "cpu", "args")
@@ -542,9 +518,9 @@ if dace:
         return {
             # connectivity tables at runtime
             **{
-                connectivity_identifier(k): v.table
+                gtx_dace_utils.connectivity_identifier(k): v.ndarray
                 for k, v in offset_providers.items()
-                if hasattr(v, "table")
+                if hasattr(v, "ndarray")
             },
             # GHEX C++ ptrs
             "__context_ptr": expose_cpp_ptr(exchange_obj._context)
@@ -557,7 +533,7 @@ if dace:
                 f"__pattern_{dim.value}Dim_ptr": expose_cpp_ptr(exchange_obj._patterns[dim])
                 if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
-                for dim in dims.global_dimensions.values()
+                for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
             },
             **{
                 f"__domain_descriptor_{dim.value}Dim_ptr": expose_cpp_ptr(
@@ -565,7 +541,7 @@ if dace:
                 )
                 if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
-                for dim in dims.global_dimensions.values()
+                for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
             },
         }
 
@@ -633,8 +609,8 @@ if dace:
 
         return {
             **{
-                "CellDim_sym": grid.offset_providers["C2E"].table.shape[0],
-                "EdgeDim_sym": grid.offset_providers["E2C"].table.shape[0],
+                "CellDim_sym": grid.connectivities["C2E"].ndarray.shape[0],
+                "EdgeDim_sym": grid.connectivities["E2C"].ndarray.shape[0],
                 "KDim_sym": grid.num_levels,
             },
             **concretize_symbols_for_dace_structure,

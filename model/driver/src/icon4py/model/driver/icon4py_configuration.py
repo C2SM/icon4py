@@ -5,13 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import dataclasses
 import datetime
+import functools
 import logging
 
+from gt4py.next import backend as gtx_backend, metrics as gtx_metrics
+
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+from icon4py.model.common import constants
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
 
@@ -23,11 +26,12 @@ n_substeps_reduced = 2
 
 @dataclasses.dataclass(frozen=True)
 class Icon4pyRunConfig:
+    backend: gtx_backend.Backend
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
 
-    # TODO (Chia Rui): check ICON code if we need to define extra ndyn_substeps in timeloop that changes in runtime
+    # TODO (Chia Rui): ndyn_substeps in timeloop may change in runtime
     n_substeps: int = 5
     """ndyn_substeps in ICON"""
 
@@ -40,6 +44,10 @@ class Icon4pyRunConfig:
 
     restart_mode: bool = False
 
+    @functools.cached_property
+    def backend(self):
+        return self.backend
+
 
 @dataclasses.dataclass
 class Icon4pyConfig:
@@ -50,7 +58,8 @@ class Icon4pyConfig:
 
 
 def read_config(
-    experiment_type: driver_init.ExperimentType = driver_init.ExperimentType.ANY,
+    experiment_type: driver_init.ExperimentType,
+    backend: gtx_backend.Backend,
 ) -> Icon4pyConfig:
     def _mch_ch_r04b09_vertical_config():
         return v_grid.VerticalGridConfig(
@@ -74,12 +83,13 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=150.0,
-            max_nudging_coeff=0.075,
+            max_nudging_coefficient=0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
         )
 
     def _mch_ch_r04b09_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             ndyn_substeps_var=n_substeps_reduced,
+            max_nudging_coefficient=0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
         )
 
     def _jabw_vertical_config():
@@ -102,16 +112,13 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=200.0,
-            max_nudging_coeff=0.075,
         )
 
-    def _jabw_nonhydro_config(n_substeps: int):
+    def _jabw_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             # original igradp_method is 2
             # original divdamp_order is 4
-            ndyn_substeps_var=n_substeps,
-            max_nudging_coeff=0.02,
-            divdamp_fac=0.0025,
+            fourth_order_divdamp_factor=0.0025,
         )
 
     def _mch_ch_r04b09_config():
@@ -122,6 +129,7 @@ def read_config(
                 end_date=datetime.datetime(2021, 6, 20, 12, 0, 10),
                 n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
+                backend=backend,
             ),
             _mch_ch_r04b09_vertical_config(),
             _mch_ch_r04b09_diffusion_config(),
@@ -134,10 +142,11 @@ def read_config(
             end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
+            backend=backend,
         )
         jabw_vertical_config = _jabw_vertical_config()
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
-        jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
+        jabw_nonhydro_config = _jabw_nonhydro_config()
         return (
             icon_run_config,
             jabw_vertical_config,
@@ -152,14 +161,14 @@ def read_config(
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
-        return diffusion.DiffusionConfig()
+        return diffusion.DiffusionConfig(
+            n_substeps=n_substeps,
+        )
 
-    def _gauss3d_nonhydro_config(n_substeps: int):
+    def _gauss3d_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             igradp_method=3,
-            ndyn_substeps_var=n_substeps,
-            max_nudging_coeff=0.02,
-            divdamp_fac=0.0025,
+            fourth_order_divdamp_factor=0.0025,
         )
 
     def _gauss3d_config():
@@ -168,10 +177,11 @@ def read_config(
             end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
             apply_initial_stabilization=False,
             n_substeps=5,
+            backend=backend,
         )
         vertical_config = _gauss3d_vertical_config()
         diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)
-        nonhydro_config = _gauss3d_nonhydro_config(icon_run_config.n_substeps)
+        nonhydro_config = _gauss3d_nonhydro_config()
         return (
             icon_run_config,
             vertical_config,
@@ -209,3 +219,10 @@ def read_config(
         diffusion_config=diffusion_config,
         solve_nonhydro_config=nonhydro_config,
     )
+
+
+@dataclasses.dataclass
+class ProfilingConfig:
+    gt4py_metrics_level: int = gtx_metrics.ALL
+    gt4py_metrics_output_file: str = "gt4py_metrics.json"
+    skip_first_timestep: bool = True

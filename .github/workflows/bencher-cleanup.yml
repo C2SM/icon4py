@@ -1,0 +1,20 @@
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  archive_pr_branch:
+    name: Bencher (cloud or self-hosted) | Archive feature branch reports on PR close
+        # DO NOT REMOVE: For handling Fork PRs see Pull Requests from Forks
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bencherdev/bencher@main
+      - name: Bencher (cloud or self-hosted) | Archive feature branch reports on PR close
+        run: |
+          bencher archive \
+          --project '${{ vars.BENCHER_PROJECT }}' \
+          --token '${{ secrets.BENCHER_API_TOKEN }}' \
+          --branch "$GITHUB_HEAD_REF"
+          --host '${{ vars.BENCHER_HOST }}'

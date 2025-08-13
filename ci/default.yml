@@ -4,39 +4,55 @@ include:
 .test_model_stencils:
   stage: test
   script:
-    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID
+    - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
+  rules:
+    - if: $COMPONENT == 'dycore' || $COMPONENT == 'diffusion'
+      variables:
+        SLURM_TIMELIMIT: '00:20:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:10:00'
   parallel:
     matrix:
-    - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
-      GRID: [simple_grid, icon_grid]
-  rules:
-    # exclude slow test configurations
-    - if: $BACKEND == "roundtrip" && $GRID == "icon_grid"
-      when: never
-    - when: on_success
-test_model_stencils_x86_64:
-  extends: [.test_model_stencils, .test_template_x86_64]
+      - COMPONENT: [diffusion, dycore, microphysics, common, driver]
+        BACKEND: [gtfn_gpu]
+        GRID: [simple_grid, icon_grid]
+# test_model_stencils_x86_64:
+#   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
-.test_tools:
+
+.test_tools_datatests:
   stage: test
   script:
-    - tox -r -c tools/
-test_tools_x86_64:
-  extends: [.test_tools, .test_template_x86_64]
-test_tools_aarch64:
-  extends: [.test_tools, .test_template_aarch64]
+    - nox -s 'test_tools-3.10(datatest)'
+# test_tools_x86_64:
+#   extends: [.test_tools_datatests, .test_template_x86_64]
+test_tools_datatests_aarch64:
+  extends: [.test_tools_datatests, .test_template_aarch64]
 
 .test_model_datatests:
   stage: test
   script:
-    - tox -r -e run_model_tests -c model/ -- --backend=$BACKEND $COMPONENT
+    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
+  rules:
+    - if: $COMPONENT == 'common' && $LEVEL == 'integration'
+      variables:
+        NUM_PROCESSES: 2
+        SLURM_TIMELIMIT: '00:30:00'
+    - if: $BACKEND == 'embedded'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
   parallel:
     matrix:
-    - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, atmosphere/subgrid_scale_physics/microphysics/tests, common/tests, driver/tests]
-      BACKEND: [gtfn_cpu]
-test_model_datatests_x86_64:
-  extends: [.test_model_datatests, .test_template_x86_64]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+        BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+        LEVEL: [integration]
+# test_model_datatests_x86_64:
+#   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]

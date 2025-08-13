@@ -1,0 +1,69 @@
+name: ICON4Py Unit Tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+jobs:
+  test-model:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+        backend: ["embedded", "gtfn_cpu"]         # TODO add dace-cpu?
+        component: ["advection", "diffusion", "dycore", "microphysics", "muphys", "driver", "common"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libboost-all-dev
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.6.16"
+          enable-cache: false
+          cache-dependency-glob: "uv.lock"
+          python-version: ${{ matrix.python-version }}
+
+      - name: cache key
+        id: cache-key
+        run: |
+          echo "key=$(.github/validation_grid_utils.py cache-key)" >> $GITHUB_OUTPUT
+
+      - name: gridfile cache
+        id: grid-cache
+        uses: actions/cache@v4
+        with:
+          path: testdata/grids
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: download grids
+        if: steps.grid-cache.outputs.cache-hit != 'true'
+        run: |
+          .github/validation_grid_utils.py download
+
+      - name: run nox session - unit tests
+        shell: bash
+        env:
+          NUM_PROCESSES: auto
+          ICON4PY_ENABLE_GRID_DOWNLOAD: false
+          ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
+        run: |
+          uvx nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
+
+      - name: run nox session - stencil tests
+        shell: bash
+        env:
+          NUM_PROCESSES: auto
+          ICON4PY_ENABLE_GRID_DOWNLOAD: false
+          ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
+        run: |
+          uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid

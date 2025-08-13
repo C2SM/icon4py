@@ -81,8 +81,7 @@ SUBROUTINE diffusion(p_nh_prog,p_nh_diag,p_nh_metrics,p_patch,p_int,dtime,linit)
     !$ACC   CREATE(z_vn_ie, z_vt_ie) &
     !$DSL INSERT(!$ACC   CREATE(w_old) &)
     !$DSL INSERT(!$ACC   COPYIN(vertical_idx, horizontal_idx) &)
-    !$ACC   PRESENT(ividx, ivblk, iecidx, iecblk, icidx, icblk, ieidx, ieblk) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   PRESENT(ividx, ivblk, iecidx, iecblk, icidx, icblk, ieidx, ieblk)
 
     ...
 
@@ -97,7 +96,7 @@ SUBROUTINE diffusion(p_nh_prog,p_nh_diag,p_nh_metrics,p_patch,p_int,dtime,linit)
         !$DSL                vertical_upper = nlev; &
         !$DSL                horizontal_lower = i_startidx; &
         !$DSL                horizontal_upper = i_endidx )
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
 
 !$NEC outerloop_unroll(4)
 DO jk = 1, nlev
@@ -135,7 +134,7 @@ DO je = i_startidx, i_endidx
         !$DSL                vertical_upper = nlev; &
         !$DSL                horizontal_lower = i_startidx; &
         !$DSL                horizontal_upper = i_endidx )
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO jk = 1, nlev
           DO jc = i_startidx, i_endidx
 
@@ -154,7 +153,7 @@ DO je = i_startidx, i_endidx
         !$DSL                vertical_upper = nlev; &
         !$DSL                horizontal_lower = i_startidx; &
         !$DSL                horizontal_upper = i_endidx )
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO jk = 2, nlev ! levels 1 and nlevp1 are unused
 
 !DIR$ IVDEP

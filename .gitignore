@@ -13,8 +13,11 @@ simple_mesh*.nc
 /prof
 .profile
 
+### Sphinx ###
+**/docs/_source/*.rst
+
 ### GT4Py ####
-.gt_cache/
+.gt4py_cache/
 
 # DaCe
 .dacecache
@@ -94,7 +97,7 @@ target/
 .ipynb_checkpoints
 
 # pyenv
-.python-version
+# .python-version
 
 # Environments
 .env*
@@ -115,7 +118,7 @@ venv.bak/
 .idea/
 
 # VSCode project settings
-.vscode/
+.vscode
 
 # SublimeText project settings
 *.sublime-project

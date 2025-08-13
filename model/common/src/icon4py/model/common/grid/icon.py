@@ -8,185 +8,192 @@
 import dataclasses
 import functools
 import logging
+import math
 import uuid
+from typing import Callable, Final, Optional
 
 import gt4py.next as gtx
-import numpy as np
+from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import builder
+from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
 
+CONNECTIVITIES_ON_BOUNDARIES = (
+    dims.C2E2C2EDim,
+    dims.E2CDim,
+    dims.C2E2CDim,
+    dims.C2E2CODim,
+    dims.E2C2VDim,
+    dims.E2C2EDim,
+    dims.E2C2EODim,
+    dims.C2E2C2E2CDim,
+)
+CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
+
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
-    root: int
-    level: int
+    root: Optional[int] = None
+    level: Optional[int] = None
+    _num_cells: Optional[int] = None
+    _mean_cell_area: Optional[float] = None
+    geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
+    radius: float = constants.EARTH_RADIUS
+
+    @classmethod
+    def from_mean_cell_area(
+        cls,
+        mean_cell_area: float,
+        root: Optional[int] = None,
+        level: Optional[int] = None,
+        num_cells: Optional[int] = None,
+        geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
+        radius: float = constants.EARTH_RADIUS,
+    ):
+        return cls(root, level, num_cells, mean_cell_area, geometry_type)
 
     @functools.cached_property
     def num_cells(self):
-        return 20.0 * self.root**2 * 4.0**self.level
+        if self._num_cells is None:
+            match self.geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    assert self.root is not None and self.level is not None
+                    return compute_icosahedron_num_cells(self.root, self.level)
+                case base.GeometryType.TORUS:
+                    raise NotImplementedError("TODO : lookup torus cell number computation")
+                case _:
+                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+
+        return self._num_cells
+
+    @functools.cached_property
+    def characteristic_length(self):
+        return math.sqrt(self.mean_cell_area)
+
+    @functools.cached_property
+    def mean_cell_area(self):
+        if self._mean_cell_area is None:
+            match self.geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
+                case base.GeometryType.TORUS:
+                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+                case _:
+                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+
+        return self._mean_cell_area
 
 
-class IconGrid(base.BaseGrid):
-    def __init__(self, id_: uuid.UUID):
-        """Instantiate a grid according to the ICON model."""
-        super().__init__()
-        self._id = id_
-        self._start_indices = {}
-        self._end_indices = {}
-        self.global_properties = None
-        self.offset_provider_mapping = {
-            "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
-            "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),
-            "E2V": (self._get_offset_provider, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
-            "C2E2C": (self._get_offset_provider, dims.C2E2CDim, dims.CellDim, dims.CellDim),
-            "C2E2C2E": (self._get_offset_provider, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
-            "E2EC": (
-                self._get_offset_provider_for_sparse_fields,
-                dims.E2CDim,
-                dims.EdgeDim,
-                dims.ECDim,
+def compute_icosahedron_num_cells(root: int, level: int):
+    return 20.0 * root**2 * 4.0**level
+
+
+def compute_mean_cell_area_for_sphere(radius, num_cells):
+    """
+    Compute the mean cell area.
+
+    Computes the mean cell area by dividing the sphere by the number of cells in the
+    global grid.
+
+    Args:
+        radius: average earth radius, might be rescaled by a scaling parameter
+        num_cells: number of cells on the global grid
+    Returns: mean area of one cell [m^2]
+    """
+    return 4.0 * math.pi * radius**2 / num_cells
+
+
+@dataclasses.dataclass(frozen=True)
+class IconGrid(base.Grid):
+    global_properties: GlobalGridParams = dataclasses.field(default=None, kw_only=True)
+    refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
+        default=None, kw_only=True
+    )
+
+
+def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
+    """
+    For the icosahedral global grid skip values are only present for the pentagon points.
+
+    In the local area model there are also skip values at the boundaries when
+    accessing neighbouring cells or edges from vertices.
+    """
+    dimension = offset.target[1]
+    assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
+    value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
+        limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES
+    )
+    return value
+
+
+def _should_replace_skip_values(
+    offset: gtx.FieldOffset, keep_skip_values: bool, limited_area: bool
+) -> bool:
+    """
+    Check if the skip_values in a neighbor table  should be replaced.
+
+    There are various reasons for skip_values in neighbor tables depending on the type of grid:
+        - pentagon points (icosahedral grid),
+        - boundary layers of limited area grids,
+        - halos for distributed grids.
+
+    There is config flag to evaluate whether skip_value replacement should be done at all.
+    If so, we replace skip_values for halos and boundary layers of limited area grids.
+
+    Even though by specifying the correct output domain of a stencil, access to
+    invalid indices is avoided in the output fields, temporary computations
+    inside a stencil do run over the entire data buffer including halos and boundaries
+    as the output domain is unknown at that point.
+
+    Args:
+        dim: The (local) dimension for which the neighbor table is checked.
+    Returns:
+        bool: True if the skip values in the neighbor table should be replaced, False otherwise.
+
+    """
+    return not keep_skip_values and (limited_area or not _has_skip_values(offset, limited_area))
+
+
+def icon_grid(
+    id_: uuid.UUID,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
+    config: base.GridConfig,
+    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
+    start_indices: dict[gtx.Dimension, data_alloc.NDArray],
+    end_indices: dict[gtx.Dimension, data_alloc.NDArray],
+    global_properties: GlobalGridParams,
+    refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
+    sparse_1d_connectivity_constructor: Callable[
+        [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
+        gtx_common.NeighborTable,
+    ]
+    | None = None,
+) -> IconGrid:
+    connectivities = {
+        offset.value: base.construct_connectivity(
+            offset,
+            data_alloc.import_array_ns(allocator).asarray(table),
+            skip_value=-1 if _has_skip_values(offset, config.limited_area) else None,
+            allocator=allocator,
+            replace_skip_values=_should_replace_skip_values(
+                offset, config.keep_skip_values, config.limited_area
             ),
-            "C2E2CO": (self._get_offset_provider, dims.C2E2CODim, dims.CellDim, dims.CellDim),
-            "E2C2V": (self._get_offset_provider, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
-            "V2E": (self._get_offset_provider, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
-            "V2C": (self._get_offset_provider, dims.V2CDim, dims.VertexDim, dims.CellDim),
-            "C2V": (self._get_offset_provider, dims.C2VDim, dims.CellDim, dims.VertexDim),
-            "E2ECV": (
-                self._get_offset_provider_for_sparse_fields,
-                dims.E2C2VDim,
-                dims.EdgeDim,
-                dims.ECVDim,
-            ),
-            "C2CEC": (
-                self._get_offset_provider_for_sparse_fields,
-                dims.C2E2CDim,
-                dims.CellDim,
-                dims.CECDim,
-            ),
-            "C2CE": (
-                self._get_offset_provider_for_sparse_fields,
-                dims.C2EDim,
-                dims.CellDim,
-                dims.CEDim,
-            ),
-            "E2C2E": (self._get_offset_provider, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
-            "E2C2EO": (self._get_offset_provider, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
-            "Koff": (lambda: dims.KDim,),  # Koff is a special case
-            "C2CECEC ": (
-                self._get_offset_provider_for_sparse_fields,
-                dims.C2E2C2E2CDim,
-                dims.CellDim,
-                dims.CECECDim,
-            ),
-        }
-
-    @builder.builder
-    def with_start_end_indices(
-        self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
-    ):
-        log.debug(f"Using start_indices {dim} {start_indices}, end_indices {dim} {end_indices}")
-        self._start_indices[dim] = start_indices.astype(gtx.int32)
-        self._end_indices[dim] = end_indices.astype(gtx.int32)
-
-    @builder.builder
-    def with_global_params(self, global_params: GlobalGridParams):
-        self.global_properties = global_params
-
-    @property
-    def num_levels(self):
-        return self.config.num_levels if self.config else 0
-
-    @property
-    def num_cells(self):
-        return self.config.num_cells if self.config else 0
-
-    @property
-    def global_num_cells(self):
-        """
-        Return the number of cells in the global grid.
-
-        If the global grid parameters are not set, it assumes that we are in a one node scenario
-        and returns the local number of cells.
-        """
-        return self.global_properties.num_cells if self.global_properties else self.num_cells
-
-    @property
-    def num_vertices(self):
-        return self.config.num_vertices if self.config else 0
-
-    @property
-    def num_edges(self):
-        return self.config.num_edges if self.config else 0
-
-    @property
-    def limited_area(self):
-        # defined in mo_grid_nml.f90
-        return self.config.limited_area
-
-    def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
-        """
-        Determine whether a sparse dimension has skip values.
-
-        For the icosahedral global grid skip values are only present for the pentagon points. In the local area model there are also skip values at the boundaries when
-        accessing neighbouring cells or edges from vertices.
-        """
-        assert (
-            dimension.kind == gtx.DimensionKind.LOCAL
-        ), "only local dimensions can have skip values"
-        if dimension in (dims.V2EDim, dims.V2CDim):
-            return True
-        elif self.limited_area:
-            if dimension in (
-                dims.C2E2C2E2CDim,
-                dims.C2E2C2EDim,
-                dims.E2CDim,
-                dims.C2E2CDim,
-                dims.C2E2CODim,
-                dims.E2C2VDim,
-                dims.E2C2EDim,
-                dims.E2C2EODim,
-            ):
-                return True
-        else:
-            return False
-
-    @property
-    def id(self):
-        return self._id
-
-    @property
-    def n_shift(self):
-        return self.config.n_shift_total if self.config else 0
-
-    @property
-    def lvert_nest(self):
-        return True if self.config.lvertnest else False
-
-    def start_index(self, domain: h_grid.Domain):
-        """
-        Use to specify lower end of domains of a field for field_operators.
-
-        For a given dimension, returns the start index of the
-        horizontal region in a field given by the marker.
-        """
-        if domain.local:
-            # special treatment because this value is not set properly in the underlying data.
-            return 0
-        return self._start_indices[domain.dim][domain()].item()
-
-    def end_index(self, domain: h_grid.Domain):
-        """
-        Use to specify upper end of domains of a field for field_operators.
-
-        For a given dimension, returns the end index of the
-        horizontal region in a field given by the marker.
-        """
-        if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
-            # special treatment because this value is not set properly in the underlying data, for a global grid
-            return self.size[domain.dim]
-        return self._end_indices[domain.dim][domain()].item()
+        )
+        for offset, table in neighbor_tables.items()
+    }
+    return IconGrid(
+        id=id_,
+        allocator=allocator,
+        config=config,
+        connectivities=connectivities,
+        geometry_type=global_properties.geometry_type,
+        _start_indices=start_indices,
+        _end_indices=end_indices,
+        global_properties=global_properties,
+        refinement_control=refinement_control or {},
+        sparse_1d_connectivity_constructor=sparse_1d_connectivity_constructor,
+    )

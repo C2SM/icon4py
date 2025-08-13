@@ -7,81 +7,51 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
-from gt4py.eve.utils import FrozenNamespace
-from gt4py.next import backend, broadcast
-from gt4py.next.ffront.fbuiltins import (
-    abs,
-    exp,
-    maximum,
-    where,
-)
+from gt4py.eve import utils as eve_utils
+from gt4py.next import backend as gtx_backend
+from gt4py.next.ffront.fbuiltins import abs, exp, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common import (
-    constants as phy_const,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
-from icon4py.model.common.diagnostic_calculations.stencils import (
-    diagnose_pressure as pressure,
-    diagnose_surface_pressure as surface_pressure,
-)
-from icon4py.model.common.dimension import CellDim, KDim
+import icon4py.model.common.utils as common_utils
+from icon4py.model.common import constants as phy_const, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
-from icon4py.model.common.settings import xp
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    model,
-    prognostic_state as prognostics,
-    tracer_state as tracers,
-)
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.states import model
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+physics_constants: Final = phy_const.PhysicsConstants()
 
 
 # TODO (Chia Rui): Refactor this class when direct import is enabled for gt4py stencils
-class SaturatedPressureConstants(FrozenNamespace):
+class MicrophysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     """
     Constants used for the computation of saturated pressure in saturation adjustment and microphysics.
     It was originally in mo_lookup_tables_constants.f90.
     """
 
     #: Latent heat of vaporisation for water [J kg-1]. Originally expressed as alv in ICON.
-    vaporisation_latent_heat: ta.wpfloat = 2.5008e6
+    vaporisation_latent_heat = 2.5008e6
     #: Melting temperature of ice/snow [K]
-    tmelt: ta.wpfloat = 273.15
+    melting_temperature = 273.15
 
-    #: See docstring in common/constanst.py
-    rd: ta.wpfloat = phy_const.GAS_CONSTANT_DRY_AIR
-    #: See docstring in common/constanst.py
-    rv: ta.wpfloat = phy_const.GAS_CONSTANT_WATER_VAPOR
-    #: See docstring in common/constanst.py
-    cvd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_VOLUME
-    #: See docstring in common/constanst.py
-    cpd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_PRESSURE
-
-    rv_o_rd_minus_1: ta.wpfloat = rv / rd - 1.0
-    rd_o_cpd: ta.wpfloat = phy_const.RD_O_CPD
-
-    #: Dry air heat capacity at constant pressure / water heat capacity at constant pressure - 1
-    rcpl: ta.wpfloat = 3.1733
-    #: Specific heat capacity of liquid water [J K-1 kg-1]. Originally expressed as clw in ICON.
-    specific_heat_capacity_for_water: ta.wpfloat = (rcpl + 1.0) * cpd
+    #: Specific heat capacity of liquid water [J K-1 kg-1]. Originally expressed as clw in ICON. 4.1733 is dry air heat capacity at constant pressure / water heat capacity at constant pressure.
+    specific_heat_capacity_for_water = 4.1733 * phy_const.CPD
 
     #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation. Originally expressed as c1es in ICON.
-    tetens_p0: ta.wpfloat = 610.78
+    tetens_p0 = 610.78
     #: aw in Tetens formula for saturation water pressure. Originally expressed as c3les in ICON.
-    tetens_aw: ta.wpfloat = 17.269
+    tetens_aw = 17.269
     #: bw in Tetens formula for saturation water pressure. Originally expressed as c4les in ICON.
-    tetens_bw: ta.wpfloat = 35.86
+    tetens_bw = 35.86
     #: numerator in temperature partial derivative of Tetens formula for saturation water pressure (psat tetens_der / (t - tetens_bw)^2). Originally expressed as c5les in ICON.
-    tetens_der: ta.wpfloat = tetens_aw * (tmelt - tetens_bw)
+    tetens_der = tetens_aw * (melting_temperature - tetens_bw)
 
 
 # Instantiate the class
-satpres_const: Final = SaturatedPressureConstants()
+microphy_const: Final = MicrophysicsConstants()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -90,8 +60,6 @@ class SaturationAdjustmentConfig:
     max_iter: int = 10
     #: in ICON, 1.e-3 is always used for the tolerance when subroutine satad_v_3D is called.
     tolerance: ta.wpfloat = 1.0e-3
-    #: An extra step of updating the variables from new temperature is done in ICON after satad is called in at the beginning of mo_nh_interface_nwp.f90. This is a new option to update those variables.
-    diagnose_variables_from_new_temperature: bool = True
 
 
 @dataclasses.dataclass
@@ -111,35 +79,11 @@ _SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dic
         units="kg m-3",
         icon_var_name="rho",
     ),
-    exner_function=dict(
-        standard_name="dimensionless_exner_function",
-        long_name="exner function",
-        icon_var_name="exner",
-        units="1",
-    ),
     temperature=dict(
         standard_name="air_temperature",
         long_name="air temperature",
         units="K",
         icon_var_name="temp",
-    ),
-    virtual_temperature=dict(
-        standard_name="air_virtual_temperature",
-        long_name="air virtual temperature",
-        units="K",
-        icon_var_name="tempv",
-    ),
-    pressure=dict(
-        standard_name="air_pressure",
-        long_name="air pressure",
-        units="Pa",
-        icon_var_name="pres",
-    ),
-    interface_pressure=dict(
-        standard_name="air_pressure_at_interface_level",
-        long_name="air pressure at model interface level",
-        units="Pa",
-        icon_var_name="pres_ifc",
     ),
     specific_humidity=dict(
         standard_name="specific_humidity",
@@ -153,59 +97,15 @@ _SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dic
         units="1",
         icon_var_name="qc",
     ),
-    specific_ice=dict(
-        standard_name="specific_ice_content",
-        long_name="ratio of cloud ice mass to total moist air parcel mass",
-        units="1",
-        icon_var_name="qi",
-    ),
-    specific_rain=dict(
-        standard_name="specific_rain_content",
-        long_name="ratio of rain mass to total moist air parcel mass",
-        units="1",
-        icon_var_name="qr",
-    ),
-    specific_snow=dict(
-        standard_name="specific_snow_content",
-        long_name="ratio of snow mass to total moist air parcel mass",
-        units="1",
-        icon_var_name="qs",
-    ),
-    specific_graupel=dict(
-        standard_name="specific_graupel_content",
-        long_name="ratio of graupel mass to total moist air parcel mass",
-        units="1",
-        icon_var_name="qg",
-    ),
 )
 
 
 #: CF attributes of saturation adjustment output variables
 _SATURATION_ADJUST_OUTPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
-    tend_exner_function_due_to_satad=dict(
-        standard_name="tendency_of_dimensionless_exner_function_due_to_saturation_adjustment",
-        long_name="tendency of exner function due to saturation adjustment",
-        units="K s-1",
-    ),
     tend_temperature_due_to_satad=dict(
         standard_name="tendency_of_air_temperature_due_to_saturation_adjustment",
         long_name="tendency of air temperature due to saturation adjustment",
         units="K s-1",
-    ),
-    tend_virtual_temperature_due_to_satad=dict(
-        standard_name="tendency_of_air_virtual_temperature_due_to_saturation_adjustment",
-        long_name="air virtual temperature",
-        units="K s-1",
-    ),
-    tend_pressure_due_to_satad=dict(
-        standard_name="tendency_of_air_pressure_due_to_saturation_adjustment",
-        long_name="tendency of air pressure due to saturation adjustment",
-        units="Pa s-1",
-    ),
-    tend_interface_pressure_due_to_satad=dict(
-        standard_name="tendency_of_air_pressure_at_interface_level_due_to_saturation_adjustment",
-        long_name="tendency of air pressure at model interface level due to saturation adjustment",
-        units="Pa s-1",
     ),
     tend_specific_humidity_due_to_satad=dict(
         standard_name="tendency_of_specific_humidity_due_to_saturation_adjustment",
@@ -227,15 +127,21 @@ class SaturationAdjustment:
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         self._backend = backend
         self.config = config
         self.grid = grid
         self.vertical_params: v_grid.VerticalGrid = vertical_params
         self.metric_state: MetricStateSaturationAdjustment = metric_state
-        self._allocate_tendencies()
+        self._allocate_local_variables()
         self._determine_horizontal_domains()
+
+        self._xp = data_alloc.import_array_ns(self._backend)
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
     # TODO (Chia Rui): add in input and output data properties, and refactor this component to follow the physics component protocol.
     def input_properties(self) -> dict[str, model.FieldMetaData]:
@@ -244,69 +150,27 @@ class SaturationAdjustment:
     def output_properties(self) -> dict[str, model.FieldMetaData]:
         raise NotImplementedError
 
-    def _allocate_tendencies(self):
+    def _allocate_local_variables(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
-        self._temperature1 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self._temperature1 = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         #: it was originally named as twork in ICON. New temperature before iteration.
-        self._temperature2 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self._temperature2 = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         #: A mask that indicates whether the grid cell is subsaturated or not.
-        self._subsaturated_mask = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
+        self._subsaturated_mask = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, dtype=bool, backend=self._backend
         )
         #: A mask that indicates whether next Newton iteration is required.
-        self._newton_iteration_mask = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
+        self._newton_iteration_mask = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, dtype=bool, backend=self._backend
         )
         #: latent heat vaporization / dry air heat capacity at constant volume
-        self._lwdocvd = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self._lwdocvd = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._k_field = field_alloc.allocate_indices(
-            dims.KDim, grid=self.grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
-        )
-        # TODO (Chia Rui): remove local pressure and pressire_ifc when scan operator can be called along with pressure tendency computation
-        self._pressure = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        self._pressure_ifc = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
-        )
-        self._pressure_ifc = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
-        )
-        self._new_exner = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        self._new_virtual_temperature = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        # TODO (Chia Rui): remove the tendency terms below when architecture of the entire phyiscs component is ready to use.
-        self.temperature_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        self.qv_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        self.qc_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        self.virtual_temperature_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        self.exner_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        self.pressure_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
-        )
-        self.pressure_ifc_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
-        )
-
         self.compute_subsaturated_case_and_initialize_newton_iterations = (
             compute_subsaturated_case_and_initialize_newton_iterations.with_backend(self._backend)
         )
@@ -321,33 +185,34 @@ class SaturationAdjustment:
         self.update_temperature_qv_qc_tendencies = update_temperature_qv_qc_tendencies.with_backend(
             self._backend
         )
-        self.compute_temperature_and_exner_tendencies_after_saturation_adjustment = (
-            compute_temperature_and_exner_tendencies_after_saturation_adjustment.with_backend(
-                self._backend
-            )
-        )
-        self.diagnose_surface_pressure = surface_pressure.diagnose_surface_pressure.with_backend(
-            self._backend
-        )
-        self.diagnose_pressure = pressure.diagnose_pressure.with_backend(self._backend)
-        self.compute_pressure_tendency_after_saturation_adjustment = (
-            compute_pressure_tendency_after_saturation_adjustment.with_backend(self._backend)
-        )
-        self.compute_pressure_ifc_tendency_after_saturation_adjustment = (
-            compute_pressure_ifc_tendency_after_saturation_adjustment.with_backend(self._backend)
+
+    def _determine_horizontal_domains(self):
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
+
+    def _not_converged(self) -> bool:
+        return self._xp.any(
+            self._newton_iteration_mask.ndarray[
+                self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
+            ]
         )
 
     def _determine_horizontal_domains(self):
-        cell_domain = h_grid.domain(CellDim)
+        cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
     def run(
         self,
         dtime: ta.wpfloat,
-        prognostic_state: prognostics.PrognosticState,
-        diagnostic_state: diagnostics.DiagnosticState,
-        tracer_state: tracers.TracerState,
+        rho: fa.CellKField[ta.wpfloat],
+        temperature: fa.CellKField[ta.wpfloat],
+        qv: fa.CellKField[ta.wpfloat],
+        qc: fa.CellKField[ta.wpfloat],
+        temperature_tendency: fa.CellKField[ta.wpfloat],
+        qv_tendency: fa.CellKField[ta.wpfloat],
+        qc_tendency: fa.CellKField[ta.wpfloat],
     ):
         """
         Adjust saturation at each grid point.
@@ -361,14 +226,24 @@ class SaturationAdjustment:
         is taken, which is a common approximation and introduces only a small error.
 
         Originally inspired from satad_v_3D of ICON.
+
+        Args:
+            dtime: time step [s]
+            rho: air density [kg m-3]
+            temperature: air temperature [K]
+            qv: specific humidity [kg kg-1]
+            qc: specific cloud water content [kg kg-1]
+            temperature_tendency: air temperature tendency [K s-1]
+            qv_tendency: specific humidity tendency [s-1]
+            qc_tendency: specific cloud water content tendency [s-1]
         """
 
         self.compute_subsaturated_case_and_initialize_newton_iterations(
             self.config.tolerance,
-            diagnostic_state.temperature,
-            tracer_state.qv,
-            tracer_state.qc,
-            prognostic_state.rho,
+            temperature,
+            qv,
+            qc,
+            rho,
             self._subsaturated_mask,
             self._lwdocvd,
             self._temperature1,
@@ -381,28 +256,24 @@ class SaturationAdjustment:
             offset_provider={},
         )
 
+        temperature_pair = common_utils.TimeStepPair(self._temperature1, self._temperature2)
+
         # TODO (Chia Rui): this is inspired by the cpu version of the original ICON saturation_adjustment code. Consider to refactor this code when break and for loop features are ready in gt4py.
-        temperature_list = [self._temperature1, self._temperature2]
-        ncurrent, nnext, num_iter = 0, 1, 1
-        not_converged = xp.any(
-            self._newton_iteration_mask.ndarray[
-                self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
-            ]
-        )
-        while not_converged:
+        num_iter = 0
+        while self._not_converged():
             if num_iter > self.config.max_iter:
                 raise ConvergenceError(
-                    f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {xp.abs(self._temperature1.ndarray - self._temperature2.ndarray).max()} . Please raise max_iter"
+                    f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {self._xp.abs(self._temperature1.ndarray - self._temperature2.ndarray).max()} . Please raise max_iter"
                 )
 
             self.update_temperature_by_newton_iteration(
-                diagnostic_state.temperature,
-                tracer_state.qv,
-                prognostic_state.rho,
+                temperature,
+                qv,
+                rho,
                 self._newton_iteration_mask,
                 self._lwdocvd,
-                temperature_list[nnext],
-                temperature_list[ncurrent],
+                temperature_pair.next,
+                temperature_pair.current,
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
                 vertical_start=gtx.int32(0),
@@ -412,8 +283,8 @@ class SaturationAdjustment:
 
             self.compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
                 self.config.tolerance,
-                temperature_list[ncurrent],
-                temperature_list[nnext],
+                temperature_pair.current,
+                temperature_pair.next,
                 self._newton_iteration_mask,
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
@@ -422,114 +293,26 @@ class SaturationAdjustment:
                 offset_provider={},
             )
 
-            not_converged = xp.any(
-                self._newton_iteration_mask.ndarray[
-                    self._start_cell_nudging : self._end_cell_local, 0 : self.grid.num_levels
-                ]
-            )
-
-            ncurrent = (ncurrent + 1) % 2
-            nnext = (nnext + 1) % 2
+            temperature_pair.swap()
             num_iter = num_iter + 1
 
         self.update_temperature_qv_qc_tendencies(
             dtime,
-            diagnostic_state.temperature,
-            temperature_list[ncurrent],
-            tracer_state.qv,
-            tracer_state.qc,
-            prognostic_state.rho,
+            temperature,
+            temperature_pair.current,
+            qv,
+            qc,
+            rho,
             self._subsaturated_mask,
-            self.temperature_tendency,
-            self.qv_tendency,
-            self.qc_tendency,
+            temperature_tendency,
+            qv_tendency,
+            qc_tendency,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-
-        if self.config.diagnose_variables_from_new_temperature:
-            # TODO (Chia Rui): Consider to merge the gt4py stencils below if scan operator can be called in the intermediate step
-            self.compute_temperature_and_exner_tendencies_after_saturation_adjustment(
-                dtime,
-                tracer_state.qv,
-                tracer_state.qc,
-                tracer_state.qi,
-                tracer_state.qr,
-                tracer_state.qs,
-                tracer_state.qg,
-                self.qv_tendency,
-                self.qc_tendency,
-                temperature_list[ncurrent],
-                diagnostic_state.virtual_temperature,
-                prognostic_state.exner,
-                self.virtual_temperature_tendency,
-                self.exner_tendency,
-                self._new_exner,
-                self._new_virtual_temperature,
-                self._k_field,
-                self.vertical_params.kstart_moist,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
-
-            self.diagnose_surface_pressure(
-                self._new_exner,
-                self._new_virtual_temperature,
-                self.metric_state.ddqz_z_full,
-                self._pressure_ifc,
-                phy_const.CPD_O_RD,
-                phy_const.P0REF,
-                phy_const.GRAV_O_RD,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=self.grid.num_levels,
-                vertical_end=self.grid.num_levels + gtx.int32(1),
-                offset_provider={"Koff": dims.KDim},
-            )
-
-            self.diagnose_pressure(
-                self.metric_state.ddqz_z_full,
-                self._new_virtual_temperature,
-                gtx.as_field((dims.CellDim,), self._pressure_ifc.ndarray[:, -1]),
-                self._pressure,
-                self._pressure_ifc,
-                phy_const.GRAV_O_RD,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
-
-            self.compute_pressure_tendency_after_saturation_adjustment(
-                dtime,
-                diagnostic_state.pressure,
-                self._pressure,
-                self.pressure_tendency,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
-
-            self.compute_pressure_ifc_tendency_after_saturation_adjustment(
-                dtime,
-                diagnostic_state.pressure_ifc,
-                self._pressure_ifc,
-                self.pressure_ifc_tendency,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels + gtx.int32(1),
-                offset_provider={},
-            )
 
 
 @gtx.field_operator
@@ -547,9 +330,10 @@ def _latent_heat_vaporization(
         latent heat of vaporization.
     """
     return (
-        satpres_const.vaporisation_latent_heat
-        + (1850.0 - satpres_const.specific_heat_capacity_for_water) * (t - satpres_const.tmelt)
-        - satpres_const.rv * t
+        microphy_const.vaporisation_latent_heat
+        + (1850.0 - microphy_const.specific_heat_capacity_for_water)
+        * (t - microphy_const.melting_temperature)
+        - physics_constants.rv * t
     )
 
 
@@ -564,8 +348,10 @@ def _sat_pres_water(t: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
     Returns:
         saturation water vapour pressure.
     """
-    return satpres_const.tetens_p0 * exp(
-        satpres_const.tetens_aw * (t - satpres_const.tmelt) / (t - satpres_const.tetens_bw)
+    return microphy_const.tetens_p0 * exp(
+        microphy_const.tetens_aw
+        * (t - microphy_const.melting_temperature)
+        / (t - microphy_const.tetens_bw)
     )
 
 
@@ -585,7 +371,7 @@ def _qsat_rho(
     Returns:
         specific humidity at water saturation.
     """
-    return _sat_pres_water(t) / (rho * satpres_const.rv * t)
+    return _sat_pres_water(t) / (rho * physics_constants.rv * t)
 
 
 @gtx.field_operator
@@ -608,7 +394,7 @@ def _dqsatdT_rho(
     Returns:
         partial derivative of the specific humidity at water saturation.
     """
-    beta = satpres_const.tetens_der / (t - satpres_const.tetens_bw) ** 2 - 1.0 / t
+    beta = microphy_const.tetens_der / (t - microphy_const.tetens_bw) ** 2 - 1.0 / t
     return beta * zqsat
 
 
@@ -802,14 +588,14 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
         mask for Newton iteration case
     """
     temperature_after_all_qc_evaporated = (
-        temperature - _latent_heat_vaporization(temperature) / satpres_const.cvd * qc
+        temperature - _latent_heat_vaporization(temperature) / physics_constants.cvd * qc
     )
 
     # Check, which points will still be subsaturated even after evaporating all cloud water.
     subsaturated_mask = qv + qc <= _qsat_rho(temperature_after_all_qc_evaporated, rho)
 
     # Remains const. during iteration
-    lwdocvd = _latent_heat_vaporization(temperature) / satpres_const.cvd
+    lwdocvd = _latent_heat_vaporization(temperature) / physics_constants.cvd
 
     new_temperature1 = where(
         subsaturated_mask,
@@ -895,213 +681,6 @@ def compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
         temperature_current,
         temperature_next,
         out=(newton_iteration_mask, temperature_next),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
-    dtime: ta.wpfloat,
-    qv: fa.CellKField[ta.wpfloat],
-    qc: fa.CellKField[ta.wpfloat],
-    qi: fa.CellKField[ta.wpfloat],
-    qr: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
-    qg: fa.CellKField[ta.wpfloat],
-    qv_tendency: fa.CellKField[ta.wpfloat],
-    qc_tendency: fa.CellKField[ta.wpfloat],
-    temperature: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    exner: fa.CellKField[ta.wpfloat],
-    k_field: fa.KField[gtx.int32],
-    kstart_moist: gtx.int32,
-) -> tuple[
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-]:
-    """
-    Update virtual temperature and exner tendencies after saturation adjustment updates temperature, qv , and qc.
-
-    Args:
-        dtime: time step [s]
-        qv: specific humidity [kg kg-1]
-        qc: specific cloud water content [kg kg-1]
-        qi: specific cloud ice content [kg kg-1]
-        qr: specific rain water content [kg kg-1]
-        qs: specific snow content [kg kg-1]
-        qg: specific graupel content [kg kg-1]
-        qv_tendency: specific humidity tendency [kg kg-1 s-1]
-        qc_tendency: specific cloud water content tendency [kg kg-1 s-1]
-        temperature: air temperature [K]
-        virtual_temperature: air virtual temperature [K]
-        exner: exner function
-        k_field: k level indices
-        kstart_moist: starting level for all moisture processes
-    Returns:
-        virtual temperature tendency [K s-1], exner tendency [s-1], new exner, new virtual temperature [K]
-    """
-    qsum = where(
-        k_field < kstart_moist,
-        broadcast(0.0, (CellDim, KDim)),  # TODO: use dims module import when ready in gt4px
-        qc + qc_tendency * dtime + qi + qr + qs + qg,
-    )
-
-    new_virtual_temperature = where(
-        k_field < kstart_moist,
-        virtual_temperature,
-        temperature * (1.0 + satpres_const.rv_o_rd_minus_1 * (qv + qv_tendency * dtime) - qsum),
-    )
-    new_exner = where(
-        k_field < kstart_moist,
-        exner,
-        exner
-        * (1.0 + satpres_const.rd_o_cpd * (new_virtual_temperature / virtual_temperature - 1.0)),
-    )
-
-    return (
-        (new_virtual_temperature - virtual_temperature) / dtime,
-        (new_exner - exner) / dtime,
-        new_exner,
-        new_virtual_temperature,
-    )
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_temperature_and_exner_tendencies_after_saturation_adjustment(
-    dtime: ta.wpfloat,
-    qv: fa.CellKField[ta.wpfloat],
-    qc: fa.CellKField[ta.wpfloat],
-    qi: fa.CellKField[ta.wpfloat],
-    qr: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
-    qg: fa.CellKField[ta.wpfloat],
-    qv_tendency: fa.CellKField[ta.wpfloat],
-    qc_tendency: fa.CellKField[ta.wpfloat],
-    temperature: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    exner: fa.CellKField[ta.wpfloat],
-    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
-    exner_tendency: fa.CellKField[ta.wpfloat],
-    new_exner: fa.CellKField[ta.wpfloat],
-    new_virtual_temperature: fa.CellKField[ta.wpfloat],
-    k_field: fa.KField[gtx.int32],
-    kstart_moist: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
-        dtime,
-        qv,
-        qc,
-        qi,
-        qr,
-        qs,
-        qg,
-        qv_tendency,
-        qc_tendency,
-        temperature,
-        virtual_temperature,
-        exner,
-        k_field,
-        kstart_moist,
-        out=(
-            virtual_temperature_tendency,
-            exner_tendency,
-            new_exner,
-            new_virtual_temperature,
-        ),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _compute_pressure_tendency_after_saturation_adjustment(
-    dtime: ta.wpfloat,
-    old_pressure: fa.CellKField[ta.wpfloat],
-    new_pressure: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Update pressure tendency at full levels after saturation adjustment updates temperature, qv , and qc.
-
-    Args:
-        dtime: time step [s]
-        old_pressure: old air pressure at full levels [Pa]
-        new_pressure: new air pressure at full levels [Pa]
-    Returns:
-        pressure tendency [Pa s-1]
-    """
-
-    return (new_pressure - old_pressure) / dtime
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_pressure_tendency_after_saturation_adjustment(
-    dtime: ta.wpfloat,
-    old_pressure: fa.CellKField[ta.wpfloat],
-    new_pressure: fa.CellKField[ta.wpfloat],
-    pressure_tendency: fa.CellKField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_pressure_tendency_after_saturation_adjustment(
-        dtime,
-        old_pressure,
-        new_pressure,
-        out=pressure_tendency,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _compute_pressure_ifc_tendency_after_saturation_adjustment(
-    dtime: ta.wpfloat,
-    old_pressure_ifc: fa.CellKField[ta.wpfloat],
-    new_pressure_ifc: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Update pressure tendency at half levels (including surface level) after saturation adjustment updates temperature, qv , and qc.
-
-    Args:
-        dtime: time step [s]
-        old_pressure_ifc: old air pressure at interface [Pa]
-        new_pressure_ifc: new air pressure at interface [Pa]
-    Returns:
-        interface pressure tendency [Pa s-1]
-    """
-    return (new_pressure_ifc - old_pressure_ifc) / dtime
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_pressure_ifc_tendency_after_saturation_adjustment(
-    dtime: ta.wpfloat,
-    old_pressure_ifc: fa.CellKField[ta.wpfloat],
-    new_pressure_ifc: fa.CellKField[ta.wpfloat],
-    pressure_ifc_tendency: fa.CellKField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_pressure_ifc_tendency_after_saturation_adjustment(
-        dtime,
-        old_pressure_ifc,
-        new_pressure_ifc,
-        out=pressure_ifc_tendency,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
