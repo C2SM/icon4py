@@ -9,8 +9,8 @@ SLURM_NODES=1
 SLURM_UENV="icon/25.2:v3"
 SLURM_UENV_VIEW="default"
 
-SLURM_PARTITION="normal"
-SLURM_TIME="08:50:00"
+SLURM_PARTITION="debug"
+SLURM_TIME="00:10:00"
 
 SLURM_JOBNAME="channel_950x350x100_5m_nlev20_leeMoser"
 SLURM_LOGDIR="../runs_icon4py/logs"

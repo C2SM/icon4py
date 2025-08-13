@@ -144,17 +144,19 @@ class ChannelFlow:
         full_edge_mask_np = xp.zeros((self.num_edges, self.num_levels), dtype=float)
 
         x_inflow = xp.unique(cell_x)[1]  # second cell centre from left
-        domain_length = xp.unique(cell_x)[-2] # NOTE: grid_file.domain_length be the right choice, but the sponge would never reach 1
+        x_outflow = xp.unique(cell_x)[-4]
         for k in range(self.num_levels):
-            # outflow: tanh sponge
+            # outflow: tanh sponge + outflow
             full_cell_mask_np[:, k] = (
                 1
-                + xp.tanh((cell_x + sponge_length / 2 - domain_length) * 2 * xp.pi / sponge_length)
+                + xp.tanh((cell_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
             ) / 2
             full_edge_mask_np[:, k] = (
                 1
-                + xp.tanh((edge_x + sponge_length / 2 - domain_length) * 2 * xp.pi / sponge_length)
+                + xp.tanh((edge_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
             ) / 2
+            full_cell_mask_np[:, k] = xp.where(cell_x >= x_outflow, 1.0, full_cell_mask_np[:, k])
+            full_edge_mask_np[:, k] = xp.where(edge_x >= x_outflow, 1.0, full_edge_mask_np[:, k])
             # inflow: Dirichlet on first cell(s?)
             full_cell_mask_np[:, k] = xp.where(cell_x <= x_inflow, 1.0, full_cell_mask_np[:, k])
             full_edge_mask_np[:, k] = xp.where(edge_x <= x_inflow, 1.0, full_edge_mask_np[:, k])
