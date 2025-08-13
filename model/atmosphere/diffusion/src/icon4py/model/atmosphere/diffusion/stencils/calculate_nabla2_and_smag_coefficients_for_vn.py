@@ -39,48 +39,36 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
         (diff_multfac_smag, u_vert, v_vert, smag_offset), wpfloat
     )
 
-    tmp = u_vert_wp(E2C2V) * dual_normal_vert_x + v_vert_wp(E2C2V) * dual_normal_vert_y
+    v_n = u_vert_wp(E2C2V) * primal_normal_vert_x + v_vert_wp(E2C2V) * primal_normal_vert_y
 
-    dvt_tang_wp = -tmp[E2C2VDim(0)] + tmp[E2C2VDim(1)]
-    dvt_norm_vp = astype((-tmp[E2C2VDim(2)]) + tmp[E2C2VDim(3)], vpfloat)
-
-    tmp2 = astype(
-        u_vert_wp(E2C2V) * primal_normal_vert_x + v_vert_wp(E2C2V) * primal_normal_vert_y, vpfloat
+    nabla2_of_vn = (v_n[E2C2VDim(0)] + v_n[E2C2VDim(1)] - wpfloat("2.0") * vn) * (
+        inv_primal_edge_length * inv_primal_edge_length
+    ) + (v_n[E2C2VDim(2)] + v_n[E2C2VDim(3)] - wpfloat("2.0") * vn) * (
+        inv_vert_vert_length * inv_vert_vert_length
     )
-    kh_smag_1_vp = -tmp2[E2C2VDim(0)] + tmp2[E2C2VDim(1)]
+    # The factor of 4 comes from the lengths in the denominator being twice those needed
+    # for the diffusion stencil (https://doi.org/10.1002%2Fqj.2378).
+    nabla2_of_vn = wpfloat("4.0") * nabla2_of_vn
 
-    dvt_tang_vp = astype(dvt_tang_wp * tangent_orientation, vpfloat)
+    v_t = u_vert_wp(E2C2V) * dual_normal_vert_x + v_vert_wp(E2C2V) * dual_normal_vert_y
+    l_p = tangent_orientation * inv_primal_edge_length
+    l_vv = inv_vert_vert_length
 
-    kh_smag_1_wp, dvt_norm_wp = astype((kh_smag_1_vp, dvt_norm_vp), wpfloat)
-    kh_smag_1_wp = (kh_smag_1_wp * tangent_orientation * inv_primal_edge_length) + (
-        dvt_norm_wp * inv_vert_vert_length
+    kh_smag_part1 = (v_n[E2C2VDim(3)] - v_n[E2C2VDim(2)]) * l_vv - (
+        v_t[E2C2VDim(1)] - v_t[E2C2VDim(0)]
+    ) * l_p
+    kh_smag_part2 = (v_n[E2C2VDim(1)] - v_n[E2C2VDim(0)]) * l_p + (
+        v_t[E2C2VDim(3)] - v_t[E2C2VDim(2)]
+    ) * l_vv
+
+    kh_smag_e_wp = diff_multfac_smag_wp * sqrt(
+        kh_smag_part1 * kh_smag_part1 + kh_smag_part2 * kh_smag_part2
     )
 
-    kh_smag_1_wp = kh_smag_1_wp * kh_smag_1_wp
-
-    kh_smag_2_vp = -tmp2[E2C2VDim(2)] + tmp2[E2C2VDim(3)]
-
-    kh_smag_2_wp = astype(kh_smag_2_vp, wpfloat)
-    kh_smag_2_wp = (kh_smag_2_wp * inv_vert_vert_length) - (
-        astype(dvt_tang_vp, wpfloat) * inv_primal_edge_length
-    )
-
-    kh_smag_2_wp = kh_smag_2_wp * kh_smag_2_wp
-
-    kh_smag_e_wp = diff_multfac_smag_wp * sqrt(kh_smag_2_wp + kh_smag_1_wp)
-    z_nabla2_e_wp = (
-        astype(tmp2[E2C2VDim(0)] + tmp2[E2C2VDim(1)], wpfloat) - wpfloat("2.0") * vn
-    ) * (inv_primal_edge_length * inv_primal_edge_length) + (
-        astype(tmp2[E2C2VDim(2)] + tmp2[E2C2VDim(3)], wpfloat) - wpfloat("2.0") * vn
-    ) * (inv_vert_vert_length * inv_vert_vert_length)
-
-    z_nabla2_e_wp = wpfloat("4.0") * z_nabla2_e_wp
-
-    kh_smag_ec_wp = kh_smag_e_wp
     kh_smag_e_vp = maximum(vpfloat("0.0"), astype(kh_smag_e_wp - smag_offset_wp, vpfloat))
     kh_smag_e_vp = minimum(kh_smag_e_vp, smag_limit)
 
-    return kh_smag_e_vp, astype(kh_smag_ec_wp, vpfloat), z_nabla2_e_wp
+    return kh_smag_e_vp, astype(kh_smag_e_wp, vpfloat), nabla2_of_vn
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
