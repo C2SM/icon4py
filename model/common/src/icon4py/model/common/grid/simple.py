@@ -453,31 +453,28 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
 
     start_indices = {
         dims.CellDim: {
-            h_grid._map_to_index(dims.CellDim, zone): (0 if not zone.is_halo() else _CELLS)
-            for zone in h_grid.Zone
-            if zone in h_grid.CELL_ZONES
+            h_grid.domain(dims.CellDim)(zone): gtx.int32(0 if not zone.is_halo() else _CELLS)
+            for zone in h_grid.CELL_ZONES
         },
         dims.EdgeDim: {
-            h_grid._map_to_index(dims.EdgeDim, zone): (0 if not zone.is_halo() else _EDGES)
+            h_grid.domain(dims.EdgeDim)(zone): gtx.int32(0 if not zone.is_halo() else _EDGES)
             for zone in h_grid.Zone
         },
         dims.VertexDim: {
-            h_grid._map_to_index(dims.VertexDim, zone): (0 if not zone.is_halo() else _VERTICES)
-            for zone in h_grid.Zone
-            if zone in h_grid.VERTEX_ZONES
+            h_grid.domain(dims.VertexDim)(zone): gtx.int32(0 if not zone.is_halo() else _VERTICES)
+            for zone in h_grid.VERTEX_ZONES
         },
     }
     end_indices = {
         dims.CellDim: {
-            h_grid._map_to_index(dims.CellDim, zone): _CELLS
-            for zone in h_grid.Zone
-            if zone in h_grid.CELL_ZONES
+            h_grid.domain(dims.CellDim)(zone): gtx.int32(_CELLS) for zone in h_grid.CELL_ZONES
         },
-        dims.EdgeDim: {h_grid._map_to_index(dims.EdgeDim, zone): _EDGES for zone in h_grid.Zone},
+        dims.EdgeDim: {
+            h_grid.domain(dims.EdgeDim)(zone): gtx.int32(_EDGES) for zone in h_grid.Zone
+        },
         dims.VertexDim: {
-            h_grid._map_to_index(dims.VertexDim, zone): _VERTICES
-            for zone in h_grid.Zone
-            if zone in h_grid.VERTEX_ZONES
+            h_grid.domain(dims.VertexDim)(zone): gtx.int32(_VERTICES)
+            for zone in h_grid.VERTEX_ZONES
         },
     }
 

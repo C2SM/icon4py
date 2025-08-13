@@ -143,7 +143,7 @@ class LineNumber(enum.IntEnum):
     EIGHTH = 7
 
 
-def _lateral_boundary(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _lateral_boundary(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     """Indicate lateral boundary.
 
     These points correspond to the sorted points in ICON, the marker can be incremented in order
@@ -170,16 +170,16 @@ def _local(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
     return _domain_index(_LOCAL, dim, offset)
 
 
-def _halo(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _halo(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     return _domain_index(_HALO, dim, offset)
 
 
-def _nudging(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _nudging(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     """Indicate the nudging zone."""
     return _domain_index(_NUDGING, dim, offset)
 
 
-def _interior(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _interior(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     """Indicate interior i.e. unordered prognostic cells in ICON."""
     return _domain_index(_INTERIOR, dim, offset)
 
@@ -334,8 +334,6 @@ def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
             return _nudging(dim, LineNumber.FIRST)
         case Zone.NUDGING_LEVEL_2:
             return _nudging(dim, LineNumber.SECOND)
-        case _:
-            raise ValueError(f"Unknown marker {marker}")
 
 
 @runtime_checkable
