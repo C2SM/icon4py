@@ -224,7 +224,7 @@ def _test_and_benchmark(
 
 
 class StandardStaticVariants(eve.StrEnum):
-    DEFAULT = "default"
+    NONE = "none"
     COMPILE_TIME_DOMAIN = "compile_time_domain"
     COMPILE_TIME_VERTICAL = "compile_time_vertical"
 
@@ -264,9 +264,7 @@ class StencilTest:
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: ClassVar[typing.Optional[tuple]] = None
-    STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = (
-        None  # TODO maybe non-dict in case there is only one default
-    )
+    STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
 

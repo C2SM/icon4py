@@ -60,7 +60,7 @@ class TestCalculateNabla4(StencilTest):
     OUTPUTS = ("z_nabla4_e2",)
     MARKERS = (pytest.mark.skip_value_error,)
     STATIC_PARAMS = {
-        StandardStaticVariants.DEFAULT: None,
+        StandardStaticVariants.NONE: None,
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
