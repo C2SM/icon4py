@@ -97,6 +97,7 @@ class TestCalculateNabla4(StencilTest):
         )
         return dict(z_nabla4_e2=z_nabla4_e2)
 
+    @pytest.fixture
     def input_data(self, grid) -> dict:
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
