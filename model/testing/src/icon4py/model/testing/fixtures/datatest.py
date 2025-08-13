@@ -7,14 +7,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 import pytest
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
-from icon4py.model.common.grid import base as base_grid, simple as simple_grid
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import (
     config,
     data_handling as data,
@@ -22,16 +22,12 @@ from icon4py.model.testing import (
     definitions,
     locking,
 )
-from icon4py.model.testing.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 
 
 if TYPE_CHECKING:
     import pathlib
 
     from icon4py.model.testing import serialbox
-
-DEFAULT_GRID: Final[str] = "simple_grid"
-VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
 
 
 def _check_backend_validity(backend_name: str) -> None:
@@ -42,34 +38,6 @@ def _check_backend_validity(backend_name: str) -> None:
             + available_backends
             + "] and pass it as an argument to --backend when invoking pytest."
         )
-
-
-def _check_grid_validity(grid_name: str) -> None:
-    assert (
-        grid_name in VALID_GRIDS
-    ), f"Invalid value for '--grid' option - possible names are {VALID_GRIDS}"
-
-
-def _get_grid(
-    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
-) -> base_grid.Grid:
-    match selected_grid_type:
-        case "icon_grid":
-            from icon4py.model.testing.grid_utils import get_grid_manager_for_experiment
-
-            grid_instance = get_grid_manager_for_experiment(
-                REGIONAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
-            ).grid
-            return grid_instance
-        case "icon_grid_global":
-            from icon4py.model.testing.grid_utils import get_grid_manager_for_experiment
-
-            grid_instance = get_grid_manager_for_experiment(
-                GLOBAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
-            ).grid
-            return grid_instance
-        case _:
-            return simple_grid.simple_grid(selected_backend)
 
 
 @pytest.fixture(scope="session")
@@ -83,18 +51,6 @@ def backend(request):
 
     selected_backend = model_backends.BACKENDS[backend_option]
     return selected_backend
-
-
-@pytest.fixture(scope="session")
-def grid(request, backend):
-    try:
-        grid_option = request.config.getoption("grid")
-    except ValueError:
-        grid_option = DEFAULT_GRID
-    else:
-        _check_grid_validity(grid_option)
-    grid = _get_grid(grid_option, backend)
-    return grid
 
 
 @pytest.fixture
