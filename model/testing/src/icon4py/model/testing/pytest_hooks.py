@@ -14,7 +14,6 @@ from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.testing.fixtures import (
     # Note: has to be used from pytest_hooks, otherwise StencilTest will not respect the session scope
     backend,  # noqa: F401
-    connectivities_as_numpy,  # noqa: F401
     grid,  # noqa: F401
 )
 from icon4py.model.testing.helpers import apply_markers

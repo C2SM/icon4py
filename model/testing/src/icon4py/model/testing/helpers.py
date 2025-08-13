@@ -169,11 +169,26 @@ def _verify_stencil_test(
             )
 
 
+@dataclasses.dataclass
+class _ConnectivityConceptFixer:
+    """
+    This works around a misuse of dimensions as an identifier for connectivities.
+    Since GT4Py might change the way the mesh is represented, we could
+    keep this for a while, otherwise we need to touch all StencilTests.
+    """
+
+    _grid: base.Grid
+
+    def __getitem__(self, dim: gtx.Dimension | str) -> np.ndarray:
+        if isinstance(dim, gtx.Dimension):
+            dim = dim.value
+        return self._grid.get_connectivity(dim).asnumpy()
+
+
 def _test_and_benchmark(
     self: StencilTest,
     grid: base.Grid,
     backend: gtx_backend.Backend | None,
-    connectivities_as_numpy: dict[str, np.ndarray],
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
     static_variant: Sequence[str],  # the names of the static parameters
     benchmark: pytest.FixtureRequest,
@@ -181,9 +196,10 @@ def _test_and_benchmark(
     if self.MARKERS is not None:
         apply_markers(self.MARKERS, grid, backend)
 
-    connectivities = connectivities_as_numpy
+    connectivities_as_numpy = _ConnectivityConceptFixer(grid)
+
     reference_outputs = self.reference(
-        connectivities,
+        connectivities_as_numpy,  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
         **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
     )
 
