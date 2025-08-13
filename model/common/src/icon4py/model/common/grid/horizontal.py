@@ -302,7 +302,7 @@ class Zone(str, enum.Enum):
         return self in (Zone.HALO, Zone.HALO_LEVEL_2)
 
 
-def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
+def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:
     match marker:
         case Zone.END:
             return _end(dim)
@@ -345,8 +345,7 @@ class Domain(Protocol):
     """
 
     _dim: gtx.Dimension
-    _marker: Zone
-    _index: int
+    _zone: Zone
 
     def __eq__(self, other):
         if isinstance(other, Domain):
@@ -357,19 +356,18 @@ class Domain(Protocol):
         return hash((self.dim, self.zone))
 
     def __str__(self):
-        return f"Domain (dim = {self.dim}: zone = {self._marker} /[ {self._index}])"
+        return f"Domain (dim = {self.dim}: zone = {self._zone} /[ {_map_to_icon_index(self.dim, self.zone)} ])"
 
     @abstractmethod
     def _valid(self, marker: Zone) -> bool: ...
 
     @property
     def zone(self) -> Zone:
-        return self._marker
+        return self._zone
 
-    def marker(self, marker: Zone):
+    def set_marker(self, marker: Zone):
         assert self._valid(marker), f" Domain `{marker}` not a valid zone for use with '{self.dim}'"
-        self._marker = marker
-        self._index = _map_to_index(self.dim, marker)
+        self._zone = marker
         return self
 
     @property
@@ -377,11 +375,8 @@ class Domain(Protocol):
         return self._dim
 
     @functools.cached_property
-    def local(self) -> bool:
-        return self._marker == Zone.LOCAL
-
-    def __call__(self) -> int:
-        return self._index
+    def is_local(self) -> bool:
+        return self._zone == Zone.LOCAL
 
 
 def domain(dim: gtx.Dimension):
@@ -407,13 +402,13 @@ def domain(dim: gtx.Dimension):
     return _domain
 
 
-def _domain_factory(dim: gtx.Dimension, marker: Zone):
+def _domain_factory(dim: gtx.Dimension, zone: Zone):
     if dim == dims.CellDim:
-        return CellDomain().marker(marker)
+        return CellDomain().set_marker(zone)
     elif dim == dims.EdgeDim:
-        return EdgeDomain().marker(marker)
+        return EdgeDomain().set_marker(zone)
     else:
-        return VertexDomain().marker(marker)
+        return VertexDomain().set_marker(zone)
 
 
 class EdgeDomain(Domain):
@@ -487,9 +482,11 @@ def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
             )
 
 
-def map_domain_bounds(
+def map_icon_domain_bounds(
     dim: gtx.Dimension, pre_computed_bounds: np.ndarray
 ) -> dict[Domain, gtx.int32]:
     get_domain = domain(dim)
     domains = (get_domain(zone) for zone in get_zones_for_dim(dim))
-    return {d: gtx.int32(pre_computed_bounds[d._index].item()) for d in domains}
+    return {
+        d: gtx.int32(pre_computed_bounds[_map_to_icon_index(dim, d.zone)].item()) for d in domains
+    }

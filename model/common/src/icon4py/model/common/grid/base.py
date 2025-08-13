@@ -172,7 +172,7 @@ class Grid:
         For a given dimension, returns the start index of the
         horizontal region in a field given by the marker.
         """
-        if domain.local:
+        if domain.is_local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
         return self._start_indices[domain.dim][domain]

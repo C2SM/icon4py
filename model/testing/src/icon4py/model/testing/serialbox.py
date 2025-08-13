@@ -326,6 +326,34 @@ class IconGridSavepoint(IconSavepoint):
     def edge_start_index(self):
         return self._read_int32_shift1("e_start_index")
 
+    def start_index(self, dim: gtx.Dimension) -> np.ndarray:
+        """
+        Use to specify lower end of domains of a field for field_operators.
+        """
+        match dim:
+            case dims.CellDim:
+                return self.cells_start_index()
+            case dims.EdgeDim:
+                return self.edge_start_index()
+            case dims.VertexDim:
+                return self.vertex_start_index()
+            case _:
+                raise ValueError(f"Unsupported dimension {dim}")
+
+    def end_index(self, dim: gtx.Dimension) -> np.ndarray:
+        """
+        Use to specify upper end of domains of a field for field_operators.
+        """
+        match dim:
+            case dims.CellDim:
+                return self.cells_end_index()
+            case dims.EdgeDim:
+                return self.edge_end_index()
+            case dims.VertexDim:
+                return self.vertex_end_index()
+            case _:
+                raise ValueError(f"Unsupported dimension {dim}")
+
     def nflatlev(self):
         return self._read_int32_shift1("nflatlev").item()
 
@@ -488,15 +516,15 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
         start_indices = {
-            dims.VertexDim: h_grid.map_domain_bounds(dims.VertexDim, vertex_starts),
-            dims.EdgeDim: h_grid.map_domain_bounds(dims.EdgeDim, edge_starts),
-            dims.CellDim: h_grid.map_domain_bounds(dims.CellDim, cell_starts),
+            dims.VertexDim: h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_starts),
+            dims.EdgeDim: h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_starts),
+            dims.CellDim: h_grid.map_icon_domain_bounds(dims.CellDim, cell_starts),
         }
 
         end_indices = {
-            dims.VertexDim: h_grid.map_domain_bounds(dims.VertexDim, vertex_ends),
-            dims.EdgeDim: h_grid.map_domain_bounds(dims.EdgeDim, edge_ends),
-            dims.CellDim: h_grid.map_domain_bounds(dims.CellDim, cell_ends),
+            dims.VertexDim: h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_ends),
+            dims.EdgeDim: h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_ends),
+            dims.CellDim: h_grid.map_icon_domain_bounds(dims.CellDim, cell_ends),
         }
 
         neighbor_tables = {

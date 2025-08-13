@@ -12,6 +12,13 @@ import random
 import pytest
 
 from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
+from icon4py.model.testing.fixtures.datatest import (
+    grid_savepoint,
+    data_provider,
+    download_ser_data,
+    processor_props,
+    ranked_data_path,
+)
 
 
 @pytest.fixture

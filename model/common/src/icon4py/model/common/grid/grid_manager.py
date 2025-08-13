@@ -363,11 +363,11 @@ class GridManager:
         start, end, _ = self._read_start_end_indices()
 
         start_indices = {
-            dim: h_grid.map_domain_bounds(dim, start[dim])
+            dim: h_grid.map_icon_domain_bounds(dim, start[dim])
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         end_indices = {
-            dim: h_grid.map_domain_bounds(dim, end[dim])
+            dim: h_grid.map_icon_domain_bounds(dim, end[dim])
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
 
