@@ -16,6 +16,9 @@ from icon4py.model.testing import definitions
 
 
 DEFAULT_GRID: Final[str] = "simple_grid"
+DEFAULT_NUM_LEVELS: Final[int] = (
+    65  # the number matters for performance measurements, but otherwise is arbitrary
+)
 VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
 
 
@@ -42,19 +45,17 @@ def _get_grid_manager(
 def _get_grid(
     selected_grid_type: str, selected_backend: gtx_backend.Backend | None
 ) -> base_grid.Grid:
-    print(f"Using grid type: {selected_grid_type} with backend: {selected_backend}")
-    print("This should have been called only once per test session.")
     match selected_grid_type:
         case "icon_grid":
             return _get_grid_manager(
                 descriptor=definitions.Grids.MCH_CH_R04B09_DSL,
-                num_levels=65,  # random decision
+                num_levels=DEFAULT_NUM_LEVELS,
                 backend=selected_backend,
             ).grid
         case "icon_grid_global":
             return _get_grid_manager(
                 descriptor=definitions.Grids.R02B04_GLOBAL,
-                num_levels=60,  # random decision
+                num_levels=DEFAULT_NUM_LEVELS,
                 backend=selected_backend,
             ).grid
         case _:
