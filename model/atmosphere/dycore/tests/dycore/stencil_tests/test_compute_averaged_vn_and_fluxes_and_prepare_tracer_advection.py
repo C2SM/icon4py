@@ -45,6 +45,9 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        spatially_averaged_vn: np.ndarray,
+        mass_flux_at_edges_on_model_levels: np.ndarray,
+        theta_v_flux_at_edges_on_model_levels: np.ndarray,
         substep_and_spatially_averaged_vn: np.ndarray,
         substep_averaged_mass_flux: np.ndarray,
         e_flx_avg: np.ndarray,
@@ -55,8 +58,17 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
         prepare_advection: bool,
         at_first_substep: bool,
         r_nsubsteps: ta.wpfloat,
+        horizontal_start: int,
+        horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
+
+        initial_spatially_averaged_vn = spatially_averaged_vn.copy()
+        initial_mass_flux_at_edges_on_model_levels = mass_flux_at_edges_on_model_levels.copy()
+        initial_theta_v_flux_at_edges_on_model_levels = theta_v_flux_at_edges_on_model_levels.copy()
+        initial_substep_and_spatially_averaged_vn = substep_and_spatially_averaged_vn.copy()
+        initial_substep_averaged_mass_flux = substep_averaged_mass_flux.copy()
+
         spatially_averaged_vn = spatially_average_flux_or_velocity_numpy(
             connectivities, e_flx_avg, vn
         )
@@ -85,6 +97,21 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.Stenc
                     r_nsubsteps,
                 )
             )
+
+        spatially_averaged_vn[:horizontal_start, :] = initial_spatially_averaged_vn[:horizontal_start, :]
+        spatially_averaged_vn[horizontal_end:, :]   = initial_spatially_averaged_vn[horizontal_end:, :]
+
+        mass_flux_at_edges_on_model_levels[:horizontal_start, :] = initial_mass_flux_at_edges_on_model_levels[:horizontal_start, :]
+        mass_flux_at_edges_on_model_levels[horizontal_end:, :]   = initial_mass_flux_at_edges_on_model_levels[horizontal_end:, :]
+
+        theta_v_flux_at_edges_on_model_levels[:horizontal_start, :] = initial_theta_v_flux_at_edges_on_model_levels[:horizontal_start, :]
+        theta_v_flux_at_edges_on_model_levels[horizontal_end:, :]   = initial_theta_v_flux_at_edges_on_model_levels[horizontal_end:, :]
+
+        substep_and_spatially_averaged_vn[:horizontal_start, :] = initial_substep_and_spatially_averaged_vn[:horizontal_start, :]
+        substep_and_spatially_averaged_vn[horizontal_end:, :]   = initial_substep_and_spatially_averaged_vn[horizontal_end:, :]
+
+        substep_averaged_mass_flux[:horizontal_start, :] = initial_substep_averaged_mass_flux[:horizontal_start, :]
+        substep_averaged_mass_flux[horizontal_end:, :]   = initial_substep_averaged_mass_flux[horizontal_end:, :]
 
         return dict(
             spatially_averaged_vn=spatially_averaged_vn,
