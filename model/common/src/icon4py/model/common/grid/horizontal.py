@@ -37,7 +37,7 @@ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nw
 import enum
 import functools
 from abc import abstractmethod
-from typing import Final, Protocol
+from typing import Final, Protocol, TypedDict
 
 import gt4py.next as gtx
 
@@ -79,51 +79,56 @@ _HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS  # 3
 _LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS  # 4
 _END_CELLS: Final[int] = 0
 
-_LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX  # 8
+_LATERAL_BOUNDARY_VERTICES:Final[int] = 1 + _ICON_INDEX_OFFSET_VERTEX  # 8
 _INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX  # 7
 _NUDGING_VERTICES: Final[int] = 0
 _HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX  # 2
 _LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX  # 3
 _END_VERTICES: Final[int] = 0
 
-
 _EDGE_GRF: Final[int] = 24
 _CELL_GRF: Final[int] = 14
 _VERTEX_GRF: Final[int] = 13
 
+GRID_REFINEMENT_SIZE: Final[dict[gtx.Dimension, int]] = {
+    dims.CellDim: _CELL_GRF, dims.EdgeDim: _EDGE_GRF, dims.VertexDim: _VERTEX_GRF
+}
 
-_LATERAL_BOUNDARY = {
+
+
+_LATERAL_BOUNDARY:Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: _LATERAL_BOUNDARY_CELLS,
     dims.EdgeDim: _LATERAL_BOUNDARY_EDGES,
     dims.VertexDim: _LATERAL_BOUNDARY_VERTICES,
 }
-_LOCAL = {
+_LOCAL:Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: _LOCAL_CELLS,
     dims.EdgeDim: _LOCAL_EDGES,
     dims.VertexDim: _LOCAL_VERTICES,
 }
-_HALO = {
+_HALO:Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: _HALO_CELLS,
     dims.EdgeDim: _HALO_EDGES,
     dims.VertexDim: _HALO_VERTICES,
 }
-_INTERIOR = {
+_INTERIOR:Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: _INTERIOR_CELLS,
     dims.EdgeDim: _INTERIOR_EDGES,
     dims.VertexDim: _INTERIOR_VERTICES,
 }
-_NUDGING = {
+
+_NUDGING:Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: _NUDGING_CELLS,
     dims.EdgeDim: _NUDGING_EDGES,
     dims.VertexDim: _NUDGING_VERTICES,
 }
-_END = {
+_END:Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: _END_CELLS,
     dims.EdgeDim: _END_EDGES,
     dims.VertexDim: _END_VERTICES,
 }
 
-_BOUNDS = {
+_BOUNDS: Final[dict[gtx.Dimension, tuple[int, int]]]= {
     dims.CellDim: (0, _CELL_GRF - 1),
     dims.EdgeDim: (0, _EDGE_GRF - 1),
     dims.VertexDim: (0, _VERTEX_GRF - 1),
