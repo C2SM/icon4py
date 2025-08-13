@@ -12,9 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     _accumulate_prep_adv_fields,
 )
-from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity import (
-    _spatially_average_flux_or_velocity,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
@@ -29,6 +26,9 @@ from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
     _compute_tangential_wind,
 )
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity import (
+    _spatially_average_flux_or_velocity,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C2EO, E2C2EODim
 from icon4py.model.common.type_alias import vpfloat

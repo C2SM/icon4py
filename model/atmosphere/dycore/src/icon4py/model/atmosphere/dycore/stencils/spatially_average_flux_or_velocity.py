@@ -22,7 +22,9 @@ def _spatially_average_flux_or_velocity(
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_31."""
     # e_flx_avg is the weight vector for spatially averaging fluxes or velocities
-    spatially_averaged_flux_or_velocity = neighbor_sum(e_flx_avg * flux_or_velocity(E2C2EO), axis=E2C2EODim)
+    spatially_averaged_flux_or_velocity = neighbor_sum(
+        e_flx_avg * flux_or_velocity(E2C2EO), axis=E2C2EODim
+    )
     return spatially_averaged_flux_or_velocity
 
 
