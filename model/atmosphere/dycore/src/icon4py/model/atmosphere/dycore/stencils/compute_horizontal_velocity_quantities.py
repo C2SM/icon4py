@@ -12,7 +12,7 @@ from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     _accumulate_prep_adv_fields,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import (
+from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity import (
     _spatially_average_flux_or_velocity,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (

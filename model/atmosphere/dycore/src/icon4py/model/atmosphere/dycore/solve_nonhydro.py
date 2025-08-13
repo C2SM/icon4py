@@ -38,7 +38,7 @@ from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import 
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import (
+from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity import (
     spatially_average_flux_or_velocity,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
