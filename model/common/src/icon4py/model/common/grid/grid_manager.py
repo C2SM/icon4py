@@ -9,7 +9,7 @@ import functools
 import logging
 import pathlib
 from types import ModuleType
-from typing import Callable, Literal, Optional, Protocol, TypeAlias, Union
+from typing import Callable, Literal, Optional, TypeAlias, Union
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -36,35 +36,6 @@ class IconGridError(RuntimeError):
     pass
 
 
-class IndexTransformation(Protocol):
-    """Return a transformation field to be applied to index fields"""
-
-    def __call__(
-        self,
-        array: data_alloc.NDArray,
-    ) -> data_alloc.NDArray: ...
-
-
-class NoTransformation(IndexTransformation):
-    """Empty implementation of the Protocol. Just return zeros."""
-
-    def __call__(self, array: data_alloc.NDArray):
-        return np.zeros_like(array)
-
-
-class ToZeroBasedIndexTransformation(IndexTransformation):
-    def __call__(self, array: data_alloc.NDArray):
-        """
-        Calculate the index offset needed for usage with python.
-
-        Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
-        INVALID values which are marked with -1 in the grid file and are kept such.
-        """
-        return np.asarray(
-            np.where(array == gridfile.GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32
-        )
-
-
 CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
@@ -83,12 +54,12 @@ class GridManager:
 
     def open(self):
         """Open the gridfile resource for reading."""
-        self._reader = gridfile.GridFile(self._file_name)
+        self._reader = gridfile.GridFile(self._file_name, self._transformation)
         self._reader.open()
 
     def __init__(
         self,
-        transformation: IndexTransformation,
+        transformation: gridfile.IndexTransformation,
         grid_file: Union[pathlib.Path, str],
         config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove: - separate vertical from horizontal grid
         decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
@@ -227,14 +198,18 @@ class GridManager:
             gridfile.GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
                 (dims.CellDim, dims.C2EDim),
                 self._reader.int_variable(
-                    gridfile.GeometryName.CELL_NORMAL_ORIENTATION, transpose=True
+                    gridfile.GeometryName.CELL_NORMAL_ORIENTATION,
+                    transpose=True,
+                    apply_transformation=False,
                 ),
                 allocator=backend,
             ),
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
                 self._reader.int_variable(
-                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX, transpose=True
+                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
+                    transpose=True,
+                    apply_transformation=False,
                 ),
                 allocator=backend,
             ),
@@ -265,7 +240,9 @@ class GridManager:
         refinement_control_fields = {
             dim: gtx.as_field(
                 (dim,),
-                self._reader.int_variable(name, decomposition_info, transpose=False),
+                self._reader.int_variable(
+                    name, decomposition_info, transpose=False, apply_transformation=False
+                ),
                 allocator=backend,
             )
             for dim, name in refinement_control_names.items()
@@ -439,10 +416,9 @@ class GridManager:
         transpose=True,
         apply_offset=True,
     ):
-        field = self._reader.int_variable(field, indices=indices, transpose=transpose)
-        if apply_offset:
-            field = field + self._transformation(field)
-        return field
+        return self._reader.int_variable(
+            field, indices=indices, transpose=transpose, apply_transformation=apply_offset
+        )
 
     def _read_full_grid_size(self) -> base.HorizontalGridSize:
         """

@@ -129,7 +129,18 @@ def is_limited_area_grid(
 def compute_start_index(
     dim: gtx.Dimension, refinement_ctrl: data_alloc.NDArray, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
-    """Compute the start index for the refinement control field for a given dimension."""
+    """
+    Compute the start index for the refinement control field for a given dimension.
+
+    Args:
+        dim: Dimension to handle, one out of CellDim, EdgeDim, VertexDim
+        refinement_ctrl: refinement control array for the given dimension
+        array_ns: numpy or cupy module to use for array operations
+
+    Returns:
+
+    """
+
     assert (
         dim.kind == gtx.DimensionKind.HORIZONTAL
     ), f"dim = {dim=} refinement control values only exist for horizontal dimensions"

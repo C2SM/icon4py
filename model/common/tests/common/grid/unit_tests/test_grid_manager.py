@@ -12,6 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as defs, halo
 from icon4py.model.common.grid import (
@@ -42,7 +43,7 @@ from ..fixtures import *
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
-ZERO_BASE = gm.ToZeroBasedIndexTransformation()
+ZERO_BASE = icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation()
 vertical = v_grid.VerticalGridConfig(num_levels=80)
 
 
@@ -90,7 +91,7 @@ def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim, bac
     ).grid.refinement_control
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
     assert np.all(
-        refin_ctrl_serialized.ndarrayg
+        refin_ctrl_serialized.ndarray
         == refin.convert_to_unnested_refinement_values(refin_ctrl[dim].ndarray, dim)
     )
 
@@ -364,7 +365,9 @@ def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
-            gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
+            icon4py.model.common.grid.gridfile.NoTransformation(),
+            fname,
+            v_grid.VerticalGridConfig(num_levels=80),
         )
         manager(backend=None, keep_skip_values=True)
         assert error.value == 1
@@ -373,7 +376,7 @@ def test_gridmanager_given_file_not_found_then_abort():
 @pytest.mark.parametrize("size", [100, 1500, 20000])
 @pytest.mark.with_netcdf
 def test_gt4py_transform_offset_by_1_where_valid(size):
-    trafo = gm.ToZeroBasedIndexTransformation()
+    trafo = icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation()
     rng = np.random.default_rng()
     input_field = rng.integers(-1, size, size)
     offset = trafo(input_field)

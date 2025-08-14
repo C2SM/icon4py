@@ -10,6 +10,7 @@ import logging
 
 import pytest
 
+import icon4py.model.common.grid.gridfile
 import icon4py.model.testing.grid_utils as grid_utils
 from icon4py.model.common import exceptions
 from icon4py.model.common.decomposition import definitions, halo, mpi_decomposition
@@ -55,13 +56,13 @@ def test_start_end_index(
 
     partitioner = halo.SimpleMetisDecomposer()
     manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(),
+        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
         file,
         v_grid.VerticalGridConfig(1),
         run_properties=processor_props,
     )
     single_node_grid = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(),
+        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
         file,
         v_grid.VerticalGridConfig(1),
         run_properties=definitions.get_processor_properties(definitions.SingleNodeRun()),
@@ -84,7 +85,7 @@ def test_start_end_index(
 def test_grid_manager_validate_decomposer(processor_props):
     file = grid_utils.resolve_full_grid_file_name(dt_utils.R02B04_GLOBAL)
     manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(),
+        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
         file,
         v_grid.VerticalGridConfig(1),
         run_properties=processor_props,

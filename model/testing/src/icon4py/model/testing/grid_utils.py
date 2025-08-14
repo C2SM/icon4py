@@ -10,6 +10,7 @@ from typing import Optional
 
 import gt4py.next.backend as gtx_backend
 
+import icon4py.model.common.grid.gridfile
 from icon4py.model.common.decomposition import halo
 from icon4py.model.common.grid import (
     geometry,
@@ -127,7 +128,7 @@ def _download_and_load_gridfile(
     """
     grid_file = _download_grid_file(file_path)
     manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(),
+        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
         grid_file,
         v_grid.VerticalGridConfig(num_levels=num_levels),
     )

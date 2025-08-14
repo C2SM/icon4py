@@ -101,25 +101,22 @@ def test_compute_start_index(dim, grid_file, experiment, start_indices):
     assert start_index.shape[0] == h_grid.GRID_REFINEMENT_SIZE[dim]
     domain = h_grid.domain(dim)
     assert (
-        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY)()]
-        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY)()]
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY)]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY)]
     )
     assert (
-        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)()]
-        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)()]
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)]
     )
     assert (
-        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)()]
-        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)()]
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)]
     )
     assert (
-        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)()]
-        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)()]
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)]
     )
+    assert start_index[domain(h_grid.Zone.NUDGING)] == reference_start[domain(h_grid.Zone.NUDGING)]
     assert (
-        start_index[domain(h_grid.Zone.NUDGING)()] == reference_start[domain(h_grid.Zone.NUDGING)()]
-    )
-    assert (
-        start_index[domain(h_grid.Zone.INTERIOR)()]
-        == reference_start[domain(h_grid.Zone.INTERIOR)()]
+        start_index[domain(h_grid.Zone.INTERIOR)] == reference_start[domain(h_grid.Zone.INTERIOR)]
     )

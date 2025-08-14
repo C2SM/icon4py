@@ -11,6 +11,8 @@ import pathlib
 import gt4py.next as gtx
 import numpy as np
 import pytest
+
+import icon4py.model.common.grid.gridfile
 from ..fixtures import *  # noqa: F403
 
 import icon4py.model.common.dimension as dims
@@ -63,7 +65,9 @@ def simple_neighbor_tables():
 
 def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
     manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(), str(file), v_grid.VerticalGridConfig(num_levels=1)
+        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
+        str(file),
+        v_grid.VerticalGridConfig(num_levels=1),
     )
     manager(keep_skip_values=True)
     return manager
