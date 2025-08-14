@@ -18,6 +18,7 @@ from icon4py.model.testing.fixtures import backend
 from .. import utils
 from ..fixtures import *
 
+
 def out_of_range(dim: gtx.Dimension):
     lower = range(-36, refin._UNORDERED[dim][1])
     for v in lower:
@@ -75,9 +76,15 @@ def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
     assert isinstance(limited_area, bool)
     assert expected == limited_area
 
+
 @pytest.fixture
-def start_indices(grid_savepoint)->dict:
-    return {dims.CellDim:grid_savepoint.cells_start_index(),dims.EdgeDim:grid_savepoint.edge_start_index(),dims.VertexDim:grid_savepoint.vertex_start_index()}
+def start_indices(grid_savepoint) -> dict:
+    return {
+        dims.CellDim: grid_savepoint.cells_start_index(),
+        dims.EdgeDim: grid_savepoint.edge_start_index(),
+        dims.VertexDim: grid_savepoint.vertex_start_index(),
+    }
+
 
 @pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 @pytest.mark.parametrize(
@@ -85,16 +92,34 @@ def start_indices(grid_savepoint)->dict:
 )
 def test_compute_start_index(dim, grid_file, experiment, start_indices):
     reference_start = start_indices.get(dim)
-    grid = grid_utils.get_grid_manager(grid_file, num_levels=1, keep_skip_values=True, backend=None).grid
+    grid = grid_utils.get_grid_manager(
+        grid_file, num_levels=1, keep_skip_values=True, backend=None
+    ).grid
     refinement_control_field = grid.refinement_control[dim]
     start_index = refin.compute_start_index(dim, refinement_control_field.ndarray)
     assert start_index.ndim == 1
     assert start_index.shape[0] == h_grid.GRID_REFINEMENT_SIZE[dim]
     domain = h_grid.domain(dim)
-    assert start_index[domain(h_grid.Zone.LATERAL_BOUNDARY)()] == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY)()]
-    assert start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)()] == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)()]
-    assert start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)()] == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)()]
-    assert start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)()] == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)()]
-    assert start_index[domain(h_grid.Zone.NUDGING)()] == reference_start[domain(h_grid.Zone.NUDGING)()]
-    assert start_index[domain(h_grid.Zone.INTERIOR)()] == reference_start[domain(h_grid.Zone.INTERIOR)()]
-
+    assert (
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY)()]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY)()]
+    )
+    assert (
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)()]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)()]
+    )
+    assert (
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)()]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)()]
+    )
+    assert (
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)()]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)()]
+    )
+    assert (
+        start_index[domain(h_grid.Zone.NUDGING)()] == reference_start[domain(h_grid.Zone.NUDGING)()]
+    )
+    assert (
+        start_index[domain(h_grid.Zone.INTERIOR)()]
+        == reference_start[domain(h_grid.Zone.INTERIOR)()]
+    )

@@ -17,9 +17,14 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, exceptions, type_alias as ta, utils
 from icon4py.model.common.decomposition import definitions as decomposition, halo
-from icon4py.model.common.decomposition.halo import HaloConstructor
-from icon4py.model.common.grid import base, gridfile, icon, refinement, vertical as v_grid
-from icon4py.model.common.grid.base import HorizontalGridSize
+from icon4py.model.common.grid import (
+    base,
+    gridfile,
+    horizontal as h_grid,
+    icon,
+    refinement,
+    vertical as v_grid,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -270,9 +275,9 @@ class GridManager:
     def _read_start_end_indices(
         self,
     ) -> tuple[
-        dict[gtx.Dimension : data_alloc.NDArray],
-        dict[gtx.Dimension : data_alloc.NDArray],
-        dict[gtx.Dimension : gtx.int32],
+        dict[gtx.Dimension, data_alloc.NDArray],
+        dict[gtx.Dimension, data_alloc.NDArray],
+        dict[gtx.Dimension, gtx.int32],
     ]:
         """ "
         Read the start/end indices from the grid file.
@@ -403,14 +408,24 @@ class GridManager:
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
         # TODO compute for local patch
         start, end, _ = self._read_start_end_indices()
+        start_indices = {
+            k: v
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            for k, v in h_grid.map_icon_domain_bounds(dim, start[dim]).items()
+        }
+        end_indices = {
+            k: v
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            for k, v in h_grid.map_icon_domain_bounds(dim, end[dim]).items()
+        }
 
         grid = icon.icon_grid(
             uuid_,
             allocator=backend,
             config=grid_config,
             neighbor_tables=neighbor_tables,
-            start_indices=start,
-            end_indices=end,
+            start_indices=start_indices,
+            end_indices=end_indices,
             global_properties=global_params,
             refinement_control=refinement_fields,
         )
@@ -428,7 +443,7 @@ class GridManager:
             field = field + self._transformation(field)
         return field
 
-    def _read_full_grid_size(self) -> HorizontalGridSize:
+    def _read_full_grid_size(self) -> base.HorizontalGridSize:
         """
         Read the grid size propertes (cells, edges, vertices) from the grid file.
 
@@ -448,7 +463,7 @@ class GridManager:
         grid_size: base.HorizontalGridSize,
         connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
         backend=Optional[gtx_backend.Backend],
-    ) -> HaloConstructor:
+    ) -> halo.HaloConstructor:
         if self._run_properties.single_node():
             return halo.NoHalos(
                 num_levels=self._vertical_config.num_levels,
