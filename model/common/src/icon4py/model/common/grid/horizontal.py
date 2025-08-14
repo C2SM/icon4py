@@ -37,7 +37,7 @@ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nw
 import dataclasses
 import enum
 import functools
-from typing import Callable, Final
+from typing import Any, Callable, Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -152,14 +152,14 @@ def _lateral_boundary(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST)
     return _domain_index(_LATERAL_BOUNDARY, dim, offset)
 
 
-def _domain_index(value_dict, dim: gtx.Dimension, offset: LineNumber) -> int:
+def _domain_index(value_dict: dict, dim: gtx.Dimension, offset: LineNumber) -> int:
     index = value_dict[dim] + offset
     assert index <= _BOUNDS[dim][1], f"Index {index} out of bounds for {dim}:  {_BOUNDS[dim]}"
     assert index >= _BOUNDS[dim][0], f"Index {index} out of bounds for {dim}: {_BOUNDS[dim]}"
     return index
 
 
-def _local(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _local(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     """
     Indicate points that are owned by the processing unit, i.e. non halo points.
 
@@ -375,15 +375,15 @@ class Domain:
     _dim: gtx.Dimension
     _zone: Zone
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, Domain):
             return self.dim == other.dim and self.zone == other.zone
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.dim, self.zone))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Domain (dim = {self.dim}: zone = {self._zone} /ICON index[ {_map_to_icon_index(self.dim, self.zone)} ])"
 
     @property
@@ -422,7 +422,7 @@ def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
     return _domain
 
 
-def _domain_factory(dim: gtx.Dimension, zone: Zone):
+def _domain_factory(dim: gtx.Dimension, zone: Zone) -> Domain:
     assert _validate(
         dim, zone
     ), f"Invalid zone {zone} for dimension {dim}. Valid zones are: {get_zones_for_dim(dim)}"
@@ -434,9 +434,11 @@ def _validate(dim: gtx.Dimension, marker: Zone) -> bool:
         case dims.CellDim:
             return marker in CELL_ZONES
         case dims.EdgeDim:
-            return marker in tuple(Zone)
+            return marker in EDGE_ZONES
         case dims.VertexDim:
             return marker in VERTEX_ZONES
+        case _:
+            return False
 
 
 def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
@@ -458,9 +460,10 @@ def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
 
 def map_icon_domain_bounds(
     dim: gtx.Dimension, pre_computed_bounds: np.ndarray
-) -> dict[Domain, gtx.int32]:
+) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
     get_domain = domain(dim)
     domains = (get_domain(zone) for zone in get_zones_for_dim(dim))
     return {
-        d: gtx.int32(pre_computed_bounds[_map_to_icon_index(dim, d.zone)].item()) for d in domains
+        d: gtx.int32(pre_computed_bounds[_map_to_icon_index(dim, d.zone)].item())
+        for d in domains  # type: ignore [attr-defined]
     }
