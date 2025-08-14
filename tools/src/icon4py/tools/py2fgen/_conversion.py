@@ -57,7 +57,7 @@ def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.
     length = math.prod(sizes)
     c_type = ffi.getctype(
         ffi.typeof(ptr).item
-    )  # TODO use the type from the annotation and add a debug assert that they are fine
+    )  # TODO(): use the type from the annotation and add a debug assert that they are fine
 
     # Map C data types to NumPy dtypes
 

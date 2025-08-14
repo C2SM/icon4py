@@ -36,7 +36,7 @@ except ImportError:
 
 NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 
-# TODO(havogt) import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
+# TODO(havogt): import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
 assert hasattr(mpi_decomposition, "get_multinode_properties")
 
 log = logging.getLogger(__name__)

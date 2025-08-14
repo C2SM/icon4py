@@ -102,7 +102,7 @@ class IntermediateFields:
     """
     tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[
         ta.vpfloat
-    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    ]  # TODO(): change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     """
     Declared as z_alpha in ICON.
     """
@@ -116,7 +116,7 @@ class IntermediateFields:
     """
     vertical_mass_flux_at_cells_on_half_levels: fa.EdgeKField[
         ta.wpfloat
-    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    ]  # TODO(): change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     """
     Declared as z_contr_w_fl_l in ICON.
     """

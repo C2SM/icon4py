@@ -171,7 +171,7 @@ class NETCDFWriter:
                     len(new_slice.dims) == len(dims) - 1
                 ), f"Data variable dimensions do not match for {standard_name}."
 
-                # TODO (magdalena) change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
+                # TODO(halungge): change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
                 # we can acutally assume fixed index ordering here, input arrays are  re-shaped to canonical order (see above)
 
                 right = (slice(None),) * (len(dims) - 1)

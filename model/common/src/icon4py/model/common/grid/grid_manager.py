@@ -76,7 +76,7 @@ class GridManager:
         self,
         transformation: IndexTransformation,
         grid_file: Union[pathlib.Path, str],
-        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove to separate vertical and horizontal grid
+        config: v_grid.VerticalGridConfig,  # TODO(halungge): remove to separate vertical and horizontal grid
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
@@ -165,14 +165,14 @@ class GridManager:
 
     def _read_geometry_fields(self, backend: Optional[gtx_backend.Backend]):
         return {
-            # TODO (@halungge) still needs to ported, values from "our" grid files contains (wrong) values:
+            # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
             gridfile.GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.GeometryName.CELL_AREA),
                 allocator=backend,
             ),
-            # TODO (@halungge) easily computed from a neighbor_sum V2C over the cell areas?
+            # TODO(halungge): easily computed from a neighbor_sum V2C over the cell areas?
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
@@ -188,7 +188,7 @@ class GridManager:
                 self._reader.variable(gridfile.GeometryName.EDGE_VERTEX_DISTANCE, transpose=True),
                 allocator=backend,
             ),
-            # TODO (@halungge) recompute from coordinates? field in gridfile contains NaN on boundary edges
+            # TODO(halungge): recompute from coordinates? field in gridfile contains NaN on boundary edges
             gridfile.GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.GeometryName.TANGENT_ORIENTATION),
@@ -449,7 +449,7 @@ def _construct_diamond_vertices(
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
     far_indices = array_ns.zeros_like(e2v)
-    # TODO (magdalena) vectorize speed this up?
+    # TODO(halungge): vectorize speed this up?
     for i in range(sh[0]):
         far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
     return array_ns.hstack((e2v, far_indices))

@@ -41,7 +41,7 @@ test = [
   "icon4py-testing>=0.0.6",
   # external dependencies
   "coverage[toml]>=7.5.0",
-  "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b",  # TODO: remove once there is any release newer than 2024.10.09
+  "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b",  # TODO(): remove once there is any release newer than 2024.10.09
   "pytest>=8.0.1",
   "pytest-benchmark>=5.0.0",
   "pytest-cache>=1.0",
@@ -148,7 +148,7 @@ warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
 
-# TODO fix gtx.int32 export in gt4py
+# TODO(): fix gtx.int32 export in gt4py
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
 module = '*.stencil_tests.*'
@@ -191,56 +191,43 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 # -- Rules set to be considered --
-# A: flake8-builtins
-# B: flake8-bugbear
-# C4: flake8-comprehensions
-# CPY: flake8-copyright
-# D: pydocstyle
-# DOC: pydoclint
-# E: pycodestyle
-# ERA: eradicate
-# F: Pyflakes
-# FA100: future-rewritable-type-annotation
-# FBT: flake8-boolean-trap
-# FLY: flynt
-# I: isort
-# ICN: flake8-import-conventions
-# ISC: flake8-implicit-str-concat
-# N: pep8-naming
-# NPY: NumPy-specific rules
-# PERF: Perflint
-# PGH: pygrep-hooks
-# PTH: flake8-use-pathlib
-# Q: flake8-quotes
-# RUF: Ruff-specific rules
-# SIM: flake8-simplify
-# T10: flake8-debugger
-# TD: flake8-todos
-# UP: pyupgrade
-# YTT: flake8-2020
 exclude = ["**/tests/**"]
 explicit-preview-rules = true
 extend-select = ["F822"]  # TODO(egparedes): remove when not longer in preview
 ignore = [
   'E501',  # [line-too-long]
-  'B905'  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
+  'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
+  'TD003'  # [missing-todo-link]
 ]
 preview = true  # use only with explicit-preview-rules=true
 select = [
-  'A',
-  'B',
-  'CPY',
-  'E',
-  'ERA',
-  'F',
-  'FA100',
-  'I',
-  'ISC',
-  'NPY',
-  'Q',
-  'RUF',
-  'T10',
-  'YTT'
+  'A',  # flake8-builtins
+  'B',  # flake8-bugbear
+  # 'C4', # flake8-comprehensions
+  'CPY',  # flake8-copyright
+  # 'D', # pydocstyle
+  'DOC',  # pydoclint
+  'E',  # pycodestyle
+  'ERA',  # eradicate
+  'F',  # Pyflakes
+  'FA100',  # future-rewritable-type-annotation
+  # 'FBT', # flake8-boolean-trap
+  'FLY',  # flynt
+  'I',  # isort
+  # 'ICN', # flake8-import-conventions
+  'ISC',  # flake8-implicit-str-concat
+  # 'N', # pep8-naming
+  'NPY',  # NumPy-specific rules
+  'PERF',  # Perflint
+  # 'PGH', # pygrep-hooks
+  # 'PTH', # flake8-use-pathlib
+  'Q',  # flake8-quotes
+  'RUF',  # Ruff-specific rules
+  # 'SIM', # flake8-simplify
+  'T10',  # flake8-debugger
+  'TD',  # flake8-todos
+  # 'UP', # pyupgrade
+  'YTT'  # flake8-2020
 ]
 typing-modules = ['gt4py.eve.extended_typing']
 unfixable = []

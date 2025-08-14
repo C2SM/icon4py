@@ -314,9 +314,10 @@ class GHexMultiNodeExchange:
             return {ghex_ptr_name: dace.uintp for ghex_ptr_name in halo_exchange.GHEX_PTR_NAMES}
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-            args = []
-            for i in range(GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace):
-                args.append(f"field_{i}")
+            args = [
+                f"field_{i}"
+                for i in range(GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace)
+            ]
             return (args, [])
 
     else:

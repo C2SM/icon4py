@@ -80,7 +80,7 @@ def test_diffusion_wrapper_granule_inputs(
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
     zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
-    # todo: special handling, determine if this is necessary for Fortran arrays too
+    # TODO(): special handling, determine if this is necessary for Fortran arrays too
     zd_vertoffset = np.squeeze(
         metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
     )
@@ -338,7 +338,7 @@ def test_diffusion_wrapper_single_step(
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
     zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
-    # todo: special handling, determine if this is necessary for Fortran arrays too
+    # TODO(): special handling, determine if this is necessary for Fortran arrays too
     zd_vertoffset = np.squeeze(
         metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
     )

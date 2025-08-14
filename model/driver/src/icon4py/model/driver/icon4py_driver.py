@@ -105,7 +105,7 @@ class TimeLoop:
         return self._substep_timestep
 
     def _full_name(self, func: Callable):
-        return ":".join((self.__class__.__name__, func.__name__))
+        return f"{self.__class__.__name__}:{func.__name__}"
 
     def time_integration(
         self,
@@ -124,11 +124,11 @@ class TimeLoop:
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
-        # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
+        # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
-        # TODO (Chia Rui): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+        # TODO(OngChia): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-        # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
+        # TODO(OngChia): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
         if (
             self.diffusion.config.apply_to_horizontal_wind
@@ -160,7 +160,7 @@ class TimeLoop:
                 log.debug(
                     f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
                 )
-                # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
+                # TODO(OngChia): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
@@ -180,11 +180,11 @@ class TimeLoop:
 
             self._is_first_step_in_simulation = False
 
-            # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
+            # TODO(OngChia): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
-            # TODO (Chia Rui): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+            # TODO(OngChia): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-            # TODO (Chia Rui): simple IO enough for JW test
+            # TODO(OngChia): simple IO enough for JW test
 
         timer_first_timestep.summary(True)
         if self.n_time_steps > 1:  # in case only one time step was run
@@ -202,7 +202,7 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
+        # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
@@ -221,7 +221,7 @@ class TimeLoop:
 
         prognostic_states.swap()
 
-    # TODO (Chia Rui): add tracer advection here
+    # TODO(OngChia): add tracer advection here
 
     def _update_time_levels_for_velocity_tendencies(
         self,
@@ -270,7 +270,7 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): compute airmass for prognostic_state here
+        # TODO(OngChia): compute airmass for prognostic_state here
 
         for dyn_substep in range(self.n_substeps_var):
             log.info(
@@ -300,7 +300,7 @@ class TimeLoop:
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
 
-        # TODO (Chia Rui): compute airmass for prognostic_state here
+        # TODO(OngChia): compute airmass for prognostic_state here
 
 
 class DriverStates(NamedTuple):

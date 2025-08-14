@@ -24,7 +24,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 physics_constants: Final = phy_const.PhysicsConstants()
 
 
-# TODO (Chia Rui): Refactor this class when direct import is enabled for gt4py stencils
+# TODO(OngChia): Refactor this class when direct import is enabled for gt4py stencils
 class MicrophysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     """
     Constants used for the computation of saturated pressure in saturation adjustment and microphysics.
@@ -142,7 +142,7 @@ class SaturationAdjustment:
         self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
-    # TODO (Chia Rui): add in input and output data properties, and refactor this component to follow the physics component protocol.
+    # TODO(OngChia): add in input and output data properties, and refactor this component to follow the physics component protocol.
     def input_properties(self) -> dict[str, model.FieldMetaData]:
         raise NotImplementedError
 
@@ -252,7 +252,7 @@ class SaturationAdjustment:
 
         temperature_pair = common_utils.TimeStepPair(self._temperature1, self._temperature2)
 
-        # TODO (Chia Rui): this is inspired by the cpu version of the original ICON saturation_adjustment code. Consider to refactor this code when break and for loop features are ready in gt4py.
+        # TODO(OngChia): this is inspired by the cpu version of the original ICON saturation_adjustment code. Consider to refactor this code when break and for loop features are ready in gt4py.
         num_iter = 0
         while self._not_converged():
             if num_iter > self.config.max_iter:

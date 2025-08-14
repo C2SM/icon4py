@@ -133,7 +133,7 @@ def zonalwind_2_normalwind_ndarray(
         eta_v_e: vertical eta coordinate at edge center
     Returns: normal wind
     """
-    # TODO (Chia Rui) this function needs a test
+    # TODO(OngChia): this function needs a test
 
     mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
@@ -174,7 +174,7 @@ def zonalwind_2_normalwind_ndarray(
     return vn
 
 
-# TODO (Chia Rui): Can this kind of simple arithmetic operation be replaced by a more general stencil that does the same operation on a general field?
+# TODO(OngChia): Can this kind of simple arithmetic operation be replaced by a more general stencil that does the same operation on a general field?
 @gtx.field_operator
 def _compute_perturbed_exner(
     exner: fa.CellKField[ta.wpfloat],

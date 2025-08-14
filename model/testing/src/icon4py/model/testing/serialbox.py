@@ -1481,7 +1481,7 @@ class NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
         return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
 
 
-# TODO (magdalena) rename?
+# TODO(halungge): rename?
 class IconNonHydroFinalSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("theta_v", dims.CellDim, dims.KDim)
@@ -1621,7 +1621,7 @@ class IconJabwExitSavepoint(IconSavepoint):
     def temperature(self):
         return self._get_field("temperature", dims.CellDim, dims.KDim)
 
-    # TODO change field name
+    # TODO(): change field name
     def pressure_sfc(self):
         return self._get_field("surface_pressure", dims.CellDim)
 

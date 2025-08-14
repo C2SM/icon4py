@@ -62,7 +62,7 @@ def allocate_data(
     backend: Optional[gtx_backend.Backend],
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
 ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
-    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO: check why it does understand the fluid_partial
+    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO(): check why it does understand the fluid_partial
     input_data = {
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
@@ -98,7 +98,7 @@ def apply_markers(
                 pytest.skip("GTFN compilation is too slow for this test.")
             case "skip_value_error":
                 if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
-                    # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
+                    # TODO(halungge): this still skips too many tests: it matters what connectivity the test uses
                     pytest.skip(
                         "Stencil does not support domain containing skip values. Consider shrinking domain."
                     )
@@ -189,7 +189,7 @@ def _test_and_benchmark(
 
     run_verify_and_benchmark(
         functools.partial(
-            self.PROGRAM.with_backend(backend),  # type: ignore[arg-type] # TODO: gt4py should accept `None` in with_backend
+            self.PROGRAM.with_backend(backend),  # type: ignore[arg-type] # TODO(): gt4py should accept `None` in with_backend
             **input_data,  # type: ignore[arg-type]
             offset_provider=grid.connectivities,
         ),

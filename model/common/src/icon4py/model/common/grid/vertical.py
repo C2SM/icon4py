@@ -179,9 +179,13 @@ class VerticalGrid:
         vertical_params_properties.append("Level    Coordinate    Thickness:")
         vct_a_array = self._vct_a.ndarray
         dvct = vct_a_array[:-1] - vct_a_array[1:]
-        array_value = [f"   0   {vct_a_array[0]:12.3f}"]
-        for k in range(vct_a_array.shape[0] - 1):
-            array_value.append(f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}")
+        array_value = [
+            f"   0   {vct_a_array[0]:12.3f}",
+            *(
+                f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
+                for k in range(vct_a_array.shape[0] - 1)
+            ),
+        ]
         array_value[self._end_index_of_flat_layer] += " End of flat layer "
         array_value[self._end_index_of_damping_layer] += " End of damping layer "
         array_value[self._start_index_for_moist_physics] += " Start of moist physics"

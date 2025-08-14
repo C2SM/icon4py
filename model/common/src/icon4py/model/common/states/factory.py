@@ -256,7 +256,7 @@ class PrecomputedFieldProvider(FieldProvider):
 class EmbeddedFieldOperatorProvider(FieldProvider):
     """Provider that calls a GT4Py Fieldoperator.
 
-    # TODO (@halungge) for now to be used only on FieldView Embedded GT4Py backend.
+    # TODO(halungge): for now to be used only on FieldView Embedded GT4Py backend.
     - restrictions:
          - (if only called on FieldView-Embedded, this is not a necessary restriction)
             calls field operators without domain args, so it can only be used for full field computations
@@ -341,7 +341,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             out_fields = out_fields[0]
         return out_fields
 
-    # TODO: do we need that here?
+    # TODO(): do we need that here?
     def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
         for dim in self._dims:
@@ -407,7 +407,7 @@ class ProgramFieldProvider(FieldProvider):
     """
     Computes a field defined by a GT4Py Program.
 
-    TODO (halungge): need a way to specify where the dependencies and params can be retrieved.
+    TODO(halungge): need a way to specify where the dependencies and params can be retrieved.
        As not all parameters can be resolved at the definition time
 
     Args:
@@ -460,7 +460,7 @@ class ProgramFieldProvider(FieldProvider):
         field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields.keys()}
 
-    # TODO (@halungge) this can be simplified when completely disentangling vertical and horizontal grid.
+    # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
     def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
@@ -609,7 +609,7 @@ class NumpyFieldsProvider(FieldProvider):
         args.update(offsets)
         args.update(self._params)
         results = self._func(**args)
-        ## TODO: can the order of return values be checked?
+        ## TODO(): can the order of return values be checked?
         results = (results,) if isinstance(results, data_alloc.NDArray) else results
         self._fields = {
             k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
