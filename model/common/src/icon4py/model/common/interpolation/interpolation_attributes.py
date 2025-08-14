@@ -44,7 +44,7 @@ attrs: dict[str, model.FieldMetaData] = {
     NUDGECOEFFS_E: dict(
         standard_name=NUDGECOEFFS_E,
         long_name="nudging_coefficients_for_edges",
-        units="",  # TODO(Yilu): : need to check unit
+        units="",  # TODO(yiluchen1066): : need to check unit
         dims=(dims.EdgeDim,),
         icon_var_name="nudgecoeffs_e",
         dtype=ta.wpfloat,

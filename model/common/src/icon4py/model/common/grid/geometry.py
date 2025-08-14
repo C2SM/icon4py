@@ -139,7 +139,7 @@ class GridGeometry(factory.FieldSource):
 
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
-                # TODO(magdalena): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
+                # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
                 attrs.EDGE_CELL_DISTANCE: extra_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE],
                 attrs.EDGE_VERTEX_DISTANCE: extra_fields[
                     gridfile.GeometryName.EDGE_VERTEX_DISTANCE

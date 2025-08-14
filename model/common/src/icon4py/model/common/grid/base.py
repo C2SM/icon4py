@@ -49,7 +49,7 @@ class HorizontalGridSize:
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
     horizontal_config: HorizontalGridSize
-    # TODO(Magdalena): Decouple the vertical from horizontal grid.
+    # TODO(halungge): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
     n_shift_total: int = 0

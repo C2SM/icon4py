@@ -379,7 +379,7 @@ def _weighting_factors(
         directed cells. The third condition is sum(w(i)) = 1., and the weight
         of the local point is 0.5 (see above). Analytical elimination yields...
 
-    # TODO(Andreas J): computation different for Torus grids see mo_intp_coeffs.f90
+    # TODO(ajocksch): computation different for Torus grids see mo_intp_coeffs.f90
     # The function weighting_factors does not exist in the Fortran code, the
     # Fortran is organised differently with code duplication
 

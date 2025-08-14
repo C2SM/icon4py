@@ -307,7 +307,7 @@ class FieldGroupMonitor(monitor.Monitor):
     ) -> None:
         """Initialise the dataset with global attributes and dimensions.
 
-        TODO(magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical
+        TODO(halungge): as long as we have no terrain it is probably ok to take vct_a as vertical
                           coordinate once there is terrain k-heights become [horizontal, vertical ] field
 
         """
