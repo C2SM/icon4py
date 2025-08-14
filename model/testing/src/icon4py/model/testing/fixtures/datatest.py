@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import pkgutil
 from typing import TYPE_CHECKING
 
 import pytest
@@ -30,27 +31,31 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
 
 
-def _check_backend_validity(backend_name: str) -> None:
-    if backend_name not in model_backends.BACKENDS:
-        available_backends = ", ".join([f"'{k}'" for k in model_backends.BACKENDS.keys()])
-        raise Exception(
-            "Need to select a backend. Select from: ["
-            + available_backends
-            + "] and pass it as an argument to --backend when invoking pytest."
-        )
-
-
 @pytest.fixture(scope="session")
-def backend(request):
-    try:
-        backend_option = request.config.getoption("backend")
-    except ValueError:
-        backend_option = model_backends.DEFAULT_BACKEND
-    else:
-        _check_backend_validity(backend_option)
+def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
+    """
+    Fixture to provide a GT4Py backend for the tests.
 
-    selected_backend = model_backends.BACKENDS[backend_option]
-    return selected_backend
+    The provided backend is instanciated according to the `--backend` pytest
+    command line option value, which might refer to a known backend name, or to
+    an gt4py backend instance defined in an arbitrary location, by using the
+    notation `path.to.module:backend_symbol`.
+    """
+    spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
+    assert isinstance(spec, str), "Backend spec must be a string"
+    if spec.count(":") > 1:
+        raise ValueError("Invalid backend spec in '--backend' option (spec: <backend_name> or <path.to.module>:<symbol>)")
+
+    if ":" in spec:
+        backend = pkgutil.resolve_name(spec)
+    elif spec in model_backends.BACKENDS:
+        backend = model_backends.BACKENDS[spec]
+    else:
+        raise ValueError(
+            f"Invalid backend name in '--backend' option. It should be one of {[*model_backends.BACKENDS.keys()]}"
+        )
+    
+    return backend
 
 
 @pytest.fixture

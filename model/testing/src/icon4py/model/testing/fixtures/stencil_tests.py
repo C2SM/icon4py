@@ -60,12 +60,11 @@ def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) ->
     """
     spec = request.config.getoption("grid", DEFAULT_GRID)
     assert isinstance(spec, str), "Grid spec must be a string"
-    name, *levels = spec.split(":")
-
-    levels = [num for num in levels if num.strip()]
-    if len(levels) > 1:
+    if spec.count(":") > 1:
         raise ValueError("Invalid grid spec in '--grid' option (spec: <grid_name>:<grid_levels>)")
-    num_levels = int(levels[0]) if levels else DEFAULT_NUM_LEVELS
+    
+    name, *levels = spec.split(":")
+    num_levels = int(levels[0]) if levels and levels[0].strip() else DEFAULT_NUM_LEVELS
 
     if name in VALID_GRID_PRESETS:
         grid = _get_grid_from_preset(name, num_levels=num_levels, backend=backend)
