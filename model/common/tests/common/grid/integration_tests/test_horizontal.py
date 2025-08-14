@@ -65,6 +65,6 @@ def _map_and_assert_array(dim, index_array):
         if d.zone == h_grid.Zone.HALO:
             same_index = index == index_array[h_grid._HALO[d.dim]]
         if d.zone == h_grid.Zone.HALO_LEVEL_2:
-            same_index = index == index_array[h_grid._HALO[d.dim] + 1]
+            same_index = index == index_array[h_grid._HALO[d.dim] - 1]
         if not same_index:
             raise AssertionError(f"Wrong index for {d.zone} zone in dimension {d.dim}: ")
