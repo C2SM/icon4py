@@ -8,7 +8,7 @@
 import contextlib
 import logging
 import pathlib
-from typing import Final, Union
+from typing import Final
 
 import gt4py.next as gtx
 import uxarray
@@ -220,8 +220,8 @@ class IconUGridWriter:
 
     def __init__(
         self,
-        original_filename: Union[pathlib.Path, str],
-        output_path: Union[pathlib.Path, str],
+        original_filename: pathlib.Path | str,
+        output_path: pathlib.Path | str,
     ):
         self.original_filename = pathlib.Path(original_filename)
         self.output_path = pathlib.Path(output_path)
@@ -242,7 +242,7 @@ def dump_ugrid_file(
 
 
 @contextlib.contextmanager
-def load_data_file(filename: Union[pathlib.Path | str]) -> xa.Dataset:
+def load_data_file(filename: pathlib.Path | str) -> xa.Dataset:
     ds = xa.open_dataset(filename)
     try:
         yield ds

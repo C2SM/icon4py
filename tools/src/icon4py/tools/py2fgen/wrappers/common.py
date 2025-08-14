@@ -9,8 +9,9 @@
 
 import functools
 import logging
+from collections.abc import Callable, Iterable
 from types import ModuleType
-from typing import Callable, Iterable, TypeAlias, Union
+from typing import TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -34,7 +35,7 @@ except ImportError:
     xp = np
 
 
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
+NDArray: TypeAlias = np.ndarray | xp.ndarray
 
 # TODO(havogt): import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
 assert hasattr(mpi_decomposition, "get_multinode_properties")

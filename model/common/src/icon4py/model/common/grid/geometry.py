@@ -7,7 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, Literal, TypeAlias, TypeVar
 
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
@@ -80,7 +81,7 @@ class GridGeometry(factory.FieldSource):
         self,
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         coordinates: gm.CoordinateDict,
         extra_fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],
@@ -580,9 +581,9 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
     def __call__(
         self,
         field_name: str,
-        field_src: Optional[factory.FieldSource],
-        backend: Optional[gtx_backend.Backend],
-        grid: Optional[factory.GridProvider],
+        field_src: factory.FieldSource | None,
+        backend: gtx_backend.Backend | None,
+        grid: factory.GridProvider | None,
     ):
         if not self._fields.get(field_name):
             # get the fields from the wrapped provider
@@ -611,7 +612,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
 def as_sparse_field(
     target_dims: tuple[HorizontalD, SparseD],
     data: Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]],
-    backend: Optional[gtx_backend.Backend] = None,
+    backend: gtx_backend.Backend | None = None,
 ):
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
@@ -634,7 +635,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],

@@ -11,7 +11,7 @@ from __future__ import annotations
 import pathlib
 import re
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gt4py.next import backend as gtx_backend
 
@@ -144,7 +144,7 @@ def get_datapath_for_experiment(
 def create_icon_serial_data_provider(
     datapath: pathlib.Path,
     processor_props: decomposition.ProcessProperties,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
 ) -> serialbox.IconSerialDataProvider:
     # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.testing.serialbox import IconSerialDataProvider

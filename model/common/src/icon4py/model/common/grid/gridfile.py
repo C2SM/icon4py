@@ -8,7 +8,6 @@
 
 import enum
 import logging
-from typing import Union
 
 import numpy as np
 from gt4py import next as gtx
@@ -246,7 +245,7 @@ class GridFile:
         """Read a dimension with name 'name' from the grid file."""
         return self._dataset.dimensions[name].size
 
-    def attribute(self, name: PropertyName) -> Union[str, int, float]:
+    def attribute(self, name: PropertyName) -> str | int | float:
         "Read a global attribute with name 'name' from the grid file."
         return self._dataset.getncattr(name)
 

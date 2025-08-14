@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from types import ModuleType
-from typing import Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -219,7 +218,7 @@ def compute_perturbed_exner(
 
 
 def initialize_diffusion_diagnostic_state(
-    grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]
+    grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None
 ) -> diffusion_states.DiffusionDiagnosticState:
     return diffusion_states.DiffusionDiagnosticState(
         hdef_ic=data_alloc.zero_field(
@@ -240,7 +239,7 @@ def initialize_diffusion_diagnostic_state(
 def initialize_solve_nonhydro_diagnostic_state(
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     grid: icon_grid.IconGrid,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
 ) -> dycore_states.DiagnosticStateNonHydro:
     normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
         data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
@@ -299,7 +298,7 @@ def initialize_solve_nonhydro_diagnostic_state(
 
 
 def initialize_prep_advection(
-    grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]
+    grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None
 ) -> dycore_states.PrepAdvection:
     return dycore_states.PrepAdvection(
         vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
@@ -323,7 +322,7 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     pressure_ndarray: data_alloc.NDArray,
     pressure_ifc_ndarray: data_alloc.NDArray,
     grid: icon_grid.IconGrid,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],

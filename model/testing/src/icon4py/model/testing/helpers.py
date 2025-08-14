@@ -10,8 +10,8 @@ from __future__ import annotations
 import dataclasses
 import functools
 import hashlib
-import typing
-from typing import Any, Callable, ClassVar, Optional
+from collections.abc import Callable
+from typing import Any, ClassVar
 
 import gt4py.next as gtx
 import numpy as np
@@ -59,7 +59,7 @@ def dallclose(
 
 
 def allocate_data(
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
 ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
     _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO(): check why it does understand the fluid_partial
@@ -114,9 +114,8 @@ class Output:
 def run_verify_and_benchmark(
     test_func: Callable[[], None],
     verification_func: Callable[[], None],
-    benchmark_fixture: Optional[
-        Any
-    ],  # should be pytest_benchmark.fixture.BenchmarkFixture pytest_benchmark is not typed
+    benchmark_fixture: Any
+    | None,  # should be pytest_benchmark.fixture.BenchmarkFixture pytest_benchmark is not typed
 ) -> None:
     """
     Function to perform verification and benchmarking of test_func (along with normally executing it).
@@ -224,7 +223,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKERS: ClassVar[typing.Optional[tuple]] = None
+    MARKERS: ClassVar[tuple | None] = None
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
 

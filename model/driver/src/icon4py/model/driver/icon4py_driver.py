@@ -10,7 +10,8 @@ import datetime
 import logging
 import pathlib
 import uuid
-from typing import Callable, NamedTuple
+from collections.abc import Callable
+from typing import NamedTuple
 
 import click
 import numpy as np

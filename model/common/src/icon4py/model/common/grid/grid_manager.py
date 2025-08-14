@@ -8,7 +8,7 @@
 import logging
 import pathlib
 from types import ModuleType
-from typing import Literal, Optional, Protocol, TypeAlias, Union
+from typing import Literal, Protocol, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -75,14 +75,14 @@ class GridManager:
     def __init__(
         self,
         transformation: IndexTransformation,
-        grid_file: Union[pathlib.Path, str],
+        grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(halungge): remove to separate vertical and horizontal grid
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
         self._vertical_config = config
-        self._grid: Optional[icon.IconGrid] = None
-        self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
+        self._grid: icon.IconGrid | None = None
+        self._decomposition_info: decomposition.DecompositionInfo | None = None
         self._geometry: GeometryDict = {}
         self._reader = None
         self._coordinates: CoordinateDict = {}
@@ -109,7 +109,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool):
+    def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool):
         if not self._reader:
             self.open()
         self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
@@ -117,7 +117,7 @@ class GridManager:
         self._geometry = self._read_geometry_fields(backend)
         self.close()
 
-    def _read_coordinates(self, backend: Optional[gtx_backend.Backend]) -> CoordinateDict:
+    def _read_coordinates(self, backend: gtx_backend.Backend | None) -> CoordinateDict:
         return {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -163,7 +163,7 @@ class GridManager:
             },
         }
 
-    def _read_geometry_fields(self, backend: Optional[gtx_backend.Backend]):
+    def _read_geometry_fields(self, backend: gtx_backend.Backend | None):
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -212,8 +212,8 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
-        decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-        backend: Optional[gtx_backend.Backend] = None,
+        decomposition_info: decomposition.DecompositionInfo | None = None,
+        backend: gtx_backend.Backend | None = None,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -310,7 +310,7 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
+        self, backend: gtx_backend.Backend | None, with_skip_values: bool
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 

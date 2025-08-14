@@ -13,7 +13,8 @@ import enum
 import logging
 import pathlib
 import uuid
-from typing import Optional, Sequence, TypedDict
+from collections.abc import Sequence
+from typing import TypedDict
 
 from typing_extensions import Required
 
@@ -61,7 +62,7 @@ class Config(abc.ABC):
     """
 
     def __str__(self):
-        return "instance of {}(Config)".format(self.__class__)
+        return f"instance of {self.__class__}(Config)"
 
     @abc.abstractmethod
     def validate(self) -> None:
@@ -86,9 +87,9 @@ class FieldGroupIOConfig(Config):
     """
 
     output_interval: str
-    start_time: Optional[
-        str
-    ]  # TODO(halungge): make it possible to pass datetime.datetime objects other than strings?
+    start_time: (
+        str | None
+    )  # TODO(halungge): make it possible to pass datetime.datetime objects other than strings?
     filename: str
     variables: list[str]
     timesteps_per_file: int = 10
