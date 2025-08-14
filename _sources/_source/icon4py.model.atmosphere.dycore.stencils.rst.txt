@@ -156,14 +156,6 @@ icon4py.model.atmosphere.dycore.stencils.compute\_approx\_of\_2nd\_vertical\_der
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.compute\_avg\_vn module
-----------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_avg_vn
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.compute\_avg\_vn\_and\_graddiv\_vn\_and\_vt module
 -------------------------------------------------------------------------------------------
 
@@ -320,6 +312,14 @@ icon4py.model.atmosphere.dycore.stencils.compute\_horizontal\_kinetic\_energy mo
 ------------------------------------------------------------------------------------
 
 .. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.stencils.compute\_horizontal\_velocity\_quantities module
+-----------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities
    :members:
    :undoc-members:
    :show-inheritance:
@@ -568,6 +568,14 @@ icon4py.model.atmosphere.dycore.stencils.solve\_tridiagonal\_matrix\_for\_w\_for
 --------------------------------------------------------------------------------------------------
 
 .. automodule:: icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.stencils.spatially\_average\_flux\_or\_velocity module
+--------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity
    :members:
    :undoc-members:
    :show-inheritance:
