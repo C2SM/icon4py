@@ -170,7 +170,7 @@ class DecompositionInfo:
     def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag):
         return np.where(self._halo_levels[dim] == level, True, False)
 
-    # TODO unused - delete
+    # TODO (@halungge) unused - delete
     def is_on_node(self, dim, index: int, entryType: EntryType = EntryType.ALL) -> bool:
         return np.isin(index, self.global_index(dim, entry_type=entryType)).item()
 
@@ -185,11 +185,11 @@ class ExchangeResult(Protocol):
 class ExchangeRuntime(Protocol):
     def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple): ...
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple) -> None: ...
 
-    def get_size(self): ...
+    def get_size(self) -> int: ...
 
-    def my_rank(self): ...
+    def my_rank(self) -> int: ...
 
 
 @dataclass
@@ -197,13 +197,13 @@ class SingleNodeExchange:
     def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple) -> None:
         return
 
-    def my_rank(self):
+    def my_rank(self) -> int:
         return 0
 
-    def get_size(self):
+    def get_size(self) -> int:
         return 1
 
     def __call__(self, *args, **kwargs) -> Optional[ExchangeResult]:

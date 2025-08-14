@@ -395,7 +395,7 @@ class GridManager:
         ##
         # CONSTRUCT LOCAL PATCH
 
-        # TODO run this onlz for distrbuted grids otherwise to nothing internally
+        # TODO run this only for distrbuted grids otherwise to nothing internally
         neighbor_tables = {
             k: decomposition_info.global_to_local(
                 k.source, v[decomposition_info.global_index(k.target[0])]
@@ -406,6 +406,7 @@ class GridManager:
         # COMPUTE remaining derived connectivities
 
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
+
         # TODO compute for local patch
         start, end, _ = self._read_start_end_indices()
         start_indices = {
