@@ -48,7 +48,7 @@ from icon4py.model.testing.fixtures.datatest import (
 def test_construct_rbf_matrix_offsets_tables_for_cells(
     grid_file, experiment, grid_savepoint, icon_grid, backend
 ):
-    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
     assert offset_table.shape == (
@@ -83,7 +83,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
 def test_construct_rbf_matrix_offsets_tables_for_edges(
     grid_file, experiment, grid_savepoint, icon_grid, backend
 ):
-    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
     assert offset_table.shape == (
@@ -116,7 +116,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
 def test_construct_rbf_matrix_offsets_tables_for_vertices(
     experiment, grid_file, grid_savepoint, icon_grid, backend
 ):
-    grid_manager = gridtest_utils.get_grid_manager(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
     assert offset_table.shape == (

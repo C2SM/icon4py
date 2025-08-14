@@ -6,69 +6,79 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pathlib
 from typing import Final
 
 import pytest
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common.grid import base as base_grid, grid_manager as gm, simple as simple_grid
-from icon4py.model.testing import definitions
+from icon4py.model.common.grid import base as base_grid, simple as simple_grid
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 
 
-DEFAULT_GRID: Final[str] = "simple_grid"
+DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (
     65  # the number matters for performance measurements, but otherwise is arbitrary
 )
-VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
+VALID_GRID_PRESETS: tuple[str, str, str] = ("simple", "icon_regional", "icon_global")
 
 
-def _check_grid_validity(grid_name: str) -> None:
-    assert (
-        grid_name in VALID_GRIDS
-    ), f"Invalid value for '--grid' option - possible names are {VALID_GRIDS}"
-
-
-def _get_grid_manager(
-    descriptor: definitions.Grid, num_levels: int, backend: gtx_backend.Backend | None
-) -> gm.GridManager:
-    from icon4py.model.testing.grid_utils import get_grid_manager
-
-    assert descriptor.file_name is not None
-    return get_grid_manager(
-        grid_file_identifier=descriptor.name,
-        num_levels=num_levels,
-        keep_skip_values=False,
-        backend=backend,
-    )
-
-
-def _get_grid(
-    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
+def _get_grid_from_preset(
+    grid_preset: str,
+    *,
+    num_levels: int = DEFAULT_NUM_LEVELS,
+    backend: gtx_backend.Backend | None = None,
 ) -> base_grid.Grid:
-    match selected_grid_type:
-        case "icon_grid":
-            return _get_grid_manager(
-                descriptor=definitions.Grids.MCH_CH_R04B09_DSL,
-                num_levels=DEFAULT_NUM_LEVELS,
-                backend=selected_backend,
+    match grid_preset:
+        case "icon_regional":
+            return grid_utils.get_grid_manager_from_identifier(
+                dt_utils.REGIONAL_EXPERIMENT,
+                num_levels=num_levels,
+                keep_skip_values=False,
+                backend=backend,
             ).grid
-        case "icon_grid_global":
-            return _get_grid_manager(
-                descriptor=definitions.Grids.R02B04_GLOBAL,
-                num_levels=DEFAULT_NUM_LEVELS,
-                backend=selected_backend,
+        case "icon_global":
+            return grid_utils.get_grid_manager_from_identifier(
+                dt_utils.R02B04_GLOBAL,
+                num_levels=num_levels,
+                keep_skip_values=False,
+                backend=backend,
             ).grid
         case _:
-            return simple_grid.simple_grid(selected_backend)
+            return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
 
 
 @pytest.fixture(scope="session")
 def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) -> base_grid.Grid:
-    try:
-        grid_option = request.config.getoption("grid")
-    except ValueError:
-        grid_option = DEFAULT_GRID
+    """
+    Fixture for providing a grid instance.
+
+    The provided grid instance is based on the configuration specified in the
+    pytest command line option `--grid <grid_name>:<grid_levels>`, where `<grid_name>`
+    might refer to a known grid configuration or to an existing ICON NetCDF grid file,
+    and `<grid_levels>` specifies the number of vertical levels to use (optional).
+    """
+    spec = request.config.getoption("grid", DEFAULT_GRID)
+    assert isinstance(spec, str), "Grid spec must be a string"
+    name, *levels = spec.split(":")
+
+    levels = [num for num in levels if num.strip()]
+    if len(levels) > 1:
+        raise ValueError("Invalid grid spec in '--grid' option (spec: <grid_name>:<grid_levels>)")
+    num_levels = int(levels[0]) if levels else DEFAULT_NUM_LEVELS
+
+    if name in VALID_GRID_PRESETS:
+        grid = _get_grid_from_preset(name, num_levels=num_levels, backend=backend)
     else:
-        _check_grid_validity(grid_option)
-    grid = _get_grid(grid_option, backend)
+        try:
+            grid_file = pathlib.Path(name).resolve(strict=True)
+            grid = grid_utils.get_grid_manager(
+                grid_file, num_levels=num_levels, keep_skip_values=False, backend=backend
+            ).grid
+        except OSError as e:
+            raise ValueError(
+                f"Invalid grid name in '--grid' option. It should be one of {VALID_GRID_PRESETS}"
+                " or a valid path to an ICON NetCDF grid file."
+            ) from e
+
     return grid

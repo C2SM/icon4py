@@ -132,7 +132,7 @@ def pytest_runtest_setup(item):
         grid = item.funcargs["grid"]
     else:
         # use the default grid
-        grid = simple_grid.simple_grid(selected_backend)
+        grid = simple_grid.simple_grid(backend=selected_backend)
     apply_markers(
         item.own_markers,
         grid,
