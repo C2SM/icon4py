@@ -1919,7 +1919,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep: int
     ) -> IconDycoreInit30To38Savepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-30to38-init"]  # TODO
+            self.serializer.savepoint["solve-nonhydro-30to38-init"]
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]
@@ -1981,7 +1981,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep: int
     ) -> IconDycoreExit30To38Savepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-30to38-exit"]  # TODO
+            self.serializer.savepoint["solve-nonhydro-30to38-exit"]
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]

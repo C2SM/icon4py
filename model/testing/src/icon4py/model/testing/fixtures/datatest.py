@@ -332,9 +332,9 @@ def savepoint_nonhydro_init(
 @pytest.fixture
 def savepoint_dycore_30_to_38_init(data_provider, istep_init, step_date_init, substep_init):
     """
-    Load data from ICON savepoint TODO
-    (formally known as stencils 30 to 38) in mo_solve_nonhydro.f90 of solve_nonhydro module.
-     metadata to select a unique savepoint:
+    Load data from ICON savepoint directly before the first stencil in
+    stencils 30 to 38 in mo_solve_nonhydro.f90 of solve_nonhydro module.
+    metadata to select a unique savepoint:
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - date: <iso_string> of the simulation timestep
     - substep: dynamical substep
@@ -413,9 +413,9 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
 @pytest.fixture
 def savepoint_dycore_30_to_38_exit(data_provider, istep_exit, step_date_exit, substep_exit):
     """
-    Load data from ICON savepoint TODO
-    (formally known as stencils 30 to 38) in mo_solve_nonhydro.f90 of solve_nonhydro module.
-     metadata to select a unique savepoint:
+    Load data from ICON savepoint directly after the last stencil in
+    stencils 30 to 38 in mo_solve_nonhydro.f90 of solve_nonhydro module.
+    metadata to select a unique savepoint:
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
     - date: <iso_string> of the simulation timestep
     - substep: dynamical substep
