@@ -197,24 +197,20 @@ class StencilTest:
         # it does not allocate for the correct device.
         return allocate_data(backend, input_data)
 
-    @pytest.fixture(autouse=True)
-    def _apply_markers(self, grid: base.Grid, backend: gtx_backend.Backend | None) -> None:
-        if self.MARKERS is not None:
-            apply_markers(self.MARKERS, grid, backend)
-
-    @pytest.fixture
-    def _connectivities_as_numpy(self, grid: base.Grid) -> _ConnectivityConceptFixer:
-        return _ConnectivityConceptFixer(grid)
-
     def test_stencil(
         self: StencilTest,
+        benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
         grid: base.Grid,
+        backend: gtx_backend.Backend | None,
         _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         _configured_program: Callable[..., None],
-        _connectivities_as_numpy: _ConnectivityConceptFixer,
     ) -> None:
+        if self.MARKERS is not None:
+            apply_markers(self.MARKERS, grid, backend)
         reference_outputs = self.reference(
-            _connectivities_as_numpy,  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+            _ConnectivityConceptFixer(
+                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+            ),
             **{
                 k: v.asnumpy() if isinstance(v, gtx.Field) else v
                 for k, v in _properly_allocated_input_data.items()
@@ -226,20 +222,12 @@ class StencilTest:
             input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
         )
 
-    def test_benchmark(
-        self,
-        benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
-        _configured_program: Callable[..., None],
-        _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        grid: base.Grid,
-    ) -> None:
-        if not benchmark.enabled:
-            pytest.skip("Benchmarking is not enabled.")
-        benchmark(
-            _configured_program,
-            **_properly_allocated_input_data,
-            offset_provider=grid.connectivities,
-        )
+        if benchmark is not None and benchmark.enabled:
+            benchmark(
+                _configured_program,
+                **_properly_allocated_input_data,
+                offset_provider=grid.connectivities,
+            )
 
     def _verify_stencil_test(
         self,
