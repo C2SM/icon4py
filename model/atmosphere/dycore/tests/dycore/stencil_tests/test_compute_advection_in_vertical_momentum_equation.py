@@ -19,7 +19,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import stencil_tests as test_helpers
+from icon4py.model.testing import stencil_tests as stencil_tests
 
 from .test_add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w_numpy,
@@ -270,7 +270,7 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
     return vertical_wind_advective_tendency
 
 
-class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
+class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_vertical_momentum_equation
     OUTPUTS = (
         "vertical_wind_advective_tendency",
@@ -469,7 +469,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         )
 
 
-class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(test_helpers.StencilTest):
+class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction_and_advection_in_vertical_momentum_equation
     OUTPUTS = (
         "contravariant_correction_at_cells_on_half_levels",
