@@ -18,7 +18,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 
 DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (
-    65  # the number matters for performance measurements, but otherwise is arbitrary
+    10  # the number matters for performance measurements, but otherwise is arbitrary
 )
 VALID_GRID_PRESETS: tuple[str, str, str] = ("simple", "icon_regional", "icon_global")
 
