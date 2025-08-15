@@ -16,7 +16,7 @@ include:
     matrix:
       - COMPONENT: [diffusion, dycore, microphysics, common, driver]
         BACKEND: [gtfn_gpu]
-        GRID: [simple_grid, icon_grid]
+        GRID: [simple_grid, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
