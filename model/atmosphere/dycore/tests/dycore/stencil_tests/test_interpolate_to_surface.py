@@ -23,6 +23,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def interpolate_to_surface_numpy(
     interpolant: np.ndarray, wgtfacq_c: np.ndarray, interpolation_to_surface: np.ndarray
 ) -> np.ndarray:
+    interpolation_to_surface = np.copy(interpolation_to_surface)
     interpolation_to_surface[:, 3:] = (
         np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(interpolant, shift=1, axis=1)
         + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(interpolant, shift=2, axis=1)

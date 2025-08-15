@@ -38,7 +38,7 @@ item_marker_filters: dict[str, ItemFilter] = {
         action=functools.partial(pytest.skip, "currently only runs on CPU"),
     ),
     "embedded_only": ItemFilter(
-        condition=lambda item: test_utils.is_embedded(
+        condition=lambda item: not test_utils.is_embedded(
             test_utils.get_fixture_value("backend", item)
         ),
         action=functools.partial(pytest.skip, "stencil runs only on embedded backend"),

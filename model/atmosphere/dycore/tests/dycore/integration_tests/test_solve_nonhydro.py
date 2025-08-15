@@ -1872,57 +1872,57 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         },
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         z_vn_avg_ref.asnumpy(),
         z_vn_avg.asnumpy(),
         rtol=1.0e-6,
     )
 
     # same tolerances as in Liskov
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         z_graddiv_vn_ref.asnumpy(),
         z_graddiv_vn.asnumpy(),
         rtol=1.0e-2,
         atol=1.0e-20,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         vt_ref.asnumpy(),
         vt.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         mass_fl_e_ref.asnumpy(),
         mass_fl_e.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         z_theta_v_fl_e_ref.asnumpy(),
         z_theta_v_fl_e.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         vn_ie_ref.asnumpy(),
         vn_ie.asnumpy(),
         rtol=1.0e-5,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         z_vt_ie_ref.asnumpy(),
         z_vt_ie.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         z_kin_hor_e_ref.asnumpy(),
         z_kin_hor_e.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         z_w_concorr_me_ref.asnumpy(),
         z_w_concorr_me.asnumpy(),
         rtol=1.0e-7,
@@ -2018,31 +2018,31 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
         },
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         z_vn_avg_ref.asnumpy(),
         z_vn_avg.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         mass_fl_e_ref.asnumpy(),
         mass_fl_e.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         z_theta_v_fl_e_ref.asnumpy(),
         z_theta_v_fl_e.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         vn_traj_ref.asnumpy(),
         vn_traj.asnumpy(),
         rtol=1.0e-6,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         mass_flx_me_ref.asnumpy(),
         mass_flx_me.asnumpy(),
         rtol=1.0e-6,
