@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import functools
+from collections.abc import Callable
+from typing import Any
 
 import gt4py._core.definitions as gtx_core_defs  # TODO(havogt): avoid this private import
 from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
@@ -38,7 +40,7 @@ def sync(backend: gtx_backend.Backend | None = None) -> None:
         cp.cuda.runtime.deviceSynchronize()
 
 
-def synchronized_function(func: callable, *, backend: gtx_backend.Backend | None):
+def synchronized_function(func: Callable[..., Any], *, backend: gtx_backend.Backend | None):
     """
     Wraps a function and synchronizes after execution
     """
@@ -52,7 +54,9 @@ def synchronized_function(func: callable, *, backend: gtx_backend.Backend | None
     return wrapper
 
 
-def synchronized(backend: gtx_backend.Backend | None) -> callable:
+def synchronized(
+    backend: gtx_backend.Backend | None,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator that synchronizes the device after the function execution.
     """
