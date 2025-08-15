@@ -18,7 +18,7 @@ from ..fixtures import *  # noqa: F403
 
 
 def test_hydrostatic_adjustment_ndarray(backend):
-    # TODO (Jacopo / Chia Rui) these tests could be better
+    # TODO(jcanton,OngChia): these tests could be better
     num_cells = 10
     num_levels = 10
 
@@ -77,7 +77,7 @@ def test_hydrostatic_adjustment_ndarray(backend):
 
 
 def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
-    # TODO (Jacopo / Chia Rui) these tests could be better
+    # TODO(jcanton,OngChia): these tests could be better
     num_cells = 10
     num_levels = 10
 

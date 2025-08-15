@@ -24,7 +24,7 @@ from ..fixtures import backend
 if TYPE_CHECKING:
     from gt4py.next import backend as gtx_backend
 
-# TODO: apply StencilTest structure to this test
+# TODO(): apply StencilTest structure to this test
 
 
 def fourth_order_divdamp_scaling_coeff_for_order_24_numpy(

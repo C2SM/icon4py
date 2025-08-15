@@ -14,7 +14,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
-# TODO: revise names with domain scientists
+# TODO(): revise names with domain scientists
 
 Z_MC: Final[str] = "height"
 FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"

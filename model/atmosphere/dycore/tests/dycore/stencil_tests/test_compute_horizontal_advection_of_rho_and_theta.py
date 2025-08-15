@@ -21,7 +21,7 @@ from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import helpers
 
 
-# TODO copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
+# TODO(): copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     p_ccpr1: np.ndarray,

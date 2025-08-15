@@ -111,7 +111,7 @@ def test_advection_run_single_step(
     advection_init_savepoint,
     advection_exit_savepoint,
 ):
-    # TODO (Chia Rui): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
+    # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
     if (
         even_timestep
         and horizontal_advection_type == advection.HorizontalAdvectionType.NO_ADVECTION

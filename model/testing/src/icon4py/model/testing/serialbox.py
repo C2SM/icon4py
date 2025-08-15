@@ -8,7 +8,7 @@
 import functools
 import logging
 import uuid
-from typing import Final, Literal, Optional, TypeAlias
+from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -48,12 +48,12 @@ class IconSavepoint:
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         size: dict,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
     ):
         self.savepoint = sp
         self.serializer = ser
         self.sizes = size
-        self.log = logging.getLogger((__name__))
+        self.log = logging.getLogger(__name__)
         self.backend = backend
         self.xp = data_alloc.import_array_ns(self.backend)
 
@@ -149,7 +149,7 @@ class IconGridSavepoint(IconSavepoint):
         size: dict,
         root: int,
         level: int,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
@@ -1481,7 +1481,7 @@ class NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
         return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
 
 
-# TODO (magdalena) rename?
+# TODO(halungge): rename?
 class IconNonHydroFinalSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("theta_v", dims.CellDim, dims.KDim)
@@ -1621,7 +1621,7 @@ class IconJabwExitSavepoint(IconSavepoint):
     def temperature(self):
         return self._get_field("temperature", dims.CellDim, dims.KDim)
 
-    # TODO change field name
+    # TODO(): change field name
     def pressure_sfc(self):
         return self._get_field("surface_pressure", dims.CellDim)
 
@@ -1791,7 +1791,7 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         fname_prefix,
         path=".",
         do_print=False,

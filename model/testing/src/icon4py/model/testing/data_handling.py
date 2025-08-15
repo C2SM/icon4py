@@ -28,7 +28,7 @@ def download_and_extract(uri: str, dst: Path, data_file: str = "downloaded.tar.g
 
     wget.download(uri, out=data_file)
     if not tarfile.is_tarfile(data_file):
-        raise IOError(f"{data_file} needs to be a valid tar file")
+        raise OSError(f"{data_file} needs to be a valid tar file")
     with tarfile.open(data_file, mode="r:*") as tf:
         tf.extractall(path=dst)
     Path(data_file).unlink(missing_ok=True)

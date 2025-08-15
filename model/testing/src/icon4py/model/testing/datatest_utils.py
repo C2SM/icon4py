@@ -11,7 +11,7 @@ from __future__ import annotations
 import pathlib
 import re
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gt4py.next import backend as gtx_backend
 
@@ -67,7 +67,7 @@ GRID_URIS = {
     R02B07_GLOBAL: R02B07_GLOBAL_GRID_URI,
     ICON_CH2_SMALL: MCH_OPR_R04B07_DOMAIN01_GRID_URI,
     REGIONAL_BENCHMARK: DOMAIN01_GRID_URI,
-    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500,  # TODO: check
+    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500,  # TODO(): check
 }
 
 GRID_IDS = {
@@ -117,7 +117,7 @@ def get_grid_id_for_experiment(experiment: str) -> uuid.UUID:
 
     These ids are encoded in the original grid file that was used to run the simulation, but not serialized when generating the test data. So we duplicate the information here.
 
-    TODO (@halungge): this becomes obsolete once we get the connectivities from the grid files.
+    TODO(halungge): this becomes obsolete once we get the connectivities from the grid files.
     """
     try:
         return GRID_IDS[experiment]
@@ -144,7 +144,7 @@ def get_datapath_for_experiment(
 def create_icon_serial_data_provider(
     datapath: pathlib.Path,
     processor_props: decomposition.ProcessProperties,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
 ) -> serialbox.IconSerialDataProvider:
     # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.testing.serialbox import IconSerialDataProvider

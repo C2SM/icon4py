@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import site
 import sys
-from typing import Any, ClassVar, Final, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, ClassVar, Final
 
 
 try:
@@ -305,7 +306,7 @@ class DummyNestedSDFG:
 
         return sdfg
 
-    def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+    def __sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
         return {}
 
     def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:

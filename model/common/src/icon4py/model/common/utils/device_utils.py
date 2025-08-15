@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Optional
 
 import gt4py._core.definitions as gtx_core_defs  # TODO(havogt): avoid this private import
 from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
@@ -28,7 +27,7 @@ def is_cupy_device(
     return False
 
 
-def sync(backend: Optional[gtx_backend.Backend] = None) -> None:
+def sync(backend: gtx_backend.Backend | None = None) -> None:
     """
     Synchronize the device if appropriate for the given backend.
 

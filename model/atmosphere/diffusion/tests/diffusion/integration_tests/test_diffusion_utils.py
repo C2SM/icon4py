@@ -16,7 +16,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from ..utils import diff_multfac_vn_numpy, smag_limit_numpy
 
 
-# TODO: apply StencilTest structure to this test
+# TODO(): apply StencilTest structure to this test
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):

@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Sequence, TypeAlias, TypeVar, Union
+from collections.abc import Sequence
+from typing import TypeAlias, TypeVar
 
 import gt4py.next as gtx
 import xarray as xa
@@ -16,14 +17,14 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 DimT = TypeVar("DimT", dims.KDim, dims.KHalfDim, dims.CellDim, dims.EdgeDim, dims.VertexDim)
 
-FloatType: TypeAlias = Union[ta.wpfloat, ta.vpfloat, float]
-IntegerType: TypeAlias = Union[gtx.int32, gtx.int64, int]
-ScalarType: TypeAlias = Union[FloatType, bool, IntegerType]
+FloatType: TypeAlias = ta.wpfloat | ta.vpfloat | float
+IntegerType: TypeAlias = gtx.int32 | gtx.int64 | int
+ScalarType: TypeAlias = FloatType | bool | IntegerType
 
 T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
 
 GTXFieldType: TypeAlias = gtx.Field[Sequence[gtx.Dims[DimT]], T]
-FieldType: TypeAlias = Union[gtx.Field[Sequence[gtx.Dims[DimT]], T], data_alloc.NDArray]
+FieldType: TypeAlias = gtx.Field[Sequence[gtx.Dims[DimT]], T] | data_alloc.NDArray
 
 
 def to_data_array(field: FieldType, attrs: dict):

@@ -651,7 +651,7 @@ def test_nonhydro_corrector_step(
     assert helpers.dallclose(
         prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-9,  # TODO (magdalena) was 1e-10 for local experiment only
+        rtol=1e-9,  # TODO(halungge): was 1e-10 for local experiment only
     )
 
     assert helpers.dallclose(
@@ -687,20 +687,20 @@ def test_nonhydro_corrector_step(
     assert helpers.dallclose(
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
+        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
 
     # stencil 33, 34
     assert helpers.dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
+        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
     # stencil 33, 34
     assert helpers.dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
+        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
     # stencil 60 only relevant for last substep
     assert helpers.dallclose(
