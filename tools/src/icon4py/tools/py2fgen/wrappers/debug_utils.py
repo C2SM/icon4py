@@ -28,32 +28,44 @@ def print_grid_decomp_info(
     log.info(
         "icon_grid:cell_start for rank %s is.... %s",
         processor_props.rank,
-        icon_grid._start_indices[CellDim],
+        "\n".join(
+            [f"{k:<10}  - {v}" for k, v in icon_grid._start_indices.items() if k.dim == CellDim]
+        ),
     )
     log.info(
         "icon_grid:cell_end for rank %s is.... %s",
         processor_props.rank,
-        icon_grid._end_indices[CellDim],
+        "\n".join(
+            [f"{k:<10}  - {v}" for k, v in icon_grid._end_indices.items() if k.dim == CellDim]
+        ),
     )
     log.info(
         "icon_grid:vert_start for rank %s is.... %s",
         processor_props.rank,
-        icon_grid._start_indices[VertexDim],
+        "\n".join(
+            [f"{k:<10}  - {v}" for k, v in icon_grid._start_indices.items() if k.dim == VertexDim]
+        ),
     )
     log.info(
         "icon_grid:vert_end for rank %s is.... %s",
         processor_props.rank,
-        icon_grid._end_indices[VertexDim],
+        "\n".join(
+            [f"{k:<10}  - {v}" for k, v in icon_grid._end_indices.items() if k.dim == VertexDim]
+        ),
     )
     log.info(
         "icon_grid:edge_start for rank %s is.... %s",
         processor_props.rank,
-        icon_grid._start_indices[EdgeDim],
+        "\n".join(
+            [f"{k:<10}  - {v}" for k, v in icon_grid._start_indices.items() if k.dim == EdgeDim]
+        ),
     )
     log.info(
         "icon_grid:edge_end for rank %s is.... %s",
         processor_props.rank,
-        icon_grid._end_indices[EdgeDim],
+        "\n".join(
+            [f"{k:<10}  - {v}" for k, v in icon_grid._end_indices.items() if k.dim == EdgeDim]
+        ),
     )
 
     for offset, connectivity in icon_grid.connectivities.items():

@@ -16,7 +16,14 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import base, gridfile, icon, refinement, vertical as v_grid
+from icon4py.model.common.grid import (
+    base,
+    gridfile,
+    horizontal as h_grid,
+    icon,
+    refinement,
+    vertical as v_grid,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -244,11 +251,7 @@ class GridManager:
 
     def _read_start_end_indices(
         self,
-    ) -> tuple[
-        dict[gtx.Dimension : data_alloc.NDArray],
-        dict[gtx.Dimension : data_alloc.NDArray],
-        dict[gtx.Dimension : gtx.int32],
-    ]:
+    ) -> tuple[dict[gtx.Dimension, data_alloc.NDArray], dict[gtx.Dimension, data_alloc.NDArray]]:
         """ "
         Read the start/end indices from the grid file.
 
@@ -295,7 +298,7 @@ class GridManager:
                 max_refinement_control_values[dim],
             ), f"start index array for {dim} has wrong shape"
 
-        return start_indices, end_indices, grid_refinement_dimensions
+        return start_indices, end_indices
 
     @property
     def grid(self) -> icon.IconGrid:
@@ -353,9 +356,17 @@ class GridManager:
         }
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
-        start, end, _ = self._read_start_end_indices()
-        start_indices = {dim: start[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
-        end_indices = {dim: end[dim] for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()}
+        start, end = self._read_start_end_indices()
+        start_indices = {
+            k: v
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            for k, v in h_grid.map_icon_domain_bounds(dim, start[dim]).items()
+        }
+        end_indices = {
+            k: v
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            for k, v in h_grid.map_icon_domain_bounds(dim, end[dim]).items()
+        }
 
         return icon.icon_grid(
             id_=uuid_,
