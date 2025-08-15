@@ -119,7 +119,6 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKERS: ClassVar[tuple | None] = None
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str] | None] | None] = None
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
@@ -252,9 +251,3 @@ class StencilTest:
                     cls.static_variant
                 )
             )
-
-        # apply markers to the test function.
-        # TODO(egparedes,havogt): use directly pytest.mark as class decorators
-        if cls.MARKERS:
-            for marker in cls.MARKERS:
-                cls.test_stencil = marker(cls.test_stencil)  # type:ignore[method-assign] # we override with a decorated function

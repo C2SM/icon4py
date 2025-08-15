@@ -60,10 +60,10 @@ def calculate_nabla4_numpy(
     return z_nabla4_e2
 
 
+@pytest.mark.skip_value_error
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
-    MARKERS = (pytest.mark.skip_value_error,)
     STATIC_PARAMS = {
         StandardStaticVariants.NONE: None,
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
