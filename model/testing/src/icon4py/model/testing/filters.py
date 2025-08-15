@@ -27,7 +27,7 @@ class ItemFilter(NamedTuple):
     """Test item filter definition."""
 
     condition: Predicate[pytest.Item]
-    action: Callable
+    action: Callable[[], None]
 
 
 item_marker_filters: dict[str, ItemFilter] = {

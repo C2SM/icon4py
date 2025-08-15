@@ -9,8 +9,8 @@
 from __future__ import annotations
 
 import dataclasses
-import typing
-from typing import Any, Callable, ClassVar, Optional, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any, ClassVar
 
 import gt4py.next as gtx
 import numpy as np
@@ -25,10 +25,10 @@ from icon4py.model.common.utils import device_utils
 
 
 def allocate_data(
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
 ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
-    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO: check why it does understand the fluid_partial
+    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO(havogt): check why it does understand the fluid_partial
     input_data = {
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
@@ -92,7 +92,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKERS: ClassVar[typing.Optional[tuple]] = None
+    MARKERS: ClassVar[tuple | None] = None
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
@@ -111,7 +111,7 @@ class StencilTest:
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
-        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO: gt4py should accept `None` in with_backend
+        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
         if backend is not None:
             if isinstance(program, FieldOperator):
                 if len(static_args) > 0:
