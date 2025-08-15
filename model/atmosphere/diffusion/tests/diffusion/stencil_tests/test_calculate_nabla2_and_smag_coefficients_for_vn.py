@@ -149,7 +149,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(helpers.StencilTest):
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         smag_offset = ta.vpfloat("9.0")
         diff_multfac_smag = data_alloc.random_field(grid, dims.KDim, dtype=ta.vpfloat)
-        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        tangent_orientation = data_alloc.random_sign(grid, dims.EdgeDim, dtype=ta.wpfloat)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         smag_limit = data_alloc.random_field(grid, dims.KDim, dtype=ta.vpfloat)
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
