@@ -66,7 +66,6 @@ class DataAlloc(Protocol):
 
     @staticmethod
     def random_field(
-        grid: base.Grid,
         *dims: gtx.Dimension,
         low: float = -1.0,
         high: float = 1.0,
@@ -76,7 +75,6 @@ class DataAlloc(Protocol):
 
     @staticmethod
     def random_mask(
-        grid: base.Grid,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
@@ -84,7 +82,6 @@ class DataAlloc(Protocol):
 
     @staticmethod
     def zero_field(
-        grid: base.Grid,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = ta.wpfloat,
         extend: dict[gtx.Dimension, int] | None = None,
@@ -92,7 +89,6 @@ class DataAlloc(Protocol):
 
     @staticmethod
     def constant_field(
-        grid: base.Grid,
         value: float,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = ta.wpfloat,
@@ -160,7 +156,11 @@ class StencilTest:
         return test_func
 
     @pytest.fixture
-    def data_alloc(self, backend: gtx_backend.Backend | None) -> DataAlloc:
+    def data_alloc(self, backend: gtx_backend.Backend | None, grid: base.Grid) -> DataAlloc:
+        """
+        Convenience fixture to provide data allocation function with backend and grid already bound.
+        """
+
         class data_alloc_impl:
             def __getattr__(self, name: str) -> Callable[..., gtx.Field]:
                 if not hasattr(DataAlloc, name):
@@ -168,7 +168,7 @@ class StencilTest:
                         f"Data allocation function '{name}' not found. Maybe missing in the 'DataAlloc' protocol?"
                     )
                 alloc_fun = getattr(data_allocation, name)
-                return functools.partial(alloc_fun, backend=backend)
+                return functools.partial(alloc_fun, grid, backend=backend)
 
         return data_alloc_impl()
 
@@ -176,7 +176,6 @@ class StencilTest:
         self: StencilTest,
         benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
         grid: base.Grid,
-        backend: gtx_backend.Backend | None,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         _configured_program: Callable[..., None],
     ) -> None:
