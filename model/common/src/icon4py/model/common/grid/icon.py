@@ -35,34 +35,112 @@ CONNECTIVITIES_ON_BOUNDARIES = (
 CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class GridSubdivision:
+    root: int
+    level: int
+
+
+@dataclasses.dataclass(kw_only=True)
+class GridParams:
+    geometry_type: base.GeometryType
+    subdivision: GridSubdivision
+
+    def __init__(
+        self,
+        geometry_type: Optional[base.GeometryType] = None,
+        subdivision: Optional[GridSubdivision] = None,
+    ) -> None:
+        if geometry_type is None and subdivision is None:
+            raise ValueError("Either geometry_type or subdivision must be provided")
+
+        # Validate that geometry type and the subdivision parameters are
+        # consistent. Torus should have root=2 and level=0. If both are given,
+        # check for consistency. If only one is given, infer the other.
+        # Otherwise assume dealing with icosahedron and check that values are
+        # sane.
+        if geometry_type:
+            match geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    if subdivision is None:
+                        raise ValueError(
+                            "Subdivision must be provided for icosahedron geometry type"
+                        )
+
+                    if subdivision.root < 1 or subdivision.level < 0:
+                        raise ValueError(
+                            f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
+                        )
+                case base.GeometryType.TORUS:
+                    if subdivision is None:
+                        subdivision = GridSubdivision(root=2, level=0)
+                    else:
+                        if subdivision.root != 2 or subdivision.level != 0:
+                            raise ValueError(
+                                f"For torus geometry type, root must be 2 and level must be 0, got {subdivision.root=} and {subdivision.level=}"
+                            )
+                case _:
+                    raise ValueError(f"Unknown geometry type {geometry_type}")
+        else:
+            if subdivision.root == 2 and subdivision.level == 0:
+                geometry_type = base.GeometryType.TORUS
+            else:
+                if subdivision.root < 1 or subdivision.level < 0:
+                    raise ValueError(
+                        f"If geometry_type is not specified (assuming icosahedron), root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
+                    )
+                geometry_type = base.GeometryType.ICOSAHEDRON
+
+        self.geometry_type = geometry_type
+        self.subdivision = subdivision
+
+
+@dataclasses.dataclass
 class GlobalGridParams:
-    root: Optional[int] = None
-    level: Optional[int] = None
+    grid_params: Final[Optional[GridParams]] = None
     _num_cells: Optional[int] = None
     _mean_cell_area: Optional[float] = None
-    geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
     radius: float = constants.EARTH_RADIUS
+
+    def __init__(
+        self,
+        grid_params: Optional[GridParams] = None,
+        num_cells: Optional[int] = None,
+        mean_cell_area: Optional[float] = None,
+        radius: float = constants.EARTH_RADIUS,
+    ) -> None:
+        self.grid_params = grid_params
+        self._num_cells = num_cells
+        self._mean_cell_area = mean_cell_area
+        self.radius = radius
 
     @classmethod
     def from_mean_cell_area(
         cls,
         mean_cell_area: float,
-        root: Optional[int] = None,
+        grid_params: Optional[GridParams] = None,
         level: Optional[int] = None,
         num_cells: Optional[int] = None,
-        geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
         radius: float = constants.EARTH_RADIUS,
     ):
-        return cls(root, level, num_cells, mean_cell_area, geometry_type)
+        return cls(
+            grid_params,
+            num_cells,
+            mean_cell_area,
+            radius,
+        )
+
+    @property
+    def geometry_type(self) -> base.GeometryType:
+        return self.grid_params.geometry_type if self.grid_params else None
 
     @functools.cached_property
-    def num_cells(self):
+    def num_cells(self) -> int:
         if self._num_cells is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    assert self.root is not None and self.level is not None
-                    return compute_icosahedron_num_cells(self.root, self.level)
+                    assert self.grid_params.subdivision is not None
+                    return compute_icosahedron_num_cells(self.grid_params.subdivision)
                 case base.GeometryType.TORUS:
                     raise NotImplementedError("TODO : lookup torus cell number computation")
                 case _:
@@ -71,28 +149,30 @@ class GlobalGridParams:
         return self._num_cells
 
     @functools.cached_property
-    def characteristic_length(self):
+    def characteristic_length(self) -> float:
         return math.sqrt(self.mean_cell_area)
 
     @functools.cached_property
-    def mean_cell_area(self):
+    def mean_cell_area(self) -> float:
         if self._mean_cell_area is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
+                    return compute_mean_cell_area_for_sphere(self.radius, self.num_cells)
                 case base.GeometryType.TORUS:
-                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+                    raise NotImplementedError(
+                        f"mean_cell_area not implemented for {self.geometry_type}"
+                    )
                 case _:
-                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
         return self._mean_cell_area
 
 
-def compute_icosahedron_num_cells(root: int, level: int):
-    return 20.0 * root**2 * 4.0**level
+def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:
+    return 20 * subdivision.root**2 * 4**subdivision.level
 
 
-def compute_mean_cell_area_for_sphere(radius, num_cells):
+def compute_mean_cell_area_for_sphere(radius, num_cells) -> float:
     """
     Compute the mean cell area.
 
@@ -104,7 +184,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
         num_cells: number of cells on the global grid
     Returns: mean area of one cell [m^2]
     """
-    return 4.0 * math.pi * radius**2 / num_cells
+    return 4.0 * math.pi * radius**2.0 / num_cells
 
 
 @dataclasses.dataclass(frozen=True)
