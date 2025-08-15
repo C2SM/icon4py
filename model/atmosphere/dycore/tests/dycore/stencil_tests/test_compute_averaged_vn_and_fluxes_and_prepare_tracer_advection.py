@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests as stencil_tests
 
 from .test_accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields_numpy,
@@ -31,7 +31,7 @@ from .test_compute_mass_flux import (
 )
 
 
-class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(test_helpers.StencilTest):
+class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.StencilTest):
     PROGRAM = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection
     OUTPUTS = (
         "spatially_averaged_vn",
