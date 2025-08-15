@@ -50,3 +50,11 @@ def test_halo_zones(zone):
         assert zone.is_halo()
     else:
         assert not zone.is_halo()
+
+@pytest.mark.parametrize("zone", zones())
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
+def test_get_refinement_control(zone, dim):
+    zone = h_grid.Zone.LATERAL_BOUNDARY
+    ref_ctrl = h_grid.get_refinement_control(dim, zone)
+    assert 1 == ref_ctrl
+

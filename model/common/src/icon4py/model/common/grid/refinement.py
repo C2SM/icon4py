@@ -8,7 +8,7 @@
 import dataclasses
 import logging
 from types import ModuleType
-from typing import Final
+from typing import Final, Mapping
 
 import numpy as np
 from gt4py import next as gtx
@@ -33,6 +33,7 @@ This module only contains functionality related to grid refinement as we use it 
 """
 _log = logging.getLogger(__name__)
 
+# TODO get these from grid file cell_grf, edge_grf, vertex_grf
 _MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 14,
     dims.EdgeDim: 24,
@@ -40,7 +41,6 @@ _MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
 }
 """Lateral boundary points are ordered and have an index indicating the (cell) s distance to the boundary,
 generally the number of ordered rows can be defined in the grid generator, but it will never exceed 14 for cells.
-TODO: Are these the x_grf dimension in the netcdf grid file?
 """
 
 
@@ -124,3 +124,30 @@ def is_limited_area_grid(
     The .item() call is needed to get a scalar return for cupy arrays.
     """
     return array_ns.any(refinement_field > 0).item()
+
+
+def compute_start_index(
+    dim: gtx.Dimension, refinement_ctrl: data_alloc.NDArray, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
+    """
+    Compute the start index for the refinement control field for a given dimension.
+
+    Args:
+        dim: Dimension to handle, one out of CellDim, EdgeDim, VertexDim
+        refinement_ctrl: refinement control array for the given dimension
+        array_ns: numpy or cupy module to use for array operations
+
+    Returns:
+
+    """
+
+    assert (
+        dim.kind == gtx.DimensionKind.HORIZONTAL
+    ), f"dim = {dim=} refinement control values only exist for horizontal dimensions"
+
+    index = array_ns.min(array_ns.where(refinement_ctrl == h_grid.LineNumber.FIRST))
+    starts[h_grid._LATERAL_BOUNDARY[dim]] = index
+    index = array_ns.min(array_ns.where(refinement_ctrl == h_grid.LineNumber.SECOND))
+    starts[h_grid._LATERAL_BOUNDARY[dim] + 1] = index
+
+    return starts

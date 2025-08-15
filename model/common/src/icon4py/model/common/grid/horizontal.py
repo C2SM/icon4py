@@ -195,19 +195,19 @@ class Zone(str, enum.Enum):
 
 
     ## CellDim
-    | ICON constant or value    | ICON4py Name               |
-    |:------------------------- |:-------------------------- |
-    | `min_rlcell` (-8)         | `END`                      |
-    | `min_rlcell_int-2`,  (-6) | `HALO_LEVEL_2`             |
-    | `min_rlcell_int-1` (-5)   | `HALO`                     |
-    | `min_rlcell_int`(-4)      | `LOCAL`                    |
-    | `0`                       | `INTERIOR`                 |
-    | `1`                       | `LATERAL_BOUNDARY`         |
-    | `2`                       | `LATERAL_BOUNDARY_LEVEL_2` |
-    | `3`                       | `LATERAL_BOUNDARY_LEVEL_3` |
-    | `grf_bdywidth_c` (4)      | `LATERAL_BOUNDARY_LEVEL_4` |
-    | `grf_bdywith_c +1` (5)    | `NUDGING`                  |
-    | `grf_bdywidth_c+2` (6)    | `NUDGING_LEVEL_2`          |
+    | ICON constant or value                | ICON4py Name               |
+    |:------------------------------------- |:-------------------------- |
+    | `min_rlcell` (-8)                     | `END`                      |
+    | `min_rlcell_int-2`,  (-6)             | `HALO_LEVEL_2`             |
+    | `min_rlcell_int-1` (-5)               | `HALO`                     |
+    | `min_rlcell_int`(-4)                  | `LOCAL`                    |
+    | `0`                                   | `INTERIOR`                 |
+    | `1`                                   | `LATERAL_BOUNDARY`         |
+    | `2`                                   | `LATERAL_BOUNDARY_LEVEL_2` |
+    | `3`                                   | `LATERAL_BOUNDARY_LEVEL_3` |
+    | `grf_bdywidth_c` (4)                  | `LATERAL_BOUNDARY_LEVEL_4` |
+    | `grf_bdywith_c +1`,max_rlcell (5)     | `NUDGING`                  |
+    | `grf_bdywidth_c+2` (6)                | `NUDGING_LEVEL_2`          |
 
     Lateral boundary and nudging are only relevant for LAM runs, halo lines only for distributed domains.
     The constants are defined in `mo_impl_constants.f90` and `mo_impl_constants_grf.f90`
@@ -365,6 +365,20 @@ def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:
             return _nudging(dim, LineNumber.SECOND)
 
 
+def get_refinement_control(dim:gtx.Dimension, zone: Zone) -> int:
+    """
+
+    Args:
+        dim: dimension (one of CellDim, EdgeDim, VertexDim)
+        zone: grid zone
+
+    Returns:
+        value used to denote this boundary
+
+    """
+    return 1
+
+
 @dataclasses.dataclass(frozen=True)
 class Domain:
     """
@@ -397,6 +411,17 @@ class Domain:
     @functools.cached_property
     def is_local(self) -> bool:
         return self._zone == Zone.LOCAL
+
+    @functools.cached_property
+    def refinement_control_value(self) -> int:
+        """
+        Get the refinement control value for this domain.
+
+        This is the value that is used in the refinement control field for this domain.
+        """
+        return get_refinement_control(self._dim, self._zone)
+
+
 
 
 def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
