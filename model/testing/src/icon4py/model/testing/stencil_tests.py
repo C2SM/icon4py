@@ -17,8 +17,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
-from gt4py._core.definitions import is_scalar_type
-from gt4py.next import backend as gtx_backend, constructors
+from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.decorator import FieldOperator, Program
 
 from icon4py.model.common import type_alias as ta
@@ -28,22 +27,6 @@ from icon4py.model.common.utils import data_allocation, device_utils
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-
-
-def allocate_data(
-    backend: gtx_backend.Backend | None,
-    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
-    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO(havogt): check why it does understand the fluid_partial
-    input_data = {
-        k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
-        if isinstance(v, tuple)
-        else _allocate_field(domain=v.domain, data=v.ndarray)
-        if not is_scalar_type(v) and k != "domain"
-        else v
-        for k, v in input_data.items()
-    }
-    return input_data
 
 
 @dataclasses.dataclass(frozen=True)
