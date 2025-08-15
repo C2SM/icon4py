@@ -130,10 +130,10 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     """Apply test item filters as the final test setup step."""
 
     item_marker_filters = filters.item_marker_filters
-    for marker_name in set(m.name for m in item.own_markers) - item_marker_filters.keys():
+    for marker_name in set(m.name for m in item.own_markers) & item_marker_filters.keys():
         item_filter = item_marker_filters[marker_name]
         if item_filter.condition(item):
-            item_filter.action(item)
+            item_filter.action()
 
 
 # pytest benchmark hook, see:
