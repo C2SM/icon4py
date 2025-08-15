@@ -193,7 +193,6 @@ docstring-code-format = true
 # -- Rules set to be considered --
 exclude = ["**/tests/**"]
 explicit-preview-rules = true
-extend-select = ["F822"]  # TODO(egparedes): remove when not longer in preview
 ignore = [
   'E501',  # [line-too-long]
   'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
@@ -211,6 +210,7 @@ select = [
   'E',  # pycodestyle
   'ERA',  # eradicate
   'F',  # Pyflakes
+  'F822',  # [undefined-export] (preview)  # TODO(egparedes): remove when not longer in preview
   'FA100',  # future-rewritable-type-annotation
   # 'FBT', # flake8-boolean-trap
   'FLY',  # flynt
