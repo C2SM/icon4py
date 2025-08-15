@@ -251,11 +251,7 @@ class GridManager:
 
     def _read_start_end_indices(
         self,
-    ) -> tuple[
-        dict[gtx.Dimension, data_alloc.NDArray],
-        dict[gtx.Dimension, data_alloc.NDArray],
-        dict[gtx.Dimension, gtx.int32],
-    ]:
+    ) -> tuple[dict[gtx.Dimension, data_alloc.NDArray], dict[gtx.Dimension, data_alloc.NDArray]]:
         """ "
         Read the start/end indices from the grid file.
 
@@ -302,7 +298,7 @@ class GridManager:
                 max_refinement_control_values[dim],
             ), f"start index array for {dim} has wrong shape"
 
-        return start_indices, end_indices, grid_refinement_dimensions
+        return start_indices, end_indices
 
     @property
     def grid(self) -> icon.IconGrid:
@@ -360,7 +356,7 @@ class GridManager:
         }
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
-        start, end, _ = self._read_start_end_indices()
+        start, end = self._read_start_end_indices()
         start_indices = {
             k: v
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()

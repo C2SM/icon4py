@@ -470,7 +470,7 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
     }
     end_indices = {
         **{cell_domain(zone): gtx.int32(_CELLS) for zone in h_grid.CELL_ZONES},
-        **{edge_domain(zone): gtx.int32(_EDGES) for zone in h_grid.Zone},
+        **{edge_domain(zone): gtx.int32(_EDGES) for zone in h_grid.EDGE_ZONES},
         **{vertex_domain(zone): gtx.int32(_VERTICES) for zone in h_grid.VERTEX_ZONES},
     }
 
