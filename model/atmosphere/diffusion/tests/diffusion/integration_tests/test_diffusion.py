@@ -373,14 +373,9 @@ def test_run_diffusion_single_step(
     ndyn_substeps,
     backend,
     orchestration,
-    benchmark,
 ):
     if orchestration and not test_utils.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
-
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
-        # Skip benchmarks for this experiment
-        benchmark = None
 
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
@@ -428,22 +423,10 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    stencil_tests.run_verify_and_benchmark(
-        functools.partial(
-            diffusion_granule.run,
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-        ),
-        functools.partial(
-            verify_diffusion_fields,
-            config=config,
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            diffusion_savepoint=savepoint_diffusion_exit,
-        ),
-        benchmark,
+    diffusion_granule.run(
+        diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, dtime=dtime
     )
+    verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
 
 @pytest.mark.datatest
