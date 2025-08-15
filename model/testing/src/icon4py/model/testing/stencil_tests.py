@@ -8,9 +8,10 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import hashlib
 import typing
-from typing import Any, Callable, ClassVar, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional, Protocol, Sequence
 
 import gt4py.next as gtx
 import numpy as np
@@ -21,8 +22,13 @@ from gt4py.next import backend as gtx_backend, constructors
 from gt4py.next.ffront.decorator import FieldOperator, Program
 from typing_extensions import Buffer
 
+from icon4py.model.common import type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import device_utils
+from icon4py.model.common.utils import data_allocation, device_utils
+
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
@@ -127,6 +133,48 @@ class StandardStaticVariants(eve.StrEnum):
     COMPILE_TIME_VERTICAL = "compile_time_vertical"
 
 
+class DataAlloc(Protocol):
+    """
+    This protocol mimics the 'icon4py.model.common.utils.data_allocation',
+    but with 'backend' bound in the respective functions.
+    """
+
+    @staticmethod
+    def random_field(
+        grid: base.Grid,
+        *dims: gtx.Dimension,
+        low: float = -1.0,
+        high: float = 1.0,
+        dtype: npt.DTypeLike | None = None,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    @staticmethod
+    def random_mask(
+        grid: base.Grid,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = None,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    @staticmethod
+    def zero_field(
+        grid: base.Grid,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = ta.wpfloat,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+    @staticmethod
+    def constant_field(
+        grid: base.Grid,
+        value: float,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = ta.wpfloat,
+        extend: dict[gtx.Dimension, int] | None = None,
+    ) -> gtx.Field: ...
+
+
 class StencilTest:
     """
     Base class to be used for testing stencils.
@@ -151,7 +199,7 @@ class StencilTest:
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: ClassVar[typing.Optional[tuple]] = None
-    STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
+    STATIC_PARAMS: ClassVar[dict[str, Sequence[str] | None] | None] = None
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
@@ -187,22 +235,24 @@ class StencilTest:
         return test_func
 
     @pytest.fixture
-    def _properly_allocated_input_data(
-        self,
-        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        backend: gtx_backend.Backend | None,
-    ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
-        # TODO(havogt): this is a workaround,
-        # because in the `input_data` fixture provided by the user
-        # it does not allocate for the correct device.
-        return allocate_data(backend, input_data)
+    def data_alloc(self, backend: gtx_backend.Backend | None) -> DataAlloc:
+        class data_alloc_impl:
+            def __getattr__(self, name: str) -> Callable[..., gtx.Field]:
+                if not hasattr(DataAlloc, name):
+                    raise AttributeError(
+                        f"Data allocation function '{name}' not found. Maybe missing in the 'DataAlloc' protocol?"
+                    )
+                alloc_fun = getattr(data_allocation, name)
+                return functools.partial(alloc_fun, backend=backend)
+
+        return data_alloc_impl()
 
     def test_stencil(
         self: StencilTest,
         benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
         grid: base.Grid,
         backend: gtx_backend.Backend | None,
-        _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         _configured_program: Callable[..., None],
     ) -> None:
         if self.MARKERS is not None:
@@ -211,21 +261,16 @@ class StencilTest:
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
             ),
-            **{
-                k: v.asnumpy() if isinstance(v, gtx.Field) else v
-                for k, v in _properly_allocated_input_data.items()
-            },
+            **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
         )
 
-        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-        self._verify_stencil_test(
-            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-        )
+        _configured_program(**input_data, offset_provider=grid.connectivities)
+        self._verify_stencil_test(input_data=input_data, reference_outputs=reference_outputs)
 
         if benchmark is not None and benchmark.enabled:
             benchmark(
                 _configured_program,
-                **_properly_allocated_input_data,
+                **input_data,
                 offset_provider=grid.connectivities,
             )
 
