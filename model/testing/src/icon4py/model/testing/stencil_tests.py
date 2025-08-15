@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
 import hashlib
 import typing
 from typing import Any, Callable, ClassVar, Optional, Sequence
@@ -106,63 +105,6 @@ class Output:
     gtslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
 
 
-def run_verify_and_benchmark(
-    test_func: Callable[[], None],
-    verification_func: Callable[[], None],
-    benchmark_fixture: Optional[
-        Any
-    ],  # should be pytest_benchmark.fixture.BenchmarkFixture pytest_benchmark is not typed
-) -> None:
-    """
-    Function to perform verification and benchmarking of test_func (along with normally executing it).
-
-    Args:
-        test_func: Function to be run, verified and benchmarked.
-        verification_func: Function to be used for verification of test_func.
-        benchmark_fixture: pytest-benchmark fixture.
-
-    Note:
-        - test_func and verification_func should be provided with bound arguments, i.e. with functools.partial.
-    """
-    test_func()
-    verification_func()
-
-    if benchmark_fixture is not None and benchmark_fixture.enabled:
-        benchmark_fixture(test_func)
-
-
-def _verify_stencil_test(
-    self: StencilTest,
-    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-    reference_outputs: dict[str, np.ndarray | tuple[np.ndarray, ...]],
-) -> None:
-    for out in self.OUTPUTS:
-        name, refslice, gtslice = (
-            (out.name, out.refslice, out.gtslice)
-            if isinstance(out, Output)
-            else (out, (slice(None),), (slice(None),))
-        )
-
-        input_data_name = input_data[name]  # for mypy
-        if isinstance(input_data_name, tuple):
-            for i_out_field, out_field in enumerate(input_data_name):
-                np.testing.assert_allclose(
-                    out_field.asnumpy()[gtslice],
-                    reference_outputs[name][i_out_field][refslice],
-                    equal_nan=True,
-                    err_msg=f"Verification failed for '{name}[{i_out_field}]'",
-                )
-        else:
-            reference_outputs_name = reference_outputs[name]  # for mypy
-            assert isinstance(reference_outputs_name, np.ndarray)
-            np.testing.assert_allclose(
-                input_data_name.asnumpy()[gtslice],
-                reference_outputs_name[refslice],
-                equal_nan=True,
-                err_msg=f"Verification failed for '{name}'",
-            )
-
-
 @dataclasses.dataclass
 class _ConnectivityConceptFixer:
     """
@@ -213,33 +155,20 @@ class StencilTest:
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
-    def test_stencil(
-        self: StencilTest,
-        grid: base.Grid,
+    @pytest.fixture
+    def _configured_program(
+        self,
         backend: gtx_backend.Backend | None,
+        static_variant: Sequence[str],
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        static_variant: Sequence[str],  # the names of the static parameters
-        benchmark: pytest.FixtureRequest,
-    ) -> None:
-        if self.MARKERS is not None:
-            apply_markers(self.MARKERS, grid, backend)
-
-        connectivities_as_numpy = _ConnectivityConceptFixer(grid)
-
-        reference_outputs = self.reference(
-            connectivities_as_numpy,  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-            **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
-        )
-
-        input_data = allocate_data(backend, input_data)
-
+        grid: base.Grid,
+    ) -> Callable[..., None]:
         unused_static_params = set(static_variant) - set(input_data.keys())
         if unused_static_params:
             raise ValueError(
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
-
         program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO: gt4py should accept `None` in with_backend
         if backend is not None:
             if isinstance(program, FieldOperator):
@@ -254,23 +183,94 @@ class StencilTest:
                     **static_args,  # type: ignore[arg-type]
                 )
 
-        test_func = functools.partial(
-            program,
-            **input_data,  # type: ignore[arg-type]
+        test_func = device_utils.synchronized_function(program, backend=backend)
+        return test_func
+
+    @pytest.fixture
+    def _properly_allocated_input_data(
+        self,
+        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+        backend: gtx_backend.Backend | None,
+    ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
+        # TODO(havogt): this is a workaround,
+        # because in the `input_data` fixture provided by the user
+        # it does not allocate for the correct device.
+        return allocate_data(backend, input_data)
+
+    @pytest.fixture(autouse=True)
+    def _apply_markers(self, grid: base.Grid, backend: gtx_backend.Backend | None) -> None:
+        if self.MARKERS is not None:
+            apply_markers(self.MARKERS, grid, backend)
+
+    @pytest.fixture
+    def _connectivities_as_numpy(self, grid: base.Grid) -> _ConnectivityConceptFixer:
+        return _ConnectivityConceptFixer(grid)
+
+    def test_stencil(
+        self: StencilTest,
+        grid: base.Grid,
+        _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+        _configured_program: Callable[..., None],
+        _connectivities_as_numpy: _ConnectivityConceptFixer,
+    ) -> None:
+        reference_outputs = self.reference(
+            _connectivities_as_numpy,  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+            **{
+                k: v.asnumpy() if isinstance(v, gtx.Field) else v
+                for k, v in _properly_allocated_input_data.items()
+            },
+        )
+
+        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
+        self._verify_stencil_test(
+            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
+        )
+
+    def test_benchmark(
+        self,
+        benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
+        _configured_program: Callable[..., None],
+        _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+        grid: base.Grid,
+    ) -> None:
+        if not benchmark.enabled:
+            pytest.skip("Benchmarking is not enabled.")
+        benchmark(
+            _configured_program,
+            **_properly_allocated_input_data,
             offset_provider=grid.connectivities,
         )
-        test_func = device_utils.synchronized_function(test_func, backend=backend)
 
-        run_verify_and_benchmark(
-            test_func,
-            functools.partial(
-                _verify_stencil_test,
-                self=self,
-                input_data=input_data,
-                reference_outputs=reference_outputs,
-            ),
-            benchmark,
-        )
+    def _verify_stencil_test(
+        self,
+        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+        reference_outputs: dict[str, np.ndarray | tuple[np.ndarray, ...]],
+    ) -> None:
+        for out in self.OUTPUTS:
+            name, refslice, gtslice = (
+                (out.name, out.refslice, out.gtslice)
+                if isinstance(out, Output)
+                else (out, (slice(None),), (slice(None),))
+            )
+
+            input_data_name = input_data[name]  # for mypy
+            if isinstance(input_data_name, tuple):
+                for i_out_field, out_field in enumerate(input_data_name):
+                    np.testing.assert_allclose(
+                        out_field.asnumpy()[gtslice],
+                        reference_outputs[name][i_out_field][refslice],
+                        equal_nan=True,
+                        err_msg=f"Verification failed for '{name}[{i_out_field}]'",
+                    )
+            else:
+                reference_outputs_name = reference_outputs[name]  # for mypy
+                assert isinstance(reference_outputs_name, np.ndarray)
+                np.testing.assert_allclose(
+                    input_data_name.asnumpy()[gtslice],
+                    reference_outputs_name[refslice],
+                    equal_nan=True,
+                    err_msg=f"Verification failed for '{name}'",
+                )
 
     @staticmethod
     def static_variant(request: pytest.FixtureRequest) -> Sequence[str]:
