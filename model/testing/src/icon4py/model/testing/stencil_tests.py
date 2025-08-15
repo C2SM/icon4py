@@ -179,60 +179,6 @@ class _ConnectivityConceptFixer:
         return self._grid.get_connectivity(dim).asnumpy()
 
 
-def _test_and_benchmark(
-    self: StencilTest,
-    grid: base.Grid,
-    backend: gtx_backend.Backend | None,
-    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-    static_variant: Sequence[str],  # the names of the static parameters
-    benchmark: pytest.FixtureRequest,
-) -> None:
-    if self.MARKERS is not None:
-        apply_markers(self.MARKERS, grid, backend)
-
-    connectivities_as_numpy = _ConnectivityConceptFixer(grid)
-
-    reference_outputs = self.reference(
-        connectivities_as_numpy,  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-        **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
-    )
-
-    input_data = allocate_data(backend, input_data)
-
-    unused_static_params = set(static_variant) - set(input_data.keys())
-    if unused_static_params:
-        raise ValueError(
-            f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
-        )
-    static_args = {name: [input_data[name]] for name in static_variant}
-
-    program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO: gt4py should accept `None` in with_backend
-    if backend is not None:
-        if isinstance(program, FieldOperator):
-            if len(static_args) > 0:
-                raise NotImplementedError("'FieldOperator's do not support static arguments yet.")
-        else:
-            program.compile(offset_provider=grid.connectivities, enable_jit=False, **static_args)  # type: ignore[arg-type]
-
-    test_func = functools.partial(
-        program,
-        **input_data,  # type: ignore[arg-type]
-        offset_provider=grid.connectivities,
-    )
-    test_func = device_utils.synchronized_function(test_func, backend=backend)
-
-    run_verify_and_benchmark(
-        test_func,
-        functools.partial(
-            _verify_stencil_test,
-            self=self,
-            input_data=input_data,
-            reference_outputs=reference_outputs,
-        ),
-        benchmark,
-    )
-
-
 class StandardStaticVariants(eve.StrEnum):
     NONE = "none"
     COMPILE_TIME_DOMAIN = "compile_time_domain"
@@ -258,19 +204,6 @@ class StencilTest:
         ...         return dict(some_output=np.asarray(some_input) * 2)
     """
 
-    @staticmethod
-    def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
-        static_params = metafunc.cls.STATIC_PARAMS
-        if not static_params:
-            metafunc.parametrize("static_variant", ((),), ids=["variant=none"], scope="class")
-        else:
-            metafunc.parametrize(
-                "static_variant",
-                (() if v is None else v for v in static_params.values()),
-                ids=(f"variant={k}" for k in static_params.keys()),
-                scope="class",
-            )
-
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: ClassVar[typing.Optional[tuple]] = None
@@ -278,9 +211,86 @@ class StencilTest:
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
+    def test_stencil(
+        self: StencilTest,
+        grid: base.Grid,
+        backend: gtx_backend.Backend | None,
+        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+        static_variant: Sequence[str],  # the names of the static parameters
+        benchmark: pytest.FixtureRequest,
+    ) -> None:
+        if self.MARKERS is not None:
+            apply_markers(self.MARKERS, grid, backend)
+
+        connectivities_as_numpy = _ConnectivityConceptFixer(grid)
+
+        reference_outputs = self.reference(
+            connectivities_as_numpy,  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+            **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
+        )
+
+        input_data = allocate_data(backend, input_data)
+
+        unused_static_params = set(static_variant) - set(input_data.keys())
+        if unused_static_params:
+            raise ValueError(
+                f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
+            )
+        static_args = {name: [input_data[name]] for name in static_variant}
+
+        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO: gt4py should accept `None` in with_backend
+        if backend is not None:
+            if isinstance(program, FieldOperator):
+                if len(static_args) > 0:
+                    raise NotImplementedError(
+                        "'FieldOperator's do not support static arguments yet."
+                    )
+            else:
+                program.compile(
+                    offset_provider=grid.connectivities,
+                    enable_jit=False,
+                    **static_args,  # type: ignore[arg-type]
+                )
+
+        test_func = functools.partial(
+            program,
+            **input_data,  # type: ignore[arg-type]
+            offset_provider=grid.connectivities,
+        )
+        test_func = device_utils.synchronized_function(test_func, backend=backend)
+
+        run_verify_and_benchmark(
+            test_func,
+            functools.partial(
+                _verify_stencil_test,
+                self=self,
+                input_data=input_data,
+                reference_outputs=reference_outputs,
+            ),
+            benchmark,
+        )
+
+    @staticmethod
+    def static_variant(request: pytest.FixtureRequest) -> Sequence[str]:
+        """
+        Fixture for parametrization over the `STATIC_PARAMS` of the test class.
+
+        Note: Will be decorated in `__init_subclass__`, when all information is available.
+        """
+        _, variant = request.param
+        return () if variant is None else variant
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
-        # Add two methods for verification and benchmarking. In order to have names that
-        # reflect the name of the test we do this dynamically here instead of using regular
-        # inheritance.
         super().__init_subclass__(**kwargs)
-        setattr(cls, f"test_{cls.__name__}", _test_and_benchmark)
+
+        # decorate `static_variant` with parametrized fixtures
+        # the parametrization is available at class definition time
+        if cls.STATIC_PARAMS is None:
+            # not parametrized, return an empty tuple
+            cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
+        else:
+            cls.static_variant = staticmethod(  # type: ignore[method-assign]
+                pytest.fixture(params=cls.STATIC_PARAMS.items(), scope="class", ids=lambda p: p[0])(
+                    cls.static_variant
+                )
+            )
