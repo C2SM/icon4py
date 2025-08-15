@@ -428,7 +428,7 @@ def test_dycore_wrapper_granule_inputs(
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
-    )  # TODO sp.vol_flx_ic()
+    )  # TODO(): p.vol_flx_ic()
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
@@ -602,7 +602,7 @@ def test_dycore_wrapper_granule_inputs(
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
             icon_grid, dims.CellDim, dims.KDim
-        ),  # TODO: sp.vol_flx_ic(),
+        ),  # TODO(): sp.vol_flx_ic(),
     )
     expected_second_order_divdamp_factor = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
@@ -1062,7 +1062,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     savepoint_nonhydro_step_final,
     experiment,
     ndyn_substeps,
-    vn_only,  # TODO we don't use that value?
+    vn_only,  # TODO(): we don't use that value?
     at_initial_timestep,
     backend,
 ):

@@ -301,7 +301,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     )
 
 
-# TODO (@halungge) add test in test_metric_factory.py?
+# TODO(halungge): add test in test_metric_factory.py?
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_e(

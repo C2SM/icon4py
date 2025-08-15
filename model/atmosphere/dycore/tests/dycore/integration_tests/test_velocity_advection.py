@@ -702,7 +702,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
         atol=1.0e-15,
     )
 
-    # TODO (Chia Rui): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
+    # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
         vertical_cfl.asnumpy(),
         icon_result_cfl_clipping.asnumpy(),
@@ -839,7 +839,7 @@ def test_compute_advection_in_vertical_momentum_equation(
         atol=1.0e-15,
     )
 
-    # TODO (Chia Rui): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
+    # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
         vertical_cfl.asnumpy(),
         icon_result_cfl_clipping.asnumpy(),

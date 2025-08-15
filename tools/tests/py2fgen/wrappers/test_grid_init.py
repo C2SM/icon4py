@@ -148,5 +148,5 @@ def grid_init(grid_savepoint):
     )
 
 
-# TODO if useful add a grid_init (mock) test like in test_diffusion_wrapper.py
+# TODO(): if useful add a grid_init (mock) test like in test_diffusion_wrapper.py
 # otherwise rename this to something without the `test_` prefix

@@ -6,10 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import os
 
 
-def env_flag_to_bool(name: str, default: bool) -> bool:
+def _env_flag_to_bool(name: str, default: bool) -> bool:
     """Convert environment variable string variable to a bool value."""
     flag_value = os.environ.get(name, None)
     if flag_value is None:
@@ -25,6 +27,6 @@ def env_flag_to_bool(name: str, default: bool) -> bool:
             )
 
 
-ENABLE_GRID_DOWNLOAD: bool = env_flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
-ENABLE_TESTDATA_DOWNLOAD: bool = env_flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
+ENABLE_GRID_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
+ENABLE_TESTDATA_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
 TEST_DATA_PATH: str | None = os.environ.get("ICON4PY_TEST_DATA_PATH", None)

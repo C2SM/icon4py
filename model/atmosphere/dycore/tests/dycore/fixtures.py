@@ -34,6 +34,8 @@ from icon4py.model.testing.fixtures.datatest import (
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
+    savepoint_dycore_30_to_38_init,
+    savepoint_dycore_30_to_38_exit,
     savepoint_velocity_exit,
     savepoint_velocity_init,
     savepoint_vertically_implicit_dycore_solver_init,

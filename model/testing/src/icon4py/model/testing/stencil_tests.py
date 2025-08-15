@@ -5,13 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
 import dataclasses
 import functools
-import hashlib
-import typing
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional, Protocol, Sequence
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 import gt4py.next as gtx
 import numpy as np
@@ -20,7 +20,6 @@ from gt4py import eve
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import backend as gtx_backend, constructors
 from gt4py.next.ffront.decorator import FieldOperator, Program
-from typing_extensions import Buffer
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.grid import base
@@ -31,38 +30,11 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
-def is_python(backend: gtx_backend.Backend | None) -> bool:
-    # want to exclude python backends:
-    #   - cannot run on embedded: because of slicing
-    #   - roundtrip is very slow on large grid
-    return is_embedded(backend) or is_roundtrip(backend)
-
-
-def is_dace(backend: gtx_backend.Backend | None) -> bool:
-    return backend.name.startswith("run_dace_") if backend else False
-
-
-def is_embedded(backend: gtx_backend.Backend | None) -> bool:
-    return backend is None
-
-
-def is_gtfn_backend(backend: gtx_backend.Backend | None) -> bool:
-    return "gtfn" in backend.name if backend else False
-
-
-def is_roundtrip(backend: gtx_backend.Backend | None) -> bool:
-    return backend.name == "roundtrip" if backend else False
-
-
-def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
-    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
-
-
 def allocate_data(
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
 ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
-    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO: check why it does understand the fluid_partial
+    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO(havogt): check why it does understand the fluid_partial
     input_data = {
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
@@ -72,36 +44,6 @@ def allocate_data(
         for k, v in input_data.items()
     }
     return input_data
-
-
-def apply_markers(
-    markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
-    grid: base.Grid,
-    backend: gtx_backend.Backend | None,
-) -> None:
-    for marker in markers:
-        match marker.name:
-            case "cpu_only" if device_utils.is_cupy_device(backend):
-                pytest.xfail("currently only runs on CPU")
-            case "embedded_only" if not is_embedded(backend):
-                pytest.skip("stencil runs only on embedded backend")
-            case "embedded_remap_error" if is_embedded(backend):
-                # https://github.com/GridTools/gt4py/issues/1583
-                pytest.xfail("Embedded backend currently fails in remap function.")
-            case "embedded_static_args" if is_embedded(backend):
-                pytest.xfail(" gt4py _compiled_programs returns error when backend is None.")
-            case "uses_as_offset" if is_embedded(backend):
-                pytest.xfail("Embedded backend does not support as_offset.")
-            case "uses_concat_where" if is_embedded(backend):
-                pytest.xfail("Embedded backend does not support concat_where.")
-            case "gtfn_too_slow" if is_gtfn_backend(backend):
-                pytest.skip("GTFN compilation is too slow for this test.")
-            case "skip_value_error":
-                if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
-                    # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
-                    pytest.skip(
-                        "Stencil does not support domain containing skip values. Consider shrinking domain."
-                    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -198,7 +140,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKERS: ClassVar[typing.Optional[tuple]] = None
+    MARKERS: ClassVar[tuple | None] = None
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str] | None] | None] = None
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
@@ -217,7 +159,7 @@ class StencilTest:
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
-        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO: gt4py should accept `None` in with_backend
+        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
         if backend is not None:
             if isinstance(program, FieldOperator):
                 if len(static_args) > 0:
@@ -255,8 +197,6 @@ class StencilTest:
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         _configured_program: Callable[..., None],
     ) -> None:
-        if self.MARKERS is not None:
-            apply_markers(self.MARKERS, grid, backend)
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
@@ -310,7 +250,8 @@ class StencilTest:
         """
         Fixture for parametrization over the `STATIC_PARAMS` of the test class.
 
-        Note: Will be decorated in `__init_subclass__`, when all information is available.
+        Note: the actual `pytest.fixture()`  decoration happens inside `__init_subclass__`,
+          when all information is available.
         """
         _, variant = request.param
         return () if variant is None else variant
@@ -318,8 +259,8 @@ class StencilTest:
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
-        # decorate `static_variant` with parametrized fixtures
-        # the parametrization is available at class definition time
+        # decorate `static_variant` with parametrized fixtures, since the
+        # parametrization is only available in the concrete subclass definition
         if cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
             cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
@@ -329,3 +270,9 @@ class StencilTest:
                     cls.static_variant
                 )
             )
+
+        # apply markers to the test function.
+        # TODO(egparedes,havogt): use directly pytest.mark as class decorators
+        if cls.MARKERS:
+            for marker in cls.MARKERS:
+                cls.test_stencil = marker(cls.test_stencil)  # type:ignore[method-assign] # we override with a decorated function

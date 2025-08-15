@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils, parallel_helpers, stencil_tests
+from icon4py.model.testing import datatest_utils, parallel_helpers, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -46,7 +46,7 @@ def test_parallel_diffusion(
     backend,
     orchestration,
 ):
-    if orchestration and not stencil_tests.is_dace(backend):
+    if orchestration and not test_utils.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace` backends.")
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -160,7 +160,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
-    if not stencil_tests.is_dace(backend):
+    if not test_utils.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization

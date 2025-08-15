@@ -8,8 +8,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import cffi
 import numpy as np
 
@@ -73,7 +71,7 @@ def array_info(
 def array_to_array_info(
     arr: np.ndarray,  # or cp.ndarray
     *,
-    ffi: Optional[cffi.FFI] = None,
+    ffi: cffi.FFI | None = None,
     keep_alive: bool = True,
     as_fortran_layout: bool = True,
 ) -> _definitions.ArrayInfo:

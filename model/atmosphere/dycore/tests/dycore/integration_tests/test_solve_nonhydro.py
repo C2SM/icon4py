@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore import (
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
+    compute_horizontal_velocity_quantities,
     compute_hydrostatic_correction_term,
     vertically_implicit_dycore_solver,
 )
@@ -652,7 +653,7 @@ def test_nonhydro_corrector_step(
     assert test_utils.dallclose(
         prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-9,  # TODO (magdalena) was 1e-10 for local experiment only
+        rtol=1e-9,  # TODO(halungge): was 1e-10 for local experiment only
     )
 
     assert test_utils.dallclose(
@@ -688,20 +689,20 @@ def test_nonhydro_corrector_step(
     assert test_utils.dallclose(
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
+        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
 
     # stencil 33, 34
     assert test_utils.dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
+        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
     # stencil 33, 34
     assert test_utils.dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
+        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
     # stencil 60 only relevant for last substep
     assert test_utils.dallclose(
@@ -1746,6 +1747,305 @@ def test_apply_divergence_damping_and_update_vn(
         next_vn.asnumpy(),
         vn_ref.asnumpy(),
         atol=4.0e-15,
+    )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
+    ],
+)
+def test_compute_horizontal_velocity_quantities_and_fluxes(
+    istep_init,
+    istep_exit,
+    substep_init,
+    substep_exit,
+    step_date_init,
+    step_date_exit,
+    experiment,
+    icon_grid,
+    ndyn_substeps,
+    grid_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    savepoint_dycore_30_to_38_init,
+    savepoint_dycore_30_to_38_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    savepoint_nonhydro_init,
+    savepoint_nonhydro_exit,
+    backend,
+):
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+
+    ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
+    ddxn_z_full = metrics_savepoint.ddxn_z_full()
+    ddxt_z_full = metrics_savepoint.ddxt_z_full()
+    wgtfac_e = metrics_savepoint.wgtfac_e()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
+    rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
+    geofac_grdiv = interpolation_savepoint.geofac_grdiv()
+    nflatlev = vertical_params.nflatlev
+
+    z_vn_avg = savepoint_dycore_30_to_38_init.z_vn_avg()
+    z_graddiv_vn = savepoint_dycore_30_to_38_init.z_graddiv_vn()
+    vt = savepoint_dycore_30_to_38_init.vt()
+    mass_fl_e = savepoint_dycore_30_to_38_init.mass_fl_e()
+    z_theta_v_fl_e = savepoint_dycore_30_to_38_init.z_theta_v_fl_e()
+    z_vt_ie = savepoint_dycore_30_to_38_init.z_vt_ie()
+    vn_ie = savepoint_dycore_30_to_38_init.vn_ie()
+    z_kin_hor_e = savepoint_dycore_30_to_38_init.z_kin_hor_e()
+    z_w_concorr_me = savepoint_dycore_30_to_38_init.z_w_concorr_me()
+
+    e_flx_avg = interpolation_savepoint.e_flx_avg()
+    vn = savepoint_dycore_30_to_38_init.vn()
+    z_rho_e = savepoint_dycore_30_to_38_init.z_rho_e()
+    z_theta_v_e = savepoint_dycore_30_to_38_init.z_theta_v_e()
+
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+
+    z_vn_avg_ref = savepoint_dycore_30_to_38_exit.z_vn_avg()
+    z_graddiv_vn_ref = savepoint_dycore_30_to_38_exit.z_graddiv_vn()
+    vt_ref = savepoint_dycore_30_to_38_exit.vt()
+    mass_fl_e_ref = savepoint_dycore_30_to_38_exit.mass_fl_e()
+    z_theta_v_fl_e_ref = savepoint_dycore_30_to_38_exit.z_theta_v_fl_e()
+    vn_ie_ref = savepoint_dycore_30_to_38_exit.vn_ie()
+    z_vt_ie_ref = savepoint_dycore_30_to_38_exit.z_vt_ie()
+    z_kin_hor_e_ref = savepoint_dycore_30_to_38_exit.z_kin_hor_e()
+    z_w_concorr_me_ref = savepoint_dycore_30_to_38_exit.z_w_concorr_me()
+
+    compute_horizontal_velocity_quantities.compute_horizontal_velocity_quantities_and_fluxes.with_backend(
+        backend
+    )(
+        spatially_averaged_vn=z_vn_avg,
+        horizontal_gradient_of_normal_wind_divergence=z_graddiv_vn,
+        tangential_wind=vt,
+        mass_flux_at_edges_on_model_levels=mass_fl_e,
+        theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
+        tangential_wind_on_half_levels=z_vt_ie,
+        vn_on_half_levels=vn_ie,
+        horizontal_kinetic_energy_at_edges_on_model_levels=z_kin_hor_e,
+        contravariant_correction_at_edges_on_model_levels=z_w_concorr_me,
+        vn=vn,
+        e_flx_avg=e_flx_avg,
+        geofac_grdiv=geofac_grdiv,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        rho_at_edges_on_model_levels=z_rho_e,
+        theta_v_at_edges_on_model_levels=z_theta_v_e,
+        ddqz_z_full_e=ddqz_z_full_e,
+        ddxn_z_full=ddxn_z_full,
+        ddxt_z_full=ddxt_z_full,
+        wgtfac_e=wgtfac_e,
+        wgtfacq_e=wgtfacq_e,
+        nflatlev=nflatlev,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels + 1,
+        offset_provider={
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
+            "E2C2E": icon_grid.get_connectivity("E2C2E"),
+            "Koff": dims.KDim,
+        },
+    )
+
+    assert helpers.dallclose(
+        z_vn_avg_ref.asnumpy(),
+        z_vn_avg.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    # same tolerances as in Liskov
+    assert helpers.dallclose(
+        z_graddiv_vn_ref.asnumpy(),
+        z_graddiv_vn.asnumpy(),
+        rtol=1.0e-2,
+        atol=1.0e-20,
+    )
+
+    assert helpers.dallclose(
+        vt_ref.asnumpy(),
+        vt.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        mass_fl_e_ref.asnumpy(),
+        mass_fl_e.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        z_theta_v_fl_e_ref.asnumpy(),
+        z_theta_v_fl_e.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        vn_ie_ref.asnumpy(),
+        vn_ie.asnumpy(),
+        rtol=1.0e-5,
+    )
+
+    assert helpers.dallclose(
+        z_vt_ie_ref.asnumpy(),
+        z_vt_ie.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        z_kin_hor_e_ref.asnumpy(),
+        z_kin_hor_e.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        z_w_concorr_me_ref.asnumpy(),
+        z_w_concorr_me.asnumpy(),
+        rtol=1.0e-7,
+    )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize("at_first_substep, istep_init, istep_exit", [(True, 2, 2)])
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
+    ],
+)
+def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+    istep_init,
+    istep_exit,
+    substep_init,
+    substep_exit,
+    step_date_init,
+    step_date_exit,
+    experiment,
+    icon_grid,
+    ndyn_substeps,
+    at_first_substep,
+    grid_savepoint,
+    savepoint_dycore_30_to_38_init,
+    savepoint_dycore_30_to_38_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    savepoint_nonhydro_init,
+    savepoint_nonhydro_exit,
+    backend,
+):
+    edge_domain = h_grid.domain(dims.EdgeDim)
+
+    ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
+    config = utils.construct_solve_nh_config(experiment)
+
+    z_vn_avg = savepoint_dycore_30_to_38_init.z_vn_avg()
+    mass_fl_e = savepoint_dycore_30_to_38_init.mass_fl_e()
+    z_theta_v_fl_e = savepoint_dycore_30_to_38_init.z_theta_v_fl_e()
+    vn_traj = savepoint_nonhydro_init.vn_traj()
+    mass_flx_me = savepoint_nonhydro_init.mass_flx_me()
+    e_flx_avg = interpolation_savepoint.e_flx_avg()
+    vn = savepoint_dycore_30_to_38_init.vn()
+    z_rho_e = savepoint_dycore_30_to_38_init.z_rho_e()
+    z_theta_v_e = savepoint_dycore_30_to_38_init.z_theta_v_e()
+    r_nsubsteps = 1.0 / ndyn_substeps
+
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+
+    z_vn_avg_ref = savepoint_dycore_30_to_38_exit.z_vn_avg()
+    mass_fl_e_ref = savepoint_dycore_30_to_38_exit.mass_fl_e()
+    z_theta_v_fl_e_ref = savepoint_dycore_30_to_38_exit.z_theta_v_fl_e()
+    vn_traj_ref = savepoint_dycore_30_to_38_exit.vn_traj()
+    mass_flx_me_ref = savepoint_dycore_30_to_38_exit.mass_flx_me()
+
+    compute_horizontal_velocity_quantities.compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
+        backend
+    )(
+        spatially_averaged_vn=z_vn_avg,
+        mass_flux_at_edges_on_model_levels=mass_fl_e,
+        theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
+        substep_and_spatially_averaged_vn=vn_traj,
+        substep_averaged_mass_flux=mass_flx_me,
+        e_flx_avg=e_flx_avg,
+        vn=vn,
+        rho_at_edges_on_model_levels=z_rho_e,
+        ddqz_z_full_e=ddqz_z_full_e,
+        theta_v_at_edges_on_model_levels=z_theta_v_e,
+        prepare_advection=True,
+        at_first_substep=at_first_substep,
+        r_nsubsteps=r_nsubsteps,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
+        offset_provider={
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
+            "Koff": dims.KDim,
+        },
+    )
+
+    assert helpers.dallclose(
+        z_vn_avg_ref.asnumpy(),
+        z_vn_avg.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        mass_fl_e_ref.asnumpy(),
+        mass_fl_e.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        z_theta_v_fl_e_ref.asnumpy(),
+        z_theta_v_fl_e.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        vn_traj_ref.asnumpy(),
+        vn_traj.asnumpy(),
+        rtol=1.0e-6,
+    )
+
+    assert helpers.dallclose(
+        mass_flx_me_ref.asnumpy(),
+        mass_flx_me.asnumpy(),
+        rtol=1.0e-6,
     )
 
 

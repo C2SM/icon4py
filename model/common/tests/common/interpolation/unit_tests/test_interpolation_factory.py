@@ -216,7 +216,7 @@ def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend)
     assert field_x.shape == (grid.num_cells, 4)
     field_y = factory.get(attrs.GEOFAC_GRG_Y)
     assert field_y.shape == (grid.num_cells, 4)
-    # TODO (@halungge) tolerances are high, especially in the 0th (central) component, check stencil
+    # TODO(halungge): tolerances are high, especially in the 0th (central) component, check stencil
     #   this passes due to the atol which is too large for the values
     assert test_helpers.dallclose(
         field_ref[0].asnumpy(),
@@ -255,8 +255,8 @@ def test_get_mass_conserving_cell_average_weight(
 
 ## FIXME: does not validate
 #   -> connectivity order between reference from serialbox and computed value is different
-## TODO (@halungge) rtol is from parametrization is overwritten in assert - function is most probably wrong
-#  TODO (@halungge) global grid is not tested
+## TODO(halungge): rtol is from parametrization is overwritten in assert - function is most probably wrong
+#  TODO(halungge) global grid is not tested
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
