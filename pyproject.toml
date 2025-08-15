@@ -196,6 +196,7 @@ explicit-preview-rules = true
 ignore = [
   'E501',  # [line-too-long]
   'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
+  'ISC001',  # [single-line-implicit-string-concatenation]
   'TD003',  # [missing-todo-link]
   'UP038'  # [non-pep604-isinstance]
 ]

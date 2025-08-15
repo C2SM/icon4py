@@ -147,8 +147,6 @@ class StencilTest:
         _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         _configured_program: Callable[..., None],
     ) -> None:
-        if self.MARKERS is not None:
-            apply_markers(self.MARKERS, grid, backend)
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
@@ -207,7 +205,8 @@ class StencilTest:
         """
         Fixture for parametrization over the `STATIC_PARAMS` of the test class.
 
-        Note: Will be decorated in `__init_subclass__`, when all information is available.
+        Note: the actual `pytest.fixture()`  decoration happens inside `__init_subclass__`,
+          when all information is available.
         """
         _, variant = request.param
         return () if variant is None else variant
@@ -215,8 +214,8 @@ class StencilTest:
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
-        # decorate `static_variant` with parametrized fixtures
-        # the parametrization is available at class definition time
+        # decorate `static_variant` with parametrized fixtures, since the
+        # parametrization is only available in the concrete subclass definition
         if cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
             cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
@@ -226,3 +225,9 @@ class StencilTest:
                     cls.static_variant
                 )
             )
+
+        # apply markers to the test function.
+        # TODO(egparedes,havogt): use directly pytest.mark as class decorators
+        if cls.MARKERS:
+            for marker in cls.MARKERS:
+                cls.test_stencil = marker(cls.test_stencil)  # type:ignore[method-assign] # we override with a decorated function
