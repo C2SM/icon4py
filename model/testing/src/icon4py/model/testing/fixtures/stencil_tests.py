@@ -58,11 +58,13 @@ def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) ->
     might refer to a known grid configuration or to an existing ICON NetCDF grid file,
     and `<grid_levels>` specifies the number of vertical levels to use (optional).
     """
-    spec = request.config.getoption("grid", DEFAULT_GRID)
+    spec = request.config.getoption("grid")
+    if spec is None:
+        spec = DEFAULT_GRID
     assert isinstance(spec, str), "Grid spec must be a string"
     if spec.count(":") > 1:
         raise ValueError("Invalid grid spec in '--grid' option (spec: <grid_name>:<grid_levels>)")
-    
+
     name, *levels = spec.split(":")
     num_levels = int(levels[0]) if levels and levels[0].strip() else DEFAULT_NUM_LEVELS
 

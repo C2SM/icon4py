@@ -50,7 +50,7 @@ def pytest_configure(config):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser):
     """Add custom commandline options for pytest."""
     try:
         datatest = parser.getgroup("datatest", "Options for data testing")
@@ -82,8 +82,7 @@ def pytest_addoption(parser):
         parser.addoption(
             "--grid",
             action="store",
-            default="simple_grid",
-            help="Grid to use. Defaults to simple_grid, other options include icon_grid",
+            help="Grid to use.",
         )
     except ValueError:
         pass
