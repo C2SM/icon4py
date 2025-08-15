@@ -16,29 +16,32 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _compute_avg_vn(
+def _spatially_average_flux_or_velocity(
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], wpfloat],
-    vn: fa.EdgeKField[wpfloat],
+    flux_or_velocity: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_31."""
-    z_vn_avg_wp = neighbor_sum(e_flx_avg * vn(E2C2EO), axis=E2C2EODim)
-    return z_vn_avg_wp
+    # e_flx_avg is the weight vector for spatially averaging fluxes or velocities
+    spatially_averaged_flux_or_velocity = neighbor_sum(
+        e_flx_avg * flux_or_velocity(E2C2EO), axis=E2C2EODim
+    )
+    return spatially_averaged_flux_or_velocity
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_avg_vn(
+def spatially_average_flux_or_velocity(
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], wpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    z_vn_avg: fa.EdgeKField[wpfloat],
+    flux_or_velocity: fa.EdgeKField[wpfloat],
+    spatially_averaged_flux_or_velocity: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_avg_vn(
+    _spatially_average_flux_or_velocity(
         e_flx_avg,
-        vn,
-        out=z_vn_avg,
+        flux_or_velocity,
+        out=spatially_averaged_flux_or_velocity,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

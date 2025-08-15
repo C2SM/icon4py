@@ -21,7 +21,7 @@ from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
 
-# TODO copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
+# TODO(): copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     p_ccpr1: np.ndarray,
@@ -208,7 +208,7 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
 class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
     PROGRAM = _compute_horizontal_advection_of_rho_and_theta
     OUTPUTS = ("out",)
-    MARKERS = (pytest.mark.skip_value_error,)
+    MARKERS = (pytest.mark.skip_value_error, pytest.mark.embedded_remap_error)
 
     @staticmethod
     def reference(

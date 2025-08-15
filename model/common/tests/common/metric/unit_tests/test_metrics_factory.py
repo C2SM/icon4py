@@ -502,7 +502,7 @@ def test_factory_ddxt_z_full(
     )
     field = factory.get(attrs.DDXT_Z_FULL)
     caplog.set_level(logging.DEBUG)
-    # TODO (halungge) these are the np.allclose default values: single precision
+    # TODO(halungge): these are the np.allclose default values: single precision
     assert test_helpers.dallclose(field.asnumpy(), field_ref, rtol=1.0e-5, atol=1.0e-8)
 
 
@@ -548,7 +548,7 @@ def test_factory_exner_w_implicit_weight_parameter(
         (
             dt_utils.REGIONAL_EXPERIMENT,
             dt_utils.REGIONAL_EXPERIMENT,
-        ),  # TODO: check vwind_offctr value for regional
+        ),  # TODO(): check vwind_offctr value for regional
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -713,7 +713,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
-@pytest.mark.cpu_only  # TODO (@halungge: slow on GPU due to vwind_impl_wgt computation)
+@pytest.mark.cpu_only  # TODO(halungge): slow on GPU due to vwind_impl_wgt computation)
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [

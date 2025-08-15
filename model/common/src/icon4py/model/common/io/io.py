@@ -13,7 +13,8 @@ import enum
 import logging
 import pathlib
 import uuid
-from typing import Optional, Sequence, TypedDict
+from collections.abc import Sequence
+from typing import TypedDict
 
 from typing_extensions import Required
 
@@ -57,11 +58,11 @@ class Config(abc.ABC):
     """
     Base class for all config classes.
 
-    # TODO (halungge) Need to visit this, when we address configuration
+    # TODO(halungge): Need to visit this, when we address configuration
     """
 
     def __str__(self):
-        return "instance of {}(Config)".format(self.__class__)
+        return f"instance of {self.__class__}(Config)"
 
     @abc.abstractmethod
     def validate(self) -> None:
@@ -86,9 +87,9 @@ class FieldGroupIOConfig(Config):
     """
 
     output_interval: str
-    start_time: Optional[
-        str
-    ]  # TODO (halungge) make it possible to pass datetime.datetime objects other than strings?
+    start_time: (
+        str | None
+    )  # TODO(halungge): make it possible to pass datetime.datetime objects other than strings?
     filename: str
     variables: list[str]
     timesteps_per_file: int = 10
@@ -216,7 +217,7 @@ class GlobalFileAttributes(TypedDict, total=False):
     """
 
     #: version of the supported CF conventions
-    Conventions: Required[str]  # TODO (halungge) check changelog? latest version is 1.11
+    Conventions: Required[str]  # TODO(halungge): check changelog? latest version is 1.11
 
     #: unique id of the horizontal grid used in the simulation (from grid file)
     uuidOfHGrid: Required[uuid.UUID]
@@ -233,7 +234,7 @@ class GlobalFileAttributes(TypedDict, total=False):
     #: path of the binary and generation time stamp of the file
     history: Required[str]
 
-    #: references for publication # TODO (halungge) check if this is the right reference
+    #: references for publication # TODO(halungge): check if this is the right reference
     references: str
     comment: str
     external_variables: str
@@ -265,14 +266,14 @@ class FieldGroupMonitor(monitor.Monitor):
         output_path: pathlib.Path = pathlib.Path(__file__).parent,
     ):
         self._global_attrs: GlobalFileAttributes = {
-            "Conventions": "CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
+            "Conventions": "CF-1.7",  # TODO(halungge): check changelog? latest version is 1.11
             "title": config.nc_title,
             "comment": config.nc_comment,
             "institution": "ETH Zurich and MeteoSwiss",
             "source": "https://icon4py.github.io",
             "history": output_path.absolute().as_posix()
             + " "
-            + dt.datetime.now().isoformat(),  # TODO (halungge) this is actually the path to the binary in ICON not the output path
+            + dt.datetime.now().isoformat(),  # TODO(halungge): this is actually the path to the binary in ICON not the output path
             "references": "https://icon4py.github.io",
             "uuidOfHGrid": grid_id,
         }
@@ -306,7 +307,7 @@ class FieldGroupMonitor(monitor.Monitor):
     ) -> None:
         """Initialise the dataset with global attributes and dimensions.
 
-        TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical
+        TODO(halungge): as long as we have no terrain it is probably ok to take vct_a as vertical
                           coordinate once there is terrain k-heights become [horizontal, vertical ] field
 
         """
@@ -335,9 +336,9 @@ class FieldGroupMonitor(monitor.Monitor):
             state: dict  model state dictionary
             model_time: the current time step of the simulation
         """
-        # TODO (halungge) how to handle non time matches? That is if the model time jumps over the output time
+        # TODO(halungge): how to handle non time matches? That is if the model time jumps over the output time
         if self._at_capture_time(model_time):
-            # TODO (halungge) this should do a deep copy of the data
+            # TODO(halungge): this should do a deep copy of the data
             try:
                 state_to_store = {field: state[field] for field in self._field_names}
             except KeyError as e:

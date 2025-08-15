@@ -211,9 +211,9 @@ def _collect_fixture_files(root_dir: pathlib.Path) -> list[pathlib.Path]:
             continue  # Skip virtual environments
         if (dirpath.endswith("fixtures") or dirpath in fixture_pkgs) and "__init__.py" in filenames:
             fixture_pkgs.update(f"{dirpath}/{d}" for d in dirnames)
-            for fname in filenames:
-                if fname.endswith(".py"):
-                    fixture_files.append(pathlib.Path(dirpath) / fname)
+            fixture_files.extend(
+                pathlib.Path(dirpath) / fname for fname in filenames if fname.endswith(".py")
+            )
             if dirpath in fixture_pkgs:
                 fixture_pkgs.remove(dirpath)
         elif "fixtures.py" in filenames:
