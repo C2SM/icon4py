@@ -11,10 +11,9 @@ import numpy as np
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.fixtures.datatest import backend, grid
-from icon4py.model.testing.reference_funcs import (
-    enhanced_smagorinski_factor_numpy,
-)
+from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.testing.fixtures.stencil_tests import grid
+from icon4py.model.testing.reference_funcs import enhanced_smagorinski_factor_numpy
 
 
 def test_init_enh_smag_fac(backend, grid):

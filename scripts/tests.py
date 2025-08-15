@@ -121,7 +121,7 @@ def check_layout(
 
 
 # -- fixture-requests --
-FixtureRequest: TypeAlias = tuple[pathlib.Path, str]
+FixtureRequestLocation: TypeAlias = tuple[pathlib.Path, str]
 
 
 class RequestedFixtures(NamedTuple):
@@ -241,7 +241,7 @@ def _find_closest_fixture_import_path(
     up_levels = 100
     fixture_import = None
 
-    for _, def_path in enumerate(fixture_definitions):
+    for def_path in fixture_definitions:
         if (
             "tests" in def_path.parts
             and def_path.parts[def_path.parts.index("tests") + 1] == test_file_component
@@ -264,9 +264,9 @@ def _find_closest_fixture_import_path(
 def _fix_fixture_requests(
     fixture_requests: RequestedFixturesPerFile,
     test_path: pathlib.Path,
-) -> tuple[list[FixtureRequest], list[FixtureRequest]]:
-    """Fix unknown fixture requests by creating __init__.py files."""
-    rich.print("[yellow]Adding missing fixtures...[/yellow]")
+) -> tuple[list[FixtureRequestLocation], list[FixtureRequestLocation]]:
+    """Fix unknown fixture requests by adding explicit imports."""
+    rich.print("[yellow]Adding missing fixture imports...[/yellow]")
 
     fixed = []
     errors = []
@@ -331,7 +331,7 @@ def fixture_requests(
     fixture_requests: RequestedFixturesPerFile = _collect_fixture_requests(test_path, with_args)
 
     report = []
-    errors: list[FixtureRequest] = []
+    errors: list[FixtureRequestLocation] = []
     fixes = None
     for path, (all_, unknown) in fixture_requests.items():
         all_list = sorted(all_)

@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.dycore import dycore_utils
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import test_utils
 
 from ..fixtures import backend
 
@@ -66,7 +66,7 @@ def test_calculate_fourth_order_divdamp_scaling_coeff_order_24(
         second_order_divdamp_factor,
         mean_cell_area,
     )
-    assert helpers.dallclose(ref, out.asnumpy())
+    assert test_utils.dallclose(ref, out.asnumpy())
 
 
 def test_calculate_fourth_order_divdamp_scaling_coeff_any_order(
@@ -90,7 +90,7 @@ def test_calculate_fourth_order_divdamp_scaling_coeff_any_order(
         offset_provider={},
     )
     enhanced_factor = -interpolated_fourth_order_divdamp_factor.asnumpy() * mean_cell_area**2
-    assert helpers.dallclose(enhanced_factor, out.asnumpy())
+    assert test_utils.dallclose(enhanced_factor, out.asnumpy())
 
 
 def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
@@ -103,7 +103,7 @@ def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
     dycore_utils._calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary.with_backend(
         backend
     )(fourth_order_divdamp_scaling_coeff, coeff, constants.DBL_EPS, out=out, offset_provider={})
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         out.asnumpy(),
         calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
             coeff, fourth_order_divdamp_scaling_coeff.asnumpy()
@@ -146,8 +146,8 @@ def test_calculate_divdamp_fields(backend: gtx_backend.Backend) -> None:
         ),
         offset_provider={},
     )
-    helpers.dallclose(fourth_order_divdamp_scaling_coeff.asnumpy(), scaled_ref)
-    helpers.dallclose(
+    test_utils.dallclose(fourth_order_divdamp_scaling_coeff.asnumpy(), scaled_ref)
+    test_utils.dallclose(
         reduced_fourth_order_divdamp_coeff_at_nest_boundary.asnumpy(),
         reduced_fourth_order_divdamp_coeff_at_nest_boundary_ref,
     )

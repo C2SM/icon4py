@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests
 
 from .test_compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt_numpy,
@@ -90,7 +90,7 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     )
 
 
-class TestComputeHorizontalVelocityQuantitiesAndFluxes(test_helpers.StencilTest):
+class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest):
     PROGRAM = compute_horizontal_velocity_quantities_and_fluxes
     OUTPUTS = (
         "spatially_averaged_vn",

@@ -15,8 +15,11 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 from ..utils import diff_multfac_vn_numpy, smag_limit_numpy
 
+from icon4py.model.testing.fixtures import backend
 
-# TODO(): apply StencilTest structure to this test
+
+# TODO(havogt): apply StencilTest structure, however this needs to be executed with CartesianGrid,
+# i.e. must not receive connectivities.
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):

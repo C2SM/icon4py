@@ -22,7 +22,7 @@ from icon4py.model.common.utils.data_allocation import (
     random_mask,
     zero_field,
 )
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(

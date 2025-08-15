@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_vertical_tracer_flux_upwind import (
     compute_vertical_tracer_flux_upwind,
 )
@@ -23,9 +23,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 outslice = (slice(None), slice(1, None))
 
 
-class TestComputeVerticalTracerFluxUpwind(helpers.StencilTest):
+class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
     PROGRAM = compute_vertical_tracer_flux_upwind
-    OUTPUTS = (helpers.Output("p_upflux", refslice=outslice, gtslice=outslice),)
+    OUTPUTS = (stencil_tests.Output("p_upflux", refslice=outslice, gtslice=outslice),)
 
     @staticmethod
     def reference(
