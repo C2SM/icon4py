@@ -5,10 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
 import dataclasses
 import hashlib
+import functools
 import typing
 from typing import Any, Callable, ClassVar, Optional, Sequence
 
@@ -19,37 +21,9 @@ from gt4py import eve
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import backend as gtx_backend, constructors
 from gt4py.next.ffront.decorator import FieldOperator, Program
-from typing_extensions import Buffer
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
-
-
-def is_python(backend: gtx_backend.Backend | None) -> bool:
-    # want to exclude python backends:
-    #   - cannot run on embedded: because of slicing
-    #   - roundtrip is very slow on large grid
-    return is_embedded(backend) or is_roundtrip(backend)
-
-
-def is_dace(backend: gtx_backend.Backend | None) -> bool:
-    return backend.name.startswith("run_dace_") if backend else False
-
-
-def is_embedded(backend: gtx_backend.Backend | None) -> bool:
-    return backend is None
-
-
-def is_gtfn_backend(backend: gtx_backend.Backend | None) -> bool:
-    return "gtfn" in backend.name if backend else False
-
-
-def is_roundtrip(backend: gtx_backend.Backend | None) -> bool:
-    return backend.name == "roundtrip" if backend else False
-
-
-def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
-    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
 
 
 def allocate_data(
@@ -66,36 +40,6 @@ def allocate_data(
         for k, v in input_data.items()
     }
     return input_data
-
-
-def apply_markers(
-    markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
-    grid: base.Grid,
-    backend: gtx_backend.Backend | None,
-) -> None:
-    for marker in markers:
-        match marker.name:
-            case "cpu_only" if device_utils.is_cupy_device(backend):
-                pytest.xfail("currently only runs on CPU")
-            case "embedded_only" if not is_embedded(backend):
-                pytest.skip("stencil runs only on embedded backend")
-            case "embedded_remap_error" if is_embedded(backend):
-                # https://github.com/GridTools/gt4py/issues/1583
-                pytest.xfail("Embedded backend currently fails in remap function.")
-            case "embedded_static_args" if is_embedded(backend):
-                pytest.xfail(" gt4py _compiled_programs returns error when backend is None.")
-            case "uses_as_offset" if is_embedded(backend):
-                pytest.xfail("Embedded backend does not support as_offset.")
-            case "uses_concat_where" if is_embedded(backend):
-                pytest.xfail("Embedded backend does not support concat_where.")
-            case "gtfn_too_slow" if is_gtfn_backend(backend):
-                pytest.skip("GTFN compilation is too slow for this test.")
-            case "skip_value_error":
-                if grid.limited_area or grid.geometry_type == base.GeometryType.ICOSAHEDRON:
-                    # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
-                    pytest.skip(
-                        "Stencil does not support domain containing skip values. Consider shrinking domain."
-                    )
 
 
 @dataclasses.dataclass(frozen=True)

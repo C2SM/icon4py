@@ -44,7 +44,9 @@ def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
     spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
     assert isinstance(spec, str), "Backend spec must be a string"
     if spec.count(":") > 1:
-        raise ValueError("Invalid backend spec in '--backend' option (spec: <backend_name> or <path.to.module>:<symbol>)")
+        raise ValueError(
+            "Invalid backend spec in '--backend' option (spec: <backend_name> or <path.to.module>:<symbol>)"
+        )
 
     if ":" in spec:
         backend = pkgutil.resolve_name(spec)
@@ -54,7 +56,7 @@ def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
         raise ValueError(
             f"Invalid backend name in '--backend' option. It should be one of {[*model_backends.BACKENDS.keys()]}"
         )
-    
+
     return backend
 
 

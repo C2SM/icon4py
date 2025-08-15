@@ -11,8 +11,7 @@ import re
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.testing.stencil_tests import apply_markers
+from icon4py.model.testing import filters
 
 
 __all__ = [
@@ -126,18 +125,15 @@ def pytest_collection_modifyitems(config, items):
                 )
 
 
-def pytest_runtest_setup(item):
-    selected_backend = model_backends.BACKENDS[item.config.getoption("--backend")]
-    if "grid" in item.funcargs:
-        grid = item.funcargs["grid"]
-    else:
-        # use the default grid
-        grid = simple_grid.simple_grid(backend=selected_backend)
-    apply_markers(
-        item.own_markers,
-        grid,
-        selected_backend,
-    )
+@pytest.hookimpl(trylast=True)
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    """Apply test item filters as the final test setup step."""
+
+    item_marker_filters = filters.item_marker_filters
+    for marker_name in set(m.name for m in item.own_markers) - item_marker_filters.keys():
+        item_filter = item_marker_filters[marker_name]
+        if item_filter.condition(item):
+            item_filter.action(item)
 
 
 # pytest benchmark hook, see:
