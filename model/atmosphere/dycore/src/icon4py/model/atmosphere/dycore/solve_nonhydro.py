@@ -823,19 +823,19 @@ class SolveNonhydro:
             prognostic_states.next.exner,
             prognostic_states.next.theta_v,
         )
-        plots.pickle_data(
-            state={
-                "vn": prognostic_states.next.vn.asnumpy(),
-                "w": prognostic_states.next.w.asnumpy(),
-                "rho": prognostic_states.next.rho.asnumpy(),
-                "exner": prognostic_states.next.exner.asnumpy(),
-                "theta_v": prognostic_states.next.theta_v.asnumpy(),
-                "sponge_full_cell": self._channel.full_cell_mask.asnumpy(),
-                "sponge_half_cell": self._channel.half_cell_mask.asnumpy(),
-                "sponge_full_edge": self._channel.full_edge_mask.asnumpy(),
-            },
-            label=f"channel",
-        )
+        #plots.pickle_data(
+        #    state={
+        #        "vn": prognostic_states.next.vn.asnumpy(),
+        #        "w": prognostic_states.next.w.asnumpy(),
+        #        "rho": prognostic_states.next.rho.asnumpy(),
+        #        "exner": prognostic_states.next.exner.asnumpy(),
+        #        "theta_v": prognostic_states.next.theta_v.asnumpy(),
+        #        "sponge_full_cell": self._channel.full_cell_mask.asnumpy(),
+        #        "sponge_half_cell": self._channel.half_cell_mask.asnumpy(),
+        #        "sponge_full_edge": self._channel.full_edge_mask.asnumpy(),
+        #    },
+        #    label=f"channel",
+        #)
         #<--- Channel
         #---> IBM
         if self._ibm.DEBUG_LEVEL >= 3:
