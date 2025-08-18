@@ -318,7 +318,7 @@ def _read_vct_a_and_vct_b_from_file(
     vct_a = np.zeros(num_levels_plus_one, dtype=float)
     vct_b = np.zeros(num_levels_plus_one, dtype=float)
     try:
-        with open(file_path) as vertical_grid_file:
+        with file_path.open() as vertical_grid_file:
             # skip the first line that contains titles
             vertical_grid_file.readline()
             for k in range(num_levels_plus_one):
