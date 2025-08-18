@@ -9,6 +9,7 @@
 # ruff: noqa: PGH003 [blanket-type-ignore] # just for the `type: ignore` in next line
 # type: ignore
 
+import contextlib
 import functools
 import logging
 from collections.abc import Callable, Iterable
@@ -59,23 +60,18 @@ _BACKEND_MAP = {
     BackendIntEnum._GTFN_CPU: run_gtfn_cached,
     BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
 }
-try:
+with contextlib.suppress(ImportError):  # dace backends might not be available
     _BACKEND_MAP |= {
         BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(gpu=False),
         BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(gpu=True),
     }
-except NotImplementedError:
-    pass  # dace backends not available
 
 
 def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
     default_cpu = BackendIntEnum._GTFN_CPU
     default_gpu = BackendIntEnum._GTFN_GPU
     if selector == BackendIntEnum.DEFAULT:
-        if on_gpu:
-            selector = BackendIntEnum.DEFAULT_GPU
-        else:
-            selector = BackendIntEnum.DEFAULT_CPU
+        selector = BackendIntEnum.DEFAULT_GPU if on_gpu else BackendIntEnum.DEFAULT_CPU
     if selector == BackendIntEnum.DEFAULT_CPU:
         selector = default_cpu
     elif selector == BackendIntEnum.DEFAULT_GPU:

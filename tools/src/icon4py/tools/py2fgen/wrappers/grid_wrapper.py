@@ -113,7 +113,7 @@ def grid_init(
     limited_area: bool,
     backend: gtx.int32,
 ) -> None:
-    on_gpu = not c2e.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = c2e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )

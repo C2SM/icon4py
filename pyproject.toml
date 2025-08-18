@@ -204,32 +204,32 @@ preview = true  # use only with explicit-preview-rules=true
 select = [
   'A',  # flake8-builtins
   'B',  # flake8-bugbear
-  # 'C4', # flake8-comprehensions
+  # 'C4', #  flake8-comprehensions
   'CPY',  # flake8-copyright
-  # 'D', # pydocstyle
+  # 'D', #  pydocstyle
   'DOC',  # pydoclint
   'E',  # pycodestyle
   'ERA',  # eradicate
   'F',  # Pyflakes
   'F822',  # [undefined-export] (preview)  # TODO(egparedes): remove when not longer in preview
   'FA100',  # future-rewritable-type-annotation
-  # 'FBT', # flake8-boolean-trap
+  # 'FBT',  # flake8-boolean-trap
   'FLY',  # flynt
   'I',  # isort
-  # 'ICN', # flake8-import-conventions
+  # 'ICN',  # flake8-import-conventions
   'ISC',  # flake8-implicit-str-concat
-  # 'N', # pep8-naming
+  # 'N',  # pep8-naming
   'NPY',  # NumPy-specific rules
   'PERF',  # Perflint
   'PGH',  # pygrep-hooks
   'PLC',  # Pylint-Convention
   'PLE',  # Pylint-Error
-  # 'PLR', # Pylint-Refactor
+  # 'PLR',  # Pylint-Refactor
   'PLW',  # Pylint-Warning
   'PTH',  # flake8-use-pathlib
   'Q',  # flake8-quotes
   'RUF',  # Ruff-specific rules
-  # 'SIM', # flake8-simplify
+  'SIM',  # flake8-simplify
   'T10',  # flake8-debugger
   'TD',  # flake8-todos
   'UP',  # pyupgrade

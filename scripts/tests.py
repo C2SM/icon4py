@@ -13,6 +13,7 @@
 # work fine for the current needs, and it is already quite useful.
 
 import ast
+import contextlib
 import enum
 import functools
 import os
@@ -80,12 +81,10 @@ def check_layout(
 
                     is_ns_init_ok = False
                     if "__init__.py" in file_names:
-                        try:
+                        with contextlib.suppress(SyntaxError):
                             is_ns_init_ok = ast_dump(
                                 ast.parse((dir_path / "__init__.py").read_text())
                             ) == ast_dump(_NS_INIT_PY_AST)
-                        except SyntaxError:
-                            pass
 
                     if not is_ns_init_ok:
                         violations += 1
@@ -183,22 +182,23 @@ def _collect_fixtures_in_file(test_file_path: pathlib.Path) -> list[str]:
     fixtures = []
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
-            for decorator in node.decorator_list:
+            fixtures.extend(
+                node.name
+                for decorator_node in node.decorator_list
                 if (
-                    isinstance(decorator, ast.Call)
-                    and isinstance(decorator.func, ast.Attribute)
-                    and decorator.func.attr == "fixture"
-                    and isinstance(decorator.func.value, ast.Name)
-                    and decorator.func.value.id == "pytest"
-                ):
-                    fixtures.append(node.name)
-                elif (
-                    isinstance(decorator, ast.Attribute)
-                    and decorator.attr == "fixture"
-                    and isinstance(decorator.value, ast.Name)
-                    and decorator.value.id == "pytest"
-                ):
-                    fixtures.append(node.name)
+                    isinstance(decorator_node, ast.Call)
+                    and isinstance(decorator_node.func, ast.Attribute)
+                    and decorator_node.func.attr == "fixture"
+                    and isinstance(decorator_node.func.value, ast.Name)
+                    and decorator_node.func.value.id == "pytest"
+                )
+                or (
+                    isinstance(decorator_node, ast.Attribute)
+                    and decorator_node.attr == "fixture"
+                    and isinstance(decorator_node.value, ast.Name)
+                    and decorator_node.value.id == "pytest"
+                )
+            )
     return fixtures
 
 

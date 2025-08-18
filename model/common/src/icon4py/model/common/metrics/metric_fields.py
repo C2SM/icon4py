@@ -65,7 +65,7 @@ def _compute_ddqz_z_half(
 ) -> fa.CellKField[wpfloat]:
     ddqz_z_half = concat_where((dims.KDim > 0) & (dims.KDim < nlev), 0.0, 2.0 * (z_ifc - z_mc))
     ddqz_z_half = concat_where(
-        (0 < dims.KDim) & (dims.KDim < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half
+        (dims.KDim > 0) & (dims.KDim < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half
     )
     ddqz_z_half = concat_where(dims.KDim == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
@@ -996,7 +996,7 @@ def _compute_param(
     nlev: gtx.int32,
 ) -> tuple[gtx.int32, bool]:
     param_0, param_1 = param
-    if param_0 >= lower:
+    if param_0 >= lower:  # noqa: SIM102 [collapsible-if]  # TODO(havogt): check if this can be simplified
         if (param_0 == nlev) | (z_me_jk <= z_ifc_off) & (z_me_jk >= z_ifc_off_koff):
             param_1 = True
     return param_0 + 1, param_1

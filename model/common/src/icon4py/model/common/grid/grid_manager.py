@@ -273,7 +273,7 @@ class GridManager:
             dim: self._get_index_field(name, transpose=False, apply_offset=True)[_CHILD_DOM]
             for dim, name in start_index_names.items()
         }
-        for dim in grid_refinement_dimensions.keys():
+        for dim in grid_refinement_dimensions:
             assert start_indices[dim].shape == (
                 max_refinement_control_values[dim],
             ), f"start index array for {dim} has wrong shape"
@@ -287,7 +287,7 @@ class GridManager:
             dim: self._get_index_field(name, transpose=False, apply_offset=False)[_CHILD_DOM]
             for dim, name in end_index_names.items()
         }
-        for dim in grid_refinement_dimensions.keys():
+        for dim in grid_refinement_dimensions:
             assert start_indices[dim].shape == (
                 max_refinement_control_values[dim],
             ), f"start index array for {dim} has wrong shape"

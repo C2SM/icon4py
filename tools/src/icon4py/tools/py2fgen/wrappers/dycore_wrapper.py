@@ -150,7 +150,7 @@ def solve_nh_init(
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )

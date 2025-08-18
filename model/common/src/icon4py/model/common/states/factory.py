@@ -179,12 +179,12 @@ class FieldSource(GridProvider, Protocol):
                 raise ValueError(f"Invalid retrieval type {type_}")
 
     def _provided_by_source(self, name):
-        return name in self._sources._providers or name in self._sources.metadata.keys()
+        return name in self._sources._providers or name in self._sources.metadata
 
     def register_provider(self, provider: FieldProvider):
         # dependencies must be provider by this field source or registered in sources
         for dependency in provider.dependencies:
-            if not (dependency in self._providers.keys() or self._provided_by_source(dependency)):
+            if not (dependency in self._providers or self._provided_by_source(dependency)):
                 raise ValueError(
                     f"Missing dependency: '{dependency}' in registered of sources {self.__class__}"
                 )
@@ -304,7 +304,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             f"{data_alloc.backend_name(factory.backend)}"
         )
         xp = data_alloc.import_array_ns(factory.backend)
-        metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields.keys()}
+        metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields}
         self._fields = self._allocate_fields(compute_backend, grid_provider, xp, metadata)
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
@@ -388,7 +388,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
 
         return {
             k: _allocate(grid_provider, backend, xp, dtype=dtype_or_default(k, metadata))
-            for k in self._fields.keys()
+            for k in self._fields
         }
 
 
@@ -447,13 +447,13 @@ class ProgramFieldProvider(FieldProvider):
 
         allocate = gtx.constructors.zeros.partial(allocator=backend)
         field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
-        return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields.keys()}
+        return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
     def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
-        for dim in self._compute_domain.keys():
+        for dim in self._compute_domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 horizontal_offsets = {
                     k: v
@@ -608,7 +608,7 @@ class NumpyFieldsProvider(FieldProvider):
     def _validate_dependencies(self):
         func_signature = inspect.signature(self._func)
         parameters = func_signature.parameters
-        for dep_key in self._dependencies.keys():
+        for dep_key in self._dependencies:
             parameter_definition = parameters.get(dep_key)
             checked = _check_union(parameter_definition, union=data_alloc.NDArray)
             assert checked, (
