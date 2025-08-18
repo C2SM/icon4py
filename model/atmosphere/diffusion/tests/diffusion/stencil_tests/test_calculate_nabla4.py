@@ -5,14 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+from typing import TYPE_CHECKING, Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.testing.stencil_tests import StencilTest, StandardStaticVariants
+from icon4py.model.testing.stencil_tests import StencilTest, StandardStaticVariants, DataAlloc
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base
 
 
 def calculate_nabla4_numpy(
@@ -55,10 +60,10 @@ def calculate_nabla4_numpy(
     return z_nabla4_e2
 
 
+@pytest.mark.skip_value_error
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
-    MARKERS = (pytest.mark.skip_value_error,)
     STATIC_PARAMS = {
         StandardStaticVariants.NONE: None,
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
@@ -83,7 +88,7 @@ class TestCalculateNabla4(StencilTest):
         z_nabla2_e: np.ndarray,
         inv_vert_vert_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_nabla4_e2 = calculate_nabla4_numpy(
             connectivities,
@@ -98,22 +103,22 @@ class TestCalculateNabla4(StencilTest):
         return dict(z_nabla4_e2=z_nabla4_e2)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
-        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
-        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+    def input_data(self, grid: base.Grid, data_alloc: DataAlloc) -> dict:
+        u_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        v_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
 
         primal_normal_vert_v1 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+            dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
         primal_normal_vert_v2 = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+            dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
 
-        z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        inv_vert_vert_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
 
-        z_nabla4_e2 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_nabla4_e2 = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             u_vert=u_vert,
