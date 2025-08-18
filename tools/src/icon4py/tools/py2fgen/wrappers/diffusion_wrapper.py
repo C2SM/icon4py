@@ -60,12 +60,10 @@ granule: DiffusionGranule | None = None
 
 
 def profile_enable():
-    global granule
     granule.profiler.enable()
 
 
 def profile_disable():
-    global granule
     granule.profiler.disable()
     stats = pstats.Stats(granule.profiler)
     stats.dump_stats(f"{__name__}.profile")
@@ -205,7 +203,7 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    global granule
+    global granule  # noqa: PLW0603 [global-statement]
     granule = DiffusionGranule(
         diffusion=Diffusion(
             grid=grid_wrapper.grid_state.grid,
@@ -238,7 +236,6 @@ def diffusion_run(
     dtime: gtx.float64,
     linit: bool,
 ):
-    global granule
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
 

@@ -52,12 +52,10 @@ granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
 def profile_enable():
-    global granule
     granule.profiler.enable()
 
 
 def profile_disable():
-    global granule
     granule.profiler.disable()
     stats = pstats.Stats(granule.profiler)
     stats.dump_stats(f"{__name__}.profile")
@@ -261,7 +259,7 @@ def solve_nh_init(
         ),  # Fortran vs Python indexing
     )
 
-    global granule
+    global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
         solve_nh=solve_nonhydro.SolveNonhydro(
             grid=grid_wrapper.grid_state.grid,
@@ -337,7 +335,6 @@ def solve_nh_run(
     ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
 ):
-    global granule
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 

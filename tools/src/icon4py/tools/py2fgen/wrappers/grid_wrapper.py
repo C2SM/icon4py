@@ -200,7 +200,7 @@ def grid_init(
             num_vertices,
         )
 
-    global grid_state
+    global grid_state  # noqa: PLW0603 [global-statement]
     grid_state = GridState(
         grid=grid,
         edge_geometry=edge_params,

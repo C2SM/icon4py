@@ -21,8 +21,8 @@ precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
 
 def set_precision(new_precision: Literal["double", "mixed"]) -> None:
-    global precision
-    global vpfloat
+    global precision  # noqa: PLW0603 [global-statement]
+    global vpfloat  # noqa: PLW0603 [global-statement]
 
     precision = new_precision.lower()
     match precision:
