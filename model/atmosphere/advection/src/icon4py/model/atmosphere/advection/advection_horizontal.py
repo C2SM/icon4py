@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from abc import ABC, abstractmethod
 import logging
-from typing import Optional
+from abc import ABC, abstractmethod
 
-import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend as gtx_backend
 
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.advection import advection_states
-
 from icon4py.model.atmosphere.advection.stencils.apply_positive_definite_horizontal_multiplicative_flux_factor import (
     apply_positive_definite_horizontal_multiplicative_flux_factor,
 )
@@ -37,7 +35,6 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally i
 from icon4py.model.atmosphere.advection.stencils.reconstruct_linear_coefficients_svd import (
     reconstruct_linear_coefficients_svd,
 )
-
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -45,7 +42,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -53,7 +50,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 Advection components related to horizontal transport.
 """
 
-# flake8: noqa
+# ruff: noqa: PGH004 [blanket-noqa] # just for the `noqa` in next line
+# ruff: noqa
 log = logging.getLogger(__name__)
 
 
@@ -76,7 +74,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._grid = grid
@@ -189,7 +187,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self,
         grid: icon_grid.IconGrid,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         horizontal_limiter: HorizontalFluxLimiter = HorizontalFluxLimiter(),
     ):
         self._grid = grid
@@ -325,7 +323,7 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -437,7 +435,7 @@ class SemiLagrangian(FiniteVolume):
         metric_state: advection_states.AdvectionMetricState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         log.debug("horizontal advection class init - start")

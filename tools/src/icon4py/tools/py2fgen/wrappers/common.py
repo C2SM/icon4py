@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+# ruff: noqa: PGH003 [blanket-type-ignore] # just for the `type: ignore` in next line
 # type: ignore
 
 import functools

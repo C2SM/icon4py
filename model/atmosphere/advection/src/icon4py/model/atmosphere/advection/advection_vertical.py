@@ -6,23 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from abc import ABC, abstractmethod
 import logging
-from typing import Optional
+from abc import ABC, abstractmethod
 
-import icon4py.model.common.grid.states as grid_states
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.advection import advection_states
-
-from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
-    compute_ppm_quadratic_face_values,
-)
-from icon4py.model.atmosphere.advection.stencils.compute_ppm_quartic_face_values import (
-    compute_ppm_quartic_face_values,
-)
-from icon4py.model.atmosphere.advection.stencils.compute_ppm_slope import compute_ppm_slope
 from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_courant_number import (
     compute_ppm4gpu_courant_number,
 )
@@ -35,6 +25,13 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_integer_flux im
 from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_parabola_coefficients import (
     compute_ppm4gpu_parabola_coefficients,
 )
+from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
+    compute_ppm_quadratic_face_values,
+)
+from icon4py.model.atmosphere.advection.stencils.compute_ppm_quartic_face_values import (
+    compute_ppm_quartic_face_values,
+)
+from icon4py.model.atmosphere.advection.stencils.compute_ppm_slope import compute_ppm_slope
 from icon4py.model.atmosphere.advection.stencils.compute_vertical_parabola_limiter_condition import (
     compute_vertical_parabola_limiter_condition,
 )
@@ -60,16 +57,13 @@ from icon4py.model.atmosphere.advection.stencils.limit_vertical_parabola_semi_mo
 from icon4py.model.atmosphere.advection.stencils.limit_vertical_slope_semi_monotonically import (
     limit_vertical_slope_semi_monotonically,
 )
-
-
 from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
     type_alias as ta,
 )
-from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -77,7 +71,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 Advection components related to vertical transport.
 """
 
-# flake8: noqa
+# ruff: noqa: PGH004 [blanket-noqa] # just for the `noqa` in next line
+# ruff: noqa
 log = logging.getLogger(__name__)
 
 
@@ -106,7 +101,7 @@ class BoundaryConditions(ABC):
 class NoFluxCondition(BoundaryConditions):
     """Class that sets the upper and lower boundary fluxes to zero."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
@@ -184,7 +179,7 @@ class VerticalLimiter(ABC):
 class NoLimiter(VerticalLimiter):
     """Class that implements no vertical parabola limiter."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
@@ -252,7 +247,7 @@ class NoLimiter(VerticalLimiter):
 class SemiMonotonicLimiter(VerticalLimiter):
     """Class that implements a semi-monotonic vertical parabola limiter."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
@@ -384,7 +379,7 @@ class VerticalAdvection(ABC):
 class NoAdvection(VerticalAdvection):
     """Class that implements disabled vertical advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
         log.debug("vertical advection class init - start")
 
         # input arguments
@@ -516,7 +511,7 @@ class FirstOrderUpwind(FiniteVolume):
         boundary_conditions: BoundaryConditions,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
     ):
         log.debug("vertical advection class init - start")
 
@@ -657,7 +652,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         vertical_limiter: VerticalLimiter,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
     ):
         log.debug("vertical advection class init - start")
 
