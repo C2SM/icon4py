@@ -31,7 +31,7 @@ def compute_topography(cell_lat, u0, backend):
     fac1 = u0 * xp.cos((1.0 - eta_0) * (math.pi / 2))**1.5
     fac2 = (-2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0) + 1.0 / 6.3) * fac1
     fac3 = (
-       (1.6 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * (math.pi / 2))
+       (1.6 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.5 * (math.pi / 2))
         * phy_const.EARTH_RADIUS
         * phy_const.EARTH_ANGULAR_VELOCITY
     )

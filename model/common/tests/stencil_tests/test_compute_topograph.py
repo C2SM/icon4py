@@ -12,9 +12,9 @@ from icon4py.model.common.grid import (
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "gridfile, rank",
+    "grid_file",
     [
-        (dt_utils.R02B04_GLOBAL, 0),
+        (dt_utils.R02B04_GLOBAL),
     ],
 )
 def test_compute_topograph(

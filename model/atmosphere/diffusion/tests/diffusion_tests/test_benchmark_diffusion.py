@@ -168,6 +168,8 @@ def test_run_diffusion_benchmark(
     backend,
     # benchmark,
 ):
+
+    # TODO (Yilu): itopo can be set: 0 (topography speficied by analytical function), 1 (topography read from netcdf file)
     download_and_extract("https://polybox.ethz.ch/index.php/s/CWWtBHBC9iNpLEo/download", Path("./extpar_data/"),Path("./extpar_data/"), "extpar_r04b09.tar.gz")
 
     f = nc4.Dataset("/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_data/extpar_r04b09.nc", "r")
@@ -189,11 +191,11 @@ def test_run_diffusion_benchmark(
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=True,
+        zdiffu_t=False, # TODO (Yilu): zdiffu_t is the issue
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
+        max_nudging_coefficient=0.375,
         n_substeps=ndyn_substeps,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )

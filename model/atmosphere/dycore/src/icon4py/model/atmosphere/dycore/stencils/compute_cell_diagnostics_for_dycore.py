@@ -682,7 +682,7 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
         - reference_theta_at_cells_on_model_levels: reference virtual potential temperature at cells on model levels [K]
         - ddz_of_reference_exner_at_cells_on_half_levels: vertical gradient of reference exner function at cells on half levels [m-1]
         - ddqz_z_half: vertical spacing on half levels (distance between the height of cell centers at k at k-1)  [m]
-        - wgtfac_c: metrics field
+        - wgtfac_c: _
         - exner_w_explicit_weight_parameter: explicitness weight for exner and w in the vertically implicit dycore solver
         - dtime: time step
         - rhotheta_explicit_weight_parameter: explicitness weight of density and virtual potential temperature
