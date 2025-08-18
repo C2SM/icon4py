@@ -5,8 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import functools
 import uuid
+from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -33,7 +36,10 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+
+
+DEFAULT_NUM_LEVELS: Final = 10
 
 
 class SimpleGridData:
@@ -406,7 +412,9 @@ class SimpleGridData:
         )
 
 
-def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
+def simple_grid(
+    *, backend: gtx_backend.Backend | None = None, num_levels: int = DEFAULT_NUM_LEVELS
+) -> base.Grid:
     """
     Factory function to create a SimpleGrid instance.
 
@@ -420,14 +428,14 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
     horizontal_grid_size = base.HorizontalGridSize(
         num_vertices=_VERTICES, num_edges=_EDGES, num_cells=_CELLS
     )
-    vertical_grid_config = VerticalGridConfig(num_levels=10)
+    vertical_grid_config = VerticalGridConfig(num_levels=num_levels)
     config = base.GridConfig(
         horizontal_config=horizontal_grid_size,
         vertical_size=vertical_grid_config.num_levels,
         limited_area=False,
     )
 
-    on_gpu = False if backend is None else data_alloc.is_cupy_device(backend)
+    on_gpu = False if backend is None else device_utils.is_cupy_device(backend)
     simple_grid_data = SimpleGridData(on_gpu=on_gpu)
 
     neighbor_tables = {
@@ -486,7 +494,6 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
         config=config,
         connectivities=connectivities,
         geometry_type=base.GeometryType.TORUS,
-        allocator=backend,
         _start_indices=start_indices,
         _end_indices=end_indices,
     )

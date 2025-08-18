@@ -58,7 +58,7 @@ def _compute_wgtfac_c(
     return wgt_fac_c
 
 
-# TODO (@halungge) missing test?
+# TODO(halungge): missing test?
 @program(grid_type=GridType.UNSTRUCTURED, backend=run_gtfn)
 def compute_wgtfac_c(
     wgtfac_c: fa.CellKField[wpfloat],

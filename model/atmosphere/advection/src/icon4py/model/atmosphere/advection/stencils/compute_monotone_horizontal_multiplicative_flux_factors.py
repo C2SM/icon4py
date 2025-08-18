@@ -14,7 +14,7 @@ from icon4py.model.common.dimension import C2E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO (dastrm): this stencil has no test
+# TODO(dastrm): this stencil has no test
 
 
 @gtx.field_operator

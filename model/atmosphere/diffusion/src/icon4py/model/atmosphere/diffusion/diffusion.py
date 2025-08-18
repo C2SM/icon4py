@@ -28,6 +28,9 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     scale_k,
     setup_fields_for_initial_step,
 )
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
+    apply_diffusion_to_theta_and_exner,
+)
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
     apply_diffusion_to_vn,
 )
@@ -119,8 +122,8 @@ class DiffusionConfig:
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
 
-    # TODO(Magdalena): to be read from config
-    # TODO(Magdalena):  handle dependencies on other namelists (see below...)
+    # TODO(halungge): to be read from config
+    # TODO(halungge):  handle dependencies on other namelists (see below...)
 
     def __init__(
         self,
@@ -201,11 +204,6 @@ class DiffusionConfig:
 
         #: Number of dynamics substeps per fast-physics step
         #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
-
-        # TODO (magdalena) ndyn_substeps may dynamically increase during a model run in order to
-        #       reduce instabilities. Need to figure out whether the parameter is the configured
-        #       (constant!) one or the dynamical one. In the latter case it should be removed from
-        #       DiffusionConfig and init()
         self.ndyn_substeps: int = n_substeps
 
         # namelist mo_gridref_nml.f90
@@ -474,47 +472,28 @@ class Diffusion:
                 offset_provider=self._grid.connectivities,
             )
         )
-        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(
+        self.apply_diffusion_to_theta_and_exner = apply_diffusion_to_theta_and_exner.with_backend(
             self._backend
         ).compile(
-            # enable_jit=False,
+            enable_jit=False,
+            apply_zdiffusion_t=[self.config.apply_zdiffusion_t],
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,
-        )
-        self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
-            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(self._backend)
-        ).compile(
-            # enable_jit=False,
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.connectivities,
-        )
-        self.update_theta_and_exner = update_theta_and_exner.with_backend(self._backend).compile(
-            # enable_jit=False,
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider={},
         )
         self.copy_field = copy_field.with_backend(self._backend).compile(
-            #enable_jit=False,
-            offset_provider={},
+            enable_jit=False, offset_provider={}
         )
         self.scale_k = scale_k.with_backend(self._backend).compile(
-            #enable_jit=False,
-            offset_provider={}
+            enable_jit=False, offset_provider={}
         )
         self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(
             self._backend
-        ).compile(
-            #enable_jit=False,
-            offset_provider={})
+        ).compile(enable_jit=False, offset_provider={})
 
         self.init_diffusion_local_fields_for_regular_timestep = (
             init_diffusion_local_fields_for_regular_timestep.with_backend(self._backend)
-        ).compile(
-            #enable_jit=False,
-            offset_provider={"Koff": dims.KDim})
+        ).compile(enable_jit=False, offset_provider={"Koff": dims.KDim})
 
         self._allocate_temporary_fields()
 
@@ -549,7 +528,6 @@ class Diffusion:
             heights_1=self._vertical_grid.interface_physical_height.ndarray[1].item(),
             vertical_start=gtx.int32(1),
             vertical_end=gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1),
-            offset_provider={},
         )
 
         self._determine_horizontal_domains()
@@ -578,11 +556,8 @@ class Diffusion:
         self.z_nabla2_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.z_temp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
-        # TODO(Magdalena): this is KHalfDim
+        # TODO(halungge): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
@@ -594,6 +569,9 @@ class Diffusion:
         )
         self.w_tmp = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+        )
+        self.theta_v_tmp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
     def _determine_horizontal_domains(self):
@@ -721,7 +699,7 @@ class Diffusion:
             smag_offset:
 
         """
-        self.scale_k(self.enh_smag_fac, float(dtime), self.diff_multfac_smag, offset_provider={})
+        self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
@@ -801,7 +779,7 @@ class Diffusion:
             )
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
-        # TODO (magdalena) move this up and do asynchronous exchange
+        # TODO(halungge): move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True)
@@ -864,8 +842,8 @@ class Diffusion:
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
-        # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+        # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
+        self.copy_field(prognostic_state.w, self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self._cell_params.area,
@@ -916,65 +894,41 @@ class Diffusion:
             log.debug(
                 "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
+            log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
+            self.copy_field(
+                prognostic_state.theta_v, self.theta_v_tmp
+            )  # TODO(): write in a way that we can avoid the copy
 
-            log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-            self.calculate_nabla2_for_theta(
+            self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
-                theta_v=prognostic_state.theta_v,
+                theta_v_in=self.theta_v_tmp,
                 geofac_div=self._interpolation_state.geofac_div,
-                z_temp=self.z_temp,
+                mask=self._metric_state.mask_hdiff,
+                zd_vertoffset=self._metric_state.zd_vertoffset,
+                zd_diffcoef=self._metric_state.zd_diffcoef,
+                geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
+                geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
+                vcoef=self._metric_state.zd_intcoef,
+                area=self._cell_params.area,
+                theta_v=prognostic_state.theta_v,
+                exner=prognostic_state.exner,
+                rd_o_cvd=self.rd_o_cvd,
+                apply_zdiffusion_t=self.config.apply_zdiffusion_t,
                 horizontal_start=self._cell_start_nudging,
                 horizontal_end=self._cell_end_local,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.connectivities,
             )
-            log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
-            log.debug(
-                "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
-            )
-            if self.config.apply_zdiffusion_t:
-                self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-                    mask=self._metric_state.mask_hdiff,
-                    zd_vertoffset=self._metric_state.zd_vertoffset,
-                    zd_diffcoef=self._metric_state.zd_diffcoef,
-                    geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
-                    geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
-                    vcoef=self._metric_state.zd_intcoef,
-                    theta_v=prognostic_state.theta_v,
-                    z_temp=self.z_temp,
-                    horizontal_start=self._cell_start_nudging,
-                    horizontal_end=self._cell_end_local,
-                    vertical_start=0,
-                    vertical_end=self._grid.num_levels,
-                    offset_provider=self._grid.connectivities,
-                )
-
-                log.debug(
-                    "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
-                )
-            log.debug("running stencil 16 (update_theta_and_exner): start")
-            self.update_theta_and_exner(
-                z_temp=self.z_temp,
-                area=self._cell_params.area,
-                theta_v=prognostic_state.theta_v,
-                exner=prognostic_state.exner,
-                rd_o_cvd=self.rd_o_cvd,
-                horizontal_start=self._cell_start_nudging,
-                horizontal_end=self._cell_end_local,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider={},
-            )
-            log.debug("running stencil 16 (update_theta_and_exner): end")
+            log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 
         self.halo_exchange_wait(
             handle_edge_comm
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 
-    # TODO (kotsaloscv): It is unsafe to set it as cached property -demands more testing-
+    # TODO(kotsaloscv): It is unsafe to set it as cached property -demands more testing-
     def orchestration_uid(self) -> str:
         """Unique id based on the runtime state of the Diffusion object. It is used for caching in DaCe Orchestration."""
         members_to_disregard = [

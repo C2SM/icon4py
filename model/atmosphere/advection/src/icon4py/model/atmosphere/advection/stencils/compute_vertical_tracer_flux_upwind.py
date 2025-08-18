@@ -16,7 +16,7 @@ from icon4py.model.common.dimension import Koff
 @gtx.field_operator
 def _compute_vertical_tracer_flux_upwind(
     p_cc: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+    p_mflx_contra_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
 ) -> fa.CellKField[ta.wpfloat]:
     p_upflux = where(p_mflx_contra_v >= 0.0, p_cc, p_cc(Koff[-1])) * p_mflx_contra_v
     return p_upflux
@@ -25,8 +25,8 @@ def _compute_vertical_tracer_flux_upwind(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_vertical_tracer_flux_upwind(
     p_cc: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
-    p_upflux: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+    p_mflx_contra_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+    p_upflux: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

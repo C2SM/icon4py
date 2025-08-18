@@ -11,18 +11,18 @@ jobs:
   deploy-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: install uv
         uses: astral-sh/setup-uv@v6
         with:
-              version: "0.6.16"
-              enable-cache: true
-              cache-dependency-glob: "uv.lock"
-              python-version: "3.10"
+          version: "0.6.16"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          python-version: "3.10"
       - name: Build documentation
         run: |
-            cd model/atmosphere/dycore/docs/
-            uv run --project ../../../../ make html
+          cd model/atmosphere/dycore/docs/
+          uv run --project ../../../../ make html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:

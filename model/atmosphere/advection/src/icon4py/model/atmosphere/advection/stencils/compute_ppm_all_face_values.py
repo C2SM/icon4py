@@ -16,8 +16,8 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import Koff
 
 
-# TODO (dastrm): this stencil is imported but never called
-# TODO (dastrm): slev/elev and vertical_start/end are redundant
+# TODO(dastrm): this stencil is imported but never called
+# TODO(dastrm): slev/elev and vertical_start/end are redundant
 
 
 @gtx.field_operator

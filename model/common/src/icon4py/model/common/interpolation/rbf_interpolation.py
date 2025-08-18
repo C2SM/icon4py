@@ -14,10 +14,7 @@ import gt4py.next as gtx
 import numpy as np
 import scipy.linalg as sla
 
-from icon4py.model.common import (
-    dimension as dims,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -373,7 +370,7 @@ def compute_rbf_interpolation_coeffs_cell(
     edge_normal_y: data_alloc.NDArray,
     edge_normal_z: data_alloc.NDArray,
     rbf_offset: data_alloc.NDArray,
-    # TODO: Can't pass enum as "params" in NumpyFieldsProvider?
+    # TODO(): Can't pass enum as "params" in NumpyFieldsProvider?
     rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,

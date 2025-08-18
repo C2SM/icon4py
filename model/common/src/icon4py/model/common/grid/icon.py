@@ -10,10 +10,10 @@ import functools
 import logging
 import math
 import uuid
-from typing import Callable, Final, Optional
+from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import allocators as gtx_allocators, common as gtx_common
+from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
@@ -37,10 +37,10 @@ CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
-    root: Optional[int] = None
-    level: Optional[int] = None
-    _num_cells: Optional[int] = None
-    _mean_cell_area: Optional[float] = None
+    root: int | None = None
+    level: int | None = None
+    _num_cells: int | None = None
+    _mean_cell_area: float | None = None
     geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
     radius: float = constants.EARTH_RADIUS
 
@@ -48,9 +48,9 @@ class GlobalGridParams:
     def from_mean_cell_area(
         cls,
         mean_cell_area: float,
-        root: Optional[int] = None,
-        level: Optional[int] = None,
-        num_cells: Optional[int] = None,
+        root: int | None = None,
+        level: int | None = None,
+        num_cells: int | None = None,
         geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
         radius: float = constants.EARTH_RADIUS,
     ):
@@ -167,11 +167,6 @@ def icon_grid(
     end_indices: dict[gtx.Dimension, data_alloc.NDArray],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
-    sparse_1d_connectivity_constructor: Callable[
-        [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
-        gtx_common.NeighborTable,
-    ]
-    | None = None,
 ) -> IconGrid:
     connectivities = {
         offset.value: base.construct_connectivity(
@@ -187,7 +182,6 @@ def icon_grid(
     }
     return IconGrid(
         id=id_,
-        allocator=allocator,
         config=config,
         connectivities=connectivities,
         geometry_type=global_properties.geometry_type,
@@ -195,5 +189,4 @@ def icon_grid(
         _end_indices=end_indices,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
-        sparse_1d_connectivity_constructor=sparse_1d_connectivity_constructor,
     )

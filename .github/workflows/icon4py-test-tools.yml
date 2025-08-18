@@ -1,36 +1,36 @@
 name: ICON4Py Unit Tests
 on:
-    workflow_dispatch:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
-        types: [opened, reopened, synchronize]
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
 jobs:
-    test-tools:
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                python-version: ["3.10", "3.11"]
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            - name: Install system dependencies
-              run: |
-                sudo apt-get update
-                sudo apt-get install libboost-all-dev
-            - name: install uv
-              uses: astral-sh/setup-uv@v6
-              with:
-                  version: "0.6.16"
-                  enable-cache: true
-                  cache-dependency-glob: "uv.lock"
-                  python-version: ${{ matrix.python-version }}
-            - name: run nox session - tools
-              env:
-                NUM_PROCESSES: auto
-              shell: bash
-              run: |
-                uv run nox -s "test_tools-${{matrix.python-version}}(unittest)" --
+  test-tools:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libboost-all-dev
+      - name: install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.6.16"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          python-version: ${{ matrix.python-version }}
+      - name: run nox session - tools
+        env:
+          NUM_PROCESSES: auto
+        shell: bash
+        run: |
+          uv run nox -s "test_tools-${{matrix.python-version}}(unittest)" --

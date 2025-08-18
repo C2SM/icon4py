@@ -28,8 +28,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _apply_diffusion_to_vn(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
+    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -53,7 +53,7 @@ def _apply_diffusion_to_vn(
         inv_primal_edge_length,
     )
 
-    # TODO: Use if-else statement instead
+    # TODO(): Use if-else statement instead
     vn = (
         concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
@@ -91,8 +91,8 @@ def _apply_diffusion_to_vn(
 def apply_diffusion_to_vn(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
+    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],

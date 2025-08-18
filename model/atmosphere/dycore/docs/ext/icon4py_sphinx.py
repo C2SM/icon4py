@@ -295,9 +295,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             else:
                                 # short name version
                                 vname = element
-                            split_line[
-                                i
-                            ] = f"{vname}: {self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                            split_line[i] = (
+                                f"{vname}: {self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                            )
                         elif element == ":":
                             if section == "Outputs":
                                 # Drop the colon from the bullet point line
@@ -495,7 +495,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 method_obj = getattr(class_obj, local_shortname)
             else:
                 # Handle the case where the method is imported and renamed in the class
-                for _, attr in vars(class_obj).items():
+                for attr in vars(class_obj).values():
                     if (
                         callable(attr)
                         and hasattr(attr, "__name__")
@@ -670,9 +670,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         map_shortname_to_type = {}
         for arg_name, var_type in method_info["annotations"].items():
             if arg_name in method_info["map_argname_to_shortname"].keys():
-                map_shortname_to_type[
-                    method_info["map_argname_to_shortname"][arg_name]
-                ] = self.format_type_string(var_type)
+                map_shortname_to_type[method_info["map_argname_to_shortname"][arg_name]] = (
+                    self.format_type_string(var_type)
+                )
         return map_shortname_to_type
 
     def format_type_string(self, var_type: typing.Type) -> str:

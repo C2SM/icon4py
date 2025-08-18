@@ -29,32 +29,36 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _apply_diffusion_to_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
-    theta_v_in: fa.CellKField[wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     mask: fa.CellKField[bool],
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
-    geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CECDim], wpfloat],
-    vcoef: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], wpfloat],
+    geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
     area: fa.CellField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
+    apply_zdiffusion_t: bool,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v_in)
+    z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
-    # TODO (@halungge) this is only done conditionally on _apply_extra_diffusion
-    z_temp = _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-        mask,
-        zd_vertoffset,
-        zd_diffcoef,
-        geofac_n2s_c,
-        geofac_n2s_nbh,
-        vcoef,
-        theta_v_in,
-        z_temp,
+    z_temp = (
+        _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
+            mask,
+            zd_vertoffset,
+            zd_diffcoef,
+            geofac_n2s_c,
+            geofac_n2s_nbh,
+            vcoef,
+            theta_v,
+            z_temp,
+        )
+        if apply_zdiffusion_t
+        else z_temp
     )
-    theta_v, exner = _update_theta_and_exner(z_temp, area, theta_v_in, exner, rd_o_cvd)
+    theta_v, exner = _update_theta_and_exner(z_temp, area, theta_v, exner, rd_o_cvd)
     return theta_v, exner
 
 
@@ -63,17 +67,18 @@ def apply_diffusion_to_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v_in: fa.CellKField[wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     mask: fa.CellKField[bool],
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
-    geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CECDim], wpfloat],
-    vcoef: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], wpfloat],
+    geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
     area: fa.CellField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
+    apply_zdiffusion_t: bool,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -93,6 +98,7 @@ def apply_diffusion_to_theta_and_exner(
         area,
         exner,
         rd_o_cvd,
+        apply_zdiffusion_t,
         out=(theta_v, exner),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

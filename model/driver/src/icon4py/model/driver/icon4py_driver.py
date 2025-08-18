@@ -10,18 +10,16 @@ import datetime
 import logging
 import pathlib
 import uuid
-from typing import Callable, NamedTuple
+from collections.abc import Callable
+from typing import NamedTuple
 
 import click
 import numpy as np
 from devtools import Timer
-from gt4py.next import backend as gtx_backend
+from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import (
-    diffusion,
-    diffusion_states,
-)
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -29,6 +27,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.utils import device_utils
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
@@ -107,7 +106,7 @@ class TimeLoop:
         return self._substep_timestep
 
     def _full_name(self, func: Callable):
-        return ":".join((self.__class__.__name__, func.__name__))
+        return f"{self.__class__.__name__}:{func.__name__}"
 
     def time_integration(
         self,
@@ -117,6 +116,7 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
+        profiling: driver_config.ProfilingConfig | None = None,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -125,11 +125,11 @@ class TimeLoop:
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
-        # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
+        # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
-        # TODO (Chia Rui): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+        # TODO(OngChia): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-        # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
+        # TODO(OngChia): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
         if (
             self.diffusion.config.apply_to_horizontal_wind
@@ -145,20 +145,27 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        timer = Timer(self._full_name(self._integrate_one_time_step))
+        timer_first_timestep = Timer("TimeLoop: first time step", dp=6)
+        timer_after_first_timestep = Timer("TimeLoop: after first time step", dp=6)
         for time_step in range(self._n_time_steps):
+            timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
+            if profiling is not None:
+                if not profiling.skip_first_timestep or time_step > 0:
+                    gtx_config.COLLECT_METRICS_LEVEL = profiling.gt4py_metrics_level
+
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.debug(
-                f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
-            )
-            log.debug(
-                f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
-            )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
+            if log.isEnabledFor(logging.DEBUG):
+                log.debug(
+                    f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
+                )
+                log.debug(
+                    f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
+                )
+                # TODO(OngChia): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
-            # update boundary condition
+            # update boundary conditions
 
             timer.start()
             self._integrate_one_time_step(
@@ -169,17 +176,23 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
+            device_utils.sync(self.run_config.backend)
             timer.capture()
 
             self._is_first_step_in_simulation = False
 
-            # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
+            # TODO(OngChia): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
-            # TODO (Chia Rui): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+            # TODO(OngChia): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-            # TODO (Chia Rui): simple IO enough for JW test
+            # TODO(OngChia): simple IO enough for JW test
 
-        timer.summary(True)
+        timer_first_timestep.summary(True)
+        if self.n_time_steps > 1:  # in case only one time step was run
+            timer_after_first_timestep.summary(True)
+        if profiling is not None and profiling.gt4py_metrics_level > gtx_metrics.DISABLED:
+            print(gtx_metrics.dumps())
+            gtx_metrics.dump_json(profiling.gt4py_metrics_output_file)
 
     def _integrate_one_time_step(
         self,
@@ -190,7 +203,7 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
+        # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
@@ -209,7 +222,7 @@ class TimeLoop:
 
         prognostic_states.swap()
 
-    # TODO (Chia Rui): add tracer advection here
+    # TODO(OngChia): add tracer advection here
 
     def _update_time_levels_for_velocity_tendencies(
         self,
@@ -258,9 +271,9 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): compute airmass for prognostic_state here
+        # TODO(OngChia): compute airmass for prognostic_state here
 
-        for dyn_substep in range(self._n_substeps_var):
+        for dyn_substep in range(self.n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
@@ -278,6 +291,7 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
+                ndyn_substeps_var=self.n_substeps_var,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
@@ -287,7 +301,7 @@ class TimeLoop:
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
 
-        # TODO (Chia Rui): compute airmass for prognostic_state here
+        # TODO(OngChia): compute airmass for prognostic_state here
 
 
 class DriverStates(NamedTuple):
@@ -399,7 +413,7 @@ def initialize(
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
-        diagnostic_metric_state,
+        _,
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,
@@ -527,6 +541,12 @@ def initialize(
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
+    "--enable_profiling",
+    is_flag=True,
+    default=False,
+    help="Enable detailed profiling with GT4Py metrics.",
+)
+@click.option(
     "--icon4py_driver_backend",
     "-b",
     required=True,
@@ -542,6 +562,7 @@ def icon4py_driver(
     grid_root,
     grid_level,
     enable_output,
+    enable_profiling,
     icon4py_driver_backend,
 ) -> None:
     """
@@ -606,6 +627,7 @@ def icon4py_driver(
         ds.prep_advection_prognostic,
         dp.second_order_divdamp_factor,
         do_prep_adv=False,
+        profiling=driver_config.ProfilingConfig() if enable_profiling else None,
     )
 
     log.info("time loop:  DONE")

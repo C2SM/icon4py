@@ -7,21 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import (
-    astype,
-    maximum,
-    minimum,
-    neighbor_sum,
-)
+from gt4py.next.ffront.fbuiltins import astype, maximum, minimum, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2CE, C2E
+from icon4py.model.common.dimension import C2E, C2EDim
 from icon4py.model.common.type_alias import vpfloat
 
 
 @gtx.field_operator
 def _compute_antidiffusive_cell_fluxes_and_min_max(
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     p_rhodz_now: fa.CellKField[ta.wpfloat],
     p_rhodz_new: fa.CellKField[ta.wpfloat],
     z_mflx_low: fa.EdgeKField[ta.wpfloat],
@@ -35,9 +30,9 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    z_mflx_anti_1 = astype(p_dtime * geofac_div(C2CE[0]) / p_rhodz_new * z_anti(C2E[0]), vpfloat)
-    z_mflx_anti_2 = astype(p_dtime * geofac_div(C2CE[1]) / p_rhodz_new * z_anti(C2E[1]), vpfloat)
-    z_mflx_anti_3 = astype(p_dtime * geofac_div(C2CE[2]) / p_rhodz_new * z_anti(C2E[2]), vpfloat)
+    z_mflx_anti_1 = astype(p_dtime * geofac_div[C2EDim(0)] / p_rhodz_new * z_anti(C2E[0]), vpfloat)
+    z_mflx_anti_2 = astype(p_dtime * geofac_div[C2EDim(1)] / p_rhodz_new * z_anti(C2E[1]), vpfloat)
+    z_mflx_anti_3 = astype(p_dtime * geofac_div[C2EDim(2)] / p_rhodz_new * z_anti(C2E[2]), vpfloat)
 
     z_mflx_anti_in = -1.0 * (
         minimum(0.0, z_mflx_anti_1) + minimum(0.0, z_mflx_anti_2) + minimum(0.0, z_mflx_anti_3)
@@ -47,7 +42,7 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
         maximum(0.0, z_mflx_anti_1) + maximum(0.0, z_mflx_anti_2) + maximum(0.0, z_mflx_anti_3)
     )
 
-    z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div(C2CE), axis=dims.C2EDim)
+    z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div, axis=dims.C2EDim)
 
     z_tracer_new_low = (p_cc * p_rhodz_now - p_dtime * z_fluxdiv_c) / p_rhodz_new
     z_tracer_max = astype(maximum(p_cc, z_tracer_new_low), vpfloat)
@@ -64,7 +59,7 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_antidiffusive_cell_fluxes_and_min_max(
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     p_rhodz_now: fa.CellKField[ta.wpfloat],
     p_rhodz_new: fa.CellKField[ta.wpfloat],
     z_mflx_low: fa.EdgeKField[ta.wpfloat],

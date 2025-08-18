@@ -14,7 +14,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
-# TODO: revise names with domain scientists
+# TODO(): revise names with domain scientists
 
 Z_MC: Final[str] = "height"
 FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"
@@ -35,12 +35,12 @@ DDXT_Z_HALF_E: Final[str] = "ddxt_z_half_e"
 DDXN_Z_HALF_E: Final[str] = "ddxn_z_half_e"
 DDXN_Z_FULL: Final[str] = "ddxn_z_full"
 DDXT_Z_FULL: Final[str] = "ddxt_z_full"
-EXNER_W_IMPLICIT_WEIGHT_PARAMETER: Final[
-    str
-] = "implicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
-EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[
-    str
-] = "explicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+EXNER_W_IMPLICIT_WEIGHT_PARAMETER: Final[str] = (
+    "implicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+)
+EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[str] = (
+    "explicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+)
 EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
@@ -319,7 +319,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=COEFF_GRADEKIN,
         long_name="coeff_gradekin",
         units="",
-        dims=(dims.ECDim,),
+        dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="coeff_gradekin",
         dtype=ta.wpfloat,
     ),
@@ -399,7 +399,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=ZD_INTCOEF_DSL,
         long_name="zd_intcoef_dsl",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_intcoef_dsl",
         dtype=ta.wpfloat,
     ),
@@ -407,7 +407,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=ZD_VERTOFFSET_DSL,
         long_name="zd_vertoffset_dsl",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_vertoffset_dsl",
         dtype=ta.wpfloat,
     ),

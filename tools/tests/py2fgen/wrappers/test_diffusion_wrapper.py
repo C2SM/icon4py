@@ -15,8 +15,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 from icon4py.tools.py2fgen.wrappers import (
@@ -25,7 +24,7 @@ from icon4py.tools.py2fgen.wrappers import (
 )
 
 from . import utils
-from .test_grid_init import grid_init  # noqa: F401
+from .test_grid_init import grid_init
 
 
 @pytest.mark.datatest
@@ -36,13 +35,14 @@ from .test_grid_init import grid_init  # noqa: F401
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
     lowest_layer_thickness,
@@ -79,7 +79,7 @@ def test_diffusion_wrapper_granule_inputs(
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
     zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
-    # todo: special handling, determine if this is necessary for Fortran arrays too
+    # TODO(): special handling, determine if this is necessary for Fortran arrays too
     zd_vertoffset = np.squeeze(
         metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
     )
@@ -123,14 +123,10 @@ def test_diffusion_wrapper_granule_inputs(
     expected_edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
-        ),
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.geofac_div()
-        ),
+        geofac_div=interpolation_savepoint.geofac_div(),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -296,13 +292,14 @@ def test_diffusion_wrapper_granule_inputs(
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    grid_init,  # noqa: F811  # initializes the grid as side-effect
+    grid_init,  # initializes the grid as side-effect
     experiment,
     lowest_layer_thickness,
     model_top_height,
@@ -340,7 +337,7 @@ def test_diffusion_wrapper_single_step(
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
     zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
-    # todo: special handling, determine if this is necessary for Fortran arrays too
+    # TODO(): special handling, determine if this is necessary for Fortran arrays too
     zd_vertoffset = np.squeeze(
         metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
     )
@@ -452,23 +449,27 @@ def test_diffusion_wrapper_single_step(
     dwdx_ = savepoint_diffusion_exit.dwdx()
     dwdy_ = savepoint_diffusion_exit.dwdy()
 
-    assert helpers.dallclose(py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(py2fgen.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
+        py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12
+    )
+    assert testing_test_utils.dallclose(
+        py2fgen.as_array(ffi, vn, py2fgen.FLOAT64), vn_.asnumpy(), atol=1e-12
+    )
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, exner, py2fgen.FLOAT64), exner_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, div_ic, py2fgen.FLOAT64), div_ic_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, dwdx, py2fgen.FLOAT64), dwdx_.asnumpy(), atol=1e-12
     )
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, dwdy, py2fgen.FLOAT64), dwdy_.asnumpy(), atol=1e-12
     )

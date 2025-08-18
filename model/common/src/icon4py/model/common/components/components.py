@@ -46,11 +46,10 @@ class Component(Protocol[Ins, Outs]):
         ...
         ...     def __call__(
         ...         self, state: dict[RequiredInputs, model.DataField], time_step: datetime.datetime
-        ...     ) -> dict[ProducedOutputs, model.DataField]:
-        ...         ...
+        ...     ) -> dict[ProducedOutputs, model.DataField]: ...
 
 
-    TODO (@halungge): add more consistency checks.
+    TODO(halungge): add more consistency checks.
      - check for mathching units and provide a hook for unit conversion for the components implementations
      - check for consistency of dimensions of state and input_properties
 
@@ -72,7 +71,7 @@ class Component(Protocol[Ins, Outs]):
 
         Each input key contains metadata with the standard CF name, units and dimension of the associated data field.
 
-        TODO (@halungge): is this too generic and we should split into separate properties for the different types of outputs: like
+        TODO(halungge): is this too generic and we should split into separate properties for the different types of outputs: like
             tendencies, diagnostics, prognostics, etc?
             Are they different? or are they just different in the way they are used later on
             and how they are applied to the model state? Should this be made explicit in the interface?
@@ -95,7 +94,7 @@ class Component(Protocol[Ins, Outs]):
 
         This function *must* be implemented with the real logic of the component.
 
-        TODO (@halungge): is it possible to improve this interface not haveing to pass on the entire state for example?
+        TODO(halungge): is it possible to improve this interface not haveing to pass on the entire state for example?
 
         Args:
             state: Model state dictionary.
