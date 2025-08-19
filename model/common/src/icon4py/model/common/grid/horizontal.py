@@ -301,7 +301,7 @@ class Zone(str, enum.Enum):
         return self in (Zone.HALO, Zone.HALO_LEVEL_2)
 
 
-def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
+def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:  # noqa: PLR0911,PLR0912  [too-many-return-statements],[too-many-branches]
     match marker:
         case Zone.END:
             return _end(dim)

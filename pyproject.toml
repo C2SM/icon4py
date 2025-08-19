@@ -196,7 +196,8 @@ explicit-preview-rules = true
 ignore = [
   'E501',  # [line-too-long]
   'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
-  'ISC001',  # [single-line-implicit-string-concatenation]
+  'PLR0913',  # [too-many-arguments]  # TODO(egparedes): remove when possible
+  'PLR2004',  # [magic-value-comparison]  # TODO(egparedes): remove when possible
   'TD003',  # [missing-todo-link]
   'UP038'  # [non-pep604-isinstance]
 ]
@@ -224,7 +225,7 @@ select = [
   'PGH',  # pygrep-hooks
   'PLC',  # Pylint-Convention
   'PLE',  # Pylint-Error
-  # 'PLR',  # Pylint-Refactor
+  'PLR',  # Pylint-Refactor
   'PLW',  # Pylint-Warning
   'PTH',  # flake8-use-pathlib
   'Q',  # flake8-quotes
@@ -266,6 +267,10 @@ max-complexity = 15
 # Ignore spurious errors when explicitly importing fixtures in tests.
 # Check: https://github.com/astral-sh/ruff/issues/10662
 "**/tests/**/test_*.py" = ["F401", "F811"]
+
+[tool.ruff.lint.pylint]
+max-branches = 12
+max-statements = 60
 
 # -- setuptools --
 [tool.setuptools]

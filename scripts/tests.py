@@ -55,7 +55,7 @@ _NS_INIT_PY_AST = ast.parse(_NS_INIT_PY_DEFAULT_CONTENT)
 
 
 @cli.command(name="check-layout")
-def check_layout(
+def check_layout(  # noqa: PLR0912 [too-many-branches]
     fix: Annotated[
         bool, typer.Option("--fix", "-f", help="Automatically create unknown __init__.py files.")
     ] = False,

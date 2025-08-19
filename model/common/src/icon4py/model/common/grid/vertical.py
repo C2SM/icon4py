@@ -340,7 +340,7 @@ def _read_vct_a_and_vct_b_from_file(
     )
 
 
-def _compute_vct_a_and_vct_b(
+def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
     vertical_config: VerticalGridConfig, backend: gtx_backend.Backend | None
 ) -> tuple[fa.KField, fa.KField]:
     """

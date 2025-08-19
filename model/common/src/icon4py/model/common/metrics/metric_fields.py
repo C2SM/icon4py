@@ -5,6 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90."""
+
+from __future__ import annotations
+
 from types import ModuleType
 from typing import Final
 
@@ -45,11 +50,6 @@ from icon4py.model.common.math.helpers import (
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-"""
-Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
-"""
 
 
 rayleigh_damping_options: Final = model_options.RayleighType()
