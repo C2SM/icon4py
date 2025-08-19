@@ -14,7 +14,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
     damping_height,
@@ -152,7 +152,7 @@ def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_leve
 @pytest.mark.datatest
 def test_interface_physical_height(grid_savepoint):
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         grid_savepoint.vct_a().asnumpy(), vertical_grid.interface_physical_height.asnumpy()
     )
 
@@ -314,8 +314,8 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
-    assert helpers.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
-    assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
+    assert test_utils.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
+    assert test_utils.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
 
 
 @pytest.mark.level("unit")
@@ -392,7 +392,7 @@ def test_compute_vertical_coordinate(
         array_ns=xp,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         data_alloc.as_numpy(vertical_coordinates_on_half_levels),
         metrics_savepoint.z_ifc().asnumpy(),
         rtol=1e-9,

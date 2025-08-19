@@ -22,7 +22,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    helpers,
+    test_utils,
 )
 
 
@@ -476,8 +476,8 @@ def test_read_geometry_fields(grid_savepoint, grid_file, experiment, backend):
     cell_area = manager.geometry[gridfile.GeometryName.CELL_AREA.value]
     tangent_orientation = manager.geometry[gridfile.GeometryName.TANGENT_ORIENTATION.value]
 
-    assert helpers.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
-    assert helpers.dallclose(
+    assert test_utils.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
+    assert test_utils.dallclose(
         tangent_orientation.asnumpy(), grid_savepoint.tangent_orientation().asnumpy()
     )
 
@@ -495,8 +495,8 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim, backend):
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     lat = manager.coordinates[dim]["lat"]
     lon = manager.coordinates[dim]["lon"]
-    assert helpers.dallclose(lat.asnumpy(), grid_savepoint.lat(dim).asnumpy())
-    assert helpers.dallclose(lon.asnumpy(), grid_savepoint.lon(dim).asnumpy())
+    assert test_utils.dallclose(lat.asnumpy(), grid_savepoint.lat(dim).asnumpy())
+    assert test_utils.dallclose(lon.asnumpy(), grid_savepoint.lon(dim).asnumpy())
 
 
 @pytest.mark.datatest
@@ -511,7 +511,7 @@ def test_tangent_orientation(grid_file, grid_savepoint, experiment, backend):
     expected = grid_savepoint.tangent_orientation()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.TANGENT_ORIENTATION].asnumpy(), expected.asnumpy()
     )
 
@@ -528,7 +528,7 @@ def test_edge_orientation_on_vertex(grid_file, grid_savepoint, experiment, backe
     expected = grid_savepoint.vertex_edge_orientation()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX].asnumpy(),
         expected.asnumpy(),
     )
@@ -546,7 +546,7 @@ def test_dual_area(grid_file, grid_savepoint, experiment, backend):
     expected = grid_savepoint.vertex_dual_area()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.DUAL_AREA].asnumpy(), expected.asnumpy()
     )
 
@@ -564,7 +564,7 @@ def test_edge_cell_distance(grid_file, grid_savepoint, experiment, backend):
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE].asnumpy(),
         expected.asnumpy(),
         equal_nan=True,
@@ -583,7 +583,7 @@ def test_cell_normal_orientation(grid_file, grid_savepoint, experiment, backend)
     expected = grid_savepoint.edge_orientation()
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(), expected.asnumpy()
     )
 
@@ -601,7 +601,7 @@ def test_edge_vertex_distance(grid_file, grid_savepoint, experiment, backend):
     manager = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     geometry_fields = manager.geometry
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.EDGE_VERTEX_DISTANCE].asnumpy(),
         expected.asnumpy(),
         equal_nan=True,

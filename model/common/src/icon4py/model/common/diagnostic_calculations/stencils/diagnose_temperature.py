@@ -40,7 +40,7 @@ def _diagnose_virtual_temperature_and_temperature(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def diagnose_virtual_temperature_and_temperature(
     qv: fa.CellKField[ta.wpfloat],
-    # TODO (Chia Rui): This should be changed to a list hydrometeors with mass instead of directly specifying each hydrometeor, as in trHydroMass list in ICON. Otherwise, the input arguments may need to be changed when different microphysics is used.
+    # TODO(OngChia): This should be changed to a list hydrometeors with mass instead of directly specifying each hydrometeor, as in trHydroMass list in ICON. Otherwise, the input arguments may need to be changed when different microphysics is used.
     qc: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
     qr: fa.CellKField[ta.wpfloat],

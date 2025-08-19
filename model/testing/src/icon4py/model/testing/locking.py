@@ -8,8 +8,8 @@
 
 from __future__ import annotations
 
+import contextlib
 import pathlib
-from typing import ContextManager
 
 import filelock
 
@@ -17,7 +17,7 @@ import filelock
 # Consider moving to common if this is needed outside of testing
 
 
-def lock(directory: pathlib.Path | str, suffix: str = ".lock") -> ContextManager:
+def lock(directory: pathlib.Path | str, suffix: str = ".lock") -> contextlib.AbstractContextManager:
     """Create a lock for the given path."""
     directory = pathlib.Path(directory)
     if not directory.is_dir():

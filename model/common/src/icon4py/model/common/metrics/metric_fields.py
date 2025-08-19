@@ -55,8 +55,8 @@ Contains metric fields calculations for the vertical grid, ported from mo_vertic
 rayleigh_damping_options: Final = model_options.RayleighType()
 
 
-# TODO(@nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
-# TODO(@nfarabullini): change dimension type hint for ddqz_z_half to cell, khalf
+# TODO(nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
+# TODO(nfarabullini): change dimension type hint for ddqz_z_half to cell, khalf
 @field_operator
 def _compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
@@ -741,7 +741,7 @@ def _compute_mask_prog_halo_c(
     return mask_prog_halo_c
 
 
-# TODO (@halungge) not registered in factory
+# TODO(halungge): not registered in factory
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
@@ -776,7 +776,7 @@ def _compute_bdy_halo_c(
     return bdy_halo_c
 
 
-# TODO (@halungge) not registered in factory
+# TODO(halungge): not registered in factory
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_bdy_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],

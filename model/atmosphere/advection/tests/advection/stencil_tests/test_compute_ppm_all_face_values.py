@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_all_face_values import (
     compute_ppm_all_face_values,
 )
@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestComputePpmAllFaceValues(helpers.StencilTest):
+class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_all_face_values
     OUTPUTS = ("p_face",)
     MARKERS = (pytest.mark.uses_concat_where,)
