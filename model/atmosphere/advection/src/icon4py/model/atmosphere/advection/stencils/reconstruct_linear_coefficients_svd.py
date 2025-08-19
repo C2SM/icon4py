@@ -13,8 +13,8 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import C2E2C, C2E2CDim
 
 
-# TODO (dastrm): this stencil has no test
-# TODO (dastrm): move to common
+# TODO(dastrm): this stencil has no test
+# TODO(dastrm): move to common
 
 
 @gtx.field_operator

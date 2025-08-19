@@ -16,7 +16,7 @@ import numpy as np
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.testing import helpers, serialbox as sb
+from icon4py.model.testing import serialbox as sb, test_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -175,17 +175,17 @@ def verify_advection_fields(
     log_dbg(p_tracer_new_ref.asnumpy()[p_tracer_new_range, :], "p_tracer_new_ref")
 
     # verify advection output fields
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         rtol=1e-10,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
         diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
         rtol=1e-10,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         p_tracer_new.asnumpy()[p_tracer_new_range, :],
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
         atol=1e-16,

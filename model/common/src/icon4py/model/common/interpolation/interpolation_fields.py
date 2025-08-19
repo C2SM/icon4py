@@ -379,7 +379,7 @@ def _weighting_factors(
         directed cells. The third condition is sum(w(i)) = 1., and the weight
         of the local point is 0.5 (see above). Analytical elimination yields...
 
-    # TODO (Andreas J) computation different for Torus grids see mo_intp_coeffs.f90
+    # TODO(ajocksch): computation different for Torus grids see mo_intp_coeffs.f90
     # The function weighting_factors does not exist in the Fortran code, the
     # Fortran is organised differently with code duplication
 
@@ -677,7 +677,7 @@ def _create_inverse_neighbor_index(
     return inv_neighbor_idx
 
 
-# TODO (@halungge) this can be simplified using only
+# TODO(halungge): this can be simplified using only
 def compute_e_flx_avg(
     c_bln_avg: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,

@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.type_alias as ta
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.test_utils as stencil_tests
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
@@ -76,9 +76,9 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
         offset_provider={},
     )
 
-    assert helpers.dallclose(rho_ref_mc.asnumpy(), rho_ref_mc_ref.asnumpy())
-    assert helpers.dallclose(theta_ref_mc.asnumpy(), theta_ref_mc_ref.asnumpy())
-    assert helpers.dallclose(exner_ref_mc.asnumpy(), exner_ref_mc_ref.asnumpy())
+    assert stencil_tests.dallclose(rho_ref_mc.asnumpy(), rho_ref_mc_ref.asnumpy())
+    assert stencil_tests.dallclose(theta_ref_mc.asnumpy(), theta_ref_mc_ref.asnumpy())
+    assert stencil_tests.dallclose(exner_ref_mc.asnumpy(), exner_ref_mc_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -118,7 +118,7 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
         offset_provider={},
     )
 
-    assert helpers.dallclose(theta_ref_ic.asnumpy(), theta_ref_ic_ref.asnumpy())
+    assert stencil_tests.dallclose(theta_ref_ic.asnumpy(), theta_ref_ic_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -137,7 +137,7 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, experiment, bac
         offset_provider={},
     )
 
-    assert helpers.dallclose(d_exner_dz_ref_ic.asnumpy(), d_exner_dz_ref_ic_ref.asnumpy())
+    assert stencil_tests.dallclose(d_exner_dz_ref_ic.asnumpy(), d_exner_dz_ref_ic_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -187,8 +187,8 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
         vertical_end=(gtx.int32(icon_grid.num_levels)),
         offset_provider={},
     )
-    assert helpers.dallclose(rho_ref_me.asnumpy(), rho_ref_me_ref.asnumpy(), rtol=1e-10)
-    assert helpers.dallclose(theta_ref_me.asnumpy(), theta_ref_me_ref.asnumpy())
+    assert stencil_tests.dallclose(rho_ref_me.asnumpy(), rho_ref_me_ref.asnumpy(), rtol=1e-10)
+    assert stencil_tests.dallclose(theta_ref_me.asnumpy(), theta_ref_me_ref.asnumpy())
 
 
 @pytest.mark.level("unit")
@@ -220,5 +220,5 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, e
         offset_provider={},
     )
 
-    assert helpers.dallclose(d2dexdz2_fac1_mc.asnumpy(), d2dexdz2_fac1_mc_ref.asnumpy())
-    assert helpers.dallclose(d2dexdz2_fac2_mc.asnumpy(), d2dexdz2_fac2_mc_ref.asnumpy())
+    assert stencil_tests.dallclose(d2dexdz2_fac1_mc.asnumpy(), d2dexdz2_fac1_mc_ref.asnumpy())
+    assert stencil_tests.dallclose(d2dexdz2_fac2_mc.asnumpy(), d2dexdz2_fac2_mc_ref.asnumpy())

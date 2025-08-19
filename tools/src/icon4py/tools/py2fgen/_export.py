@@ -10,8 +10,8 @@ import dataclasses
 import functools
 import types
 import typing
-from collections.abc import Mapping
-from typing import Any, Callable, Optional, TypeAlias
+from collections.abc import Callable, Mapping
+from typing import Any, TypeAlias
 
 import cffi
 
@@ -47,7 +47,7 @@ def param_descriptor_from_annotation(
 
 def get_param_descriptors(
     type_hints: dict[str, Any],
-    param_descriptors: Optional[_definitions.ParamDescriptors],
+    param_descriptors: _definitions.ParamDescriptors | None,
     annotation_descriptor_hook: AnnotationDescriptorHook | None,
 ) -> _definitions.ParamDescriptors:
     if param_descriptors is not None:
@@ -119,7 +119,7 @@ class _DecoratedFunction:
             type_hints, self.annotation_mapping_hook, self.param_descriptors
         )
 
-    def __call__(self, ffi: cffi.FFI, perf_counters: Optional[dict], **kwargs: Any) -> Any:
+    def __call__(self, ffi: cffi.FFI, perf_counters: dict | None, **kwargs: Any) -> Any:
         # Notes: For performance reasons we could switch to positional-only arguments
         # (this is purely internal between the generated Python code and this function).
         # However, an experiment showed that this had small impact.
@@ -139,7 +139,7 @@ class _DecoratedFunction:
 def export(
     annotation_descriptor_hook: AnnotationDescriptorHook | None = None,
     annotation_mapping_hook: AnnotationMappingHook | None = None,
-    param_descriptors: Optional[_definitions.ParamDescriptors] = None,
+    param_descriptors: _definitions.ParamDescriptors | None = None,
 ) -> Callable[[Callable], Callable]:
     """
     Decorator to mark a function as exportable.

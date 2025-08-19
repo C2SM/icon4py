@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
-import icon4py.model.testing.helpers as test_helpers
+import icon4py.model.testing.stencil_tests as test_helpers
 from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
     RhoThetaAdvectionType,

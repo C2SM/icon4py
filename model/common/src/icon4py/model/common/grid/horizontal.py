@@ -37,7 +37,8 @@ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nw
 import dataclasses
 import enum
 import functools
-from typing import Any, Callable, Final
+from collections.abc import Callable
+from typing import Any, Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -386,8 +387,8 @@ class Domain:
     Used to access domain bounds in concrete the ICON grid.
     """
 
-    _dim: gtx.Dimension
-    _zone: Zone
+    dim: gtx.Dimension
+    zone: Zone
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Domain):
@@ -398,19 +399,16 @@ class Domain:
         return hash((self.dim, self.zone))
 
     def __str__(self) -> str:
-        return f"Domain (dim = {self.dim}: zone = {self._zone} /ICON index[ {_map_to_icon_index(self.dim, self.zone)} ])"
+        return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_to_icon_index(self.dim, self.zone)} ])"
 
-    @property
-    def zone(self) -> Zone:
-        return self._zone
-
-    @property
-    def dim(self) -> gtx.Dimension:
-        return self._dim
+    def __post_init__(self):
+        assert _validate(
+            self.dim, self.zone
+        ), f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {get_zones_for_dim(self.dim)}"
 
     @functools.cached_property
     def is_local(self) -> bool:
-        return self._zone == Zone.LOCAL
+        return self.zone == Zone.LOCAL
 
     @functools.cached_property
     def refinement_control_value(self) -> int:
@@ -441,29 +439,14 @@ def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
     """
 
     def _domain(marker: Zone) -> Domain:
-        return _domain_factory(dim, marker)
+        return Domain(dim, marker)
 
     assert dim.kind == gtx.DimensionKind.HORIZONTAL, "Only defined for horizontal dimensions"
     return _domain
 
 
-def _domain_factory(dim: gtx.Dimension, zone: Zone) -> Domain:
-    assert _validate(
-        dim, zone
-    ), f"Invalid zone {zone} for dimension {dim}. Valid zones are: {get_zones_for_dim(dim)}"
-    return Domain(dim, zone)
-
-
 def _validate(dim: gtx.Dimension, marker: Zone) -> bool:
-    match dim:
-        case dims.CellDim:
-            return marker in CELL_ZONES
-        case dims.EdgeDim:
-            return marker in EDGE_ZONES
-        case dims.VertexDim:
-            return marker in VERTEX_ZONES
-        case _:
-            return False
+    return marker in get_zones_for_dim(dim)
 
 
 def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
@@ -474,7 +457,7 @@ def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
         case dims.CellDim:
             return CELL_ZONES
         case dims.EdgeDim:
-            return tuple(Zone)
+            return EDGE_ZONES
         case dims.VertexDim:
             return VERTEX_ZONES
         case _:
