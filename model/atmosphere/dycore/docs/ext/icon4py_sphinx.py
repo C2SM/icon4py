@@ -495,7 +495,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 method_obj = getattr(class_obj, local_shortname)
             else:
                 # Handle the case where the method is imported and renamed in the class
-                for _, attr in vars(class_obj).items():
+                for attr in vars(class_obj).values():
                     if (
                         callable(attr)
                         and hasattr(attr, "__name__")

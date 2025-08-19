@@ -24,7 +24,7 @@ from icon4py.model.common import (
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
@@ -67,7 +67,7 @@ from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
 )
 
 
-class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
+class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
         "vertical_mass_flux_at_cells_on_half_levels",

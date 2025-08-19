@@ -249,7 +249,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
+        # TODO(OngChia): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
         rho_at_cells_on_half_levels
         * (
@@ -313,7 +313,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
         (tridiagonal_intermediate_result, next_w),
     )
 
-    # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
+    # TODO(OngChia): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
     tridiagonal_intermediate_result = concat_where(
         dims.KDim == n_lev - 1,
         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
@@ -501,7 +501,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        # TODO (Chia Rui): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
+        # TODO(OngChia): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
         (1 <= dims.KDim) & (dims.KDim < n_lev),
         rho_at_cells_on_half_levels
         * (
@@ -565,7 +565,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
         (tridiagonal_intermediate_result, next_w),
     )
 
-    # TODO (Chia Rui): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
+    # TODO(OngChia): We should not need this because alpha is zero at n_lev and thus tridiagonal_intermediate_result should be zero at nlev-1. However, stencil test shows it is nonzero.
     tridiagonal_intermediate_result = concat_where(
         dims.KDim == n_lev - 1,
         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),

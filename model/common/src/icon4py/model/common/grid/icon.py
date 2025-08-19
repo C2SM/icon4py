@@ -10,7 +10,8 @@ import functools
 import logging
 import math
 import uuid
-from typing import Final, Mapping, Optional
+from collections.abc import Mapping
+from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
@@ -37,10 +38,10 @@ CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
-    root: Optional[int] = None
-    level: Optional[int] = None
-    _num_cells: Optional[int] = None
-    _mean_cell_area: Optional[float] = None
+    root: int | None = None
+    level: int | None = None
+    _num_cells: int | None = None
+    _mean_cell_area: float | None = None
     geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
     radius: float = constants.EARTH_RADIUS
 
@@ -48,9 +49,9 @@ class GlobalGridParams:
     def from_mean_cell_area(
         cls,
         mean_cell_area: float,
-        root: Optional[int] = None,
-        level: Optional[int] = None,
-        num_cells: Optional[int] = None,
+        root: int | None = None,
+        level: int | None = None,
+        num_cells: int | None = None,
         geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
         radius: float = constants.EARTH_RADIUS,
     ):

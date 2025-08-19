@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advect
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
 def add_interpolated_horizontal_advection_of_w_numpy(
@@ -38,7 +38,7 @@ def add_interpolated_horizontal_advection_of_w_numpy(
     return ddt_w_adv
 
 
-class TestAddInterpolatedHorizontalAdvectionOfW(helpers.StencilTest):
+class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
     PROGRAM = add_interpolated_horizontal_advection_of_w
     OUTPUTS = ("ddt_w_adv",)
 

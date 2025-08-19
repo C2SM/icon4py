@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import sys
-from typing import Final, Optional, Type
+from typing import Final
 
 from gt4py.next import Field, common
 from gt4py.next.ffront.fbuiltins import int32, int64
@@ -20,7 +20,7 @@ try:
 except ImportError:
     from types import ModuleType
 
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+    dace: ModuleType | None = None  # type: ignore[no-redef]
 
 
 if dace:
@@ -48,7 +48,7 @@ if dace:
         dace.int64 if sys.maxsize > 2**32 else dace.int32,
     )
 
-    def stride_symbol_name_from_field(cls: Type, field_name: str, stride: int) -> str:
+    def stride_symbol_name_from_field(cls: type, field_name: str, stride: int) -> str:
         return f"{cls.__name__}_{field_name}_s{stride}_sym"
 
     def gt4py_dim_to_dace_symbol(dim: common.Dimension) -> dace.symbol:
@@ -65,7 +65,7 @@ if dace:
         else:
             raise ValueError(f"The dimension [{dim}] is not supported.")
 
-    def dace_structure_dict(cls: Type) -> dict[str, dace.data.Array]:
+    def dace_structure_dict(cls: type) -> dict[str, dace.data.Array]:
         """
         Function that returns a dictionary to be used to define DaCe Structures based on the provided data class.
         The function extracts the GT4Py field members of the data class and builds the dictionary accordingly.

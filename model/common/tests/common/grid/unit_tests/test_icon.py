@@ -35,7 +35,7 @@ from .. import utils
 
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
-    return gridtest_utils.get_grid_manager_for_experiment(
+    return gridtest_utils.get_grid_manager_from_experiment(
         dt_utils.REGIONAL_EXPERIMENT, keep_skip_values=True, backend=None
     ).grid
 

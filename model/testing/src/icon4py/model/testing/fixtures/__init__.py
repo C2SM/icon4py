@@ -9,4 +9,4 @@
 from __future__ import annotations
 
 from .datatest import *  # noqa: F403
-from .general import *  # noqa: F403
+from .stencil_tests import *  # noqa: F403

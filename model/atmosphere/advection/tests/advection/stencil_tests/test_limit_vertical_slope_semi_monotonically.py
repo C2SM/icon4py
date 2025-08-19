@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.limit_vertical_slope_semi_monotonically import (
     limit_vertical_slope_semi_monotonically,
 )
@@ -20,9 +20,9 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestLimitVerticalSlopeSemiMonotonically(helpers.StencilTest):
+class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
     PROGRAM = limit_vertical_slope_semi_monotonically
-    OUTPUTS = (helpers.Output("z_slope", gtslice=(slice(None), slice(1, -1))),)
+    OUTPUTS = (stencil_tests.Output("z_slope", gtslice=(slice(None), slice(1, -1))),)
 
     @staticmethod
     def reference(

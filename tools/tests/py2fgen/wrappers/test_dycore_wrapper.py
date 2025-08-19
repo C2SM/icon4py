@@ -22,7 +22,7 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    helpers,
+    test_utils as testing_test_utils,
 )
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
@@ -428,7 +428,7 @@ def test_dycore_wrapper_granule_inputs(
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
-    )  # TODO sp.vol_flx_ic()
+    )  # TODO(): p.vol_flx_ic()
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
@@ -602,7 +602,7 @@ def test_dycore_wrapper_granule_inputs(
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
             icon_grid, dims.CellDim, dims.KDim
-        ),  # TODO: sp.vol_flx_ic(),
+        ),  # TODO(): sp.vol_flx_ic(),
     )
     expected_second_order_divdamp_factor = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
@@ -1004,34 +1004,34 @@ def test_granule_solve_nonhydro_single_step_regional(
     )
 
     # Comparison asserts should now use py2fgen.as_array
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, theta_v_new, py2fgen.FLOAT64),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, exner_new, py2fgen.FLOAT64), sp_step_exit.exner_new().asnumpy()
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, vn_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-12,
         atol=1e-13,
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, rho_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, w_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
@@ -1062,7 +1062,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     savepoint_nonhydro_step_final,
     experiment,
     ndyn_substeps,
-    vn_only,  # TODO we don't use that value?
+    vn_only,  # TODO(): we don't use that value?
     at_initial_timestep,
     backend,
 ):
@@ -1204,63 +1204,63 @@ def test_granule_solve_nonhydro_multi_step_regional(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, rho_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, theta_v_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, mass_fl_e, py2fgen.FLOAT64)[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-7,
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, mass_flx_me, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         atol=5e-7,
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, vn_traj, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         atol=1e-12,
     )
 
     # we compare against _now fields as _new and _now are switched internally in the granule.
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, theta_v_now, py2fgen.FLOAT64),
         sp_step_exit.theta_v_new().asnumpy(),
         atol=5e-7,
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, rho_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, exner_now, py2fgen.FLOAT64),
         sp_step_exit.exner_new().asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, w_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, vn_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13,
     )
-    assert helpers.dallclose(
+    assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,

@@ -20,7 +20,8 @@ Fortran granule interfaces:
 import cProfile
 import dataclasses
 import pstats
-from typing import Annotated, Callable, Optional, TypeAlias
+from collections.abc import Callable
+from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -47,7 +48,7 @@ class SolveNonhydroGranule:
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
-granule: Optional[SolveNonhydroGranule]  # TODO(havogt): remove module global state
+granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
 def profile_enable():
@@ -321,9 +322,9 @@ def solve_nh_run(
     grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vn_incr: Optional[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64]],
-    rho_incr: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
-    exner_incr: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64] | None,
+    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
+    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
