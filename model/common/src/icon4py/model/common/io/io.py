@@ -12,7 +12,6 @@ import datetime as dt
 import enum
 import logging
 import pathlib
-import sys
 import uuid
 from collections.abc import Sequence
 from typing import TypedDict
@@ -182,11 +181,11 @@ class IOMonitor(monitor.Monitor):
         try:
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
             self._output_path = path
-        except OSError as error:
+        except FileExistsError as error:
             log.error(
                 f"Output directory at {path} exists: {error}. Re-run with another output directory. Aborting."
             )
-            sys.exit(1)
+            raise error
 
     def _write_ugrid(self) -> None:
         writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)

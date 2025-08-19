@@ -60,7 +60,7 @@ _BACKEND_MAP = {
     BackendIntEnum._GTFN_CPU: run_gtfn_cached,
     BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
 }
-with contextlib.suppress(ImportError):  # dace backends might not be available
+with contextlib.suppress(NotImplementedError):  # dace backends might not be available
     _BACKEND_MAP |= {
         BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(gpu=False),
         BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(gpu=True),
