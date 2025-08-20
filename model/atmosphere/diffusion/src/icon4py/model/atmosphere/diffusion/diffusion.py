@@ -10,6 +10,8 @@ import dataclasses
 import enum
 import functools
 import logging
+import typing
+
 import math
 import sys
 from typing import Final, Optional
@@ -358,6 +360,35 @@ def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
+    def icon4py_compile(
+        self,
+        program_func: typing.Callable,
+        bound_args: dict = {},
+        bound_static_args: dict = {},
+        static_args: dict = {},
+        horizontal_sizes: dict = {},
+        vertical_sizes: dict = {},
+        offset_provider=None,
+    ):
+        offset_provider = self._grid.connectivities if offset_provider is None else offset_provider
+        dict_values_to_list = lambda d: {k: [v] for k, v in d.items()}
+        static_args_program = program_func.with_backend(self._backend).compile(
+            **dict_values_to_list(horizontal_sizes),
+            **dict_values_to_list(vertical_sizes),
+            **dict_values_to_list(static_args),
+            enable_jit=False,
+            offset_provider=offset_provider,
+        )
+        return functools.partial(
+            static_args_program,
+            **bound_args,
+            **bound_static_args,
+            **static_args,
+            **horizontal_sizes,
+            **vertical_sizes,
+            offset_provider=offset_provider,
+        )
+
     def __init__(
         self,
         grid: icon_grid.IconGrid,
@@ -404,87 +435,157 @@ class Diffusion:
 
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
+        self._determine_horizontal_domains()
 
-        self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.connectivities,
-        )
-        self.calculate_nabla2_and_smag_coefficients_for_vn = (
-            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(self._backend).compile(
-                enable_jit=False,
-                vertical_start=[0],
-                vertical_end=[self._grid.num_levels],
-                offset_provider=self._grid.connectivities,
-            )
+        self.mo_intp_rbf_rbf_vec_interpol_vertex = self.icon4py_compile(
+            program_func=mo_intp_rbf_rbf_vec_interpol_vertex,
+            bound_args={
+                "ptr_coeff_1": self._interpolation_state.rbf_coeff_1,
+                "ptr_coeff_2": self._interpolation_state.rbf_coeff_2,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._vertex_start_lateral_boundary_level_2,
+                "horizontal_end": self._vertex_end_local,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
         )
 
-        self.calculate_diagnostic_quantities_for_turbulence = (
-            calculate_diagnostic_quantities_for_turbulence.with_backend(self._backend).compile(
-                enable_jit=False,
-                vertical_start=[1],
-                vertical_end=[self._grid.num_levels],
-                offset_provider=self._grid.connectivities,
-            )
+        self.calculate_nabla2_and_smag_coefficients_for_vn = self.icon4py_compile(
+            program_func=calculate_nabla2_and_smag_coefficients_for_vn,
+            bound_args={
+                "tangent_orientation": self._edge_params.tangent_orientation,
+                "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
+                "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
+                "primal_normal_vert_x": self._edge_params.primal_normal_vert[0],
+                "primal_normal_vert_y": self._edge_params.primal_normal_vert[1],
+                "dual_normal_vert_x": self._edge_params.dual_normal_vert[0],
+                "dual_normal_vert_y": self._edge_params.dual_normal_vert[1],
+            },
+            horizontal_sizes={
+                "horizontal_start": self._edge_start_lateral_boundary_level_5,
+                "horizontal_end": self._edge_end_halo_level_2,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
         )
-        self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(self._backend).compile(
-            enable_jit=False,
-            nudgezone_diff=[self.nudgezone_diff],
-            fac_bdydiff_v=[self.fac_bdydiff_v],
-            limited_area=[self._grid.limited_area],
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.connectivities,
+
+        self.calculate_diagnostic_quantities_for_turbulence = self.icon4py_compile(
+            program_func=calculate_diagnostic_quantities_for_turbulence,
+            bound_args={
+                "e_bln_c_s": self._interpolation_state.e_bln_c_s,
+                "geofac_div": self._interpolation_state.geofac_div,
+                "wgtfac_c": self._metric_state.wgtfac_c,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
+        )
+        self.apply_diffusion_to_vn = self.icon4py_compile(
+            program_func=apply_diffusion_to_vn,
+            bound_args={
+                "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
+                "primal_normal_vert_v2": self._edge_params.primal_normal_vert[1],
+                "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
+                "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
+                "area_edge": self._edge_params.edge_areas,
+                "nudgecoeff_e": self._interpolation_state.nudgecoeff_e,
+            },
+            bound_static_args={
+                "nudgezone_diff": self.nudgezone_diff,
+                "fac_bdydiff_v": self.fac_bdydiff_v,
+            },
+            static_args={
+                "start_2nd_nudge_line_idx_e": self._edge_start_nudging_level_2,
+                "limited_area": self._grid.limited_area,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._edge_start_lateral_boundary_level_5,
+                "horizontal_end": self._edge_end_local,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
         )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
-            apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
-                self._backend
-            ).compile(
-                enable_jit=False,
-                diff_multfac_w=[self.diff_multfac_w],
-                type_shear=[int32(self.config.shear_type.value)],
-                nrdmax=[int32(self._vertical_grid.end_index_of_damping_layer + 1)],
-                vertical_start=[0],
-                vertical_end=[self._grid.num_levels],
-                offset_provider=self._grid.connectivities,
+            self.icon4py_compile(
+                program_func=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+                bound_args={
+                    "geofac_n2s": self._interpolation_state.geofac_n2s,
+                    "geofac_grg_x": self._interpolation_state.geofac_grg_x,
+                    "geofac_grg_y": self._interpolation_state.geofac_grg_y,
+                    "area": self._cell_params.area,
+                },
+                bound_static_args={
+                    "diff_multfac_w": self.diff_multfac_w,
+                    "type_shear": int32(
+                        self.config.shear_type.value
+                    ),  # DaCe parser peculiarity (does not work as gtx.int32)
+                },
+                static_args={
+                    "nrdmax": int32(  # DaCe parser peculiarity (does not work as gtx.int32)
+                        self._vertical_grid.end_index_of_damping_layer + 1
+                    ),  # +1 since Fortran includes boundaries
+                    "halo_idx": self._cell_end_local,
+                    "interior_idx": self._cell_start_interior,
+                },
+                horizontal_sizes={
+                    "horizontal_start": self._horizontal_start_index_w_diffusion,
+                    "horizontal_end": self._cell_end_halo,
+                },
+                vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             )
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
-            calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
-                self._backend
-            ).compile(
-                enable_jit=False,
-                thresh_tdiff=[self.thresh_tdiff],
-                vertical_start=[(self._grid.num_levels - 2)],
-                vertical_end=[self._grid.num_levels],
-                offset_provider=self._grid.connectivities,
+            self.icon4py_compile(
+                program_func=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+                bound_args={
+                    "theta_ref_mc": self._metric_state.theta_ref_mc,
+                },
+                bound_static_args={
+                    "thresh_tdiff": self.thresh_tdiff,
+                },
+                horizontal_sizes={
+                    "horizontal_start": self._edge_start_nudging,
+                    "horizontal_end": self._edge_end_halo,
+                },
+                vertical_sizes={
+                    "vertical_start": self._grid.num_levels - 2,
+                    "vertical_end": self._grid.num_levels,
+                },
             )
         )
-        self.apply_diffusion_to_theta_and_exner = apply_diffusion_to_theta_and_exner.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            apply_zdiffusion_t=[self.config.apply_zdiffusion_t],
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.connectivities,
+        self.apply_diffusion_to_theta_and_exner = self.icon4py_compile(
+            program_func=apply_diffusion_to_theta_and_exner,
+            bound_args={
+                "geofac_div": self._interpolation_state.geofac_div,
+                "mask": self._metric_state.mask_hdiff,
+                "zd_vertoffset": self._metric_state.zd_vertoffset,
+                "zd_diffcoef": self._metric_state.zd_diffcoef,
+                "vcoef": self._metric_state.zd_intcoef,
+                "geofac_n2s_c": self._interpolation_state.geofac_n2s_c,
+                "geofac_n2s_nbh": self._interpolation_state.geofac_n2s_nbh,
+                "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
+                "area": self._cell_params.area,
+            },
+            static_args={"apply_zdiffusion_t": self.config.apply_zdiffusion_t},
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": 0,
+                "vertical_end": self._grid.num_levels,
+            },
         )
-        self.copy_field = copy_field.with_backend(self._backend).compile(
-            enable_jit=False, offset_provider={}
+        self.copy_field = self.icon4py_compile(program_func=copy_field, offset_provider={})
+        self.scale_k = self.icon4py_compile(program_func=scale_k, offset_provider={})
+        self.setup_fields_for_initial_step = self.icon4py_compile(
+            program_func=setup_fields_for_initial_step, offset_provider={}
         )
-        self.scale_k = scale_k.with_backend(self._backend).compile(
-            enable_jit=False, offset_provider={}
-        )
-        self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(
-            self._backend
-        ).compile(enable_jit=False, offset_provider={})
 
-        self.init_diffusion_local_fields_for_regular_timestep = (
-            init_diffusion_local_fields_for_regular_timestep.with_backend(self._backend)
-        ).compile(enable_jit=False, offset_provider={"Koff": dims.KDim})
+        self.init_diffusion_local_fields_for_regular_timestep = self.icon4py_compile(
+            program_func=init_diffusion_local_fields_for_regular_timestep,
+            offset_provider={"Koff": dims.KDim},
+        )
 
         self._allocate_temporary_fields()
 
@@ -499,27 +600,25 @@ class Diffusion:
             self.enh_smag_fac,
             offset_provider={"Koff": dims.KDim},
         )
-
-        diffusion_utils.init_nabla2_factor_in_upper_damping_zone.with_backend(
-            self._backend
-        ).compile(
-            nshift=[0],
-            end_index_of_damping_layer=[self._vertical_grid.end_index_of_damping_layer],
-            vertical_start=[1],
-            vertical_end=[gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1)],
+        self.icon4py_compile(
+            program_func=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
+            bound_args={
+                "physical_heights": self._vertical_grid.interface_physical_height,
+            },
+            static_args={
+                "nshift": 0,
+                "end_index_of_damping_layer": self._vertical_grid.end_index_of_damping_layer,
+                "heights_1": self._vertical_grid.interface_physical_height.ndarray[1].item(),
+                "heights_nrd_shift": self._vertical_grid.interface_physical_height.ndarray[
+                    self._vertical_grid.end_index_of_damping_layer + 1
+                ].item(),
+            },
+            vertical_sizes={
+                "vertical_start": 1,
+                "vertical_end": gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1),
+            },
             offset_provider={},
-        )(
-            physical_heights=self._vertical_grid.interface_physical_height,
-            diff_multfac_n2w=self.diff_multfac_n2w,
-            end_index_of_damping_layer=self._vertical_grid.end_index_of_damping_layer,
-            nshift=0,
-            heights_nrd_shift=self._vertical_grid.interface_physical_height.ndarray[
-                self._vertical_grid.end_index_of_damping_layer + 1
-            ].item(),
-            heights_1=self._vertical_grid.interface_physical_height.ndarray[1].item(),
-            vertical_start=gtx.int32(1),
-            vertical_end=gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1),
-        )
+        )(diff_multfac_n2w=self.diff_multfac_n2w)
 
         self._determine_horizontal_domains()
 
@@ -695,15 +794,8 @@ class Diffusion:
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
-            ptr_coeff_1=self._interpolation_state.rbf_coeff_1,
-            ptr_coeff_2=self._interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=self._vertex_start_lateral_boundary_level_2,
-            horizontal_end=self._vertex_end_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug("rbf interpolation 1: end")
 
@@ -720,26 +812,14 @@ class Diffusion:
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
         self.calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
-            tangent_orientation=self._edge_params.tangent_orientation,
-            inv_primal_edge_length=self._edge_params.inverse_primal_edge_lengths,
-            inv_vert_vert_length=self._edge_params.inverse_vertex_vertex_lengths,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
-            primal_normal_vert_x=self._edge_params.primal_normal_vert[0],
-            primal_normal_vert_y=self._edge_params.primal_normal_vert[1],
-            dual_normal_vert_x=self._edge_params.dual_normal_vert[0],
-            dual_normal_vert_y=self._edge_params.dual_normal_vert[1],
             vn=prognostic_state.vn,
             smag_limit=smag_limit,
             kh_smag_e=self.kh_smag_e,
             kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
             smag_offset=smag_offset,
-            horizontal_start=self._edge_start_lateral_boundary_level_5,
-            horizontal_end=self._edge_end_halo_level_2,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
         if (
@@ -753,17 +833,9 @@ class Diffusion:
             self.calculate_diagnostic_quantities_for_turbulence(
                 kh_smag_ec=self.kh_smag_ec,
                 vn=prognostic_state.vn,
-                e_bln_c_s=self._interpolation_state.e_bln_c_s,
-                geofac_div=self._interpolation_state.geofac_div,
                 diff_multfac_smag=self.diff_multfac_smag,
-                wgtfac_c=self._metric_state.wgtfac_c,
                 div_ic=diagnostic_state.div_ic,
                 hdef_ic=diagnostic_state.hdef_ic,
-                horizontal_start=self._cell_start_nudging,
-                horizontal_end=self._cell_end_local,
-                vertical_start=1,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.connectivities,
             )
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
@@ -805,25 +877,10 @@ class Diffusion:
         self.apply_diffusion_to_vn(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
-            primal_normal_vert_v1=self._edge_params.primal_normal_vert[0],
-            primal_normal_vert_v2=self._edge_params.primal_normal_vert[1],
             z_nabla2_e=self.z_nabla2_e,
-            inv_vert_vert_length=self._edge_params.inverse_vertex_vertex_lengths,
-            inv_primal_edge_length=self._edge_params.inverse_primal_edge_lengths,
-            area_edge=self._edge_params.edge_areas,
             kh_smag_e=self.kh_smag_e,
             diff_multfac_vn=diff_multfac_vn,
-            nudgecoeff_e=self._interpolation_state.nudgecoeff_e,
             vn=prognostic_state.vn,
-            nudgezone_diff=self.nudgezone_diff,
-            fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=self._edge_start_nudging_level_2,
-            limited_area=self._grid.limited_area,
-            horizontal_start=self._edge_start_lateral_boundary_level_5,
-            horizontal_end=self._edge_end_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
@@ -837,29 +894,12 @@ class Diffusion:
         self.copy_field(prognostic_state.w, self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
-            area=self._cell_params.area,
-            geofac_n2s=self._interpolation_state.geofac_n2s,
-            geofac_grg_x=self._interpolation_state.geofac_grg_x,
-            geofac_grg_y=self._interpolation_state.geofac_grg_y,
             w_old=self.w_tmp,
             w=prognostic_state.w,
-            type_shear=int32(
-                self.config.shear_type.value
-            ),  # DaCe parser peculiarity (does not work as gtx.int32)
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
-            nrdmax=int32(  # DaCe parser peculiarity (does not work as gtx.int32)
-                self._vertical_grid.end_index_of_damping_layer + 1
-            ),  # +1 since Fortran includes boundaries
-            interior_idx=self._cell_start_interior,
-            halo_idx=self._cell_end_local,
-            horizontal_start=self._horizontal_start_index_w_diffusion,
-            horizontal_end=self._cell_end_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
@@ -872,15 +912,8 @@ class Diffusion:
 
             self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
                 theta_v=prognostic_state.theta_v,
-                theta_ref_mc=self._metric_state.theta_ref_mc,
-                thresh_tdiff=self.thresh_tdiff,
                 smallest_vpfloat=constants.DBL_EPS,
                 kh_smag_e=self.kh_smag_e,
-                horizontal_start=self._edge_start_nudging,
-                horizontal_end=self._edge_end_halo,
-                vertical_start=(self._grid.num_levels - 2),
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.connectivities,
             )
             log.debug(
                 "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
@@ -892,25 +925,10 @@ class Diffusion:
 
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
-                inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
                 theta_v_in=self.theta_v_tmp,
-                geofac_div=self._interpolation_state.geofac_div,
-                mask=self._metric_state.mask_hdiff,
-                zd_vertoffset=self._metric_state.zd_vertoffset,
-                zd_diffcoef=self._metric_state.zd_diffcoef,
-                geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
-                geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
-                vcoef=self._metric_state.zd_intcoef,
-                area=self._cell_params.area,
                 theta_v=prognostic_state.theta_v,
                 exner=prognostic_state.exner,
                 rd_o_cvd=self.rd_o_cvd,
-                apply_zdiffusion_t=self.config.apply_zdiffusion_t,
-                horizontal_start=self._cell_start_nudging,
-                horizontal_end=self._cell_end_local,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.connectivities,
             )
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 
