@@ -13,7 +13,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing import test_utils
 from icon4py.model.common.grid import geometry as grid_geometry
 from model.atmosphere.diffusion.tests.diffusion.integration_tests.test_benchmark_diffusion import \
-    _construct_dummy_decomposition_info, get_cell_geometry_for_grid_file
+    construct_dummy_decomposition_info, get_cell_geometry_for_grid_file
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
 )
@@ -39,7 +39,7 @@ def test_topography_initialization(
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid,
-        decomposition_info=_construct_dummy_decomposition_info(grid, backend),
+        decomposition_info=construct_dummy_decomposition_info(grid, backend),
         backend=backend,
         coordinates=coordinates,
         extra_fields=geometry_input_fields,
@@ -49,7 +49,7 @@ def test_topography_initialization(
     cell_geometry = get_cell_geometry_for_grid_file(grid_file, geometry_field_source, backend)
 
     topo_c = topography_initialization(
-        cell_lat=cell_geometry.lat.asnumpy(),
+        cell_lat=cell_geometry.cell_center_lat.asnumpy(),
         u0=1.0,
         backend=backend,
     )

@@ -16,7 +16,7 @@ import gt4py.next as gtx
 from icon4py.model.common.decomposition import definitions
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common.dimension import CellDim
+
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid, geometry,
@@ -26,7 +26,7 @@ from icon4py.model.common.metrics import (
     metrics_attributes,
     metrics_factory,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
@@ -40,14 +40,16 @@ from icon4py.model.common.grid import geometry as grid_geometry
 grid_functionality = {dt_utils.R02B04_GLOBAL: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
 def get_edge_geometry_for_grid_file(grid_file, geometry_factory, backend):
-    return _get_or_initialize_from_grid_file(grid_file, geometry_factory, backend, "edge_geometry")
+    return _get_or_initialize_for_grid_file(grid_file, geometry_factory, backend, "edge_geometry")
 
 
 def get_cell_geometry_for_grid_file(grid_file, geometry_factory, backend):
-    return _get_or_initialize_from_grid_file(grid_file, geometry_factory, backend, "cell_geometry")
+    return _get_or_initialize_for_grid_file(grid_file, geometry_factory, backend, "cell_geometry")
 
 
-def _get_or_initialize_from_grid_file(grid_file, geometry_factory, backend, name):
+def _get_or_initialize_for_grid_file(grid_file, geometry_factory, backend, name):
+    """This is refactored from _get_or_initialize in test_diffusion.py,
+    which is used to get the edge or cell geometry for a given grid file, not a given experiment"""
 
     if not grid_functionality[grid_file].get(name):
 
@@ -73,41 +75,30 @@ def _get_or_initialize_from_grid_file(grid_file, geometry_factory, backend, name
             primal_normal_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_V),
             primal_normal_cell_x=geometry_factory.get(geometry_meta.EDGE_NORMAL_CELL_U),
             primal_normal_cell_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_CELL_V),
-            primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=(geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_U)),
-                backend=backend,
-            ),
-            primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=(geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_V)),
-                backend=backend,
-            ),
+            primal_normal_vert_x=geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            primal_normal_vert_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
             dual_normal_cell_x=geometry_factory.get(geometry_meta.EDGE_TANGENT_CELL_U),
             dual_normal_cell_y=geometry_factory.get(geometry_meta.EDGE_TANGENT_CELL_V),
-            dual_normal_vert_x=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=geometry_factory.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-                backend=backend,
-            ),
-            dual_normal_vert_y=data_alloc.flatten_first_two_dims(
-                dims.ECVDim,
-                field=geometry_factory.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
-                backend=backend,
-            ),
+            dual_normal_vert_x=geometry_factory.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            dual_normal_vert_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
         )
         grid_functionality[grid_file]["edge_geometry"] = edge_params
         grid_functionality[grid_file]["cell_geometry"] = cell_params
     return grid_functionality[grid_file].get(name)
 
-def _construct_dummy_decomposition_info(grid, backend) -> definitions.DecompositionInfo:
+def construct_dummy_decomposition_info(grid, backend) -> definitions.DecompositionInfo:
+    """A public helper function to construct a dummy decomposition info object for test cases
+     refactored from grid_utils.py"""
+
+    on_gpu = device_utils.is_cupy_device(backend)
+    xp = data_alloc.array_ns(on_gpu)
+
     def _add_dimension(dim: gtx.Dimension):
         indices = data_alloc.index_field(grid, dim, backend=backend)
         owner_mask = xp.ones((grid.size[dim],), dtype=bool)
         decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
-    on_gpu = data_alloc.is_cupy_device(backend)
-    xp = data_alloc.array_ns(on_gpu)
+
     decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
     _add_dimension(dims.EdgeDim)
     _add_dimension(dims.VertexDim)
