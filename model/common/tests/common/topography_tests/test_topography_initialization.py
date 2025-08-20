@@ -21,12 +21,13 @@ from model.common.tests.common.fixtures import *  # noqa: F403
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file",
+    "grid_file, experiment",
     [
-        (dt_utils.R02B04_GLOBAL),
+        (dt_utils.R02B04_GLOBAL, dt_utils.JABW_EXPERIMENT),
     ],
 )
 def test_topography_initialization(
+    grid_savepoint,
     grid_file,
     backend,
     topography_savepoint,
