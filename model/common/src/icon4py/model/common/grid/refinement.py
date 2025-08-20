@@ -73,19 +73,24 @@ _NUDGING_START: Final[dict[gtx.Dimension, int]] = {
 @dataclasses.dataclass(frozen=True)
 class RefinementValue:
     domain: h_grid.Domain
-    value: tuple[int,...]
+    _value: int|tuple[int,...]
 
     def __post_init__(self):
         _log.debug(f"Checking refinement value {self.value} for dimension {self.domain}")
-        assert (
-            _UNORDERED[self.domain.dim][1] <= self.value <= _MAX_ORDERED[self.domain.dim]
-        ), f"Invalid refinement control constant {self.value}"
+        for v in self.value:
+            assert (
+                _UNORDERED[self.domain.dim][1] <= v <= _MAX_ORDERED[self.domain.dim]
+            ), f"Invalid refinement control constant {self.value}"
 
     def is_nested(self) -> bool:
         return self.value < 0
 
     def is_ordered(self) -> bool:
         return self.value not in _UNORDERED[self.domain.dim]
+
+    @property
+    def value(self)-> tuple[int,]:
+        return self._value if isinstance(self._value, tuple) else (self._value,)
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -94,12 +99,12 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 # TODO(halungge): can the GRF_BOUNDARY_WIDTH be made dynamic
 _REFINEMENT_CONTROL:dict[h_grid.Domain, RefinementValue] = {
-    cell_domain(h_grid.Zone.LATERAL_BOUNDARY): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY), (1,)),
-    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2), (2,)),
-    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3), (3, )),
-    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4), (4, )),
-    cell_domain(h_grid.Zone.NUDGING): RefinementValue(cell_domain(h_grid.Zone.NUDGING), (h_grid._GRF_BOUNDARY_WIDTH_CELL + 1, )),
-    cell_domain(h_grid.Zone.LOCAL): RefinementValue(cell_domain(h_grid.Zone.LOCAL), 0),
+    cell_domain(h_grid.Zone.LATERAL_BOUNDARY): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY), 1),
+    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2), 2),
+    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3), 3 ),
+    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4), 4),
+    cell_domain(h_grid.Zone.NUDGING): RefinementValue(cell_domain(h_grid.Zone.NUDGING), h_grid._GRF_BOUNDARY_WIDTH_CELL + 1),
+    cell_domain(h_grid.Zone.LOCAL): RefinementValue(cell_domain(h_grid.Zone.LOCAL), _UNORDERED[dims.CellDim]),
     cell_domain(h_grid.Zone.INTERIOR): RefinementValue(cell_domain(h_grid.Zone.INTERIOR), _UNORDERED[dims.CellDim]),
     cell_domain(h_grid.Zone.END): RefinementValue(cell_domain(h_grid.Zone.END), 0),
     cell_domain(h_grid.Zone.HALO): RefinementValue(cell_domain(h_grid.Zone.HALO), 0), # TODO(halungge)
@@ -109,7 +114,7 @@ _REFINEMENT_CONTROL:dict[h_grid.Domain, RefinementValue] = {
     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2), 2),
     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3), 3),
     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4), 4),
-    vertex_domain(h_grid.Zone.LOCAL): RefinementValue(cell_domain(h_grid.Zone.LOCAL), 0),
+    vertex_domain(h_grid.Zone.LOCAL): RefinementValue(cell_domain(h_grid.Zone.LOCAL), _UNORDERED[dims.VertexDim]),
     vertex_domain(h_grid.Zone.INTERIOR): RefinementValue(cell_domain(h_grid.Zone.INTERIOR), _UNORDERED[dims.VertexDim]),
     vertex_domain(h_grid.Zone.END): RefinementValue(cell_domain(h_grid.Zone.END), 0),
     vertex_domain(h_grid.Zone.HALO): RefinementValue(cell_domain(h_grid.Zone.HALO), 0), # TODO(halungge)
@@ -124,7 +129,7 @@ _REFINEMENT_CONTROL:dict[h_grid.Domain, RefinementValue] = {
     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_8): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_8), 8),
     edge_domain(h_grid.Zone.NUDGING): RefinementValue(edge_domain(h_grid.Zone.NUDGING), h_grid._GRF_BOUNDARY_WIDTH_EDGES),
     edge_domain(h_grid.Zone.NUDGING_LEVEL_2): RefinementValue(edge_domain(h_grid.Zone.NUDGING_LEVEL_2), h_grid._GRF_BOUNDARY_WIDTH_EDGES + 1),
-    edge_domain(h_grid.Zone.LOCAL): RefinementValue(edge_domain(h_grid.Zone.LOCAL), 0), # TODO(halungge) meaning?
+    edge_domain(h_grid.Zone.LOCAL): RefinementValue(edge_domain(h_grid.Zone.LOCAL), _UNORDERED[dims.EdgeDim]), # TODO(halungge) meaning?
     edge_domain(h_grid.Zone.INTERIOR): RefinementValue(edge_domain(h_grid.Zone.INTERIOR), _UNORDERED[dims.EdgeDim]),
     edge_domain(h_grid.Zone.END): RefinementValue(edge_domain(h_grid.Zone.END), 0),  # TODO(halungge) meaning?
     edge_domain(h_grid.Zone.HALO): RefinementValue(edge_domain(h_grid.Zone.HALO), 0), # TODO(halungge)
@@ -181,7 +186,7 @@ def is_limited_area_grid(
 
 def compute_start_index(
     domain: h_grid.Domain, refinement_fields: dict[gtx.Dimension, gtx.Field], array_ns: ModuleType = np
-) -> int:
+) -> gtx.int32:
     """
     Compute the start index for the refinement control field for a given dimension.
 
@@ -194,7 +199,43 @@ def compute_start_index(
     """
 
     refinement_ctrl = refinement_fields.get(domain.dim).ndarray
-    refinement_mask = array_ns.where(refinement_ctrl == _REFINEMENT_CONTROL[domain].value)[0]
-    start_index = refinement_ctrl.size if refinement_mask.size == 0 else array_ns.min(refinement_mask).item()
+    refinement_value = _REFINEMENT_CONTROL[domain].value
+    refinement_mask = array_ns.zeros_like(refinement_ctrl, dtype=bool)
+    # Check for any of the refinement values
+    for value in refinement_value:
+        refinement_mask = refinement_mask | (refinement_ctrl == value)
+
+    #TODO(halungge) should we not rather return refinement_ctrl.size??
+    index = array_ns.where(refinement_mask)[0]
+    start_index = 0 if index.size == 0 else array_ns.min(index).item()
+
+    return gtx.int32(start_index)
+
+
+def compute_end_index(
+    domain: h_grid.Domain, refinement_fields: dict[gtx.Dimension, gtx.Field], array_ns: ModuleType = np
+) -> gtx.int32:
+    """
+    Compute the end index for the refinement control field for a given dimension.
+
+    Args:
+        domain: Dimension to handle, one out of CellDim, EdgeDim, VertexDim
+        refinement_fields: refinement control arrays as dictionary mapping dimension to arrays
+        array_ns: numpy or cupy module to use for array operations
+    Returns:
+        last index of this  domain
+    """
+
+    refinement_ctrl = refinement_fields.get(domain.dim).ndarray
+    refinement_value = _REFINEMENT_CONTROL[domain].value
+    refinement_mask = array_ns.zeros_like(refinement_ctrl, dtype=bool)
+    # Check for any of the refinement values
+    for value in refinement_value:
+        refinement_mask = refinement_mask | (refinement_ctrl == value)
+
+    #TODO(halungge) should we not rather return refinement_ctrl.size??
+    index = array_ns.where(refinement_mask)[0]
+    start_index = 0 if index.size == 0 else array_ns.max(index).item() + 1
+
 
     return gtx.int32(start_index)

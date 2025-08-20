@@ -97,6 +97,7 @@ class Grid:
     config: GridConfig
     connectivities: gtx_common.OffsetProvider
     geometry_type: GeometryType
+    # TODO(halunge): replace _start_indices and _end_indices: pass a function instead
     # only used internally for `start_index` and `end_index` public interface:
     _start_indices: Mapping[h_grid.Domain, gtx.int32]
     _end_indices: Mapping[h_grid.Domain, gtx.int32]
