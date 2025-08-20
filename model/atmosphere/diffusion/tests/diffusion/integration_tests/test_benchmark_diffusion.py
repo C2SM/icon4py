@@ -152,7 +152,7 @@ def metrics_factory_params(
 @pytest.mark.parametrize(
     "grid_file",
     [
-        #(dt_utils.R02B04_GLOBAL),
+        (dt_utils.R02B04_GLOBAL),
         (dt_utils.REGIONAL_GRIDFILE),
     ],
 )
@@ -201,7 +201,7 @@ def test_run_diffusion_benchmark(
     diffusion_parameters = diffusion.DiffusionParams(config)
 
     # run the grid manager to get the grid, coordinates, geometry_fields
-    grid_manager = grid_utils.get_grid_manager(grid_file=grid_file, num_levels=num_levels, keep_skip_values=True,backend=backend)
+    grid_manager = grid_utils.get_grid_manager_from_identifier(grid_file_identifier=grid_file, num_levels=num_levels, keep_skip_values=True,backend=backend)
     grid = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
