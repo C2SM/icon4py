@@ -129,8 +129,6 @@ def _get_metrics_factory(
             interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
-            e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),
-            c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,

@@ -1,14 +1,23 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import pytest
+from icon4py.model.common.initialization.topography_initialization import topography_initialization
 
-from icon4py.model.common.external_parameters import compute_topography
-
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
+from icon4py.model.testing import test_utils as helpers
 from icon4py.model.common.grid import geometry as grid_geometry
-from model.atmosphere.diffusion.tests.diffusion_tests.test_benchmark_diffusion import \
+from model.atmosphere.diffusion.tests.diffusion.integration_tests.test_benchmark_diffusion import \
     _construct_dummy_decomposition_info, get_cell_geometry_for_grid_file
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
 )
+from model.common.tests.common.fixtures import *  # noqa: F403
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -17,7 +26,7 @@ from icon4py.model.common.grid import (
         (dt_utils.R02B04_GLOBAL),
     ],
 )
-def test_compute_topograph(
+def test_topography_initialization(
     grid_file,
     backend,
     topography_savepoint,
@@ -39,7 +48,7 @@ def test_compute_topograph(
 
     cell_geometry = get_cell_geometry_for_grid_file(grid_file, geometry_field_source, backend)
 
-    topo_c = compute_topography(
+    topo_c = topography_initialization(
         cell_lat=cell_geometry.lat.asnumpy(),
         u0=1.0,
         backend=backend,
@@ -51,5 +60,6 @@ def test_compute_topograph(
         topo_c,
         topo_c_ref,
     )
+
 
 

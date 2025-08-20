@@ -33,9 +33,6 @@ from icon4py.model.testing import (
 )
 from icon4py.model.testing.data_handling import download_and_extract
 
-from .utils import (
-    construct_diffusion_config,
-)
 import icon4py.model.common.states.prognostic_state as prognostics
 
 from icon4py.model.common.grid import geometry as grid_geometry
