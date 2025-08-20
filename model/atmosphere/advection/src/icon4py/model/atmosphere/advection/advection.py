@@ -36,8 +36,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 Advection module ported from ICON mo_advection_stepping.f90.
 """
 
-# ruff: noqa: PGH004 [blanket-noqa] # just for the `noqa` in next line
-# ruff: noqa
 log = logging.getLogger(__name__)
 
 
@@ -162,14 +160,14 @@ class NoAdvection(Advection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx_backend.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("advection class init - start")
 
         # input arguments
         self._grid = grid
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -218,7 +216,7 @@ class GodunovSplittingAdvection(Advection):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_backend.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime | None = None,
         even_timestep: bool = False,
     ):
         log.debug("advection class init - start")
@@ -229,7 +227,7 @@ class GodunovSplittingAdvection(Advection):
         self._grid = grid
         self._metric_state = metric_state
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
         self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 
         # cell indices
@@ -375,7 +373,7 @@ class GodunovSplittingAdvection(Advection):
         log.debug("advection run - end")
 
 
-def convert_config_to_horizontal_vertical_advection(
+def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,
@@ -384,8 +382,10 @@ def convert_config_to_horizontal_vertical_advection(
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_backend.Backend | None,
-    exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+    exchange: decomposition.ExchangeRuntime | None = None,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
+    exchange = exchange or decomposition.SingleNodeExchange()
+    assert exchange is not None, "Exchange runtime must not be None."
     match config.horizontal_advection_limiter:
         case HorizontalAdvectionLimiter.NO_LIMITER:
             horizontal_limiter = advection_horizontal.HorizontalFluxLimiter()
@@ -466,9 +466,11 @@ def convert_config_to_advection(
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_backend.Backend | None,
-    exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+    exchange: decomposition.ExchangeRuntime | None = None,
     even_timestep: bool = False,
 ) -> Advection:
+    exchange = exchange or decomposition.SingleNodeExchange()
+    assert exchange is not None, "Exchange runtime must not be None."
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
         and config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION

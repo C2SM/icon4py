@@ -58,8 +58,6 @@ Diffusion module ported from ICON mo_nh_diffusion.f90.
 Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 """
 
-# ruff: noqa: PGH004 [blanket-noqa] # just for the `noqa` in next line
-# ruff: noqa
 log = logging.getLogger(__name__)
 
 
@@ -361,11 +359,11 @@ class Diffusion:
         cell_params: grid_states.CellParams,
         backend: gtx_backend.Backend | None,
         orchestration: bool = False,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
         self.config = config
         self._params = params
         self._grid = grid
@@ -920,7 +918,7 @@ class Diffusion:
             "compile_time_connectivities",
             *[
                 name
-                for name in self.__dict__.keys()
+                for name in self.__dict__
                 if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
             ],
         ]

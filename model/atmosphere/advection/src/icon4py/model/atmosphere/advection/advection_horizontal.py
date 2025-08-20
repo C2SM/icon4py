@@ -46,12 +46,8 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-"""
-Advection components related to horizontal transport.
-"""
+"""Advection components related to horizontal transport."""
 
-# ruff: noqa: PGH004 [blanket-noqa] # just for the `noqa` in next line
-# ruff: noqa
 log = logging.getLogger(__name__)
 
 
@@ -75,12 +71,12 @@ class PositiveDefinite(HorizontalFluxLimiter):
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
         backend: gtx_backend.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._grid = grid
         self._interpolation_state = interpolation_state
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -188,12 +184,12 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         grid: icon_grid.IconGrid,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
         backend: gtx_backend.Backend | None,
-        horizontal_limiter: HorizontalFluxLimiter = HorizontalFluxLimiter(),
+        horizontal_limiter: HorizontalFluxLimiter | None = None,
     ):
         self._grid = grid
         self._least_squares_state = least_squares_state
         self._backend = backend
-        self._horizontal_limiter = horizontal_limiter
+        self._horizontal_limiter = horizontal_limiter or HorizontalFluxLimiter()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -436,7 +432,7 @@ class SemiLagrangian(FiniteVolume):
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: gtx_backend.Backend | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("horizontal advection class init - start")
 
@@ -449,7 +445,7 @@ class SemiLagrangian(FiniteVolume):
         self._edge_params = edge_params
         self._cell_params = cell_params
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)

@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import abc
 import logging
-from abc import ABC, abstractmethod
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -71,15 +71,13 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 Advection components related to vertical transport.
 """
 
-# ruff: noqa: PGH004 [blanket-noqa] # just for the `noqa` in next line
-# ruff: noqa
 log = logging.getLogger(__name__)
 
 
-class BoundaryConditions(ABC):
+class BoundaryConditions(abc.ABC):
     """Class that sets the upper and lower boundary conditions."""
 
-    @abstractmethod
+    @abc.abstractmethod
     def run(
         self,
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
@@ -148,9 +146,10 @@ class NoFluxCondition(BoundaryConditions):
         log.debug("vertical boundary conditions computation - end")
 
 
-class VerticalLimiter(ABC):
+class VerticalLimiter(abc.ABC):
     """Class that limits the vertical reconstructed fields and the fluxes."""
 
+    @abc.abstractmethod
     def limit_slope(
         self,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -159,6 +158,7 @@ class VerticalLimiter(ABC):
         horizontal_end: gtx.int32,
     ): ...
 
+    @abc.abstractmethod
     def limit_parabola(
         self,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -169,6 +169,7 @@ class VerticalLimiter(ABC):
         horizontal_end: gtx.int32,
     ): ...
 
+    @abc.abstractmethod
     def limit_fluxes(
         self,
         horizontal_start: gtx.int32,
@@ -338,10 +339,10 @@ class SemiMonotonicLimiter(VerticalLimiter):
     ): ...
 
 
-class VerticalAdvection(ABC):
+class VerticalAdvection(abc.ABC):
     """Class that does one vertical advection step."""
 
-    @abstractmethod
+    @abc.abstractmethod
     def run(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
@@ -479,7 +480,7 @@ class FiniteVolume(VerticalAdvection):
 
         log.debug("vertical advection run - end")
 
-    @abstractmethod
+    @abc.abstractmethod
     def _compute_numerical_flux(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
@@ -490,7 +491,7 @@ class FiniteVolume(VerticalAdvection):
         even_timestep: bool,
     ): ...
 
-    @abstractmethod
+    @abc.abstractmethod
     def _update_unknowns(
         self,
         p_tracer_now: fa.CellKField[ta.wpfloat],

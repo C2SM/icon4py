@@ -77,9 +77,6 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-# ruff: noqa: PGH004 [blanket-noqa] # just for the `noqa` in next line
-# ruff: noqa
-
 log = logging.getLogger(__name__)
 
 
@@ -216,8 +213,8 @@ class NonHydrostaticConfig:
         l_vert_nested: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
-        _nudge_max_coeff: float = None,  # default is set in __init__
-        max_nudging_coefficient: float = None,  # default is set in __init__
+        _nudge_max_coeff: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float | None = None,  # default is set in __init__
         fourth_order_divdamp_factor: float = 0.0025,
         fourth_order_divdamp_factor2: float = 0.004,
         fourth_order_divdamp_factor3: float = 0.004,
@@ -1057,8 +1054,8 @@ class SolveNonhydro:
         )
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
-            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,  # TODO
-            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,  # TODO
+            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,  # TODO(): fix
+            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,  # TODO(): fix
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
