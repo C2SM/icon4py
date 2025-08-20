@@ -7,18 +7,19 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
-import pytest
 
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
+from icon4py.model.atmosphere.diffusion import diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-from ..fixtures import *  # noqa: F403
-from ..utils import construct_diffusion_config, diff_multfac_vn_numpy, smag_limit_numpy
+from ..utils import diff_multfac_vn_numpy, smag_limit_numpy
+
+from icon4py.model.testing.fixtures import backend
 
 
-# TODO: apply StencilTest structure to this test
+# TODO(havogt): apply StencilTest structure, however this needs to be executed with CartesianGrid,
+# i.e. must not receive connectivities.
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
@@ -97,30 +98,3 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
     assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize("linit", [True])
-def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
-):
-    savepoint = savepoint_diffusion_init
-    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
-
-    params = diffusion.DiffusionParams(config)
-    expected_diff_multfac_vn = savepoint.diff_multfac_vn()
-    expected_smag_limit = savepoint.smag_limit()
-    exptected_smag_offset = savepoint.smag_offset()
-
-    diff_multfac_vn = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
-    smag_limit = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
-    diffusion_utils.setup_fields_for_initial_step.with_backend(backend)(
-        params.K4,
-        config.hdiff_efdt_ratio,
-        diff_multfac_vn,
-        smag_limit,
-        offset_provider={},
-    )
-    assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
-    assert exptected_smag_offset == 0.0

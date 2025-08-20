@@ -18,9 +18,9 @@ import sys
 
 
 if __name__ == "__main__":
-
     try:
         import scripts  # Import from the ./scripts folder when running as a script
+
         assert len(scripts.__path__) == 1 and scripts.__path__[0] == str(
             pathlib.Path(__file__).parent.resolve().absolute() / "scripts"
         ), (
@@ -38,5 +38,3 @@ if __name__ == "__main__":
         sys.exit(127)
 
     import scripts.__main__
-
-

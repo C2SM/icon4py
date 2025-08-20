@@ -12,7 +12,8 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_diffusion_metrics import (
-    compute_diffusion_metrics,
+    compute_diffusion_intcoef_and_vertoffset,
+    compute_diffusion_mask_and_coef,
 )
 from icon4py.model.common.metrics.metric_fields import (
     compute_max_nbhgt,
@@ -20,7 +21,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -103,7 +104,7 @@ def test_compute_diffusion_metrics(
         offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
     )
 
-    mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_metrics(
+    mask_hdiff, zd_diffcoef_dsl = compute_diffusion_mask_and_coef(
         c2e2c=c2e2c,
         z_mc=z_mc.asnumpy(),
         max_nbhgt=max_nbhgt.asnumpy(),
@@ -115,9 +116,21 @@ def test_compute_diffusion_metrics(
         cell_nudging=cell_nudging,
         nlev=nlev,
     )
-    assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
-    assert helpers.dallclose(
+    zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_intcoef_and_vertoffset(
+        c2e2c=c2e2c,
+        z_mc=z_mc.asnumpy(),
+        max_nbhgt=max_nbhgt.asnumpy(),
+        c_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
+        maxslp_avg=maxslp_avg.asnumpy(),
+        maxhgtd_avg=maxhgtd_avg.asnumpy(),
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        cell_nudging=cell_nudging,
+        nlev=nlev,
+    )
+    assert test_utils.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
+    assert test_utils.dallclose(
         zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
     )
-    assert helpers.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
-    assert helpers.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())
+    assert test_utils.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
+    assert test_utils.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())

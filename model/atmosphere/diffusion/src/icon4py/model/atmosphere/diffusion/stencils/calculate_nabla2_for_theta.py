@@ -24,7 +24,7 @@ def _calculate_nabla2_for_theta(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
 ) -> fa.CellKField[vpfloat]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
@@ -36,7 +36,7 @@ def calculate_nabla2_for_theta(
     kh_smag_e: fa.EdgeKField[float],
     inv_dual_edge_length: fa.EdgeField[float],
     theta_v: fa.CellKField[float],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], float],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], float],
     z_temp: fa.CellKField[float],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

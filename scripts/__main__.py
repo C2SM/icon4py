@@ -11,13 +11,13 @@
 
 from __future__ import annotations
 
-from typing import Final
-
 import importlib
 import pathlib
 import pkgutil
+from typing import Final
 
 import typer
+
 
 SCRIPTS_DIR: Final = pathlib.Path(__file__).parent.resolve().absolute()
 assert str(SCRIPTS_DIR.name) == __package__
@@ -33,5 +33,5 @@ for _, name, _ in pkgutil.walk_packages([str(SCRIPTS_DIR)]):
                 cli.add_typer(module.cli, name=module.cli.info.name or name)
             else:
                 cli.add_typer(module.cli)
-                
+
 cli()

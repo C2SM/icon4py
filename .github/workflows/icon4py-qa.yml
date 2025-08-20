@@ -1,39 +1,39 @@
 name: ICON4Py Quality Assurance
 
 on:
-    workflow_dispatch:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
-        types: [opened, reopened, synchronize]
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
 jobs:
-    pre-commit-icon4py-model:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
+  pre-commit-icon4py-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
 
-            - name: Install system dependencies
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install libboost-all-dev
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libboost-all-dev
 
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                python-version-file: ".python-version"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
 
-            - name: Install uv
-              uses: astral-sh/setup-uv@v6
-              with:
-                enable-cache: true
-                cache-dependency-glob: "uv.lock"
-                activate-environment: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          activate-environment: true
 
-            - name: Install icon4py namespace packages
-              run: uv sync --extra all
+      - name: Install icon4py namespace packages
+        run: uv sync --extra all
 
-            - name: "Run pre-commit"
-              uses: pre-commit/action@v3.0.1
+      - name: "Run pre-commit"
+        uses: pre-commit/action@v3.0.1

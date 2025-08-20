@@ -8,11 +8,10 @@
 
 from __future__ import annotations
 
-import os
 import pathlib
 import re
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gt4py.next import backend as gtx_backend
 
@@ -22,7 +21,6 @@ from icon4py.model.common.decomposition import definitions as decomposition
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
 
-DEFAULT_TEST_DATA_FOLDER = "testdata"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
@@ -69,7 +67,7 @@ GRID_URIS = {
     R02B07_GLOBAL: R02B07_GLOBAL_GRID_URI,
     ICON_CH2_SMALL: MCH_OPR_R04B07_DOMAIN01_GRID_URI,
     REGIONAL_BENCHMARK: DOMAIN01_GRID_URI,
-    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500,  # TODO: check
+    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500,  # TODO(): check
 }
 
 GRID_IDS = {
@@ -80,22 +78,6 @@ GRID_IDS = {
     WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
 }
 
-
-def get_test_data_root_path() -> pathlib.Path:
-    test_utils_path = pathlib.Path(__file__).parent
-    model_path = test_utils_path.parent
-    common_path = model_path.parent.parent.parent.parent
-    env_base_path = os.getenv("TEST_DATA_PATH")
-
-    if env_base_path:
-        return pathlib.Path(env_base_path)
-    else:
-        return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
-
-
-TEST_DATA_ROOT = get_test_data_root_path()
-SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
-GRIDS_PATH = TEST_DATA_ROOT.joinpath("grids")
 
 DATA_URIS = {
     1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",
@@ -122,7 +104,7 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         return 0, 2
 
     try:
-        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
+        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
         return root, level
     except AttributeError as err:
         raise ValueError(
@@ -130,12 +112,12 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         ) from err
 
 
-def get_grid_id_for_experiment(experiment) -> uuid.UUID:
+def get_grid_id_for_experiment(experiment: str) -> uuid.UUID:
     """Get the unique id of the grid used in the experiment.
 
     These ids are encoded in the original grid file that was used to run the simulation, but not serialized when generating the test data. So we duplicate the information here.
 
-    TODO (@halungge): this becomes obsolete once we get the connectivities from the grid files.
+    TODO(halungge): this becomes obsolete once we get the connectivities from the grid files.
     """
     try:
         return GRID_IDS[experiment]
@@ -143,20 +125,26 @@ def get_grid_id_for_experiment(experiment) -> uuid.UUID:
         raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
 
 
-def get_processor_properties_for_run(run_instance):
+def get_processor_properties_for_run(
+    run_instance: decomposition.RunType,
+) -> decomposition.ProcessProperties:
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_ranked_data_path(base_path, processor_properties):
-    return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
+def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Path:
+    return base_path.absolute().joinpath(f"mpitask{comm_size}")
 
 
-def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
+def get_datapath_for_experiment(
+    ranked_base_path: pathlib.Path, experiment: str = REGIONAL_EXPERIMENT
+) -> pathlib.Path:
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
 def create_icon_serial_data_provider(
-    datapath, processor_props, backend: Optional[gtx_backend.Backend]
+    datapath: pathlib.Path,
+    processor_props: decomposition.ProcessProperties,
+    backend: gtx_backend.Backend | None,
 ) -> serialbox.IconSerialDataProvider:
     # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.testing.serialbox import IconSerialDataProvider

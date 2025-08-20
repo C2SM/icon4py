@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_tendency import (
     compute_tendency,
 )
@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestComputeTendency(helpers.StencilTest):
+class TestComputeTendency(stencil_tests.StencilTest):
     PROGRAM = compute_tendency
     OUTPUTS = ("opt_ddt_tracer_adv",)
 

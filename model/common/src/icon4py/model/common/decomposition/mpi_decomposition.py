@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import functools
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import numpy as np
 from gt4py import next as gtx
@@ -50,7 +51,7 @@ try:
 except ImportError:
     from types import ModuleType
 
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+    dace: ModuleType | None = None  # type: ignore[no-redef]
 
 if TYPE_CHECKING:
     import mpi4py.MPI
@@ -128,9 +129,9 @@ class MPICommProcessProperties(definitions.ProcessProperties):
 
 
 class GHexMultiNodeExchange:
-    max_num_of_fields_to_communicate_dace: Final[
-        int
-    ] = 10  # maximum number of fields to perform halo exchange on (DaCe-related)
+    max_num_of_fields_to_communicate_dace: Final[int] = (
+        10  # maximum number of fields to perform halo exchange on (DaCe-related)
+    )
 
     def __init__(
         self,
@@ -256,7 +257,7 @@ class GHexMultiNodeExchange:
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
-    def __call__(self, *args, **kwargs) -> Optional[MultiNodeResult]:
+    def __call__(self, *args, **kwargs) -> MultiNodeResult | None:
         """Perform a halo exchange operation.
 
         Args:
@@ -307,16 +308,15 @@ class GHexMultiNodeExchange:
             self.num_of_halo_tasklets += 1
             return sdfg
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             # Get the underlying C++ pointers of the GHEX objects and use them in the halo exchange tasklet
             return {ghex_ptr_name: dace.uintp for ghex_ptr_name in halo_exchange.GHEX_PTR_NAMES}
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-            args = []
-            for i in range(GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace):
-                args.append(f"field_{i}")
+            args = [
+                f"field_{i}"
+                for i in range(GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace)
+            ]
             return (args, [])
 
     else:
@@ -326,9 +326,7 @@ class GHexMultiNodeExchange:
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             raise NotImplementedError(
                 "__sdfg_closure__ is only supported when the 'dace' module is available."
             )
@@ -395,9 +393,7 @@ class HaloExchangeWait:
 
             return sdfg
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             return {}
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
@@ -415,9 +411,7 @@ class HaloExchangeWait:
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             raise NotImplementedError(
                 "__sdfg_closure__ is only supported when the 'dace' module is available."
             )
