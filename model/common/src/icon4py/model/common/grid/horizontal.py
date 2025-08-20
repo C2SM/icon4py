@@ -45,7 +45,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims
 
-
+#TODO(halungge): can we get rid of all these?
 NUM_GHOST_ROWS: Final[int] = 2
 # values from mo_impl_constants.f90
 _ICON_INDEX_OFFSET_CELLS: Final[int] = 8
@@ -60,6 +60,7 @@ _MIN_RL_VERTEX: Final[int] = _MIN_RL_VERTEX_INT - (NUM_GHOST_ROWS + 1)
 _MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
 
 _ICON_INDEX_OFFSET_EDGES: Final[int] = 13
+
 _GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
 _GRF_NUDGEZONE_START_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + 1
 _GRF_NUDGEZONE_WIDTH: Final[int] = 8
@@ -301,6 +302,7 @@ class Zone(str, enum.Enum):
 
     def is_halo(self) -> bool:
         return self in (Zone.HALO, Zone.HALO_LEVEL_2)
+
 
 
 VERTEX_ZONES = (

@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
+import enum
 import logging
 from types import ModuleType
 from typing import Final, Mapping
@@ -13,7 +14,7 @@ from typing import Final, Mapping
 import numpy as np
 from gt4py import next as gtx
 
-import icon4py.model.common.grid.horizontal as h_grid
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -33,18 +34,24 @@ This module only contains functionality related to grid refinement as we use it 
 """
 _log = logging.getLogger(__name__)
 
-# TODO get these from grid file cell_grf, edge_grf, vertex_grf
-_MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
+#TODO(halunge): from grid file cell_grf, edge_grf, vertex_grf
+GRF_DIMENSION: Final[dict[gtx.Dimension,int]] = {
     dims.CellDim: 14,
     dims.EdgeDim: 24,
-    dims.VertexDim: 13,
+    dims.VertexDim: 13
+},
+
+_MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
+    dims.CellDim: 14,
+    dims.EdgeDim: 28,
+    dims.VertexDim: 14,
 }
 """Lateral boundary points are ordered and have an index indicating the (cell) s distance to the boundary,
 generally the number of ordered rows can be defined in the grid generator, but it will never exceed 14 for cells.
 """
 
 
-_UNORDERED: Final[dict[gtx.Dimension : tuple[int, int]]] = {
+_UNORDERED: Final[dict[gtx.Dimension, tuple[int, int]]] = {
     dims.CellDim: (0, -4),
     dims.EdgeDim: (0, -8),
     dims.VertexDim: (0, -4),
@@ -56,7 +63,7 @@ _MIN_ORDERED: Final[dict[gtx.Dimension, int]] = {
 }
 """For coarse parent grids the overlapping boundary regions are counted with negative values, from -1 to max -3, (as -4 is used to mark interior points)"""
 
-_NUDGING_START: Final[dict[gtx.Dimension : int]] = {
+_NUDGING_START: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: h_grid._GRF_BOUNDARY_WIDTH_CELL + 1,
     dims.EdgeDim: h_grid._GRF_BOUNDARY_WIDTH_EDGES + 1,
 }
@@ -65,20 +72,66 @@ _NUDGING_START: Final[dict[gtx.Dimension : int]] = {
 
 @dataclasses.dataclass(frozen=True)
 class RefinementValue:
-    dim: gtx.Dimension
-    value: int
+    domain: h_grid.Domain
+    value: tuple[int,...]
 
     def __post_init__(self):
-        _log.debug(f"Checking refinement value {self.value} for dimension {self.dim}")
+        _log.debug(f"Checking refinement value {self.value} for dimension {self.domain}")
         assert (
-            _UNORDERED[self.dim][1] <= self.value <= _MAX_ORDERED[self.dim]
+            _UNORDERED[self.domain.dim][1] <= self.value <= _MAX_ORDERED[self.domain.dim]
         ), f"Invalid refinement control constant {self.value}"
 
     def is_nested(self) -> bool:
         return self.value < 0
 
     def is_ordered(self) -> bool:
-        return self.value not in _UNORDERED[self.dim]
+        return self.value not in _UNORDERED[self.domain.dim]
+
+
+cell_domain = h_grid.domain(dims.CellDim)
+edge_domain = h_grid.domain(dims.EdgeDim)
+vertex_domain = h_grid.domain(dims.VertexDim)
+
+# TODO(halungge): can the GRF_BOUNDARY_WIDTH be made dynamic
+_REFINEMENT_CONTROL:dict[h_grid.Domain, RefinementValue] = {
+    cell_domain(h_grid.Zone.LATERAL_BOUNDARY): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY), (1,)),
+    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2), (2,)),
+    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3), (3, )),
+    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4), (4, )),
+    cell_domain(h_grid.Zone.NUDGING): RefinementValue(cell_domain(h_grid.Zone.NUDGING), (h_grid._GRF_BOUNDARY_WIDTH_CELL + 1, )),
+    cell_domain(h_grid.Zone.LOCAL): RefinementValue(cell_domain(h_grid.Zone.LOCAL), 0),
+    cell_domain(h_grid.Zone.INTERIOR): RefinementValue(cell_domain(h_grid.Zone.INTERIOR), _UNORDERED[dims.CellDim]),
+    cell_domain(h_grid.Zone.END): RefinementValue(cell_domain(h_grid.Zone.END), 0),
+    cell_domain(h_grid.Zone.HALO): RefinementValue(cell_domain(h_grid.Zone.HALO), 0), # TODO(halungge)
+    cell_domain(h_grid.Zone.HALO_LEVEL_2): RefinementValue(cell_domain(h_grid.Zone.HALO_LEVEL_2), 0), # TODO(halungge)
+
+    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY), 1),
+    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2), 2),
+    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3), 3),
+    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4): RefinementValue(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4), 4),
+    vertex_domain(h_grid.Zone.LOCAL): RefinementValue(cell_domain(h_grid.Zone.LOCAL), 0),
+    vertex_domain(h_grid.Zone.INTERIOR): RefinementValue(cell_domain(h_grid.Zone.INTERIOR), _UNORDERED[dims.VertexDim]),
+    vertex_domain(h_grid.Zone.END): RefinementValue(cell_domain(h_grid.Zone.END), 0),
+    vertex_domain(h_grid.Zone.HALO): RefinementValue(cell_domain(h_grid.Zone.HALO), 0), # TODO(halungge)
+    vertex_domain(h_grid.Zone.HALO_LEVEL_2): RefinementValue(cell_domain(h_grid.Zone.HALO_LEVEL_2), 0), # TODO(halungge)
+    edge_domain(h_grid.Zone.LATERAL_BOUNDARY): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY), 1),
+    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2), 2),
+    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3), 3),
+    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4), 4),
+    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5), 5),
+    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6), 6),
+    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7), 7),
+    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_8): RefinementValue(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_8), 8),
+    edge_domain(h_grid.Zone.NUDGING): RefinementValue(edge_domain(h_grid.Zone.NUDGING), h_grid._GRF_BOUNDARY_WIDTH_EDGES),
+    edge_domain(h_grid.Zone.NUDGING_LEVEL_2): RefinementValue(edge_domain(h_grid.Zone.NUDGING_LEVEL_2), h_grid._GRF_BOUNDARY_WIDTH_EDGES + 1),
+    edge_domain(h_grid.Zone.LOCAL): RefinementValue(edge_domain(h_grid.Zone.LOCAL), 0), # TODO(halungge) meaning?
+    edge_domain(h_grid.Zone.INTERIOR): RefinementValue(edge_domain(h_grid.Zone.INTERIOR), _UNORDERED[dims.EdgeDim]),
+    edge_domain(h_grid.Zone.END): RefinementValue(edge_domain(h_grid.Zone.END), 0),  # TODO(halungge) meaning?
+    edge_domain(h_grid.Zone.HALO): RefinementValue(edge_domain(h_grid.Zone.HALO), 0), # TODO(halungge)
+    edge_domain(h_grid.Zone.HALO_LEVEL_2): RefinementValue(edge_domain(h_grid.Zone.HALO_LEVEL_2), 0), # TODO(halungge)
+
+}
+
 
 
 def is_unordered_field(
@@ -127,27 +180,21 @@ def is_limited_area_grid(
 
 
 def compute_start_index(
-    dim: gtx.Dimension, refinement_ctrl: data_alloc.NDArray, array_ns: ModuleType = np
-) -> data_alloc.NDArray:
+    domain: h_grid.Domain, refinement_fields: dict[gtx.Dimension, gtx.Field], array_ns: ModuleType = np
+) -> int:
     """
     Compute the start index for the refinement control field for a given dimension.
 
     Args:
-        dim: Dimension to handle, one out of CellDim, EdgeDim, VertexDim
-        refinement_ctrl: refinement control array for the given dimension
+        domain: Dimension to handle, one out of CellDim, EdgeDim, VertexDim
+        refinement_fields: refinement control arrays as dictionary mapping dimension to arrays
         array_ns: numpy or cupy module to use for array operations
-
     Returns:
-
+        start index for the domain
     """
 
-    assert (
-        dim.kind == gtx.DimensionKind.HORIZONTAL
-    ), f"dim = {dim=} refinement control values only exist for horizontal dimensions"
+    refinement_ctrl = refinement_fields.get(domain.dim).ndarray
+    refinement_mask = array_ns.where(refinement_ctrl == _REFINEMENT_CONTROL[domain].value)[0]
+    start_index = refinement_ctrl.size if refinement_mask.size == 0 else array_ns.min(refinement_mask).item()
 
-    index = array_ns.min(array_ns.where(refinement_ctrl == h_grid.LineNumber.FIRST))
-    starts[h_grid._LATERAL_BOUNDARY[dim]] = index
-    index = array_ns.min(array_ns.where(refinement_ctrl == h_grid.LineNumber.SECOND))
-    starts[h_grid._LATERAL_BOUNDARY[dim] + 1] = index
-
-    return starts
+    return gtx.int32(start_index)
