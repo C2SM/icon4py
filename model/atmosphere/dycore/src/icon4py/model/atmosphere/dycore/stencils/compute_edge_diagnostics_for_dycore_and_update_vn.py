@@ -13,7 +13,6 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import broadcast
 
-from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
 )
@@ -63,7 +62,6 @@ from icon4py.model.common import (
 from icon4py.model.common.type_alias import wpfloat
 
 
-horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType()
 dycore_consts: Final = constants.PhysicsConstants()
 
 

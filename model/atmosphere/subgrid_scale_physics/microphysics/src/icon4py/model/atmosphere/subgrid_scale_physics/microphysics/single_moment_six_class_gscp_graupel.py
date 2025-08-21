@@ -8,7 +8,6 @@
 
 
 import dataclasses
-import enum
 import math
 import sys
 from typing import Final
@@ -29,7 +28,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 sys.setrecursionlimit(350000)
 
 
-class LiquidAutoConversion(enum.IntEnum):
+class LiquidAutoConversionType(FrozenNamespace[gtx.int32]):
     """
     Options for computing liquid auto conversion rate
     """
@@ -40,7 +39,7 @@ class LiquidAutoConversion(enum.IntEnum):
     SEIFERT_BEHENG = 1
 
 
-class SnowInterceptParameter(enum.IntEnum):
+class SnowInterceptParametererization(FrozenNamespace[gtx.int32]):
     """
     Options for deriving snow intercept parameter
     """
@@ -49,6 +48,10 @@ class SnowInterceptParameter(enum.IntEnum):
     FIELD_BEST_FIT_ESTIMATION = 1
     #: Estimated intercept parameter for the snow size distribution from the general moment equation in table 2 of Field et al. (2005)
     FIELD_GENERAL_MOMENT_ESTIMATION = 2
+
+
+liquid_auto_conversion_type = LiquidAutoConversionType()
+snow_intercept_parameterization = SnowInterceptParametererization()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -66,10 +69,10 @@ class SingleMomentSixClassIconGraupelConfig:
     """
 
     #: liquid auto conversion mode. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    liquid_autoconversion_option: LiquidAutoConversion = LiquidAutoConversion.KESSLER
+    liquid_autoconversion_option: LiquidAutoConversionType = LiquidAutoConversionType.KESSLER
     #: snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    snow_intercept_option: SnowInterceptParameter = (
-        SnowInterceptParameter.FIELD_GENERAL_MOMENT_ESTIMATION
+    snow_intercept_option: SnowInterceptParametererization = (
+        SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION
     )
     #: Determine whether the microphysical processes are isochoric or isobaric. Originally defined as l_cv as input to the graupel in ICON. It is hardcoded to True, I still keep it because I do not understand the reason for its existence and isobaric may have a positive effect on reducing sound waves.
     is_isochoric: bool = True
@@ -392,11 +395,14 @@ def _compute_snow_interception_and_collision_parameters(
         llqs: snow grid cell
         snow_intercept_option: estimation method for snow intercept parameter
     Returns:
-
+        n0s: snow size distribution intercept parameter
+        snow_sed0: integration factor for snow sedimendation
+        crim: riming constant
+        cagg: aggregation constant
+        cbsdep: deposition constant
     """
     if llqs:
-        # TODO (Chia Rui): SnowInterceptParameter.FIELD_BEST_FIT_ESTIMATION.value does not work.
-        if snow_intercept_option == 1:
+        if snow_intercept_option == snow_intercept_parameterization.FIELD_BEST_FIT_ESTIMATION:
             # Calculate n0s using the temperature-dependent
             # formula of Field et al. (2005)
             local_tc = temperature - icon_graupel_params.melting_temperature
@@ -408,8 +414,9 @@ def _compute_snow_interception_and_collision_parameters(
             n0s = minimum(n0s, wpfloat("1.0e9"))
             n0s = maximum(n0s, wpfloat("1.0e6"))
 
-        # TODO (Chia Rui): SnowInterceptParameter.FIELD_GENERAL_MOMENT_ESTIMATION.value does not work.
-        elif snow_intercept_option == 2:
+        elif (
+            snow_intercept_option == snow_intercept_parameterization.FIELD_GENERAL_MOMENT_ESTIMATION
+        ):
             # Calculate n0s using the temperature-dependent moment
             # relations of Field et al. (2005)
             local_tc = temperature - icon_graupel_params.melting_temperature
@@ -533,8 +540,8 @@ def _autoconversion_and_rain_accretion(
 ) -> tuple[ta.wpfloat, ta.wpfloat]:
     """
     Compute the rate of cloud-to-rain autoconversion and the mass of cloud accreted by rain.
-    Method 1: liquid_autoconversion_option = LiquidAutoConversion.KESSLER, Kessler (1969)
-    Method 2: liquid_autoconversion_option = LiquidAutoConversion.SEIFERT_BEHENG, Seifert and beheng (2001)
+    Method 1: liquid_autoconversion_option = LiquidAutoConversionType.KESSLER, Kessler (1969)
+    Method 2: liquid_autoconversion_option = LiquidAutoConversionType.SEIFERT_BEHENG, Seifert and beheng (2001)
 
     Args:
         temperature: air temperature [K]
@@ -548,8 +555,7 @@ def _autoconversion_and_rain_accretion(
         cloud-to-rain autoconversionn rate, rain-cloud accretion rate
     """
     if llqc & (temperature > icon_graupel_params.homogeneous_freeze_temperature):
-        # TODO (Chia Rui): LiquidAutoConversion.KESSLER.value does not work.
-        if liquid_autoconversion_option == 0:
+        if liquid_autoconversion_option == liquid_auto_conversion_type.KESSLER:
             # Kessler(1969) autoconversion rate
             cloud_autoconversion_rate_c2r = (
                 icon_graupel_params.kessler_cloud2rain_autoconversion_coeff_for_cloud
@@ -561,8 +567,7 @@ def _autoconversion_and_rain_accretion(
                 * celn7o8qrk
             )
 
-        # TODO (Chia Rui): LiquidAutoConversion.SEIFERT_BEHENG.value does not work.
-        elif liquid_autoconversion_option == 1:
+        elif liquid_autoconversion_option == liquid_auto_conversion_type.SEIFERT_BEHENG:
             # Seifert and Beheng (2001) autoconversion rate
             local_const = (
                 icon_graupel_params.kcau
@@ -752,7 +757,6 @@ def _reduced_deposition_in_clouds(
     dz: ta.wpfloat,
     dist_cldtop_kup: ta.wpfloat,
     k_lev: gtx.int32,
-    startmoist_level: gtx.int32,
     is_surface: bool,
     llqc: bool,
 ) -> tuple[ta.wpfloat, ta.wpfloat]:
@@ -770,14 +774,13 @@ def _reduced_deposition_in_clouds(
         dz: vertical grid spacing
         dist_cldtop_kup: vertical distance to cloud top
         k_lev: current vertical level index
-        startmoist_level: the starting vertical level index for moist process
         is_surface: True if the current k level is at the bottom
         llqc: cloud grid cell
     Returns:
         vertical distance to cloud top, reduced factor for ice deposition
     """
     if llqc:
-        if (k_lev > startmoist_level) & (not is_surface):
+        if (k_lev > 0) & (not is_surface):
             cqcgk_1 = qi_kup + qs_kup + qg_kup
 
             # distance from cloud top
@@ -789,7 +792,7 @@ def _reduced_deposition_in_clouds(
         else:
             dist_cldtop = dist_cldtop_kup
 
-        if (k_lev > startmoist_level) & (not is_surface):
+        if (k_lev > 0) & (not is_surface):
             # finalizing transfer rates in clouds and calculate depositional growth reduction
             cnin = _compute_cooper_inp_concentration(temperature)
             cfnuc = minimum(cnin / icon_graupel_params.nimix, wpfloat("1.0"))
@@ -1355,7 +1358,6 @@ def _evaporation_and_freezing_in_subsaturated_air(
     return rain_evaporation_rate_r2v, rain_freezing_rate_r2g
 
 
-# TODO (Chia Rui): this is a duplicated function for saturated pressure. Move to a common place when the one in saturation adjustment can be used in scan operator.
 @gtx.field_operator
 def sat_pres_water(temperature: ta.wpfloat) -> ta.wpfloat:
     return icon_graupel_params.tetens_p0 * exp(
@@ -1518,9 +1520,6 @@ class SingleMomentSixClassIconGraupel:
         return self._sed_dens_factor_coef
 
     def _initialize_local_fields(self):
-        self.qnc = data_alloc.zero_field(
-            self.grid, dims.CellDim, dtype=ta.wpfloat, backend=self._backend
-        )
         self.rhoqrv_old_kup = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
@@ -1578,6 +1577,7 @@ class SingleMomentSixClassIconGraupel:
         qi: gtx.Field[[dims.CellDim, dims.KDim], ta.wpfloat],
         qs: gtx.Field[[dims.CellDim, dims.KDim], ta.wpfloat],
         qg: gtx.Field[[dims.CellDim, dims.KDim], ta.wpfloat],
+        qnc: gtx.Field[[dims.CellDim], ta.wpfloat],
         temperature_tendency: gtx.Field[[dims.CellDim, dims.KDim], ta.wpfloat],
         qv_tendency: gtx.Field[[dims.CellDim, dims.KDim], ta.wpfloat],
         qc_tendency: gtx.Field[[dims.CellDim, dims.KDim], ta.wpfloat],
@@ -1598,6 +1598,7 @@ class SingleMomentSixClassIconGraupel:
             qi: specific ice content [kg/kg]
             qs: specific snow content [kg/kg]
             qg: specific graupel content [kg/kg]
+            qnc: cloud number concentration [/m3]
         Returns:
             temperature_tendency: air temperature tendency [K/s]
             qv_tendency: specific humidity tendency [kg/kg/s]
@@ -1608,9 +1609,9 @@ class SingleMomentSixClassIconGraupel:
             qg_tendency: specific graupel content tendency [kg/kg/s]
         """
         icon_graupel(
-            self.vertical_params.kstart_moist,
-            self.config.liquid_autoconversion_option.value,
-            self.config.snow_intercept_option.value,
+            gtx.int32(self.grid.num_levels - 1),
+            self.config.liquid_autoconversion_option,
+            self.config.snow_intercept_option,
             self.config.is_isochoric,
             self.config.use_constant_water_heat_capacity,
             self.config.ice_stickeff_min,
@@ -1632,7 +1633,7 @@ class SingleMomentSixClassIconGraupel:
             qr,
             qs,
             qg,
-            self.qnc,
+            qnc,
             temperature_tendency,
             qv_tendency,
             qc_tendency,
@@ -1650,7 +1651,7 @@ class SingleMomentSixClassIconGraupel:
             self.vnew_i,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
-            vertical_start=0,
+            vertical_start=self.vertical_params.kstart_moist,
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
@@ -1682,8 +1683,8 @@ class SingleMomentSixClassIconGraupel:
             self.total_precipitation_flux,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels - gtx.int32(1),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self.grid.num_levels - 1),
             offset_provider={},
         )
 
@@ -1714,7 +1715,7 @@ class SingleMomentSixClassIconGraupel:
             self.total_precipitation_flux,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
-            vertical_start=self.grid.num_levels - gtx.int32(1),
+            vertical_start=gtx.int32(self.grid.num_levels - 1),
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
@@ -2002,8 +2003,7 @@ def _icon_graupel_scan(
         ta.wpfloat,
         gtx.int32,
     ],
-    startmoist_level: gtx.int32,  # k start moist level
-    surface_level: gtx.int32,  # k bottom level
+    ground_level: gtx.int32,  # k bottom level
     liquid_autoconversion_option: gtx.int32,
     snow_intercept_option: gtx.int32,
     is_isochoric: bool,
@@ -2040,13 +2040,12 @@ def _icon_graupel_scan(
 ):
     """
     This is the ICON graupel scheme. The structure of the code can be split into several steps as follow:
-        1. return the original prognostic, diagnostic, and tracer variables when k is smaller than kstart_moist.
-        2. initialize tracer at k-1 level, and some pre-computed coefficients including the snow intercept parameter for later uses.
-        3. compute sedimentation fluxes and update rain, snow, and graupel mass at the current k level.
-        4. compute pre-computed coefficients after update from sedimentation fluxes to include implicitness of the graupel scheme.
-        5. compute all transfer rates.
-        6. check if tracers go below 0.
-        7. update all tendencies.
+        1. initialize tracer at k-1 level, and some pre-computed coefficients including the snow intercept parameter for later uses.
+        2. compute sedimentation fluxes and update rain, snow, and graupel mass at the current k level.
+        3. compute pre-computed coefficients after update from sedimentation fluxes to include implicitness of the graupel scheme.
+        4. compute all transfer rates.
+        5. check if tracers go below 0.
+        6. update all tendencies.
 
     Below is a list of the so-called transfered rates for all microphyiscal processes in ICON graupel scheme:
         ice_net_deposition_rate_v2i         :   vapor   -> ice,     ice vapor deposition
@@ -2108,45 +2107,7 @@ def _icon_graupel_scan(
     ) = state_kup
 
     # ------------------------------------------------------------------------------
-    #  Section 1: Skip microphysics when k < kstart_moist
-    # ------------------------------------------------------------------------------
-
-    # TODO (Chia Rui): This scan operator has to be run from top to bottom because bounds are ignored on embedded backend. Consider to remove this when graupel scan can be run on gtfn backend.
-    if k_lev < startmoist_level:
-        k_lev = k_lev + 1
-        return (
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            qv,
-            qc,
-            qi,
-            qr,
-            qs,
-            qg,
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            rho,
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            wpfloat("0.0"),
-            k_lev,
-        )
-
-    # ------------------------------------------------------------------------------
-    #  Section 2: Precomputed coefficients
+    #  Section 1: Precomputed coefficients
     # ------------------------------------------------------------------------------
 
     qv_kup = qv_old_kup + qv_tendency_kup * dt
@@ -2156,7 +2117,7 @@ def _icon_graupel_scan(
     qs_kup = qs_old_kup + qs_tendency_kup * dt
     qg_kup = qg_old_kup + qg_tendency_kup * dt
 
-    is_surface = True if k_lev == surface_level else False
+    is_surface = True if k_lev == ground_level else False
 
     # Define reciprocal of heat capacity of dry air (at constant pressure vs at constant volume)
     heat_cap_r = icon_graupel_params.rcvd if is_isochoric else icon_graupel_params.rcpd
@@ -2235,10 +2196,10 @@ def _icon_graupel_scan(
     )
 
     # ------------------------------------------------------------------------------
-    #  Section 3: Sedimentation fluxes
+    #  Section 2: Sedimentation fluxes
     # ------------------------------------------------------------------------------
 
-    if k_lev > startmoist_level:
+    if k_lev > 0:
         vnew_s = (
             snow_sed0_kup
             * exp(icon_graupel_params.ccswxp * log((qs_kup + qs) * wpfloat("0.5") * rho_kup))
@@ -2381,7 +2342,7 @@ def _icon_graupel_scan(
     rhoqg = rhoqg_intermediate * cimg
 
     # ------------------------------------------------------------------------------
-    #  Section 4: Precomputed coefficients after sedimentation for implicitness
+    #  Section 3: Precomputed coefficients after sedimentation for implicitness
     # ------------------------------------------------------------------------------
 
     llqr = True if (rhoqr > icon_graupel_params.qmin) else False
@@ -2461,7 +2422,7 @@ def _icon_graupel_scan(
         csdep = wpfloat("3.367e-2")
 
     # ------------------------------------------------------------------------------
-    #  Section 5: Transfer rates
+    #  Section 4: Transfer rates
     # ------------------------------------------------------------------------------
 
     ice_nucleation_rate_v2i = _deposition_nucleation_at_low_temperature_or_in_clouds(
@@ -2507,7 +2468,6 @@ def _icon_graupel_scan(
         dz,
         dist_cldtop_kup,
         k_lev,
-        startmoist_level,
         is_surface,
         llqc,
     )
@@ -2609,7 +2569,7 @@ def _icon_graupel_scan(
     )
 
     # ------------------------------------------------------------------------------
-    #  Section 6: Check for negative mass
+    #  Section 5: Check for negative mass
     # ------------------------------------------------------------------------------
 
     snow_deposition_rate_v2s = (
@@ -2692,7 +2652,7 @@ def _icon_graupel_scan(
         snow_autoconversion_rate_s2g = ccorr * snow_autoconversion_rate_s2g
 
     # ------------------------------------------------------------------------------
-    #  Section 7: Update tendencies
+    #  Section 6: Update tendencies
     # ------------------------------------------------------------------------------
 
     cqvt = (
@@ -2798,7 +2758,6 @@ def _icon_graupel_scan(
 
 @field_operator
 def _icon_graupel(
-    startmoist_level: gtx.int32,
     ground_level: gtx.int32,
     liquid_autoconversion_option: gtx.int32,
     snow_intercept_option: gtx.int32,
@@ -2880,7 +2839,6 @@ def _icon_graupel(
         _,
         _,
     ) = _icon_graupel_scan(
-        startmoist_level,
         ground_level,
         liquid_autoconversion_option,
         snow_intercept_option,
@@ -2938,7 +2896,6 @@ def _icon_graupel(
 
 @program(grid_type=gtx.GridType.UNSTRUCTURED)
 def icon_graupel(
-    startmoist_level: gtx.int32,
     ground_level: gtx.int32,
     liquid_autoconversion_option: gtx.int32,
     snow_intercept_option: gtx.int32,
@@ -2994,7 +2951,6 @@ def icon_graupel(
     vertical_end: gtx.int32,
 ):
     _icon_graupel(
-        startmoist_level,
         ground_level,
         liquid_autoconversion_option,
         snow_intercept_option,
