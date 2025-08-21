@@ -21,17 +21,20 @@ class RayleighType(FrozenNamespace[int]):
     KLEMP = 2
 
 
+def dict_values_to_list(d: dict[str, typing.Any]) -> dict:
+    return {k: [v] for k, v in d.items()}
+
+
 def program_compile_time(
     backend: backend.Backend,
     program_func: typing.Callable,
-    bound_args: dict = {},
-    static_args: dict = {},
-    horizontal_sizes: dict = {},
-    vertical_sizes: dict = {},
-    offset_provider: dict = {},
+    bound_args: dict = {},  # noqa: B006
+    static_args: dict = {},  # noqa: B006
+    horizontal_sizes: dict = {},  # noqa: B006
+    vertical_sizes: dict = {},  # noqa: B006
+    offset_provider: dict = {},  # noqa: B006
 ):
     bound_static_args = {k: v for k, v in bound_args.items() if is_scalar(v)}
-    dict_values_to_list = lambda d: {k: [v] for k, v in d.items()}
     static_args_program = program_func.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),
