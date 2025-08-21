@@ -15,20 +15,35 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@scan_operator(axis=dims.KDim, forward=True, init=(vpfloat("0.0"), 0.0))
-def _w(
-    state: tuple[vpfloat, float],
-    z_a: vpfloat,
-    z_b: vpfloat,
-    z_c: vpfloat,
-    w_prep: wpfloat,
+@scan_operator(
+    axis=dims.KDim,
+    forward=True,
+    init=(
+        vpfloat("0.0"),
+        0.0,
+    ),  # boundary condition for upper tridiagonal element and w at model top
+)
+def tridiagonal_forward_sweep_for_w(
+    state_kminus1: tuple[vpfloat, float],
+    a: vpfloat,
+    b: vpfloat,
+    c: vpfloat,
+    d: wpfloat,
 ):
-    z_q_m1 = astype(state[0], vpfloat)
-    w_m1 = state[1]
-    z_g = vpfloat("1.0") / (z_b + z_a * z_q_m1)
-    z_q_new = (vpfloat("0.0") - z_c) * z_g
-    w_new = (w_prep - astype(z_a, wpfloat) * w_m1) * astype(z_g, wpfloat)
-    return z_q_new, w_new
+    """
+    |  1   0                  |  | w_0 |    |  0  |          | 1   0                     |  | w_0 |    |  0     |
+    | a_1 b_1 c_1             |  | w_1 |    | d_1 |          | 0   1  cnew_1             |  | w_1 |    | dnew_1 |
+    |     a_2 b_2 c_2         |  | w_2 |  = | d_2 |    ==>   |     0   1  cnew_2         |  | w_2 |  = | dnew_2 |
+    |         a_3 b_3 c_3     |  | w_3 |    | d_3 |          |         0   1  cnew_3     |  | w_3 |    | dnew_3 |
+    |             a_4 b_4 c_4 |  | w_4 |    | d_4 |          |             0   1  cnew_4 |  | w_4 |    | dnew_4 |
+    |                 ...     |  | ... |    | ... |          |                 ...       |  | ... |    | ...    |
+    """
+    c_kminus1 = astype(state_kminus1[0], vpfloat)
+    d_kminus1 = state_kminus1[1]
+    normalization = vpfloat("1.0") / (b + a * c_kminus1)  # normalize diagonal element to 1
+    c_new = (vpfloat("0.0") - c) * normalization
+    d_new = (d - astype(a, wpfloat) * d_kminus1) * astype(normalization, wpfloat)
+    return c_new, d_new
 
 
 @field_operator
@@ -52,7 +67,7 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (z_beta(Koff[-1]) + z_beta)
     z_gamma_wp = astype(z_gamma_vp, wpfloat)
     w_prep = z_w_expl - z_gamma_wp * (z_exner_expl(Koff[-1]) - z_exner_expl)
-    z_q_res, w_res = _w(z_a, z_b, z_c, w_prep)
+    z_q_res, w_res = tridiagonal_forward_sweep_for_w(z_a, z_b, z_c, w_prep)
     return z_q_res, w_res
 
 
