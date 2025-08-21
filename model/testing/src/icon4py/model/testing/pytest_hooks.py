@@ -157,7 +157,7 @@ def pytest_benchmark_update_json(output_json):
 
     for bench in output_json["benchmarks"]:
         match = pattern.search(bench["fullname"])
-        class_name = match.group("class")
-        params = match.group("params")
-
-        bench["fullname"] = f"{class_name}[{params}]" if params else class_name
+        if match is not None:
+            class_name = match.group("class")
+            params = match.group("params")
+            bench["fullname"] = f"{class_name}[{params}]" if params else class_name

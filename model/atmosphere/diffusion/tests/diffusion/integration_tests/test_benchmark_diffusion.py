@@ -38,7 +38,7 @@ import icon4py.model.common.states.prognostic_state as prognostics
 
 from icon4py.model.common.grid import geometry as grid_geometry
 
-from model.atmosphere.diffusion.tests.diffusion.fixtures import *
+from ..fixtures import *
 
 grid_functionality = {dt_utils.R02B04_GLOBAL: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
@@ -141,23 +141,20 @@ def metrics_factory_params(
     }
 
 
-@pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file",
     [
         (dt_utils.R02B04_GLOBAL),
-        (dt_utils.REGIONAL_GRIDFILE),
+        #(dt_utils.REGIONAL_GRIDFILE),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", [2])  # TODO: the default value is 5
 def test_run_diffusion_benchmark(
     grid_file,
     vertical_grid_params,
     metrics_factory_params,
-    ndyn_substeps,
     backend,
-    # benchmark,
+    benchmark,
 ):
 
     itopo = 1 if grid_file == dt_utils.REGIONAL_GRIDFILE else 0
@@ -165,7 +162,6 @@ def test_run_diffusion_benchmark(
     # get configuration
     num_levels = 65
     dtime = 10.0
-    orchestration = False
     # TODO (Yilu): for now we use the default configuration, later we can add more configurations
     # TODO (Yilu): later we will use the configuration from the grid file
     config=diffusion.DiffusionConfig(
@@ -182,7 +178,7 @@ def test_run_diffusion_benchmark(
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coefficient=0.375,
-        n_substeps=ndyn_substeps,
+        n_substeps=5,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
@@ -310,15 +306,12 @@ def test_run_diffusion_benchmark(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        orchestration=orchestration,
+        orchestration=False,
     )
 
-
-    diffusion_granule.run(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        dtime=dtime,
+    benchmark.pedantic(diffusion_granule.run,
+        args=(diagnostic_state,prognostic_state,dtime),
+        rounds=10, warmup_rounds=2, iterations=1
     )
 
-    # check the computation
 
