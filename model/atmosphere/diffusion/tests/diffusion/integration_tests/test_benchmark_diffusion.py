@@ -146,7 +146,7 @@ def metrics_factory_params(
 @pytest.mark.parametrize(
     "grid_file",
     [
-        #(dt_utils.R02B04_GLOBAL),
+        (dt_utils.R02B04_GLOBAL),
         (dt_utils.REGIONAL_GRIDFILE),
     ],
 )
