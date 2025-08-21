@@ -149,6 +149,9 @@ def metrics_factory_params(
         #(dt_utils.REGIONAL_GRIDFILE),
     ],
 )
+@pytest.mark.benchmark(
+    group="diffusion_benchmark",
+)
 def test_run_diffusion_benchmark(
     grid_file,
     vertical_grid_params,
