@@ -51,7 +51,7 @@ def test_topography_initialization(
 
     topo_c = topography_initialization(
         cell_lat=cell_geometry.cell_center_lat.asnumpy(),
-        u0=1.0,
+        u0=35.0,
         backend=backend,
     )
 
