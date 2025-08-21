@@ -15,25 +15,18 @@ from .. import utils
 from ...fixtures import *  # noqa: F401, F403
 
 
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_map_domain_bounds_start_index(experiment, dim, grid_savepoint):
-    grid_savepoint.start_index(dim)
-    start_index_array = grid_savepoint.start_index(dim)
-    _map_and_assert_array(dim, start_index_array)
-
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_map_domain_bounds_end_index(experiment, dim, grid_savepoint):
-    end_index_array = grid_savepoint.end_index(dim)
-    _map_and_assert_array(dim, end_index_array)
+def test_map_icon_start_end_index(experiment, dim, grid_savepoint):
+    end_indices = grid_savepoint.end_index()
+    start_indices = grid_savepoint.start_index()
+    start_map, end_map = h_grid.map_icon_start_end_index(dim, start_indices, end_indices)
+    _assert_domain_map(start_map, start_indices[dim])
+    _assert_domain_map(end_map, end_indices[dim])
 
-
-def _map_and_assert_array(dim, index_array):
-    index_map = h_grid.map_icon_domain_bounds(dim, index_array)
+def _assert_domain_map(index_map:dict[h_grid.Domain, gtx.int32], index_array:np.ndarray):
     same_index = False
     for d, index in index_map.items():
         if d.zone == h_grid.Zone.INTERIOR:

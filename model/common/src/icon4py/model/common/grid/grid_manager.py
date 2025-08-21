@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 import logging
 import pathlib
 from types import ModuleType
@@ -20,7 +21,6 @@ from icon4py.model.common.grid import (
     base,
     grid_refinement as refinement,
     gridfile,
-    horizontal as h_grid,
     icon,
     vertical as v_grid,
 )
@@ -249,57 +249,6 @@ class GridManager:
         }
         return refinement_control_fields
 
-    def _read_start_end_indices(
-        self,
-    ) -> tuple[dict[gtx.Dimension, data_alloc.NDArray], dict[gtx.Dimension, data_alloc.NDArray]]:
-        """ "
-        Read the start/end indices from the grid file.
-
-        This should be used for a single node run. In the case of a multi node distributed run the  start and end indices need to be reconstructed from the decomposed grid.
-        """
-        _CHILD_DOM = 0
-        grid_refinement_dimensions = {
-            dims.CellDim: gridfile.DimensionName.CELL_GRF,
-            dims.EdgeDim: gridfile.DimensionName.EDGE_GRF,
-            dims.VertexDim: gridfile.DimensionName.VERTEX_GRF,
-        }
-        max_refinement_control_values = {
-            dim: self._reader.dimension(name) for dim, name in grid_refinement_dimensions.items()
-        }
-        start_index_names = {
-            dims.CellDim: gridfile.GridRefinementName.START_INDEX_CELLS,
-            dims.EdgeDim: gridfile.GridRefinementName.START_INDEX_EDGES,
-            dims.VertexDim: gridfile.GridRefinementName.START_INDEX_VERTICES,
-        }
-
-        start_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset=True)[_CHILD_DOM]
-            for dim, name in start_index_names.items()
-        }
-        for dim in grid_refinement_dimensions.keys():
-            assert start_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-
-        end_index_names = {
-            dims.CellDim: gridfile.GridRefinementName.END_INDEX_CELLS,
-            dims.EdgeDim: gridfile.GridRefinementName.END_INDEX_EDGES,
-            dims.VertexDim: gridfile.GridRefinementName.END_INDEX_VERTICES,
-        }
-        end_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset=False)[_CHILD_DOM]
-            for dim, name in end_index_names.items()
-        }
-        for dim in grid_refinement_dimensions.keys():
-            assert start_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-            assert end_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-
-        return start_indices, end_indices
-
     @property
     def grid(self) -> icon.IconGrid:
         return self._grid
@@ -311,6 +260,8 @@ class GridManager:
     @property
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
+
+
 
     def _construct_grid(
         self, backend: gtx_backend.Backend | None, with_skip_values: bool
@@ -355,29 +306,21 @@ class GridManager:
             dims.V2E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E2V)),
         }
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
-
-        start, end = self._read_start_end_indices()
-        start_indices = {
-            k: v
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-            for k, v in h_grid.map_icon_domain_bounds(dim, start[dim]).items()
-        }
-        end_indices = {
-            k: v
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-            for k, v in h_grid.map_icon_domain_bounds(dim, end[dim]).items()
-        }
+        construct_domain_bounds = functools.partial(refinement.compute_domain_bounds, refinement_fields = refinement_fields ,array_ns = xp)
+        start_index, end_index = icon.get_start_and_end_index(construct_domain_bounds)
 
         return icon.icon_grid(
             id_=uuid_,
             allocator=backend,
             config=config,
             neighbor_tables=neighbor_tables,
-            start_indices=start_indices,
-            end_indices=end_indices,
+            start_indices=start_index,
+            end_indices=end_index,
             global_properties=global_params,
             refinement_control=refinement_fields,
         )
+
+
 
     def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
         field = self._reader.int_variable(field, transpose=transpose)
@@ -597,3 +540,5 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
         axis=0,
     )
     return patched_ar
+
+

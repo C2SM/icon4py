@@ -11,7 +11,7 @@ import logging
 import math
 import uuid
 from collections.abc import Mapping
-from typing import Final
+from typing import Final, Callable
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
@@ -164,8 +164,8 @@ def icon_grid(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    start_indices: Mapping[h_grid.Domain, gtx.int32],
-    end_indices: Mapping[h_grid.Domain, gtx.int32],
+    start_indices: Callable[[h_grid.Domain], gtx.int32],
+    end_indices: Callable[[h_grid.Domain], gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
@@ -186,8 +186,26 @@ def icon_grid(
         config=config,
         connectivities=connectivities,
         geometry_type=global_properties.geometry_type,
-        _start_indices=start_indices,
-        _end_indices=end_indices,
+        start_index=start_indices,
+        end_index=end_indices,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
     )
+
+
+def get_start_and_end_index(constructor:Callable[[gtx.Dimension], tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]]) -> tuple[
+    Callable[[h_grid.Domain], gtx.int32], Callable[[h_grid.Domain], gtx.int32]]:
+    start_indices = {}
+    end_indices = {}
+    for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+        start_map, end_map = constructor(dim)
+        start_indices.update(start_map)
+        end_indices.update(end_map)
+
+    def start_index(domain: h_grid.Domain) -> gtx.int32:
+        return start_indices[domain]
+
+    def end_index(domain: h_grid.Domain) -> gtx.int32:
+        return end_indices[domain]
+
+    return start_index, end_index

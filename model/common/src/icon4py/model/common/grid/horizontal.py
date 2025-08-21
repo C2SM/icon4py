@@ -38,12 +38,14 @@ import dataclasses
 import enum
 import functools
 from collections.abc import Callable, Iterator
-from typing import Any, Final
+from typing import Any, Final, Callable
 
 import gt4py.next as gtx
 import numpy as np
+from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 # TODO(halungge): can we get rid of all these?
@@ -493,17 +495,46 @@ def _get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
             )
 
 
-def map_icon_domain_bounds(
+def _map_icon_domain_bounds(
     dim: gtx.Dimension, pre_computed_bounds: np.ndarray
 ) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
+    """
+    Re-map ICON grid domain bounds to ICON4Py domains.
+    ICON or the ICON grid file store the grid domain bounds in an array where the array position
+    determines the domain. This function simply remaps these values to a dict[Domain, gtx.int32]
+    Args:
+        dim: Dimension, one of CellDim, EdgeDim, VertexDim
+        pre_computed_bounds: domain bounds, these are always on CPU
+
+    Returns:
+        mapping from Domain-> index
+
+    """
     domains = get_domains_for_dim(dim)
     return {
         d: gtx.int32(pre_computed_bounds[_map_to_icon_index(dim, d.zone)].item())
         for d in domains  # type: ignore [attr-defined]
     }
 
+def map_icon_start_end_index(dim:gtx.Dimension, start_indices:dict[gtx.Dimension, np.ndarray], end_indices:dict[gtx.Dimension, np.ndarray])-> tuple[dict[gtx.Domain, gtx.int32], dict[gtx.Domain, gtx.int32]]:
+    start = start_indices[dim]
+    end = end_indices[dim]
+    return _map_icon_domain_bounds(dim, start), _map_icon_domain_bounds(dim, end)
+
+
 
 def get_domains_for_dim(dim: gtx.Dimension) -> Iterator[Domain]:
+    """
+    Generate all grid Domains for a given dimension
+    Args:
+        dim: Dimension, one of CelLDim, EdgeDim, VertexDim
+
+    Returns:
+
+    """
+    assert dim.kind == gtx.DimensionKind.HORIZONTAL, "Only horizontal dimension are allowed."
     get_domain = domain(dim)
     domains = (get_domain(zone) for zone in _get_zones_for_dim(dim))
     return domains
+
+

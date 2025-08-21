@@ -326,33 +326,11 @@ class IconGridSavepoint(IconSavepoint):
     def edge_start_index(self):
         return self._read_int32_shift1("e_start_index")
 
-    def start_index(self, dim: gtx.Dimension) -> np.ndarray:
-        """
-        Use to specify lower end of domains of a field for field_operators.
-        """
-        match dim:
-            case dims.CellDim:
-                return self.cells_start_index()
-            case dims.EdgeDim:
-                return self.edge_start_index()
-            case dims.VertexDim:
-                return self.vertex_start_index()
-            case _:
-                raise ValueError(f"Unsupported dimension {dim}")
+    def start_index(self) -> dict[gtx.Dimension,np.ndarray]:
+        return {dims.CellDim: self.cells_start_index(), dims.EdgeDim: self.edge_start_index(), dims.VertexDim: self.vertex_start_index()}
 
-    def end_index(self, dim: gtx.Dimension) -> np.ndarray:
-        """
-        Use to specify upper end of domains of a field for field_operators.
-        """
-        match dim:
-            case dims.CellDim:
-                return self.cells_end_index()
-            case dims.EdgeDim:
-                return self.edge_end_index()
-            case dims.VertexDim:
-                return self.vertex_end_index()
-            case _:
-                raise ValueError(f"Unsupported dimension {dim}")
+    def end_index(self) -> dict[gtx.Dimension, np.ndarray]:
+        return{ dims.CellDim: self.cells_end_index(), dims.EdgeDim: self.edge_end_index(), dims.VertexDim: self.vertex_end_index()}
 
     def nflatlev(self):
         return self._read_int32_shift1("nflatlev").item()
@@ -515,18 +493,8 @@ class IconGridSavepoint(IconSavepoint):
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
-        start_indices = {
-            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_starts),
-            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_starts),
-            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_starts),
-        }
-
-        end_indices = {
-            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_ends),
-            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_ends),
-            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_ends),
-        }
-
+        constructor = functools.partial(h_grid.map_icon_start_end_index, start_indices=self.start_index(), end_indices=self.end_index() )
+        start_index, end_index = icon.get_start_and_end_index(constructor)
         neighbor_tables = {
             dims.C2E: self.c2e(),
             dims.E2C: self.e2c(),
@@ -548,8 +516,8 @@ class IconGridSavepoint(IconSavepoint):
             config=config,
             neighbor_tables=neighbor_tables,
             global_properties=self.global_grid_params,
-            start_indices=start_indices,
-            end_indices=end_indices,
+            start_indices=start_index,
+            end_indices=end_index,
         )
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:
@@ -580,6 +548,8 @@ class IconGridSavepoint(IconSavepoint):
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
         )
+
+
 
 
 class InterpolationSavepoint(IconSavepoint):
