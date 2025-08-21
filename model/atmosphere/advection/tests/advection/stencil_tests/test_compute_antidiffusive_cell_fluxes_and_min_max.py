@@ -11,14 +11,14 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_antidiffusive_cell_fluxes_and_min_max import (
     compute_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.common import dimension as dims
 
 
-class TestComputeAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
+class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
     PROGRAM = compute_antidiffusive_cell_fluxes_and_min_max
     OUTPUTS = (
         "z_mflx_anti_in",

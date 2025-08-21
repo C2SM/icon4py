@@ -113,8 +113,8 @@ class DiffusionConfig:
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
 
-    # TODO(Magdalena): to be read from config
-    # TODO(Magdalena):  handle dependencies on other namelists (see below...)
+    # TODO(halungge): to be read from config
+    # TODO(halungge):  handle dependencies on other namelists (see below...)
 
     def __init__(
         self,
@@ -548,7 +548,7 @@ class Diffusion:
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
-        # TODO(Magdalena): this is KHalfDim
+        # TODO(halungge): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
@@ -770,7 +770,7 @@ class Diffusion:
             )
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
-        # TODO (magdalena) move this up and do asynchronous exchange
+        # TODO(halungge): move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True)
@@ -833,7 +833,7 @@ class Diffusion:
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
-        # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
+        # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
         self.copy_field(prognostic_state.w, self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
@@ -888,7 +888,7 @@ class Diffusion:
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
             self.copy_field(
                 prognostic_state.theta_v, self.theta_v_tmp
-            )  # TODO write in a way that we can avoid the copy
+            )  # TODO(): write in a way that we can avoid the copy
 
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
@@ -919,7 +919,7 @@ class Diffusion:
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 
-    # TODO (kotsaloscv): It is unsafe to set it as cached property -demands more testing-
+    # TODO(kotsaloscv): It is unsafe to set it as cached property -demands more testing-
     def orchestration_uid(self) -> str:
         """Unique id based on the runtime state of the Diffusion object. It is used for caching in DaCe Orchestration."""
         members_to_disregard = [

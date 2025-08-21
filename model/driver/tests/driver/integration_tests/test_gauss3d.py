@@ -9,7 +9,7 @@
 import pytest
 
 from icon4py.model.driver.testcases import gauss3d
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
@@ -51,17 +51,17 @@ def test_gauss3d_initial_condition(
 
     # only verifying those assigned in the IC rather than all (at least for now)
     prognostics_reference_savepoint = data_provider.from_savepoint_prognostics_initial()
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_state_now.rho.asnumpy(),
         prognostics_reference_savepoint.rho_now().asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_state_now.exner.asnumpy(),
         prognostics_reference_savepoint.exner_now().asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_state_now.theta_v.asnumpy(),
         prognostics_reference_savepoint.theta_v_now().asnumpy(),
     )

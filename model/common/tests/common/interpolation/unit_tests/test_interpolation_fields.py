@@ -11,7 +11,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-import icon4py.model.testing.helpers as test_helpers
+import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import constants
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,

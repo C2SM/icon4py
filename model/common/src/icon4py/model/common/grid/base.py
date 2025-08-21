@@ -10,8 +10,8 @@ import enum
 import functools
 import logging
 import uuid
+from collections.abc import Mapping, Sequence
 from types import ModuleType
-from typing import Dict, Mapping, Sequence
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators, common as gtx_common
@@ -49,7 +49,7 @@ class HorizontalGridSize:
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
     horizontal_config: HorizontalGridSize
-    # TODO (Magdalena): Decouple the vertical from horizontal grid.
+    # TODO(halungge): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
     n_shift_total: int = 0
@@ -107,7 +107,7 @@ class Grid:
         self.connectivities[dims.Koff.value] = dims.KDim
 
     @functools.cached_property
-    def size(self) -> Dict[gtx.Dimension, int]:
+    def size(self) -> dict[gtx.Dimension, int]:
         sizes = {
             dims.KDim: self.config.num_levels,
             dims.CellDim: self.config.num_cells,

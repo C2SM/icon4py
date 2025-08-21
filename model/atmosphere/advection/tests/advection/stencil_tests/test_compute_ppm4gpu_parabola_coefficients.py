@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_parabola_coefficients import (
     compute_ppm4gpu_parabola_coefficients,
 )
@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestComputePpm4gpuParabolaCoefficients(helpers.StencilTest):
+class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
     PROGRAM = compute_ppm4gpu_parabola_coefficients
     OUTPUTS = ("z_delta_q", "z_a1")
 

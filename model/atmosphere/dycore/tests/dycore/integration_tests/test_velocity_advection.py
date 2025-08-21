@@ -33,7 +33,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -113,7 +113,7 @@ def test_verify_velocity_init_against_savepoint(
     )
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
-    assert helpers.dallclose(velocity_advection.vertical_cfl.asnumpy(), 0.0)
+    assert test_utils.dallclose(velocity_advection.vertical_cfl.asnumpy(), 0.0)
 
 
 @pytest.mark.embedded_static_args
@@ -274,16 +274,16 @@ def test_velocity_predictor_step(
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.vn_on_half_levels.asnumpy(), icon_result_vn_ie, atol=1.0e-14
     )
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.contravariant_correction_at_cells_on_half_levels.asnumpy()[
             start_cell_nudging:, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
@@ -293,7 +293,7 @@ def test_velocity_predictor_step(
         atol=1.0e-15,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[
             start_cell_nudging:, :
         ],
@@ -302,7 +302,7 @@ def test_velocity_predictor_step(
         rtol=1.0e-10,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
@@ -424,14 +424,14 @@ def test_velocity_corrector_step(
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
@@ -535,25 +535,25 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
         },
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_vt.asnumpy(), tangential_wind.asnumpy(), rtol=1.0e-14, atol=1.0e-14
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_z_vt_ie.asnumpy(),
         tangential_wind_on_half_levels.asnumpy(),
         rtol=1.0e-14,
         atol=1.0e-14,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_vn_ie.asnumpy(), vn_on_half_levels.asnumpy(), rtol=1.0e-15, atol=1.0e-15
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_z_kin_hor_e.asnumpy(),
         horizontal_kinetic_energy_at_edges_on_model_levels.asnumpy(),
         rtol=1.0e-14,
         atol=1.0e-14,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_z_w_concorr_me.asnumpy(),
         contravariant_correction_at_edges_on_model_levels.asnumpy(),
         rtol=1.0e-15,
@@ -562,7 +562,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     # the restriction is ok, as this is a velocity advection temporary
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_z_v_grad_w.asnumpy()[lateral_boundary_7:halo_1, :],
         horizontal_advection_of_w_at_edges_on_half_levels.asnumpy()[lateral_boundary_7:halo_1, :],
         rtol=1.0e-15,
@@ -676,20 +676,20 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
         },
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_w_concorr_c.asnumpy(),
         contravariant_correction_at_cells_on_half_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_z_w_con_c_full.asnumpy(),
         contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_ddt_w_adv.asnumpy()[
             start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
             :,
@@ -702,7 +702,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
         atol=1.0e-15,
     )
 
-    # TODO (Chia Rui): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
+    # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
         vertical_cfl.asnumpy(),
         icon_result_cfl_clipping.asnumpy(),
@@ -820,13 +820,13 @@ def test_compute_advection_in_vertical_momentum_equation(
         },
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_z_w_con_c_full.asnumpy(),
         contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
         rtol=1.0e-15,
         atol=1.0e-15,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_ddt_w_adv.asnumpy()[
             start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
             :,
@@ -839,7 +839,7 @@ def test_compute_advection_in_vertical_momentum_equation(
         atol=1.0e-15,
     )
 
-    # TODO (Chia Rui): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
+    # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
         vertical_cfl.asnumpy(),
         icon_result_cfl_clipping.asnumpy(),
@@ -946,7 +946,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
         },
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         icon_result_ddt_vn_apc.asnumpy(),
         normal_wind_advective_tendency.asnumpy(),
         rtol=1.0e-15,

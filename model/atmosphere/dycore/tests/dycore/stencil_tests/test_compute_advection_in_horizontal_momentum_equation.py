@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_mo
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests as stencil_tests
 
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
@@ -134,7 +134,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     return normal_wind_advective_tendency
 
 
-class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
+class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_horizontal_momentum_equation
     OUTPUTS = ("normal_wind_advective_tendency",)
     MARKERS = (pytest.mark.embedded_remap_error,)

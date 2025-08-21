@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging as log
 from types import ModuleType
-from typing import TYPE_CHECKING, Optional, TypeAlias, Union
+from typing import TYPE_CHECKING, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -30,8 +30,8 @@ try:
 except ImportError:
     import numpy as xp
 
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
-NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
+NDArray: TypeAlias = np.ndarray | xp.ndarray
+NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
 
 
 def backend_name(backend: gtx_backend.Backend | None) -> str:
@@ -69,7 +69,7 @@ def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) 
 
 def as_field(
     field: gtx.Field,
-    backend: Optional[gtx_backend.Backend] = None,
+    backend: gtx_backend.Backend | None = None,
     embedded_on_host: bool = False,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
@@ -82,8 +82,8 @@ def random_field(
     *dims,
     low: float = -1.0,
     high: float = 1.0,
-    dtype: Optional[npt.DTypeLike] = None,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
     backend=None,
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
@@ -97,9 +97,9 @@ def random_field(
 def random_mask(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    dtype: Optional[npt.DTypeLike] = None,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
-    backend: Optional[gtx_backend.Backend] = None,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
+    backend: gtx_backend.Backend | None = None,
 ) -> gtx.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
@@ -117,7 +117,7 @@ def zero_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    extend: dict[gtx.Dimension, int] | None = None,
     backend=None,
 ) -> gtx.Field:
     field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
@@ -141,7 +141,7 @@ def constant_field(
 def _shape(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    extend: dict[gtx.Dimension, int] | None = None,
 ) -> tuple[int, ...]:
     extend = extend or {}
     return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dims)
@@ -150,9 +150,9 @@ def _shape(
 def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    extend: dict[gtx.Dimension, int] | None = None,
     dtype=gtx.int32,
-    backend: Optional[gtx_backend.Backend] = None,
+    backend: gtx_backend.Backend | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(backend)
     shapex = _shape(grid, dim, extend=extend)[0]

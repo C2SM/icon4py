@@ -15,10 +15,10 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
-class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
+class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
     PROGRAM = temporary_fields_for_turbulence_diagnostics
     OUTPUTS = ("div", "kh_c")
 

@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -98,17 +98,17 @@ def test_saturation_adjustement(
     updated_qc = qc.asnumpy() + qc_tendency.asnumpy() * dtime
     updated_temperature = temperature.asnumpy() + temperature_tendency.asnumpy() * dtime
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         updated_qv,
         satad_exit.qv().asnumpy(),
         atol=1.0e-13,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         updated_qc,
         satad_exit.qc().asnumpy(),
         atol=1.0e-13,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         updated_temperature,
         satad_exit.temperature().asnumpy(),
         atol=1.0e-13,

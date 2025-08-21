@@ -21,7 +21,7 @@ from icon4py.model.driver import (
     icon4py_driver,
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
@@ -358,30 +358,30 @@ def test_run_timeloop_single_step(
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-12,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-14,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.exner.asnumpy(),
         exner_sp.asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=4e-12,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.rho.asnumpy(),
         rho_sp.asnumpy(),
     )
