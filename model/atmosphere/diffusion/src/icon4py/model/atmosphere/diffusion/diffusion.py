@@ -58,6 +58,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.model.common.model_options import program_compile_time
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -360,34 +361,6 @@ def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def program_compile_time(
-        self,
-        program_func: typing.Callable,
-        bound_args: dict = {},
-        static_args: dict = {},
-        horizontal_sizes: dict = {},
-        vertical_sizes: dict = {},
-        offset_provider: dict = {},
-    ):
-        bound_static_args = {k: v for k, v in bound_args.items() if is_scalar(v)}
-        dict_values_to_list = lambda d: {k: [v] for k, v in d.items()}
-        static_args_program = program_func.with_backend(self._backend).compile(
-            **dict_values_to_list(horizontal_sizes),
-            **dict_values_to_list(vertical_sizes),
-            **dict_values_to_list(static_args),
-            **dict_values_to_list(bound_static_args),
-            enable_jit=False,
-            offset_provider=offset_provider,
-        )
-        return functools.partial(
-            static_args_program,
-            **bound_args,
-            **static_args,
-            **horizontal_sizes,
-            **vertical_sizes,
-            offset_provider=offset_provider,
-        )
-
     def __init__(
         self,
         grid: icon_grid.IconGrid,
@@ -436,7 +409,8 @@ class Diffusion:
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
 
-        self.mo_intp_rbf_rbf_vec_interpol_vertex = self.program_compile_time(
+        self.mo_intp_rbf_rbf_vec_interpol_vertex = program_compile_time(
+            backend=self._backend,
             program_func=mo_intp_rbf_rbf_vec_interpol_vertex,
             bound_args={
                 "ptr_coeff_1": self._interpolation_state.rbf_coeff_1,
@@ -450,7 +424,8 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
 
-        self.calculate_nabla2_and_smag_coefficients_for_vn = self.program_compile_time(
+        self.calculate_nabla2_and_smag_coefficients_for_vn = program_compile_time(
+            backend=self._backend,
             program_func=calculate_nabla2_and_smag_coefficients_for_vn,
             bound_args={
                 "tangent_orientation": self._edge_params.tangent_orientation,
@@ -469,7 +444,8 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
 
-        self.calculate_diagnostic_quantities_for_turbulence = self.program_compile_time(
+        self.calculate_diagnostic_quantities_for_turbulence = program_compile_time(
+            backend=self._backend,
             program_func=calculate_diagnostic_quantities_for_turbulence,
             bound_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
@@ -483,7 +459,8 @@ class Diffusion:
             vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_vn = self.program_compile_time(
+        self.apply_diffusion_to_vn = program_compile_time(
+            backend=self._backend,
             program_func=apply_diffusion_to_vn,
             bound_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
@@ -505,7 +482,8 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
-            self.program_compile_time(
+            program_compile_time(
+                backend=self._backend,
                 program_func=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
                 bound_args={
                     "geofac_n2s": self._interpolation_state.geofac_n2s,
@@ -534,7 +512,8 @@ class Diffusion:
             )
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
-            self.program_compile_time(
+            program_compile_time(
+                backend=self._backend,
                 program_func=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
                 bound_args={
                     "theta_ref_mc": self._metric_state.theta_ref_mc,
@@ -551,7 +530,8 @@ class Diffusion:
                 offset_provider=self._grid.connectivities,
             )
         )
-        self.apply_diffusion_to_theta_and_exner = self.program_compile_time(
+        self.apply_diffusion_to_theta_and_exner = program_compile_time(
+            backend=self._backend,
             program_func=apply_diffusion_to_theta_and_exner,
             bound_args={
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -575,13 +555,14 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.copy_field = self.program_compile_time(program_func=copy_field)
-        self.scale_k = self.program_compile_time(program_func=scale_k)
-        self.setup_fields_for_initial_step = self.program_compile_time(
-            program_func=setup_fields_for_initial_step
+        self.copy_field = program_compile_time(backend=self._backend, program_func=copy_field)
+        self.scale_k = program_compile_time(backend=self._backend, program_func=scale_k)
+        self.setup_fields_for_initial_step = program_compile_time(
+            backend=self._backend, program_func=setup_fields_for_initial_step
         )
 
-        self.init_diffusion_local_fields_for_regular_timestep = self.program_compile_time(
+        self.init_diffusion_local_fields_for_regular_timestep = program_compile_time(
+            backend=self._backend,
             program_func=init_diffusion_local_fields_for_regular_timestep,
             offset_provider={"Koff": dims.KDim},
         )
@@ -599,7 +580,8 @@ class Diffusion:
             self.enh_smag_fac,
             offset_provider={"Koff": dims.KDim},
         )
-        self.program_compile_time(
+        program_compile_time(
+            backend=self._backend,
             program_func=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
             bound_args={
                 "physical_heights": self._vertical_grid.interface_physical_height,
