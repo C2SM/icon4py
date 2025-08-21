@@ -54,3 +54,8 @@ def is_dace(backend: gtx_backend.Backend | None) -> bool:
 
 def is_gtfn_backend(backend: gtx_backend.Backend | None) -> bool:
     return "gtfn" in backend.name if backend else False
+
+
+def is_scalar(param) -> bool:
+    scalar_types = (int, float, str, bool)
+    return isinstance(param, scalar_types)
