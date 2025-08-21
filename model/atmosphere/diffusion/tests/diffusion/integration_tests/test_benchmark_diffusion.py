@@ -10,7 +10,8 @@ import functools
 import pytest
 import netCDF4 as nc4
 from pathlib import Path
-
+import numpy as np
+from icon4py.model.common.initialization.topography_initialization import topography_initialization
 import icon4py.model.common.dimension as dims
 import gt4py.next as gtx
 from icon4py.model.common.decomposition import definitions
@@ -36,6 +37,8 @@ from icon4py.model.testing.data_handling import download_and_extract
 import icon4py.model.common.states.prognostic_state as prognostics
 
 from icon4py.model.common.grid import geometry as grid_geometry
+
+from model.atmosphere.diffusion.tests.diffusion.fixtures import *
 
 grid_functionality = {dt_utils.R02B04_GLOBAL: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
@@ -143,7 +146,7 @@ def metrics_factory_params(
 @pytest.mark.parametrize(
     "grid_file",
     [
-        (dt_utils.R02B04_GLOBAL),
+        #(dt_utils.R02B04_GLOBAL),
         (dt_utils.REGIONAL_GRIDFILE),
     ],
 )
@@ -157,16 +160,11 @@ def test_run_diffusion_benchmark(
     # benchmark,
 ):
 
-    # TODO (Yilu): itopo can be set: 0 (topography speficied by analytical function), 1 (topography read from netcdf file)
-    download_and_extract("https://polybox.ethz.ch/index.php/s/CWWtBHBC9iNpLEo/download", Path("./extpar_data/"),Path("./extpar_data/"), "extpar_r04b09.tar.gz")
-
-    f = nc4.Dataset("/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_data/extpar_r04b09.nc", "r")
-    topo_c = f.variables["topography_c"][:]
-    f.close()
+    itopo = 1 if grid_file == dt_utils.REGIONAL_GRIDFILE else 0
 
     # get configuration
     num_levels = 65
-    dtime = 10
+    dtime = 10.0
     orchestration = False
     # TODO (Yilu): for now we use the default configuration, later we can add more configurations
     # TODO (Yilu): later we will use the configuration from the grid file
@@ -199,7 +197,7 @@ def test_run_diffusion_benchmark(
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid,
-        decomposition_info=_construct_dummy_decomposition_info(grid, backend),
+        decomposition_info=construct_dummy_decomposition_info(grid, backend),
         backend=backend,
         coordinates=coordinates,
         extra_fields=geometry_input_fields,
@@ -208,6 +206,24 @@ def test_run_diffusion_benchmark(
 
     cell_geometry = get_cell_geometry_for_grid_file(grid_file, geometry_field_source, backend)
     edge_geometry = get_edge_geometry_for_grid_file(grid_file, geometry_field_source, backend)
+
+    if itopo == 1:
+        download_and_extract(
+            "https://polybox.ethz.ch/index.php/s/CWWtBHBC9iNpLEo/download",
+            Path("./extpar_data/"),
+            "extpar_r04b09.tar.gz",
+        )
+        f = nc4.Dataset(
+            "/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_data/extpar_r04b09.nc",
+            "r")
+        topo_c = f.variables["topography_c"][:]
+        f.close()
+    else:
+        topo_c =  topography_initialization(
+            cell_lat=cell_geometry.cell_center_lat.asnumpy(),
+            u0=35.0,
+            backend=backend,
+        )
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -227,7 +243,7 @@ def test_run_diffusion_benchmark(
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
         grid=grid,
-        decomposition_info=_construct_dummy_decomposition_info(grid, backend),
+        decomposition_info=construct_dummy_decomposition_info(grid, backend),
         geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
@@ -236,9 +252,9 @@ def test_run_diffusion_benchmark(
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
         grid=grid,
         vertical_grid=vertical_grid,
-        decomposition_info=_construct_dummy_decomposition_info(grid, backend),
+        decomposition_info=construct_dummy_decomposition_info(grid, backend),
         geometry_source=geometry_field_source,
-        topography=gtx.as_field((dims.CellDim,), data=topo_c), # TODO: check the analytical computation
+        topography=gtx.as_field((dims.CellDim,), data=topo_c),
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
@@ -249,18 +265,10 @@ def test_run_diffusion_benchmark(
     )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-            backend=backend,
-        ),
+        e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
         rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
         rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-            backend=backend,
-        ),
+        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
         geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
         geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
@@ -277,7 +285,6 @@ def test_run_diffusion_benchmark(
     )
 
     # initialization of the diagnostic and prognostic state
-    # TODO (Yilu): for now we feed it with random fields for the test
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
         div_ic=data_alloc.random_field(grid, dims.CellDim, dims.KDim),

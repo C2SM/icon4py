@@ -409,7 +409,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_vertoffset_dsl",
-        dtype=ta.wpfloat,
+        dtype=gtx.int32,
     ),
     CELL_HEIGHT_ON_HALF_LEVEL: dict(
         standard_name=CELL_HEIGHT_ON_HALF_LEVEL,

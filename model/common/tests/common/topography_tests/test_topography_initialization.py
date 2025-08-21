@@ -27,7 +27,6 @@ from model.common.tests.common.fixtures import *  # noqa: F403
     ],
 )
 def test_topography_initialization(
-    grid_savepoint,
     grid_file,
     backend,
     topography_savepoint,
