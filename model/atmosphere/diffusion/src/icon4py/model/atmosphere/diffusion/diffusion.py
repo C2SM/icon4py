@@ -360,7 +360,7 @@ def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def icon4py_compile(
+    def program_compile_time(
         self,
         program_func: typing.Callable,
         bound_args: dict = {},
@@ -376,6 +376,7 @@ class Diffusion:
             **dict_values_to_list(horizontal_sizes),
             **dict_values_to_list(vertical_sizes),
             **dict_values_to_list(static_args),
+            **dict_values_to_list(bound_static_args),
             enable_jit=False,
             offset_provider=offset_provider,
         )
@@ -437,7 +438,7 @@ class Diffusion:
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
 
-        self.mo_intp_rbf_rbf_vec_interpol_vertex = self.icon4py_compile(
+        self.mo_intp_rbf_rbf_vec_interpol_vertex = self.program_compile_time(
             program_func=mo_intp_rbf_rbf_vec_interpol_vertex,
             bound_args={
                 "ptr_coeff_1": self._interpolation_state.rbf_coeff_1,
@@ -450,7 +451,7 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
         )
 
-        self.calculate_nabla2_and_smag_coefficients_for_vn = self.icon4py_compile(
+        self.calculate_nabla2_and_smag_coefficients_for_vn = self.program_compile_time(
             program_func=calculate_nabla2_and_smag_coefficients_for_vn,
             bound_args={
                 "tangent_orientation": self._edge_params.tangent_orientation,
@@ -468,7 +469,7 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
         )
 
-        self.calculate_diagnostic_quantities_for_turbulence = self.icon4py_compile(
+        self.calculate_diagnostic_quantities_for_turbulence = self.program_compile_time(
             program_func=calculate_diagnostic_quantities_for_turbulence,
             bound_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
@@ -481,7 +482,7 @@ class Diffusion:
             },
             vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
         )
-        self.apply_diffusion_to_vn = self.icon4py_compile(
+        self.apply_diffusion_to_vn = self.program_compile_time(
             program_func=apply_diffusion_to_vn,
             bound_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
@@ -506,7 +507,7 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
         )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
-            self.icon4py_compile(
+            self.program_compile_time(
                 program_func=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
                 bound_args={
                     "geofac_n2s": self._interpolation_state.geofac_n2s,
@@ -535,7 +536,7 @@ class Diffusion:
             )
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
-            self.icon4py_compile(
+            self.program_compile_time(
                 program_func=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
                 bound_args={
                     "theta_ref_mc": self._metric_state.theta_ref_mc,
@@ -553,7 +554,7 @@ class Diffusion:
                 },
             )
         )
-        self.apply_diffusion_to_theta_and_exner = self.icon4py_compile(
+        self.apply_diffusion_to_theta_and_exner = self.program_compile_time(
             program_func=apply_diffusion_to_theta_and_exner,
             bound_args={
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -566,7 +567,7 @@ class Diffusion:
                 "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
                 "area": self._cell_params.area,
             },
-            static_args={"apply_zdiffusion_t": self.config.apply_zdiffusion_t},
+            bound_static_args={"apply_zdiffusion_t": self.config.apply_zdiffusion_t},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -576,13 +577,13 @@ class Diffusion:
                 "vertical_end": self._grid.num_levels,
             },
         )
-        self.copy_field = self.icon4py_compile(program_func=copy_field, offset_provider={})
-        self.scale_k = self.icon4py_compile(program_func=scale_k, offset_provider={})
-        self.setup_fields_for_initial_step = self.icon4py_compile(
+        self.copy_field = self.program_compile_time(program_func=copy_field, offset_provider={})
+        self.scale_k = self.program_compile_time(program_func=scale_k, offset_provider={})
+        self.setup_fields_for_initial_step = self.program_compile_time(
             program_func=setup_fields_for_initial_step, offset_provider={}
         )
 
-        self.init_diffusion_local_fields_for_regular_timestep = self.icon4py_compile(
+        self.init_diffusion_local_fields_for_regular_timestep = self.program_compile_time(
             program_func=init_diffusion_local_fields_for_regular_timestep,
             offset_provider={"Koff": dims.KDim},
         )
@@ -600,7 +601,7 @@ class Diffusion:
             self.enh_smag_fac,
             offset_provider={"Koff": dims.KDim},
         )
-        self.icon4py_compile(
+        self.program_compile_time(
             program_func=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
             bound_args={
                 "physical_heights": self._vertical_grid.interface_physical_height,
