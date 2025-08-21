@@ -1728,7 +1728,7 @@ class IconGraupelSavepoint(IconSavepoint):
         return self.tracer(QG)
 
     def qnc(self):
-        return self._get_field("qnc", dims.CellDim, dims.KDim)
+        return self._get_field("qnc", dims.CellDim)
 
     def dtime(self):
         return self.serializer.read("dtime", self.savepoint)[0]
@@ -2055,13 +2055,15 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelSavepoint:
-        savepoint = self.serializer.savepoint["microphysics-init"].date[date].as_savepoint()
+        # TODO (Chia Rui): fix typo microphy[s]ics
+        savepoint = self.serializer.savepoint["microphyics-init"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelSavepoint:
-        savepoint = self.serializer.savepoint["microphysics-exit"].date[date].as_savepoint()
+        # TODO (Chia Rui): fix typo microphy[s]ics
+        savepoint = self.serializer.savepoint["microphyics-exit"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
