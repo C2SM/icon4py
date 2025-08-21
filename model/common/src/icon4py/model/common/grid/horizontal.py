@@ -37,7 +37,7 @@ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nw
 import dataclasses
 import enum
 import functools
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any, Final
 
 import gt4py.next as gtx
@@ -45,11 +45,11 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims
 
-#TODO(halungge): can we get rid of all these?
+
+# TODO(halungge): can we get rid of all these?
 NUM_GHOST_ROWS: Final[int] = 2
 # values from mo_impl_constants.f90
 _ICON_INDEX_OFFSET_CELLS: Final[int] = 8
-_GRF_BOUNDARY_WIDTH_CELL: Final[int] = 4
 _MIN_RL_CELL_INT: Final[int] = -4
 _MIN_RL_CELL: Final[int] = _MIN_RL_CELL_INT - 2 * NUM_GHOST_ROWS
 _MAX_RL_CELL: Final[int] = 5
@@ -61,30 +61,27 @@ _MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
 
 _ICON_INDEX_OFFSET_EDGES: Final[int] = 13
 
-_GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
-_GRF_NUDGEZONE_START_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + 1
-_GRF_NUDGEZONE_WIDTH: Final[int] = 8
-_MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT
-_MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
-_MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL
+_MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT  # -8
+_MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)  # -13
+_MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL  # 10
 
 _LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES  # 14
 _INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES  # 13
-_NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES  # 22
+_NUDGING_EDGES: Final[int] = _MAX_RL_EDGE - 1 + _ICON_INDEX_OFFSET_EDGES  # 22
 _HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES  # 4
 _LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES  # 5
 _END_EDGES: Final[int] = 0
 
 _LATERAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS  # 9
 _INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS  # 8
-_NUDGING_CELLS: Final[int] = _GRF_BOUNDARY_WIDTH_CELL + 1 + _ICON_INDEX_OFFSET_CELLS  # 13
+_NUDGING_CELLS: Final[int] = _MAX_RL_CELL + _ICON_INDEX_OFFSET_CELLS  # 13
 _HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS  # 3
 _LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS  # 4
 _END_CELLS: Final[int] = 0
 
 _LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX  # 8
 _INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX  # 7
-_NUDGING_VERTICES: Final[int] = 0
+_NUDGING_VERTICES: Final[int] = _MAX_RL_VERTEX + _ICON_INDEX_OFFSET_VERTEX  # 12
 _HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX  # 2
 _LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX  # 3
 _END_VERTICES: Final[int] = 0
@@ -190,7 +187,7 @@ def _end(dim: gtx.Dimension) -> int:
     return _END[dim]
 
 
-class Zone(str, enum.Enum):
+class Zone(enum.Enum):
     """
     Enum of different zones on the horizontal ICON grid.
     The mapping to the constant used in ICON is as follows: (note that not all values exist for all dimensions
@@ -199,22 +196,26 @@ class Zone(str, enum.Enum):
     ## CellDim
     | ICON constant or value                | ICON4py Name               |
     |:------------------------------------- |:-------------------------- |
-    | `min_rlcell` (-8)                     | `END`                      |
-    | `min_rlcell_int-2`,  (-6)             | `HALO_LEVEL_2`             |
+    | `min_rlcell_int-3`, `min_rlcell` (-8) | `END`                      |
+    | `min_rlcell_int-3` (-7)               |                            |
+    | `min_rlcell_int-2`, (-6)              | `HALO_LEVEL_2`             |
     | `min_rlcell_int-1` (-5)               | `HALO`                     |
     | `min_rlcell_int`(-4)                  | `LOCAL`                    |
+    | (-3)                                  |                            | unused in icon4py (relevant for nesting)
+    | (-2)                                  |                            | unused in icon4py (relevant for nesting)
+    | (-1)                                  |                            | unused in icon4py (relevant for nesting)
     | `0`                                   | `INTERIOR`                 |
     | `1`                                   | `LATERAL_BOUNDARY`         |
     | `2`                                   | `LATERAL_BOUNDARY_LEVEL_2` |
     | `3`                                   | `LATERAL_BOUNDARY_LEVEL_3` |
     | `grf_bdywidth_c` (4)                  | `LATERAL_BOUNDARY_LEVEL_4` |
     | `grf_bdywith_c +1`,max_rlcell (5)     | `NUDGING`                  |
-    | `grf_bdywidth_c+2` (6)                | `NUDGING_LEVEL_2`          |
+
 
     Lateral boundary and nudging are only relevant for LAM runs, halo lines only for distributed domains.
     The constants are defined in `mo_impl_constants.f90` and `mo_impl_constants_grf.f90`
-    ## VertexDim
 
+    ## VertexDim
 
     | ICON constant or value                  | ICON4Py Name               |
     |:--------------------------------------- |:-------------------------- |
@@ -222,12 +223,15 @@ class Zone(str, enum.Enum):
     | `min_rlvert+1`, `min_rlvert_int-2` (-6) | `HALO_LEVEL_2`             |
     | `min_rlvert_int-1` (-5)                 | `HALO`                     |
     | `min_rlvert_int` (-4)                   | `LOCAL`                    |
+    | (-3)                                    |                            | unused in icon4py (relevant for nesting)
+    | (-2)                                    |                            | unused in icon4py (relevant for nesting)
+    | (-1)                                    |                            | unused in icon4py (relevant for nesting)
     | `0`                                     | `INTERIOR`                 |
     | `1`                                     | `LATERAL_BOUNDARY`         |
     | `2`                                     | `LATERAL_BOUNDARY_LEVEL_2` |
     | `3`                                     | `LATERAL_BOUNDARY_LEVEL_3` |
     | `4`                                     | `LATERAL_BOUNDARY_LEVEL_4` |
-    | `max_rlvert` (5)                        |                            |
+    | `max_rlvert` (5)                        | `NUDGING`                 |
 
     For the meaning see above.
 
@@ -237,9 +241,16 @@ class Zone(str, enum.Enum):
     | ICON constant or value                 | ICON4Py Name               |
     |:-------------------------------------- |:-------------------------- |
     | `min_rledge` (-13)                     | `END`                      |
-    | `min_rledge_int-2`            (-10)    | `HALO_LEVEL_2`             |
+    | `min_rledge_int-2` (-10)               | `HALO_LEVEL_2`             |
     | `min_rledge_int-1` (-9)                | `HALO`                     |
     | `min_rledge_int` (-8)                  | `LOCAL`                    |
+    | (-7)                                   |                            | unused in icon4py (relevant for nesting)
+    | (-6)                                   |                            | unused in icon4py (relevant for nesting)
+    | (-5)                                   |                            | unused in icon4py (relevant for nesting)
+    | (-4)                                   |                            | unused in icon4py (relevant for nesting)
+    | (-3)                                   |                            | unused in icon4py (relevant for nesting)
+    | (-2)                                   |                            | unused in icon4py (relevant for nesting)
+    |(-1)                                    |                            | unused in icon4py (relevant for nesting)
     | `0`                                    | `INTERIOR`                 |
     | `1`                                    | `LATERAL_BOUNDARY`         |
     | `2`                                    | `LATERAL_BOUNDARY_LEVEL_2` |
@@ -250,75 +261,101 @@ class Zone(str, enum.Enum):
     | `7`                                    | `LATERAL_BOUNDARY_LEVEL_7` |
     | `8`                                    | `LATERAL_BOUNDARY_LEVEL_8` |
     | `grf_bdywidth_e`   (9)                 | `NUDGING`                  |
-    | `grf_bdywidth_e+1` `max_rledge`   (10) | `NUDGING_LEVEL_2`          |
+    | `grf_bdywidth_e+1`, `max_rledge`   (10) | `NUDGING_LEVEL_2`          |
 
 
     """
 
-    #: points the the number of entries in a local grid
-    END = "end"
+    def __init__(self, name, level):
+        self._name = name  # Use _name to avoid conflict with Enum's name
+        self.level = level
+        self._value_str = f"{name}_{level}" if level > 0 else name
+
+    #: points to the number of entries in a local grid
+    END = ("end", 0)
 
     #: interior unordered prognostic entries
-    INTERIOR = "interior"
+    INTERIOR = ("interior", 0)
 
     #: first halo line
-    HALO = "halo_level_1"
+    HALO = ("halo_level", 1)
 
     #: 2nd halo line
-    HALO_LEVEL_2 = "halo_level_2"
+    HALO_LEVEL_2 = ("halo_level", 2)
 
     #: all entries owned on the local grid, that is all entries excluding halo lines
-    LOCAL = "local"
+    LOCAL = ("local", 0)
 
     #: lateral boundary (row 1) in LAM model
-    LATERAL_BOUNDARY = "lb_level_1"
+    LATERAL_BOUNDARY = ("lb_level", 1)
 
     #: lateral boundary (row 2) in LAM model
-    LATERAL_BOUNDARY_LEVEL_2 = "lb_level_2"
+    LATERAL_BOUNDARY_LEVEL_2 = ("lb_level", 2)
 
     # ; lateral boundary (row 3) in LAM model
-    LATERAL_BOUNDARY_LEVEL_3 = "lb_level_3"
+    LATERAL_BOUNDARY_LEVEL_3 = ("lb_level", 3)
 
     #: lateral boundary (row 4) in LAM model
-    LATERAL_BOUNDARY_LEVEL_4 = "lb_level_4"
+    LATERAL_BOUNDARY_LEVEL_4 = ("lb_level", 4)
 
     #: lateral boundary (row 5) in LAM model
-    LATERAL_BOUNDARY_LEVEL_5 = "lb_level_5"
+    LATERAL_BOUNDARY_LEVEL_5 = ("lb_level", 5)
 
     #: lateral boundary (row 6) in LAM model
-    LATERAL_BOUNDARY_LEVEL_6 = "lb_level_6"
+    LATERAL_BOUNDARY_LEVEL_6 = ("lb_level", 6)
 
     #: lateral boundary (row 7) in LAM model
-    LATERAL_BOUNDARY_LEVEL_7 = "lb_level_7"
+    LATERAL_BOUNDARY_LEVEL_7 = ("lb_level", 7)
 
     #: lateral boundary (row 8) in LAM model
-    LATERAL_BOUNDARY_LEVEL_8 = "lb_level_8"
+    LATERAL_BOUNDARY_LEVEL_8 = ("lb_level", 8)
 
     #: nudging level in LAM model
-    NUDGING = "nudging_level_1"
+    NUDGING = ("nudging_level", 1)
 
     #: 2nd nudging level in LAM model
-    NUDGING_LEVEL_2 = "nudging_level_2"
+    NUDGING_LEVEL_2 = ("nudging_level", 2)
+
+    @property
+    def value(self) -> str:
+        return self._value_str
+
+    def __str__(self) -> str:
+        return self._value_str
+
+    def __hash__(self) -> int:
+        """Generate a hash based on the zone name and level."""
+        return hash((self.name, self.level))
+
+    def __eq__(self, other: Any) -> bool:
+        """Check equality based on zone name and level."""
+        if not isinstance(other, Zone):
+            return False
+        return (self.name, self.level) == (other.name, other.level)
 
     def is_halo(self) -> bool:
         return self in (Zone.HALO, Zone.HALO_LEVEL_2)
 
+    def is_lateral_boundary(self) -> bool:
+        return self in (
+            Zone.LATERAL_BOUNDARY,
+            Zone.LATERAL_BOUNDARY_LEVEL_2,
+            Zone.LATERAL_BOUNDARY_LEVEL_3,
+            Zone.LATERAL_BOUNDARY_LEVEL_4,
+            Zone.LATERAL_BOUNDARY_LEVEL_5,
+            Zone.LATERAL_BOUNDARY_LEVEL_6,
+            Zone.LATERAL_BOUNDARY_LEVEL_7,
+            Zone.LATERAL_BOUNDARY_LEVEL_8,
+        )
+
+    def is_nudging(self) -> bool:
+        return self in (Zone.NUDGING, Zone.NUDGING_LEVEL_2)
+
+    def is_local(self) -> bool:
+        return self == Zone.LOCAL
 
 
-VERTEX_ZONES = (
-    Zone.END,
-    Zone.INTERIOR,
-    Zone.HALO,
-    Zone.HALO_LEVEL_2,
-    Zone.LOCAL,
-    Zone.LATERAL_BOUNDARY,
-    Zone.LATERAL_BOUNDARY_LEVEL_2,
-    Zone.LATERAL_BOUNDARY_LEVEL_3,
-    Zone.LATERAL_BOUNDARY_LEVEL_4,
-)
-
-
-CELL_ZONES = (
+VERTEX_AND_CELL_ZONES = (
     Zone.END,
     Zone.INTERIOR,
     Zone.HALO,
@@ -330,6 +367,7 @@ CELL_ZONES = (
     Zone.LATERAL_BOUNDARY_LEVEL_4,
     Zone.NUDGING,
 )
+
 
 EDGE_ZONES = tuple(Zone)
 
@@ -368,7 +406,7 @@ def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:
             return _nudging(dim, LineNumber.SECOND)
 
 
-def get_refinement_control(dim:gtx.Dimension, zone: Zone) -> int:
+def get_refinement_control(dim: gtx.Dimension, zone: Zone) -> int:
     """
 
     Args:
@@ -406,22 +444,11 @@ class Domain:
     def __post_init__(self):
         assert _validate(
             self.dim, self.zone
-        ), f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {get_zones_for_dim(self.dim)}"
+        ), f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {_get_zones_for_dim(self.dim)}"
 
     @functools.cached_property
     def is_local(self) -> bool:
-        return self.zone == Zone.LOCAL
-
-    @functools.cached_property
-    def refinement_control_value(self) -> int:
-        """
-        Get the refinement control value for this domain.
-
-        This is the value that is used in the refinement control field for this domain.
-        """
-        return get_refinement_control(self._dim, self._zone)
-
-
+        return self.zone.is_local()
 
 
 def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
@@ -448,20 +475,18 @@ def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
 
 
 def _validate(dim: gtx.Dimension, marker: Zone) -> bool:
-    return marker in get_zones_for_dim(dim)
+    return marker in _get_zones_for_dim(dim)
 
 
-def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
+def _get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
     """
     Get the grid zones valid for a given horizontal dimension in ICON .
     """
     match dim:
-        case dims.CellDim:
-            return CELL_ZONES
+        case dims.CellDim | dims.VertexDim:
+            return VERTEX_AND_CELL_ZONES
         case dims.EdgeDim:
             return EDGE_ZONES
-        case dims.VertexDim:
-            return VERTEX_ZONES
         case _:
             raise ValueError(
                 f"Dimension should be one of {(dims.MAIN_HORIZONTAL_DIMENSIONS.values())} but was {dim}"
@@ -471,9 +496,14 @@ def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
 def map_icon_domain_bounds(
     dim: gtx.Dimension, pre_computed_bounds: np.ndarray
 ) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
-    get_domain = domain(dim)
-    domains = (get_domain(zone) for zone in get_zones_for_dim(dim))
+    domains = get_domains_for_dim(dim)
     return {
         d: gtx.int32(pre_computed_bounds[_map_to_icon_index(dim, d.zone)].item())
         for d in domains  # type: ignore [attr-defined]
     }
+
+
+def get_domains_for_dim(dim: gtx.Dimension) -> Iterator[Domain]:
+    get_domain = domain(dim)
+    domains = (get_domain(zone) for zone in _get_zones_for_dim(dim))
+    return domains

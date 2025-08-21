@@ -17,9 +17,9 @@ from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
+    grid_refinement as refinement,
     horizontal as h_grid,
     icon,
-    refinement,
 )
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -113,7 +113,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "grf_nudge_start_e": refinement.refine_control_value(
                     dims.EdgeDim, h_grid.Zone.NUDGING
-                ).value,
+                ),
                 "max_nudging_coefficient": self._config["max_nudging_coefficient"],
                 "nudge_efold_width": self._config["nudge_efold_width"],
                 "nudge_zone_width": self._config["nudge_zone_width"],

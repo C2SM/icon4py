@@ -18,10 +18,10 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base,
+    grid_refinement as refinement,
     gridfile,
     horizontal as h_grid,
     icon,
-    refinement,
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -226,7 +226,7 @@ class GridManager:
         Reads the refinement control fields from the grid file.
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
-        see [refinement.py](refinement.py)
+        see [grid_refinement.py](grid_refinement.py)
 
         Args:
             decomposition_info: Optional decomposition information, if not provided the grid is assumed to be a single node run.

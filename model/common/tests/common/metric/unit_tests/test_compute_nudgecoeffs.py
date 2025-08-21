@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid, refinement
+from icon4py.model.common.grid import horizontal as h_grid, grid_refinement as refinement
 from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -39,7 +39,7 @@ def test_compute_nudgecoeffs_e(
     nudgecoeff_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat, backend=backend)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
     refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
-    grf_nudge_start_e = refinement.refine_control_value(dims.EdgeDim, h_grid.Zone.NUDGING).value
+    grf_nudge_start_e = refinement.refine_control_value(dims.EdgeDim, h_grid.Zone.NUDGING)
     max_nudging_coefficient = wpfloat(0.375)
     nudge_efold_width = wpfloat(2.0)
     nudge_zone_width = 10

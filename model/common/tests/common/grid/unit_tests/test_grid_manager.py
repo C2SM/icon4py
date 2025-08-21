@@ -17,7 +17,7 @@ from icon4py.model.common.grid import (
     grid_manager as gm,
     gridfile,
     horizontal as h_grid,
-    refinement as refin,
+    grid_refinement as refin,
     vertical as v_grid,
 )
 from icon4py.model.testing import (

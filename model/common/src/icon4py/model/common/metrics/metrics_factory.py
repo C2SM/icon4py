@@ -12,6 +12,7 @@ import math
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
+import icon4py.model.common.grid.grid_refinement
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
@@ -650,7 +651,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP: attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP},
             params={
                 "grf_nudge_start_e": gtx.int32(h_grid._GRF_NUDGEZONE_START_EDGES),
-                "grf_nudgezone_width": gtx.int32(h_grid._GRF_NUDGEZONE_WIDTH),
+                "grf_nudgezone_width": gtx.int32(
+                    icon4py.model.common.grid.grid_refinement._GRF_NUDGEZONE_WIDTH
+                ),
             },
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)

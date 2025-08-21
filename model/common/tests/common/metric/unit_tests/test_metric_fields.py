@@ -10,6 +10,7 @@ import math
 import gt4py.next as gtx
 import pytest
 
+import icon4py.model.common.grid.grid_refinement
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
 from icon4py.model.common.metrics import metric_fields as mf
@@ -462,7 +463,9 @@ def test_compute_horizontal_mask_for_3d_divdamp(
         e_refin_ctrl=e_refin_ctrl,
         horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
         grf_nudge_start_e=gtx.int32(horizontal._GRF_NUDGEZONE_START_EDGES),
-        grf_nudgezone_width=gtx.int32(horizontal._GRF_NUDGEZONE_WIDTH),
+        grf_nudgezone_width=gtx.int32(
+            icon4py.model.common.grid.grid_refinement._GRF_NUDGEZONE_WIDTH
+        ),
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_edges,
         offset_provider={},

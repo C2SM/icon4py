@@ -465,7 +465,7 @@ def simple_grid(
     start_indices = {
         **{
             cell_domain(zone): gtx.int32(0 if not zone.is_halo() else _CELLS)
-            for zone in h_grid.CELL_ZONES
+            for zone in h_grid.VERTEX_AND_CELL_ZONES
         },
         **{
             edge_domain(zone): gtx.int32(0 if not zone.is_halo() else _EDGES)
@@ -473,13 +473,13 @@ def simple_grid(
         },
         **{
             vertex_domain(zone): gtx.int32(0 if not zone.is_halo() else _VERTICES)
-            for zone in h_grid.VERTEX_ZONES
+            for zone in h_grid.VERTEX_AND_CELL_ZONES
         },
     }
     end_indices = {
-        **{cell_domain(zone): gtx.int32(_CELLS) for zone in h_grid.CELL_ZONES},
+        **{cell_domain(zone): gtx.int32(_CELLS) for zone in h_grid.VERTEX_AND_CELL_ZONES},
         **{edge_domain(zone): gtx.int32(_EDGES) for zone in h_grid.EDGE_ZONES},
-        **{vertex_domain(zone): gtx.int32(_VERTICES) for zone in h_grid.VERTEX_ZONES},
+        **{vertex_domain(zone): gtx.int32(_VERTICES) for zone in h_grid.VERTEX_AND_CELL_ZONES},
     }
 
     return base.Grid(
