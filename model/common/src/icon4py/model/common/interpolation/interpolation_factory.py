@@ -11,7 +11,7 @@ import logging
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as common_metrics
+import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -99,7 +99,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     def _register_computed_fields(self):
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
-            func=common_metrics.compute_nudgecoeffs.with_backend(None),
+            func=nudgecoeffs.compute_nudgecoeffs.with_backend(None),
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
