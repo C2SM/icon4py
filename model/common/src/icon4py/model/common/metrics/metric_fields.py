@@ -996,7 +996,7 @@ def _compute_param(
     nlev: gtx.int32,
 ) -> tuple[gtx.int32, bool]:
     param_0, param_1 = param
-    if param_0 >= lower:  # noqa: SIM102 [collapsible-if]  # TODO(havogt): check if this can be simplified
+    if param_0 >= lower:
         if (param_0 == nlev) | (z_me_jk <= z_ifc_off) & (z_me_jk >= z_ifc_off_koff):
             param_1 = True
     return param_0 + 1, param_1

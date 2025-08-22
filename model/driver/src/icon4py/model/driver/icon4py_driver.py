@@ -149,8 +149,9 @@ class TimeLoop:
         timer_after_first_timestep = Timer("TimeLoop: after first time step", dp=6)
         for time_step in range(self._n_time_steps):
             timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
-            if profiling is not None and (not profiling.skip_first_timestep or time_step > 0):
-                gtx_config.COLLECT_METRICS_LEVEL = profiling.gt4py_metrics_level
+            if profiling is not None:
+                if not profiling.skip_first_timestep or time_step > 0:
+                    gtx_config.COLLECT_METRICS_LEVEL = profiling.gt4py_metrics_level
 
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             if log.isEnabledFor(logging.DEBUG):

@@ -128,13 +128,14 @@ def _download_grid_file(grid_file_identifier: str) -> pathlib.Path:
                     dt_utils.GRID_URIS[grid_file_identifier],
                     grid_directory,
                 )
-    # If grid download is disabled, we check if the file exists
-    # without locking. We assume the location is managed by the user
-    # and avoid locking shared directories (e.g. on CI).
-    elif not full_name.exists():
-        raise FileNotFoundError(
-            f"Grid file {full_name} does not exist and grid download is disabled."
-        )
+    else:
+        # If grid download is disabled, we check if the file exists
+        # without locking. We assume the location is managed by the user
+        # and avoid locking shared directories (e.g. on CI).
+        if not full_name.exists():
+            raise FileNotFoundError(
+                f"Grid file {full_name} does not exist and grid download is disabled."
+            )
     return full_name
 
 
