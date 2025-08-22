@@ -158,7 +158,10 @@ ignore_errors = true
 module = [
   'icon4py.model.testing.fixtures.datatest',
   'icon4py.model.testing.pytest_hooks',
-  'icon4py.model.testing.serialbox'
+  'icon4py.model.testing.serialbox',
+  'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',
+  'icon4py.tools.py2fgen.wrappers.dycore_wrapper',
+  'icon4py.tools.py2fgen.wrappers.grid_wrapper'
 ]
 
 # -- pytest --
@@ -195,9 +198,10 @@ exclude = ["**/tests/**"]
 explicit-preview-rules = true
 ignore = [
   'E501',  # [line-too-long]
-  'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
-  'PLR0913',  # [too-many-arguments]  # TODO(egparedes): remove when possible
-  'PLR2004',  # [magic-value-comparison]  # TODO(egparedes): remove when possible
+  'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): activate when possible
+  'PLR0913',  # [too-many-arguments]  # TODO(egparedes): activate when possible
+  'PLR2004',  # [magic-value-comparison]  # TODO(egparedes): activate when possible
+  'PLR5501',  # [collapsible-else-if]  # TODO(egparedes): rediscuss in future
   'TD003',  # [missing-todo-link]
   'UP038'  # [non-pep604-isinstance]
 ]
@@ -262,11 +266,13 @@ split-on-trailing-comma = false
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**/*_test.py" = ["F401", "F811"]
-"**/tests/**/fixtures.py" = ["F401", "F811"]
+# Avoid messing up conditionals in gt4py stencils
+"**/model/**/stencils/*.py" = ["SIM102"]
 # Ignore spurious errors when explicitly importing fixtures in tests.
 # Check: https://github.com/astral-sh/ruff/issues/10662
 "**/tests/**/test_*.py" = ["F401", "F811"]
+"**/tests/**/*_test.py" = ["F401", "F811"]
+"**/tests/**/fixtures.py" = ["F401", "F811"]
 
 [tool.ruff.lint.pylint]
 max-branches = 12

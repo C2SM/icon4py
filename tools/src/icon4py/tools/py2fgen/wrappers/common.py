@@ -6,22 +6,20 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ruff: noqa: PGH003 [blanket-type-ignore] # just for the `type: ignore` in next line
-# type: ignore
 
 import contextlib
 import functools
 import logging
+import uuid
 from collections.abc import Callable, Iterable
 from types import ModuleType
-from typing import TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias, cast
 
 import gt4py.next as gtx
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
 from gt4py.next import backend as gtx_backend
-from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
@@ -29,13 +27,16 @@ from icon4py.model.common.grid import base, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-try:
-    import cupy as cp
+if TYPE_CHECKING:
+    xp: Final = np
+else:
+    try:
+        import cupy as cp
 
-    xp = cp
-except ImportError:
-    cp = None
-    xp = np
+        xp = cp
+    except ImportError:
+        cp = None
+        xp = np
 
 
 NDArray: TypeAlias = np.ndarray | xp.ndarray
@@ -56,14 +57,14 @@ class BackendIntEnum(eve.IntEnum):
     _DACE_GPU = 22
 
 
-_BACKEND_MAP = {
-    BackendIntEnum._GTFN_CPU: run_gtfn_cached,
-    BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
+_BACKEND_MAP: dict[BackendIntEnum, gtx_backend.Backend] = {
+    BackendIntEnum._GTFN_CPU: cast(gtx_backend.Backend, model_backends.BACKENDS["gtfn_cpu"]),
+    BackendIntEnum._GTFN_GPU: cast(gtx_backend.Backend, model_backends.BACKENDS["gtfn_gpu"]),
 }
 with contextlib.suppress(NotImplementedError):  # dace backends might not be available
     _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(gpu=False),
-        BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(gpu=True),
+        BackendIntEnum._DACE_CPU: cast(gtx_backend.Backend, model_backends.BACKENDS["dace_cpu"]),
+        BackendIntEnum._DACE_GPU: cast(gtx_backend.Backend, model_backends.BACKENDS["dace_gpu"]),
     }
 
 
@@ -100,7 +101,7 @@ def cached_dummy_field_factory(
     @functools.lru_cache(maxsize=20)
     def impl(_name: str, domain: gtx.Domain, dtype: gt4py_definitions.DType) -> gtx.Field:
         # _name is used to differentiate between different dummy fields
-        return gtx.zeros(domain, dtype=dtype, allocator=allocator)
+        return gtx.zeros(domain, dtype=dtype, allocator=allocator)  # type:ignore[arg-type]  # TODO(): fix type hint
 
     return impl
 
@@ -151,7 +152,7 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
-    mean_cell_area: gtx.float64,
+    mean_cell_area: gtx.float64,  # type:ignore[name-defined]  # TODO(): fix type hint
     backend: gtx_backend.Backend,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
@@ -230,7 +231,7 @@ def construct_icon_grid(
     }
 
     return icon.icon_grid(
-        id_=grid_id,
+        id_=uuid.UUID(grid_id),
         allocator=backend,
         config=config,
         neighbor_tables=neighbor_tables,
