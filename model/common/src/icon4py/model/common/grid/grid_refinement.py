@@ -103,8 +103,8 @@ _LAST_BOUNDARY: dict[gtx.Dimension, h_grid.Zone] = {
 
 def compute_domain_bounds(
     dim: gtx.Dimension, refinement_fields: dict[gtx.Dimension, gtx.Field], array_ns: ModuleType = np
-) -> tuple[dict[gtx.Domain, gtx.int32], dict[gtx.Domain, gtx.int32]]:
-    refinement_ctrl = refinement_fields.get(dim).ndarray
+) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
+    refinement_ctrl = refinement_fields[dim].ndarray
     refinement_ctrl = convert_to_unnested_refinement_values(refinement_ctrl, dim, array_ns)
 
     domains = h_grid.get_domains_for_dim(dim)
@@ -112,13 +112,13 @@ def compute_domain_bounds(
     end_indices = {}
     for domain in domains:
         start_index = 0
-        end_index = refinement_ctrl.size
+        end_index = refinement_ctrl.shape[0]
         my_zone = domain.zone
         if (
             my_zone is h_grid.Zone.END or my_zone.is_halo()
         ):  # TODO(halungge): implement for distributed
-            start_index = refinement_ctrl.size
-            end_index = refinement_ctrl.size
+            start_index = refinement_ctrl.shape[0]
+            end_index = refinement_ctrl.shape[0]
         elif my_zone.is_lateral_boundary():
             found = array_ns.where(refinement_ctrl == my_zone.level)[0]
             start_index, end_index = (
@@ -140,20 +140,20 @@ def compute_domain_bounds(
             value = get_nudging_refinement_value(dim)
             found = array_ns.where(refinement_ctrl == value)[0]
             start_index = array_ns.max(found).item() + 1 if found.size > 0 else 0
-            end_index = refinement_ctrl.size
-        start_indices[domain] = gtx.int32(start_index)
-        end_indices[domain] = gtx.int32(end_index)
+            end_index = refinement_ctrl.shape[0]
+        start_indices[domain] = gtx.int32(start_index)  # type: ignore [attr-defined]
+        end_indices[domain] = gtx.int32(end_index)  # type: ignore [attr-defined]
     return start_indices, end_indices
 
 
-def get_nudging_refinement_value(dim):
+def get_nudging_refinement_value(dim: gtx.Dimension) -> int:
     return _LAST_BOUNDARY[dim].level + _LAST_NUDGING[dim].level
 
 
 def is_unordered_field(
     field: data_alloc.NDArray, dim: gtx.Dimension, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
-    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
+    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
     return array_ns.where(
         field == _UNORDERED[dim][0], True, array_ns.where(field == _UNORDERED[dim][1], True, False)
     )
@@ -167,7 +167,7 @@ def convert_to_unnested_refinement_values(
 
     The nested values are used for example in the radiation grids.
     """
-    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
+    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
     return array_ns.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
 
 

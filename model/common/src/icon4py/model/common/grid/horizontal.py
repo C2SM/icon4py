@@ -190,7 +190,7 @@ class Zone(enum.Enum):
 
     """
 
-    def __init__(self, name, level):
+    def __init__(self, name: str, level: int) -> None:
         self._name = name  # Use _name to avoid conflict with Enum's name
         self.level = level
         self._value_str = f"{name}_{level}" if level > 0 else name
@@ -295,42 +295,27 @@ VERTEX_AND_CELL_ZONES = (
 
 EDGE_ZONES = tuple(Zone)
 
+_ZONE_TO_INDEX_MAPPING = {
+    Zone.END: lambda dim: _icon_domain_index(_ICON_END, dim),
+    Zone.INTERIOR: lambda dim: _icon_domain_index(_ICON_INTERIOR, dim),
+    Zone.HALO: lambda dim: _icon_domain_index(_ICON_HALO, dim),
+    Zone.HALO_LEVEL_2: lambda dim: _icon_domain_index(_ICON_HALO, dim, -1),
+    Zone.LOCAL: lambda dim: _icon_domain_index(ICON_LOCAL, dim),
+    Zone.LATERAL_BOUNDARY: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim),
+    Zone.LATERAL_BOUNDARY_LEVEL_2: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 1),
+    Zone.LATERAL_BOUNDARY_LEVEL_3: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 2),
+    Zone.LATERAL_BOUNDARY_LEVEL_4: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 3),
+    Zone.LATERAL_BOUNDARY_LEVEL_5: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 4),
+    Zone.LATERAL_BOUNDARY_LEVEL_6: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 5),
+    Zone.LATERAL_BOUNDARY_LEVEL_7: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 6),
+    Zone.LATERAL_BOUNDARY_LEVEL_8: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 7),
+    Zone.NUDGING: lambda dim: _icon_domain_index(_ICON_NUDGING, dim),
+    Zone.NUDGING_LEVEL_2: lambda dim: _icon_domain_index(_ICON_NUDGING, dim, 1),
+}
+
 
 def _map_zone_to_icon_array_index(dim: gtx.Dimension, zone: Zone) -> int:
-    match zone:
-        case Zone.END:
-            return _icon_domain_index(_ICON_END, dim)
-        case Zone.INTERIOR:
-            return _icon_domain_index(_ICON_INTERIOR, dim)
-        case Zone.HALO:
-            return _icon_domain_index(_ICON_HALO, dim)
-        case Zone.HALO_LEVEL_2:
-            return _icon_domain_index(_ICON_HALO, dim, -1)
-        case Zone.LOCAL:
-            return _icon_domain_index(ICON_LOCAL, dim)
-        case Zone.LATERAL_BOUNDARY:
-            return _icon_domain_index(
-                _ICON_LATERAL_BOUNDARY,
-                dim,
-            )
-        case Zone.LATERAL_BOUNDARY_LEVEL_2:
-            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 1)
-        case Zone.LATERAL_BOUNDARY_LEVEL_3:
-            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 2)
-        case Zone.LATERAL_BOUNDARY_LEVEL_4:
-            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 3)
-        case Zone.LATERAL_BOUNDARY_LEVEL_5:
-            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 4)
-        case Zone.LATERAL_BOUNDARY_LEVEL_6:
-            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 5)
-        case Zone.LATERAL_BOUNDARY_LEVEL_7:
-            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 6)
-        case Zone.LATERAL_BOUNDARY_LEVEL_8:
-            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 7)
-        case Zone.NUDGING:
-            return _icon_domain_index(_ICON_NUDGING, dim)
-        case Zone.NUDGING_LEVEL_2:
-            return _icon_domain_index(_ICON_NUDGING, dim, 1)
+    return _ZONE_TO_INDEX_MAPPING[zone](dim)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -354,7 +339,7 @@ class Domain:
     def __str__(self) -> str:
         return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_zone_to_icon_array_index(self.dim, self.zone)} ])"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         assert _validate(
             self.dim, self.zone
         ), f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {_get_zones_for_dim(self.dim)}"
@@ -425,7 +410,7 @@ def get_start_end_idx_from_icon_arrays(
     dim: gtx.Dimension,
     start_indices: dict[gtx.Dimension, np.ndarray],
     end_indices: dict[gtx.Dimension, np.ndarray],
-) -> tuple[dict[gtx.Domain, gtx.int32], dict[gtx.Domain, gtx.int32]]:
+) -> tuple[dict[Domain, gtx.int32], dict[Domain, gtx.int32]]:  # type: ignore [name-defined]
     """
     Translates ICON type start_idx and end_idx arrays to mapping of Domains to index values
     Args:
@@ -446,6 +431,6 @@ def _map_icon_array_to_domains(
 ) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
     domains = get_domains_for_dim(dim)
     return {
-        d: gtx.int32(pre_computed_bounds[_map_zone_to_icon_array_index(dim, d.zone)].item())
-        for d in domains  # type: ignore [attr-defined]
+        d: gtx.int32(pre_computed_bounds[_map_zone_to_icon_array_index(dim, d.zone)].item())  # type: ignore [attr-defined]
+        for d in domains
     }
