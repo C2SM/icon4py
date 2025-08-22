@@ -63,7 +63,6 @@ from icon4py.model.common.model_options import program_compile_time
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common.orchestration import decorator as dace_orchestration
-from icon4py.model.testing.test_utils import is_scalar
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -544,6 +543,7 @@ class Diffusion:
                 "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
                 "area": self._cell_params.area,
                 "apply_zdiffusion_t": self.config.apply_zdiffusion_t,
+                "rd_o_cvd": self.rd_o_cvd,
             },
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
@@ -597,8 +597,6 @@ class Diffusion:
                 ].item(),
             },
         )(diff_multfac_n2w=self.diff_multfac_n2w)
-
-        self._determine_horizontal_domains()
 
         # TODO(edopao): we should call gtx.common.offset_provider_to_type()
         #   but this requires some changes in gt4py domain inference.
@@ -906,7 +904,6 @@ class Diffusion:
                 theta_v_in=self.theta_v_tmp,
                 theta_v=prognostic_state.theta_v,
                 exner=prognostic_state.exner,
-                rd_o_cvd=self.rd_o_cvd,
             )
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 

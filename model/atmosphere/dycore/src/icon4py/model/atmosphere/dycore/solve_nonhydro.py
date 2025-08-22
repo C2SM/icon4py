@@ -17,6 +17,7 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
+from icon4py.model.common.model_options import program_compile_time
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common import constants
@@ -35,27 +36,14 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
-    compute_avg_vn_and_graddiv_vn_and_vt,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import (
     compute_exner_from_rhotheta,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_mass_flux
 from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import (
     compute_theta_and_exner,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
-    compute_vn_on_lateral_boundary,
-)
-from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
-    init_two_edge_kdim_fields_with_zero_wp,
 )
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
@@ -79,7 +67,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -426,157 +413,271 @@ class SolveNonhydro:
         self._vertical_params = vertical_params
         self._edge_geometry = edge_geometry
         self._cell_params = cell_geometry
+        self._determine_local_domains()
 
-        self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider={},
-        )
-        self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider={},
-        )
-        self._update_theta_v = update_theta_v.with_backend(self._backend).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider={},
-        )
-        self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
-                self._backend
-            ).compile(
-                enable_jit=False,
-                vertical_start=[gtx.int32(0)],
-                vertical_end=[gtx.int32(self._grid.num_levels)],
-                offset_provider=self._grid.connectivities,
-            )
-        )
-        self._init_two_edge_kdim_fields_with_zero_wp = (
-            init_two_edge_kdim_fields_with_zero_wp.with_backend(self._backend).compile(
-                enable_jit=False,
-                vertical_start=[gtx.int32(0)],
-                vertical_end=[gtx.int32(self._grid.num_levels)],
-                offset_provider={},
-            )
-        )
-        self._compute_hydrostatic_correction_term = (
-            compute_hydrostatic_correction_term.with_backend(self._backend).compile(
-                enable_jit=False,
-                vertical_start=[gtx.int32(self._grid.num_levels - 1)],
-                vertical_end=[gtx.int32(self._grid.num_levels)],
-                offset_provider=self._grid.connectivities,
-            )
+        self._compute_theta_and_exner = program_compile_time(
+            backend=self._backend,
+            program_func=compute_theta_and_exner,
+            bound_args={
+                "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,
+                "rd_o_cvd": constants.RD_O_CVD,
+                "rd_o_p0ref": constants.RD_O_P0REF,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_local,
+                "horizontal_end": self._end_cell_end,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
         )
 
-        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            iau_wgt_dyn=[self._config.iau_wgt_dyn],
-            is_iau_active=[self._config.is_iau_active],
-            limited_area=[self._grid.limited_area],
-            nflatlev=[self._vertical_params.nflatlev],
-            nflat_gradp=[self._vertical_params.nflat_gradp],
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
+        self._compute_exner_from_rhotheta = program_compile_time(
+            backend=self._backend,
+            program_func=compute_exner_from_rhotheta,
+            bound_args={
+                "rd_o_cvd": constants.RD_O_CVD,
+                "rd_o_p0ref": constants.RD_O_P0REF,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary,
+                "horizontal_end": self._end_cell_lateral_boundary_level_4,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+        )
+
+        self._update_theta_v = program_compile_time(
+            backend=self._backend,
+            program_func=update_theta_v,
+            bound_args={
+                "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_halo,
+                "horizontal_end": self._end_cell_end,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+        )
+
+        self._compute_hydrostatic_correction_term = program_compile_time(
+            backend=self._backend,
+            program_func=compute_hydrostatic_correction_term,
+            bound_args={
+                "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,  # TODO
+                "zdiff_gradp": self._metric_state_nonhydro.zdiff_gradp,  # TODO
+                "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
+                "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
+                "grav_o_cpd": constants.GRAV_O_CPD,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_nudging_level_2,
+                "horizontal_end": self._end_edge_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(self._grid.num_levels - 1),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
             offset_provider=self._grid.connectivities,
         )
-        self._apply_divergence_damping_and_update_vn = compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            iau_wgt_dyn=[self._config.iau_wgt_dyn],
-            is_iau_active=[self._config.is_iau_active],
-            limited_area=[self._grid.limited_area],
-            apply_2nd_order_divergence_damping=[True, False],
-            apply_4th_order_divergence_damping=[True, False],
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
+
+        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = program_compile_time(
+            backend=self._backend,
+            program_func=compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
+            bound_args={
+                "reference_rho_at_edges_on_model_levels": self._metric_state_nonhydro.reference_rho_at_edges_on_model_levels,
+                "reference_theta_at_edges_on_model_levels": self._metric_state_nonhydro.reference_theta_at_edges_on_model_levels,
+                "geofac_grg_x": self._interpolation_state.geofac_grg_x,
+                "geofac_grg_y": self._interpolation_state.geofac_grg_y,
+                "pos_on_tplane_e_x": self._interpolation_state.pos_on_tplane_e_1,
+                "pos_on_tplane_e_y": self._interpolation_state.pos_on_tplane_e_2,
+                "primal_normal_cell_x": self._edge_geometry.primal_normal_cell[0],
+                "dual_normal_cell_x": self._edge_geometry.dual_normal_cell[0],
+                "primal_normal_cell_y": self._edge_geometry.primal_normal_cell[1],
+                "dual_normal_cell_y": self._edge_geometry.dual_normal_cell[1],
+                "ddxn_z_full": self._metric_state_nonhydro.ddxn_z_full,
+                "c_lin_e": self._interpolation_state.c_lin_e,
+                "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,
+                "zdiff_gradp": self._metric_state_nonhydro.zdiff_gradp,
+                "ipeidx_dsl": self._metric_state_nonhydro.pg_edgeidx_dsl,
+                "pg_exdist": self._metric_state_nonhydro.pg_exdist,
+                "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
+                "iau_wgt_dyn": self._config.iau_wgt_dyn,
+                "is_iau_active": self._config.is_iau_active,
+                "limited_area": self._grid.limited_area,
+            },
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(0),
+                "horizontal_end": self._end_edge_halo_level_2,
+                "start_edge_lateral_boundary": self._start_edge_lateral_boundary,
+                "start_edge_lateral_boundary_level_7": self._start_edge_lateral_boundary_level_7,
+                "start_edge_nudging_level_2": self._start_edge_nudging_level_2,
+                "end_edge_nudging": self._end_edge_nudging,
+                "end_edge_halo": self._end_edge_halo,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+                "nflatlev": self._vertical_params.nflatlev,
+                "nflat_gradp": self._vertical_params.nflat_gradp,
+            },
             offset_provider=self._grid.connectivities,
         )
-        self._compute_horizontal_velocity_quantities_and_fluxes = (
-            compute_horizontal_velocity_quantities_and_fluxes.with_backend(self._backend).compile(
-                nflatlev=[self._vertical_params.nflatlev],
-                vertical_start=[gtx.int32(0)],
-                vertical_end=[gtx.int32(self._grid.num_levels + 1)],
-                offset_provider=self._grid.connectivities,
-            )
-        )
-        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = (
-            compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
-                self._backend
-            ).compile(
-                prepare_advection=[False, True],
-                at_first_substep=[False, True],
-                vertical_start=[gtx.int32(0)],
-                vertical_end=[gtx.int32(self._grid.num_levels)],
-                offset_provider=self._grid.connectivities,
-            )
-        )
-        self._compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider={},
-        )
-        self._compute_avg_vn_and_graddiv_vn_and_vt = (
-            compute_avg_vn_and_graddiv_vn_and_vt.with_backend(self._backend)
-        ).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
+
+        self._apply_divergence_damping_and_update_vn = program_compile_time(
+            backend=self._backend,
+            program_func=compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn,
+            bound_args={
+                "horizontal_mask_for_3d_divdamp": self._metric_state_nonhydro.horizontal_mask_for_3d_divdamp,
+                "scaling_factor_for_3d_divdamp": self._metric_state_nonhydro.scaling_factor_for_3d_divdamp,
+                "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
+                "nudgecoeff_e": self._interpolation_state.nudgecoeff_e,
+                "geofac_grdiv": self._interpolation_state.geofac_grdiv,
+                "advection_explicit_weight_parameter": self._params.advection_explicit_weight_parameter,
+                "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
+                "iau_wgt_dyn": self._config.iau_wgt_dyn,
+                "is_iau_active": self._config.is_iau_active,
+                "limited_area": self._grid.limited_area,
+            },
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(self._start_edge_nudging_level_2),
+                "horizontal_end": self._end_edge_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
             offset_provider=self._grid.connectivities,
         )
-        self._compute_mass_flux = compute_mass_flux.with_backend(self._backend).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider={},
-        )
-        self._vertically_implicit_solver_at_predictor_step = vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            iau_wgt_dyn=[self._config.iau_wgt_dyn],
-            is_iau_active=[self._config.is_iau_active],
-            rayleigh_type=[self._config.rayleigh_type],
-            divdamp_type=[self._config.divdamp_type],
-            end_index_of_damping_layer=[self._vertical_params.end_index_of_damping_layer],
-            kstart_moist=[self._vertical_params.kstart_moist],
-            flat_level_index_plus1=[gtx.int32(self._vertical_params.nflatlev + 1)],
-            vertical_start_index_model_top=[gtx.int32(0)],
-            vertical_end_index_model_surface=[gtx.int32(self._grid.num_levels + 1)],
-            offset_provider=[self._grid.connectivities],
-        )
-        self._vertically_implicit_solver_at_corrector_step = vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            iau_wgt_dyn=[self._config.iau_wgt_dyn],
-            is_iau_active=[self._config.is_iau_active],
-            rayleigh_type=[self._config.rayleigh_type],
-            end_index_of_damping_layer=[self._vertical_params.end_index_of_damping_layer],
-            kstart_moist=[self._vertical_params.kstart_moist],
-            vertical_start_index_model_top=[gtx.int32(0)],
-            vertical_end_index_model_surface=[gtx.int32(self._grid.num_levels + 1)],
-            offset_provider=[self._grid.connectivities],
-        )
-        self._compute_dwdz_for_divergence_damping = (
-            compute_dwdz_for_divergence_damping.with_backend(self._backend)
-        ).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
+
+        self._compute_horizontal_velocity_quantities_and_fluxes = program_compile_time(
+            backend=self._backend,
+            program_func=compute_horizontal_velocity_quantities_and_fluxes,
+            bound_args={
+                "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
+                "ddxn_z_full": self._metric_state_nonhydro.ddxn_z_full,
+                "ddxt_z_full": self._metric_state_nonhydro.ddxt_z_full,
+                "wgtfac_e": self._metric_state_nonhydro.wgtfac_e,
+                "wgtfacq_e": self._metric_state_nonhydro.wgtfacq_e,
+                "e_flx_avg": self._interpolation_state.e_flx_avg,
+                "geofac_grdiv": self._interpolation_state.geofac_grdiv,
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
+            },
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(self._start_edge_lateral_boundary_level_5),
+                "horizontal_end": self._end_edge_halo_level_2,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels + 1),
+                "nflatlev": self._vertical_params.nflatlev,
+            },
             offset_provider=self._grid.connectivities,
         )
+
+        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = program_compile_time(
+            backend=self._backend,
+            program_func=compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+            bound_args={
+                "e_flx_avg": self._interpolation_state.e_flx_avg,
+                "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
+            },
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(self._start_edge_lateral_boundary_level_5),
+                "horizontal_end": self._end_edge_halo_level_2,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
+        )
+
+        self._vertically_implicit_solver_at_predictor_step = program_compile_time(
+            backend=self._backend,
+            program_func=vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step,
+            bound_args={
+                "geofac_div": self._interpolation_state.geofac_div,
+                "exner_w_explicit_weight_parameter": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
+                "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
+                "exner_w_implicit_weight_parameter": self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
+                "ddqz_z_half": self._metric_state_nonhydro.ddqz_z_half,
+                "reference_exner_at_cells_on_model_levels": self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
+                "e_bln_c_s": self._interpolation_state.e_bln_c_s,
+                "wgtfac_c": self._metric_state_nonhydro.wgtfac_c,
+                "wgtfacq_c": self._metric_state_nonhydro.wgtfacq_c,
+                "iau_wgt_dyn": self._config.iau_wgt_dyn,
+                "is_iau_active": self._config.is_iau_active,
+                "rayleigh_type": self._config.rayleigh_type,
+                "divdamp_type": self._config.divdamp_type,
+            },
+            horizontal_sizes={
+                "start_cell_index_nudging": self._start_cell_nudging,
+                "end_cell_index_local": self._end_cell_local,
+                "start_cell_index_lateral_lvl3": self._start_cell_lateral_boundary_level_3,
+                "end_cell_index_halo_lvl1": self._end_cell_halo,
+            },
+            vertical_sizes={
+                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
+                "kstart_moist": self._vertical_params.kstart_moist,
+                "flat_level_index_plus1": gtx.int32(self._vertical_params.nflatlev + 1),
+                "vertical_start_index_model_top": gtx.int32(0),
+                "vertical_end_index_model_surface": gtx.int32(self._grid.num_levels + 1),
+            },
+            offset_provider=self._grid.connectivities,
+        )
+
+        self._vertically_implicit_solver_at_corrector_step = program_compile_time(
+            backend=self._backend,
+            program_func=vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step,
+            bound_args={
+                "exner_w_explicit_weight_parameter": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
+                "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
+                "exner_w_implicit_weight_parameter": self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
+                "ddqz_z_half": self._metric_state_nonhydro.ddqz_z_half,
+                "reference_exner_at_cells_on_model_levels": self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
+                "advection_explicit_weight_parameter": self._params.advection_explicit_weight_parameter,
+                "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
+                "iau_wgt_dyn": self._config.iau_wgt_dyn,
+                "is_iau_active": self._config.is_iau_active,
+                "rayleigh_type": self._config.rayleigh_type,
+            },
+            horizontal_sizes={
+                "start_cell_index_nudging": self._start_cell_nudging,
+                "end_cell_index_local": self._end_cell_local,
+            },
+            vertical_sizes={
+                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
+                "kstart_moist": self._vertical_params.kstart_moist,
+                "vertical_start_index_model_top": gtx.int32(0),
+                "vertical_end_index_model_surface": gtx.int32(self._grid.num_levels + 1),
+            },
+            offset_provider=self._grid.connectivities,
+        )
+
+        self._compute_dwdz_for_divergence_damping = program_compile_time(
+            backend=self._backend,
+            program_func=compute_dwdz_for_divergence_damping,
+            bound_args={
+                "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary,
+                "horizontal_end": self._end_cell_lateral_boundary_level_4,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
+        )
+
         self._init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
             self._backend
         ).compile(
@@ -615,23 +716,6 @@ class SolveNonhydro:
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
         )
-        self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            nflatlev_startindex=[self._vertical_params.nflatlev],
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.connectivities,
-        )
-        self._predictor_stencils_37_38 = nhsolve_stencils.predictor_stencils_37_38.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels + 1],
-            offset_provider=self._grid.connectivities,
-        )
         self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend).compile(
             enable_jit=False,
             vertical_start=[gtx.int32(0)],
@@ -655,7 +739,6 @@ class SolveNonhydro:
             backend=self._backend,
         )
         self._allocate_local_fields()
-        self._determine_local_domains()
 
         self._en_smag_fac_for_zero_nshift(
             self._vertical_params.interface_physical_height,
@@ -928,42 +1011,24 @@ class SolveNonhydro:
 
         if self._grid.limited_area:
             self._compute_theta_and_exner(
-                bdy_halo_c=self._metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
-                rd_o_cvd=constants.RD_O_CVD,
-                rd_o_p0ref=constants.RD_O_P0REF,
-                horizontal_start=self._start_cell_local,
-                horizontal_end=self._end_cell_end,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
             )
 
             self._compute_exner_from_rhotheta(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
-                rd_o_cvd=constants.RD_O_CVD,
-                rd_o_p0ref=constants.RD_O_P0REF,
-                horizontal_start=self._start_cell_lateral_boundary,
-                horizontal_end=self._end_cell_lateral_boundary_level_4,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
             )
 
         self._update_theta_v(
-            mask_prog_halo_c=self._metric_state_nonhydro.mask_prog_halo_c,
             rho_now=prognostic_states.current.rho,
             theta_v_now=prognostic_states.current.theta_v,
             exner_new=prognostic_states.next.exner,
             exner_now=prognostic_states.current.exner,
             rho_new=prognostic_states.next.rho,
             theta_v_new=prognostic_states.next.theta_v,
-            horizontal_start=self._start_cell_halo,
-            horizontal_end=self._end_cell_end,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
         )
 
     # flake8: noqa: C901
@@ -1059,18 +1124,8 @@ class SolveNonhydro:
         )
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
-            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,  # TODO
-            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,  # TODO
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-            inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
             z_hydro_corr=self.hydrostatic_correction,
-            grav_o_cpd=constants.GRAV_O_CPD,
-            horizontal_start=self._start_edge_nudging_level_2,
-            horizontal_end=self._end_edge_local,
-            vertical_start=self._grid.num_levels - 1,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
 
         self.hydrostatic_correction_on_lowest_level[...] = self.hydrostatic_correction.ndarray[
@@ -1084,8 +1139,6 @@ class SolveNonhydro:
             next_vn=prognostic_states.next.vn,
             current_vn=prognostic_states.current.vn,
             tangential_wind=diagnostic_state_nh.tangential_wind,
-            reference_rho_at_edges_on_model_levels=self._metric_state_nonhydro.reference_rho_at_edges_on_model_levels,
-            reference_theta_at_edges_on_model_levels=self._metric_state_nonhydro.reference_theta_at_edges_on_model_levels,
             perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
@@ -1096,37 +1149,7 @@ class SolveNonhydro:
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
-            geofac_grg_x=self._interpolation_state.geofac_grg_x,
-            geofac_grg_y=self._interpolation_state.geofac_grg_y,
-            pos_on_tplane_e_x=self._interpolation_state.pos_on_tplane_e_1,
-            pos_on_tplane_e_y=self._interpolation_state.pos_on_tplane_e_2,
-            primal_normal_cell_x=self._edge_geometry.primal_normal_cell[0],
-            dual_normal_cell_x=self._edge_geometry.dual_normal_cell[0],
-            primal_normal_cell_y=self._edge_geometry.primal_normal_cell[1],
-            dual_normal_cell_y=self._edge_geometry.dual_normal_cell[1],
-            ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
-            c_lin_e=self._interpolation_state.c_lin_e,
-            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
-            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,
-            ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
-            pg_exdist=self._metric_state_nonhydro.pg_exdist,
-            inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
             dtime=dtime,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
-            is_iau_active=self._config.is_iau_active,
-            limited_area=self._grid.limited_area,
-            nflatlev=self._vertical_params.nflatlev,
-            nflat_gradp=self._vertical_params.nflat_gradp,
-            start_edge_lateral_boundary=self._start_edge_lateral_boundary,
-            start_edge_lateral_boundary_level_7=self._start_edge_lateral_boundary_level_7,
-            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
-            end_edge_nudging=self._end_edge_nudging,
-            end_edge_halo=self._end_edge_halo,
-            horizontal_start=gtx.int32(0),
-            horizontal_end=gtx.int32(self._end_edge_halo_level_2),
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self._grid.num_levels),
-            offset_provider=self._grid.connectivities,
         )
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
@@ -1145,22 +1168,8 @@ class SolveNonhydro:
             horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             vn=prognostic_states.next.vn,
-            e_flx_avg=self._interpolation_state.e_flx_avg,
-            geofac_grdiv=self._interpolation_state.geofac_grdiv,
-            rbf_vec_coeff_e=self._interpolation_state.rbf_vec_coeff_e,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
-            ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
-            ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
-            ddxt_z_full=self._metric_state_nonhydro.ddxt_z_full,
-            wgtfac_e=self._metric_state_nonhydro.wgtfac_e,
-            wgtfacq_e=self._metric_state_nonhydro.wgtfacq_e,
-            nflatlev=self._vertical_params.nflatlev,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels + 1,
-            offset_provider=self._grid.connectivities,
         )
 
         self._vertically_implicit_solver_at_predictor_step(
@@ -1176,47 +1185,24 @@ class SolveNonhydro:
             next_theta_v=prognostic_states.next.theta_v,
             dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
             exner_dynamical_increment=diagnostic_state_nh.exner_dynamical_increment,
-            geofac_div=self._interpolation_state.geofac_div,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
             pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
-            exner_w_explicit_weight_parameter=self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
             current_exner=prognostic_states.current.exner,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
             current_w=prognostic_states.current.w,
-            inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-            exner_w_implicit_weight_parameter=self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             perturbed_exner_at_cells_on_model_levels=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             rayleigh_damping_factor=self.rayleigh_damping_factor,
-            reference_exner_at_cells_on_model_levels=self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
-            e_bln_c_s=self._interpolation_state.e_bln_c_s,
-            wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
-            wgtfacq_c=self._metric_state_nonhydro.wgtfacq_c,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
-            is_iau_active=self._config.is_iau_active,
-            rayleigh_type=self._config.rayleigh_type,
-            divdamp_type=self._config.divdamp_type,
             at_first_substep=at_first_substep,
-            kstart_moist=self._vertical_params.kstart_moist,
-            end_index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            flat_level_index_plus1=gtx.int32(self._vertical_params.nflatlev + 1),
-            start_cell_index_nudging=self._start_cell_nudging,
-            end_cell_index_local=self._end_cell_local,
-            start_cell_index_lateral_lvl3=self._start_cell_lateral_boundary_level_3,
-            end_cell_index_halo_lvl1=self._end_cell_halo,
-            vertical_start_index_model_top=gtx.int32(0),
-            vertical_end_index_model_surface=gtx.int32(self._grid.num_levels + 1),
-            offset_provider=self._grid.connectivities,
         )
 
         if self._grid.limited_area:
@@ -1239,16 +1225,11 @@ class SolveNonhydro:
 
         if self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
-                inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_states.next.w,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
-                horizontal_start=self._start_cell_lateral_boundary,
-                horizontal_end=self._end_cell_lateral_boundary_level_4,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.connectivities,
             )
+
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
@@ -1356,6 +1337,7 @@ class SolveNonhydro:
                 and second_order_divdamp_factor <= (4.0 * self._config.fourth_order_divdamp_factor)
             )
         )
+
         self._apply_divergence_damping_and_update_vn(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             next_vn=prognostic_states.next.vn,
@@ -1370,24 +1352,9 @@ class SolveNonhydro:
             reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
             fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
             second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
-            horizontal_mask_for_3d_divdamp=self._metric_state_nonhydro.horizontal_mask_for_3d_divdamp,
-            scaling_factor_for_3d_divdamp=self._metric_state_nonhydro.scaling_factor_for_3d_divdamp,
-            inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
-            nudgecoeff_e=self._interpolation_state.nudgecoeff_e,
-            geofac_grdiv=self._interpolation_state.geofac_grdiv,
-            advection_explicit_weight_parameter=self._params.advection_explicit_weight_parameter,
-            advection_implicit_weight_parameter=self._params.advection_implicit_weight_parameter,
             dtime=dtime,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
-            is_iau_active=self._config.is_iau_active,
-            limited_area=self._grid.limited_area,
             apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
-            horizontal_start=gtx.int32(self._start_edge_nudging_level_2),
-            horizontal_end=gtx.int32(self._end_edge_local),
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self._grid.num_levels),
-            offset_provider=self._grid.connectivities,
         )
 
         log.debug("exchanging prognostic field 'vn'")
@@ -1399,19 +1366,12 @@ class SolveNonhydro:
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             substep_and_spatially_averaged_vn=prep_adv.vn_traj,
             substep_averaged_mass_flux=prep_adv.mass_flx_me,
-            e_flx_avg=self._interpolation_state.e_flx_avg,
             vn=prognostic_states.next.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
-            ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             prepare_advection=lprep_adv,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
 
         self._vertically_implicit_solver_at_corrector_step(
@@ -1435,39 +1395,22 @@ class SolveNonhydro:
             pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            exner_w_explicit_weight_parameter=self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
             current_exner=prognostic_states.current.exner,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
             current_w=prognostic_states.current.w,
-            inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
-            exner_w_implicit_weight_parameter=self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             perturbed_exner_at_cells_on_model_levels=diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels,
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
             rayleigh_damping_factor=self.rayleigh_damping_factor,
-            reference_exner_at_cells_on_model_levels=self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
-            advection_explicit_weight_parameter=self._params.advection_explicit_weight_parameter,
-            advection_implicit_weight_parameter=self._params.advection_implicit_weight_parameter,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(ndyn_substeps_var),
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
-            is_iau_active=self._config.is_iau_active,
-            rayleigh_type=self._config.rayleigh_type,
-            end_index_of_damping_layer=self._vertical_params.end_index_of_damping_layer,
-            kstart_moist=self._vertical_params.kstart_moist,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
-            start_cell_index_nudging=self._start_cell_nudging,
-            end_cell_index_local=self._end_cell_local,
-            vertical_start_index_model_top=gtx.int32(0),
-            vertical_end_index_model_surface=gtx.int32(self._grid.num_levels + 1),
-            offset_provider=self._grid.connectivities,
         )
 
         if lprep_adv:
