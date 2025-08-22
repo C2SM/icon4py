@@ -326,7 +326,6 @@ def test_compute_wgtfac_e(
 
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
-@pytest.mark.skip_value_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_pressure_gradient_downward_extrapolation_mask_distance(

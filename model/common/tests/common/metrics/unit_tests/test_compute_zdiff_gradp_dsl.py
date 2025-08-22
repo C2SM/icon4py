@@ -1,4 +1,4 @@
-# ICON4Py - ICON inspired code in Python and GT4Py
+''# ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -65,7 +65,7 @@ def test_compute_zdiff_gradp_dsl(
         vertical_end=icon_grid.num_levels - 1,
         offset_provider={
             "E2C": icon_grid.get_connectivity("E2C"),
-            "Koff": icon_grid.get_connectivity("Koff"),
+            "Koff": dims.KDim,
         },
     )
 
@@ -77,7 +77,7 @@ def test_compute_zdiff_gradp_dsl(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
         flat_idx=flat_idx_np,
-        z_ifc_sliced=z_ifc_ground_level,
+        topography=z_ifc_ground_level,
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
