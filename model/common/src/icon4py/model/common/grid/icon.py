@@ -10,7 +10,8 @@ import functools
 import logging
 import math
 import uuid
-from typing import Final, Callable
+from collections.abc import Callable
+from typing import Final, Literal
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
@@ -51,7 +52,7 @@ class GlobalGridParams:
         root: int | None = None,
         level: int | None = None,
         num_cells: int | None = None,
-        geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
+        geometry_type: Literal[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
         radius: float = constants.EARTH_RADIUS,
     ):
         return cls(root, level, num_cells, mean_cell_area, geometry_type)

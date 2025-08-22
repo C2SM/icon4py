@@ -46,145 +46,66 @@ import numpy as np
 from icon4py.model.common import dimension as dims
 
 
-# TODO(halungge): can we get rid of all these?
-NUM_GHOST_ROWS: Final[int] = 2
-# values from mo_impl_constants.f90
-_ICON_INDEX_OFFSET_CELLS: Final[int] = 8
-_MIN_RL_CELL_INT: Final[int] = -4
-_MIN_RL_CELL: Final[int] = _MIN_RL_CELL_INT - 2 * NUM_GHOST_ROWS
-_MAX_RL_CELL: Final[int] = 5
-
-_ICON_INDEX_OFFSET_VERTEX: Final[int] = 7
-_MIN_RL_VERTEX_INT: Final[int] = _MIN_RL_CELL_INT
-_MIN_RL_VERTEX: Final[int] = _MIN_RL_VERTEX_INT - (NUM_GHOST_ROWS + 1)
-_MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
-
-_ICON_INDEX_OFFSET_EDGES: Final[int] = 13
-
-_MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT  # -8
-_MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)  # -13
-_MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL  # 10
-
-_LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES  # 14
-_INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES  # 13
-_NUDGING_EDGES: Final[int] = _MAX_RL_EDGE - 1 + _ICON_INDEX_OFFSET_EDGES  # 22
-_HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES  # 4
-_LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES  # 5
-_END_EDGES: Final[int] = 0
-
-_LATERAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS  # 9
-_INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS  # 8
-_NUDGING_CELLS: Final[int] = _MAX_RL_CELL + _ICON_INDEX_OFFSET_CELLS  # 13
-_HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS  # 3
-_LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS  # 4
-_END_CELLS: Final[int] = 0
-
-_LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX  # 8
-_INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX  # 7
-_NUDGING_VERTICES: Final[int] = _MAX_RL_VERTEX + _ICON_INDEX_OFFSET_VERTEX  # 12
-_HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX  # 2
-_LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX  # 3
-_END_VERTICES: Final[int] = 0
-
-
 _EDGE_GRF: Final[int] = 24
 _CELL_GRF: Final[int] = 14
 _VERTEX_GRF: Final[int] = 13
 
+_ICON_LATERAL_BOUNDARY: Final[dict[gtx.Dimension, int]] = {
+    dims.CellDim: 9,
+    dims.EdgeDim: 14,
+    dims.VertexDim: 8,
+}
+ICON_LOCAL = {
+    dims.CellDim: 4,
+    dims.EdgeDim: 5,
+    dims.VertexDim: 3,
+}
+_ICON_HALO = {
+    dims.CellDim: 3,
+    dims.EdgeDim: 4,
+    dims.VertexDim: 2,
+}
+_ICON_INTERIOR = {
+    dims.CellDim: 8,
+    dims.EdgeDim: 13,
+    dims.VertexDim: 7,
+}
+_ICON_NUDGING = {
+    dims.CellDim: 13,
+    dims.EdgeDim: 22,
+    dims.VertexDim: 12,
+}
+_ICON_END = {
+    dims.CellDim: 0,
+    dims.EdgeDim: 0,
+    dims.VertexDim: 0,
+}
 
-_LATERAL_BOUNDARY = {
-    dims.CellDim: _LATERAL_BOUNDARY_CELLS,
-    dims.EdgeDim: _LATERAL_BOUNDARY_EDGES,
-    dims.VertexDim: _LATERAL_BOUNDARY_VERTICES,
-}
-_LOCAL = {
-    dims.CellDim: _LOCAL_CELLS,
-    dims.EdgeDim: _LOCAL_EDGES,
-    dims.VertexDim: _LOCAL_VERTICES,
-}
-_HALO = {
-    dims.CellDim: _HALO_CELLS,
-    dims.EdgeDim: _HALO_EDGES,
-    dims.VertexDim: _HALO_VERTICES,
-}
-_INTERIOR = {
-    dims.CellDim: _INTERIOR_CELLS,
-    dims.EdgeDim: _INTERIOR_EDGES,
-    dims.VertexDim: _INTERIOR_VERTICES,
-}
-_NUDGING = {
-    dims.CellDim: _NUDGING_CELLS,
-    dims.EdgeDim: _NUDGING_EDGES,
-    dims.VertexDim: _NUDGING_VERTICES,
-}
-_END = {
-    dims.CellDim: _END_CELLS,
-    dims.EdgeDim: _END_EDGES,
-    dims.VertexDim: _END_VERTICES,
-}
-
-_BOUNDS = {
+_ICON_CONSTANTS_BOUNDS = {
     dims.CellDim: (0, _CELL_GRF - 1),
     dims.EdgeDim: (0, _EDGE_GRF - 1),
     dims.VertexDim: (0, _VERTEX_GRF - 1),
 }
+"""
+Indices used to look up start index and end index in the arrays int `start_idx_[c,e,v]` from ICON.
+
+ICON uses constants defined in `mo_impl_constants.f90` and `mo_impl_constants_grf.f90` to index into these arrays, where
+for each dimension they index from start_idx(-n, m) such that what we call `Zone.INTERIOR` is at  start_idx[0]. (see tables below)
+
+The values here are translations of these indices taking into account that all arrays in Python are zero based.
+
+"""
 
 
-class LineNumber(enum.IntEnum):
-    HALO = -1
-    FIRST = 0
-    SECOND = 1
-    THIRD = 2
-    FOURTH = 3
-    FIFTH = 4
-    SIXTH = 5
-    SEVENTH = 6
-    EIGHTH = 7
-
-
-def _lateral_boundary(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
-    """Indicate lateral boundary.
-
-    These points correspond to the sorted points in ICON, the marker can be incremented in order
-    to access higher order boundary lines
-    """
-    return _domain_index(_LATERAL_BOUNDARY, dim, offset)
-
-
-def _domain_index(value_dict: dict, dim: gtx.Dimension, offset: LineNumber) -> int:
+def _icon_domain_index(value_dict: dict, dim: gtx.Dimension, offset: int = 0) -> int:
     index = value_dict[dim] + offset
-    assert index <= _BOUNDS[dim][1], f"Index {index} out of bounds for {dim}:  {_BOUNDS[dim]}"
-    assert index >= _BOUNDS[dim][0], f"Index {index} out of bounds for {dim}: {_BOUNDS[dim]}"
+    assert (
+        index <= _ICON_CONSTANTS_BOUNDS[dim][1]
+    ), f"Index {index} out of bounds for {dim}:  {_ICON_CONSTANTS_BOUNDS[dim]}"
+    assert (
+        index >= _ICON_CONSTANTS_BOUNDS[dim][0]
+    ), f"Index {index} out of bounds for {dim}: {_ICON_CONSTANTS_BOUNDS[dim]}"
     return index
-
-
-def _local(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
-    """
-    Indicate points that are owned by the processing unit, i.e. non halo points.
-
-    This is true to the exception that it excludes points in the halo lines. For classical ICON ordering
-    this zone might include halo points that are part of lateral boundary and are ordered in the lateral boundary zone.
-    It is there _not_ identical to the fully correct owner mask in the [DecompositionInfo](../../../../../decomposition/definitions.py)
-    """
-    return _domain_index(_LOCAL, dim, offset)
-
-
-def _halo(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
-    return _domain_index(_HALO, dim, offset)
-
-
-def _nudging(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
-    """Indicate the nudging zone."""
-    return _domain_index(_NUDGING, dim, offset)
-
-
-def _interior(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
-    """Indicate interior i.e. unordered prognostic cells in ICON."""
-    return _domain_index(_INTERIOR, dim, offset)
-
-
-def _end(dim: gtx.Dimension) -> int:
-    return _END[dim]
 
 
 class Zone(enum.Enum):
@@ -195,6 +116,7 @@ class Zone(enum.Enum):
 
     ## CellDim
     | ICON constant or value                | ICON4py Name               |
+    | from mo_impl_constants.f90            |                            |
     |:------------------------------------- |:-------------------------- |
     | `min_rlcell_int-3`, `min_rlcell` (-8) | `END`                      |
     | `min_rlcell_int-3` (-7)               |                            |
@@ -218,6 +140,7 @@ class Zone(enum.Enum):
     ## VertexDim
 
     | ICON constant or value                  | ICON4Py Name               |
+    | from mo_impl_constants.f90              |                            |
     |:--------------------------------------- |:-------------------------- |
     | `min_rlvert` (-7)                       | `END`                      |
     | `min_rlvert+1`, `min_rlvert_int-2` (-6) | `HALO_LEVEL_2`             |
@@ -239,11 +162,12 @@ class Zone(enum.Enum):
 
 
     | ICON constant or value                 | ICON4Py Name               |
+    | from mo_impl_constants.f90             |                            |
     |:-------------------------------------- |:-------------------------- |
     | `min_rledge` (-13)                     | `END`                      |
     | `min_rledge_int-2` (-10)               | `HALO_LEVEL_2`             |
     | `min_rledge_int-1` (-9)                | `HALO`                     |
-    | `min_rledge_int` (-8)                  | `LOCAL`                    |
+    | `min_rledge_int`   (-8)                | `LOCAL`                    |
     | (-7)                                   |                            | unused in icon4py (relevant for nesting)
     | (-6)                                   |                            | unused in icon4py (relevant for nesting)
     | (-5)                                   |                            | unused in icon4py (relevant for nesting)
@@ -261,7 +185,7 @@ class Zone(enum.Enum):
     | `7`                                    | `LATERAL_BOUNDARY_LEVEL_7` |
     | `8`                                    | `LATERAL_BOUNDARY_LEVEL_8` |
     | `grf_bdywidth_e`   (9)                 | `NUDGING`                  |
-    | `grf_bdywidth_e+1`, `max_rledge`   (10) | `NUDGING_LEVEL_2`          |
+    | `grf_bdywidth_e+1`, `max_rledge`  (10) | `NUDGING_LEVEL_2`          |
 
 
     """
@@ -372,52 +296,41 @@ VERTEX_AND_CELL_ZONES = (
 EDGE_ZONES = tuple(Zone)
 
 
-def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:
-    match marker:
+def _map_zone_to_icon_index(dim: gtx.Dimension, zone: Zone) -> int:
+    match zone:
         case Zone.END:
-            return _end(dim)
+            return _icon_domain_index(_ICON_END, dim)
         case Zone.INTERIOR:
-            return _interior(dim)
+            return _icon_domain_index(_ICON_INTERIOR, dim)
         case Zone.HALO:
-            return _halo(dim, LineNumber.FIRST)
+            return _icon_domain_index(_ICON_HALO, dim)
         case Zone.HALO_LEVEL_2:
-            return _halo(dim, LineNumber.HALO)
+            return _icon_domain_index(_ICON_HALO, dim, -1)
         case Zone.LOCAL:
-            return _local(dim)
+            return _icon_domain_index(ICON_LOCAL, dim)
         case Zone.LATERAL_BOUNDARY:
-            return _lateral_boundary(dim, LineNumber.FIRST)
+            return _icon_domain_index(
+                _ICON_LATERAL_BOUNDARY,
+                dim,
+            )
         case Zone.LATERAL_BOUNDARY_LEVEL_2:
-            return _lateral_boundary(dim, LineNumber.SECOND)
+            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 1)
         case Zone.LATERAL_BOUNDARY_LEVEL_3:
-            return _lateral_boundary(dim, LineNumber.THIRD)
+            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 2)
         case Zone.LATERAL_BOUNDARY_LEVEL_4:
-            return _lateral_boundary(dim, LineNumber.FOURTH)
+            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 3)
         case Zone.LATERAL_BOUNDARY_LEVEL_5:
-            return _lateral_boundary(dim, LineNumber.FIFTH)
+            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 4)
         case Zone.LATERAL_BOUNDARY_LEVEL_6:
-            return _lateral_boundary(dim, LineNumber.SIXTH)
+            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 5)
         case Zone.LATERAL_BOUNDARY_LEVEL_7:
-            return _lateral_boundary(dim, LineNumber.SEVENTH)
+            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 6)
         case Zone.LATERAL_BOUNDARY_LEVEL_8:
-            return _lateral_boundary(dim, LineNumber.EIGHTH)
+            return _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 7)
         case Zone.NUDGING:
-            return _nudging(dim, LineNumber.FIRST)
+            return _icon_domain_index(_ICON_NUDGING, dim)
         case Zone.NUDGING_LEVEL_2:
-            return _nudging(dim, LineNumber.SECOND)
-
-
-def get_refinement_control(dim: gtx.Dimension, zone: Zone) -> int:
-    """
-
-    Args:
-        dim: dimension (one of CellDim, EdgeDim, VertexDim)
-        zone: grid zone
-
-    Returns:
-        value used to denote this boundary
-
-    """
-    return 1
+            return _icon_domain_index(_ICON_NUDGING, dim, 1)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -439,7 +352,7 @@ class Domain:
         return hash((self.dim, self.zone))
 
     def __str__(self) -> str:
-        return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_to_icon_index(self.dim, self.zone)} ])"
+        return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_zone_to_icon_index(self.dim, self.zone)} ])"
 
     def __post_init__(self):
         assert _validate(
@@ -493,38 +406,6 @@ def _get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
             )
 
 
-def _map_icon_domain_bounds(
-    dim: gtx.Dimension, pre_computed_bounds: np.ndarray
-) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
-    """
-    Re-map ICON grid domain bounds to ICON4Py domains.
-    ICON or the ICON grid file store the grid domain bounds in an array where the array position
-    determines the domain. This function simply remaps these values to a dict[Domain, gtx.int32]
-    Args:
-        dim: Dimension, one of CellDim, EdgeDim, VertexDim
-        pre_computed_bounds: domain bounds, these are always on CPU
-
-    Returns:
-        mapping from Domain-> index
-
-    """
-    domains = get_domains_for_dim(dim)
-    return {
-        d: gtx.int32(pre_computed_bounds[_map_to_icon_index(dim, d.zone)].item())
-        for d in domains  # type: ignore [attr-defined]
-    }
-
-
-def map_icon_start_end_index(
-    dim: gtx.Dimension,
-    start_indices: dict[gtx.Dimension, np.ndarray],
-    end_indices: dict[gtx.Dimension, np.ndarray],
-) -> tuple[dict[gtx.Domain, gtx.int32], dict[gtx.Domain, gtx.int32]]:
-    start = start_indices[dim]
-    end = end_indices[dim]
-    return _map_icon_domain_bounds(dim, start), _map_icon_domain_bounds(dim, end)
-
-
 def get_domains_for_dim(dim: gtx.Dimension) -> Iterator[Domain]:
     """
     Generate all grid Domains for a given dimension
@@ -538,3 +419,33 @@ def get_domains_for_dim(dim: gtx.Dimension) -> Iterator[Domain]:
     get_domain = domain(dim)
     domains = (get_domain(zone) for zone in _get_zones_for_dim(dim))
     return domains
+
+
+def get_start_end_idx_from_icon_arrays(
+    dim: gtx.Dimension,
+    start_indices: dict[gtx.Dimension, np.ndarray],
+    end_indices: dict[gtx.Dimension, np.ndarray],
+) -> tuple[dict[gtx.Domain, gtx.int32], dict[gtx.Domain, gtx.int32]]:
+    """
+    Translates ICON type start_idx and end_idx arrays to mapping of Domains to index values
+    Args:
+        dim: dimsension
+        start_indices: icon type index arrays for start_idx
+        end_indices: icon type index array for end_idx
+
+    Returns: dict[Domain, gtx.int32] that can be used with the [base.py](Grid) for relevant domains for dimension dim
+
+    """
+    start = start_indices[dim]
+    end = end_indices[dim]
+    return _map_icon_array_to_domains(dim, start), _map_icon_array_to_domains(dim, end)
+
+
+def _map_icon_array_to_domains(
+    dim: gtx.Dimension, pre_computed_bounds: np.ndarray
+) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
+    domains = get_domains_for_dim(dim)
+    return {
+        d: gtx.int32(pre_computed_bounds[_map_zone_to_icon_index(dim, d.zone)].item())
+        for d in domains  # type: ignore [attr-defined]
+    }

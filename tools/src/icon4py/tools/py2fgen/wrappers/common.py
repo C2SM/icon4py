@@ -219,7 +219,9 @@ def construct_icon_grid(
         tables=neighbor_tables,
     )
     domain_bounds_constructor = functools.partial(
-        h_grid.map_icon_start_end_index, start_indices=start_indices, end_indices=end_indices
+        h_grid.get_start_end_idx_from_icon_arrays,
+        start_indices=start_indices,
+        end_indices=end_indices,
     )
     start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 

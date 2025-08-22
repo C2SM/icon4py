@@ -495,7 +495,7 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
         constructor = functools.partial(
-            h_grid.map_icon_start_end_index,
+            h_grid.get_start_end_idx_from_icon_arrays,
             start_indices=self.start_index(),
             end_indices=self.end_index(),
         )

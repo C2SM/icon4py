@@ -304,10 +304,10 @@ class GridManager:
             dims.V2E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E2V)),
         }
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
-        domain_bound_constructor = functools.partial(
+        domain_bounds_constructor = functools.partial(
             refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
         )
-        start_index, end_index = icon.get_start_and_end_index(domain_bound_constructor)
+        start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
         return icon.icon_grid(
             id_=uuid_,
