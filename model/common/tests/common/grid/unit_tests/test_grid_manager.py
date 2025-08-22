@@ -537,7 +537,7 @@ def test_edge_orientation_on_vertex(grid_file, grid_savepoint, experiment, backe
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [
+    [i
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
