@@ -142,6 +142,76 @@ def test_graupel(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
     )
 
+    rain_evaporation_rate_r2v = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    ice_deposition_rate_v2i = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    snow_deposition_rate_v2s = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    graupel_deposition_rate_v2g = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    ice_nucleation_rate_v2i = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    rain_deposition_rate_v2r = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    ice_melting_rate_i2c = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    cloud_autoconversion_rate_c2r = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    cloud_freezing_rate_c2i = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    rain_cloud_collision_rate_c2r = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    rain_shedding_rate_c2r = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    snow_riming_rate_c2s = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    graupel_riming_rate_c2g = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    rain_ice_2graupel_ice_loss_rate_i2g = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    ice_dep_autoconversion_rate_i2s = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    snow_ice_collision_rate_i2s = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    graupel_ice_collision_rate_i2g = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    ice_autoconverson_rate_i2s = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    snow_melting_rate_s2r = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    graupel_melting_rate_g2r = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    rain_ice_2graupel_rain_loss_rate_r2g = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    rain_freezing_rate_r2g = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    snow_autoconversion_rate_s2g = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+
     graupel_microphysics.run(
         dtime,
         prognostic_state.rho,
@@ -161,6 +231,29 @@ def test_graupel(
         qi_tendency,
         qs_tendency,
         qg_tendency,
+        rain_evaporation_rate_r2v,
+        ice_deposition_rate_v2i,
+        snow_deposition_rate_v2s,
+        graupel_deposition_rate_v2g,
+        ice_nucleation_rate_v2i,
+        rain_deposition_rate_v2r,
+        ice_melting_rate_i2c,
+        cloud_autoconversion_rate_c2r,
+        cloud_freezing_rate_c2i,
+        rain_cloud_collision_rate_c2r,
+        rain_shedding_rate_c2r,
+        snow_riming_rate_c2s,
+        graupel_riming_rate_c2g,
+        rain_ice_2graupel_ice_loss_rate_i2g,
+        ice_dep_autoconversion_rate_i2s,
+        snow_ice_collision_rate_i2s,
+        graupel_ice_collision_rate_i2g,
+        ice_autoconverson_rate_i2s,
+        snow_melting_rate_s2r,
+        graupel_melting_rate_g2r,
+        rain_ice_2graupel_rain_loss_rate_r2g,
+        rain_freezing_rate_r2g,
+        snow_autoconversion_rate_s2g,
     )
 
     new_temperature = (
@@ -172,6 +265,33 @@ def test_graupel(
     new_qi = entry_savepoint.qi().ndarray[:, :] + qi_tendency.ndarray * dtime
     new_qs = entry_savepoint.qs().ndarray[:, :] + qs_tendency.ndarray * dtime
     new_qg = entry_savepoint.qg().ndarray[:, :] + qg_tendency.ndarray * dtime
+
+    import numpy as np
+
+    print()
+    print(np.abs(rain_evaporation_rate_r2v.asnumpy()).max())
+    print(np.abs(ice_deposition_rate_v2i.asnumpy()).max())
+    print(np.abs(snow_deposition_rate_v2s.asnumpy()).max())
+    print(np.abs(graupel_deposition_rate_v2g.asnumpy()).max())
+    print(np.abs(ice_nucleation_rate_v2i.asnumpy()).max())
+    print(np.abs(rain_deposition_rate_v2r.asnumpy()).max())
+    print(np.abs(ice_melting_rate_i2c.asnumpy()).max())  #
+    print(np.abs(cloud_autoconversion_rate_c2r.asnumpy()).max())
+    print(np.abs(cloud_freezing_rate_c2i.asnumpy()).max())  #
+    print(np.abs(rain_cloud_collision_rate_c2r.asnumpy()).max())
+    print(np.abs(rain_shedding_rate_c2r.asnumpy()).max())
+    print(np.abs(snow_riming_rate_c2s.asnumpy()).max())
+    print(np.abs(graupel_riming_rate_c2g.asnumpy()).max())
+    print(np.abs(rain_ice_2graupel_ice_loss_rate_i2g.asnumpy()).max())  #
+    print(np.abs(ice_dep_autoconversion_rate_i2s.asnumpy()).max())
+    print(np.abs(snow_ice_collision_rate_i2s.asnumpy()).max())
+    print(np.abs(graupel_ice_collision_rate_i2g.asnumpy()).max())
+    print(np.abs(ice_autoconverson_rate_i2s.asnumpy()).max())
+    print(np.abs(snow_melting_rate_s2r.asnumpy()).max())  #
+    print(np.abs(graupel_melting_rate_g2r.asnumpy()).max())
+    print(np.abs(rain_ice_2graupel_rain_loss_rate_r2g.asnumpy()).max())
+    print(np.abs(rain_freezing_rate_r2g.asnumpy()).max())
+    print(np.abs(snow_autoconversion_rate_s2g.asnumpy()).max())
 
     assert test_utils.dallclose(
         new_temperature,
