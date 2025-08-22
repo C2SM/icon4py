@@ -13,7 +13,7 @@ import logging
 import uuid
 from collections.abc import Callable, Iterable
 from types import ModuleType
-from typing import TYPE_CHECKING, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -57,14 +57,14 @@ class BackendIntEnum(eve.IntEnum):
     _DACE_GPU = 22
 
 
-_BACKEND_MAP: dict[BackendIntEnum, gtx_backend.Backend] = {
-    BackendIntEnum._GTFN_CPU: cast(gtx_backend.Backend, model_backends.BACKENDS["gtfn_cpu"]),
-    BackendIntEnum._GTFN_GPU: cast(gtx_backend.Backend, model_backends.BACKENDS["gtfn_gpu"]),
+_BACKEND_MAP: dict[BackendIntEnum, gtx_backend.Backend | None] = {
+    BackendIntEnum._GTFN_CPU: model_backends.BACKENDS["gtfn_cpu"],
+    BackendIntEnum._GTFN_GPU: model_backends.BACKENDS["gtfn_gpu"],
 }
 with contextlib.suppress(NotImplementedError):  # dace backends might not be available
     _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: cast(gtx_backend.Backend, model_backends.BACKENDS["dace_cpu"]),
-        BackendIntEnum._DACE_GPU: cast(gtx_backend.Backend, model_backends.BACKENDS["dace_gpu"]),
+        BackendIntEnum._DACE_CPU: model_backends.BACKENDS.get("dace_cpu"),
+        BackendIntEnum._DACE_GPU: model_backends.BACKENDS.get("dace_gpu"),
     }
 
 
@@ -90,8 +90,10 @@ def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backen
     if not on_gpu and selector in (BackendIntEnum._DACE_GPU, BackendIntEnum._GTFN_GPU):
         raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=False")
 
-    assert selector in _BACKEND_MAP
-    return _BACKEND_MAP[selector]
+    backend = _BACKEND_MAP.get(selector)
+    assert backend is not None
+
+    return backend
 
 
 def cached_dummy_field_factory(
