@@ -412,8 +412,6 @@ class SimpleGridData:
         )
 
 
-
-
 def simple_grid(
     *, backend: gtx_backend.Backend | None = None, num_levels: int = DEFAULT_NUM_LEVELS
 ) -> base.Grid:
@@ -428,14 +426,11 @@ def simple_grid(
     _VERTICES = 9
     size = {dims.CellDim: _CELLS, dims.EdgeDim: _EDGES, dims.VertexDim: _VERTICES}
 
-
-
     def simple_start_index(domain: h_grid.Domain) -> gtx.int32:
         return gtx.int32(size[domain.dim]) if domain.zone.is_halo() else gtx.int32(0)
 
     def simple_end_index(domain: h_grid.Domain) -> gtx.int32:
         return gtx.int32(size[domain.dim])
-
 
     horizontal_grid_size = base.HorizontalGridSize(
         num_vertices=_VERTICES, num_edges=_EDGES, num_cells=_CELLS
@@ -479,5 +474,3 @@ def simple_grid(
         start_index=simple_start_index,
         end_index=simple_end_index,
     )
-
-

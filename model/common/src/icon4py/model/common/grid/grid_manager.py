@@ -261,8 +261,6 @@ class GridManager:
     def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
-
-
     def _construct_grid(
         self, backend: gtx_backend.Backend | None, with_skip_values: bool
     ) -> icon.IconGrid:
@@ -306,21 +304,21 @@ class GridManager:
             dims.V2E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E2V)),
         }
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
-        construct_domain_bounds = functools.partial(refinement.compute_domain_bounds, refinement_fields = refinement_fields ,array_ns = xp)
-        start_index, end_index = icon.get_start_and_end_index(construct_domain_bounds)
+        domain_bound_constructor = functools.partial(
+            refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
+        )
+        start_index, end_index = icon.get_start_and_end_index(domain_bound_constructor)
 
         return icon.icon_grid(
             id_=uuid_,
             allocator=backend,
             config=config,
             neighbor_tables=neighbor_tables,
-            start_indices=start_index,
-            end_indices=end_index,
+            start_index=start_index,
+            end_index=end_index,
             global_properties=global_params,
             refinement_control=refinement_fields,
         )
-
-
 
     def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
         field = self._reader.int_variable(field, transpose=transpose)
@@ -540,5 +538,3 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
         axis=0,
     )
     return patched_ar
-
-

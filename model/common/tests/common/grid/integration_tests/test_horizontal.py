@@ -15,7 +15,6 @@ from .. import utils
 from ...fixtures import *  # noqa: F401, F403
 
 
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
@@ -26,7 +25,8 @@ def test_map_icon_start_end_index(experiment, dim, grid_savepoint):
     _assert_domain_map(start_map, start_indices[dim])
     _assert_domain_map(end_map, end_indices[dim])
 
-def _assert_domain_map(index_map:dict[h_grid.Domain, gtx.int32], index_array:np.ndarray):
+
+def _assert_domain_map(index_map: dict[h_grid.Domain, gtx.int32], index_array: np.ndarray):
     same_index = False
     for d, index in index_map.items():
         if d.zone == h_grid.Zone.INTERIOR:

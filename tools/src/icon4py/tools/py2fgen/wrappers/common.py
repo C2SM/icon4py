@@ -166,13 +166,12 @@ def construct_icon_grid(
 
     xp = data_alloc.import_array_ns(backend)
 
-    cells_start_index = adjust_fortran_indices(cell_starts)
-    vertex_start_index = adjust_fortran_indices(vertex_starts)
-    edge_start_index = adjust_fortran_indices(edge_starts)
-
-    cells_end_index = cell_ends
-    vertex_end_index = vertex_ends
-    edge_end_index = edge_ends
+    start_indices = {
+        dims.CellDim: adjust_fortran_indices(cell_starts),
+        dims.EdgeDim: adjust_fortran_indices(edge_starts),
+        dims.VertexDim: adjust_fortran_indices(vertex_starts),
+    }
+    end_indices = {dims.CellDim: cell_ends, dims.EdgeDim: edge_ends, dims.VertexDim: vertex_ends}
 
     c2e = adjust_fortran_indices(c2e)
     c2v = adjust_fortran_indices(c2v)
@@ -219,26 +218,18 @@ def construct_icon_grid(
         sizes={dims.EdgeDim: num_edges, dims.VertexDim: num_vertices, dims.CellDim: num_cells},
         tables=neighbor_tables,
     )
-
-    start_indices = {
-        **h_grid.map_icon_domain_bounds(dims.CellDim, cells_start_index),
-        **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_start_index),
-        **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_start_index),
-    }
-
-    end_indices = {
-        **h_grid.map_icon_domain_bounds(dims.CellDim, cells_end_index),
-        **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_end_index),
-        **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_end_index),
-    }
+    domain_bounds_constructor = functools.partial(
+        h_grid.map_icon_start_end_index, start_indices=start_indices, end_indices=end_indices
+    )
+    start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
     return icon.icon_grid(
         id_=grid_id,
         allocator=backend,
         config=config,
         neighbor_tables=neighbor_tables,
-        start_indices=start_indices,
-        end_indices=end_indices,
+        start_index=start_index,
+        end_index=end_index,
         global_properties=icon.GlobalGridParams.from_mean_cell_area(mean_cell_area),
     )
 

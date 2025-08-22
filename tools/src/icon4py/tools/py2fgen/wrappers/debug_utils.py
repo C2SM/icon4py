@@ -8,17 +8,17 @@
 
 from gt4py.next import common as gtx_common
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.grid.icon import IconGrid
-from icon4py.tools.common.logger import setup_logger
+from icon4py.model.common.grid import horizontal as h_grid, icon
+from icon4py.tools.common import logger
 
 
-log = setup_logger(__name__)
+log = logger.setup_logger(__name__)
 
 
 def print_grid_decomp_info(
-    icon_grid: IconGrid,
+    icon_grid: icon.IconGrid,
     processor_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
     num_cells: int,
@@ -29,42 +29,60 @@ def print_grid_decomp_info(
         "icon_grid:cell_start for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
-            [f"{k:<10}  - {v}" for k, v in icon_grid._start_indices.items() if k.dim == CellDim]
+            [
+                f"{k:<10}  - {icon_grid.start_index(k)}"
+                for k in h_grid.get_domains_for_dim(dims.CellDim)
+            ]
         ),
     )
     log.info(
         "icon_grid:cell_end for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
-            [f"{k:<10}  - {v}" for k, v in icon_grid._end_indices.items() if k.dim == CellDim]
+            [
+                f"{k:<10}  - {icon_grid.end_index(k)}"
+                for k in h_grid.get_domains_for_dim(dims.CellDim)
+            ]
         ),
     )
     log.info(
         "icon_grid:vert_start for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
-            [f"{k:<10}  - {v}" for k, v in icon_grid._start_indices.items() if k.dim == VertexDim]
+            [
+                f"{k:<10}  - {icon_grid.start_index(k)}"
+                for k in h_grid.get_domains_for_dim(dims.VertexDim)
+            ]
         ),
     )
     log.info(
         "icon_grid:vert_end for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
-            [f"{k:<10}  - {v}" for k, v in icon_grid._end_indices.items() if k.dim == VertexDim]
+            [
+                f"{k:<10}  - {icon_grid.end_index(k)}"
+                for k in h_grid.get_domains_for_dim(dims.VertexDim)
+            ]
         ),
     )
     log.info(
         "icon_grid:edge_start for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
-            [f"{k:<10}  - {v}" for k, v in icon_grid._start_indices.items() if k.dim == EdgeDim]
+            [
+                f"{k:<10}  - {icon_grid.start_index(k)}"
+                for k in h_grid.get_domains_for_dim(dims.EdgeDim)
+            ]
         ),
     )
     log.info(
         "icon_grid:edge_end for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
-            [f"{k:<10}  - {v}" for k, v in icon_grid._end_indices.items() if k.dim == EdgeDim]
+            [
+                f"{k:<10}  - {icon_grid.end_index(k)}"
+                for k in h_grid.get_domains_for_dim(dims.EdgeDim)
+            ]
         ),
     )
 
@@ -77,40 +95,40 @@ def print_grid_decomp_info(
     log.info(
         "c_glb_index for rank %s is.... %s",
         processor_props.rank,
-        decomposition_info.global_index(CellDim)[0:num_cells],
+        decomposition_info.global_index(dims.CellDim)[0:num_cells],
     )
     log.info(
         "e_glb_index for rank %s is.... %s",
         processor_props.rank,
-        decomposition_info.global_index(EdgeDim)[0:num_edges],
+        decomposition_info.global_index(dims.EdgeDim)[0:num_edges],
     )
     log.info(
         "v_glb_index for rank %s is.... %s",
         processor_props.rank,
-        decomposition_info.global_index(VertexDim)[0:num_verts],
+        decomposition_info.global_index(dims.VertexDim)[0:num_verts],
     )
 
     log.info(
         "c_owner_mask for rank %s is.... %s",
         processor_props.rank,
-        decomposition_info.owner_mask(CellDim)[0:num_cells],
+        decomposition_info.owner_mask(dims.CellDim)[0:num_cells],
     )
     log.info(
         "e_owner_mask for rank %s is.... %s",
         processor_props.rank,
-        decomposition_info.owner_mask(EdgeDim)[0:num_edges],
+        decomposition_info.owner_mask(dims.EdgeDim)[0:num_edges],
     )
     log.info(
         "v_owner_mask for rank %s is.... %s",
         processor_props.rank,
-        decomposition_info.owner_mask(VertexDim)[0:num_verts],
+        decomposition_info.owner_mask(dims.VertexDim)[0:num_verts],
     )
 
     log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels} "
-        f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
-        f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
-        f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
+        f"local cells = {decomposition_info.global_index(dims.CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local edges = {decomposition_info.global_index(dims.EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local vertices = {decomposition_info.global_index(dims.VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
     )
     log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"

@@ -326,11 +326,19 @@ class IconGridSavepoint(IconSavepoint):
     def edge_start_index(self):
         return self._read_int32_shift1("e_start_index")
 
-    def start_index(self) -> dict[gtx.Dimension,np.ndarray]:
-        return {dims.CellDim: self.cells_start_index(), dims.EdgeDim: self.edge_start_index(), dims.VertexDim: self.vertex_start_index()}
+    def start_index(self) -> dict[gtx.Dimension, np.ndarray]:
+        return {
+            dims.CellDim: self.cells_start_index(),
+            dims.EdgeDim: self.edge_start_index(),
+            dims.VertexDim: self.vertex_start_index(),
+        }
 
     def end_index(self) -> dict[gtx.Dimension, np.ndarray]:
-        return{ dims.CellDim: self.cells_end_index(), dims.EdgeDim: self.edge_end_index(), dims.VertexDim: self.vertex_end_index()}
+        return {
+            dims.CellDim: self.cells_end_index(),
+            dims.EdgeDim: self.edge_end_index(),
+            dims.VertexDim: self.vertex_end_index(),
+        }
 
     def nflatlev(self):
         return self._read_int32_shift1("nflatlev").item()
@@ -471,13 +479,6 @@ class IconGridSavepoint(IconSavepoint):
     def construct_icon_grid(
         self, backend: gtx_backend.Backend | None = None, keep_skip_values: bool = True
     ) -> icon.IconGrid:
-        cell_starts = self.cells_start_index()
-        cell_ends = self.cells_end_index()
-        vertex_starts = self.vertex_start_index()
-        vertex_ends = self.vertex_end_index()
-        edge_starts = self.edge_start_index()
-        edge_ends = self.edge_end_index()
-
         config = base.GridConfig(
             horizontal_config=base.HorizontalGridSize(
                 num_vertices=self.num(dims.VertexDim),
@@ -493,7 +494,11 @@ class IconGridSavepoint(IconSavepoint):
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
-        constructor = functools.partial(h_grid.map_icon_start_end_index, start_indices=self.start_index(), end_indices=self.end_index() )
+        constructor = functools.partial(
+            h_grid.map_icon_start_end_index,
+            start_indices=self.start_index(),
+            end_indices=self.end_index(),
+        )
         start_index, end_index = icon.get_start_and_end_index(constructor)
         neighbor_tables = {
             dims.C2E: self.c2e(),
@@ -516,8 +521,8 @@ class IconGridSavepoint(IconSavepoint):
             config=config,
             neighbor_tables=neighbor_tables,
             global_properties=self.global_grid_params,
-            start_indices=start_index,
-            end_indices=end_index,
+            start_index=start_index,
+            end_index=end_index,
         )
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:
@@ -548,8 +553,6 @@ class IconGridSavepoint(IconSavepoint):
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
         )
-
-
 
 
 class InterpolationSavepoint(IconSavepoint):

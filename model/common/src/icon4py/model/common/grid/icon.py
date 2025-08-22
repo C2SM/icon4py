@@ -10,7 +10,6 @@ import functools
 import logging
 import math
 import uuid
-from collections.abc import Mapping
 from typing import Final, Callable
 
 import gt4py.next as gtx
@@ -164,8 +163,8 @@ def icon_grid(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    start_indices: Callable[[h_grid.Domain], gtx.int32],
-    end_indices: Callable[[h_grid.Domain], gtx.int32],
+    start_index: Callable[[h_grid.Domain], gtx.int32],
+    end_index: Callable[[h_grid.Domain], gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
@@ -186,15 +185,32 @@ def icon_grid(
         config=config,
         connectivities=connectivities,
         geometry_type=global_properties.geometry_type,
-        start_index=start_indices,
-        end_index=end_indices,
+        start_index=start_index,
+        end_index=end_index,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
     )
 
 
-def get_start_and_end_index(constructor:Callable[[gtx.Dimension], tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]]) -> tuple[
-    Callable[[h_grid.Domain], gtx.int32], Callable[[h_grid.Domain], gtx.int32]]:
+def get_start_and_end_index(
+    constructor: Callable[
+        [gtx.Dimension], tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]
+    ],
+) -> tuple[Callable[[h_grid.Domain], gtx.int32], Callable[[h_grid.Domain], gtx.int32]]:
+    """
+    Return start_index and end_index functions to be used in the Gri.
+
+    This function constructs a map from a [Domain](./horizontal.py::Domain) to the start and end indices of this domain in ICON fields.
+    It returns then functions that lookup the indices in from that map
+
+    Args:
+        constructor: function that takes a dimension as argument and constructs constructs a lookup
+        dict[Domain, gtx.int32] for all domains for that dimension
+
+    Returns:
+        tuple of functions `start_index` and `end_index` to be passed to the [Grid](./base.py::Grid)
+
+    """
     start_indices = {}
     end_indices = {}
     for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():

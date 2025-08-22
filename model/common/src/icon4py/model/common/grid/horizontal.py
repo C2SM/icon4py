@@ -38,14 +38,12 @@ import dataclasses
 import enum
 import functools
 from collections.abc import Callable, Iterator
-from typing import Any, Final, Callable
+from typing import Any, Final
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 # TODO(halungge): can we get rid of all these?
@@ -516,11 +514,15 @@ def _map_icon_domain_bounds(
         for d in domains  # type: ignore [attr-defined]
     }
 
-def map_icon_start_end_index(dim:gtx.Dimension, start_indices:dict[gtx.Dimension, np.ndarray], end_indices:dict[gtx.Dimension, np.ndarray])-> tuple[dict[gtx.Domain, gtx.int32], dict[gtx.Domain, gtx.int32]]:
+
+def map_icon_start_end_index(
+    dim: gtx.Dimension,
+    start_indices: dict[gtx.Dimension, np.ndarray],
+    end_indices: dict[gtx.Dimension, np.ndarray],
+) -> tuple[dict[gtx.Domain, gtx.int32], dict[gtx.Domain, gtx.int32]]:
     start = start_indices[dim]
     end = end_indices[dim]
     return _map_icon_domain_bounds(dim, start), _map_icon_domain_bounds(dim, end)
-
 
 
 def get_domains_for_dim(dim: gtx.Dimension) -> Iterator[Domain]:
@@ -536,5 +538,3 @@ def get_domains_for_dim(dim: gtx.Dimension) -> Iterator[Domain]:
     get_domain = domain(dim)
     domains = (get_domain(zone) for zone in _get_zones_for_dim(dim))
     return domains
-
-

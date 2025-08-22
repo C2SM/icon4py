@@ -127,7 +127,7 @@ def compute_domain_bounds(
         my_zone = domain.zone
         if (
             my_zone is h_grid.Zone.END or my_zone.is_halo()
-        ):  # TODO(halungge) implement for distributed
+        ):  # TODO(halungge): implement for distributed
             start_index = refinement_ctrl.size
             end_index = refinement_ctrl.size
         elif my_zone.is_lateral_boundary():

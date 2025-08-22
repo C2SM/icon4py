@@ -10,9 +10,8 @@ import enum
 import functools
 import logging
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Sequence
 from types import ModuleType
-from typing import Callable
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators, common as gtx_common
