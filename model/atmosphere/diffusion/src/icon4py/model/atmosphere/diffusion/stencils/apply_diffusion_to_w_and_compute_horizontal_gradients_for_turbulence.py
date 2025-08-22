@@ -47,7 +47,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 ]:
     dwdx, dwdy = (
         concat_where(
-            KDim > 0,
+            0 < KDim,
             _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
             (dwdx, dwdy),
         )
@@ -64,7 +64,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     )
 
     w = concat_where(
-        (KDim > 0) & (KDim < nrdmax) & (interior_idx <= CellDim) & (CellDim < halo_idx),
+        (0 < KDim) & (KDim < nrdmax) & (interior_idx <= CellDim) & (CellDim < halo_idx),
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )

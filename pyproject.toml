@@ -267,6 +267,8 @@ split-on-trailing-comma = false
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
+# Avoid messing up conditions in gt4py stencils
+"**/model/**/stencils/*.py" = ["SIM300"]
 # Ignore spurious errors when explicitly importing fixtures in tests.
 # Check: https://github.com/astral-sh/ruff/issues/10662
 "**/tests/**/*_test.py" = ["F401", "F811"]
