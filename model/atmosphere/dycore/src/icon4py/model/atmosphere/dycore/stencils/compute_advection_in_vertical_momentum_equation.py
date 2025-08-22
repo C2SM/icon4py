@@ -209,7 +209,7 @@ def _compute_advective_vertical_wind_tendency(
     dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.vpfloat]:
     vertical_wind_advective_tendency = concat_where(
-        dims.KDim >= 1,
+        1 <= dims.KDim,
         _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
         ),
@@ -217,7 +217,7 @@ def _compute_advective_vertical_wind_tendency(
     )
 
     vertical_wind_advective_tendency = concat_where(
-        dims.KDim >= 1,
+        1 <= dims.KDim,
         _add_interpolated_horizontal_advection_of_w(
             e_bln_c_s,
             horizontal_advection_of_w_at_edges_on_half_levels,

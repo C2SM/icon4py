@@ -50,7 +50,9 @@ def _compute_wgtfac_c(
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     wgt_fac_c = concat_where(
-        (dims.KDim > 0) & (dims.KDim < nlev), _compute_wgtfac_c_inner(z_ifc), z_ifc
+        (0 < dims.KDim) & (dims.KDim < nlev),  # noqa: SIM300 [yoda-conditions]
+        _compute_wgtfac_c_inner(z_ifc),
+        z_ifc,
     )
     wgt_fac_c = concat_where(dims.KDim == 0, _compute_wgtfac_c_0(z_ifc=z_ifc), wgt_fac_c)
     wgt_fac_c = concat_where(dims.KDim == nlev, _compute_wgtfac_c_nlev(z_ifc=z_ifc), wgt_fac_c)

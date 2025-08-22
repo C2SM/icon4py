@@ -229,7 +229,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
     tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
 
     w_explicit_term = concat_where(
-        dims.KDim >= 1,
+        1 <= dims.KDim,
         _compute_w_explicit_term_with_predictor_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
@@ -250,7 +250,7 @@ def _vertically_implicit_solver_at_predictor_step_before_solving_w(
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO(OngChia): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
-        (dims.KDim >= 1) & (dims.KDim < n_lev),
+        (1 <= dims.KDim) & (dims.KDim < n_lev),
         rho_at_cells_on_half_levels
         * (
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
@@ -478,7 +478,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
     tridiagonal_intermediate_result = broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
 
     w_explicit_term = concat_where(
-        dims.KDim >= 1,
+        1 <= dims.KDim,
         _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
@@ -502,7 +502,7 @@ def _vertically_implicit_solver_at_corrector_step_before_solving_w(
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         # TODO(OngChia): (dims.KDim < n_lev) is needed. Otherwise, the stencil test fails.
-        (dims.KDim >= 1) & (dims.KDim < n_lev),
+        (1 <= dims.KDim) & (dims.KDim < n_lev),
         rho_at_cells_on_half_levels
         * (
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
@@ -672,7 +672,7 @@ def _vertically_implicit_solver_at_corrector_step_after_solving_w(
             dynamical_vertical_mass_flux_at_cells_on_half_levels,
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
         ) = concat_where(
-            dims.KDim >= 1,
+            1 <= dims.KDim,
             _update_mass_volume_flux(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels,
