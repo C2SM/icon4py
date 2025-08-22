@@ -86,18 +86,7 @@ _MIN_ORDERED: Final[dict[gtx.Dimension, int]] = {
 """
 
 
-_NUDGING_START: Final[dict[gtx.Dimension, int]] = {
-    dim: value + 1 for dim, value in _GRID_REFINEMENT_BOUNDARY_WIDTH.items()
-}
-"""Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
-
-
-_GRF_NUDGEZONE_WIDTH: Final[int] = 8
-
-
-cell_domain = h_grid.domain(dims.CellDim)
-edge_domain = h_grid.domain(dims.EdgeDim)
-vertex_domain = h_grid.domain(dims.VertexDim)
+DEFAULT_GRF_NUDGEZONE_WIDTH: Final[int] = 8
 
 
 _LAST_NUDGING: dict[gtx.Dimension, h_grid.Zone] = {
@@ -148,13 +137,17 @@ def compute_domain_bounds(
         elif my_zone is h_grid.Zone.INTERIOR:
             # for the Vertex and Edges the level after the nudging zones are not ordered anymore, so
             # we rely on using the end index of the nudging zone for INTERIOR
-            value = _LAST_BOUNDARY[dim].level + _LAST_NUDGING[dim].level
+            value = get_nudging_refinement_value(dim)
             found = array_ns.where(refinement_ctrl == value)[0]
             start_index = array_ns.max(found).item() + 1 if found.size > 0 else 0
             end_index = refinement_ctrl.size
         start_indices[domain] = gtx.int32(start_index)
         end_indices[domain] = gtx.int32(end_index)
     return start_indices, end_indices
+
+
+def get_nudging_refinement_value(dim):
+    return _LAST_BOUNDARY[dim].level + _LAST_NUDGING[dim].level
 
 
 def is_unordered_field(
@@ -176,17 +169,6 @@ def convert_to_unnested_refinement_values(
     """
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
     return array_ns.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
-
-
-def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone) -> int:
-    assert (
-        dim.kind == gtx.DimensionKind.HORIZONTAL
-    ), f"dim = {dim=} refinement control values only exist for horizontal dimensions"
-    match zone:
-        case zone.NUDGING:
-            return _NUDGING_START[dim]
-        case _:
-            raise NotImplementedError
 
 
 def is_limited_area_grid(

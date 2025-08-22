@@ -165,7 +165,8 @@ def construct_icon_grid(
     log.debug("Offsetting Fortran connectivitity arrays by 1")
 
     xp = data_alloc.import_array_ns(backend)
-
+    # TODO (halungge): icon has 0 values in these arrays in some places possibly where they don't use them in case
+    #  they are accessed the `adjust_fortran_indices` might lead to crashes
     start_indices = {
         dims.CellDim: adjust_fortran_indices(cell_starts),
         dims.EdgeDim: adjust_fortran_indices(edge_starts),

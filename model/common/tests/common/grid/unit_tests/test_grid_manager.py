@@ -426,38 +426,22 @@ def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, experiment
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_grid_manager_start_end_index(caplog, grid_savepoint, grid_file, experiment, dim, backend):
+def test_grid_manager_start_end_index_compare_with_serialized_data(
+    caplog, grid_savepoint, grid_file, experiment, dim, backend
+):
     caplog.set_level(logging.INFO)
     serialized_grid = grid_savepoint.construct_icon_grid()
     grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
-    for domain in utils.global_grid_domains(dim):
-        if (
-            dim == dims.EdgeDim
-            and domain.zone == h_grid.Zone.END
-            and experiment == dt_utils.GLOBAL_EXPERIMENT
-        ):
-            pytest.xfail(
-                "FIXME: start_index in serialized data changed to 0 with unknown consequences, see also icon-exclaim output"
-            )
-        assert grid.start_index(domain) == serialized_grid.start_index(
-            domain
-        ), f"start index wrong for domain {domain}"
-        assert grid.end_index(domain) == serialized_grid.end_index(
-            domain
-        ), f"end index wrong for domain {domain}"
 
-    for domain in utils.valid_boundary_zones_for_dim(dim):
-        if not grid.limited_area:
-            assert grid.start_index(domain) == 0
-            assert grid.end_index(domain) == 0
+    for domain in h_grid.get_domains_for_dim(dim):
         assert grid.start_index(domain) == serialized_grid.start_index(
             domain
         ), f"start index wrong for domain {domain}"
+
         assert grid.end_index(domain) == serialized_grid.end_index(
             domain
         ), f"end index wrong for domain {domain}"

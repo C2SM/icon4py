@@ -199,14 +199,14 @@ def get_start_and_end_index(
     ],
 ) -> tuple[Callable[[h_grid.Domain], gtx.int32], Callable[[h_grid.Domain], gtx.int32]]:
     """
-    Return start_index and end_index functions to be used in the Gri.
+    Return start_index and end_index functions to be passed to the Grid constructor.
 
-    This function constructs a map from a [Domain](./horizontal.py::Domain) to the start and end indices of this domain in ICON fields.
-    It returns then functions that lookup the indices in from that map
+    This function defines a version of `start_index` and `end_index` that looks up the indeces in an internal map from [Domain](horizontal.py::Domain) -> gtx.int32
+    It takes the constructor function of this map as input.
 
     Args:
-        constructor: function that takes a dimension as argument and constructs constructs a lookup
-        dict[Domain, gtx.int32] for all domains for that dimension
+        constructor: function that takes a dimension as argument and constructs  a lookup table
+        dict[Domain, gtx.int32] for all domains for a given dimension
 
     Returns:
         tuple of functions `start_index` and `end_index` to be passed to the [Grid](./base.py::Grid)

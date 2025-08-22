@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import numpy as np
 import pytest
 from gt4py import next as gtx
 

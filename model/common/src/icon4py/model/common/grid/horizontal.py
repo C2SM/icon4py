@@ -296,7 +296,7 @@ VERTEX_AND_CELL_ZONES = (
 EDGE_ZONES = tuple(Zone)
 
 
-def _map_zone_to_icon_index(dim: gtx.Dimension, zone: Zone) -> int:
+def _map_zone_to_icon_array_index(dim: gtx.Dimension, zone: Zone) -> int:
     match zone:
         case Zone.END:
             return _icon_domain_index(_ICON_END, dim)
@@ -352,7 +352,7 @@ class Domain:
         return hash((self.dim, self.zone))
 
     def __str__(self) -> str:
-        return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_zone_to_icon_index(self.dim, self.zone)} ])"
+        return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_zone_to_icon_array_index(self.dim, self.zone)} ])"
 
     def __post_init__(self):
         assert _validate(
@@ -446,6 +446,6 @@ def _map_icon_array_to_domains(
 ) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
     domains = get_domains_for_dim(dim)
     return {
-        d: gtx.int32(pre_computed_bounds[_map_zone_to_icon_index(dim, d.zone)].item())
+        d: gtx.int32(pre_computed_bounds[_map_zone_to_icon_array_index(dim, d.zone)].item())
         for d in domains  # type: ignore [attr-defined]
     }

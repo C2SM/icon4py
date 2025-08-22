@@ -312,19 +312,27 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_field("edge_cell_length", dims.EdgeDim, dims.E2CDim)
 
     def cells_start_index(self):
-        return self._read_int32_shift1("c_start_index")
+        start_idx = self._read_int32("c_start_index")
+        return np.where(start_idx == 0, start_idx, start_idx - 1)
 
     def cells_end_index(self):
         return self._read_int32("c_end_index")
 
     def vertex_start_index(self):
-        return self._read_int32_shift1("v_start_index")
+        start_idx = self._read_int32("v_start_index")
+        return np.where(start_idx == 0, start_idx, start_idx - 1)
 
     def vertex_end_index(self):
         return self._read_int32("v_end_index")
 
     def edge_start_index(self):
-        return self._read_int32_shift1("e_start_index")
+        start_idx = self._read_int32("e_start_index")
+        return np.where(start_idx == 0, start_idx, start_idx - 1)
+
+    def edge_end_index(self):
+        # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
+        # one off accounts for being exclusive [from:to)
+        return self._read_int32("e_end_index")
 
     def start_index(self) -> dict[gtx.Dimension, np.ndarray]:
         return {
@@ -345,11 +353,6 @@ class IconGridSavepoint(IconSavepoint):
 
     def nflat_gradp(self):
         return self._read_int32_shift1("nflat_gradp").item()
-
-    def edge_end_index(self):
-        # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
-        # one off accounts for being exclusive [from:to)
-        return self.serializer.read("e_end_index", self.savepoint)
 
     def v_owner_mask(self):
         return self._get_field("v_owner_mask", dims.VertexDim, dtype=bool)
