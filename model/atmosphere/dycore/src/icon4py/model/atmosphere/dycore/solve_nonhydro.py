@@ -576,7 +576,7 @@ class SolveNonhydro:
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,
                 "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
+                "vertical_end": gtx.int32(self._grid.num_levels + 1),
             },
             offset_provider=self._grid.connectivities,
         )
