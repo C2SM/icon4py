@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.apply_vertical_density_increment import (
     apply_vertical_density_increment,
 )
@@ -20,10 +20,10 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestApplyVerticalDensityIncrement(helpers.StencilTest):
+class TestApplyVerticalDensityIncrement(stencil_tests.StencilTest):
     PROGRAM = apply_vertical_density_increment
     OUTPUTS = (
-        helpers.Output(
+        stencil_tests.Output(
             "rhodz_ast2",
             refslice=(slice(None), slice(None, -1)),
             gtslice=(slice(None), slice(None, -1)),

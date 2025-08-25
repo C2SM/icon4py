@@ -14,7 +14,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
-# TODO: revise names with domain scientists
+# TODO(): revise names with domain scientists
 
 Z_MC: Final[str] = "height"
 FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"
@@ -319,7 +319,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=COEFF_GRADEKIN,
         long_name="coeff_gradekin",
         units="",
-        dims=(dims.ECDim,),
+        dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="coeff_gradekin",
         dtype=ta.wpfloat,
     ),
@@ -399,7 +399,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=ZD_INTCOEF_DSL,
         long_name="zd_intcoef_dsl",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_intcoef_dsl",
         dtype=ta.wpfloat,
     ),
@@ -407,7 +407,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=ZD_VERTOFFSET_DSL,
         long_name="zd_vertoffset_dsl",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_vertoffset_dsl",
         dtype=ta.wpfloat,
     ),

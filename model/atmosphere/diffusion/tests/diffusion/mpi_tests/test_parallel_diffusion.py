@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils, helpers, parallel_helpers
+from icon4py.model.testing import datatest_utils, parallel_helpers, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -36,8 +36,8 @@ def test_parallel_diffusion(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
+    metric_state: diffusion_states.DiffusionMetricState,
+    interpolation_state: diffusion_states.DiffusionInterpolationState,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -46,7 +46,7 @@ def test_parallel_diffusion(
     backend,
     orchestration,
 ):
-    if orchestration and not helpers.is_dace(backend):
+    if orchestration and not test_utils.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace` backends.")
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -80,28 +80,6 @@ def test_parallel_diffusion(
     )
 
     diffusion_params = diffusion_.DiffusionParams(config)
-    metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        wgtfac_c=metrics_savepoint.wgtfac_c(),
-        zd_intcoef=metrics_savepoint.zd_intcoef(),
-        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
-        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
-    )
-    interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
-        ),
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.geofac_div(), backend=backend
-        ),
-        geofac_n2s=interpolation_savepoint.geofac_n2s(),
-        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
-        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-    )
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
     exchange = definitions.create_exchange(processor_props, decomposition_info)
@@ -173,8 +151,8 @@ def test_parallel_diffusion_multiple_steps(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
+    metric_state: diffusion_states.DiffusionMetricState,
+    interpolation_state: diffusion_states.DiffusionInterpolationState,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -182,7 +160,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
-    if not helpers.is_dace(backend):
+    if not test_utils.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization
@@ -205,31 +183,8 @@ def test_parallel_diffusion_multiple_steps(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        wgtfac_c=metrics_savepoint.wgtfac_c(),
-        zd_intcoef=metrics_savepoint.zd_intcoef(),
-        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
-        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
-    )
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-
-    interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
-        ),
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.geofac_div(), backend=backend
-        ),
-        geofac_n2s=interpolation_savepoint.geofac_n2s(),
-        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
-        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
-        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,

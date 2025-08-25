@@ -23,7 +23,7 @@ import uuid
 from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Optional, ParamSpec, TypeVar, Union, get_type_hints, overload
+from typing import Any, ParamSpec, TypeVar, get_type_hints, overload
 
 import gt4py.next as gtx
 import numpy as np
@@ -38,19 +38,19 @@ from icon4py.model.common.orchestration import dtypes as orchestration_dtypes
 try:
     import dace
 except ImportError:
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+    dace: ModuleType | None = None  # type: ignore[no-redef]
 
 try:
     import ghex
     from ghex import expose_cpp_ptr
 except ImportError:
-    ghex: Optional[ModuleType] = None  # type: ignore[no-redef]
+    ghex: ModuleType | None = None  # type: ignore[no-redef]
 
 try:
     import mpi4py
     from mpi4py import MPI
 except ImportError:
-    mpi4py: Optional[ModuleType] = None
+    mpi4py: ModuleType | None = None
 
 if dace:
     from dace import hooks
@@ -192,7 +192,7 @@ def orchestrate(
 def make_uid(
     fuse_func: Callable,
     compile_time_args_kwargs: dict[str, Any],
-    exchange_obj: Optional[decomposition.ExchangeRuntime],
+    exchange_obj: decomposition.ExchangeRuntime | None,
 ) -> str:
     """Generate unique key to acccess the cache of compiled SDFG objects."""
     if len(compile_time_args_kwargs) == 0:
@@ -299,7 +299,7 @@ def dace_inhibitor(f: Callable):
 
 
 @dace_inhibitor
-def wait(comm_handle: Union[int, decomposition.ExchangeResult]):
+def wait(comm_handle: int | decomposition.ExchangeResult):
     if isinstance(comm_handle, int):
         pass
     else:
@@ -366,10 +366,10 @@ if dace:
     def parse_compile_cache_sdfg(
         default_build_folder: Path,
         backend,
-        exchange_obj: Optional[decomposition.ExchangeRuntime],
+        exchange_obj: decomposition.ExchangeRuntime | None,
         fuse_func: Callable,
         compile_time_args_kwargs: dict[str, Any],
-        self_name: Optional[str] = None,
+        self_name: str | None = None,
         simplify_fused_sdfg: bool = True,
     ) -> dict[str, Any]:
         """Function that parses, compiles and caches the fused SDFG along with adding the halo exchanges."""
@@ -508,7 +508,7 @@ if dace:
         return numpy_array.strides[axis] // numpy_array.itemsize
 
     def dace_specific_kwargs(
-        exchange_obj: Optional[decomposition.ExchangeRuntime],
+        exchange_obj: decomposition.ExchangeRuntime | None,
         offset_providers: dict[str, gtx.common.Connectivity],
     ) -> dict[str, Any]:
         """kwargs needed by the compiled SDFG.

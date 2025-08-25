@@ -11,14 +11,14 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
 from icon4py.model.common import dimension as dims
 
 
-class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.StencilTest):
+class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_tests.StencilTest):
     PROGRAM = compute_positive_definite_horizontal_multiplicative_flux_factor
     OUTPUTS = ("r_m",)
 
@@ -34,7 +34,6 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
         **kwargs,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]
-        geofac_div = helpers.reshape(geofac_div, c2e.shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         p_m_0 = np.maximum(
             0.0,
@@ -56,7 +55,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        geofac_div = data_alloc.random_field(grid, dims.CEDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

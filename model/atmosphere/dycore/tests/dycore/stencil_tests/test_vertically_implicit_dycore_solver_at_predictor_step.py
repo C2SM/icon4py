@@ -24,7 +24,7 @@ from icon4py.model.common import (
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
@@ -62,28 +62,12 @@ from .test_solve_tridiagonal_matrix_for_w_back_substitution import (
 from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep_numpy,
 )
+from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
+    compute_divergence_of_fluxes_of_rho_and_theta_numpy,
+)
 
 
-def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
-    geofac_div: np.ndarray,
-    mass_flux_at_edges_on_model_levels: np.ndarray,
-    theta_v_flux_at_edges_on_model_levels: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
-    c2e = connectivities[dims.C2EDim]
-    c2ce = helpers.as_1d_connectivity(c2e)
-    geofac_div = np.expand_dims(geofac_div, axis=-1)
-
-    divergence_of_mass_wp = np.sum(
-        geofac_div[c2ce] * mass_flux_at_edges_on_model_levels[c2e], axis=1
-    )
-    divergence_of_theta_v_wp = np.sum(
-        geofac_div[c2ce] * theta_v_flux_at_edges_on_model_levels[c2e], axis=1
-    )
-    return (divergence_of_mass_wp, divergence_of_theta_v_wp)
-
-
-class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
+class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
         "vertical_mass_flux_at_cells_on_half_levels",
@@ -400,7 +384,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        geofac_div = data_alloc.random_field(grid, dims.CEDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
@@ -444,7 +428,9 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-5
         )
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, low=1.0e-5, high=0.99999)
+        e_bln_c_s = data_alloc.random_field(
+            grid, dims.CellDim, dims.C2EDim, low=1.0e-5, high=0.99999
+        )
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5, high=0.99999)
         wgtfacq_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5, high=0.99999)
 

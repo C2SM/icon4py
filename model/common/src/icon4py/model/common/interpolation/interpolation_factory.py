@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-from typing import Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -44,7 +43,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
@@ -297,7 +296,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
             ),
             fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
-            domain=(dims.ECDim,),
+            domain=(dims.EdgeDim, dims.E2CDim),
             deps={
                 "primal_normal_v1": geometry_attrs.EDGE_NORMAL_U,
                 "primal_normal_v2": geometry_attrs.EDGE_NORMAL_V,

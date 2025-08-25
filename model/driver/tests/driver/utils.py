@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.driver import icon4py_configuration as driver_config
 
 
-# TODO (Chia Rui): The diffusion and solve_nonhydro configs are duplication of the same functions in
+# TODO(OngChia): The diffusion and solve_nonhydro configs are duplication of the same functions in
 #                  diffusion_test/utils.py and dycore_tests/utils.py. Remove the duplication when
 #                  architecture for configuration is set up.
 

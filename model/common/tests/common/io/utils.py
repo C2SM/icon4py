@@ -25,7 +25,7 @@ simple_grid = simple.simple_grid()
 grid_file = definitions.grids_path().joinpath(
     datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE
 )
-global_grid = grid_utils.get_grid_manager_for_experiment(
+global_grid = grid_utils.get_grid_manager_from_experiment(
     datatest_utils.GLOBAL_EXPERIMENT, keep_skip_values=True, backend=backend
 ).grid
 

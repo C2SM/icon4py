@@ -9,7 +9,7 @@
 # type: ignore
 
 import dataclasses
-from typing import Annotated, Optional, TypeAlias
+from typing import Annotated, TypeAlias
 
 import numpy as np
 from gt4py import next as gtx
@@ -20,7 +20,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
@@ -37,7 +36,7 @@ class GridState:
     exchange_runtime: decomposition_defs.ExchangeRuntime
 
 
-grid_state: Optional[GridState] = None  # TODO(havogt): remove module global state
+grid_state: GridState | None = None  # TODO(havogt): remove module global state
 
 NumpyInt32Array1D: TypeAlias = Annotated[
     np.ndarray,
@@ -148,22 +147,14 @@ def grid_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_x
-        ),
-        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_y
-        ),
-        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
-        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
-        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_x
-        ),
-        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_y
-        ),
-        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
-        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
         edge_areas=edge_areas,
         coriolis_frequency=f_e,
         edge_center_lat=edge_center_lat,

@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import pathlib
-from typing import Optional
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -41,18 +40,18 @@ MCH_CH_R04B09_LEVELS = 65
 grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
-def get_grid_manager_for_experiment(
-    experiment: str, keep_skip_values: bool, backend: Optional[gtx_backend.Backend] = None
+def get_grid_manager_from_experiment(
+    experiment: str, keep_skip_values: bool, backend: gtx_backend.Backend | None = None
 ) -> gm.GridManager:
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
-        return _download_and_load_gridfile(
+        return get_grid_manager_from_identifier(
             dt_utils.R02B04_GLOBAL,
             num_levels=GLOBAL_NUM_LEVELS,
             keep_skip_values=keep_skip_values,
             backend=backend,
         )
     elif experiment == dt_utils.REGIONAL_EXPERIMENT:
-        return _download_and_load_gridfile(
+        return get_grid_manager_from_identifier(
             dt_utils.REGIONAL_EXPERIMENT,
             num_levels=MCH_CH_R04B09_LEVELS,
             keep_skip_values=keep_skip_values,
@@ -62,15 +61,40 @@ def get_grid_manager_for_experiment(
         raise ValueError(f"Unknown experiment: {experiment}")
 
 
-def get_grid_manager(
-    grid_file: str, num_levels: int, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
+def get_grid_manager_from_identifier(
+    grid_file_identifier: str,
+    num_levels: int,
+    keep_skip_values: bool,
+    backend: gtx_backend.Backend | None,
 ) -> gm.GridManager:
-    return _download_and_load_gridfile(
-        file_path=grid_file,
-        num_levels=num_levels,
-        keep_skip_values=keep_skip_values,
-        backend=backend,
+    grid_file = _download_grid_file(grid_file_identifier)
+    return get_grid_manager(
+        grid_file, num_levels=num_levels, keep_skip_values=keep_skip_values, backend=backend
     )
+
+
+def get_grid_manager(
+    grid_file: pathlib.Path,
+    num_levels: int,
+    keep_skip_values: bool,
+    backend: gtx_backend.Backend | None,
+) -> gm.GridManager:
+    """
+    Construct a GridManager instance for an ICON grid file.
+
+    Args:
+        grid_file: full path to the file
+        num_levels: number of vertical levels, needed for IconGrid construction but independent from grid file
+        keep_skip_values: whether to keep skip values
+        backend: the gt4py Backend we are running on
+    """
+    manager = gm.GridManager(
+        gm.ToZeroBasedIndexTransformation(),
+        grid_file,
+        v_grid.VerticalGridConfig(num_levels=num_levels),
+    )
+    manager(backend=backend, keep_skip_values=keep_skip_values)
+    return manager
 
 
 def _file_name(grid_file: str) -> str:
@@ -89,19 +113,19 @@ def _file_name(grid_file: str) -> str:
             raise NotImplementedError(f"Add grid path for experiment '{grid_file}'")
 
 
-def resolve_full_grid_file_name(grid_file_str: str) -> pathlib.Path:
-    return definitions.grids_path().joinpath(grid_file_str, _file_name(grid_file_str))
+def resolve_full_grid_file_name(grid_file_identifier: str) -> pathlib.Path:
+    return definitions.grids_path().joinpath(grid_file_identifier, _file_name(grid_file_identifier))
 
 
-def _download_grid_file(file_path: str) -> pathlib.Path:
-    full_name = resolve_full_grid_file_name(file_path)
+def _download_grid_file(grid_file_identifier: str) -> pathlib.Path:
+    full_name = resolve_full_grid_file_name(grid_file_identifier)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:
         with locking.lock(grid_directory):
             if not full_name.exists():
                 data_handling.download_and_extract(
-                    dt_utils.GRID_URIS[file_path],
+                    dt_utils.GRID_URIS[grid_file_identifier],
                     grid_directory,
                 )
     else:
@@ -115,35 +139,12 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
     return full_name
 
 
-def _download_and_load_gridfile(
-    file_path: str, num_levels: int, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
-) -> gm.GridManager:
-    """
-    Load a grid file.
-    Args:
-        file: full path to the file (file + path)
-        num_levels: number of vertical levels, needed for IconGrid construction but independent from grid file
-        backend: the gt4py Backend we are running on
-
-    Returns:
-
-    """
-    grid_file = _download_grid_file(file_path)
-    manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(),
-        grid_file,
-        v_grid.VerticalGridConfig(num_levels=num_levels),
-    )
-    manager(backend=backend, keep_skip_values=keep_skip_values)
-    return manager
-
-
 def get_num_levels(experiment: str) -> int:
     return MCH_CH_R04B09_LEVELS if experiment == dt_utils.REGIONAL_EXPERIMENT else GLOBAL_NUM_LEVELS
 
 
 def get_grid_geometry(
-    backend: Optional[gtx_backend.Backend], experiment: str, grid_file: str
+    backend: gtx_backend.Backend | None, experiment: str, grid_file: str
 ) -> geometry.GridGeometry:
     on_gpu = device_utils.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
@@ -166,7 +167,7 @@ def get_grid_geometry(
         return decomposition_info
 
     def _construct_grid_geometry() -> geometry.GridGeometry:
-        gm = _download_and_load_gridfile(
+        gm = get_grid_manager_from_identifier(
             grid_file, keep_skip_values=True, num_levels=num_levels, backend=backend
         )
         grid = gm.grid

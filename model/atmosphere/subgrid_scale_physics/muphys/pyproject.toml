@@ -6,10 +6,7 @@ requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 
 # -- Standard project description options (PEP 621) --
 [project]
-authors = [
-  {email = "gridtools@cscs.ch"},
-  {name = "ETH Zurich"}
-]
+authors = [{email = "gridtools@cscs.ch"}, {name = "ETH Zurich"}]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
@@ -28,7 +25,7 @@ dependencies = [
   # workspace members
   "icon4py-common[io]>=0.0.6",
   # external dependencies
-  "gt4py==1.0.6",
+  "gt4py==1.0.7",
   "packaging>=20.0"
 ]
 description = "ICON subgrid scale muphys parameterization."
