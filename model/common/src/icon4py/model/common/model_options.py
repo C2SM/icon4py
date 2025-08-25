@@ -8,10 +8,9 @@
 import functools
 import typing
 
+from gt4py._core.definitions import is_scalar_type
 from gt4py.eve.utils import FrozenNamespace
 from gt4py.next import backend
-
-from icon4py.model.testing.test_utils import is_scalar
 
 
 class RayleighType(FrozenNamespace[int]):
@@ -34,7 +33,7 @@ def program_compile_time(
     vertical_sizes: dict = {},  # noqa: B006
     offset_provider: dict = {},  # noqa: B006
 ):
-    bound_static_args = {k: v for k, v in bound_args.items() if is_scalar(v)}
+    bound_static_args = {k: v for k, v in bound_args.items() if is_scalar_type(v)}
     static_args_program = program_func.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),
