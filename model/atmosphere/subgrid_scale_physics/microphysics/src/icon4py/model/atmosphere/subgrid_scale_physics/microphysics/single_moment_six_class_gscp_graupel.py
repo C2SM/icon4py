@@ -1392,13 +1392,68 @@ class SingleMomentSixClassIconGraupel:
     ):
         self.config = graupel_config
         self._initialize_configurable_parameters()
-        self.grid = grid
+        self._grid = grid
         self.metric_state = metric_state
         self.vertical_params = vertical_params
         self._backend = backend
 
         self._initialize_local_fields()
         self._determine_horizontal_domains()
+        self._initialize_gt4py_programs()
+
+    def _initialize_gt4py_programs(self):
+        self._icon_graupel = icon_graupel.with_backend(self._backend).compile(
+            enable_jit=False,
+            ground_level=[gtx.int32(self._grid.num_levels - 1)],
+            liquid_autoconversion_option=[self.config.liquid_autoconversion_option],
+            snow_intercept_option=[self.config.snow_intercept_option],
+            is_isochoric=[self.config.is_isochoric],
+            use_constant_water_heat_capacity=[self.config.use_constant_water_heat_capacity],
+            ice_stickeff_min=[self.config.ice_stickeff_min],
+            snow2graupel_riming_coeff=[self.config.snow2graupel_riming_coeff],
+            power_law_coeff_for_ice_mean_fall_speed=[
+                self.config.power_law_coeff_for_ice_mean_fall_speed
+            ],
+            exponent_for_density_factor_in_ice_sedimentation=[
+                self.config.exponent_for_density_factor_in_ice_sedimentation
+            ],
+            power_law_coeff_for_snow_fall_speed=[self.config.power_law_coeff_for_snow_fall_speed],
+            ccsrim=[self._ccs[0]],
+            ccsagg=[self._ccs[1]],
+            ccsvel=[self._ccs[2]],
+            power_law_exponent_for_rain_mean_fall_speed=[self._rain_vel_coef[0]],
+            power_law_coeff_for_rain_mean_fall_speed=[self._rain_vel_coef[1]],
+            cevxp=[self._rain_vel_coef[2]],
+            cev=[self._rain_vel_coef[3]],
+            bevxp=[self._rain_vel_coef[4]],
+            bev=[self._rain_vel_coef[5]],
+            power_law_exponent_for_rain_mean_fall_speed_ln1o2=[self._sed_dens_factor_coef[0]],
+            power_law_exponent_for_ice_mean_fall_speed_ln1o2=[self._sed_dens_factor_coef[1]],
+            power_law_exponent_for_graupel_mean_fall_speed_ln1o2=[self._sed_dens_factor_coef[2]],
+            vertical_start=[gtx.int32(self.vertical_params.kstart_moist)],
+            vertical_end=[gtx.int32(self._grid.num_levels)],
+            offset_provider={},
+        )
+
+        self._icon_graupel_flux_above_ground = icon_graupel_flux_above_ground.with_backend(
+            self._backend
+        ).compile(
+            enable_jit=False,
+            do_latent_heat_nudging=[self.config.do_latent_heat_nudging],
+            vertical_start=[gtx.int32(0)],
+            vertical_end=[gtx.int32(self._grid.num_levels - 1)],
+            offset_provider={},
+        )
+
+        self._icon_graupel_flux_ground = icon_graupel_flux_ground.with_backend(
+            self._backend
+        ).compile(
+            enable_jit=False,
+            do_latent_heat_nudging=[self.config.do_latent_heat_nudging],
+            vertical_start=[gtx.int32(self._grid.num_levels - 1)],
+            vertical_end=[gtx.int32(self._grid.num_levels)],
+            offset_provider={},
+        )
 
     def _initialize_configurable_parameters(self):
         # TODO (Chia Rui): clean up the naming system of these parameters
@@ -1521,49 +1576,49 @@ class SingleMomentSixClassIconGraupel:
 
     def _initialize_local_fields(self):
         self.rhoqrv_old_kup = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.rhoqsv_old_kup = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.rhoqgv_old_kup = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.rhoqiv_old_kup = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.vnew_r = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.vnew_s = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.vnew_g = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.vnew_i = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.rain_precipitation_flux = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.snow_precipitation_flux = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.graupel_precipitation_flux = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.ice_precipitation_flux = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
         self.total_precipitation_flux = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
         )
 
     def _determine_horizontal_domains(self):
         cell_domain = h_grid.domain(dims.CellDim)
-        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
+        self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.END))
 
     def run(
         self,
@@ -1608,8 +1663,8 @@ class SingleMomentSixClassIconGraupel:
             qs_tendency: specific snow content tendency [kg/kg/s]
             qg_tendency: specific graupel content tendency [kg/kg/s]
         """
-        icon_graupel(
-            gtx.int32(self.grid.num_levels - 1),
+        self._icon_graupel(
+            gtx.int32(self._grid.num_levels - 1),
             self.config.liquid_autoconversion_option,
             self.config.snow_intercept_option,
             self.config.is_isochoric,
@@ -1652,11 +1707,11 @@ class SingleMomentSixClassIconGraupel:
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
             vertical_start=self.vertical_params.kstart_moist,
-            vertical_end=self.grid.num_levels,
+            vertical_end=self._grid.num_levels,
             offset_provider={},
         )
 
-        icon_graupel_flux_above_ground(
+        self._icon_graupel_flux_above_ground(
             self.config.do_latent_heat_nudging,
             dtime,
             rho,
@@ -1684,11 +1739,11 @@ class SingleMomentSixClassIconGraupel:
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self.grid.num_levels - 1),
+            vertical_end=gtx.int32(self._grid.num_levels - 1),
             offset_provider={},
         )
 
-        icon_graupel_flux_ground(
+        self._icon_graupel_flux_ground(
             self.config.do_latent_heat_nudging,
             dtime,
             rho,
@@ -1715,8 +1770,8 @@ class SingleMomentSixClassIconGraupel:
             self.total_precipitation_flux,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
-            vertical_start=gtx.int32(self.grid.num_levels - 1),
-            vertical_end=self.grid.num_levels,
+            vertical_start=gtx.int32(self._grid.num_levels - 1),
+            vertical_end=self._grid.num_levels,
             offset_provider={},
         )
 

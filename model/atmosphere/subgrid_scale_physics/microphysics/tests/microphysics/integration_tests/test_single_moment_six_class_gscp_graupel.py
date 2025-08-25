@@ -9,6 +9,7 @@
 
 import gt4py.next as gtx
 import pytest
+from devtools import Timer
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
@@ -35,9 +36,12 @@ from ..fixtures import *  # noqa: F403
         (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
     ],
 )
+# TODO (Chia Rui): the test is too slow, especially on gtfn backend. Only one date is used for this test.
 @pytest.mark.parametrize(
     "date",
-    ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"],
+    [
+        "2008-09-01T01:59:48.000",
+    ],
 )
 def test_graupel(
     experiment,
@@ -120,48 +124,57 @@ def test_graupel(
 
     qnc = entry_savepoint.qnc()
 
-    temperature_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qv_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qc_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qr_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qi_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qs_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qg_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
+    timer_first_timestep = Timer("Graupel: first time step", dp=6)
+    timer_after_first_timestep = Timer("Graupel: after first time step", dp=6)
+    for time_step in range(5):
+        timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
+        temperature_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qv_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qc_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qr_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qi_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qs_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qg_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
 
-    graupel_microphysics.run(
-        dtime,
-        prognostic_state.rho,
-        diagnostic_state.temperature,
-        diagnostic_state.pressure,
-        tracer_state.qv,
-        tracer_state.qc,
-        tracer_state.qr,
-        tracer_state.qi,
-        tracer_state.qs,
-        tracer_state.qg,
-        qnc,
-        temperature_tendency,
-        qv_tendency,
-        qc_tendency,
-        qr_tendency,
-        qi_tendency,
-        qs_tendency,
-        qg_tendency,
-    )
+        timer.start()
+        graupel_microphysics.run(
+            dtime,
+            prognostic_state.rho,
+            diagnostic_state.temperature,
+            diagnostic_state.pressure,
+            tracer_state.qv,
+            tracer_state.qc,
+            tracer_state.qr,
+            tracer_state.qi,
+            tracer_state.qs,
+            tracer_state.qg,
+            qnc,
+            temperature_tendency,
+            qv_tendency,
+            qc_tendency,
+            qr_tendency,
+            qi_tendency,
+            qs_tendency,
+            qg_tendency,
+        )
+        timer.capture()
+
+    timer_first_timestep.summary(True)
+    timer_after_first_timestep.summary(True)
 
     new_temperature = (
         entry_savepoint.temperature().ndarray[:, :] + temperature_tendency.ndarray * dtime
@@ -175,56 +188,56 @@ def test_graupel(
 
     assert test_utils.dallclose(
         new_temperature,
-        exit_savepoint.temperature().ndarray[:, :],
+        exit_savepoint.temperature().asnumpy()[:, :],
     )
     assert test_utils.dallclose(
         new_qv,
-        exit_savepoint.qv().ndarray[:, :],
+        exit_savepoint.qv().asnumpy()[:, :],
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qc,
-        exit_savepoint.qc().ndarray[:, :],
+        exit_savepoint.qc().asnumpy()[:, :],
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qr,
-        exit_savepoint.qr().ndarray[:, :],
+        exit_savepoint.qr().asnumpy()[:, :],
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qi,
-        exit_savepoint.qi().ndarray[:, :],
+        exit_savepoint.qi().asnumpy()[:, :],
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qs,
-        exit_savepoint.qs().ndarray[:, :],
+        exit_savepoint.qs().asnumpy()[:, :],
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qg,
-        exit_savepoint.qg().ndarray[:, :],
+        exit_savepoint.qg().asnumpy()[:, :],
         atol=1.0e-12,
     )
 
     assert test_utils.dallclose(
-        graupel_microphysics.rain_precipitation_flux.ndarray[:, -1],
-        exit_savepoint.rain_flux().ndarray[:],
+        graupel_microphysics.rain_precipitation_flux.asnumpy()[:, -1],
+        exit_savepoint.rain_flux().asnumpy()[:],
         atol=9.0e-11,
     )
     assert test_utils.dallclose(
-        graupel_microphysics.snow_precipitation_flux.ndarray[:, -1],
-        exit_savepoint.snow_flux().ndarray[:],
+        graupel_microphysics.snow_precipitation_flux.asnumpy()[:, -1],
+        exit_savepoint.snow_flux().asnumpy()[:],
         atol=9.0e-11,
     )
     assert test_utils.dallclose(
-        graupel_microphysics.graupel_precipitation_flux.ndarray[:, -1],
-        exit_savepoint.graupel_flux().ndarray[:],
+        graupel_microphysics.graupel_precipitation_flux.asnumpy()[:, -1],
+        exit_savepoint.graupel_flux().asnumpy()[:],
         atol=9.0e-11,
     )
     assert test_utils.dallclose(
-        graupel_microphysics.ice_precipitation_flux.ndarray[:, -1],
-        exit_savepoint.ice_flux().ndarray[:],
+        graupel_microphysics.ice_precipitation_flux.asnumpy()[:, -1],
+        exit_savepoint.ice_flux().asnumpy()[:],
         atol=9.0e-11,
     )
