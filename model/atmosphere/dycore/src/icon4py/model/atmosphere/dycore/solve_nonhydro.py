@@ -799,9 +799,9 @@ class SolveNonhydro:
             },
             offset_provider={"Koff": dims.KDim},
         )
-        self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(
-            self._backend
-        ).compile(
+        self._init_test_fields = program_compile_time(
+            backend=self._backend,
+            program_func=nhsolve_stencils.init_test_fields,
             horizontal_sizes={
                 "edges_start": self._start_edge_lateral_boundary,
                 "edges_end": self._end_edge_local,
