@@ -576,7 +576,7 @@ class SolveNonhydro:
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,
                 "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels + 1),
+                "vertical_end": gtx.int32(self._grid.num_levels),
             },
             offset_provider=self._grid.connectivities,
         )
@@ -689,7 +689,6 @@ class SolveNonhydro:
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels + 1),
             },
-            offset_provider={},
         )
         self._update_mass_flux_weighted = program_compile_time(
             backend=self._backend,
@@ -706,7 +705,13 @@ class SolveNonhydro:
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
-            offset_provider={},
+        )
+        self._compute_rayleigh_damping_factor = program_compile_time(
+            backend=self._backend,
+            program_func=dycore_utils.compute_rayleigh_damping_factor,
+            bound_args={
+                "rayleigh_w": self._metric_state_nonhydro.rayleigh_w,
+            },
         )
 
         self._compute_perturbed_quantities_and_interpolation = program_compile_time(
@@ -766,7 +771,7 @@ class SolveNonhydro:
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(1),
-                "vertical_end": gtx.int32(self._grid.num_levels + 1),
+                "vertical_end": gtx.int32(self._grid.num_levels),
             },
             offset_provider=self._grid.connectivities,
         )
@@ -781,7 +786,6 @@ class SolveNonhydro:
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels + 1),
             },
-            offset_provider={},
         )
         self._en_smag_fac_for_zero_nshift = program_compile_time(
             backend=self._backend,
@@ -812,7 +816,6 @@ class SolveNonhydro:
                 "vertical_start": gtx.int32(0),
                 "vertical_end": self._grid.num_levels,
             },
-            offset_provider={},
         )
 
         self.velocity_advection = VelocityAdvection(
@@ -1138,10 +1141,9 @@ class SolveNonhydro:
             )
 
         #  Precompute Rayleigh damping factor
-        dycore_utils._compute_rayleigh_damping_factor(
-            rayleigh_w=self._metric_state_nonhydro.rayleigh_w,
+        self._compute_rayleigh_damping_factor(
+            rayleigh_damping_factor=self.rayleigh_damping_factor,
             dtime=dtime,
-            out=self.rayleigh_damping_factor,
         )
 
         self._compute_perturbed_quantities_and_interpolation(
@@ -1329,11 +1331,11 @@ class SolveNonhydro:
             cell_areas=self._cell_params.area,
         )
 
-        dycore_utils._compute_rayleigh_damping_factor(
-            rayleigh_w=self._metric_state_nonhydro.rayleigh_w,
+        self._compute_rayleigh_damping_factor(
+            rayleigh_damping_factor=self.rayleigh_damping_factor,
             dtime=dtime,
-            out=self.rayleigh_damping_factor,
         )
+
         log.debug(f"corrector: start stencil 10")
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
