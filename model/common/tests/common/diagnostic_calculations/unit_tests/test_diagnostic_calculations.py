@@ -26,7 +26,7 @@ from icon4py.model.common.states import (
     tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -93,11 +93,11 @@ def test_diagnose_temperature(
     )
 
     # only temperature is tested because there is no moisture in the JW test. i.e. temperature = virtual_temperature
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         temperature.asnumpy(),
         temperature_ref,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         virtual_temperature.asnumpy(),
         virtual_temperature_ref,
     )
@@ -150,12 +150,12 @@ def test_diagnose_meridional_and_zonal_winds(
         },
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         u.asnumpy(),
         u_ref,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         v.asnumpy(),
         v_ref,
         atol=1.0e-13,
@@ -197,7 +197,7 @@ def test_diagnose_surface_pressure(
         offset_provider={"Koff": dims.KDim},
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         surface_pressure.asnumpy()[:, icon_grid.num_levels],
         surface_pressure_ref,
     )
@@ -244,9 +244,9 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
         offset_provider={},
     )
 
-    assert helpers.dallclose(pressure_ifc_ref, pressure_ifc.asnumpy())
+    assert test_utils.dallclose(pressure_ifc_ref, pressure_ifc.asnumpy())
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         pressure_ref,
         pressure.asnumpy(),
     )
@@ -378,22 +378,22 @@ def test_diagnostic_update_after_saturation_adjustement(
         offset_provider={},
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         updated_virtual_temperature,
         satad_exit.virtual_temperature().asnumpy(),
         atol=1.0e-13,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         updated_exner,
         satad_exit.exner().asnumpy(),
         atol=1.0e-13,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.pressure.asnumpy(),
         satad_exit.pressure().asnumpy(),
         atol=1.0e-13,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.pressure_ifc.asnumpy(),
         satad_exit.pressure_ifc().asnumpy(),
         atol=1.0e-13,

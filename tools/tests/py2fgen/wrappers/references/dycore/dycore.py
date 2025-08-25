@@ -125,10 +125,12 @@ def solve_nh_run_wrapper(
     vn_traj_size_0,
     vn_traj_size_1,
     dtime,
+    max_vcfl_size1_array,
+    max_vcfl_size1_array_size_0,
     lprep_adv,
     at_initial_timestep,
     divdamp_fac_o2,
-    ndyn_substeps,
+    ndyn_substeps_var,
     idyn_timestep,
     on_gpu,
 ):
@@ -492,6 +494,8 @@ def solve_nh_run_wrapper(
             False,
         )
 
+        max_vcfl_size1_array = (max_vcfl_size1_array, (max_vcfl_size1_array_size_0,), False, False)
+
         if __debug__:
             if runtime_config.PROFILING:
                 allocate_end_time = _runtime.perf_counter()
@@ -545,10 +549,11 @@ def solve_nh_run_wrapper(
             vol_flx_ic=vol_flx_ic,
             vn_traj=vn_traj,
             dtime=dtime,
+            max_vcfl_size1_array=max_vcfl_size1_array,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=divdamp_fac_o2,
-            ndyn_substeps=ndyn_substeps,
+            ndyn_substeps_var=ndyn_substeps_var,
             idyn_timestep=idyn_timestep,
         )
 
@@ -1114,6 +1119,22 @@ def solve_nh_run_wrapper(
                 )
                 logger.debug(msg)
 
+                max_vcfl_size1_array_arr = (
+                    _conversion.as_array(ffi, max_vcfl_size1_array, _definitions.FLOAT64)
+                    if max_vcfl_size1_array is not None
+                    else None
+                )
+                msg = "shape of max_vcfl_size1_array after computation = %s" % str(
+                    max_vcfl_size1_array_arr.shape if max_vcfl_size1_array is not None else "None"
+                )
+                logger.debug(msg)
+                msg = (
+                    "max_vcfl_size1_array after computation: %s" % str(max_vcfl_size1_array_arr)
+                    if max_vcfl_size1_array is not None
+                    else "None"
+                )
+                logger.debug(msg)
+
         if __debug__:
             logger.info("Python execution of solve_nh_run completed.")
 
@@ -1277,7 +1298,6 @@ def solve_nh_init_wrapper(
     itime_scheme,
     iadv_rhotheta,
     igradp_method,
-    ndyn_substeps,
     rayleigh_type,
     rayleigh_coeff,
     divdamp_order,
@@ -1823,7 +1843,6 @@ def solve_nh_init_wrapper(
             itime_scheme=itime_scheme,
             iadv_rhotheta=iadv_rhotheta,
             igradp_method=igradp_method,
-            ndyn_substeps=ndyn_substeps,
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             divdamp_order=divdamp_order,

@@ -23,8 +23,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
@@ -39,8 +39,8 @@ def _calculate_diagnostic_quantities_for_turbulence(
 def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     div_ic: fa.CellKField[vpfloat],

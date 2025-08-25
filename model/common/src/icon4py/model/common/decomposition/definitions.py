@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import functools
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
+from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import numpy as np
 from gt4py.next import Dimension
@@ -28,7 +29,7 @@ try:
 except ImportError:
     from types import ModuleType
 
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+    dace: ModuleType | None = None  # type: ignore[no-redef]
 
 
 log = logging.getLogger(__name__)
@@ -86,9 +87,9 @@ class DecompositionInfo:
     def __init__(
         self,
         klevels: int,
-        num_cells: Optional[int] = None,
-        num_edges: Optional[int] = None,
-        num_vertices: Optional[int] = None,
+        num_cells: int | None = None,
+        num_edges: int | None = None,
+        num_vertices: int | None = None,
     ):
         self._global_index = {}
         self._klevels = klevels
@@ -183,7 +184,7 @@ class SingleNodeExchange:
     def get_size(self):
         return 1
 
-    def __call__(self, *args, **kwargs) -> Optional[ExchangeResult]:
+    def __call__(self, *args, **kwargs) -> ExchangeResult | None:
         """Perform a halo exchange operation.
 
         Args:
@@ -210,9 +211,7 @@ class SingleNodeExchange:
             sdfg.name = "_halo_exchange_"
             return sdfg
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             return DummyNestedSDFG().__sdfg_closure__()
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
@@ -225,9 +224,7 @@ class SingleNodeExchange:
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             raise NotImplementedError(
                 "__sdfg_closure__ is only supported when the 'dace' module is available."
             )
@@ -253,7 +250,7 @@ class HaloExchangeWaitRuntime(Protocol):
         """DaCe related: SDFGConvertible interface."""
         ...
 
-    def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+    def __sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
         """DaCe related: SDFGConvertible interface."""
         ...
 
@@ -276,9 +273,7 @@ class HaloExchangeWait:
             sdfg.name = "_halo_exchange_wait_"
             return sdfg
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             return DummyNestedSDFG().__sdfg_closure__()
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
@@ -291,9 +286,7 @@ class HaloExchangeWait:
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             raise NotImplementedError(
                 "__sdfg_closure__ is only supported when the 'dace' module is available."
             )
@@ -354,6 +347,14 @@ class SingleNodeRun(RunType):
     pass
 
 
+@overload
+def get_runtype(with_mpi: Literal[True]) -> MultiNodeRun: ...
+
+
+@overload
+def get_runtype(with_mpi: Literal[False]) -> SingleNodeRun: ...
+
+
 def get_runtype(with_mpi: bool = False) -> RunType:
     if with_mpi:
         return MultiNodeRun()
@@ -362,12 +363,12 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime: RunType, comm_id: Union[int, None]) -> ProcessProperties:
+def get_processor_properties(runtime: RunType, comm_id: int | None = None) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 
 @get_processor_properties.register(SingleNodeRun)
-def get_single_node_properties(s: SingleNodeRun, comm_id=None) -> ProcessProperties:
+def get_single_node_properties(s: SingleNodeRun, comm_id: int | None = None) -> ProcessProperties:
     return SingleNodeProcessProperties()
 
 

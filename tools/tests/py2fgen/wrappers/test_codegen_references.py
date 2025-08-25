@@ -12,7 +12,10 @@ import pathlib
 import pytest
 from click.testing import CliRunner
 
-from icon4py.tools.py2fgen import _cli
+from icon4py.tools.py2fgen import _cli, _utils
+
+
+logger = _utils.setup_logger("test_codegen_references")
 
 
 @pytest.fixture
@@ -43,7 +46,7 @@ def diff(reference: pathlib.Path, actual: pathlib.Path):
 
     clean = True
     for line in result:
-        print(line)
+        logger.info(f"result line: {line}")
         clean = False
 
     return clean

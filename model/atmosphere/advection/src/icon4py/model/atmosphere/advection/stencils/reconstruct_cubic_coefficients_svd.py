@@ -10,21 +10,21 @@ import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C, C2E2C2E2CDim
+from icon4py.model.common.dimension import C2E2C2E2C, C2E2C2E2CDim
 
 
 @gtx.field_operator
 def _reconstruct_cubic_coefficients_svd(
     p_cc: fa.CellKField[ta.wpfloat],
-    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_3: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_4: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_5: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_6: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_7: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_8: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_9: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
+    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_6: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_7: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_8: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_9: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
     lsq_moments_1: fa.CellField[ta.wpfloat],
     lsq_moments_2: fa.CellField[ta.wpfloat],
     lsq_moments_3: fa.CellField[ta.wpfloat],
@@ -46,33 +46,15 @@ def _reconstruct_cubic_coefficients_svd(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    p_coeff_10_dsl = neighbor_sum(
-        lsq_pseudoinv_9(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
-    p_coeff_9_dsl = neighbor_sum(
-        lsq_pseudoinv_8(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
-    p_coeff_8_dsl = neighbor_sum(
-        lsq_pseudoinv_7(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
-    p_coeff_7_dsl = neighbor_sum(
-        lsq_pseudoinv_6(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
-    p_coeff_6_dsl = neighbor_sum(
-        lsq_pseudoinv_5(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
-    p_coeff_5_dsl = neighbor_sum(
-        lsq_pseudoinv_4(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
-    p_coeff_4_dsl = neighbor_sum(
-        lsq_pseudoinv_3(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
-    p_coeff_3_dsl = neighbor_sum(
-        lsq_pseudoinv_2(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
-    p_coeff_2_dsl = neighbor_sum(
-        lsq_pseudoinv_1(C2CECEC) * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim
-    )
+    p_coeff_10_dsl = neighbor_sum(lsq_pseudoinv_9 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_9_dsl = neighbor_sum(lsq_pseudoinv_8 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_8_dsl = neighbor_sum(lsq_pseudoinv_7 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_7_dsl = neighbor_sum(lsq_pseudoinv_6 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_6_dsl = neighbor_sum(lsq_pseudoinv_5 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_5_dsl = neighbor_sum(lsq_pseudoinv_4 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_4_dsl = neighbor_sum(lsq_pseudoinv_3 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_3_dsl = neighbor_sum(lsq_pseudoinv_2 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_2_dsl = neighbor_sum(lsq_pseudoinv_1 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
 
     p_coeff_1_dsl = p_cc - (
         p_coeff_2_dsl * lsq_moments_1
@@ -103,15 +85,15 @@ def _reconstruct_cubic_coefficients_svd(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def reconstruct_cubic_coefficients_svd(
     p_cc: fa.CellKField[ta.wpfloat],
-    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_3: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_4: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_5: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_6: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_7: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_8: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
-    lsq_pseudoinv_9: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],
+    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_6: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_7: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_8: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_9: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.wpfloat],
     lsq_moments_1: fa.CellField[ta.wpfloat],
     lsq_moments_2: fa.CellField[ta.wpfloat],
     lsq_moments_3: fa.CellField[ta.wpfloat],

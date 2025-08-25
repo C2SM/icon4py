@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -932,7 +932,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_07_29#74bb66ac28b7e3965024bac080995136ce855f4e" }
+source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_08_06#0c6498d65a4b9a0d74bc5c7c2540a0e17b3c97eb" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1428,7 +1428,7 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.6"
+version = "1.0.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1460,9 +1460,9 @@ dependencies = [
     { name = "versioningit" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/74/f4714967ba0391c54fc4e07acc32a179633149b74607744acf01fb2f1049/gt4py-1.0.6.tar.gz", hash = "sha256:a6c072d69cf3b28238076de49291c1de8f1f39b64cd31f9997b0407dfe520552", size = 717318, upload-time = "2025-07-30T11:03:52.796Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/a4/fd6566548ea29cc20217606e630d6ec3eadecd54c56f8b99916205f49d5c/gt4py-1.0.7.tar.gz", hash = "sha256:281c1d99a456bb1acad236404457db128e7ace4d2b0361a48d8a979c72c2bc24", size = 722457, upload-time = "2025-08-12T13:56:33.006Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/0b/ff85ecbf455dba6cc6808ef4aba2025cf9b823e04d2ae337a82b526addf7/gt4py-1.0.6-py3-none-any.whl", hash = "sha256:8c89105f6a7cb64b98a6c436b7188772cf11ca475e1cde742969ad2633a6bdde", size = 918412, upload-time = "2025-07-30T11:03:51.024Z" },
+    { url = "https://files.pythonhosted.org/packages/77/28/730558ab41d18218b5a64607f61d7ec682cc306808969299cc9dee1553ee/gt4py-1.0.7-py3-none-any.whl", hash = "sha256:c243f12fc41d00b0d3df438449e819dc39d5927b71e559b4b55596b1444d3f10", size = 923552, upload-time = "2025-08-12T13:56:31.429Z" },
 ]
 
 [package.optional-dependencies]
@@ -1805,7 +1805,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1822,7 +1822,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1839,7 +1839,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1856,13 +1856,14 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
 
 [[package]]
 name = "icon4py-atmosphere-muphys"
+version = "0.0.6"
 source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
 dependencies = [
     { name = "gt4py" },
@@ -1872,7 +1873,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1939,10 +1940,10 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_07_29" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_08_06" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
     { name = "gt4py", extras = ["next"], marker = "extra == 'dace'" },
@@ -1981,7 +1982,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1995,6 +1996,7 @@ name = "icon4py-testing"
 version = "0.0.6"
 source = { editable = "model/testing" }
 dependencies = [
+    { name = "filelock" },
     { name = "gt4py" },
     { name = "icon4py-common", extra = ["io"] },
     { name = "numpy" },
@@ -2007,7 +2009,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "filelock", specifier = ">=3.18.0" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2053,7 +2056,7 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.0.6" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },

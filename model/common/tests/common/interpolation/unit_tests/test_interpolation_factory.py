@@ -21,7 +21,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
-    helpers as test_helpers,
+    serialbox as sb,
+    test_utils as test_helpers,
 )
 from icon4py.model.testing.fixtures import (
     backend,
@@ -215,7 +216,7 @@ def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend)
     assert field_x.shape == (grid.num_cells, 4)
     field_y = factory.get(attrs.GEOFAC_GRG_Y)
     assert field_y.shape == (grid.num_cells, 4)
-    # TODO (@halungge) tolerances are high, especially in the 0th (central) component, check stencil
+    # TODO(halungge): tolerances are high, especially in the 0th (central) component, check stencil
     #   this passes due to the atol which is too large for the values
     assert test_helpers.dallclose(
         field_ref[0].asnumpy(),
@@ -254,8 +255,8 @@ def test_get_mass_conserving_cell_average_weight(
 
 ## FIXME: does not validate
 #   -> connectivity order between reference from serialbox and computed value is different
-## TODO (@halungge) rtol is from parametrization is overwritten in assert - function is most probably wrong
-#  TODO (@halungge) global grid is not tested
+## TODO(halungge): rtol is from parametrization is overwritten in assert - function is most probably wrong
+#  TODO(halungge) global grid is not tested
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
@@ -301,7 +302,9 @@ def test_e_bln_c_s(interpolation_savepoint, grid_file, experiment, backend, rtol
     ],
 )
 @pytest.mark.datatest
-def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, backend, rtol):
+def test_pos_on_tplane_e_x_y(
+    interpolation_savepoint: sb.InterpolationSavepoint, grid_file, experiment, backend, rtol
+):
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
     field_ref_2 = interpolation_savepoint.pos_on_tplane_e_y()
     factory = _get_interpolation_factory(backend, experiment, grid_file)

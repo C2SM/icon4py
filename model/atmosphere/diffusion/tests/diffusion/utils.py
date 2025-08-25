@@ -10,7 +10,7 @@ import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.testing import helpers, serialbox as sb
+from icon4py.model.testing import serialbox as sb, test_utils
 
 
 def verify_diffusion_fields(
@@ -42,15 +42,15 @@ def verify_diffusion_fields(
         ref_dwdy = diffusion_savepoint.dwdy().asnumpy()
         val_dwdy = diagnostic_state.dwdy.asnumpy()
 
-        assert helpers.dallclose(val_div_ic, ref_div_ic, atol=1e-16)
-        assert helpers.dallclose(val_hdef_ic, ref_hdef_ic, atol=1e-13)
-        assert helpers.dallclose(val_dwdx, ref_dwdx, atol=1e-18)
-        assert helpers.dallclose(val_dwdy, ref_dwdy, atol=1e-18)
+        assert test_utils.dallclose(val_div_ic, ref_div_ic, atol=1e-16)
+        assert test_utils.dallclose(val_hdef_ic, ref_hdef_ic, atol=1e-13)
+        assert test_utils.dallclose(val_dwdx, ref_dwdx, atol=1e-18)
+        assert test_utils.dallclose(val_dwdy, ref_dwdy, atol=1e-18)
 
-    assert helpers.dallclose(val_vn, ref_vn, atol=1.0e-8, rtol=1.0e-9)
-    assert helpers.dallclose(val_w, ref_w, atol=1e-14)
-    assert helpers.dallclose(val_theta_v, ref_theta_v)
-    assert helpers.dallclose(val_exner, ref_exner)
+    assert test_utils.dallclose(val_vn, ref_vn, atol=1.0e-8, rtol=1.0e-9)
+    assert test_utils.dallclose(val_w, ref_w, atol=1e-14)
+    assert test_utils.dallclose(val_theta_v, ref_theta_v)
+    assert test_utils.dallclose(val_exner, ref_exner)
 
 
 def smag_limit_numpy(func, *args):
@@ -62,7 +62,7 @@ def diff_multfac_vn_numpy(shape, k4, substeps):
     return factor * np.ones(shape)
 
 
-# TODO: this code is replicated across the codebase currently. The configuration should be read from an external file.
+# TODO(): this code is replicated across the codebase currently. The configuration should be read from an external file.
 def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
     if name.lower() in "mch_ch_r04b09_dsl":
         return r04b09_diffusion_config(ndyn_substeps)

@@ -106,7 +106,8 @@ class EdgeParams:
         """
 
         self.primal_normal_vert: tuple[
-            gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
+            gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
+            gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
         ] = (
             primal_normal_vert_x,
             primal_normal_vert_y,
@@ -120,7 +121,8 @@ class EdgeParams:
         """
 
         self.dual_normal_vert: tuple[
-            gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
+            gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
+            gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
         ] = (
             dual_normal_vert_x,
             dual_normal_vert_y,
@@ -134,7 +136,8 @@ class EdgeParams:
         """
 
         self.primal_normal_cell: tuple[
-            gtx.Field[[dims.ECDim], float], gtx.Field[[dims.ECDim], float]
+            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
         ] = (
             primal_normal_cell_x,
             primal_normal_cell_y,
@@ -148,7 +151,8 @@ class EdgeParams:
         """
 
         self.dual_normal_cell: tuple[
-            gtx.Field[[dims.ECDim], float], gtx.Field[[dims.ECDim], float]
+            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
         ] = (
             dual_normal_cell_x,
             dual_normal_cell_y,
@@ -186,7 +190,8 @@ class EdgeParams:
         """
 
         self.primal_normal: tuple[
-            gtx.Field[[dims.ECDim], float], gtx.Field[[dims.ECDim], float]
+            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+            gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
         ] = (
             primal_normal_x,
             primal_normal_y,

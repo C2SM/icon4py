@@ -7,87 +7,57 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+import pkgutil
+from typing import TYPE_CHECKING
 
 import pytest
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
-from icon4py.model.common.grid import base as base_grid, simple as simple_grid
-from icon4py.model.testing.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
-
-from .. import data_handling as data, datatest_utils as dt_utils
+from icon4py.model.common.grid import base as base_grid
+from icon4py.model.testing import (
+    config,
+    data_handling as data,
+    datatest_utils as dt_utils,
+    definitions,
+    locking,
+)
 
 
 if TYPE_CHECKING:
+    import pathlib
+
     from icon4py.model.testing import serialbox
 
-DEFAULT_GRID: Final[str] = "simple_grid"
-VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
 
+@pytest.fixture(scope="session")
+def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
+    """
+    Fixture to provide a GT4Py backend for the tests.
 
-def _check_backend_validity(backend_name: str) -> None:
-    if backend_name not in model_backends.BACKENDS:
-        available_backends = ", ".join([f"'{k}'" for k in model_backends.BACKENDS.keys()])
-        raise Exception(
-            "Need to select a backend. Select from: ["
-            + available_backends
-            + "] and pass it as an argument to --backend when invoking pytest."
+    The provided backend is instanciated according to the `--backend` pytest
+    command line option value, which might refer to a known backend name, or to
+    an gt4py backend instance defined in an arbitrary location, by using the
+    notation `path.to.module:backend_symbol`.
+    """
+    spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
+    assert isinstance(spec, str), "Backend spec must be a string"
+    if spec.count(":") > 1:
+        raise ValueError(
+            "Invalid backend spec in '--backend' option (spec: <backend_name> or <path.to.module>:<symbol>)"
         )
 
-
-def _check_grid_validity(grid_name: str) -> None:
-    assert (
-        grid_name in VALID_GRIDS
-    ), f"Invalid value for '--grid' option - possible names are {VALID_GRIDS}"
-
-
-def _get_grid(
-    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
-) -> base_grid.Grid:
-    match selected_grid_type:
-        case "icon_grid":
-            from icon4py.model.testing.grid_utils import get_grid_manager_for_experiment
-
-            grid_instance = get_grid_manager_for_experiment(
-                REGIONAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
-            ).grid
-            return grid_instance
-        case "icon_grid_global":
-            from icon4py.model.testing.grid_utils import get_grid_manager_for_experiment
-
-            grid_instance = get_grid_manager_for_experiment(
-                GLOBAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
-            ).grid
-            return grid_instance
-        case _:
-            return simple_grid.simple_grid(selected_backend)
-
-
-@pytest.fixture(scope="session")
-def backend(request):
-    try:
-        backend_option = request.config.getoption("backend")
-    except ValueError:
-        backend_option = model_backends.DEFAULT_BACKEND
+    if ":" in spec:
+        backend = pkgutil.resolve_name(spec)
+    elif spec in model_backends.BACKENDS:
+        backend = model_backends.BACKENDS[spec]
     else:
-        _check_backend_validity(backend_option)
+        raise ValueError(
+            f"Invalid backend name in '--backend' option. It should be one of {[*model_backends.BACKENDS.keys()]}"
+        )
 
-    selected_backend = model_backends.BACKENDS[backend_option]
-    return selected_backend
-
-
-@pytest.fixture(scope="session")
-def grid(request, backend):
-    try:
-        grid_option = request.config.getoption("grid")
-    except ValueError:
-        grid_option = DEFAULT_GRID
-    else:
-        _check_grid_validity(grid_option)
-    grid = _get_grid(grid_option, backend)
-    return grid
+    return backend
 
 
 @pytest.fixture
@@ -101,12 +71,60 @@ def processor_props(request):
 
 
 @pytest.fixture(scope="session")
-def ranked_data_path(processor_props):
-    return dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props)
+def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathlib.Path:
+    return dt_utils.get_ranked_data_path(
+        definitions.serialized_data_path(), processor_props.comm_size
+    )
+
+
+def _download_ser_data(
+    comm_size: int,
+    _ranked_data_path: pathlib.Path,
+    _experiment: str,
+):
+    # not a fixture to be able to use this function outside of pytest
+    try:
+        destination_path = dt_utils.get_datapath_for_experiment(_ranked_data_path, _experiment)
+        if _experiment == dt_utils.GLOBAL_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_APE[comm_size]
+        elif _experiment == dt_utils.JABW_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_JABW[comm_size]
+        elif _experiment == dt_utils.GAUSS3D_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_GAUSS3D[comm_size]
+        elif _experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_WK[comm_size]
+        else:
+            uri = dt_utils.DATA_URIS[comm_size]
+
+        data_file = _ranked_data_path.joinpath(f"{_experiment}_mpitask{comm_size}.tar.gz").name
+        _ranked_data_path.mkdir(parents=True, exist_ok=True)
+        if config.ENABLE_TESTDATA_DOWNLOAD:
+            with locking.lock(_ranked_data_path):
+                # Note: if the lock would be created for `destination_path` it would always exist...
+                if not destination_path.exists():
+                    data.download_and_extract(uri, _ranked_data_path, data_file)
+        else:
+            # If test data download is disabled, we check if the directory exists
+            # without locking. We assume the location is managed by the user
+            # and avoid locking shared directories (e.g. on CI).
+            if not destination_path.exists():
+                raise RuntimeError(
+                    f"Serialization data {data_file} does not exist, and downloading is disabled."
+                )
+    except KeyError as err:
+        raise RuntimeError(
+            f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
+        ) from err
 
 
 @pytest.fixture
-def download_ser_data(request, processor_props, ranked_data_path, experiment, pytestconfig):
+def download_ser_data(
+    request,
+    processor_props: decomposition.ProcessProperties,
+    ranked_data_path: pathlib.Path,
+    experiment: str,
+    pytestconfig,
+):
     """
     Get the binary ICON data from a remote server.
 
@@ -116,31 +134,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
-    try:
-        destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        if experiment == dt_utils.GLOBAL_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
-        elif experiment == dt_utils.JABW_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_JABW[processor_props.comm_size]
-        elif experiment == dt_utils.GAUSS3D_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_GAUSS3D[processor_props.comm_size]
-        elif experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
-        else:
-            uri = dt_utils.DATA_URIS[processor_props.comm_size]
-
-        data_file = ranked_data_path.joinpath(
-            f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
-        ).name
-        if processor_props.rank == 0:
-            data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
-
-        if processor_props.comm:
-            processor_props.comm.barrier()
-    except KeyError as err:
-        raise AssertionError(
-            f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
-        ) from err
+    _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
 
 @pytest.fixture
@@ -186,14 +180,17 @@ def decomposition_info(data_provider, experiment):
 
 
 @pytest.fixture
-def ndyn_substeps() -> int:
+def ndyn_substeps(experiment) -> int:
     """
     Return number of dynamical substeps.
 
-    Serialized data uses a reduced number (2 instead of the default 5) in order to reduce the amount
-    of data generated.
+    Serialized data of global and regional experiments uses a reduced number
+    (2 instead of the default 5) in order to reduce the amount of data generated.
     """
-    return 2
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        return 5
+    else:
+        return 2
 
 
 @pytest.fixture
@@ -276,57 +273,6 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_i
 
 
 @pytest.fixture
-def savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-    data_provider, step_date_init, istep_init, substep_init
-):  # F811
-    """
-    Load data from ICON savepoint at start of velocity_advection module for cell diagnostics computations.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_init(
-        istep=istep_init, date=step_date_init, substep=substep_init
-    )
-
-
-@pytest.fixture
-def savepoint_compute_advection_in_vertical_momentum_equation_init(
-    data_provider, step_date_init, istep_init, substep_init
-):  # F811
-    """
-    Load data from ICON savepoint at start of velocity_advection module for vertical momentum equation.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_init(
-        istep=istep_init, date=step_date_init, substep=substep_init
-    )
-
-
-@pytest.fixture
-def savepoint_compute_advection_in_horizontal_momentum_equation_init(
-    data_provider, step_date_init, istep_init, substep_init
-):  # F811
-    """
-    Load data from ICON savepoint at start of velocity_advection module for horizontal momentum equation.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_init(
-        istep=istep_init, date=step_date_init, substep=substep_init
-    )
-
-
-@pytest.fixture
 def savepoint_nonhydro_init(
     data_provider: serialbox.IconSerialDataProvider,
     step_date_init: str,
@@ -342,6 +288,21 @@ def savepoint_nonhydro_init(
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_dycore_30_to_38_init(data_provider, istep_init, step_date_init, substep_init):
+    """
+    Load data from ICON savepoint directly before the first stencil in
+    stencils 30 to 38 in mo_solve_nonhydro.f90 of solve_nonhydro module.
+    metadata to select a unique savepoint:
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_30_to_38_init(
         istep=istep_init, date=step_date_init, substep=substep_init
     )
 
@@ -397,74 +358,6 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 
 @pytest.fixture
-def savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-    data_provider, step_date_exit, istep_exit, substep_exit
-):  # F811
-    """
-    Load data from ICON savepoint at exist of velocity_advection module for edge diagnostics computations.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_edge_diagnostics_for_velocity_advection_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
-def savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-    data_provider, step_date_exit, istep_exit, substep_exit
-):  # F811
-    """
-    Load data from ICON savepoint at exit of velocity_advection module for cell diagnostics computations.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_cell_diagnostics_for_velocity_advection_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
-def savepoint_compute_advection_in_vertical_momentum_equation_exit(
-    data_provider, step_date_exit, istep_exit, substep_exit
-):  # F811
-    """
-    Load data from ICON savepoint at exit of velocity_advection module for vertical momentum equation.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_advection_in_vertical_momentum_equation_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
-def savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-    data_provider, step_date_exit, istep_exit, substep_exit
-):  # F811
-    """
-    Load data from ICON savepoint at exit of velocity_advection module for horizontal momentum equation.
-
-    metadata to select a unique savepoint:
-    - date: <iso_string> of the simulation timestep
-    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - substep: dynamical substep
-    """
-    return data_provider.from_savepoint_compute_advection_in_horizontal_momentum_equation_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep_exit
-    )
-
-
-@pytest.fixture
 def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_exit):
     """
     Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
@@ -476,6 +369,21 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
+    )
+
+
+@pytest.fixture
+def savepoint_dycore_30_to_38_exit(data_provider, istep_exit, step_date_exit, substep_exit):
+    """
+    Load data from ICON savepoint directly after the last stencil in
+    stencils 30 to 38 in mo_solve_nonhydro.f90 of solve_nonhydro module.
+    metadata to select a unique savepoint:
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_30_to_38_exit(
         istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 

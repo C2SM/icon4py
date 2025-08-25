@@ -9,14 +9,13 @@ import functools
 import logging
 import math
 import pathlib
-from typing import Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import constants as phy_const, dimension as dims
+from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
@@ -39,7 +38,7 @@ def model_initialization_jabw(
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
@@ -136,13 +135,13 @@ def model_initialization_jabw(
     lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
     ps_o_p0ref = p_sfc / phy_const.P0REF
 
-    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
+    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
@@ -154,7 +153,7 @@ def model_initialization_jabw(
     )
     lapse_rate = phy_const.RD * gamma / phy_const.GRAV
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = xp.full(num_cells, fill_value=1.0e-7, dtype=float)
+        eta_old = xp.full(num_cells, fill_value=1.0e-7, dtype=ta.wpfloat)
         log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
         for _ in range(100):
@@ -262,7 +261,7 @@ def model_initialization_jabw(
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
     pressure_ifc_ndarray[:, -1] = p_sfc
     (
         vn,

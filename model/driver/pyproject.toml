@@ -27,11 +27,11 @@ dependencies = [
   "icon4py-atmosphere-dycore>=0.0.6",
   "icon4py-atmosphere-diffusion>=0.0.6",
   "icon4py-common>=0.0.6",
-  "icon4py-testing>=0.0.6",  # TODO: remove this dependency when driver is fully standalone
+  "icon4py-testing>=0.0.6",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies
   "click>=8.0.1",
   "devtools>=0.12",
-  "gt4py==1.0.6",
+  "gt4py==1.0.7",
   "packaging>=20.0",
   "numpy>=1.23.3"
 ]

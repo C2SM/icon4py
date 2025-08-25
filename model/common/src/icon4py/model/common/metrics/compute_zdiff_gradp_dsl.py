@@ -112,7 +112,4 @@ def compute_zdiff_gradp_dsl(
                         jk_start = jk1
                         break
 
-    zdiff_gradp_full_field = zdiff_gradp.reshape(
-        (zdiff_gradp.shape[0] * zdiff_gradp.shape[1],) + zdiff_gradp.shape[2:]
-    )
-    return zdiff_gradp_full_field
+    return zdiff_gradp
