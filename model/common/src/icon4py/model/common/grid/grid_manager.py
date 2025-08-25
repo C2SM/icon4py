@@ -8,8 +8,9 @@
 import functools
 import logging
 import pathlib
+from collections.abc import Callable
 from types import ModuleType
-from typing import Callable, Literal, Optional, TypeAlias, Union
+from typing import Literal, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -30,6 +31,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 _log = logging.getLogger(__name__)
 _single_node_properties = decomposition.SingleNodeProcessProperties()
+_single_node_decomposer = halo.SingleNodeDecomposer()
 
 
 class IconGridError(RuntimeError):
@@ -60,9 +62,9 @@ class GridManager:
     def __init__(
         self,
         transformation: gridfile.IndexTransformation,
-        grid_file: Union[pathlib.Path, str],
-        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove: - separate vertical from horizontal grid
-        decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
+        grid_file: pathlib.Path | str,
+        config: v_grid.VerticalGridConfig,  # TODO(@halungge): remove: - separate vertical from horizontal grid
+        decomposer: Callable[[np.ndarray, int], np.ndarray] = _single_node_decomposer,
         run_properties: decomposition.ProcessProperties = _single_node_properties,
     ):
         self._run_properties = run_properties
@@ -71,8 +73,8 @@ class GridManager:
         self._decompose = decomposer
         self._halo_constructor = None
         self._vertical_config = config
-        self._grid: Optional[icon.IconGrid] = None
-        self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
+        self._grid: icon.IconGrid | None = None
+        self._decomposition_info: decomposition.DecompositionInfo | None = None
         self._geometry: GeometryDict = {}
         self._coordinates: CoordinateDict = {}
         self._reader = None
@@ -94,7 +96,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    @utils.chainable  # TODO split into to functions
+    @utils.chainable  # TODO(halungge): split into to functions
     def set_decomposer(
         self,
         decomposer: Callable[[np.ndarray, int], np.ndarray],
@@ -109,7 +111,7 @@ class GridManager:
         ):
             raise exceptions.InvalidConfigError("Need a Decomposer for for multi node run.")
 
-    def __call__(self, backend: Optional[gtx_backend.Backend], keep_skip_values: bool):
+    def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool):
         if not self._reader:
             self.open()
 
@@ -118,7 +120,7 @@ class GridManager:
         self._geometry = self._read_geometry_fields(backend)
         self.close()
 
-    def _read_coordinates(self, backend: Optional[gtx_backend.Backend]) -> CoordinateDict:
+    def _read_coordinates(self, backend: gtx_backend.Backend | None) -> CoordinateDict:
         return {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -164,16 +166,16 @@ class GridManager:
             },
         }
 
-    def _read_geometry_fields(self, backend: Optional[gtx_backend.Backend]):
+    def _read_geometry_fields(self, backend: gtx_backend.Backend | None):
         return {
-            # TODO (@halungge) still needs to ported, values from "our" grid files contains (wrong) values:
+            # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
             gridfile.GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.GeometryName.CELL_AREA),
                 allocator=backend,
             ),
-            # TODO (@halungge) easily computed from a neighbor_sum V2C over the cell areas?
+            # TODO(halungge): easily computed from a neighbor_sum V2C over the cell areas?
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
@@ -189,7 +191,7 @@ class GridManager:
                 self._reader.variable(gridfile.GeometryName.EDGE_VERTEX_DISTANCE, transpose=True),
                 allocator=backend,
             ),
-            # TODO (@halungge) recompute from coordinates? field in gridfile contains NaN on boundary edges
+            # TODO(halungge): recompute from coordinates? field in gridfile contains NaN on boundary edges
             gridfile.GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.GeometryName.TANGENT_ORIENTATION),
@@ -217,8 +219,8 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
-        decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-        backend: Optional[gtx_backend.Backend] = None,
+        decomposition_info: decomposition.DecompositionInfo | None = None,
+        backend: gtx_backend.Backend | None = None,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -317,7 +319,7 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, backend: Optional[gtx_backend.Backend], with_skip_values: bool
+        self, backend: gtx_backend.Backend | None, with_skip_values: bool
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -349,8 +351,8 @@ class GridManager:
             self._run_properties.comm_size,
         )
         # HALO CONSTRUCTION
-        # TODO: (magdalena) reduce the set of neighbor tables used in the halo construction
-        # TODO: (magdalena) figure out where to do the host to device copies (xp.asarray...)
+        # TODO(halungge): reduce the set of neighbor tables used in the halo construction
+        # TODO (halungge): figure out where to do the host to device copies (xp.asarray...)
         neighbor_tables_for_halo_construction = {
             dims.C2E2C: cell_to_cell_neighbors,
             dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
@@ -368,11 +370,11 @@ class GridManager:
         decomposition_info = halo_constructor(cells_to_rank_mapping)
         self._decomposition_info = decomposition_info
 
-        ## TODO do local reads (and halo exchanges!!) FIX: my_cells etc are in 0 base python coding - reading from file fails...
+        ## TODO(halungge): do local reads (and halo exchanges!!) FIX: my_cells etc are in 0 base python coding - reading from file fails...
         ##
         # CONSTRUCT LOCAL PATCH
 
-        # TODO run this only for distrbuted grids otherwise to nothing internally
+        # TODO(halungge): run this only for distrbuted grids otherwise to nothing internally
         neighbor_tables = {
             k: decomposition_info.global_to_local(
                 k.source, v[decomposition_info.global_index(k.target[0])]
@@ -384,7 +386,7 @@ class GridManager:
 
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
-        # TODO compute for local patch
+        # TODO(halungge): compute for local patch
         start, end, _ = self._read_start_end_indices()
         start_indices = {
             k: v
@@ -439,7 +441,7 @@ class GridManager:
         self,
         grid_size: base.HorizontalGridSize,
         connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
-        backend=Optional[gtx_backend.Backend],
+        backend=gtx_backend.Backend | None,
     ) -> halo.HaloConstructor:
         if self._run_properties.single_node():
             return halo.NoHalos(
@@ -530,7 +532,7 @@ def _construct_diamond_vertices(
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
     far_indices = array_ns.zeros_like(e2v)
-    # TODO (magdalena) vectorize speed this up?
+    # TODO(halungge): vectorize speed this up?
     for i in range(sh[0]):
         far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
     return array_ns.hstack((e2v, far_indices))

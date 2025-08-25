@@ -372,7 +372,7 @@ def read_geometry_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-# TODO (Chia Rui): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
+# TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
     return sb.IconSerialDataProvider(
         backend=backend,
@@ -383,7 +383,7 @@ def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
     )
 
 
-# TODO (Chia Rui): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
+# TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
         grid_id, grid_root, grid_level
@@ -548,7 +548,7 @@ def configure_logging(
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
-    # TODO (Chia Rui): modify here when single_dispatch is ready
+    # TODO(OngChia): modify here when single_dispatch is ready
     console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"

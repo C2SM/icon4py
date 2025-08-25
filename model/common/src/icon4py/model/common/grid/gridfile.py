@@ -8,7 +8,7 @@
 
 import enum
 import logging
-from typing import Protocol, Union
+from typing import Protocol
 
 import numpy as np
 from gt4py import next as gtx
@@ -204,14 +204,14 @@ class ConnectivityName(FieldName):
 
 
 class GeometryName(FieldName):
-    # TODO (@halungge) compute from coordinates
+    # TODO(halungge): compute from coordinates
     CELL_AREA = "cell_area"
-    # TODO (@halungge) compute from coordinates
+    # TODO(halungge): compute from coordinates
     DUAL_AREA = "dual_area"
     CELL_NORMAL_ORIENTATION = "orientation_of_normal"
     TANGENT_ORIENTATION = "edge_system_orientation"
     EDGE_ORIENTATION_ON_VERTEX = "edge_orientation"
-    # TODO (@halungge) compute from coordinates
+    # TODO(halungge): compute from coordinates
     EDGE_CELL_DISTANCE = "edge_cell_distance"
     EDGE_VERTEX_DISTANCE = "edge_vert_distance"
 
@@ -275,7 +275,7 @@ class GridFile:
         """Read a dimension with name 'name' from the grid file."""
         return self._dataset.dimensions[name].size
 
-    def attribute(self, name: PropertyName) -> Union[str, int, float]:
+    def attribute(self, name: PropertyName) -> str | int | float:
         "Read a global attribute with name 'name' from the grid file."
         return self._dataset.getncattr(name)
 

@@ -8,7 +8,7 @@
 import functools
 import logging
 from types import ModuleType
-from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -39,7 +39,7 @@ class NoHalos(HaloConstructor):
         self,
         horizontal_size: base.HorizontalGridSize,
         num_levels: int,
-        backend: Optional[gtx_backend.Backend] = None,
+        backend: gtx_backend.Backend | None = None,
     ):
         self._size = horizontal_size
         self._num_levels = num_levels
@@ -71,14 +71,14 @@ class IconLikeHaloConstructor(HaloConstructor):
         run_properties: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
         num_levels,
-        backend: Optional[gtx_backend.Backend] = None,
+        backend: gtx_backend.Backend | None = None,
     ):
         """
 
         Args:
             run_properties: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
-            num_levels: number of vertical levels, TODO: should be removed, it is needed in GHEX that why we have it no the DecompotionInfo
+            num_levels: number of vertical levels, TODO(halungge):: should be removed, it is needed in GHEX that why we have it no the DecompotionInfo
             backend: GT4Py (used to determine the array ns import)
         """
         self._xp = data_alloc.import_array_ns(backend)
@@ -164,7 +164,9 @@ class IconLikeHaloConstructor(HaloConstructor):
         Returns:
             next_halo_cells: full-grid indices of the next halo line
         """
-        assert cells.ndim == 1, "input should be 1d array"  # TODO: otherwise reshape instead
+        assert (
+            cells.ndim == 1
+        ), "input should be 1d array"  # TODO(halungge): otherwise reshape instead
         cell_neighbors = self._find_cell_neighbors(cells)
 
         if depot is not None:
@@ -215,7 +217,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         according to a remark in `mo_decomposition_tools.f90` ICON puts them to the node
         with the higher rank.
 
-        # TODO (@halungge): can we add an assert for the target dimension of the connectivity being cells.
+        # TODO(halungge): can we add an assert for the target dimension of the connectivity being cells.
         Args:
             owner_mask: owner mask for the dimension
             all_indices: (global) indices of the dimension
@@ -250,7 +252,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         """
         #: icon does hard coding of 2 halo lines for cells, make this dynamic!
 
-        # TODO make number of halo lines a parameter
+        # TODO(halungge): make number of halo lines a parameter
 
         self._validate_mapping(face_to_rank)
         #: cells
@@ -292,7 +294,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         vertex_on_first_halo_line = self.find_vertex_neighbors_for_cells(first_halo_cells)
         vertex_on_second_halo_line = self.find_vertex_neighbors_for_cells(
             second_halo_cells
-        )  # TODO (@halungge): do we need that at all?
+        )  # TODO(halungge): do we need that at all?
 
         vertex_on_cutting_line = self._xp.intersect1d(
             vertex_on_owned_cells, vertex_on_first_halo_line
@@ -377,7 +379,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         return decomp_info
 
 
-# TODO (@halungge): refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and
+# TODO(halungge):  refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and
 #  the return value an array of shape (n_cells,)
 
 

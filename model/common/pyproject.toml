@@ -53,7 +53,7 @@ io = [
   "netcdf4>=1.6.1",
   "numpy>=1.23.3",
   "scikit-learn>=1.4.0",
-  # TODO [magdalena] there are failing tests starting from uxarray==2024.4.0: when a data file does not have
+  # TODO(halungge): there are failing tests starting from uxarray==2024.4.0: when a data file does not have
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
   # mapping. It is not yet clear whether this is a uxarray bug or on our side.
   "uxarray==2024.3.0",

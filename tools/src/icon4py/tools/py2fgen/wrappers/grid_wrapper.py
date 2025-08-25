@@ -9,7 +9,7 @@
 # type: ignore
 
 import dataclasses
-from typing import Annotated, Optional, TypeAlias
+from typing import Annotated, TypeAlias
 
 import numpy as np
 from gt4py import next as gtx
@@ -36,7 +36,7 @@ class GridState:
     exchange_runtime: decomposition_defs.ExchangeRuntime
 
 
-grid_state: Optional[GridState] = None  # TODO(havogt): remove module global state
+grid_state: GridState | None = None  # TODO(havogt): remove module global state
 
 NumpyInt32Array1D: TypeAlias = Annotated[
     np.ndarray,

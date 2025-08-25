@@ -14,8 +14,8 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO (dastrm): this stencil has no test
-# TODO (dastrm): this stencil does not strictly match the fortran code
+# TODO(dastrm): this stencil has no test
+# TODO(dastrm): this stencil does not strictly match the fortran code
 
 
 @gtx.field_operator

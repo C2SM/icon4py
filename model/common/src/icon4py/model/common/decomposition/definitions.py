@@ -11,9 +11,10 @@ from __future__ import annotations
 import enum
 import functools
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Literal, Optional, Protocol, Sequence, overload, runtime_checkable
+from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import gt4py.next as gtx
 import numpy as np
@@ -30,7 +31,7 @@ try:
 except ImportError:
     from types import ModuleType
 
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+    dace: ModuleType | None = None  # type: ignore[no-redef]
 
 
 log = logging.getLogger(__name__)
@@ -170,7 +171,7 @@ class DecompositionInfo:
     def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag):
         return np.where(self._halo_levels[dim] == level, True, False)
 
-    # TODO (@halungge) unused - delete
+    # TODO (@halungge): unused - delete
     def is_on_node(self, dim, index: int, entryType: EntryType = EntryType.ALL) -> bool:
         return np.isin(index, self.global_index(dim, entry_type=entryType)).item()
 
@@ -206,7 +207,7 @@ class SingleNodeExchange:
     def get_size(self) -> int:
         return 1
 
-    def __call__(self, *args, **kwargs) -> Optional[ExchangeResult]:
+    def __call__(self, *args, **kwargs) -> ExchangeResult | None:
         """Perform a halo exchange operation.
 
         Args:
@@ -233,9 +234,7 @@ class SingleNodeExchange:
             sdfg.name = "_halo_exchange_"
             return sdfg
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             return DummyNestedSDFG().__sdfg_closure__()
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
@@ -248,9 +247,7 @@ class SingleNodeExchange:
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             raise NotImplementedError(
                 "__sdfg_closure__ is only supported when the 'dace' module is available."
             )
@@ -276,7 +273,7 @@ class HaloExchangeWaitRuntime(Protocol):
         """DaCe related: SDFGConvertible interface."""
         ...
 
-    def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+    def __sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
         """DaCe related: SDFGConvertible interface."""
         ...
 
@@ -299,9 +296,7 @@ class HaloExchangeWait:
             sdfg.name = "_halo_exchange_wait_"
             return sdfg
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             return DummyNestedSDFG().__sdfg_closure__()
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
@@ -314,9 +309,7 @@ class HaloExchangeWait:
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
 
-        def dace__sdfg_closure__(
-            self, reevaluate: Optional[dict[str, str]] = None
-        ) -> dict[str, Any]:
+        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
             raise NotImplementedError(
                 "__sdfg_closure__ is only supported when the 'dace' module is available."
             )

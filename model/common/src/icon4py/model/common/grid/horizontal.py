@@ -37,7 +37,8 @@ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nw
 import dataclasses
 import enum
 import functools
-from typing import Any, Callable, Final
+from collections.abc import Callable
+from typing import Any, Final
 
 import gt4py.next as gtx
 import numpy as np

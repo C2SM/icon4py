@@ -147,7 +147,7 @@ def test_io_monitor_write_ugrid_file(test_path):
 )
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
-    grid = grid_utils.get_grid_manager_for_experiment(
+    grid = grid_utils.get_grid_manager_from_experiment(
         datatest_utils.GLOBAL_EXPERIMENT, keep_skip_values=True, backend=backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
@@ -199,7 +199,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
-    grid = grid_utils.get_grid_manager_for_experiment(
+    grid = grid_utils.get_grid_manager_from_experiment(
         datatest_utils.GLOBAL_EXPERIMENT, True, backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)

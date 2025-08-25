@@ -69,7 +69,7 @@ def test_valid_refinement_values(dim):
     "grid_file, expected", [(dt_utils.R02B04_GLOBAL, False), (dt_utils.REGIONAL_EXPERIMENT, True)]
 )
 def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
-    grid = grid_utils.get_grid_manager(grid_file, 1, True, backend).grid
+    grid = grid_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend).grid
     xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     refinement_field = grid.refinement_control[dim]
     limited_area = refin.is_limited_area_grid(refinement_field.ndarray, array_ns=xp)

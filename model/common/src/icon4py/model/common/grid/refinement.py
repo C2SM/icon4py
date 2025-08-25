@@ -33,7 +33,7 @@ This module only contains functionality related to grid refinement as we use it 
 """
 _log = logging.getLogger(__name__)
 
-# TODO get these from grid file cell_grf, edge_grf, vertex_grf
+# TODO(halungge): get these from grid file cell_grf, edge_grf, vertex_grf
 _MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 14,
     dims.EdgeDim: 24,

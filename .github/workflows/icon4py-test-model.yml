@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
-        backend: ["embedded", "gtfn_cpu"]         # TODO add dace-cpu?
+        backend: ["embedded", "gtfn_cpu"]         # TODO(): add dace-cpu?
         component: ["advection", "diffusion", "dycore", "microphysics", "muphys", "driver", "common"]
     steps:
       - name: Checkout
@@ -66,4 +66,4 @@ jobs:
           ICON4PY_ENABLE_GRID_DOWNLOAD: false
           ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
         run: |
-          uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_grid
+          uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_regional
