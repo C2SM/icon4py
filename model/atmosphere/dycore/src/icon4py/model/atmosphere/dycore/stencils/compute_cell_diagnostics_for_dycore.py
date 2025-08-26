@@ -28,9 +28,7 @@ from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import astype, bool, broadcast, maximum  # noqa: A004
 
-from icon4py.model.atmosphere.dycore.dycore_states import (
-    HorizontalPressureDiscretizationType,
-)
+from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
@@ -174,10 +172,7 @@ def _surface_computations(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    temporal_extrapolation_of_perturbed_exner = (
-        _init_cell_kdim_field_with_zero_wp(),
-        temporal_extrapolation_of_perturbed_exner,
-    )
+    temporal_extrapolation_of_perturbed_exner = _init_cell_kdim_field_with_zero_wp()
 
     exner_at_cells_on_half_levels = (
         _interpolate_to_surface(
