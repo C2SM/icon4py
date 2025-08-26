@@ -34,9 +34,6 @@ from icon4py.model.atmosphere.dycore.dycore_states import (
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperatures_and_pressure_gradient import (
-    _compute_virtual_potential_temperatures_and_pressure_gradient,
-)
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
@@ -146,28 +143,6 @@ def _compute_perturbed_quantities_and_interpolation(
         pressure_buoyancy_acceleration_at_cells_on_half_levels,
     )
 
-    #(
-    #    perturbed_theta_v_at_cells_on_half_levels,
-    #    theta_v_at_cells_on_half_levels,
-    #    pressure_buoyancy_acceleration_at_cells_on_half_levels,
-    #) = concat_where(
-    #    dims.KDim >= 1,
-    #    _compute_virtual_potential_temperatures_and_pressure_gradient(
-    #        wgtfac_c,
-    #        perturbed_theta_v_at_cells_on_model_levels,
-    #        current_theta_v,
-    #        exner_w_explicit_weight_parameter,
-    #        perturbed_exner_at_cells_on_model_levels,
-    #        ddz_of_reference_exner_at_cells_on_half_levels,
-    #        ddqz_z_half,
-    #    ),
-    #    (
-    #        broadcast(0.0, (dims.CellDim, dims.KDim)),
-    #        theta_v_at_cells_on_half_levels,
-    #        pressure_buoyancy_acceleration_at_cells_on_half_levels,
-    #    ),
-    #)
-
     return (
         perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels,
@@ -186,13 +161,11 @@ def _surface_computations(
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
-    n_lev: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    temporal_extrapolation_of_perturbed_exner = concat_where(
-        dims.KDim == n_lev,
+    temporal_extrapolation_of_perturbed_exner = (
         _init_cell_kdim_field_with_zero_wp(),
         temporal_extrapolation_of_perturbed_exner,
     )
@@ -415,7 +388,6 @@ def compute_perturbed_quantities_and_interpolation(
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         igradp_method=igradp_method,
-        n_lev=vertical_end - 1,
         out=(
             temporal_extrapolation_of_perturbed_exner,
             exner_at_cells_on_half_levels,
