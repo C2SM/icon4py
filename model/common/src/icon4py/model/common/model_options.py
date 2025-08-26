@@ -20,7 +20,7 @@ class RayleighType(FrozenNamespace[int]):
     KLEMP = 2
 
 
-def dict_values_to_list(d: dict[str, typing.Any]) -> dict:
+def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
