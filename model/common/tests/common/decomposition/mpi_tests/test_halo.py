@@ -40,7 +40,7 @@ from icon4py.model.common.grid import (
     simple,
     vertical as v_grid,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, helpers, definitions as test_defs
+from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
 
 UGRID_FILE = (
@@ -49,7 +49,7 @@ UGRID_FILE = (
     .joinpath("icon_grid_0013_R02B04_R_ugrid.nc")
 )
 GRID_FILE = (
-    test_defs.grids_path().joinpath(dt_utils.R02B04_GLOBAL).joinpath("icon_grid_0013_R02B04_R.nc")
+    test_defs.grids_path().joinpath(test_defs.Grids.R02B04_GLOBAL.name).joinpath("icon_grid_0012_R02B04_G.nc")
 )
 backend = None
 
@@ -63,7 +63,7 @@ def simple_neighbor_tables():
     return neighbor_tables
 
 
-def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
+def single_node_gridfile_manager(file: pathlib.Path) -> gm.GridManager:
     manager = gm.GridManager(
         icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
         str(file),
@@ -280,18 +280,18 @@ def decompose(grid: base_grid.Grid, processor_props):  # F811 # fixture
 @pytest.mark.xfail
 @pytest.mark.mpi
 def test_distributed_fields(processor_props):  # F811 # fixture
-    grid_manager = grid_file_manager(GRID_FILE)
+    grid_manager = single_node_gridfile_manager(GRID_FILE)
 
-    global_grid = grid_manager.grid
+    single_node_grid = grid_manager.grid
 
     global_cell_area = grid_manager.geometry[grid_file.GeometryName.CELL_AREA]
     global_edge_lat = grid_manager.coordinates[dims.EdgeDim]["lat"]
     global_vertex_lon = grid_manager.coordinates[dims.VertexDim]["lon"]
 
-    labels = decompose(global_grid, processor_props)
-
+    labels = decompose(single_node_grid, processor_props)
+    neighbor_tables = {k:v.ndarray for k, v in single_node_grid.connectivities.items()}
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=global_grid.neighbor_tables,
+        connectivities=neighbor_tables,
         run_properties=processor_props,
         num_levels=1,
     )
@@ -308,7 +308,7 @@ def test_distributed_fields(processor_props):  # F811 # fixture
     )
     # the local number of cells must be at most the global number of cells (analytically computed)
     assert (
-        local_cell_area.asnumpy().shape[0] <= global_grid.global_properties.num_cells
+        local_cell_area.asnumpy().shape[0] <= single_node_grid.global_properties.num_cells
     ), "local field is larger than global field"
     # global read: read the same (global fields)
 
@@ -349,12 +349,11 @@ def assert_gathered_field_against_global(
         sorted_[gathered_global_indices] = gathered_field
         assert helpers.dallclose(sorted_, global_reference_field)
 
-
 # TODO add test including halo access:
 #  Will uses geofac_div and geofac_n2s
 
-
 @pytest.mark.xfail
+@pytest.mark.mpi
 def test_halo_neighbor_access_c2e():
     pytest.fail("TODO implement")
     # geofac_div = primal_edge_length(C2E) * edge_orientation / area

@@ -96,22 +96,9 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    @utils.chainable  # TODO(halungge): split into to functions
-    def set_decomposer(
-        self,
-        decomposer: Callable[[np.ndarray, int], np.ndarray],
-    ):
-        self._decompose = decomposer
-        self._validate_decomposer()
 
-    def _validate_decomposer(self):
-        if not self._decompose or (
-            isinstance(self._decompose, halo.SingleNodeDecomposer)
-            and not self._run_properties.single_node()
-        ):
-            raise exceptions.InvalidConfigError("Need a Decomposer for for multi node run.")
 
-    def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool):
+    def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool, decomposer:Callable[[np.ndarray, int], np.ndarray]):
         if not self._reader:
             self.open()
 
@@ -319,7 +306,7 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, backend: gtx_backend.Backend | None, with_skip_values: bool
+        self, backend: gtx_backend.Backend | None, with_skip_values: bool, decomposer:Callable[[np.ndarray, int], np.ndarray] = None
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -343,17 +330,8 @@ class GridManager:
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )
-
-        # DECOMPOSITION
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
-        cells_to_rank_mapping = self._decompose(
-            cell_to_cell_neighbors,
-            self._run_properties.comm_size,
-        )
-        # HALO CONSTRUCTION
-        # TODO(halungge): reduce the set of neighbor tables used in the halo construction
-        # TODO (halungge): figure out where to do the host to device copies (xp.asarray...)
-        neighbor_tables_for_halo_construction = {
+        neighbor_tables = {
             dims.C2E2C: cell_to_cell_neighbors,
             dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
             dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C),
@@ -363,30 +341,47 @@ class GridManager:
             dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
             dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
         }
-        # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
-        halo_constructor = self._initialize_halo_constructor(
-            global_grid_size, neighbor_tables_for_halo_construction, backend
-        )
-        decomposition_info = halo_constructor(cells_to_rank_mapping)
-        self._decomposition_info = decomposition_info
 
-        ## TODO(halungge): do local reads (and halo exchanges!!) FIX: my_cells etc are in 0 base python coding - reading from file fails...
-        ##
-        # CONSTRUCT LOCAL PATCH
+        if decomposer is not None:
+            # DECOMPOSITION
 
-        # TODO(halungge): run this only for distrbuted grids otherwise to nothing internally
-        neighbor_tables = {
-            k: decomposition_info.global_to_local(
-                k.source, v[decomposition_info.global_index(k.target[0])]
+            cells_to_rank_mapping = self._decompose(
+                cell_to_cell_neighbors,
+                self._run_properties.comm_size,
             )
-            for k, v in neighbor_tables_for_halo_construction.items()
-        }
+            # HALO CONSTRUCTION
+            # TODO(halungge): reduce the set of neighbor tables used in the halo construction
+            # TODO (halungge): figure out where to do the host to device copies (xp.asarray...)
+            neighbor_tables_for_halo_construction = neighbor_tables
+            # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
+            halo_constructor = self._initialize_halo_constructor(
+                global_grid_size, neighbor_tables_for_halo_construction, backend
+            )
+            decomposition_info = halo_constructor(cells_to_rank_mapping)
+
+            self._decomposition_info = decomposition_info
+
+            ## TODO(halungge): do local reads (and halo exchanges!!) FIX: my_cells etc are in 0 base python coding - reading from file fails...
+            ##
+            # CONSTRUCT LOCAL PATCH
+
+            # TODO(halungge): run this only for distrbuted grids otherwise to nothing internally
+            neighbor_tables = {
+                k: decomposition_info.global_to_local(
+                    k.source, v[decomposition_info.global_index(k.target[0])]
+                )
+                for k, v in neighbor_tables_for_halo_construction.items()
+            }
 
         # COMPUTE remaining derived connectivities
+        else:
+            # TODO no decomposition
+            ...
 
+        # JOINT functionality
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
-        # TODO(halungge): compute for local patch
+        # TODO(halungge): needs to be moved out of the joint section
         start, end, _ = self._read_start_end_indices()
         start_indices = {
             k: v
