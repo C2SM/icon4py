@@ -74,6 +74,9 @@ class VelocityAdvection:
                     "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
                     "tangent_orientation": self.edge_params.tangent_orientation,
                 },
+                variants={
+                    "skip_compute_predictor_vertical_advection": [False, True],
+                },
                 horizontal_sizes={
                     "horizontal_start": self._start_edge_lateral_boundary_level_5,
                     "horizontal_end": self._end_edge_halo_level_2,
@@ -97,6 +100,10 @@ class VelocityAdvection:
                 "wgtfac_c": self.metric_state.wgtfac_c,
                 "ddqz_z_half": self.metric_state.ddqz_z_half,
                 "geofac_n2s": self.interpolation_state.geofac_n2s,
+                "owner_mask": self.c_owner_mask,
+            },
+            variants={
+                "skip_compute_predictor_vertical_advection": [False, True],
             },
             vertical_sizes={
                 "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
@@ -124,6 +131,11 @@ class VelocityAdvection:
                 "e_bln_c_s": self.interpolation_state.e_bln_c_s,
                 "ddqz_z_half": self.metric_state.ddqz_z_half,
                 "geofac_n2s": self.interpolation_state.geofac_n2s,
+                "owner_mask": self.c_owner_mask,
+            },
+            variants={
+                "scalfac_exdiff": [self.scalfac_exdiff],
+                "cfl_w_limit": [self.cfl_w_limit],
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary_level_4,
@@ -151,6 +163,9 @@ class VelocityAdvection:
                 "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
                 "geofac_grdiv": self.interpolation_state.geofac_grdiv,
                 "coriolis_frequency": self.edge_params.coriolis_frequency,
+            },
+            variants={
+                "apply_extra_diffusion_on_vn": [False, True],
             },
             horizontal_sizes={
                 "horizontal_start": self._start_edge_nudging_level_2,
@@ -266,7 +281,6 @@ class VelocityAdvection:
             horizontal_advection_of_w_at_edges_on_half_levels=self._horizontal_advection_of_w_at_edges_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             area=cell_areas,
-            owner_mask=self.c_owner_mask,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
@@ -333,7 +347,6 @@ class VelocityAdvection:
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
             area=cell_areas,
-            owner_mask=self.c_owner_mask,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,

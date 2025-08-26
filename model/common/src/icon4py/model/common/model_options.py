@@ -24,20 +24,30 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
+# flake8: noqa: B006
 def program_compile_time(
     backend: backend.Backend,
     program_func: typing.Callable,
-    bound_args: dict = {},  # noqa: B006
-    static_args: dict = {},  # noqa: B006
-    horizontal_sizes: dict = {},  # noqa: B006
-    vertical_sizes: dict = {},  # noqa: B006
-    offset_provider: dict = {},  # noqa: B006
-) -> Callable[..., None]:
+    bound_args: dict = {},
+    variants: dict = {},
+    horizontal_sizes: dict = {},
+    vertical_sizes: dict = {},
+    offset_provider: dict = {},
+) -> typing.Callable[..., None]:
+    """
+    backend: pre-set backend at run time,
+    program_func: gt4py program,
+    bound_args: constant fields and scalars,
+    variants: list of all scalars potential values from which one is selected at run time,
+    horizontal_sizes: horizontal scalars,
+    vertical_sizes: vertical scalars,
+    offset_provider: gt4py offset_provider,
+    """
     bound_static_args = {k: v for k, v in bound_args.items() if is_scalar_type(v)}
     static_args_program = program_func.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),
-        **dict_values_to_list(static_args),
+        **variants,
         **dict_values_to_list(bound_static_args),
         enable_jit=False,
         offset_provider=offset_provider,
@@ -45,7 +55,7 @@ def program_compile_time(
     return functools.partial(
         static_args_program,
         **bound_args,
-        **static_args,
+        **variants,
         **horizontal_sizes,
         **vertical_sizes,
         offset_provider=offset_provider,

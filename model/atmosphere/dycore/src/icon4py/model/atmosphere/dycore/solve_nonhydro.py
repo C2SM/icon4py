@@ -545,6 +545,10 @@ class SolveNonhydro:
                 "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
             },
+            variants={
+                "apply_2nd_order_divergence_damping": [False, True],
+                "apply_4th_order_divergence_damping": [False, True],
+            },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_nudging_level_2),
                 "horizontal_end": self._end_edge_local,
@@ -588,6 +592,10 @@ class SolveNonhydro:
                 "e_flx_avg": self._interpolation_state.e_flx_avg,
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
             },
+            variants={
+                "at_first_substep": [False, True],
+                "prepare_advection": [False, True],
+            },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_lateral_boundary_level_5),
                 "horizontal_end": self._end_edge_halo_level_2,
@@ -616,6 +624,9 @@ class SolveNonhydro:
                 "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
                 "divdamp_type": self._config.divdamp_type,
+            },
+            variants={
+                "at_first_substep": [False, True],
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
@@ -647,6 +658,11 @@ class SolveNonhydro:
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
+            },
+            variants={
+                "at_first_substep": [False, True],
+                "at_last_substep": [False, True],
+                "lprep_adv": [False, True],
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,

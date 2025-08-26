@@ -435,6 +435,7 @@ class Diffusion:
                 "dual_normal_vert_x": self._edge_params.dual_normal_vert[0],
                 "dual_normal_vert_y": self._edge_params.dual_normal_vert[1],
             },
+            variants={"smag_offset": [self.smag_offset]},
             horizontal_sizes={
                 "horizontal_start": self._edge_start_lateral_boundary_level_5,
                 "horizontal_end": self._edge_end_halo_level_2,
@@ -517,6 +518,7 @@ class Diffusion:
                 bound_args={
                     "theta_ref_mc": self._metric_state.theta_ref_mc,
                     "thresh_tdiff": self.thresh_tdiff,
+                    "smallest_vpfloat": constants.DBL_EPS,
                 },
                 horizontal_sizes={
                     "horizontal_start": self._edge_start_nudging,
@@ -888,7 +890,6 @@ class Diffusion:
 
             self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
                 theta_v=prognostic_state.theta_v,
-                smallest_vpfloat=constants.DBL_EPS,
                 kh_smag_e=self.kh_smag_e,
             )
             log.debug(
