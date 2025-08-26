@@ -137,9 +137,18 @@ def _compute_perturbed_quantities_and_interpolation(
 
     pressure_buoyancy_acceleration_at_cells_on_half_levels = concat_where(
         dims.KDim >= 1,
-        exner_w_explicit_weight_parameter * theta_v_at_cells_on_half_levels * (
-            perturbed_exner_at_cells_on_model_levels(Koff[-1]) - perturbed_exner_at_cells_on_model_levels
-        ) / ddqz_z_half_wp + astype(perturbed_theta_v_at_cells_on_half_levels * ddz_of_reference_exner_at_cells_on_half_levels, wpfloat),
+        exner_w_explicit_weight_parameter
+        * theta_v_at_cells_on_half_levels
+        * (
+            perturbed_exner_at_cells_on_model_levels(Koff[-1])
+            - perturbed_exner_at_cells_on_model_levels
+        )
+        / ddqz_z_half_wp
+        + astype(
+            perturbed_theta_v_at_cells_on_half_levels
+            * ddz_of_reference_exner_at_cells_on_half_levels,
+            wpfloat,
+        ),
         pressure_buoyancy_acceleration_at_cells_on_half_levels,
     )
 
