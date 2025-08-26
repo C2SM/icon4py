@@ -2170,13 +2170,13 @@ def test_vertically_implicit_solver_at_predictor_step(
         w_concorr_c_ref.asnumpy(),
         atol=1e-15,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
         rtol=1e-7,
         atol=1e-12,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert test_utils.dallclose(
@@ -2369,13 +2369,13 @@ def test_vertically_implicit_solver_at_corrector_step(
         offset_provider=offset_provider,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
         rtol=1e-10,
         atol=1e-12,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
     )
     assert test_utils.dallclose(
