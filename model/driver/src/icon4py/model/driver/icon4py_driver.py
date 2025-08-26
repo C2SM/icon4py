@@ -131,10 +131,6 @@ class TimeLoop:
 
         # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
-        #---> IBM
-        plots.pickle_data(prognostic_states.current, "initial_condition")
-        #<--- IBM
-
         if (
             self.diffusion.config.apply_to_horizontal_wind
             and self.run_config.apply_initial_stabilization
@@ -176,8 +172,8 @@ class TimeLoop:
             )
             timer.capture()
             #---> IBM
-            if time_step % 25 == 0:
-                plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:06d}")
+            if time_step % 1500 == 0:
+                plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:09d}")
             #<--- IBM
 
             self._is_first_step_in_simulation = False
