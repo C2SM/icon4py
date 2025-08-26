@@ -7,9 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-import gt4py.next as gtx
 import pytest
-from devtools import Timer
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
@@ -104,7 +102,7 @@ def test_graupel(
     )
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
-        liquid_autoconversion_option=graupel.LiquidAutoConversionType.SEIFERT_BEHENG,  # init_savepoint.iautocon(),
+        liquid_autoconversion_option=graupel.LiquidAutoConversionType.SEIFERT_BEHENG,
         ice_stickeff_min=0.01,
         power_law_coeff_for_ice_mean_fall_speed=1.25,
         exponent_for_density_factor_in_ice_sedimentation=0.30,
@@ -124,57 +122,48 @@ def test_graupel(
 
     qnc = entry_savepoint.qnc()
 
-    timer_first_timestep = Timer("Graupel: first time step", dp=6)
-    timer_after_first_timestep = Timer("Graupel: after first time step", dp=6)
-    for time_step in range(5):
-        timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
-        temperature_tendency = data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-        )
-        qv_tendency = data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-        )
-        qc_tendency = data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-        )
-        qr_tendency = data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-        )
-        qi_tendency = data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-        )
-        qs_tendency = data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-        )
-        qg_tendency = data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-        )
+    temperature_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    qv_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    qc_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    qr_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    qi_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    qs_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    qg_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
 
-        timer.start()
-        graupel_microphysics.run(
-            dtime,
-            prognostic_state.rho,
-            diagnostic_state.temperature,
-            diagnostic_state.pressure,
-            tracer_state.qv,
-            tracer_state.qc,
-            tracer_state.qr,
-            tracer_state.qi,
-            tracer_state.qs,
-            tracer_state.qg,
-            qnc,
-            temperature_tendency,
-            qv_tendency,
-            qc_tendency,
-            qr_tendency,
-            qi_tendency,
-            qs_tendency,
-            qg_tendency,
-        )
-        timer.capture()
-
-    timer_first_timestep.summary(True)
-    timer_after_first_timestep.summary(True)
+    graupel_microphysics.run(
+        dtime,
+        prognostic_state.rho,
+        diagnostic_state.temperature,
+        diagnostic_state.pressure,
+        tracer_state.qv,
+        tracer_state.qc,
+        tracer_state.qr,
+        tracer_state.qi,
+        tracer_state.qs,
+        tracer_state.qg,
+        qnc,
+        temperature_tendency,
+        qv_tendency,
+        qc_tendency,
+        qr_tendency,
+        qi_tendency,
+        qs_tendency,
+        qg_tendency,
+    )
 
     new_temperature = (
         entry_savepoint.temperature().ndarray[:, :] + temperature_tendency.ndarray * dtime

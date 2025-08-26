@@ -19,13 +19,13 @@ from icon4py.model.common import type_alias as ta
 GAS_CONSTANT_DRY_AIR: Final[ta.wpfloat] = 287.04
 RD: Final[ta.wpfloat] = GAS_CONSTANT_DRY_AIR
 
-#: Specific heat at constant pressure [J/K/kg]
-SPECIFIC_HEAT_CONSTANT_PRESSURE: Final[ta.wpfloat] = 1004.64
-CPD = SPECIFIC_HEAT_CONSTANT_PRESSURE
+#: Specific heat capacity of dry air at constant pressure [J/K/kg]
+SPECIFIC_HEAT_CAPACITY_PRESSURE_DRY_AIR: Final[ta.wpfloat] = 1004.64
+CPD = SPECIFIC_HEAT_CAPACITY_PRESSURE_DRY_AIR
 
-#: [J/K/kg] specific heat at constant volume
-SPECIFIC_HEAT_CONSTANT_VOLUME: Final[ta.wpfloat] = CPD - RD
-CVD: Final[ta.wpfloat] = SPECIFIC_HEAT_CONSTANT_VOLUME
+#: [J/K/kg] specific heat capacity at constant volume
+SPECIFIC_HEAT_CAPACITY_VOLUME_DRY_AIR: Final[ta.wpfloat] = CPD - RD
+CVD: Final[ta.wpfloat] = SPECIFIC_HEAT_CAPACITY_VOLUME_DRY_AIR
 CVD_O_RD: Final[ta.wpfloat] = CVD / RD
 RD_O_CPD: Final[ta.wpfloat] = RD / CPD
 CPD_O_RD: Final[ta.wpfloat] = CPD / RD
@@ -34,6 +34,44 @@ RD_O_CVD: Final[ta.wpfloat] = RD / CVD
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[ta.wpfloat] = 461.51
 RV: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR
+
+#: Specific heat capacity of water vapor at constant pressure [J/K/kg]
+SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR: Final[ta.wpfloat] = 1869.46
+CPV = SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR
+
+#: Specific heat capacity of water vapor at constant volume [J/K/kg]
+SPECIFIC_HEAT_CAPACITY_VOLUME_WATER_VAPOR: Final[ta.wpfloat] = CPV - RV
+CVV = SPECIFIC_HEAT_CAPACITY_VOLUME_WATER_VAPOR
+
+#: cp_dry_air / cp_liquid_water - 1
+_RCPL: Final[ta.wpfloat] = 3.1733
+
+#: Specific heat capacity of liquid water [J/K/kg]. Originally expressed as clw in ICON.
+SPECIFIC_HEAT_CAPACITY_LIQUID_WATER: Final[ta.wpfloat] = (_RCPL + 1.0) * CPD
+CPL = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
+
+#: density of liquid water. Originally expressed as rhow in ICON. [kg/m3]
+WATER_DENSITY: Final[ta.wpfloat] = 1.000e3
+
+#: specific heat capacity of ice. Originally expressed as ci in ICON. [J/K/kg]
+SPECIFIC_HEAT_CAPACITY_ICE: Final[ta.wpfloat] = 2108.0
+
+#: Melting temperature of ice/snow [K]. Originally expressed as tmelt in ICON.
+MELTING_TEMPERATURE: Final[ta.wpfloat] = 273.15
+
+#: Latent heat of vaporisation for water [J/kg]. Originally expressed as alv in ICON.
+LATENT_HEAT_FOR_VAPORISATION: Final[ta.wpfloat] = 2.5008e6
+
+#: Latent heat of sublimation for water [J/kg]. Originally expressed as als in ICON.
+LATENT_HEAT_FOR_SUBLIMATION: Final[ta.wpfloat] = 2.8345e6
+
+#: Latent heat of fusion for water [J/kg]. Originally expressed as alf in ICON.
+LATENT_HEAT_FOR_FUSION: Final[ta.wpfloat] = (
+    LATENT_HEAT_FOR_SUBLIMATION - LATENT_HEAT_FOR_VAPORISATION
+)
+
+#: Triple point of water at 611hPa [K]
+WATER_TRIPLE_POINT_TEMPERATURE: Final[ta.wpfloat] = 273.16
 
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
@@ -92,8 +130,18 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     rd = GAS_CONSTANT_DRY_AIR
     rv = GAS_CONSTANT_WATER_VAPOR
     rv_o_rd_minus_1 = RV_O_RD_MINUS_1
-    cvd = SPECIFIC_HEAT_CONSTANT_VOLUME
-    cpd = SPECIFIC_HEAT_CONSTANT_PRESSURE
+    cvd = SPECIFIC_HEAT_CAPACITY_VOLUME_DRY_AIR
+    cpd = SPECIFIC_HEAT_CAPACITY_PRESSURE_DRY_AIR
+    cpv = SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR
+    cvv = SPECIFIC_HEAT_CAPACITY_VOLUME_WATER_VAPOR
+    cpl = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
+    cpi = SPECIFIC_HEAT_CAPACITY_ICE
+    water_density = WATER_DENSITY
+    tmelt = MELTING_TEMPERATURE
+    water_triple_point_temperature = WATER_TRIPLE_POINT_TEMPERATURE
+    lh_vaporise = LATENT_HEAT_FOR_VAPORISATION
+    lh_sublimate = LATENT_HEAT_FOR_SUBLIMATION
+    lh_fusion = LATENT_HEAT_FOR_FUSION
     rd_o_cpd = RD_O_CPD
     rd_o_cvd = RD_O_CVD
     cpd_o_rd = CPD_O_RD
@@ -102,3 +150,4 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     grav_o_cpd = GRAV_O_CPD
     grav_o_rd = GRAV_O_RD
     p0ref = REFERENCE_PRESSURE
+    eps = DBL_EPS

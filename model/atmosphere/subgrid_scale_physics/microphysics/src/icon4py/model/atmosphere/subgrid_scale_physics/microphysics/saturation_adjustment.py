@@ -10,48 +10,24 @@ import dataclasses
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.eve import utils as eve_utils
 from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.fbuiltins import abs, exp, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common import constants as phy_const, field_type_aliases as fa, type_alias as ta
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import microphysics_constants
+from icon4py.model.common import (
+    constants as physics_constants,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-physics_constants: Final = phy_const.PhysicsConstants()
-
-
-# TODO(OngChia): Refactor this class when direct import is enabled for gt4py stencils
-class MicrophysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
-    """
-    Constants used for the computation of saturated pressure in saturation adjustment and microphysics.
-    It was originally in mo_lookup_tables_constants.f90.
-    """
-
-    #: Latent heat of vaporisation for water [J kg-1]. Originally expressed as alv in ICON.
-    vaporisation_latent_heat = 2.5008e6
-    #: Melting temperature of ice/snow [K]
-    melting_temperature = 273.15
-
-    #: Specific heat capacity of liquid water [J K-1 kg-1]. Originally expressed as clw in ICON. 4.1733 is dry air heat capacity at constant pressure / water heat capacity at constant pressure.
-    specific_heat_capacity_for_water = 4.1733 * phy_const.CPD
-
-    #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation. Originally expressed as c1es in ICON.
-    tetens_p0 = 610.78
-    #: aw in Tetens formula for saturation water pressure. Originally expressed as c3les in ICON.
-    tetens_aw = 17.269
-    #: bw in Tetens formula for saturation water pressure. Originally expressed as c4les in ICON.
-    tetens_bw = 35.86
-    #: numerator in temperature partial derivative of Tetens formula for saturation water pressure (psat tetens_der / (t - tetens_bw)^2). Originally expressed as c5les in ICON.
-    tetens_der = tetens_aw * (melting_temperature - tetens_bw)
-
-
-# Instantiate the class
-microphy_const: Final = MicrophysicsConstants()
+phy_const: Final = physics_constants.PhysicsConstants()
+microphy_const: Final = microphysics_constants.MicrophysicsConstants()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -330,10 +306,7 @@ def _latent_heat_vaporization(
         latent heat of vaporization.
     """
     return (
-        microphy_const.vaporisation_latent_heat
-        + (1850.0 - microphy_const.specific_heat_capacity_for_water)
-        * (t - microphy_const.melting_temperature)
-        - physics_constants.rv * t
+        phy_const.lh_vaporise + (1850.0 - phy_const.cpl) * (t - phy_const.tmelt) - phy_const.rv * t
     )
 
 
@@ -349,9 +322,7 @@ def _sat_pres_water(t: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
         saturation water vapour pressure.
     """
     return microphy_const.tetens_p0 * exp(
-        microphy_const.tetens_aw
-        * (t - microphy_const.melting_temperature)
-        / (t - microphy_const.tetens_bw)
+        microphy_const.tetens_aw * (t - phy_const.tmelt) / (t - microphy_const.tetens_bw)
     )
 
 
@@ -371,7 +342,7 @@ def _qsat_rho(
     Returns:
         specific humidity at water saturation.
     """
-    return _sat_pres_water(t) / (rho * physics_constants.rv * t)
+    return _sat_pres_water(t) / (rho * phy_const.rv * t)
 
 
 @gtx.field_operator
@@ -588,14 +559,14 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
         mask for Newton iteration case
     """
     temperature_after_all_qc_evaporated = (
-        temperature - _latent_heat_vaporization(temperature) / physics_constants.cvd * qc
+        temperature - _latent_heat_vaporization(temperature) / phy_const.cvd * qc
     )
 
     # Check, which points will still be subsaturated even after evaporating all cloud water.
     subsaturated_mask = qv + qc <= _qsat_rho(temperature_after_all_qc_evaporated, rho)
 
     # Remains const. during iteration
-    lwdocvd = _latent_heat_vaporization(temperature) / physics_constants.cvd
+    lwdocvd = _latent_heat_vaporization(temperature) / phy_const.cvd
 
     new_temperature1 = where(
         subsaturated_mask,
