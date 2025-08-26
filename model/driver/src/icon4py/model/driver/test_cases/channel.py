@@ -351,7 +351,6 @@ class ChannelFlow:
         """
 
         xp = data_alloc.import_array_ns(self.backend)
-
         self.random_field_full_edge_np = xp.random.normal(
             loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels)
         )
