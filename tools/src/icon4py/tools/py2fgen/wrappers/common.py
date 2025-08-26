@@ -10,7 +10,6 @@
 import contextlib
 import functools
 import logging
-import uuid
 from collections.abc import Callable, Iterable
 from types import ModuleType
 from typing import TYPE_CHECKING, Final, TypeAlias
@@ -233,7 +232,7 @@ def construct_icon_grid(
     }
 
     return icon.icon_grid(
-        id_=uuid.UUID(grid_id),
+        id_=grid_id,
         allocator=backend,
         config=config,
         neighbor_tables=neighbor_tables,
