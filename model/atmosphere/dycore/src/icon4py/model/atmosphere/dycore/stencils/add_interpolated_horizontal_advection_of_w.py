@@ -11,25 +11,25 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim
+from icon4py.model.common.dimension import C2E, C2EDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _add_interpolated_horizontal_advection_of_w(
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_17."""
     z_v_grad_w_wp, ddt_w_adv_wp = astype((z_v_grad_w, ddt_w_adv), wpfloat)
-    ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim)
+    ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s, axis=C2EDim)
     return astype(ddt_w_adv_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def add_interpolated_horizontal_advection_of_w(
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,

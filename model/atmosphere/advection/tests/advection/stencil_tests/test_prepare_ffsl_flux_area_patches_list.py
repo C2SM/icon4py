@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.prepare_ffsl_flux_area_patches_list import (
     prepare_ffsl_flux_area_patches_list,
 )
@@ -113,7 +113,7 @@ def _line_intersect_numpy(
     return intersect_1, intersect_2
 
 
-class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
+class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     PROGRAM = prepare_ffsl_flux_area_patches_list
     OUTPUTS = (
         "dreg_patch0_1_lon_dsl",
@@ -141,6 +141,7 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
         "dreg_patch2_4_lon_vmask",
         "dreg_patch2_4_lat_vmask",
     )
+    MARKERS = (pytest.mark.gtfn_too_slow,)
 
     @staticmethod
     def _generate_flux_area_geometry(
@@ -888,10 +889,7 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
         dreg_patch0_4_lat_dsl,
         **kwargs,
     ) -> dict:
-        e2c = connectivities[dims.E2CDim]
-        ptr_v3_lon = helpers.reshape(ptr_v3_lon, e2c.shape)
         ptr_v3_lon_e = np.expand_dims(ptr_v3_lon, axis=-1)
-        ptr_v3_lat = helpers.reshape(ptr_v3_lat, e2c.shape)
         ptr_v3_lat_e = np.expand_dims(ptr_v3_lat, axis=-1)
         tangent_orientation_dsl = np.expand_dims(tangent_orientation_dsl, axis=-1)
 
@@ -1476,8 +1474,12 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         famask_int = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ptr_v3_lon_field = data_alloc.random_field(grid, dims.ECDim, low=0.1, high=1.0)
-        ptr_v3_lat_field = data_alloc.random_field(grid, dims.ECDim, low=0.1, high=1.0)
+        ptr_v3_lon_field = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0
+        )
+        ptr_v3_lat_field = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0
+        )
         tangent_orientation_dsl = data_alloc.random_field(grid, dims.EdgeDim, low=0.1, high=1.0)
         dreg_patch0_1_lon_dsl = data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
         dreg_patch0_1_lat_dsl = data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)

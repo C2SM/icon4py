@@ -12,7 +12,7 @@ import pytest
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, StandardStaticVariants
 
 
 def calculate_nabla4_numpy(
@@ -28,9 +28,6 @@ def calculate_nabla4_numpy(
     e2c2v = connectivities[dims.E2C2VDim]
     u_vert_e2c2v = u_vert[e2c2v]
     v_vert_e2c2v = v_vert[e2c2v]
-
-    primal_normal_vert_v1 = primal_normal_vert_v1.reshape(e2c2v.shape)
-    primal_normal_vert_v2 = primal_normal_vert_v2.reshape(e2c2v.shape)
 
     primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
     primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)
@@ -62,6 +59,19 @@ class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
     MARKERS = (pytest.mark.skip_value_error,)
+    STATIC_PARAMS = {
+        StandardStaticVariants.NONE: None,
+        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -88,12 +98,16 @@ class TestCalculateNabla4(StencilTest):
         return dict(z_nabla4_e2=z_nabla4_e2)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid) -> dict:
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
 
-        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
-        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
+        primal_normal_vert_v1 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        )
+        primal_normal_vert_v2 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+        )
 
         z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)

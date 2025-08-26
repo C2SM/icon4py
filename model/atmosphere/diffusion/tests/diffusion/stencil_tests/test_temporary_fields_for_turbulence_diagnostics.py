@@ -15,10 +15,10 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
-class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
+class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
     PROGRAM = temporary_fields_for_turbulence_diagnostics
     OUTPUTS = ("div", "kh_c")
 
@@ -33,15 +33,14 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
         **kwargs,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]
-        c2ce = helpers.as_1d_connectivity(c2e)
 
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=0)
 
-        vn_geofac = vn[c2e] * geofac_div[c2ce]
+        vn_geofac = vn[c2e] * geofac_div
         div = np.sum(vn_geofac, axis=1)
-        mul = kh_smag_ec[c2e] * e_bln_c_s[c2ce]
+        mul = kh_smag_ec[c2e] * e_bln_c_s
         summed = np.sum(mul, axis=1)
         kh_c = summed / diff_multfac_smag
 
@@ -50,10 +49,10 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid):
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        geofac_div = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
 
         kh_smag_ec = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
 
         diff_multfac_smag = data_alloc.random_field(grid, dims.KDim, dtype=ta.vpfloat)
 

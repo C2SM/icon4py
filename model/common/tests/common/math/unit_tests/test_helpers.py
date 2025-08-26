@@ -8,6 +8,7 @@
 from typing import Any
 
 import gt4py.next as gtx
+import icon4py.model.testing.test_utils
 import numpy as np
 import pytest
 
@@ -15,8 +16,9 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers as test_helpers, helpers as testing_helpers
+from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.testing.fixtures.stencil_tests import grid
 
 
 def test_cross_product(backend):
@@ -38,15 +40,15 @@ def test_cross_product(backend):
     b = np.column_stack((x2.asnumpy(), y2.asnumpy(), z2.asnumpy()))
     c = np.cross(a, b)
 
-    assert test_helpers.dallclose(c[:, 0], x.asnumpy())
-    assert test_helpers.dallclose(c[:, 1], y.asnumpy())
-    assert test_helpers.dallclose(c[:, 2], z.asnumpy())
+    assert icon4py.model.testing.test_utils.dallclose(c[:, 0], x.asnumpy())
+    assert icon4py.model.testing.test_utils.dallclose(c[:, 1], y.asnumpy())
+    assert icon4py.model.testing.test_utils.dallclose(c[:, 2], z.asnumpy())
 
 
-class TestAverageTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
+class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
     PROGRAM = helpers.average_two_vertical_levels_downwards_on_edges
     OUTPUTS = (
-        test_helpers.Output(
+        stencil_tests.Output(
             "average",
             refslice=(slice(None), slice(None, -1)),
             gtslice=(slice(None), slice(None, -1)),
@@ -77,10 +79,10 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
         )
 
 
-class TestAverageTwoVerticalLevelsDownwardsOnCells(testing_helpers.StencilTest):
+class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
     PROGRAM = helpers.average_two_vertical_levels_downwards_on_cells
     OUTPUTS = (
-        test_helpers.Output(
+        stencil_tests.Output(
             "average",
             refslice=(slice(None), slice(None, -1)),
             gtslice=(slice(None), slice(None, -1)),

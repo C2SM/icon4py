@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_vertically import (
     integrate_tracer_vertically,
 )
@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestIntegrateTracerVertically(helpers.StencilTest):
+class TestIntegrateTracerVertically(stencil_tests.StencilTest):
     PROGRAM = integrate_tracer_vertically
     OUTPUTS = ("tracer_new",)
 

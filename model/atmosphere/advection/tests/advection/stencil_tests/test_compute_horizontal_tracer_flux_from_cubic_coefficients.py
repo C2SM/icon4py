@@ -10,7 +10,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_cubic_coefficients import (
     compute_horizontal_tracer_flux_from_cubic_coefficients,
 )
@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-class TestComputeHorizontalTracerFluxFromCubicCoefficients(helpers.StencilTest):
+class TestComputeHorizontalTracerFluxFromCubicCoefficients(stencil_tests.StencilTest):
     PROGRAM = compute_horizontal_tracer_flux_from_cubic_coefficients
     OUTPUTS = ("p_out_e_hybrid_2",)
 

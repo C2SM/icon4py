@@ -9,14 +9,14 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
-    compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction,
+from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
+    compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests as stencil_tests
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -49,9 +49,9 @@ def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.nd
 
 
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
-    test_helpers.StencilTest
+    stencil_tests.StencilTest
 ):
-    PROGRAM = compute_derived_horizontal_winds_and_ke_and_horizontal_advection_of_w_and_contravariant_correction
+    PROGRAM = compute_derived_horizontal_winds_and_ke_and_contravariant_correction
     OUTPUTS = (
         "tangential_wind",
         "tangential_wind_on_half_levels",
@@ -218,9 +218,9 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         tangential_wind[:horizontal_start, :] = initial_tangential_wind[:horizontal_start, :]
         tangential_wind[horizontal_end:, :] = initial_tangential_wind[horizontal_end:, :]
 
-        tangential_wind_on_half_levels[
-            :horizontal_start, :
-        ] = initial_tangential_wind_on_half_levels[:horizontal_start, :]
+        tangential_wind_on_half_levels[:horizontal_start, :] = (
+            initial_tangential_wind_on_half_levels[:horizontal_start, :]
+        )
         tangential_wind_on_half_levels[horizontal_end:, :] = initial_tangential_wind_on_half_levels[
             horizontal_end:, :
         ]
@@ -228,26 +228,26 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         vn_on_half_levels[:horizontal_start, :] = initial_vn_on_half_levels[:horizontal_start, :]
         vn_on_half_levels[horizontal_end:, :] = initial_vn_on_half_levels[horizontal_end:, :]
 
-        horizontal_kinetic_energy_at_edges_on_model_levels[
-            :horizontal_start, :
-        ] = initial_horizontal_kinetic_energy_at_edges_on_model_levels[:horizontal_start, :]
-        horizontal_kinetic_energy_at_edges_on_model_levels[
-            horizontal_end:, :
-        ] = initial_horizontal_kinetic_energy_at_edges_on_model_levels[horizontal_end:, :]
+        horizontal_kinetic_energy_at_edges_on_model_levels[:horizontal_start, :] = (
+            initial_horizontal_kinetic_energy_at_edges_on_model_levels[:horizontal_start, :]
+        )
+        horizontal_kinetic_energy_at_edges_on_model_levels[horizontal_end:, :] = (
+            initial_horizontal_kinetic_energy_at_edges_on_model_levels[horizontal_end:, :]
+        )
 
-        contravariant_correction_at_edges_on_model_levels[
-            :horizontal_start, :
-        ] = initial_contravariant_correction_at_edges_on_model_levels[:horizontal_start, :]
-        contravariant_correction_at_edges_on_model_levels[
-            horizontal_end:, :
-        ] = initial_contravariant_correction_at_edges_on_model_levels[horizontal_end:, :]
+        contravariant_correction_at_edges_on_model_levels[:horizontal_start, :] = (
+            initial_contravariant_correction_at_edges_on_model_levels[:horizontal_start, :]
+        )
+        contravariant_correction_at_edges_on_model_levels[horizontal_end:, :] = (
+            initial_contravariant_correction_at_edges_on_model_levels[horizontal_end:, :]
+        )
 
-        horizontal_advection_of_w_at_edges_on_half_levels[
-            :horizontal_start, :
-        ] = initial_horizontal_advection_of_w_at_edges_on_half_levels[:horizontal_start, :]
-        horizontal_advection_of_w_at_edges_on_half_levels[
-            horizontal_end:, :
-        ] = initial_horizontal_advection_of_w_at_edges_on_half_levels[horizontal_end:, :]
+        horizontal_advection_of_w_at_edges_on_half_levels[:horizontal_start, :] = (
+            initial_horizontal_advection_of_w_at_edges_on_half_levels[:horizontal_start, :]
+        )
+        horizontal_advection_of_w_at_edges_on_half_levels[horizontal_end:, :] = (
+            initial_horizontal_advection_of_w_at_edges_on_half_levels[horizontal_end:, :]
+        )
 
         return dict(
             tangential_wind=tangential_wind,

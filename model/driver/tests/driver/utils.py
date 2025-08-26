@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.driver import icon4py_configuration as driver_config
 
 
-# TODO (Chia Rui): The diffusion and solve_nonhydro configs are duplication of the same functions in
+# TODO(OngChia): The diffusion and solve_nonhydro configs are duplication of the same functions in
 #                  diffusion_test/utils.py and dycore_tests/utils.py. Remove the duplication when
 #                  architecture for configuration is set up.
 
@@ -75,10 +75,9 @@ def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
         return exclaim_ape_diffusion_config(ndyn_substeps)
 
 
-def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
+def mch_ch_r04b09_dsl_nonhydrostatic_config():
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
-        ndyn_substeps_var=ndyn_substeps,
         divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
@@ -87,20 +86,19 @@ def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
     return config
 
 
-def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
+def exclaim_ape_nonhydrostatic_config():
     """Create configuration for EXCLAIM APE experiment."""
     return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
         divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
-        ndyn_substeps_var=ndyn_substeps,
     )
 
 
-def construct_nonhydrostatic_config(name: str, ndyn_substeps: int = 5):
+def construct_nonhydrostatic_config(name: str):
     if name.lower() in "mch_ch_r04b09_dsl":
-        return mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps)
+        return mch_ch_r04b09_dsl_nonhydrostatic_config()
     elif name.lower() in "exclaim_ape_r02b04":
-        return exclaim_ape_nonhydrostatic_config(ndyn_substeps)
+        return exclaim_ape_nonhydrostatic_config()
 
 
 def mch_ch_r04b09_dsl_icon4pyrun_config(

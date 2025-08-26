@@ -20,7 +20,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.grid.geometry import as_sparse_field
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
@@ -53,7 +53,7 @@ def test_edge_control_area(backend, grid_savepoint, grid_file, experiment, rtol)
     expected = grid_savepoint.edge_areas()
     geometry_source = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     result = geometry_source.get(attrs.EDGE_AREA)
-    assert helpers.dallclose(expected.asnumpy(), result.asnumpy(), rtol)
+    assert test_utils.dallclose(expected.asnumpy(), result.asnumpy(), rtol)
 
 
 @pytest.mark.parametrize(
@@ -69,7 +69,7 @@ def test_coriolis_parameter(backend, grid_savepoint, grid_file, experiment):
     expected = grid_savepoint.f_e()
 
     result = geometry_source.get(attrs.CORIOLIS_PARAMETER)
-    assert helpers.dallclose(expected.asnumpy(), result.asnumpy())
+    assert test_utils.dallclose(expected.asnumpy(), result.asnumpy())
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ def test_compute_edge_length(backend, grid_savepoint, grid_file, experiment, rto
     geometry_source = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     expected = grid_savepoint.primal_edge_length()
     result = geometry_source.get(attrs.EDGE_LENGTH)
-    assert helpers.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
+    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.parametrize(
@@ -100,7 +100,7 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
     geometry_source = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     computed = geometry_source.get(f"inverse_of_{attrs.EDGE_LENGTH}")
 
-    assert helpers.dallclose(computed.asnumpy(), expected.asnumpy(), rtol=rtol)
+    assert test_utils.dallclose(computed.asnumpy(), expected.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.parametrize(
@@ -116,7 +116,7 @@ def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, experiment
 
     expected = grid_savepoint.dual_edge_length()
     result = grid_geometry.get(attrs.DUAL_EDGE_LENGTH)
-    assert helpers.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
+    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.parametrize(
@@ -135,7 +135,7 @@ def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, ex
     # compared to ICON we overcompute, so we only compare the values from LATERAL_BOUNDARY_LEVEL_2
     level = h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     start_index = grid_geometry.grid.start_index(level)
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         result.asnumpy()[start_index:], expected.asnumpy()[start_index:], rtol=rtol
     )
 
@@ -153,7 +153,7 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file
 
     expected = grid_savepoint.inv_vert_vert_length()
     result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH)
-    assert helpers.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
+    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.datatest
@@ -181,12 +181,12 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     x_tangent_ref = grid_savepoint.dual_cart_normal_x()
     y_tangent_ref = grid_savepoint.dual_cart_normal_y()
     z_tangent_ref = grid_savepoint.dual_cart_normal_z()
-    assert helpers.dallclose(x_tangent.asnumpy(), x_tangent_ref.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(y_tangent.asnumpy(), y_tangent_ref.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(z_tangent.asnumpy(), z_tangent_ref.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(x_normal.asnumpy(), x_normal_ref.asnumpy(), atol=1e-13)  # 1e-16
-    assert helpers.dallclose(z_normal.asnumpy(), z_normal_ref.asnumpy(), atol=1e-13)
-    assert helpers.dallclose(y_normal.asnumpy(), y_normal_ref.asnumpy(), atol=1e-12)
+    assert test_utils.dallclose(x_tangent.asnumpy(), x_tangent_ref.asnumpy(), atol=1e-12)
+    assert test_utils.dallclose(y_tangent.asnumpy(), y_tangent_ref.asnumpy(), atol=1e-12)
+    assert test_utils.dallclose(z_tangent.asnumpy(), z_tangent_ref.asnumpy(), atol=1e-12)
+    assert test_utils.dallclose(x_normal.asnumpy(), x_normal_ref.asnumpy(), atol=1e-13)  # 1e-16
+    assert test_utils.dallclose(z_normal.asnumpy(), z_normal_ref.asnumpy(), atol=1e-13)
+    assert test_utils.dallclose(y_normal.asnumpy(), y_normal_ref.asnumpy(), atol=1e-12)
 
 
 @pytest.mark.datatest
@@ -205,8 +205,12 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
     primal_normal_u_ref = grid_savepoint.primal_normal_v1()
     primal_normal_v_ref = grid_savepoint.primal_normal_v2()
 
-    assert helpers.dallclose(primal_normal_u.asnumpy(), primal_normal_u_ref.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(primal_normal_v.asnumpy(), primal_normal_v_ref.asnumpy(), atol=1e-12)
+    assert test_utils.dallclose(
+        primal_normal_u.asnumpy(), primal_normal_u_ref.asnumpy(), atol=1e-12
+    )
+    assert test_utils.dallclose(
+        primal_normal_v.asnumpy(), primal_normal_v_ref.asnumpy(), atol=1e-12
+    )
 
 
 @pytest.mark.datatest
@@ -222,7 +226,7 @@ def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
     result = grid_geometry.get(attrs.TANGENT_ORIENTATION)
     expected = grid_savepoint.tangent_orientation()
 
-    assert helpers.dallclose(result.asnumpy(), expected.asnumpy())
+    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
 
 
 @pytest.mark.datatest
@@ -238,7 +242,7 @@ def test_cell_area(backend, grid_savepoint, experiment, grid_file):
     result = grid_geometry.get(attrs.CELL_AREA)
     expected = grid_savepoint.cell_areas()
 
-    assert helpers.dallclose(result.asnumpy(), expected.asnumpy())
+    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
 
 
 @pytest.mark.datatest
@@ -256,8 +260,12 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
     primal_normal_cell_u = grid_geometry.get(attrs.EDGE_NORMAL_CELL_U)
     primal_normal_cell_v = grid_geometry.get(attrs.EDGE_NORMAL_CELL_V)
 
-    assert helpers.dallclose(primal_normal_cell_u.asnumpy(), primal_normal_cell_u_ref, atol=1e-12)
-    assert helpers.dallclose(primal_normal_cell_v.asnumpy(), primal_normal_cell_v_ref, atol=1e-12)
+    assert test_utils.dallclose(
+        primal_normal_cell_u.asnumpy(), primal_normal_cell_u_ref, atol=1e-12
+    )
+    assert test_utils.dallclose(
+        primal_normal_cell_v.asnumpy(), primal_normal_cell_v_ref, atol=1e-12
+    )
 
 
 @pytest.mark.datatest
@@ -275,8 +283,8 @@ def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
     dual_normal_cell_u = grid_geometry.get(attrs.EDGE_TANGENT_CELL_U)
     dual_normal_cell_v = grid_geometry.get(attrs.EDGE_TANGENT_CELL_V)
 
-    assert helpers.dallclose(dual_normal_cell_u.asnumpy(), dual_normal_cell_u_ref, atol=1e-12)
-    assert helpers.dallclose(dual_normal_cell_v.asnumpy(), dual_normal_cell_v_ref, atol=1e-12)
+    assert test_utils.dallclose(dual_normal_cell_u.asnumpy(), dual_normal_cell_u_ref, atol=1e-12)
+    assert test_utils.dallclose(dual_normal_cell_v.asnumpy(), dual_normal_cell_v_ref, atol=1e-12)
 
 
 @pytest.mark.datatest
@@ -294,8 +302,12 @@ def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
     primal_normal_vert_u = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_U)
     primal_normal_vert_v = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_V)
 
-    assert helpers.dallclose(primal_normal_vert_u.asnumpy(), primal_normal_vert_u_ref, atol=1e-12)
-    assert helpers.dallclose(primal_normal_vert_v.asnumpy(), primal_normal_vert_v_ref, atol=1e-12)
+    assert test_utils.dallclose(
+        primal_normal_vert_u.asnumpy(), primal_normal_vert_u_ref, atol=1e-12
+    )
+    assert test_utils.dallclose(
+        primal_normal_vert_v.asnumpy(), primal_normal_vert_v_ref, atol=1e-12
+    )
 
 
 @pytest.mark.datatest
@@ -313,8 +325,8 @@ def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
     dual_normal_vert_u = grid_geometry.get(attrs.EDGE_TANGENT_VERTEX_U)
     dual_normal_vert_v = grid_geometry.get(attrs.EDGE_TANGENT_VERTEX_V)
 
-    assert helpers.dallclose(dual_normal_vert_u.asnumpy(), dual_normal_vert_u_ref, atol=1e-12)
-    assert helpers.dallclose(dual_normal_vert_v.asnumpy(), dual_normal_vert_v_ref, atol=1e-12)
+    assert test_utils.dallclose(dual_normal_vert_u.asnumpy(), dual_normal_vert_u_ref, atol=1e-12)
+    assert test_utils.dallclose(dual_normal_vert_v.asnumpy(), dual_normal_vert_v_ref, atol=1e-12)
 
 
 @pytest.mark.parametrize(
@@ -336,7 +348,7 @@ def test_cartesian_centers_edge(backend, grid_file, experiment):
     # those are coordinates on the unit sphere: hence norm should be 1
     norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
     math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
-    assert helpers.dallclose(norm.asnumpy(), 1.0)
+    assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 @pytest.mark.parametrize(
@@ -358,7 +370,7 @@ def test_cartesian_centers_cell(backend, grid_file, experiment):
     # those are coordinates on the unit sphere: hence norm should be 1
     norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
     math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
-    assert helpers.dallclose(norm.asnumpy(), 1.0)
+    assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 @pytest.mark.parametrize(
@@ -380,7 +392,7 @@ def test_vertex(backend, grid_file, experiment):
     # those are coordinates on the unit sphere: hence norm should be 1
     norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
     math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
-    assert helpers.dallclose(norm.asnumpy(), 1.0)
+    assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 def test_sparse_fields_creator():
@@ -394,8 +406,8 @@ def test_sparse_fields_creator():
     sparse_e2c = functools.partial(as_sparse_field, (dims.EdgeDim, dims.E2CDim))
     sparse2 = sparse_e2c(((f1, f2), (g1, g2)))
     assert sparse[0].asnumpy().shape == (grid.num_edges, 2)
-    assert helpers.dallclose(sparse[0].asnumpy(), sparse2[0].asnumpy())
-    assert helpers.dallclose(sparse[1].asnumpy(), sparse2[1].asnumpy())
+    assert test_utils.dallclose(sparse[0].asnumpy(), sparse2[0].asnumpy())
+    assert test_utils.dallclose(sparse[1].asnumpy(), sparse2[1].asnumpy())
 
 
 @pytest.mark.datatest
@@ -407,8 +419,8 @@ def test_sparse_fields_creator():
     ],
 )
 def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):
-    gm = grid_utils.get_grid_manager(
-        grid_file=grid_file,
+    gm = grid_utils.get_grid_manager_from_identifier(
+        grid_file_identifier=grid_file,
         num_levels=1,
         keep_skip_values=True,
         backend=backend,
@@ -426,38 +438,38 @@ def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_
     connectivity = grid.get_connectivity(dims.E2C).asnumpy()
     has_boundary_edges = np.count_nonzero(connectivity == -1)
     if has_boundary_edges == 0:
-        assert helpers.dallclose(lat_0.asnumpy(), cell_lat.asnumpy()[connectivity[:, 0]])
-        assert helpers.dallclose(lat_1.asnumpy(), cell_lat.asnumpy()[connectivity[:, 1]])
-        assert helpers.dallclose(lon_0.asnumpy(), cell_lon.asnumpy()[connectivity[:, 0]])
-        assert helpers.dallclose(lon_1.asnumpy(), cell_lon.asnumpy()[connectivity[:, 1]])
+        assert test_utils.dallclose(lat_0.asnumpy(), cell_lat.asnumpy()[connectivity[:, 0]])
+        assert test_utils.dallclose(lat_1.asnumpy(), cell_lat.asnumpy()[connectivity[:, 1]])
+        assert test_utils.dallclose(lon_0.asnumpy(), cell_lon.asnumpy()[connectivity[:, 0]])
+        assert test_utils.dallclose(lon_1.asnumpy(), cell_lon.asnumpy()[connectivity[:, 1]])
 
     edge_coordinates_0 = np.where(connectivity[:, 0] < 0)
     edge_coordinates_1 = np.where(connectivity[:, 1] < 0)
     cell_coordinates_0 = np.where(connectivity[:, 0] >= 0)
     cell_coordinates_1 = np.where(connectivity[:, 1] >= 0)
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         lat_0.asnumpy()[edge_coordinates_0], edge_lat.asnumpy()[edge_coordinates_0]
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         lat_0.asnumpy()[cell_coordinates_0], cell_lat.asnumpy()[connectivity[cell_coordinates_0, 0]]
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         lon_0.asnumpy()[edge_coordinates_0], edge_lon.asnumpy()[edge_coordinates_0]
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         lon_0.asnumpy()[cell_coordinates_0], cell_lon.asnumpy()[connectivity[cell_coordinates_0, 0]]
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         lat_1.asnumpy()[edge_coordinates_1], edge_lat.asnumpy()[edge_coordinates_1]
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         lat_1.asnumpy()[cell_coordinates_1], cell_lat.asnumpy()[connectivity[cell_coordinates_1, 1]]
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         lon_1.asnumpy()[edge_coordinates_1], edge_lon.asnumpy()[edge_coordinates_1]
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         lon_1.asnumpy()[cell_coordinates_1], cell_lon.asnumpy()[connectivity[cell_coordinates_1, 1]]
     )

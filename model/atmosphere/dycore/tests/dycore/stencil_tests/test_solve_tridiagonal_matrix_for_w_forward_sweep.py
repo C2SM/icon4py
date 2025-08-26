@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(

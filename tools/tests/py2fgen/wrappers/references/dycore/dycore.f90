@@ -114,10 +114,12 @@ module dycore
                                     vn_traj_size_0, &
                                     vn_traj_size_1, &
                                     dtime, &
+                                    max_vcfl_size1_array, &
+                                    max_vcfl_size1_array_size_0, &
                                     lprep_adv, &
                                     at_initial_timestep, &
                                     divdamp_fac_o2, &
-                                    ndyn_substeps, &
+                                    ndyn_substeps_var, &
                                     idyn_timestep, &
                                     on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
@@ -335,13 +337,17 @@ module dycore
 
          real(c_double), value, target :: dtime
 
+         type(c_ptr), value, target :: max_vcfl_size1_array
+
+         integer(c_int), value :: max_vcfl_size1_array_size_0
+
          logical(c_int), value, target :: lprep_adv
 
          logical(c_int), value, target :: at_initial_timestep
 
          real(c_double), value, target :: divdamp_fac_o2
 
-         real(c_double), value, target :: ndyn_substeps
+         integer(c_int), value, target :: ndyn_substeps_var
 
          integer(c_int), value, target :: idyn_timestep
 
@@ -500,7 +506,6 @@ module dycore
                                      itime_scheme, &
                                      iadv_rhotheta, &
                                      igradp_method, &
-                                     ndyn_substeps, &
                                      rayleigh_type, &
                                      rayleigh_coeff, &
                                      divdamp_order, &
@@ -833,8 +838,6 @@ module dycore
 
          integer(c_int), value, target :: igradp_method
 
-         real(c_double), value, target :: ndyn_substeps
-
          integer(c_int), value, target :: rayleigh_type
 
          real(c_double), value, target :: rayleigh_coeff
@@ -931,10 +934,11 @@ contains
                            vol_flx_ic, &
                            vn_traj, &
                            dtime, &
+                           max_vcfl_size1_array, &
                            lprep_adv, &
                            at_initial_timestep, &
                            divdamp_fac_o2, &
-                           ndyn_substeps, &
+                           ndyn_substeps_var, &
                            idyn_timestep, &
                            rc)
       use, intrinsic :: iso_c_binding
@@ -1011,13 +1015,15 @@ contains
 
       real(c_double), value, target :: dtime
 
+      real(c_double), dimension(:), target :: max_vcfl_size1_array
+
       logical(c_int), value, target :: lprep_adv
 
       logical(c_int), value, target :: at_initial_timestep
 
       real(c_double), value, target :: divdamp_fac_o2
 
-      real(c_double), value, target :: ndyn_substeps
+      integer(c_int), value, target :: ndyn_substeps_var
 
       integer(c_int), value, target :: idyn_timestep
 
@@ -1162,6 +1168,8 @@ contains
       integer(c_int) :: vn_traj_size_0
 
       integer(c_int) :: vn_traj_size_1
+
+      integer(c_int) :: max_vcfl_size1_array_size_0
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
@@ -1316,6 +1324,8 @@ contains
       vn_traj_size_0 = SIZE(vn_traj, 1)
       vn_traj_size_1 = SIZE(vn_traj, 2)
 
+      max_vcfl_size1_array_size_0 = SIZE(max_vcfl_size1_array, 1)
+
       if (associated(vn_incr)) then
          vn_incr_ptr = c_loc(vn_incr)
          vn_incr_size_0 = SIZE(vn_incr, 1)
@@ -1440,10 +1450,12 @@ contains
                                 vn_traj_size_0=vn_traj_size_0, &
                                 vn_traj_size_1=vn_traj_size_1, &
                                 dtime=dtime, &
+                                max_vcfl_size1_array=c_loc(max_vcfl_size1_array), &
+                                max_vcfl_size1_array_size_0=max_vcfl_size1_array_size_0, &
                                 lprep_adv=lprep_adv, &
                                 at_initial_timestep=at_initial_timestep, &
                                 divdamp_fac_o2=divdamp_fac_o2, &
-                                ndyn_substeps=ndyn_substeps, &
+                                ndyn_substeps_var=ndyn_substeps_var, &
                                 idyn_timestep=idyn_timestep, &
                                 on_gpu=on_gpu)
       !$acc end host_data
@@ -1539,7 +1551,6 @@ contains
                             itime_scheme, &
                             iadv_rhotheta, &
                             igradp_method, &
-                            ndyn_substeps, &
                             rayleigh_type, &
                             rayleigh_coeff, &
                             divdamp_order, &
@@ -1680,8 +1691,6 @@ contains
       integer(c_int), value, target :: iadv_rhotheta
 
       integer(c_int), value, target :: igradp_method
-
-      real(c_double), value, target :: ndyn_substeps
 
       integer(c_int), value, target :: rayleigh_type
 
@@ -2287,7 +2296,6 @@ contains
                                  itime_scheme=itime_scheme, &
                                  iadv_rhotheta=iadv_rhotheta, &
                                  igradp_method=igradp_method, &
-                                 ndyn_substeps=ndyn_substeps, &
                                  rayleigh_type=rayleigh_type, &
                                  rayleigh_coeff=rayleigh_coeff, &
                                  divdamp_order=divdamp_order, &

@@ -33,10 +33,10 @@ def construct_interpolation_state(
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.e_bln_c_s()),
+        e_bln_c_s=savepoint.e_bln_c_s(),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.geofac_div()),
+        geofac_div=savepoint.geofac_div(),
         geofac_n2s=savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
@@ -84,17 +84,16 @@ def construct_metric_state(
     )
 
 
-def construct_solve_nh_config(name: str, ndyn: int = 5):
+def construct_solve_nh_config(name: str):
     if name.lower() in "mch_ch_r04b09_dsl":
-        return _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn)
+        return _mch_ch_r04b09_dsl_nonhydrostatic_config()
     elif name.lower() in "exclaim_ape_r02b04":
-        return _exclaim_ape_nonhydrostatic_config(ndyn)
+        return _exclaim_ape_nonhydrostatic_config()
 
 
-def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
+def _mch_ch_r04b09_dsl_nonhydrostatic_config():
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
-        ndyn_substeps_var=ndyn,
         divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
@@ -103,12 +102,11 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
     return config
 
 
-def _exclaim_ape_nonhydrostatic_config(ndyn: int):
+def _exclaim_ape_nonhydrostatic_config():
     """Create configuration for EXCLAIM APE experiment."""
     return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
         divdamp_order=24,
-        ndyn_substeps_var=ndyn,
     )
 
 
@@ -132,6 +130,7 @@ def construct_diagnostics(
 ):
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
+        max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=init_savepoint.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=init_savepoint.exner_pr(),
         rho_at_cells_on_half_levels=init_savepoint.rho_ic(),
