@@ -19,16 +19,7 @@ from icon4py.model.common.grid import (
     icon,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
-from icon4py.model.testing.fixtures import (
-    backend,
-    data_provider,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    processor_props,
-    ranked_data_path,
-)
+
 
 from .. import utils
 

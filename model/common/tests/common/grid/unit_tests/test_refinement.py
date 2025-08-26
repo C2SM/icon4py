@@ -16,7 +16,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing.fixtures import backend
 
 from .. import utils
-from ..fixtures import *
+
 
 
 def out_of_range(dim: gtx.Dimension):

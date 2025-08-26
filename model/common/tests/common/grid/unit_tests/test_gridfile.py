@@ -11,14 +11,7 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
-from icon4py.model.testing.fixtures import (
-    backend,
-    data_provider,
-    download_ser_data,
-    grid_savepoint,
-    processor_props,
-    ranked_data_path,
-)
+
 
 from .. import utils
 
