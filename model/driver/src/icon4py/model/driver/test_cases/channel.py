@@ -33,9 +33,9 @@ log = logging.getLogger(__name__)
 def _set_boundary_conditions_cell(
     field: fa.CellKField[ta.wpfloat],
     channel_field: fa.CellKField[ta.wpfloat],
-    mask: fa.CellKField[ta.wpfloat],
+    sponge: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    field = (broadcast(1.0, (dims.CellDim, dims.KDim)) - mask) * field + mask * channel_field
+    field = (broadcast(1.0, (dims.CellDim, dims.KDim)) - sponge) * field + sponge * channel_field
     return field
 
 
@@ -43,9 +43,9 @@ def _set_boundary_conditions_cell(
 def _set_boundary_conditions_edge(
     field: fa.EdgeKField[ta.wpfloat],
     channel_field: fa.EdgeKField[ta.wpfloat],
-    mask: fa.EdgeKField[ta.wpfloat],
+    sponge: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    field = (broadcast(1.0, (dims.EdgeDim, dims.KDim)) - mask) * field + mask * channel_field
+    field = (broadcast(1.0, (dims.EdgeDim, dims.KDim)) - sponge) * field + sponge * channel_field
     return field
 
 
@@ -75,8 +75,12 @@ class ChannelFlow:
         self.random_perturbation_magnitude = 0.001  # perturbation magnitude for velocity profile
 
         # Allocate here so it's not re-allocated every BC call
-        self.random_field_full_edge_np = xp.random.normal(loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels))
-        self.random_field_full_edge = gtx.as_field((dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend)
+        self.random_field_full_edge_np = xp.random.normal(
+            loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels)
+        )
+        self.random_field_full_edge = gtx.as_field(
+            (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend
+        )
 
         data_provider = sb.IconSerialDataProvider(
             backend=self.backend,
@@ -87,11 +91,22 @@ class ChannelFlow:
 
         self.channel_y, self.channel_U = self.load_channel_data()
 
-        self.full_cell_mask, self.half_cell_mask, self.full_edge_mask = self.make_masks(
+        self.full_cell_sponge, self.half_cell_sponge, self.full_edge_sponge = self.make_sponges(
             grid_file_path=grid_file_path,
         )
 
-        self.vn, self.w, self.rho, self.exner, self.theta_v = self.compute_channel_fields(
+        (
+            self.vn_ndarray,
+            self.w_ndarray,
+            self.rho_ndarray,
+            self.exner_ndarray,
+            self.theta_v_ndarray,
+            self.vn,
+            self.w,
+            self.rho,
+            self.exner,
+            self.theta_v,
+        ) = self.compute_channel_fields(
             channel_y=self.channel_y,
             channel_U=self.channel_U,
             grid=grid,
@@ -117,7 +132,7 @@ class ChannelFlow:
 
         return channel_y, channel_U
 
-    def make_masks(
+    def make_sponges(
         self,
         grid_file_path: str,
     ) -> tuple[
@@ -139,36 +154,34 @@ class ChannelFlow:
         cell_x = xp.where(xp.abs(cell_x - 0.0) < 1e-9, 0.0, cell_x)
         cell_x = xp.where(xp.abs(cell_x - domain_length) < 1e-9, 0.0, cell_x)
 
-        half_cell_mask_np = xp.zeros((self.num_cells, self.num_levels + 1), dtype=float)
-        full_cell_mask_np = xp.zeros((self.num_cells, self.num_levels), dtype=float)
-        full_edge_mask_np = xp.zeros((self.num_edges, self.num_levels), dtype=float)
+        half_cell_sponge_np = xp.zeros((self.num_cells, self.num_levels + 1), dtype=float)
+        full_cell_sponge_np = xp.zeros((self.num_cells, self.num_levels), dtype=float)
+        full_edge_sponge_np = xp.zeros((self.num_edges, self.num_levels), dtype=float)
 
         x_inflow = xp.unique(cell_x)[1]  # second cell centre from left
-        x_outflow = xp.unique(cell_x)[-4]
+        x_outflow = xp.unique(cell_x)[-1]
         for k in range(self.num_levels):
             # outflow: tanh sponge + outflow
-            full_cell_mask_np[:, k] = (
-                1
-                + xp.tanh((cell_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
+            full_cell_sponge_np[:, k] = (
+                1 + xp.tanh((cell_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
             ) / 2
-            full_edge_mask_np[:, k] = (
-                1
-                + xp.tanh((edge_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
+            full_edge_sponge_np[:, k] = (
+                1 + xp.tanh((edge_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
             ) / 2
-            full_cell_mask_np[:, k] = xp.where(cell_x >= x_outflow, 1.0, full_cell_mask_np[:, k])
-            full_edge_mask_np[:, k] = xp.where(edge_x >= x_outflow, 1.0, full_edge_mask_np[:, k])
+            full_cell_sponge_np[:, k] = xp.where(cell_x >= x_outflow, 1.0, full_cell_sponge_np[:, k])
+            full_edge_sponge_np[:, k] = xp.where(edge_x >= x_outflow, 1.0, full_edge_sponge_np[:, k])
             # inflow: Dirichlet on first cell(s?)
-            full_cell_mask_np[:, k] = xp.where(cell_x <= x_inflow, 1.0, full_cell_mask_np[:, k])
-            full_edge_mask_np[:, k] = xp.where(edge_x <= x_inflow, 1.0, full_edge_mask_np[:, k])
+            full_cell_sponge_np[:, k] = xp.where(cell_x <= x_inflow, 1.0, full_cell_sponge_np[:, k])
+            full_edge_sponge_np[:, k] = xp.where(edge_x <= x_inflow, 1.0, full_edge_sponge_np[:, k])
 
-        half_cell_mask_np[:, :-1] = full_cell_mask_np
-        half_cell_mask_np[:, -1] = half_cell_mask_np[:, -2]
+        half_cell_sponge_np[:, :-1] = full_cell_sponge_np
+        half_cell_sponge_np[:, -1] = half_cell_sponge_np[:, -2]
 
-        full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
-        half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
-        full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
+        full_cell_sponge = gtx.as_field((CellDim, KDim), full_cell_sponge_np)
+        half_cell_sponge = gtx.as_field((CellDim, KDim), half_cell_sponge_np)
+        full_edge_sponge = gtx.as_field((EdgeDim, KDim), full_edge_sponge_np)
 
-        return full_cell_mask, half_cell_mask, full_edge_mask
+        return full_cell_sponge, half_cell_sponge, full_edge_sponge
 
     def compute_channel_fields(
         self,
@@ -178,6 +191,11 @@ class ChannelFlow:
         data_provider: sb.IconSerialDataProvider,
         grid_savepoint: sb.IconGridSavepoint,
     ) -> tuple[
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
         fa.EdgeKField[ta.wpfloat],
         fa.CellKField[ta.wpfloat],
         fa.CellKField[ta.wpfloat],
@@ -206,11 +224,13 @@ class ChannelFlow:
 
         edge_geometry = grid_savepoint.construct_edge_geometry()
         primal_normal_x = edge_geometry.primal_normal[0].ndarray
-        primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), self.num_levels, axis=1)
-        mask_array_edge_start_plus1_to_edge_end = xp.ones(self.num_edges, dtype=bool)
-        mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
-        u0_mask = xp.repeat(
-            xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
+        primal_normal_x = xp.repeat(
+            xp.expand_dims(primal_normal_x, axis=-1), self.num_levels, axis=1
+        )
+        sponge_array_edge_start_plus1_to_edge_end = xp.ones(self.num_edges, dtype=bool)
+        sponge_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
+        u0_sponge = xp.repeat(
+            xp.expand_dims(sponge_array_edge_start_plus1_to_edge_end, axis=-1),
             self.num_levels,
             axis=1,
         )
@@ -226,9 +246,11 @@ class ChannelFlow:
             LM_j = xp.argmin(
                 xp.abs(channel_y - full_level_heights[0, j])
             )  # NOTE: full_level_heights should be identical for all edges because the channel is flat
-            nh_u0[:, j] = channel_U[LM_j] + xp.random.normal(loc=0, scale=self.random_perturbation_magnitude, size=self.num_edges)
+            nh_u0[:, j] = channel_U[LM_j] + xp.random.normal(
+                loc=0, scale=self.random_perturbation_magnitude, size=self.num_edges
+            )
 
-        u = xp.where(u0_mask, nh_u0, 0.0)
+        u = xp.where(u0_sponge, nh_u0, 0.0)
         vn_ndarray = u * primal_normal_x
 
         w_ndarray = xp.zeros((self.num_cells, self.num_levels + 1), dtype=float)
@@ -278,7 +300,18 @@ class ChannelFlow:
         rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=self.backend)
         theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=self.backend)
 
-        return vn, w, rho, exner, theta_v
+        return (
+            vn_ndarray,
+            w_ndarray,
+            rho_ndarray,
+            exner_ndarray,
+            theta_v_ndarray,
+            vn,
+            w,
+            rho,
+            exner,
+            theta_v,
+        )
 
     def set_initial_conditions(
         self,
@@ -292,7 +325,12 @@ class ChannelFlow:
         """
         Set the initial conditions for the channel flow
         """
-        return self.vn, self.w, self.rho, self.exner, self.theta_v
+        vn = gtx.as_field((dims.EdgeDim, dims.KDim), self.vn_ndarray, allocator=self.backend)
+        w = gtx.as_field((dims.CellDim, dims.KDim), self.w_ndarray, allocator=self.backend)
+        exner = gtx.as_field((dims.CellDim, dims.KDim), self.exner_ndarray, allocator=self.backend)
+        rho = gtx.as_field((dims.CellDim, dims.KDim), self.rho_ndarray, allocator=self.backend)
+        theta_v = gtx.as_field((dims.CellDim, dims.KDim), self.theta_v_ndarray, allocator=self.backend)
+        return vn, w, rho, exner, theta_v
 
     def set_boundary_conditions(
         self,
@@ -314,41 +352,45 @@ class ChannelFlow:
 
         xp = data_alloc.import_array_ns(self.backend)
 
-        self.random_field_full_edge_np = xp.random.normal(loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels))
-        self.random_field_full_edge = gtx.as_field((dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend)
+        self.random_field_full_edge_np = xp.random.normal(
+            loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels)
+        )
+        self.random_field_full_edge = gtx.as_field(
+            (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend
+        )
 
         _set_boundary_conditions_edge(
             field=vn,
             channel_field=self.vn + self.random_field_full_edge,
-            mask=self.full_edge_mask,
+            sponge=self.full_edge_sponge,
             out=vn,
             offset_provider={},
         )
         _set_boundary_conditions_cell(
             field=w,
             channel_field=self.w,
-            mask=self.half_cell_mask,
+            sponge=self.half_cell_sponge,
             out=w,
             offset_provider={},
         )
         _set_boundary_conditions_cell(
             field=rho,
             channel_field=self.rho,
-            mask=self.full_cell_mask,
+            sponge=self.full_cell_sponge,
             out=rho,
             offset_provider={},
         )
         _set_boundary_conditions_cell(
             field=exner,
             channel_field=self.exner,
-            mask=self.full_cell_mask,
+            sponge=self.full_cell_sponge,
             out=exner,
             offset_provider={},
         )
         _set_boundary_conditions_cell(
             field=theta_v,
             channel_field=self.theta_v,
-            mask=self.full_cell_mask,
+            sponge=self.full_cell_sponge,
             out=theta_v,
             offset_provider={},
         )
