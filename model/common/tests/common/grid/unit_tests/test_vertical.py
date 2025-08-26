@@ -15,8 +15,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils
-
-
+from ..fixtures import *  # noqa: F401, F403
 
 NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
 

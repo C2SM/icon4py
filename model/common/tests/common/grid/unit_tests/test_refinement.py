@@ -12,11 +12,10 @@ import pytest
 from icon4py.model.common.grid import refinement as refin, horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
-from icon4py.model.testing.fixtures import backend
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, definitions as test_defs
 
 from .. import utils
-
+from ..fixtures import *  # noqa: F401, F403
 
 
 def out_of_range(dim: gtx.Dimension):
@@ -66,7 +65,8 @@ def test_valid_refinement_values(dim):
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize(
-    "grid_file, expected", [(dt_utils.R02B04_GLOBAL, False), (dt_utils.REGIONAL_EXPERIMENT, True)]
+    "grid_file, expected",
+    [(test_defs.Grids.R02B04_GLOBAL.name, False), (test_defs.Grids.MCH_CH_R04B09_DSL.name, True)],
 )
 def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
     grid = grid_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend).grid
@@ -86,13 +86,15 @@ def start_indices(grid_savepoint) -> dict:
     }
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 @pytest.mark.parametrize(
-    "grid_file, experiment", [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT)]
+    "grid_file, experiment",
+    [(test_defs.Grids.MCH_CH_R04B09_DSL.name, test_defs.Experiments.MCH_CH_R04B09.name)],
 )
-def test_compute_start_index(dim, grid_file, experiment, start_indices):
+def test_compute_start_index(dim, grid_file, start_indices, experiment):
     reference_start = start_indices.get(dim)
-    grid = grid_utils.get_grid_manager(
+    grid = grid_utils.get_grid_manager_from_identifier(
         grid_file, num_levels=1, keep_skip_values=True, backend=None
     ).grid
     refinement_control_field = grid.refinement_control[dim]

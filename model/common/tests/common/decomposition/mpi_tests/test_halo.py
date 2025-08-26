@@ -49,7 +49,9 @@ UGRID_FILE = (
     .joinpath("icon_grid_0013_R02B04_R_ugrid.nc")
 )
 GRID_FILE = (
-    test_defs.grids_path().joinpath(test_defs.Grids.R02B04_GLOBAL.name).joinpath("icon_grid_0012_R02B04_G.nc")
+    test_defs.grids_path()
+    .joinpath(test_defs.Grids.R02B04_GLOBAL.name)
+    .joinpath("icon_grid_0012_R02B04_G.nc")
 )
 backend = None
 
@@ -289,7 +291,7 @@ def test_distributed_fields(processor_props):  # F811 # fixture
     global_vertex_lon = grid_manager.coordinates[dims.VertexDim]["lon"]
 
     labels = decompose(single_node_grid, processor_props)
-    neighbor_tables = {k:v.ndarray for k, v in single_node_grid.connectivities.items()}
+    neighbor_tables = {k: v.ndarray for k, v in single_node_grid.connectivities.items()}
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=neighbor_tables,
         run_properties=processor_props,
@@ -349,8 +351,10 @@ def assert_gathered_field_against_global(
         sorted_[gathered_global_indices] = gathered_field
         assert helpers.dallclose(sorted_, global_reference_field)
 
+
 # TODO add test including halo access:
 #  Will uses geofac_div and geofac_n2s
+
 
 @pytest.mark.xfail
 @pytest.mark.mpi

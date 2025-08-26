@@ -268,7 +268,7 @@ class GridFile:
 
     def __init__(self, file_name: str, transformation: IndexTransformation):
         self._filename = file_name
-        self.transformation = transformation
+        self._offset = transformation
         self._dataset = None
 
     def dimension(self, name: DimensionName) -> int:
@@ -305,7 +305,7 @@ class GridFile:
         )
         variable = self.variable(name, indices, transpose=transpose, dtype=gtx.int32)
         if apply_transformation:
-            variable = variable + self.transformation(indices)
+            return variable + self._offset(variable)
         return variable
 
     def variable(
@@ -320,15 +320,21 @@ class GridFile:
         If a index array is given it only reads the values at those positions.
         Args:
             name: name of the field to read
-            indices: indices to read
+            indices: indices to read if requesting a restricted set of indices. We assume this be a 1d array it will be applied to the 1. dimension (after transposition)
             transpose: flag indicateing whether the array needs to be transposed
                 to match icon4py dimension ordering, defaults to False
             dtype: datatype of the field
         """
+
+        assert indices is None or indices.ndim == 1, "indices must be 1 dimensional"
+
         try:
             variable = self._dataset.variables[name]
+            slicer = [slice(None) for _ in range(variable.ndim)]
+            if indices is not None and indices.size > 0:
+                slicer[(1 if transpose else 0)] = indices
             _log.debug(f"reading {name}: transposing = {transpose}")
-            data = variable[:] if indices is None else variable[indices]
+            data = variable[tuple(slicer)]
             data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
         except KeyError as err:
@@ -336,6 +342,13 @@ class GridFile:
             _log.warning(msg)
             _log.debug(f"Error: {err}")
             raise exceptions.IconGridError(msg) from err
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def close(self):
         self._dataset.close()

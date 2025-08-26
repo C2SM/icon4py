@@ -12,6 +12,8 @@ from icon4py.model.common.grid import geometry, topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 
+from ..fixtures import *  # noqa: F401, F403
+
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest

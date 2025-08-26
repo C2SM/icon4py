@@ -38,7 +38,7 @@ except ImportError:
 
 
 from .. import utils
-from ..fixtures import *
+from ..fixtures import *  # noqa: F401, F403
 
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 

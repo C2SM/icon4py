@@ -21,7 +21,7 @@ from icon4py.model.common.grid.geometry import as_sparse_field
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils
-
+from ..fixtures import *  # noqa: F401, F403
 
 
 def test_geometry_raises_for_unknown_field(backend):
@@ -411,7 +411,7 @@ def test_sparse_fields_creator():
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):
+def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file, experiment):
     gm = grid_utils.get_grid_manager_from_identifier(
         grid_file_identifier=grid_file,
         num_levels=1,

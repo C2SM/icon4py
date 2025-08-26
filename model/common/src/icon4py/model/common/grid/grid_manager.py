@@ -16,7 +16,7 @@ import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import numpy as np
 
-from icon4py.model.common import dimension as dims, exceptions, type_alias as ta, utils
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition, halo
 from icon4py.model.common.grid import (
     base,
@@ -96,9 +96,12 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-
-
-    def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool, decomposer:Callable[[np.ndarray, int], np.ndarray]):
+    def __call__(
+        self,
+        backend: gtx_backend.Backend | None,
+        keep_skip_values: bool,
+        decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
+    ):
         if not self._reader:
             self.open()
 
@@ -306,7 +309,10 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, backend: gtx_backend.Backend | None, with_skip_values: bool, decomposer:Callable[[np.ndarray, int], np.ndarray] = None
+        self,
+        backend: gtx_backend.Backend | None,
+        with_skip_values: bool,
+        decomposer: Callable[[np.ndarray, int], np.ndarray] = None,
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
