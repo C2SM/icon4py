@@ -11,7 +11,6 @@ import logging
 import dataclasses
 from typing import Final, Optional
 
-import numpy as np
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
@@ -788,6 +787,17 @@ class SolveNonhydro:
                 prognostic_states.current.exner,
                 prognostic_states.current.theta_v,
             ) = self._channel.set_initial_conditions()
+            plots.pickle_data(
+                state={
+                    "sponge_full_cell": self._channel.full_cell_sponge.asnumpy(),
+                    "vn": self._channel.vn.asnumpy(),
+                    "w": self._channel.w.asnumpy(),
+                    "rho": self._channel.rho.asnumpy(),
+                    "exner": self._channel.exner.asnumpy(),
+                    "theta_v": self._channel.theta_v.asnumpy(),
+                },
+                label=f"debug_channel_fields",
+            )
         #<--- Channel
         #---> IBM
         if at_initial_timestep and at_first_substep:
@@ -823,23 +833,10 @@ class SolveNonhydro:
             prognostic_states.next.exner,
             prognostic_states.next.theta_v,
         )
-        #plots.pickle_data(
-        #    state={
-        #        "vn": prognostic_states.next.vn.asnumpy(),
-        #        "w": prognostic_states.next.w.asnumpy(),
-        #        "rho": prognostic_states.next.rho.asnumpy(),
-        #        "exner": prognostic_states.next.exner.asnumpy(),
-        #        "theta_v": prognostic_states.next.theta_v.asnumpy(),
-        #        "sponge_full_cell": self._channel.full_cell_mask.asnumpy(),
-        #        "sponge_half_cell": self._channel.half_cell_mask.asnumpy(),
-        #        "sponge_full_edge": self._channel.full_edge_mask.asnumpy(),
-        #    },
-        #    label=f"channel",
-        #)
         #<--- Channel
         #---> IBM
         if self._ibm.DEBUG_LEVEL >= 3:
-            plots.pickle_data(prognostic_states.next, f"end_of_predictor")
+            plots.pickle_data(prognostic_states.next, f"debug_end_of_predictor")
         #<--- IBM
 
         self.run_corrector_step(
@@ -871,7 +868,7 @@ class SolveNonhydro:
         #<--- Channel
         #---> IBM
         if self._ibm.DEBUG_LEVEL >= 3:
-            plots.pickle_data(prognostic_states.next, f"end_of_corrector")
+            plots.pickle_data(prognostic_states.next, f"debug_end_of_corrector")
         #<--- IBM
 
         if self._grid.limited_area:
@@ -1152,7 +1149,7 @@ class SolveNonhydro:
                     "dt": dtime,
                     "cpd": constants.CPD,
                 },
-                label=f"vn_tendency_predictor",
+                label=f"debug_vn_tendency_predictor",
             )
         #<--- IBM
 
@@ -1399,7 +1396,7 @@ class SolveNonhydro:
                     "dtime": dtime,
                     "cpd": constants.CPD,
                 },
-                label="w_matrix_c"
+                label="debug_w_matrix_c"
             )
         #<--- IBM
 
@@ -1654,7 +1651,7 @@ class SolveNonhydro:
                     "dt": dtime,
                     "cpd": constants.CPD,
                 },
-                label=f"vn_tendency_corrector",
+                label=f"debug_vn_tendency_corrector",
             )
         #<--- IBM
 
