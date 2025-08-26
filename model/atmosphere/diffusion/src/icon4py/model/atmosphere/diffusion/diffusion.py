@@ -28,6 +28,9 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     scale_k,
     setup_fields_for_initial_step,
 )
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
+    apply_diffusion_to_theta_and_exner,
+)
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
     apply_diffusion_to_vn,
 )
@@ -42,15 +45,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_theta import (
-    calculate_nabla2_for_theta,
-)
-from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
-    truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
-)
-from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
-    update_theta_and_exner,
 )
 from icon4py.model.common import field_type_aliases as fa, constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -140,7 +134,8 @@ class DiffusionConfig:
         thhgtd_zdiffu: float = 200.0,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
-        max_nudging_coeff: float = 0.02,
+        _nudge_max_coeff: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float | None = None,  # default is set in __init__
         nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         ltkeshs: bool = True,
@@ -200,11 +195,6 @@ class DiffusionConfig:
 
         #: Number of dynamics substeps per fast-physics step
         #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
-
-        # TODO (magdalena) ndyn_substeps may dynamically increase during a model run in order to
-        #       reduce instabilities. Need to figure out whether the parameter is the configured
-        #       (constant!) one or the dynamical one. In the latter case it should be removed from
-        #       DiffusionConfig and init()
         self.ndyn_substeps: int = n_substeps
 
         # namelist mo_gridref_nml.f90
@@ -225,8 +215,25 @@ class DiffusionConfig:
         #:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90
-        self.nudge_max_coeff: float = max_nudging_coeff
+        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90.
+        #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_nudge_max_coeff` or
+        #: the properly scaled one as `max_nudging_coefficient`,
+        #: see the comment in mo_interpol_nml.f90
+        #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
+        if _nudge_max_coeff is not None and max_nudging_coefficient is not None:
+            raise ValueError(
+                "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
+            )
+        elif max_nudging_coefficient is not None:
+            self.max_nudging_coefficient: float = max_nudging_coefficient
+        elif _nudge_max_coeff is not None:
+            self.max_nudging_coefficient: float = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _nudge_max_coeff
+            )
+        else:  # default value in ICON
+            self.max_nudging_coefficient: float = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
+            )
 
         #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
         #: Called 'nudge_efold_width' in mo_interpol_nml.f90
@@ -281,7 +288,6 @@ class DiffusionParams:
     K4W: Final[float] = dataclasses.field(init=False)
     smagorinski_factor: Final[float] = dataclasses.field(init=False)
     smagorinski_height: Final[float] = dataclasses.field(init=False)
-    scaled_nudge_max_coeff: Final[float] = dataclasses.field(init=False)
 
     def __post_init__(self, config):
         object.__setattr__(
@@ -303,12 +309,6 @@ class DiffusionParams:
         ) = self._determine_smagorinski_factor(config)
         object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
         object.__setattr__(self, "smagorinski_height", smagorinski_height)
-        # see mo_interpol_nml.f90:
-        object.__setattr__(
-            self,
-            "scaled_nudge_max_coeff",
-            config.nudge_max_coeff * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
-        )
 
     def _determine_smagorinski_factor(self, config: DiffusionConfig):
         """Enhanced Smagorinsky diffusion factor.
@@ -394,8 +394,10 @@ class Diffusion:
         self.thresh_tdiff: float = -5.0
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
-        self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
-        self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
+        self.nudgezone_diff: float = 0.04 / (
+            config.max_nudging_coefficient + sys.float_info.epsilon
+        )
+        self.bdy_diff: float = 0.015 / (config.max_nudging_coefficient + sys.float_info.epsilon)
         self.fac_bdydiff_v: float = (
             math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
         )
@@ -461,27 +463,14 @@ class Diffusion:
                 offset_provider=self._grid.connectivities,
             )
         )
-        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(
+        self.apply_diffusion_to_theta_and_exner = apply_diffusion_to_theta_and_exner.with_backend(
             self._backend
         ).compile(
             enable_jit=False,
+            apply_zdiffusion_t=[self.config.apply_zdiffusion_t],
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.connectivities,
-        )
-        self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
-            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(self._backend)
-        ).compile(
-            enable_jit=False,
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider=self._grid.connectivities,
-        )
-        self.update_theta_and_exner = update_theta_and_exner.with_backend(self._backend).compile(
-            enable_jit=False,
-            vertical_start=[0],
-            vertical_end=[self._grid.num_levels],
-            offset_provider={},
         )
         self.copy_field = copy_field.with_backend(self._backend).compile(
             enable_jit=False, offset_provider={}
@@ -558,9 +547,6 @@ class Diffusion:
         self.z_nabla2_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.z_temp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
@@ -574,6 +560,9 @@ class Diffusion:
         )
         self.w_tmp = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+        )
+        self.theta_v_tmp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
     def _determine_horizontal_domains(self):
@@ -896,57 +885,34 @@ class Diffusion:
             log.debug(
                 "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
+            log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
+            self.copy_field(
+                prognostic_state.theta_v, self.theta_v_tmp
+            )  # TODO write in a way that we can avoid the copy
 
-            log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-            self.calculate_nabla2_for_theta(
+            self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
-                theta_v=prognostic_state.theta_v,
+                theta_v_in=self.theta_v_tmp,
                 geofac_div=self._interpolation_state.geofac_div,
-                z_temp=self.z_temp,
+                mask=self._metric_state.mask_hdiff,
+                zd_vertoffset=self._metric_state.zd_vertoffset,
+                zd_diffcoef=self._metric_state.zd_diffcoef,
+                geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
+                geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
+                vcoef=self._metric_state.zd_intcoef,
+                area=self._cell_params.area,
+                theta_v=prognostic_state.theta_v,
+                exner=prognostic_state.exner,
+                rd_o_cvd=self.rd_o_cvd,
+                apply_zdiffusion_t=self.config.apply_zdiffusion_t,
                 horizontal_start=self._cell_start_nudging,
                 horizontal_end=self._cell_end_local,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.connectivities,
             )
-            log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
-            log.debug(
-                "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
-            )
-            if self.config.apply_zdiffusion_t:
-                self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-                    mask=self._metric_state.mask_hdiff,
-                    zd_vertoffset=self._metric_state.zd_vertoffset,
-                    zd_diffcoef=self._metric_state.zd_diffcoef,
-                    geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
-                    geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
-                    vcoef=self._metric_state.zd_intcoef,
-                    theta_v=prognostic_state.theta_v,
-                    z_temp=self.z_temp,
-                    horizontal_start=self._cell_start_nudging,
-                    horizontal_end=self._cell_end_local,
-                    vertical_start=0,
-                    vertical_end=self._grid.num_levels,
-                    offset_provider=self._grid.connectivities,
-                )
-
-                log.debug(
-                    "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
-                )
-            log.debug("running stencil 16 (update_theta_and_exner): start")
-            self.update_theta_and_exner(
-                z_temp=self.z_temp,
-                area=self._cell_params.area,
-                theta_v=prognostic_state.theta_v,
-                exner=prognostic_state.exner,
-                rd_o_cvd=self.rd_o_cvd,
-                horizontal_start=self._cell_start_nudging,
-                horizontal_end=self._cell_end_local,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-            )
-            log.debug("running stencil 16 (update_theta_and_exner): end")
+            log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 
         self.halo_exchange_wait(
             handle_edge_comm

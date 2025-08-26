@@ -9,34 +9,21 @@
 
 import functools
 import logging
-from typing import Callable, TypeAlias, Union
+from types import ModuleType
+from typing import Callable, Iterable, TypeAlias, Union
 
 import gt4py.next as gtx
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
-from gt4py.next import backend as gtx_backend
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn_cached,
-    run_gtfn_gpu_cached,
-)
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, icon
+from icon4py.model.common.utils import data_allocation as data_alloc
 
-
-try:
-    import dace  # type: ignore[import-untyped]
-    from gt4py.next.program_processors.runners.dace import (
-        run_dace_cpu_cached,
-        run_dace_gpu_cached,
-    )
-except ImportError:
-    from types import ModuleType
-    from typing import Optional
-
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
 
 try:
     import cupy as cp
@@ -69,11 +56,13 @@ _BACKEND_MAP = {
     BackendIntEnum._GTFN_CPU: run_gtfn_cached,
     BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
 }
-if dace:
+try:
     _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: run_dace_cpu_cached,
-        BackendIntEnum._DACE_GPU: run_dace_gpu_cached,
+        BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(gpu=False),
+        BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(gpu=True),
     }
+except NotImplementedError:
+    pass  # dace backends not available
 
 
 def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
@@ -117,9 +106,44 @@ def cached_dummy_field_factory(
     return impl
 
 
-def adjust_fortran_indices(inp: np.ndarray | NDArray, offset: int) -> np.ndarray | NDArray:
+def adjust_fortran_indices(inp: NDArray) -> NDArray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
-    return inp - offset
+    return inp - 1
+
+
+def shrink_to_dimension(
+    sizes: dict[gtx.Dimension, int], tables: dict[gtx.FieldOffset, NDArray]
+) -> dict[gtx.FieldOffset, NDArray]:
+    """Shrink the neighbor tables from nproma size to the actual size of the grid."""
+    return {k: v[: sizes[k.target[0]]] for k, v in tables.items()}
+
+
+def add_origin(xp: ModuleType, table: NDArray) -> NDArray:
+    return xp.column_stack((xp.arange(table.shape[0], dtype=xp.int32), table))
+
+
+def get_nproma(tables: Iterable[NDArray]) -> int:
+    tables = list(tables)
+    nproma = tables[0].shape[0]
+    if not all(table.shape[0] == nproma for table in tables):
+        raise ValueError("All connectivity tables must have the same number of rows (nproma).")
+    return nproma
+
+
+def _nproma_1d_sparse_connectivity_constructor(
+    nproma: int,
+    offset: gtx.FieldOffset,
+    shape2d: tuple[int, int],
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> data_alloc.NDArray:
+    arr = np.arange(nproma * shape2d[1], dtype=gtx.int32).reshape((nproma, shape2d[1]))
+    arr = arr[: shape2d[0], :]  # shrink to the actual size of the grid
+    return gtx.as_connectivity(
+        domain=offset.target,
+        codomain=offset.source,
+        data=arr,
+        allocator=allocator,
+    )
 
 
 def construct_icon_grid(
@@ -144,8 +168,9 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
-    on_gpu: bool,
-):
+    mean_cell_area: gtx.float64,
+    backend: gtx_backend.Backend,
+) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
     log.debug("num_edges:%s", num_edges)
@@ -153,33 +178,32 @@ def construct_icon_grid(
     log.debug("num_levels:%s", vertical_size)
 
     log.debug("Offsetting Fortran connectivitity arrays by 1")
-    offset = 1
 
-    xp = np if not on_gpu else cp
+    xp = data_alloc.import_array_ns(backend)
 
-    cells_start_index = adjust_fortran_indices(cell_starts, offset)
-    vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
-    edge_start_index = adjust_fortran_indices(edge_starts, offset)
+    cells_start_index = adjust_fortran_indices(cell_starts)
+    vertex_start_index = adjust_fortran_indices(vertex_starts)
+    edge_start_index = adjust_fortran_indices(edge_starts)
 
     cells_end_index = cell_ends
     vertex_end_index = vertex_ends
     edge_end_index = edge_ends
 
-    c2e = adjust_fortran_indices(c2e, offset)
-    c2v = adjust_fortran_indices(c2v, offset)
-    v2c = adjust_fortran_indices(v2c, offset)
-    e2v = adjust_fortran_indices(e2v, offset)[
+    c2e = adjust_fortran_indices(c2e)
+    c2v = adjust_fortran_indices(c2v)
+    v2c = adjust_fortran_indices(v2c)
+    e2v = adjust_fortran_indices(e2v)[
         :, 0:2
     ]  # slicing required for e2v as input data is actually e2c2v
-    c2e2c = adjust_fortran_indices(c2e2c, offset)
-    v2e = adjust_fortran_indices(v2e, offset)
-    e2c2v = adjust_fortran_indices(e2c2v, offset)
-    e2c = adjust_fortran_indices(e2c, offset)
-    e2c2e = adjust_fortran_indices(e2c2e, offset)
+    c2e2c = adjust_fortran_indices(c2e2c)
+    v2e = adjust_fortran_indices(v2e)
+    e2c2v = adjust_fortran_indices(e2c2v)
+    e2c = adjust_fortran_indices(e2c)
+    e2c2e = adjust_fortran_indices(e2c2e)
 
     # stacked arrays
-    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c))
-    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
+    c2e2c0 = add_origin(xp, c2e2c)
+    e2c2e0 = add_origin(xp, e2c2e)
 
     config = base.GridConfig(
         horizontal_config=base.HorizontalGridSize(
@@ -189,46 +213,54 @@ def construct_icon_grid(
         ),
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=on_gpu,
         keep_skip_values=False,
     )
 
-    grid = (
-        icon.IconGrid(id_=grid_id)
-        .set_config(config)
-        .set_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
-        .set_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)
-        .set_start_end_indices(dims.CellDim, cells_start_index, cells_end_index)
-        .set_neighbor_tables(
-            {
-                dims.C2EDim: c2e,
-                dims.C2VDim: c2v,
-                dims.E2CDim: e2c,
-                dims.E2C2EDim: e2c2e,
-                dims.C2E2CDim: c2e2c,
-                dims.C2E2CODim: c2e2c0,
-                dims.E2C2EODim: e2c2e0,
-            }
-        )
-        .set_neighbor_tables(
-            {
-                dims.V2EDim: v2e,
-                dims.E2VDim: e2v,
-                dims.E2C2VDim: e2c2v,
-                dims.V2CDim: v2c,
-            }
-        )
+    neighbor_tables = {
+        dims.C2E: c2e,
+        dims.C2V: c2v,
+        dims.E2C: e2c,
+        dims.E2C2E: e2c2e,
+        dims.C2E2C: c2e2c,
+        dims.C2E2CO: c2e2c0,
+        dims.E2C2EO: e2c2e0,
+        dims.V2E: v2e,
+        dims.E2V: e2v,
+        dims.E2C2V: e2c2v,
+        dims.V2C: v2c,
+    }
+
+    # extract nproma before shrinking the connectivities
+    nproma = get_nproma(neighbor_tables.values())
+
+    neighbor_tables = shrink_to_dimension(
+        sizes={dims.EdgeDim: num_edges, dims.VertexDim: num_vertices, dims.CellDim: num_cells},
+        tables=neighbor_tables,
     )
 
-    grid.update_size_connectivities(
-        {
-            dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
-            dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
-            dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
-        }
-    )
+    start_indices = {
+        dims.CellDim: cells_start_index,
+        dims.EdgeDim: edge_start_index,
+        dims.VertexDim: vertex_start_index,
+    }
+    end_indices = {
+        dims.CellDim: cells_end_index,
+        dims.EdgeDim: edge_end_index,
+        dims.VertexDim: vertex_end_index,
+    }
 
-    return grid
+    return icon.icon_grid(
+        id_=grid_id,
+        allocator=backend,
+        config=config,
+        neighbor_tables=neighbor_tables,
+        start_indices=start_indices,
+        end_indices=end_indices,
+        global_properties=icon.GlobalGridParams.from_mean_cell_area(mean_cell_area),
+        sparse_1d_connectivity_constructor=functools.partial(
+            _nproma_1d_sparse_connectivity_constructor, nproma
+        ),
+    )
 
 
 def construct_decomposition(
@@ -247,11 +279,9 @@ def construct_decomposition(
     definitions.ProcessProperties, definitions.DecompositionInfo, definitions.ExchangeRuntime
 ]:
     log.debug("Offsetting Fortran connectivitity arrays by 1")
-    offset = 1
-
-    c_glb_index = adjust_fortran_indices(c_glb_index, offset)
-    e_glb_index = adjust_fortran_indices(e_glb_index, offset)
-    v_glb_index = adjust_fortran_indices(v_glb_index, offset)
+    c_glb_index = adjust_fortran_indices(c_glb_index)
+    e_glb_index = adjust_fortran_indices(e_glb_index)
+    v_glb_index = adjust_fortran_indices(v_glb_index)
 
     c_owner_mask = c_owner_mask[:num_cells]
     e_owner_mask = e_owner_mask[:num_edges]

@@ -9,28 +9,21 @@
 from __future__ import annotations
 
 import logging as log
+from types import ModuleType
 from typing import TYPE_CHECKING, Optional, TypeAlias, Union
 
-import gt4py._core.definitions as gtx_core_defs
 import numpy as np
 import numpy.typing as npt
 from gt4py import next as gtx
-from gt4py.next import backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 
 from icon4py.model.common import type_alias as ta
+from icon4py.model.common.utils import device_utils
 
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
 
-
-#: Enum values from Enum values taken from DLPack reference implementation at:
-#:  https://github.com/dmlc/dlpack/blob/main/include/dlpack/dlpack.h
-#:  via GT4Py
-CUDA_DEVICE_TYPES = (
-    gtx_core_defs.DeviceType.CUDA,
-    gtx_core_defs.DeviceType.ROCM,
-)
 
 try:
     import cupy as xp
@@ -56,14 +49,7 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
         return cp.asnumpy(array)
 
 
-def is_cupy_device(backend: Optional[gtx_backend.Backend]) -> bool:
-    if backend is not None:
-        return backend.allocator.__gt_device_type__ in CUDA_DEVICE_TYPES
-    else:
-        return False
-
-
-def array_ns(try_cupy: bool):
+def array_ns(try_cupy: bool) -> ModuleType:
     if try_cupy:
         try:
             import cupy as cp
@@ -76,9 +62,9 @@ def array_ns(try_cupy: bool):
     return np
 
 
-def import_array_ns(backend: Optional[gtx_backend.Backend]):
+def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
-    return array_ns(is_cupy_device(backend))
+    return array_ns(device_utils.is_cupy_device(allocator))
 
 
 def as_field(
@@ -130,7 +116,7 @@ def random_field(
 
 
 def random_mask(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     *dims: gtx.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gtx.Dimension, int]] = None,
@@ -149,7 +135,7 @@ def random_mask(
 
 
 def zero_field(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
     extend: Optional[dict[gtx.Dimension, int]] = None,
@@ -160,7 +146,7 @@ def zero_field(
 
 
 def constant_field(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     value: float,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
@@ -174,7 +160,7 @@ def constant_field(
 
 
 def _shape(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     *dims: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
 ) -> tuple[int, ...]:
@@ -183,7 +169,7 @@ def _shape(
 
 
 def index_field(
-    grid: grid_base.BaseGrid,
+    grid: grid_base.Grid,
     dim: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
     dtype=gtx.int32,
