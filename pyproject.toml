@@ -226,7 +226,6 @@ select = [
   # 'PLE', # Pylint-Error
   # 'PLR', # Pylint-Refactor
   # 'PLW', # Pylint-Warning
-  'PLW0133',  # useless-exception-statement
   # 'PTH', # flake8-use-pathlib
   'Q',  # flake8-quotes
   'RUF',  # Ruff-specific rules
