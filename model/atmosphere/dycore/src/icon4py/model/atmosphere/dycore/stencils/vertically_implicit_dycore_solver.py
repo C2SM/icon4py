@@ -184,24 +184,33 @@ def _solve_tridiagonal_matrix_for_w_forward_backward_scan(
     z_exner_expl: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
+    n_lev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     (
         tridiagonal_intermediate_result,
         next_w_intermediate_result,
-    ) = _solve_tridiagonal_matrix_for_w_forward_sweep(
-        vwind_impl_wgt=vwind_impl_wgt,
-        theta_v_ic=theta_v_ic,
-        ddqz_z_half=ddqz_z_half,
-        z_alpha=z_alpha,
-        z_beta=z_beta,
-        z_w_expl=z_w_expl,
-        z_exner_expl=z_exner_expl,
-        dtime=dtime,
-        cpd=dycore_consts.cpd,
+    ) = concat_where(
+        dims.KDim > 0,
+        _solve_tridiagonal_matrix_for_w_forward_sweep(
+            vwind_impl_wgt=vwind_impl_wgt,
+            theta_v_ic=theta_v_ic,
+            ddqz_z_half=ddqz_z_half,
+            z_alpha=z_alpha,
+            z_beta=z_beta,
+            z_w_expl=z_w_expl,
+            z_exner_expl=z_exner_expl,
+            dtime=dtime,
+            cpd=dycore_consts.cpd,
+        ),
+        (broadcast(vpfloat("0.0"), (dims.CellDim,)), broadcast(wpfloat("0.0"), (dims.CellDim,))),
     )
-    next_w_intermediate_result = _solve_tridiagonal_matrix_for_w_back_substitution_scan(
-        z_q=tridiagonal_intermediate_result,
-        w=next_w_intermediate_result,
+    next_w_intermediate_result = concat_where(
+        (0 < dims.KDim) & (dims.KDim < n_lev),
+        _solve_tridiagonal_matrix_for_w_back_substitution_scan(
+            z_q=tridiagonal_intermediate_result,
+            w=next_w_intermediate_result,
+        ),
+        broadcast(vpfloat("0.0"), (dims.CellDim,)),
     )
     return next_w_intermediate_result
 
@@ -347,6 +356,7 @@ def _vertically_implicit_solver_at_predictor_step(
             z_exner_expl=exner_explicit_term,
             dtime=dtime,
             cpd=dycore_consts.cpd,
+            n_lev=n_lev,
         ),
         on_last_level=next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
     )
@@ -665,6 +675,7 @@ def _vertically_implicit_solver_at_corrector_step(
             z_exner_expl=exner_explicit_term,
             dtime=dtime,
             cpd=dycore_consts.cpd,
+            n_lev=n_lev,
         ),
         on_last_level=next_w,  # n_lev value is set by _set_surface_boundary_condtion_for_computation_of_w
     )
