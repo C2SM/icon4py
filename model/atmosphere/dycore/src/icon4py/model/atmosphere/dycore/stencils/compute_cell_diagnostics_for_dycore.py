@@ -166,7 +166,6 @@ def _compute_perturbed_quantities_and_interpolation(
 def _surface_computations(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
@@ -390,7 +389,6 @@ def compute_perturbed_quantities_and_interpolation(
     _surface_computations(
         wgtfacq_c=wgtfacq_c,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
-        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         igradp_method=igradp_method,
         out=(
             temporal_extrapolation_of_perturbed_exner,
