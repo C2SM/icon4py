@@ -86,6 +86,7 @@ class GlobalGridParams:
 
     def __init__(
         self,
+        *,
         grid_params: GridParams | None = None,
         num_cells: int | None = None,
         mean_cell_area: float | None = None,
@@ -95,21 +96,6 @@ class GlobalGridParams:
         self._num_cells = num_cells
         self._mean_cell_area = mean_cell_area
         self.radius = radius
-
-    @classmethod
-    def from_mean_cell_area(
-        cls,
-        mean_cell_area: float,
-        grid_params: GridParams | None = None,
-        num_cells: int | None = None,
-        radius: float = constants.EARTH_RADIUS,
-    ):
-        return cls(
-            grid_params,
-            num_cells,
-            mean_cell_area,
-            radius,
-        )
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
