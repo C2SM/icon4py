@@ -797,7 +797,6 @@ class Diffusion:
             kh_smag_e=self.kh_smag_e,
             kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
-            smag_offset=smag_offset,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
         if (
