@@ -252,14 +252,14 @@ def test_global_grid_params(
     expected_mean_cell_area,
 ):
     params = icon.GlobalGridParams(
-        icon.GridShape(
+        grid_shape=icon.GridShape(
             geometry_type=geometry_type,
             subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)
             if grid_root is not None
             else None,
         ),
-        num_cells,
-        mean_cell_area,
+        num_cells=num_cells,
+        mean_cell_area=mean_cell_area,
     )
     assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
@@ -286,41 +286,10 @@ def test_global_grid_params(
 def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells, mean_cell_area):
     with pytest.raises(ValueError) as e:
         _ = icon.GlobalGridParams(
-            icon.GridShape(
+            grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             ),
-            num_cells,
-            mean_cell_area,
+            num_cells=num_cells,
+            mean_cell_area=mean_cell_area,
         )
-
-
-@pytest.mark.parametrize(
-    "geometry_type,grid_root,grid_level,num_cells,mean_cell_area,expected_num_cells,expected_mean_cell_area",
-    [
-        (base.GeometryType.ICOSAHEDRON, 2, 4, 42, 123.456, 42, 123.456),
-        (base.GeometryType.ICOSAHEDRON, 4, 9, None, 123.456, 83886080, 123.456),
-        (base.GeometryType.TORUS, 2, 0, 42, 123.456, 42, 123.456),
-    ],
-)
-def test_global_grid_params_from_mean_cell_area(
-    geometry_type,
-    grid_root,
-    grid_level,
-    num_cells,
-    mean_cell_area,
-    expected_num_cells,
-    expected_mean_cell_area,
-):
-    params = icon.GlobalGridParams.from_mean_cell_area(
-        mean_cell_area,
-        num_cells=num_cells,
-        grid_shape=icon.GridShape(
-            geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-        )
-        if grid_root is not None and grid_level is not None
-        else None,
-    )
-    assert expected_num_cells == params.num_cells
-    assert expected_mean_cell_area == params.mean_cell_area
