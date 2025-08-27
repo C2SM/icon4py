@@ -49,8 +49,8 @@ def test_compute_nudgecoeffs_e(
     horizontal_end = icon_grid.end_index(domain(h_grid.Zone.LOCAL))
 
     compute_nudgecoeffs.with_backend(backend)(
-        nudgecoeff_e,
         refin_ctrl,
+        nudgecoeff_e,
         grf_nudge_start_e,
         max_nudging_coefficient,
         nudge_efold_width,

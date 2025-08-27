@@ -33,11 +33,11 @@ def _compute_nudgecoeffs(
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
     refin_ctrl: fa.EdgeField[gtx.int32],
+    nudging_coefficients_for_edges: fa.EdgeField[wpfloat],
     grf_nudge_start_e: gtx.int32,
     max_nudging_coefficient: wpfloat,
     nudge_efold_width: wpfloat,
     nudge_zone_width: gtx.int32,
-    nudging_coefficients_for_edges: fa.EdgeField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
