@@ -104,7 +104,7 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         return 0, 2
 
     try:
-        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
+        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
         return root, level
     except AttributeError as err:
         raise ValueError(
