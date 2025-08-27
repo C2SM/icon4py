@@ -12,16 +12,14 @@ import functools
 import logging
 import math
 import sys
-from typing import Final, Optional
+from typing import Final
 
 import gt4py.next as gtx
+from gt4py.next import backend as gtx_backend, int32
+
 import icon4py.model.common.grid.states as grid_states
-from gt4py.next import int32
-
 import icon4py.model.common.states.prognostic_state as prognostics
-from gt4py.next import backend as gtx_backend
-
-from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
+from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
@@ -31,9 +29,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
     apply_diffusion_to_theta_and_exner,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
-    apply_diffusion_to_vn,
-)
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
@@ -46,20 +42,14 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common import field_type_aliases as fa, constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import (
-    horizontal as h_grid,
-    vertical as v_grid,
-    icon as icon_grid,
-)
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-
-from icon4py.model.common.utils import data_allocation as data_alloc
-
 from icon4py.model.common.orchestration import decorator as dace_orchestration
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -68,7 +58,6 @@ Diffusion module ported from ICON mo_nh_diffusion.f90.
 Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 """
 
-# flake8: noqa
 log = logging.getLogger(__name__)
 
 
@@ -113,8 +102,8 @@ class DiffusionConfig:
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
 
-    # TODO(Magdalena): to be read from config
-    # TODO(Magdalena):  handle dependencies on other namelists (see below...)
+    # TODO(halungge): to be read from config
+    # TODO(halungge):  handle dependencies on other namelists (see below...)
 
     def __init__(
         self,
@@ -368,13 +357,13 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         orchestration: bool = False,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
         self.config = config
         self._params = params
         self._grid = grid
@@ -548,7 +537,7 @@ class Diffusion:
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
-        # TODO(Magdalena): this is KHalfDim
+        # TODO(halungge): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
@@ -770,7 +759,7 @@ class Diffusion:
             )
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
-        # TODO (magdalena) move this up and do asynchronous exchange
+        # TODO(halungge): move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True)
@@ -833,7 +822,7 @@ class Diffusion:
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
-        # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
+        # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
         self.copy_field(prognostic_state.w, self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
@@ -888,7 +877,7 @@ class Diffusion:
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
             self.copy_field(
                 prognostic_state.theta_v, self.theta_v_tmp
-            )  # TODO write in a way that we can avoid the copy
+            )  # TODO(): write in a way that we can avoid the copy
 
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
@@ -919,7 +908,7 @@ class Diffusion:
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 
-    # TODO (kotsaloscv): It is unsafe to set it as cached property -demands more testing-
+    # TODO(kotsaloscv): It is unsafe to set it as cached property -demands more testing-
     def orchestration_uid(self) -> str:
         """Unique id based on the runtime state of the Diffusion object. It is used for caching in DaCe Orchestration."""
         members_to_disregard = [
@@ -929,7 +918,7 @@ class Diffusion:
             "compile_time_connectivities",
             *[
                 name
-                for name in self.__dict__.keys()
+                for name in self.__dict__
                 if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
             ],
         ]

@@ -8,8 +8,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import cffi
 import numpy as np
 
@@ -17,7 +15,7 @@ from icon4py.tools.py2fgen import _codegen, _definitions
 
 
 try:
-    import cupy as cp  # type: ignore
+    import cupy as cp  # type: ignore[import-not-found]
 
 except ImportError:
     cp = None
@@ -73,7 +71,7 @@ def array_info(
 def array_to_array_info(
     arr: np.ndarray,  # or cp.ndarray
     *,
-    ffi: Optional[cffi.FFI] = None,
+    ffi: cffi.FFI | None = None,
     keep_alive: bool = True,
     as_fortran_layout: bool = True,
 ) -> _definitions.ArrayInfo:

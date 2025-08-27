@@ -11,14 +11,14 @@ import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import utils
-from icon4py.model.testing import helpers
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import backend
 
 from ..fixtures import *  # noqa: F403
 
 
 def test_hydrostatic_adjustment_ndarray(backend):
-    # TODO (Jacopo / Chia Rui) these tests could be better
+    # TODO(jcanton,OngChia): these tests could be better
     num_cells = 10
     num_levels = 10
 
@@ -58,26 +58,26 @@ def test_hydrostatic_adjustment_ndarray(backend):
     assert r_exner.shape == (num_cells, num_levels)
     assert r_theta_v.shape == (num_cells, num_levels)
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         r_rho[:, -1],
         rho0 * np.ones(num_cells),
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         data_alloc.as_numpy(r_rho[:, :-1]),
         1.0046424441749071 * np.ones((num_cells, num_levels - 1)),
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         data_alloc.as_numpy(r_exner),
         exner0 * np.ones((num_cells, num_levels)),
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         data_alloc.as_numpy(r_theta_v),
         theta_v0 * np.ones((num_cells, num_levels)),
     )
 
 
 def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
-    # TODO (Jacopo / Chia Rui) these tests could be better
+    # TODO(jcanton,OngChia): these tests could be better
     num_cells = 10
     num_levels = 10
 
@@ -114,11 +114,11 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
     assert r_rho.shape == (num_cells, num_levels)
     assert r_exner.shape == (num_cells, num_levels)
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         data_alloc.as_numpy(r_rho),
         1.0046424441749071 * np.ones((num_cells, num_levels)),
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         data_alloc.as_numpy(r_exner),
         exner0 * np.ones((num_cells, num_levels)),
     )

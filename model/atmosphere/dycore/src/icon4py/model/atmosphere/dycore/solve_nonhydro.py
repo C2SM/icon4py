@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ruff: noqa: ERA001, B008
 
-import logging
 import dataclasses
-from typing import Final, Optional
+import logging
+from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -17,24 +17,12 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
-
-from icon4py.model.common import constants
+from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
     vertically_implicit_dycore_solver,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    init_cell_kdim_field_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
-    accumulate_prep_adv_fields,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
-    compute_hydrostatic_correction_term,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import compute_avg_vn
 from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
@@ -44,44 +32,51 @@ from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_dampin
 from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import (
     compute_exner_from_rhotheta,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_mass_flux
-from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import (
-    compute_theta_and_exner,
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
+    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+    compute_horizontal_velocity_quantities_and_fluxes,
 )
+from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_mass_flux
+from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import compute_theta_and_exner
 from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
 )
-from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
     init_two_edge_kdim_fields_with_zero_wp,
 )
-from icon4py.model.atmosphere.dycore import (
-    dycore_states,
-    dycore_utils,
+from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
-from icon4py.model.atmosphere.dycore.velocity_advection import (
-    VelocityAdvection,
+from icon4py.model.atmosphere.dycore.velocity_advection import VelocityAdvection
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    field_type_aliases as fa,
+    model_options,
+    type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common import dimension as dims, model_options
 from icon4py.model.common.grid import (
     base as grid_def,
     horizontal as h_grid,
-    vertical as v_grid,
     icon as icon_grid,
+    vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-# flake8: noqa
 log = logging.getLogger(__name__)
 
 
@@ -102,7 +97,7 @@ class IntermediateFields:
     """
     tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[
         ta.vpfloat
-    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    ]  # TODO(): change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     """
     Declared as z_alpha in ICON.
     """
@@ -116,7 +111,7 @@ class IntermediateFields:
     """
     vertical_mass_flux_at_cells_on_half_levels: fa.EdgeKField[
         ta.wpfloat
-    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    ]  # TODO(): change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     """
     Declared as z_contr_w_fl_l in ICON.
     """
@@ -153,7 +148,7 @@ class IntermediateFields:
     def allocate(
         cls,
         grid: grid_def.Grid,
-        backend: Optional[gtx_backend.Backend] = None,
+        backend: gtx_backend.Backend | None = None,
     ):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
@@ -218,8 +213,8 @@ class NonHydrostaticConfig:
         l_vert_nested: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
-        _nudge_max_coeff: float = None,  # default is set in __init__
-        max_nudging_coefficient: float = None,  # default is set in __init__
+        _nudge_max_coeff: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float | None = None,  # default is set in __init__
         fourth_order_divdamp_factor: float = 0.0025,
         fourth_order_divdamp_factor2: float = 0.004,
         fourth_order_divdamp_factor3: float = 0.004,
@@ -412,7 +407,7 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
@@ -500,6 +495,25 @@ class SolveNonhydro:
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
         )
+        self._compute_horizontal_velocity_quantities_and_fluxes = (
+            compute_horizontal_velocity_quantities_and_fluxes.with_backend(self._backend).compile(
+                nflatlev=[self._vertical_params.nflatlev],
+                vertical_start=[gtx.int32(0)],
+                vertical_end=[gtx.int32(self._grid.num_levels + 1)],
+                offset_provider=self._grid.connectivities,
+            )
+        )
+        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = (
+            compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
+                self._backend
+            ).compile(
+                prepare_advection=[False, True],
+                at_first_substep=[False, True],
+                vertical_start=[gtx.int32(0)],
+                vertical_end=[gtx.int32(self._grid.num_levels)],
+                offset_provider=self._grid.connectivities,
+            )
+        )
         self._compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
             self._backend
         ).compile(
@@ -557,20 +571,6 @@ class SolveNonhydro:
             vertical_start=[gtx.int32(0)],
             vertical_end=[gtx.int32(self._grid.num_levels)],
             offset_provider=self._grid.connectivities,
-        )
-        self._compute_avg_vn = compute_avg_vn.with_backend(self._backend).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider=self._grid.connectivities,
-        )
-        self._accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels)],
-            offset_provider={},
         )
         self._init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
             self._backend
@@ -1045,12 +1045,12 @@ class SolveNonhydro:
         )
 
         log.debug(
-            f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
+            "predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
         )
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
-            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
-            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,
+            ikoffset=self._metric_state_nonhydro.vertoffset_gradp,  # TODO(): fix
+            zdiff_gradp=self._metric_state_nonhydro.zdiff_gradp,  # TODO(): fix
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
@@ -1124,60 +1124,28 @@ class SolveNonhydro:
             dims.EdgeDim, prognostic_states.next.vn, z_fields.rho_at_edges_on_model_levels
         )
 
-        self._compute_avg_vn_and_graddiv_vn_and_vt(
-            e_flx_avg=self._interpolation_state.e_flx_avg,
+        self._compute_horizontal_velocity_quantities_and_fluxes(
+            spatially_averaged_vn=self.z_vn_avg,
+            horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
+            tangential_wind=diagnostic_state_nh.tangential_wind,
+            mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
+            tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
+            vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             vn=prognostic_states.next.vn,
+            e_flx_avg=self._interpolation_state.e_flx_avg,
             geofac_grdiv=self._interpolation_state.geofac_grdiv,
             rbf_vec_coeff_e=self._interpolation_state.rbf_vec_coeff_e,
-            z_vn_avg=self.z_vn_avg,
-            z_graddiv_vn=z_fields.horizontal_gradient_of_normal_wind_divergence,
-            vt=diagnostic_state_nh.tangential_wind,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
-        )
-
-        self._compute_mass_flux(
-            z_rho_e=z_fields.rho_at_edges_on_model_levels,
-            z_vn_avg=self.z_vn_avg,
+            rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
+            theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
-            z_theta_v_e=z_fields.theta_v_at_edges_on_model_levels,
-            mass_fl_e=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
-            z_theta_v_fl_e=self.theta_v_flux_at_edges_on_model_levels,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-        )
-
-        self._predictor_stencils_35_36(
-            vn=prognostic_states.next.vn,
             ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
             ddxt_z_full=self._metric_state_nonhydro.ddxt_z_full,
-            vt=diagnostic_state_nh.tangential_wind,
-            z_w_concorr_me=self._contravariant_correction_at_edges_on_model_levels,
             wgtfac_e=self._metric_state_nonhydro.wgtfac_e,
-            vn_ie=diagnostic_state_nh.vn_on_half_levels,
-            z_vt_ie=z_fields.tangential_wind_on_half_levels,
-            z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
-            k_field=self.k_field,
-            nflatlev_startindex=self._vertical_params.nflatlev,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
-        )
-
-        self._predictor_stencils_37_38(
-            vn=prognostic_states.next.vn,
-            vt=diagnostic_state_nh.tangential_wind,
-            vn_ie=diagnostic_state_nh.vn_on_half_levels,
-            z_vt_ie=z_fields.tangential_wind_on_half_levels,
-            z_kin_hor_e=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
-            wgtfacq_e_dsl=self._metric_state_nonhydro.wgtfacq_e,
+            wgtfacq_e=self._metric_state_nonhydro.wgtfacq_e,
+            nflatlev=self._vertical_params.nflatlev,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
@@ -1322,7 +1290,7 @@ class SolveNonhydro:
             ),
         )
 
-        log.debug(f"corrector run velocity advection")
+        log.debug("corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_states.next,
@@ -1337,7 +1305,7 @@ class SolveNonhydro:
             dtime=dtime,
             out=self.rayleigh_damping_factor,
         )
-        log.debug(f"corrector: start stencil 10")
+        log.debug("corrector: start stencil 10")
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
@@ -1366,7 +1334,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        log.debug(f"corrector: start stencil apply_divergence_damping_and_update_vn")
+        log.debug("corrector: start stencil apply_divergence_damping_and_update_vn")
         apply_2nd_order_divergence_damping = (
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
             and second_order_divdamp_scaling_coeff > 1.0e-6
@@ -1414,56 +1382,27 @@ class SolveNonhydro:
 
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
-        log.debug("corrector: start stencil 31")
-        self._compute_avg_vn(
+
+        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+            spatially_averaged_vn=self.z_vn_avg,
+            mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+            theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
+            substep_and_spatially_averaged_vn=prep_adv.vn_traj,
+            substep_averaged_mass_flux=prep_adv.mass_flx_me,
             e_flx_avg=self._interpolation_state.e_flx_avg,
             vn=prognostic_states.next.vn,
-            z_vn_avg=self.z_vn_avg,
+            rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
+            ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
+            theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+            prepare_advection=lprep_adv,
+            at_first_substep=at_first_substep,
+            r_nsubsteps=r_nsubsteps,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.connectivities,
         )
-
-        log.debug("corrector: start stencil 32")
-        self._compute_mass_flux(
-            z_rho_e=z_fields.rho_at_edges_on_model_levels,
-            z_vn_avg=self.z_vn_avg,
-            ddqz_z_full_e=self._metric_state_nonhydro.ddqz_z_full_e,
-            z_theta_v_e=z_fields.theta_v_at_edges_on_model_levels,
-            mass_fl_e=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
-            z_theta_v_fl_e=self.theta_v_flux_at_edges_on_model_levels,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-        )
-
-        if lprep_adv:  # Preparations for tracer advection
-            log.debug("corrector: doing prep advection")
-            if at_first_substep:
-                log.debug("corrector: start stencil 33")
-                self._init_two_edge_kdim_fields_with_zero_wp(
-                    edge_kdim_field_with_zero_wp_1=prep_adv.vn_traj,
-                    edge_kdim_field_with_zero_wp_2=prep_adv.mass_flx_me,
-                    horizontal_start=self._start_edge_lateral_boundary,
-                    horizontal_end=self._end_edge_end,
-                    vertical_start=0,
-                    vertical_end=self._grid.num_levels,
-                )
-            log.debug(f"corrector: start stencil 34")
-            self._accumulate_prep_adv_fields(
-                z_vn_avg=self.z_vn_avg,
-                mass_fl_e=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
-                vn_traj=prep_adv.vn_traj,
-                mass_flx_me=prep_adv.mass_flx_me,
-                r_nsubsteps=r_nsubsteps,
-                horizontal_start=self._start_edge_lateral_boundary_level_5,
-                horizontal_end=self._end_edge_halo_level_2,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-            )
 
         self._vertically_implicit_solver_at_corrector_step(
             vertical_mass_flux_at_cells_on_half_levels=z_fields.vertical_mass_flux_at_cells_on_half_levels,
@@ -1524,7 +1463,7 @@ class SolveNonhydro:
         if lprep_adv:
             if at_first_substep:
                 log.debug(
-                    f"corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+                    "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
                 )
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
@@ -1533,7 +1472,7 @@ class SolveNonhydro:
                     vertical_start=0,
                     vertical_end=self._grid.num_levels + 1,
                 )
-            log.debug(f" corrector: start stencil 65")
+            log.debug(" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
                 vwind_expl_wgt=self._metric_state_nonhydro.exner_w_explicit_weight_parameter,

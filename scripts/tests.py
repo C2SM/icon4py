@@ -13,6 +13,7 @@
 # work fine for the current needs, and it is already quite useful.
 
 import ast
+import contextlib
 import enum
 import functools
 import os
@@ -54,7 +55,7 @@ _NS_INIT_PY_AST = ast.parse(_NS_INIT_PY_DEFAULT_CONTENT)
 
 
 @cli.command(name="check-layout")
-def check_layout(
+def check_layout(  # noqa: PLR0912 [too-many-branches]
     fix: Annotated[
         bool, typer.Option("--fix", "-f", help="Automatically create unknown __init__.py files.")
     ] = False,
@@ -80,12 +81,10 @@ def check_layout(
 
                     is_ns_init_ok = False
                     if "__init__.py" in file_names:
-                        try:
+                        with contextlib.suppress(SyntaxError):
                             is_ns_init_ok = ast_dump(
                                 ast.parse((dir_path / "__init__.py").read_text())
                             ) == ast_dump(_NS_INIT_PY_AST)
-                        except SyntaxError:
-                            pass
 
                     if not is_ns_init_ok:
                         violations += 1
@@ -121,7 +120,7 @@ def check_layout(
 
 
 # -- fixture-requests --
-FixtureRequest: TypeAlias = tuple[pathlib.Path, str]
+FixtureRequestLocation: TypeAlias = tuple[pathlib.Path, str]
 
 
 class RequestedFixtures(NamedTuple):
@@ -183,22 +182,23 @@ def _collect_fixtures_in_file(test_file_path: pathlib.Path) -> list[str]:
     fixtures = []
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
-            for decorator in node.decorator_list:
+            fixtures.extend(
+                node.name
+                for decorator_node in node.decorator_list
                 if (
-                    isinstance(decorator, ast.Call)
-                    and isinstance(decorator.func, ast.Attribute)
-                    and decorator.func.attr == "fixture"
-                    and isinstance(decorator.func.value, ast.Name)
-                    and decorator.func.value.id == "pytest"
-                ):
-                    fixtures.append(node.name)
-                elif (
-                    isinstance(decorator, ast.Attribute)
-                    and decorator.attr == "fixture"
-                    and isinstance(decorator.value, ast.Name)
-                    and decorator.value.id == "pytest"
-                ):
-                    fixtures.append(node.name)
+                    isinstance(decorator_node, ast.Call)
+                    and isinstance(decorator_node.func, ast.Attribute)
+                    and decorator_node.func.attr == "fixture"
+                    and isinstance(decorator_node.func.value, ast.Name)
+                    and decorator_node.func.value.id == "pytest"
+                )
+                or (
+                    isinstance(decorator_node, ast.Attribute)
+                    and decorator_node.attr == "fixture"
+                    and isinstance(decorator_node.value, ast.Name)
+                    and decorator_node.value.id == "pytest"
+                )
+            )
     return fixtures
 
 
@@ -211,9 +211,9 @@ def _collect_fixture_files(root_dir: pathlib.Path) -> list[pathlib.Path]:
             continue  # Skip virtual environments
         if (dirpath.endswith("fixtures") or dirpath in fixture_pkgs) and "__init__.py" in filenames:
             fixture_pkgs.update(f"{dirpath}/{d}" for d in dirnames)
-            for fname in filenames:
-                if fname.endswith(".py"):
-                    fixture_files.append(pathlib.Path(dirpath) / fname)
+            fixture_files.extend(
+                pathlib.Path(dirpath) / fname for fname in filenames if fname.endswith(".py")
+            )
             if dirpath in fixture_pkgs:
                 fixture_pkgs.remove(dirpath)
         elif "fixtures.py" in filenames:
@@ -241,7 +241,7 @@ def _find_closest_fixture_import_path(
     up_levels = 100
     fixture_import = None
 
-    for _, def_path in enumerate(fixture_definitions):
+    for def_path in fixture_definitions:
         if (
             "tests" in def_path.parts
             and def_path.parts[def_path.parts.index("tests") + 1] == test_file_component
@@ -264,9 +264,9 @@ def _find_closest_fixture_import_path(
 def _fix_fixture_requests(
     fixture_requests: RequestedFixturesPerFile,
     test_path: pathlib.Path,
-) -> tuple[list[FixtureRequest], list[FixtureRequest]]:
-    """Fix unknown fixture requests by creating __init__.py files."""
-    rich.print("[yellow]Adding missing fixtures...[/yellow]")
+) -> tuple[list[FixtureRequestLocation], list[FixtureRequestLocation]]:
+    """Fix unknown fixture requests by adding explicit imports."""
+    rich.print("[yellow]Adding missing fixture imports...[/yellow]")
 
     fixed = []
     errors = []
@@ -331,7 +331,7 @@ def fixture_requests(
     fixture_requests: RequestedFixturesPerFile = _collect_fixture_requests(test_path, with_args)
 
     report = []
-    errors: list[FixtureRequest] = []
+    errors: list[FixtureRequestLocation] = []
     fixes = None
     for path, (all_, unknown) in fixture_requests.items():
         all_list = sorted(all_)

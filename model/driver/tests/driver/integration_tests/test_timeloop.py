@@ -21,7 +21,7 @@ from icon4py.model.driver import (
     icon4py_driver,
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
@@ -212,18 +212,10 @@ def test_run_timeloop_single_step(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.e_bln_c_s(),
-            backend=backend,
-        ),
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim,
-            field=interpolation_savepoint.geofac_div(),
-            backend=backend,
-        ),
+        geofac_div=interpolation_savepoint.geofac_div(),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
@@ -366,30 +358,30 @@ def test_run_timeloop_single_step(
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-12,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-14,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.exner.asnumpy(),
         exner_sp.asnumpy(),
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=4e-12,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         prognostic_states.current.rho.asnumpy(),
         rho_sp.asnumpy(),
     )

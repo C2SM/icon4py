@@ -30,7 +30,7 @@ def _compute_nudgecoeffs(
     )
 
 
-# TODO (@halungge) not registered in factory
+# TODO(halungge): not registered in factory
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
     nudging_coefficients_for_edges: fa.EdgeField[wpfloat],

@@ -11,7 +11,8 @@ from __future__ import annotations
 import functools
 import math
 import types
-from typing import TYPE_CHECKING, Any, Callable, Final, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Final
 
 import numpy as np
 
@@ -19,7 +20,7 @@ from icon4py.tools.py2fgen import _definitions
 
 
 try:
-    import cupy as cp  # type: ignore
+    import cupy as cp  # type: ignore[import-not-found]
 except ImportError:
     cp = None
 
@@ -57,14 +58,14 @@ def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.
     length = math.prod(sizes)
     c_type = ffi.getctype(
         ffi.typeof(ptr).item
-    )  # TODO use the type from the annotation and add a debug assert that they are fine
+    )  # TODO(): use the type from the annotation and add a debug assert that they are fine
 
     # Map C data types to NumPy dtypes
 
     dtype = C_STR_TYPE_TO_NP_DTYPE.get(c_type, np.dtype(c_type))
 
     # Create a NumPy array from the buffer, specifying the Fortran order
-    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
+    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore[call-overload]
         sizes, order="F"
     )
     return arr
@@ -144,7 +145,7 @@ def unpack(
 
 def as_array(
     ffi: cffi.FFI, array_info: _definitions.ArrayInfo, dtype: _definitions.ScalarKind
-) -> Optional[np.ndarray]:  # or cupy
+) -> np.ndarray | None:  # or cupy
     """
     Utility function to convert an ArrayInfo to a NumPy or CuPy array.
 

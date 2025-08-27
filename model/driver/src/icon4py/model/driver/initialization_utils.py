@@ -98,7 +98,6 @@ def model_initialization_serialbox(
     grid: icon_grid.IconGrid,
     path: pathlib.Path,
     backend: gtx_backend.Backend,
-    ndyn_substeps,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
@@ -238,7 +237,6 @@ def read_initial_state(
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gtx_backend.Backend,
-    ndyn_substeps: int,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -281,7 +279,6 @@ def read_initial_state(
             edge_param=edge_param,
             path=path,
             backend=backend,
-            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     elif experiment_type == ExperimentType.GAUSS3D:
@@ -298,7 +295,6 @@ def read_initial_state(
             edge_param=edge_param,
             path=path,
             backend=backend,
-            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     elif experiment_type == ExperimentType.ANY:
@@ -314,7 +310,6 @@ def read_initial_state(
             grid=grid,
             path=path,
             backend=backend,
-            ndyn_substeps=ndyn_substeps,
             rank=rank,
         )
     else:
@@ -377,7 +372,7 @@ def read_geometry_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-# TODO (Chia Rui): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
+# TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
     return sb.IconSerialDataProvider(
         backend=backend,
@@ -388,7 +383,7 @@ def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
     )
 
 
-# TODO (Chia Rui): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
+# TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
         grid_id, grid_root, grid_level
@@ -460,18 +455,10 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=data_alloc.flatten_first_two_dims(
-                dims.CEDim,
-                field=interpolation_savepoint.e_bln_c_s(),
-                backend=backend,
-            ),
+            e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=data_alloc.flatten_first_two_dims(
-                dims.CEDim,
-                field=interpolation_savepoint.geofac_div(),
-                backend=backend,
-            ),
+            geofac_div=interpolation_savepoint.geofac_div(),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
@@ -561,7 +548,7 @@ def configure_logging(
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
-    # TODO (Chia Rui): modify here when single_dispatch is ready
+    # TODO(OngChia): modify here when single_dispatch is ready
     console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"

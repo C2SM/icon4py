@@ -296,7 +296,7 @@ def _snow_lambda(
     A2 = g_ct.ams * 2.0  # (with ams*gam(bms+1.0_wp) where gam(3) = 2)
     LMD_0 = 1.0e10  # no snow value of lambda
     BX = 1.0 / (g_ct.bms + 1.0)  # Exponent
-    QSMIN = 0.0e-6  # TODO: Check with Georgiana that this value is correct
+    QSMIN = 0.0e-6  # TODO(): Check with Georgiana that this value is correct
 
     return where(qs > g_ct.qmin, power((A2 * ns / ((qs + QSMIN) * rho)), BX), LMD_0)
 
@@ -345,7 +345,7 @@ def _snow_number(
     N0S6 = 1.0e2 * N0S1
     N0S7 = 1.0e9
 
-    # TODO: see if these can be incorporated into WHERE statement
+    # TODO(): see if these can be incorporated into WHERE statement
     tc = maximum(minimum(t, TMAX), TMIN) - t_d.tmelt
     alf = power(10.0, (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)

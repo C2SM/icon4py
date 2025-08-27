@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Any, Final, Literal, Sequence, TypeGuard, Union
+from collections.abc import Sequence
+from typing import Any, Final, Literal, TypeGuard
 
 from gt4py.eve import Node, codegen
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -45,7 +46,7 @@ def is_array(param: _definitions.ParamDescriptor) -> TypeGuard[_definitions.Arra
 
 class Func(Node):
     name: str
-    args: dict[str, Union[_definitions.ArrayParamDescriptor, _definitions.ScalarParamDescriptor]]
+    args: dict[str, _definitions.ArrayParamDescriptor | _definitions.ScalarParamDescriptor]
 
 
 class BindingsLibrary(Node):
@@ -320,7 +321,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     return f"{name} = c_loc({name})"
             return f"{name} = {name}"
 
-        param_names = ", &\n ".join([name for name in func.args.keys()] + ["rc"])
+        param_names = ", &\n ".join([name for name in func.args] + ["rc"])
         args = []
         for name, param in func.args.items():
             args.append(render_args(name, param))

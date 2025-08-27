@@ -41,7 +41,7 @@ test = [
   "icon4py-testing>=0.0.6",
   # external dependencies
   "coverage[toml]>=7.5.0",
-  "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b",  # TODO: remove once there is any release newer than 2024.10.09
+  "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b",  # TODO(): remove once there is any release newer than 2024.10.09
   "pytest>=8.0.1",
   "pytest-benchmark>=5.0.0",
   "pytest-cache>=1.0",
@@ -148,7 +148,7 @@ warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
 
-# TODO fix gtx.int32 export in gt4py
+# TODO(): fix gtx.int32 export in gt4py
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
 module = '*.stencil_tests.*'
@@ -158,7 +158,10 @@ ignore_errors = true
 module = [
   'icon4py.model.testing.fixtures.datatest',
   'icon4py.model.testing.pytest_hooks',
-  'icon4py.model.testing.serialbox'
+  'icon4py.model.testing.serialbox',
+  'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',
+  'icon4py.tools.py2fgen.wrappers.dycore_wrapper',
+  'icon4py.tools.py2fgen.wrappers.grid_wrapper'
 ]
 
 # -- pytest --
@@ -191,56 +194,52 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 # -- Rules set to be considered --
-# A: flake8-builtins
-# B: flake8-bugbear
-# C4: flake8-comprehensions
-# CPY: flake8-copyright
-# D: pydocstyle
-# DOC: pydoclint
-# E: pycodestyle
-# ERA: eradicate
-# F: Pyflakes
-# FA100: future-rewritable-type-annotation
-# FBT: flake8-boolean-trap
-# FLY: flynt
-# I: isort
-# ICN: flake8-import-conventions
-# ISC: flake8-implicit-str-concat
-# N: pep8-naming
-# NPY: NumPy-specific rules
-# PERF: Perflint
-# PGH: pygrep-hooks
-# PTH: flake8-use-pathlib
-# Q: flake8-quotes
-# RUF: Ruff-specific rules
-# SIM: flake8-simplify
-# T10: flake8-debugger
-# TD: flake8-todos
-# UP: pyupgrade
-# YTT: flake8-2020
 exclude = ["**/tests/**"]
 explicit-preview-rules = true
-extend-select = ["F822"]  # TODO(egparedes): remove when not longer in preview
 ignore = [
   'E501',  # [line-too-long]
-  'B905'  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
+  'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): activate when possible
+  'PLR0913',  # [too-many-arguments]  # TODO(egparedes): activate when possible
+  'PLR2004',  # [magic-value-comparison]  # TODO(egparedes): activate when possible
+  'PLR5501',  # [collapsible-else-if]  # TODO(egparedes): rediscuss in future
+  'SIM102',  # [collapsible-if]  # TODO(egparedes): rediscuss in future
+  'TD003',  # [missing-todo-link]
+  'UP038'  # [non-pep604-isinstance]
 ]
 preview = true  # use only with explicit-preview-rules=true
 select = [
-  'A',
-  'B',
-  'CPY',
-  'E',
-  'ERA',
-  'F',
-  'FA100',
-  'I',
-  'ISC',
-  'NPY',
-  'Q',
-  'RUF',
-  'T10',
-  'YTT'
+  'A',  # flake8-builtins
+  'B',  # flake8-bugbear
+  # 'C4', #  flake8-comprehensions
+  'CPY',  # flake8-copyright
+  # 'D', #  pydocstyle
+  'DOC',  # pydoclint
+  'E',  # pycodestyle
+  'ERA',  # eradicate
+  'F',  # Pyflakes
+  'F822',  # [undefined-export] (preview)  # TODO(egparedes): remove when not longer in preview
+  'FA100',  # future-rewritable-type-annotation
+  # 'FBT',  # flake8-boolean-trap
+  'FLY',  # flynt
+  'I',  # isort
+  # 'ICN',  # flake8-import-conventions
+  'ISC',  # flake8-implicit-str-concat
+  # 'N',  # pep8-naming
+  'NPY',  # NumPy-specific rules
+  'PERF',  # Perflint
+  'PGH',  # pygrep-hooks
+  'PLC',  # Pylint-Convention
+  'PLE',  # Pylint-Error
+  'PLR',  # Pylint-Refactor
+  'PLW',  # Pylint-Warning
+  'PTH',  # flake8-use-pathlib
+  'Q',  # flake8-quotes
+  'RUF',  # Ruff-specific rules
+  'SIM',  # flake8-simplify
+  'T10',  # flake8-debugger
+  'TD',  # flake8-todos
+  'UP',  # pyupgrade
+  'YTT'  # flake8-2020
 ]
 typing-modules = ['gt4py.eve.extended_typing']
 unfixable = []
@@ -268,11 +267,17 @@ split-on-trailing-comma = false
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**/*_test.py" = ["F401", "F811"]
-"**/tests/**/fixtures.py" = ["F401", "F811"]
+# Avoid messing up conditions in gt4py stencils
+"**/model/**/stencils/*.py" = ["SIM300"]
 # Ignore spurious errors when explicitly importing fixtures in tests.
 # Check: https://github.com/astral-sh/ruff/issues/10662
+"**/tests/**/*_test.py" = ["F401", "F811"]
+"**/tests/**/fixtures.py" = ["F401", "F811"]
 "**/tests/**/test_*.py" = ["F401", "F811"]
+
+[tool.ruff.lint.pylint]
+max-branches = 12
+max-statements = 60
 
 # -- setuptools --
 [tool.setuptools]
@@ -288,9 +293,10 @@ name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
 [tool.uv.sources]
+dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_08_06"}
 # ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
-dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_07_29"}
+# gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
