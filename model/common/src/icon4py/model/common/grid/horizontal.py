@@ -332,7 +332,7 @@ CELL_ZONES = (
 EDGE_ZONES = tuple(Zone)
 
 
-def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int: # noqa: PLR0911,PLR0912  [too-many-return-statements],[too-many-branches]
+def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:  # noqa: PLR0911,PLR0912  [too-many-return-statements],[too-many-branches]
     match marker:
         case Zone.END:
             return _end(dim)

@@ -9,7 +9,6 @@ import dataclasses
 import functools
 import logging
 import math
-import uuid
 from collections.abc import Mapping
 from typing import Final
 
