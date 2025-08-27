@@ -97,7 +97,7 @@ def get_grid_manager(
     return manager
 
 
-def _file_name(grid_file: str) -> str:
+def _file_name(grid_file: str) -> str:  # noqa: PLR0911 [too-many-return-statements]
     match grid_file:
         case dt_utils.REGIONAL_EXPERIMENT:
             return REGIONAL_GRIDFILE
