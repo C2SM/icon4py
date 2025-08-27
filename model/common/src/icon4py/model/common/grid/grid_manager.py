@@ -119,9 +119,9 @@ class GridManager:
     def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool):
         if not self._reader:
             self.open()
+        self._geometry = self._read_geometry_fields(backend)
         self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
         self._coordinates = self._read_coordinates(backend)
-        self._geometry = self._read_geometry_fields(backend)
         self.close()
 
     def _read_coordinates(self, backend: gtx_backend.Backend | None) -> CoordinateDict:
@@ -335,11 +335,27 @@ class GridManager:
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = base.GeometryType(geometry_type)
+
+        # TODO(msimberg): Put mean_cell_area and num_cells in separate class? They're
+        # derived from either global grid parameters or geometry fields.
+        # TODO(msimberg): At least three ways to get the mean cell area:
+        # - from the grid file (if present; seems to be there for torus, maybe not always for sphere)
+        # - computing from cell area geometry fields (should always be there, or can be derived)
+        # - computing from the number of cells and sphere area (only for sphere)
+        # They don't always give the same result. Does it matter? Which one should we prioritize?
+        if mean_cell_area := self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA):
+            mean_cell_area = float(mean_cell_area)
+        if mean_cell_area is None:
+            assert self.geometry is not None
+            mean_cell_area = xp.mean(self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray)
+
         global_params = icon.GlobalGridParams(
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            )
+            ),
+            num_cells=num_cells,
+            mean_cell_area=mean_cell_area,
         )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
