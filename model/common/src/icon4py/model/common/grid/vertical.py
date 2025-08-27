@@ -726,7 +726,7 @@ def _check_flatness_of_flat_level(
     array_ns: ModuleType = np,
 ) -> None:
     # Check if level nflatlev is still flat
-    if not array_ns.all(vertical_coordinate[:, nflatlev - 1] == vct_a[nflatlev - 1]):
+    if not array_ns.all(vertical_coordinate[:, np.maximum(0, nflatlev-1)] == vct_a[np.maximum(0, nflatlev-1)]):
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
 
 

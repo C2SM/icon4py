@@ -28,66 +28,12 @@ from icon4py.model.common.metrics import (
     metrics_factory,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    grid_utils,
-)
-from icon4py.model.testing.data_handling import download_and_extract
 
 import icon4py.model.common.states.prognostic_state as prognostics
 
 from icon4py.model.common.grid import geometry as grid_geometry
 
 from ..fixtures import *
-
-grid_functionality = {dt_utils.R02B04_GLOBAL: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
-
-def get_edge_geometry_for_grid_file(grid_file, geometry_factory, backend):
-    return _get_or_initialize_for_grid_file(grid_file, geometry_factory, backend, "edge_geometry")
-
-
-def get_cell_geometry_for_grid_file(grid_file, geometry_factory, backend):
-    return _get_or_initialize_for_grid_file(grid_file, geometry_factory, backend, "cell_geometry")
-
-
-def _get_or_initialize_for_grid_file(grid_file, geometry_factory, backend, name):
-    """This is refactored from _get_or_initialize in test_diffusion.py,
-    which is used to get the edge or cell geometry for a given grid file, not a given experiment"""
-
-    if not grid_functionality[grid_file].get(name):
-
-        cell_params = grid_states.CellParams(
-            cell_center_lat=geometry_factory.get(geometry_meta.CELL_LAT),
-            cell_center_lon=geometry_factory.get(geometry_meta.CELL_LON),
-            area=geometry_factory.get(geometry_meta.CELL_AREA),
-        )
-        edge_params = grid_states.EdgeParams(
-            edge_center_lat=geometry_factory.get(geometry_meta.EDGE_LAT),
-            edge_center_lon=geometry_factory.get(geometry_meta.EDGE_LON),
-            tangent_orientation=geometry_factory.get(geometry_meta.TANGENT_ORIENTATION),
-            coriolis_frequency=geometry_factory.get(geometry_meta.CORIOLIS_PARAMETER),
-            edge_areas=geometry_factory.get(geometry_meta.EDGE_AREA),
-            primal_edge_lengths=geometry_factory.get(geometry_meta.EDGE_LENGTH),
-            inverse_primal_edge_lengths=geometry_factory.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
-            dual_edge_lengths=geometry_factory.get(geometry_meta.DUAL_EDGE_LENGTH),
-            inverse_dual_edge_lengths=geometry_factory.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
-            inverse_vertex_vertex_lengths=geometry_factory.get(
-                f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
-            ),
-            primal_normal_x=geometry_factory.get(geometry_meta.EDGE_NORMAL_U),
-            primal_normal_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_V),
-            primal_normal_cell_x=geometry_factory.get(geometry_meta.EDGE_NORMAL_CELL_U),
-            primal_normal_cell_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_CELL_V),
-            primal_normal_vert_x=geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-            primal_normal_vert_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-            dual_normal_cell_x=geometry_factory.get(geometry_meta.EDGE_TANGENT_CELL_U),
-            dual_normal_cell_y=geometry_factory.get(geometry_meta.EDGE_TANGENT_CELL_V),
-            dual_normal_vert_x=geometry_factory.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-            dual_normal_vert_y=geometry_factory.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        )
-        grid_functionality[grid_file]["edge_geometry"] = edge_params
-        grid_functionality[grid_file]["cell_geometry"] = cell_params
-    return grid_functionality[grid_file].get(name)
 
 def construct_dummy_decomposition_info(grid, backend) -> definitions.DecompositionInfo:
     """A public helper function to construct a dummy decomposition info object for test cases
@@ -153,13 +99,8 @@ def test_run_diffusion_benchmark(
     benchmark,
 ):
 
-
-    itopo = 1
-    # get configuration
-    num_levels = 65
     dtime = 10.0
-    # TODO (Yilu): for now we use the default configuration, later we can add more configurations
-    # TODO (Yilu): later we will use the configuration from the grid file
+
     config=diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
@@ -193,26 +134,41 @@ def test_run_diffusion_benchmark(
         metadata=geometry_meta.attrs
     )
 
-    cell_geometry = get_cell_geometry_for_grid_file(grid_file, geometry_field_source, backend)
-    edge_geometry = get_edge_geometry_for_grid_file(grid_file, geometry_field_source, backend)
+    cell_geometry= grid_states.CellParams(
+        cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
+        cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
+        area=geometry_field_source.get(geometry_meta.CELL_AREA),
+    )
+    edge_geometry = grid_states.EdgeParams(
+        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
+        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
+        tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
+        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
+        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
+        primal_edge_lengths=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
+        inverse_primal_edge_lengths=geometry_field_source.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
+        dual_edge_lengths=geometry_field_source.get(geometry_meta.DUAL_EDGE_LENGTH),
+        inverse_dual_edge_lengths=geometry_field_source.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
+        inverse_vertex_vertex_lengths=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
+        ),
+        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
+        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+    )
 
-    if itopo == 1:
-        download_and_extract(
-            "https://polybox.ethz.ch/index.php/s/CWWtBHBC9iNpLEo/download",
-            Path("./extpar_data/"),
-            "extpar_r04b09.tar.gz",
-        )
-        f = nc4.Dataset(
-            "/Users/chenyilu/Desktop/EXCLAIM/icon4py/model/atmosphere/diffusion/tests/diffusion_tests/extpar_data/extpar_r04b09.nc",
-            "r")
-        topo_c = f.variables["topography_c"][:]
-        f.close()
-    else:
-        topo_c =  topography_initialization(
-            cell_lat=cell_geometry.cell_center_lat.asnumpy(),
-            u0=35.0,
-            backend=backend,
-        )
+    topo_c =  topography_initialization(
+        cell_lat=cell_geometry.cell_center_lat.asnumpy(),
+        u0=35.0,
+        backend=backend,
+    )
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
