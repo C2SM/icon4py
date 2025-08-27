@@ -1,6 +1,3 @@
-import numpy as np
-import gt4py.next as gtx
-from icon4py.model.common import dimension as dims
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -13,13 +10,17 @@ import os
 import pickle
 from typing import Optional
 
+from gt4py.next import backend as gtx_backend
+import gt4py.next as gtx
+from icon4py.model.common import dimension as dims
+
 import datetime
 import logging
 
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-RESTART_WRITE_FREQUENCY = 30*25 # in time steps
+RESTART_FREQUENCY = 4  # in time steps
 RESTART_DIR = os.path.join(
     os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output"), "restart"
 )
@@ -35,7 +36,7 @@ class RestartManager:
     """
 
     def __init__(self, base_filename: str = "restart"):
-        self.write_frequency = RESTART_WRITE_FREQUENCY
+        self.RESTART_FREQUENCY = RESTART_FREQUENCY
         self.restart_dir = RESTART_DIR
         self.base_filename = base_filename
         self.filepaths = [
@@ -45,7 +46,12 @@ class RestartManager:
         self._restart_data = None
         # TODO: Implement file locking for multi-process safety if needed in the future
 
-    def restore_from_restart(self, prognostic_states, diagnostic_state_nh):
+    def restore_from_restart(
+        self,
+        prognostic_states,
+        diagnostic_state_nh,
+        backend: gtx_backend.Backend,
+    ):
         """
         Restore state variables from the restart file into the provided state objects.
         Returns True if restoration was successful, False otherwise.
@@ -58,22 +64,31 @@ class RestartManager:
             return None
         missing = []
         # Restore prognostic_states.current and .next
-        for state_name, state_obj in [("current", prognostic_states.current), ("next", prognostic_states.next)]:
+        for state_name, state_obj in [
+            ("current", prognostic_states.current),
+            ("next", prognostic_states.next),
+        ]:
             for var in ["vn", "w", "rho", "exner", "theta_v"]:
                 key = f"prognostic_states.{state_name}.{var}"
                 if key in restart_data and restart_data[key] is not None:
                     arr = restart_data[key]["data"]
                     dim_names = restart_data[key]["dims"]
                     dims_tuple = tuple(getattr(dims, name + "Dim") for name in dim_names)
-                    field = gtx.as_field(dims_tuple, arr)
+                    field = gtx.as_field(dims_tuple, arr, allocator=backend)
                     setattr(state_obj, var, field)
                     log.info(f"Restored {key} from restart file.")
                 else:
                     missing.append(key)
         # Restore diagnostic_state_nh variables, handling nested attributes
         diag_restore = [
-            ("perturbed_exner_at_cells_on_model_levels", "diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels"),
-            ("vertical_wind_advective_tendency.predictor", "diagnostic_state_nh.vertical_wind_advective_tendency.predictor"),
+            (
+                "perturbed_exner_at_cells_on_model_levels",
+                "diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels",
+            ),
+            (
+                "vertical_wind_advective_tendency.predictor",
+                "diagnostic_state_nh.vertical_wind_advective_tendency.predictor",
+            ),
         ]
         for attr_path, key in diag_restore:
             if key in restart_data and restart_data[key] is not None:
@@ -84,7 +99,7 @@ class RestartManager:
                 obj = diagnostic_state_nh
                 for a in attrs[:-1]:
                     obj = getattr(obj, a)
-                field = gtx.as_field(dims_tuple, arr)
+                field = gtx.as_field(dims_tuple, arr, allocator=backend)
                 setattr(obj, attrs[-1], field)
                 log.info(f"Restored {key} from restart file.")
             else:
@@ -92,14 +107,22 @@ class RestartManager:
         if missing:
             log.warning(f"Missing variables in restart file: {missing}")
         else:
-            log.info("All prognostic and diagnostic state variables successfully restored from restart file.")
+            log.info(
+                "All prognostic and diagnostic state variables successfully restored from restart file."
+            )
         # Restore time_step_number if present
         time_step_number = restart_data.get("time_step_number", None)
         if time_step_number is not None:
             log.info(f"Restored time_step_number={time_step_number} from restart file.")
         return time_step_number
 
-    def write_restart(self, prognostic_states, diagnostic_state_nh, time_step_number: int, last_written: Optional[int] = None) -> int:
+    def write_restart(
+        self,
+        prognostic_states,
+        diagnostic_state_nh,
+        time_step_number: int,
+        last_written: Optional[int] = None,
+    ) -> int:
         """
         Writes the simulation state to a restart file, alternating between two files.
 
@@ -114,7 +137,10 @@ class RestartManager:
         """
         state = {}
         # Save prognostic_states.current and .next
-        for state_name, state_obj in [("current", prognostic_states.current), ("next", prognostic_states.next)]:
+        for state_name, state_obj in [
+            ("current", prognostic_states.current),
+            ("next", prognostic_states.next),
+        ]:
             for var in ["vn", "w", "rho", "exner", "theta_v"]:
                 key = f"prognostic_states.{state_name}.{var}"
                 field = getattr(state_obj, var)
@@ -128,7 +154,9 @@ class RestartManager:
             "data": diag_field.asnumpy(),
             "dims": [d.value for d in diag_field.domain.dims],
         }
-        diag_field = getattr(getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "predictor")
+        diag_field = getattr(
+            getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "predictor"
+        )
         state["diagnostic_state_nh.vertical_wind_advective_tendency.predictor"] = {
             "data": diag_field.asnumpy(),
             "dims": [d.value for d in diag_field.domain.dims],
@@ -143,7 +171,7 @@ class RestartManager:
         if last_written is None:
             times = []
             for fp in self.filepaths:
-                ts, _ = self._read_metadata(fp)
+                ts, _, _ = self._read_metadata(fp)
                 times.append(ts if ts else "")
             if times[0] and times[1]:
                 idx = 0 if times[0] <= times[1] else 1
@@ -168,7 +196,9 @@ class RestartManager:
             return idx
 
         # Write metadata file
-        self._write_metadata(self.filepaths[idx], state["restart_timestamp"], list(state.keys()))
+        self._write_metadata(
+            self.filepaths[idx], state["restart_timestamp"], time_step_number, list(state.keys())
+        )
         return idx
 
     def _read_restart(self) -> Optional[dict]:
@@ -198,7 +228,7 @@ class RestartManager:
         latest_file = None
         latest_time = None
         for fp in self.filepaths:
-            ts, _ = self._read_metadata(fp)
+            ts, _, _ = self._read_metadata(fp)
             if ts is not None:
                 if latest_time is None or ts > latest_time:
                     latest_time = ts
@@ -213,14 +243,19 @@ class RestartManager:
         """Return the metadata file path for a given restart file path."""
         return restart_path + ".meta"
 
-    def _write_metadata(self, restart_path: str, timestamp: str, keys: list) -> None:
+    def _write_metadata(
+        self, restart_path: str, timestamp: str, time_step_number: int, keys: list
+    ) -> None:
         """Write metadata file for a restart file."""
         meta_fp = self._get_meta_path(restart_path)
         try:
             with open(meta_fp, "w") as mf:
                 mf.write(f"{timestamp}\n")
+                mf.write(f"{time_step_number}\n")
                 mf.write(",".join(keys) + "\n")
-            log.info(f"Wrote metadata file: {meta_fp} (timestamp: {timestamp}, keys: {keys})")
+            log.info(
+                f"Wrote metadata file: {meta_fp} (timestamp: {timestamp}, time_step_number: {time_step_number}, keys: {keys})"
+            )
         except Exception as e:
             log.error(f"Failed to write metadata file {meta_fp}: {e}")
 
@@ -229,14 +264,17 @@ class RestartManager:
         meta_fp = self._get_meta_path(restart_path)
         if not os.path.exists(meta_fp):
             log.info(f"Metadata file not found: {meta_fp}")
-            return None, None
+            return None, None, None
         try:
             with open(meta_fp, "r") as mf:
                 lines = mf.read().splitlines()
                 timestamp = lines[0] if lines else None
-                keys = lines[1].split(",") if len(lines) > 1 else []
-                log.info(f"Read metadata file: {meta_fp} (timestamp: {timestamp}, keys: {keys})")
-                return timestamp, keys
+                time_step_number = lines[1] if len(lines) > 1 else 0
+                keys = lines[2].split(",") if len(lines) > 2 else []
+                log.info(
+                    f"Read metadata file: {meta_fp} (timestamp: {timestamp}, time_step_number: {time_step_number}, keys: {keys})"
+                )
+                return timestamp, time_step_number, keys
         except Exception as e:
             log.error(f"Failed to read metadata file {meta_fp}: {e}")
-            return None, None
+            return None, None, None

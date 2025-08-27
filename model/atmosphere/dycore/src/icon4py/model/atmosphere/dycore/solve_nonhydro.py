@@ -748,7 +748,6 @@ class SolveNonhydro:
         at_first_substep: bool,
         at_last_substep: bool,
         time_step_number: int = 0,
-        dyn_substep_number: int = 0,
     ):
         """
         Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
@@ -783,9 +782,6 @@ class SolveNonhydro:
             )
 
 
-        if time_step_number > 0 and time_step_number % self._restart.write_frequency == 0 and dyn_substep_number == 0:
-            self._restart.write_restart(prognostic_states, diagnostic_state_nh, time_step_number)
-
         if at_initial_timestep and at_first_substep:
             #---> Channel
             log.info(" ***Channel fixing initial condition")
@@ -819,9 +815,9 @@ class SolveNonhydro:
             plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
             #<--- IBM
             #---> Restart
-            restart_time_step_number = self._restart.restore_from_restart(prognostic_states, diagnostic_state_nh)
+            restart_time_step_number = self._restart.restore_from_restart(prognostic_states, diagnostic_state_nh, self._backend)
             if restart_time_step_number is not None:
-                time_step_number = restart_time_step_number
+                time_step_number = restart_time_step_number + 1
                 at_initial_timestep = False
             #<--- Restart
 
@@ -929,6 +925,12 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider={},
         )
+
+        #---> Restart
+        if (time_step_number+1) % self._restart.RESTART_FREQUENCY == 0 and at_last_substep:
+            self._restart.write_restart(prognostic_states, diagnostic_state_nh, time_step_number)
+        #<--- Restart
+
 
     # flake8: noqa: C901
     def run_predictor_step(
