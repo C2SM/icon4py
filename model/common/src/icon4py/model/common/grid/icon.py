@@ -82,9 +82,11 @@ class GlobalGridParams:
                 case base.GeometryType.ICOSAHEDRON:
                     return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
                 case base.GeometryType.TORUS:
-                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+                    raise NotImplementedError(
+                        f"mean_cell_area not implemented for {self.geometry_type}"
+                    )
                 case _:
-                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
         return self._mean_cell_area
 
