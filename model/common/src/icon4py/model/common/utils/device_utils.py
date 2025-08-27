@@ -15,7 +15,7 @@ from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 
 
 try:
-    import cupy as cp  # type: ignore
+    import cupy as cp
 except ImportError:
     cp = None
 

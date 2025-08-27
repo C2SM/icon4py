@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# type: ignore
 
 """
 Wrapper module for diffusion granule.
@@ -60,12 +59,10 @@ granule: DiffusionGranule | None = None
 
 
 def profile_enable():
-    global granule
     granule.profiler.enable()
 
 
 def profile_disable():
-    global granule
     granule.profiler.disable()
     stats = pstats.Stats(granule.profiler)
     stats.dump_stats(f"{__name__}.profile")
@@ -117,7 +114,7 @@ def diffusion_init(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -205,7 +202,7 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    global granule
+    global granule  # noqa: PLW0603 [global-statement]
     granule = DiffusionGranule(
         diffusion=Diffusion(
             grid=grid_wrapper.grid_state.grid,
@@ -238,7 +235,6 @@ def diffusion_run(
     dtime: gtx.float64,
     linit: bool,
 ):
-    global granule
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
 
