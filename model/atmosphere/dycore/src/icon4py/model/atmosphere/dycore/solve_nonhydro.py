@@ -782,8 +782,8 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        #---> Channel
         if at_initial_timestep and at_first_substep:
+            #---> Channel
             log.info(" ***Channel fixing initial condition")
             (
                 prognostic_states.current.vn,
@@ -803,9 +803,8 @@ class SolveNonhydro:
                 },
                 label=f"debug_channel_fields",
             )
-        #<--- Channel
-        #---> IBM
-        if at_initial_timestep and at_first_substep:
+            #<--- Channel
+            #---> IBM
             log.info(" ***IBM fixing initial conditions")
             self._ibm.set_dirichlet_value_vn(prognostic_states.current.vn)
             self._ibm.set_dirichlet_value_w(prognostic_states.current.w)
@@ -813,12 +812,16 @@ class SolveNonhydro:
             self._ibm.set_dirichlet_value_exner(prognostic_states.current.exner)
             self._ibm.set_dirichlet_value_theta_v(prognostic_states.current.theta_v)
             plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
-        #<--- IBM
-        #---> Restart
-        if at_initial_timestep and at_first_substep:
-            if self._restart.restore_from_restart(prognostic_states, diagnostic_state_nh, logger=log):
+            #<--- IBM
+            #---> Restart
+            restart_time_step_number = self._restart.restore_from_restart(prognostic_states, diagnostic_state_nh)
+            if restart_time_step_number is not None:
+                time_step_number = restart_time_step_number
                 at_initial_timestep = False
-        #<--- Restart
+            #<--- Restart
+
+        if time_step_number % self._restart.write_frequency == 0 and dyn_substep_number == 0:
+            self._restart.write_restart(prognostic_states, diagnostic_state_nh, time_step_number)
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,

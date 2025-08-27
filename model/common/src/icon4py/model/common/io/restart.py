@@ -1,5 +1,6 @@
-
-# (Removed duplicate code and class definition. The correct RestartManager class is defined below.)
+import numpy as np
+import gt4py.next as gtx
+from icon4py.model.common import dimension as dims
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -18,6 +19,7 @@ import logging
 # flake8: noqa
 log = logging.getLogger(__name__)
 
+RESTART_WRITE_FREQUENCY = 30*25 # in time steps
 RESTART_DIR = os.path.join(
     os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output"), "restart"
 )
@@ -33,6 +35,7 @@ class RestartManager:
     """
 
     def __init__(self, base_filename: str = "restart"):
+        self.write_frequency = RESTART_WRITE_FREQUENCY
         self.restart_dir = RESTART_DIR
         self.base_filename = base_filename
         self.filepaths = [
@@ -42,7 +45,7 @@ class RestartManager:
         self._restart_data = None
         # TODO: Implement file locking for multi-process safety if needed in the future
 
-    def restore_from_restart(self, prognostic_states, diagnostic_state_nh, logger=None):
+    def restore_from_restart(self, prognostic_states, diagnostic_state_nh):
         """
         Restore state variables from the restart file into the provided state objects.
         Returns True if restoration was successful, False otherwise.
@@ -51,18 +54,20 @@ class RestartManager:
             self._restart_data = self._read_restart()
         restart_data = self._restart_data
         if restart_data is None:
-            if logger:
-                logger.info("No restart data found or file missing.")
-            return False
+            log.info("No restart data found or file missing.")
+            return None
         missing = []
         # Restore prognostic_states.current and .next
         for state_name, state_obj in [("current", prognostic_states.current), ("next", prognostic_states.next)]:
             for var in ["vn", "w", "rho", "exner", "theta_v"]:
                 key = f"prognostic_states.{state_name}.{var}"
-                if key in restart_data:
-                    setattr(state_obj, var, restart_data[key])
-                    if logger:
-                        logger.info(f"Restored {key} from restart file.")
+                if key in restart_data and restart_data[key] is not None:
+                    arr = restart_data[key]["data"]
+                    dim_names = restart_data[key]["dims"]
+                    dims_tuple = tuple(getattr(dims, name + "Dim") for name in dim_names)
+                    field = gtx.as_field(dims_tuple, arr)
+                    setattr(state_obj, var, field)
+                    log.info(f"Restored {key} from restart file.")
                 else:
                     missing.append(key)
         # Restore diagnostic_state_nh variables, handling nested attributes
@@ -71,35 +76,67 @@ class RestartManager:
             ("vertical_wind_advective_tendency.predictor", "diagnostic_state_nh.vertical_wind_advective_tendency.predictor"),
         ]
         for attr_path, key in diag_restore:
-            if key in restart_data:
+            if key in restart_data and restart_data[key] is not None:
+                arr = restart_data[key]["data"]
+                dim_names = restart_data[key]["dims"]
+                dims_tuple = tuple(getattr(dims, name + "Dim") for name in dim_names)
                 attrs = attr_path.split(".")
                 obj = diagnostic_state_nh
                 for a in attrs[:-1]:
                     obj = getattr(obj, a)
-                setattr(obj, attrs[-1], restart_data[key])
-                if logger:
-                    logger.info(f"Restored {key} from restart file.")
+                field = gtx.as_field(dims_tuple, arr)
+                setattr(obj, attrs[-1], field)
+                log.info(f"Restored {key} from restart file.")
             else:
                 missing.append(key)
-        if missing and logger:
-            logger.warning(f"Missing variables in restart file: {missing}")
-        elif logger:
-            logger.info("All prognostic and diagnostic state variables successfully restored from restart file.")
-        return restart_data is not None
+        if missing:
+            log.warning(f"Missing variables in restart file: {missing}")
+        else:
+            log.info("All prognostic and diagnostic state variables successfully restored from restart file.")
+        # Restore time_step_number if present
+        time_step_number = restart_data.get("time_step_number", None)
+        if time_step_number is not None:
+            log.info(f"Restored time_step_number={time_step_number} from restart file.")
+        return time_step_number
 
-    def write_restart(self, state: dict, last_written: Optional[int] = None) -> int:
+    def write_restart(self, prognostic_states, diagnostic_state_nh, time_step_number: int, last_written: Optional[int] = None) -> int:
         """
         Writes the simulation state to a restart file, alternating between two files.
-        Adds a timestamp to the state dict and writes a metadata file for fast lookup.
+
+        Only writes the variables that restore_from_restart expects, plus time_step_number.
         Args:
-            state: The simulation state to serialize (dict).
+            prognostic_states: The prognostic states object.
+            diagnostic_state_nh: The diagnostic state object.
+            time_step_number: The current time step number to save.
             last_written: Index (0 or 1) of the last written file. If None, will pick based on file existence.
         Returns:
             The index (0 or 1) of the file just written.
         """
+        state = {}
+        # Save prognostic_states.current and .next
+        for state_name, state_obj in [("current", prognostic_states.current), ("next", prognostic_states.next)]:
+            for var in ["vn", "w", "rho", "exner", "theta_v"]:
+                key = f"prognostic_states.{state_name}.{var}"
+                field = getattr(state_obj, var)
+                state[key] = {
+                    "data": field.asnumpy(),
+                    "dims": [d.value for d in field.domain.dims],
+                }
+        # Save diagnostic_state_nh variables (handle nested attributes)
+        diag_field = getattr(diagnostic_state_nh, "perturbed_exner_at_cells_on_model_levels")
+        state["diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels"] = {
+            "data": diag_field.asnumpy(),
+            "dims": [d.value for d in diag_field.domain.dims],
+        }
+        diag_field = getattr(getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "predictor")
+        state["diagnostic_state_nh.vertical_wind_advective_tendency.predictor"] = {
+            "data": diag_field.asnumpy(),
+            "dims": [d.value for d in diag_field.domain.dims],
+        }
 
-        # Add timestamp to state
-        state = dict(state)  # Copy to avoid mutating caller's dict
+        # Add time_step_number
+        state["time_step_number"] = time_step_number
+        # Add timestamp
         state["restart_timestamp"] = datetime.datetime.now().isoformat()
 
         # Determine which file to write (using metadata files)
@@ -139,7 +176,7 @@ class RestartManager:
         Reads the most recent restart file and returns the simulation state dict.
         Returns None if no valid restart file is found.
         """
-        latest_file = self.check_restart_files()
+        latest_file = self._check_restart_files()
         if latest_file is not None:
             try:
                 with open(latest_file, "rb") as f:
@@ -152,7 +189,7 @@ class RestartManager:
         log.info("No restart file to read.")
         return None
 
-    def check_restart_files(self) -> Optional[str]:
+    def _check_restart_files(self) -> Optional[str]:
         """
         Check if restart files are present in the restart directory.
         Returns the path to the most recent restart file if found, else None.

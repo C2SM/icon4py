@@ -169,10 +169,11 @@ class TimeLoop:
                 prep_adv,
                 second_order_divdamp_factor,
                 do_prep_adv,
+                time_step,
             )
             timer.capture()
             #---> IBM
-            if time_step % 1500 == 0:
+            if time_step % 25 == 0:
                 plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:09d}")
             #<--- IBM
 
@@ -194,6 +195,7 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
+        time_step_number: int
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
 
@@ -203,6 +205,7 @@ class TimeLoop:
             prep_adv,
             second_order_divdamp_factor,
             do_prep_adv,
+            time_step_number,
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
@@ -262,6 +265,7 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
+        time_step_number: int
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
@@ -287,6 +291,9 @@ class TimeLoop:
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
+                time_step_number=time_step_number,
+                dyn_substep_number=dyn_substep,
+
             )
 
             if not self._is_last_substep(dyn_substep):
