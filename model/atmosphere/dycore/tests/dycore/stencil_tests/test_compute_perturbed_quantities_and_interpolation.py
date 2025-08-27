@@ -35,7 +35,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 from .test_compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner_numpy,
@@ -73,7 +73,7 @@ def compute_first_vertical_derivative_numpy(
     return first_vertical_derivative
 
 
-class TestComputePerturbedQuantitiesAndInterpolation(helpers.StencilTest):
+class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
     PROGRAM = compute_perturbed_quantities_and_interpolation
     OUTPUTS = (
         "temporal_extrapolation_of_perturbed_exner",

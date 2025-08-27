@@ -16,7 +16,7 @@ include:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
         BACKEND: [dace_cpu, dace_gpu]
-        GRID: [simple_grid, icon_grid]
+        GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:

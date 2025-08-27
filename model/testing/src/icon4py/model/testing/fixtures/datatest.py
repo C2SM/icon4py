@@ -7,14 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+import pkgutil
+from typing import TYPE_CHECKING
 
 import pytest
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
-from icon4py.model.common.grid import base as base_grid, simple as simple_grid
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import (
     config,
     data_handling as data,
@@ -22,7 +23,6 @@ from icon4py.model.testing import (
     definitions,
     locking,
 )
-from icon4py.model.testing.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 
 
 if TYPE_CHECKING:
@@ -30,71 +30,34 @@ if TYPE_CHECKING:
 
     from icon4py.model.testing import serialbox
 
-DEFAULT_GRID: Final[str] = "simple_grid"
-VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
 
+@pytest.fixture(scope="session")
+def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
+    """
+    Fixture to provide a GT4Py backend for the tests.
 
-def _check_backend_validity(backend_name: str) -> None:
-    if backend_name not in model_backends.BACKENDS:
-        available_backends = ", ".join([f"'{k}'" for k in model_backends.BACKENDS.keys()])
-        raise Exception(
-            "Need to select a backend. Select from: ["
-            + available_backends
-            + "] and pass it as an argument to --backend when invoking pytest."
+    The provided backend is instanciated according to the `--backend` pytest
+    command line option value, which might refer to a known backend name, or to
+    an gt4py backend instance defined in an arbitrary location, by using the
+    notation `path.to.module:backend_symbol`.
+    """
+    spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
+    assert isinstance(spec, str), "Backend spec must be a string"
+    if spec.count(":") > 1:
+        raise ValueError(
+            "Invalid backend spec in '--backend' option (spec: <backend_name> or <path.to.module>:<symbol>)"
         )
 
-
-def _check_grid_validity(grid_name: str) -> None:
-    assert (
-        grid_name in VALID_GRIDS
-    ), f"Invalid value for '--grid' option - possible names are {VALID_GRIDS}"
-
-
-def _get_grid(
-    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
-) -> base_grid.Grid:
-    match selected_grid_type:
-        case "icon_grid":
-            from icon4py.model.testing.grid_utils import get_grid_manager_for_experiment
-
-            grid_instance = get_grid_manager_for_experiment(
-                REGIONAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
-            ).grid
-            return grid_instance
-        case "icon_grid_global":
-            from icon4py.model.testing.grid_utils import get_grid_manager_for_experiment
-
-            grid_instance = get_grid_manager_for_experiment(
-                GLOBAL_EXPERIMENT, keep_skip_values=False, backend=selected_backend
-            ).grid
-            return grid_instance
-        case _:
-            return simple_grid.simple_grid(selected_backend)
-
-
-@pytest.fixture(scope="session")
-def backend(request):
-    try:
-        backend_option = request.config.getoption("backend")
-    except ValueError:
-        backend_option = model_backends.DEFAULT_BACKEND
+    if ":" in spec:
+        backend = pkgutil.resolve_name(spec)
+    elif spec in model_backends.BACKENDS:
+        backend = model_backends.BACKENDS[spec]
     else:
-        _check_backend_validity(backend_option)
+        raise ValueError(
+            f"Invalid backend name in '--backend' option. It should be one of {[*model_backends.BACKENDS.keys()]}"
+        )
 
-    selected_backend = model_backends.BACKENDS[backend_option]
-    return selected_backend
-
-
-@pytest.fixture(scope="session")
-def grid(request, backend):
-    try:
-        grid_option = request.config.getoption("grid")
-    except ValueError:
-        grid_option = DEFAULT_GRID
-    else:
-        _check_grid_validity(grid_option)
-    grid = _get_grid(grid_option, backend)
-    return grid
+    return backend
 
 
 @pytest.fixture
@@ -330,6 +293,21 @@ def savepoint_nonhydro_init(
 
 
 @pytest.fixture
+def savepoint_dycore_30_to_38_init(data_provider, istep_init, step_date_init, substep_init):
+    """
+    Load data from ICON savepoint directly before the first stencil in
+    stencils 30 to 38 in mo_solve_nonhydro.f90 of solve_nonhydro module.
+    metadata to select a unique savepoint:
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_30_to_38_init(
+        istep=istep_init, date=step_date_init, substep=substep_init
+    )
+
+
+@pytest.fixture
 def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
     data_provider, istep_init, step_date_init, substep_init
 ):
@@ -391,6 +369,21 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
+    )
+
+
+@pytest.fixture
+def savepoint_dycore_30_to_38_exit(data_provider, istep_exit, step_date_exit, substep_exit):
+    """
+    Load data from ICON savepoint directly after the last stencil in
+    stencils 30 to 38 in mo_solve_nonhydro.f90 of solve_nonhydro module.
+    metadata to select a unique savepoint:
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - date: <iso_string> of the simulation timestep
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_30_to_38_exit(
         istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 

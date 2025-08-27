@@ -12,8 +12,8 @@ from gt4py.next.ffront.fbuiltins import broadcast
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-# TODO (dastrm): move this highly generic stencil to common
-# TODO (dastrm): this stencil has no test
+# TODO(dastrm): move this highly generic stencil to common
+# TODO(dastrm): this stencil has no test
 
 
 @gtx.field_operator

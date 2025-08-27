@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
 )
@@ -20,7 +20,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 
 
-class TestIntegrateTracerHorizontally(helpers.StencilTest):
+class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
     PROGRAM = integrate_tracer_horizontally
     OUTPUTS = ("tracer_new_hor",)
 
@@ -36,7 +36,6 @@ class TestIntegrateTracerHorizontally(helpers.StencilTest):
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
-        geofac_div = helpers.reshape(geofac_div, connectivities[dims.C2EDim].shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         tracer_new_hor = (
             tracer_now * rhodz_now
@@ -53,7 +52,7 @@ class TestIntegrateTracerHorizontally(helpers.StencilTest):
         tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        geofac_div = data_alloc.random_field(grid, dims.CEDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_dtime = np.float64(5.0)
         tracer_new_hor = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(

@@ -10,13 +10,14 @@ import functools
 import logging
 import math
 import uuid
-from typing import Callable, Final, Optional
+from collections.abc import Mapping
+from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import allocators as gtx_allocators, common as gtx_common
+from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -48,8 +49,8 @@ class GridParams:
 
     def __init__(
         self,
-        geometry_type: Optional[base.GeometryType] = None,
-        subdivision: Optional[GridSubdivision] = None,
+        geometry_type: base.GeometryType | None = None,
+        subdivision: GridSubdivision | None = None,
     ) -> None:
         if geometry_type is None and subdivision is None:
             raise ValueError("Either geometry_type or subdivision must be provided")
@@ -97,16 +98,16 @@ class GridParams:
 
 @dataclasses.dataclass
 class GlobalGridParams:
-    grid_params: Final[Optional[GridParams]] = None
-    _num_cells: Optional[int] = None
-    _mean_cell_area: Optional[float] = None
+    grid_params: Final[GridParams | None] = None
+    _num_cells: int | None = None
+    _mean_cell_area: float | None = None
     radius: float = constants.EARTH_RADIUS
 
     def __init__(
         self,
-        grid_params: Optional[GridParams] = None,
-        num_cells: Optional[int] = None,
-        mean_cell_area: Optional[float] = None,
+        grid_params: GridParams | None = None,
+        num_cells: int | None = None,
+        mean_cell_area: float | None = None,
         radius: float = constants.EARTH_RADIUS,
     ) -> None:
         self.grid_params = grid_params
@@ -118,9 +119,8 @@ class GlobalGridParams:
     def from_mean_cell_area(
         cls,
         mean_cell_area: float,
-        grid_params: Optional[GridParams] = None,
-        level: Optional[int] = None,
-        num_cells: Optional[int] = None,
+        grid_params: GridParams | None = None,
+        num_cells: int | None = None,
         radius: float = constants.EARTH_RADIUS,
     ):
         return cls(
@@ -243,15 +243,10 @@ def icon_grid(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    start_indices: dict[gtx.Dimension, data_alloc.NDArray],
-    end_indices: dict[gtx.Dimension, data_alloc.NDArray],
+    start_indices: Mapping[h_grid.Domain, gtx.int32],
+    end_indices: Mapping[h_grid.Domain, gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
-    sparse_1d_connectivity_constructor: Callable[
-        [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
-        gtx_common.NeighborTable,
-    ]
-    | None = None,
 ) -> IconGrid:
     connectivities = {
         offset.value: base.construct_connectivity(
@@ -267,7 +262,6 @@ def icon_grid(
     }
     return IconGrid(
         id=id_,
-        allocator=allocator,
         config=config,
         connectivities=connectivities,
         geometry_type=global_properties.geometry_type,
@@ -275,5 +269,4 @@ def icon_grid(
         _end_indices=end_indices,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
-        sparse_1d_connectivity_constructor=sparse_1d_connectivity_constructor,
     )

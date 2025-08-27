@@ -40,16 +40,6 @@ def horizontal_dims():
             yield d
 
 
-def one_dimensional_sparse_dims():
-    for d in vars(dims).values():
-        if (
-            isinstance(d, gtx.Dimension)
-            and d.kind == gtx.DimensionKind.HORIZONTAL
-            and d not in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        ):
-            yield d
-
-
 def main_horizontal_dims():
     yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
 
@@ -132,7 +122,7 @@ def run_grid_manager(
         (file, data_alloc.backend_name(backend), "skip" if keep_skip_values else "no_skip")
     )
     if not managers.get(key):
-        manager = gridtest_utils.get_grid_manager(
+        manager = gridtest_utils.get_grid_manager_from_identifier(
             file, keep_skip_values=keep_skip_values, num_levels=1, backend=backend
         )
         managers[key] = manager

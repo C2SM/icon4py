@@ -11,7 +11,7 @@ import gt4py.next as gtx
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-# TODO (dastrm): move to common and rename arguments
+# TODO(dastrm): move to common and rename arguments
 
 
 @gtx.field_operator
