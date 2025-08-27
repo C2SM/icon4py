@@ -133,10 +133,6 @@ class VelocityAdvection:
                 "geofac_n2s": self.interpolation_state.geofac_n2s,
                 "owner_mask": self.c_owner_mask,
             },
-            variants={
-                "scalfac_exdiff": [self.scalfac_exdiff],
-                "cfl_w_limit": [self.cfl_w_limit],
-            },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary_level_4,
                 "horizontal_end": self._end_cell_halo,
