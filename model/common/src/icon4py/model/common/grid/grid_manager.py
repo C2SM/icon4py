@@ -64,13 +64,11 @@ class GridManager:
         transformation: gridfile.IndexTransformation,
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(@halungge): remove: - separate vertical from horizontal grid
-        decomposer: Callable[[np.ndarray, int], np.ndarray] = _single_node_decomposer,
         run_properties: decomposition.ProcessProperties = _single_node_properties,
     ):
         self._run_properties = run_properties
         self._transformation = transformation
         self._file_name = str(grid_file)
-        self._decompose = decomposer
         self._halo_constructor = None
         self._vertical_config = config
         self._grid: icon.IconGrid | None = None

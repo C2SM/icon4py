@@ -36,7 +36,7 @@ from icon4py.model.common.decomposition import halo
 from icon4py.model.common.grid import (
     base as base_grid,
     grid_manager as gm,
-    gridfile as grid_file,
+    gridfile,
     simple,
     vertical as v_grid,
 )
@@ -65,14 +65,24 @@ def simple_neighbor_tables():
     return neighbor_tables
 
 
-def single_node_gridfile_manager(file: pathlib.Path) -> gm.GridManager:
-    manager = gm.GridManager(
-        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
-        str(file),
-        v_grid.VerticalGridConfig(num_levels=1),
-    )
+def run_gridmananger_for_single_node(file: pathlib.Path, vertical_config:v_grid.VerticalGridConfig) -> gm.GridManager:
+    manager = _grid_manager(file, vertical_config)
     manager(keep_skip_values=True)
     return manager
+
+
+def _grid_manager(file:pathlib.Path,vertical_config:v_grid.VerticalGridConfig):
+    manager = gm.GridManager(
+        gridfile.ToZeroBasedIndexTransformation(),
+        str(file),
+        vertical_config,
+    )
+    return manager
+
+
+def run_grid_manager_for_multinode(gm:pathlib.Path, verical_config)->gm.GridManager:
+    manager = _grid_manager(file, vertical_config)
+    manager(keep_skip_values=True, run_properties=)
 
 
 @pytest.mark.mpi(min_size=4)
@@ -279,16 +289,15 @@ def decompose(grid: base_grid.Grid, processor_props):  # F811 # fixture
     return labels
 
 
-@pytest.mark.xfail
+
 @pytest.mark.mpi
 def test_distributed_fields(processor_props):  # F811 # fixture
-    grid_manager = single_node_gridfile_manager(GRID_FILE)
-
+    grid_manager = run_gridmananger_for_single_node(GRID_FILE)
     single_node_grid = grid_manager.grid
-
-    global_cell_area = grid_manager.geometry[grid_file.GeometryName.CELL_AREA]
+    global_cell_area = grid_manager.geometry[gridfile.GeometryName.CELL_AREA]
     global_edge_lat = grid_manager.coordinates[dims.EdgeDim]["lat"]
     global_vertex_lon = grid_manager.coordinates[dims.VertexDim]["lon"]
+
 
     labels = decompose(single_node_grid, processor_props)
     neighbor_tables = {k: v.ndarray for k, v in single_node_grid.connectivities.items()}
@@ -298,10 +307,11 @@ def test_distributed_fields(processor_props):  # F811 # fixture
         num_levels=1,
     )
     decomposition_info = halo_generator(labels)
+    multi_node_grid_manager = gm.GridManager(gridfile.ToZeroBased)
     # distributed read: read one field per dimension
 
     ## TODO why is this local??
-    local_cell_area = grid_manager.geometry[grid_file.GeometryName.CELL_AREA]
+    local_cell_area = grid_manager.geometry[gridfile.GeometryName.CELL_AREA]
     local_edge_lat = grid_manager.coordinates[dims.EdgeDim]["lat"]
     local_vertex_lon = grid_manager.coordinates[dims.VertexDim]["lon"]
     print(
