@@ -5,6 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90."""
+
+from __future__ import annotations
+
 from types import ModuleType
 from typing import Final
 
@@ -47,11 +52,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-"""
-Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
-"""
-
-
 rayleigh_damping_options: Final = model_options.RayleighType()
 
 
@@ -65,7 +65,9 @@ def _compute_ddqz_z_half(
 ) -> fa.CellKField[wpfloat]:
     ddqz_z_half = concat_where((dims.KDim > 0) & (dims.KDim < nlev), 0.0, 2.0 * (z_ifc - z_mc))
     ddqz_z_half = concat_where(
-        (0 < dims.KDim) & (dims.KDim < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half
+        (0 < dims.KDim) & (dims.KDim < nlev),  # noqa: SIM300 [yoda-conditions]
+        z_mc(Koff[-1]) - z_mc,
+        ddqz_z_half,
     )
     ddqz_z_half = concat_where(dims.KDim == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half

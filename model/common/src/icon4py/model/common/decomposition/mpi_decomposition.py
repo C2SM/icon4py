@@ -267,7 +267,7 @@ class GHexMultiNodeExchange:
             dim: The dimension along which the exchange is performed.
             wait: If True, the operation will block until the exchange is completed (default: True).
         """
-        dim = kwargs.get("dim", None)
+        dim = kwargs.get("dim")
         if dim is None:
             raise ValueError("Need to define a dimension.")
         wait = kwargs.get("wait", True)
@@ -285,7 +285,7 @@ class GHexMultiNodeExchange:
                 raise ValueError(
                     f"Maximum number of fields to communicate is {GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace}. Adapt the max number accordingly."
                 )
-            dim = kwargs.get("dim", None)
+            dim = kwargs.get("dim")
             if dim is None:
                 raise ValueError("Need to define a dimension.")
             wait = kwargs.get("wait", True)
