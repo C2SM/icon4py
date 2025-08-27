@@ -146,7 +146,7 @@ def metrics_factory_params(
     group="diffusion_benchmark",
 )
 def test_run_diffusion_benchmark(
-    grid,
+    grid_manager,
     vertical_grid_params,
     metrics_factory_params,
     backend,
@@ -178,13 +178,11 @@ def test_run_diffusion_benchmark(
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
-    #config = construct_diffusion_config(grid_file, ndyn_substeps)
     diffusion_parameters = diffusion.DiffusionParams(config)
 
-    # grid_manager = grid_utils.get_grid_manager_from_identifier(grid_file_identifier=grid_file, num_levels=num_levels, keep_skip_values=True,backend=backend)
-    # grid = grid_manager.grid
-    coordinates = grid.coordinates
-    geometry_input_fields = grid.geometry_fields
+    grid = grid_manager.grid
+    coordinates = grid_manager.coordinates
+    geometry_input_fields = grid_manager.geometry_fields
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid,
