@@ -42,11 +42,12 @@ TODO: @halungge: allow to read configuration data
 import collections
 import enum
 import functools
-import inspect
 import logging
+import types
+import typing
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from types import ModuleType
-from typing import Any, Optional, Protocol, TypeVar, Union, get_args
+from typing import Any, Optional, Protocol, TypeVar
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -598,31 +599,30 @@ class NumpyFieldsProvider(FieldProvider):
         args.update(offsets)
         args.update(self._params)
         results = self._func(**args)
-        ## TODO(): can the order of return values be checked?
+        # TODO(): can the order of return values be checked?
         results = (results,) if isinstance(results, data_alloc.NDArray) else results
         self._fields = {
             k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
             for i, k in enumerate(self.fields)
         }
 
-    def _validate_dependencies(self):
-        func_signature = inspect.signature(self._func)
-        parameters = func_signature.parameters
+    def _validate_dependencies(self) -> None:
+        annotations = typing.get_type_hints(self._func)
         for dep_key in self._dependencies:
-            parameter_definition = parameters.get(dep_key)
-            checked = _check_union(parameter_definition, union=data_alloc.NDArray)
+            parameter_annotation = annotations.get(dep_key)
+            checked = _is_compatible_union(parameter_annotation, expected=data_alloc.NDArray)
             assert checked, (
                 f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
-                f"wrong type ('expected ndarray') but was '{parameter_definition}'."
+                f"wrong type ('expected ndarray') but was '{parameter_annotation}'."
             )
 
+        supported_scalars = state_utils.IntegerType | state_utils.FloatType
         for param_key, param_value in self._params.items():
-            parameter_definition = parameters.get(param_key)
-            checked = _check_union_and_type(
-                parameter_definition, param_value, union=state_utils.IntegerType
-            ) or _check_union_and_type(
-                parameter_definition, param_value, union=state_utils.FloatType
-            )
+            parameter_annotation = annotations.get(param_key)
+            checked = _is_compatible_union(
+                parameter_annotation, expected=supported_scalars
+            ) and _is_compatible_value(param_value, expected=supported_scalars)
+
             assert checked, (
                 f"Parameter '{param_key}' in function '{_func_name(self._func)}' does not "
                 f"exist or has the wrong type: '{type(param_value)}'."
@@ -641,30 +641,28 @@ class NumpyFieldsProvider(FieldProvider):
         return self._fields
 
 
-def _check_union_and_type(
-    parameter_definition: inspect.Parameter,
-    value: state_utils.ScalarType | gtx.Field,
-    union: Union,
-) -> bool:
-    _check_union(parameter_definition, union) and type(value) in get_args(union)
-    members = get_args(union)
-    return (
-        parameter_definition is not None
-        and parameter_definition.annotation in members
-        and type(value) in members
+def _is_compatible_union(annotation: Any, expected: types.UnionType | typing._SpecialForm) -> bool:
+    possible_types = (
+        typing.get_args(annotation)
+        if typing.get_origin(annotation) in {types.UnionType, typing.Union}
+        else (annotation,)
     )
+    expected_types = (
+        typing.get_args(expected)
+        if typing.get_origin(expected) in {types.UnionType, typing.Union}
+        else (expected,)
+    )
+    return set(possible_types) <= set(expected_types) and None not in possible_types
 
 
-def _check_union(
-    parameter_definition: inspect.Parameter,
-    union: Union,
+def _is_compatible_value(
+    value: state_utils.ScalarType | gtx.Field, expected: types.UnionType | typing._SpecialForm
 ) -> bool:
-    members = get_args(union)
-    # fix for unions with only one member, which implicitly are not Union but fallback to the type
-    if not members:
-        members = (union,)
-    annotation = parameter_definition.annotation
-    return parameter_definition is not None and (annotation == union or annotation in members)
+    return type(value) in set(
+        typing.get_args(expected)
+        if typing.get_origin(expected) in {types.UnionType, typing.Union}
+        else (expected,)
+    )
 
 
 def _func_name(callable_: Callable[..., Any]) -> str:
