@@ -263,7 +263,7 @@ def test_global_grid_params(
     )
     assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
-        assert icon.GridSubdivision(root=2, level=0) == params.grid_params.subdivision
+        assert None == params.grid_params.subdivision
     else:
         assert (
             icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_params.subdivision
@@ -281,7 +281,6 @@ def test_global_grid_params(
     "geometry_type,grid_root,grid_level,num_cells,mean_cell_area",
     [
         (base.GeometryType.ICOSAHEDRON, 0, 0, 42, 123.456),
-        (base.GeometryType.TORUS, 0, 0, 42, 123.456),
     ],
 )
 def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells, mean_cell_area):

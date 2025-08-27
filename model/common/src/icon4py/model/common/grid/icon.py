@@ -15,6 +15,7 @@ from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
+from typing_extensions import assert_never
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -45,7 +46,7 @@ class GridSubdivision:
 @dataclasses.dataclass(kw_only=True)
 class GridParams:
     geometry_type: base.GeometryType
-    subdivision: GridSubdivision
+    subdivision: GridSubdivision | None
 
     def __init__(
         self,
@@ -55,42 +56,22 @@ class GridParams:
         if geometry_type is None and subdivision is None:
             raise ValueError("Either geometry_type or subdivision must be provided")
 
-        # Validate that geometry type and the subdivision parameters are
-        # consistent. Torus should have root=2 and level=0. If both are given,
-        # check for consistency. If only one is given, infer the other.
-        # Otherwise assume dealing with icosahedron and check that values are
-        # sane.
-        if geometry_type:
-            match geometry_type:
-                case base.GeometryType.ICOSAHEDRON:
-                    if subdivision is None:
-                        raise ValueError(
-                            "Subdivision must be provided for icosahedron geometry type"
-                        )
+        if geometry_type is None:
+            geometry_type = base.GeometryType.ICOSAHEDRON
 
-                    if subdivision.root < 1 or subdivision.level < 0:
-                        raise ValueError(
-                            f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
-                        )
-                case base.GeometryType.TORUS:
-                    if subdivision is None:
-                        subdivision = GridSubdivision(root=2, level=0)
-                    else:
-                        if subdivision.root != 2 or subdivision.level != 0:
-                            raise ValueError(
-                                f"For torus geometry type, root must be 2 and level must be 0, got {subdivision.root=} and {subdivision.level=}"
-                            )
-                case _:
-                    raise ValueError(f"Unknown geometry type {geometry_type}")
-        else:
-            if subdivision.root == 2 and subdivision.level == 0:
-                geometry_type = base.GeometryType.TORUS
-            else:
+        match geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                if subdivision is None:
+                    raise ValueError("Subdivision must be provided for icosahedron geometry type")
+
                 if subdivision.root < 1 or subdivision.level < 0:
                     raise ValueError(
-                        f"If geometry_type is not specified (assuming icosahedron), root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
+                        f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
                     )
-                geometry_type = base.GeometryType.ICOSAHEDRON
+            case base.GeometryType.TORUS:
+                subdivision = None
+            case _:
+                assert_never(geometry_type)
 
         self.geometry_type = geometry_type
         self.subdivision = subdivision
