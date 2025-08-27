@@ -24,7 +24,7 @@ from icon4py.model.atmosphere.diffusion import (
 from icon4py.model.driver.test_cases import channel
 from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.io import plots
+from icon4py.model.common.io import plots, restart
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -67,6 +67,10 @@ class TimeLoop:
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
 
+        #---> Restart
+        self._restart = restart.RestartManager()
+        #<--- Restart
+
     def re_init(self):
         self._simulation_date = self.run_config.start_date
         self._is_first_step_in_simulation = True
@@ -87,8 +91,8 @@ class TimeLoop:
     def _is_first_substep(step_nr: int):
         return step_nr == 0
 
-    def _next_simulation_date(self):
-        self._simulation_date += self.run_config.dtime
+    def _next_simulation_date(self, multiplier: int = 1):
+        self._simulation_date += multiplier * self.run_config.dtime
 
     @property
     def n_substeps_var(self):
@@ -131,6 +135,15 @@ class TimeLoop:
 
         # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
+        #---> Restart
+        start_time_step_number = 0
+        restart_time_step_number = self._restart.restore_from_restart(prognostic_states, solve_nonhydro_diagnostic_state, self.solve_nonhydro._backend)
+        if restart_time_step_number is not None:
+            start_time_step_number = restart_time_step_number + 1
+            self._is_first_step_in_simulation = False
+            self._next_simulation_date(multiplier=start_time_step_number)
+        #<--- Restart
+
         if (
             self.diffusion.config.apply_to_horizontal_wind
             and self.run_config.apply_initial_stabilization
@@ -147,7 +160,7 @@ class TimeLoop:
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
-        for time_step in range(self._n_time_steps):
+        for time_step in range(start_time_step_number, self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.debug(
                 f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
@@ -169,13 +182,17 @@ class TimeLoop:
                 prep_adv,
                 second_order_divdamp_factor,
                 do_prep_adv,
-                time_step,
             )
             timer.capture()
+
             #---> IBM
             if (time_step+1) % plots.PLOT_FREQUENCY == 0:
                 plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:09d}")
             #<--- IBM
+            #---> Restart
+            if (time_step+1) % self._restart.RESTART_FREQUENCY == 0:
+                self._restart.write_restart(prognostic_states, solve_nonhydro_diagnostic_state, time_step)
+            #<--- Restart
 
             self._is_first_step_in_simulation = False
 
@@ -195,7 +212,6 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
-        time_step_number: int
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
 
@@ -205,7 +221,6 @@ class TimeLoop:
             prep_adv,
             second_order_divdamp_factor,
             do_prep_adv,
-            time_step_number,
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
@@ -265,7 +280,6 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
-        time_step_number: int
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
@@ -291,8 +305,6 @@ class TimeLoop:
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
-                time_step_number=time_step_number,
-
             )
 
             if not self._is_last_substep(dyn_substep):

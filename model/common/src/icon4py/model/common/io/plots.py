@@ -45,7 +45,7 @@ log = logging.getLogger(__name__)
 
 DO_PLOTS = True
 PLOT_IMGS_DIR = os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output")
-PLOT_FREQUENCY = 4
+PLOT_FREQUENCY = 4 # in time steps
 
 
 @gtx.field_operator

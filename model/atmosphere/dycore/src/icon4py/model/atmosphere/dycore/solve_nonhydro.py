@@ -113,7 +113,7 @@ from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common import field_type_aliases as fa
 
-from icon4py.model.common.io import plots, restart
+from icon4py.model.common.io import plots
 from icon4py.model.atmosphere.dycore import ibm
 
 # flake8: noqa
@@ -573,9 +573,6 @@ class SolveNonhydro:
         if "channel" in extras:
             self._channel = extras["channel"]
         #<--- Channel
-        #---> Restart
-        self._restart = restart.RestartManager()
-        #<--- Restart
 
     def _allocate_local_fields(self):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
@@ -747,7 +744,6 @@ class SolveNonhydro:
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
-        time_step_number: int = 0,
     ):
         """
         Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
@@ -814,12 +810,6 @@ class SolveNonhydro:
             self._ibm.set_dirichlet_value_theta_v(prognostic_states.current.theta_v)
             plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
             #<--- IBM
-            #---> Restart
-            restart_time_step_number = self._restart.restore_from_restart(prognostic_states, diagnostic_state_nh, self._backend)
-            if restart_time_step_number is not None:
-                time_step_number = restart_time_step_number + 1
-                at_initial_timestep = False
-            #<--- Restart
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -925,11 +915,6 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider={},
         )
-
-        #---> Restart
-        if (time_step_number+1) % self._restart.RESTART_FREQUENCY == 0 and at_last_substep:
-            self._restart.write_restart(prognostic_states, diagnostic_state_nh, time_step_number)
-        #<--- Restart
 
 
     # flake8: noqa: C901
