@@ -79,6 +79,7 @@ class GridShape:
 @dataclasses.dataclass
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
+    _global_num_cells: int | None = None
     _num_cells: int | None = None
     _mean_cell_area: float | None = None
     radius: float = constants.EARTH_RADIUS
@@ -87,11 +88,13 @@ class GlobalGridParams:
         self,
         *,
         grid_shape: GridShape | None = None,
+        global_num_cells: int | None = None,
         num_cells: int | None = None,
         mean_cell_area: float | None = None,
         radius: float = constants.EARTH_RADIUS,
     ) -> None:
         self.grid_shape = grid_shape
+        self._global_num_cells = global_num_cells
         self._num_cells = num_cells
         self._mean_cell_area = mean_cell_area
         self.radius = radius
@@ -105,8 +108,8 @@ class GlobalGridParams:
         return self.grid_params.subdivision if self.grid_params else None
 
     @functools.cached_property
-    def num_cells(self) -> int:
-        if self._num_cells is None:
+    def global_num_cells(self) -> int:
+        if self._global_num_cells is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
                     assert self.grid_shape.subdivision is not None
@@ -115,6 +118,14 @@ class GlobalGridParams:
                     raise NotImplementedError("TODO : lookup torus cell number computation")
                 case _:
                     raise ValueError(f"Unknown geometry type {self.geometry_type}")
+
+        return self._global_num_cells
+
+    # TODO(msimberg): This is related to limited_area
+    @functools.cached_property
+    def num_cells(self) -> int:
+        if self._num_cells is None:
+            return self.global_num_cells
 
         return self._num_cells
 
@@ -127,7 +138,7 @@ class GlobalGridParams:
         if self._mean_cell_area is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    return compute_mean_cell_area_for_sphere(self.radius, self.num_cells)
+                    return compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells)
                 case base.GeometryType.TORUS:
                     raise NotImplementedError(
                         f"mean_cell_area not implemented for {self.geometry_type}"
