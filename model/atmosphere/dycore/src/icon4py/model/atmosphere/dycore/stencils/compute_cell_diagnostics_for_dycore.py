@@ -58,6 +58,24 @@ horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
 
 
 @field_operator
+def _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
+    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    ddqz_z_half: fa.CellKField[ta.wpfloat],
+    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    return exner_w_explicit_weight_parameter * theta_v_at_cells_on_half_levels * (
+        perturbed_exner_at_cells_on_model_levels(Koff[-1])
+        - perturbed_exner_at_cells_on_model_levels
+    ) / ddqz_z_half + astype(
+        perturbed_theta_v_at_cells_on_half_levels * ddz_of_reference_exner_at_cells_on_half_levels,
+        wpfloat,
+    )
+
+
+@field_operator
 def _compute_perturbed_quantities_and_interpolation(
     current_rho: fa.CellKField[ta.wpfloat],
     reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
@@ -135,17 +153,13 @@ def _compute_perturbed_quantities_and_interpolation(
 
     pressure_buoyancy_acceleration_at_cells_on_half_levels = concat_where(
         dims.KDim >= 1,
-        exner_w_explicit_weight_parameter
-        * theta_v_at_cells_on_half_levels
-        * (
-            perturbed_exner_at_cells_on_model_levels(Koff[-1])
-            - perturbed_exner_at_cells_on_model_levels
-        )
-        / ddqz_z_half_wp
-        + astype(
-            perturbed_theta_v_at_cells_on_half_levels
-            * ddz_of_reference_exner_at_cells_on_half_levels,
-            wpfloat,
+        _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
+            exner_w_explicit_weight_parameter,
+            theta_v_at_cells_on_half_levels,
+            perturbed_exner_at_cells_on_model_levels,
+            ddqz_z_half_wp,
+            perturbed_theta_v_at_cells_on_half_levels,
+            ddz_of_reference_exner_at_cells_on_half_levels,
         ),
         pressure_buoyancy_acceleration_at_cells_on_half_levels,
     )
