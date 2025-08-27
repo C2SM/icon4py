@@ -101,6 +101,10 @@ class GlobalGridParams:
     def geometry_type(self) -> base.GeometryType | None:
         return self.grid_params.geometry_type if self.grid_params else None
 
+    @property
+    def subdivision(self) -> GridSubdivision | None:
+        return self.grid_params.subdivision if self.grid_params else None
+
     @functools.cached_property
     def num_cells(self) -> int:
         if self._num_cells is None:
