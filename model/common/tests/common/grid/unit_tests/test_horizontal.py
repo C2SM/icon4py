@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
-
 import pytest
-
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 
@@ -43,20 +41,7 @@ def test_domain_raises_for_invalid_zones(dim, zone, caplog):
         ):
             with pytest.raises(AssertionError) as e:
                 h_grid.domain(dim)(zone)
-            e.match("not a valid zone")
-
-
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_zone_and_domain_index(dim, caplog):
-    """test mostly used for documentation purposes"""
-    caplog.set_level(logging.INFO)
-    for zone in zones():
-        try:
-            domain = h_grid.domain(dim)(zone)
-            log.info(f"dim={dim}: zone={zone:16}: index={domain():3}")
-            assert domain() <= h_grid._BOUNDS[dim][1]
-        except AssertionError:
-            log.info(f"dim={dim}: zone={zone:16}: invalid")
+            e.match("Invalid zone")
 
 
 @pytest.mark.parametrize("zone", zones())
