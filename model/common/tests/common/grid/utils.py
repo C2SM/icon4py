@@ -78,18 +78,6 @@ def all_dims():
     yield from local_dims()
 
 
-def global_grid_domains(dim: gtx.Dimension):
-    zones = [
-        h_grid.Zone.END,
-        h_grid.Zone.LOCAL,
-        h_grid.Zone.INTERIOR,
-        h_grid.Zone.HALO,
-        h_grid.Zone.HALO_LEVEL_2,
-    ]
-
-    yield from _domain(dim, zones)
-
-
 def _domain(dim, zones):
     domain = h_grid.domain(dim)
     for zone in zones:
@@ -97,22 +85,6 @@ def _domain(dim, zones):
             yield domain(zone)
         except AssertionError:
             ...
-
-
-def valid_boundary_zones_for_dim(dim: dims.Dimension):
-    zones = [
-        h_grid.Zone.LATERAL_BOUNDARY,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7,
-        h_grid.Zone.NUDGING,
-        h_grid.Zone.NUDGING_LEVEL_2,
-    ]
-
-    yield from _domain(dim, zones)
 
 
 def run_grid_manager(
