@@ -64,7 +64,7 @@ build_image_aarch64:
     SLURM_GPUS_PER_NODE: 4
     SLURM_TIMELIMIT: '01:30:00'
     CSCS_CUDA_MPS: 1
-    NUM_PROCESSES: auto
+    NUM_PROCESSES: 1
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: false
@@ -90,6 +90,6 @@ build_image_aarch64:
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
     # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
-    NUM_PROCESSES: 16
+    NUM_PROCESSES: 1
     GT4PY_BUILD_JOBS: 8
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
