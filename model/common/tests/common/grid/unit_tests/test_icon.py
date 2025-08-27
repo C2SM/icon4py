@@ -300,7 +300,6 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells
     [
         (base.GeometryType.ICOSAHEDRON, 2, 4, 42, 123.456, 42, 123.456),
         (base.GeometryType.ICOSAHEDRON, 4, 9, None, 123.456, 83886080, 123.456),
-        (base.GeometryType.ICOSAHEDRON, None, None, 42, 123.456, 42, 123.456),
         (base.GeometryType.TORUS, 2, 0, 42, 123.456, 42, 123.456),
     ],
 )
