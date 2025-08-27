@@ -782,6 +782,10 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+
+        if time_step_number > 0 and time_step_number % self._restart.write_frequency == 0 and dyn_substep_number == 0:
+            self._restart.write_restart(prognostic_states, diagnostic_state_nh, time_step_number)
+
         if at_initial_timestep and at_first_substep:
             #---> Channel
             log.info(" ***Channel fixing initial condition")
@@ -792,17 +796,18 @@ class SolveNonhydro:
                 prognostic_states.current.exner,
                 prognostic_states.current.theta_v,
             ) = self._channel.set_initial_conditions()
-            plots.pickle_data(
-                state={
-                    "sponge_full_cell": self._channel.full_cell_sponge.asnumpy(),
-                    "vn": self._channel.vn.asnumpy(),
-                    "w": self._channel.w.asnumpy(),
-                    "rho": self._channel.rho.asnumpy(),
-                    "exner": self._channel.exner.asnumpy(),
-                    "theta_v": self._channel.theta_v.asnumpy(),
-                },
-                label=f"debug_channel_fields",
-            )
+            if self._channel.DEBUG_LEVEL >= 3:
+                plots.pickle_data(
+                    state={
+                        "sponge_full_cell": self._channel.full_cell_sponge.asnumpy(),
+                        "vn": self._channel.vn.asnumpy(),
+                        "w": self._channel.w.asnumpy(),
+                        "rho": self._channel.rho.asnumpy(),
+                        "exner": self._channel.exner.asnumpy(),
+                        "theta_v": self._channel.theta_v.asnumpy(),
+                    },
+                    label=f"debug_channel_fields",
+                )
             #<--- Channel
             #---> IBM
             log.info(" ***IBM fixing initial conditions")
@@ -819,9 +824,6 @@ class SolveNonhydro:
                 time_step_number = restart_time_step_number
                 at_initial_timestep = False
             #<--- Restart
-
-        if time_step_number % self._restart.write_frequency == 0 and dyn_substep_number == 0:
-            self._restart.write_restart(prognostic_states, diagnostic_state_nh, time_step_number)
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,

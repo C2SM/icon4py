@@ -29,6 +29,8 @@ from icon4py.model.testing import serialbox as sb
 log = logging.getLogger(__name__)
 
 
+DEBUG_LEVEL = 2
+
 @gtx.field_operator
 def _set_boundary_conditions_cell(
     field: fa.CellKField[ta.wpfloat],
@@ -64,6 +66,7 @@ class ChannelFlow:
         """
         Initialize the channel
         """
+        self.DEBUG_LEVEL = DEBUG_LEVEL
 
         self.backend = backend
         xp = data_alloc.import_array_ns(self.backend)
@@ -72,7 +75,7 @@ class ChannelFlow:
         self.num_edges = grid.num_edges
         self.num_levels = grid.num_levels
 
-        self.random_perturbation_magnitude = 0.001  # perturbation magnitude for velocity profile
+        self.random_perturbation_magnitude = 0 #0.001  # perturbation magnitude for velocity profile
 
         # Allocate here so it's not re-allocated every BC call
         self.random_field_full_edge_np = xp.random.normal(

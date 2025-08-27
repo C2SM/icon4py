@@ -113,7 +113,10 @@ def pickle_data(state, label: str = "") -> None:
 
     if not os.path.isdir(PLOT_IMGS_DIR):
         os.makedirs(PLOT_IMGS_DIR)
-    file_name = f"{PLOT_IMGS_DIR}/{pickle_data.counter:06d}_{label}.pkl"
+    if "debug_" in label:
+        file_name = f"{PLOT_IMGS_DIR}/{pickle_data.counter:06d}_{label}.pkl"
+    else:
+        file_name = f"{PLOT_IMGS_DIR}/{label}.pkl"
     with open(file_name, "wb") as f:
         pickle.dump(state_dict, f)
         log.debug(f"PLOTS: saved {file_name}")
