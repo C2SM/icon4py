@@ -434,8 +434,8 @@ class Diffusion:
                 "primal_normal_vert_y": self._edge_params.primal_normal_vert[1],
                 "dual_normal_vert_x": self._edge_params.dual_normal_vert[0],
                 "dual_normal_vert_y": self._edge_params.dual_normal_vert[1],
+                "smag_offset": self.smag_offset
             },
-            variants={"smag_offset": [self.smag_offset]},
             horizontal_sizes={
                 "horizontal_start": self._edge_start_lateral_boundary_level_5,
                 "horizontal_end": self._edge_end_halo_level_2,
