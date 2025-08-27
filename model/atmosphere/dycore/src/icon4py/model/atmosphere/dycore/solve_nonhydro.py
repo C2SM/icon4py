@@ -595,10 +595,9 @@ class SolveNonhydro:
             enable_jit=False,
             nflatlev=[self._vertical_params.nflatlev],
             nflat_gradp=[self._vertical_params.nflat_gradp],
-            limited_area=[self._grid.limited_area],
             igradp_method=[self._config.igradp_method],
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[gtx.int32(self._grid.num_levels + 1)],
+            model_top=[gtx.int32(0)],
+            surface_level=[gtx.int32(self._grid.num_levels + 1)],
             offset_provider=self._grid.connectivities,
         )
 
@@ -1032,7 +1031,6 @@ class SolveNonhydro:
             inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
             d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
             d2dexdz2_fac2_mc=self._metric_state_nonhydro.d2dexdz2_fac2_mc,
-            limited_area=self._grid.limited_area,
             igradp_method=self._config.igradp_method,
             nflatlev=self._vertical_params.nflatlev,
             nflat_gradp=self._vertical_params.nflat_gradp,
@@ -1041,8 +1039,8 @@ class SolveNonhydro:
             start_cell_halo_level_2=self._start_cell_halo_level_2,
             end_cell_halo=self._end_cell_halo,
             end_cell_halo_level_2=self._end_cell_halo_level_2,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self._grid.num_levels + 1),
+            model_top=gtx.int32(0),
+            surface_level=gtx.int32(self._grid.num_levels + 1),
             offset_provider=self._grid.connectivities,
         )
 

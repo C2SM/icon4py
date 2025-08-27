@@ -294,7 +294,6 @@ def compute_perturbed_quantities_and_interpolation(
     inv_ddqz_z_full: fa.CellKField[ta.wpfloat],
     d2dexdz2_fac1_mc: fa.CellKField[ta.vpfloat],
     d2dexdz2_fac2_mc: fa.CellKField[ta.vpfloat],
-    limited_area: bool,
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
@@ -303,8 +302,8 @@ def compute_perturbed_quantities_and_interpolation(
     start_cell_halo_level_2: gtx.int32,
     end_cell_halo: gtx.int32,
     end_cell_halo_level_2: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
+    model_top: gtx.int32,
+    surface_level: gtx.int32,
 ):
     """
     Formerly known as fused_solve_nonhydro_stencil_1_to_13_predictor.
@@ -340,18 +339,16 @@ def compute_perturbed_quantities_and_interpolation(
         - inv_ddqz_z_full: inverse vertical spacing on full levels (distance between the height of interface at k+1/2 and k-1/2)
         - d2dexdz2_fac1_mc: precomputed factor for second vertical derivatives of exner function for model cell centers
         - d2dexdz2_fac2_mc: precomputed factor for second vertical derivatives of exner function for model cell centers
-        - limited_area: option indicating the grid is limited area or not
         - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
         - nflatlev: starting vertical index of flat levels
         - nflat_gradp: starting vertical index when neighboring cell centers lie within the thicknees of the layer
         - start_cell_lateral_boundary: start index of the first lateral boundary level zone for cells
         - start_cell_lateral_boundary_level_3: start index of the 3rd lateral boundary level zone for cells
         - start_cell_halo_level_2: start index of the 2nd halo level zone for cells
-        - end_cell_end: end index of the last lateral boundary level zone for cells
         - end_cell_halo: end index of the last halo level zone for cells
         - end_cell_halo_level_2: end index of the second halo level zone for cells
-        - vertical_start: start index of the vertical domain
-        - vertical_end: end index of the vertical domain
+        - model_top: start index of the vertical domain
+        - surface_level: end index of the vertical domain
 
     Returns:
         - temporal_extrapolation_of_perturbed_exner
@@ -370,7 +367,7 @@ def compute_perturbed_quantities_and_interpolation(
         out=(perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
         domain={
             dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
@@ -382,7 +379,7 @@ def compute_perturbed_quantities_and_interpolation(
         out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
@@ -396,7 +393,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (vertical_end - 1, vertical_end),
+            dims.KDim: (surface_level - 1, surface_level),
         },
     )
 
@@ -429,7 +426,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
@@ -445,7 +442,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (vertical_end - 1, vertical_end),
+            dims.KDim: (surface_level - 1, surface_level),
         },
     )
 
@@ -467,7 +464,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
@@ -482,7 +479,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_halo_level_2, end_cell_halo_level_2),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
