@@ -9,9 +9,11 @@ import functools
 import typing
 
 from gt4py._core.definitions import (
+    Scalar,
     is_scalar_type,  # TODO(havogt): Should this function be public API?
 )
-from gt4py.next import backend
+from gt4py.next import Field, backend
+from gt4py.next.common import OffsetProvider
 from gt4py.next.ffront.decorator import Program
 
 
@@ -22,11 +24,11 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
 def setup_program(
     backend: backend.Backend,
     program: Program,
-    constant_args: dict | None = None,
-    variants: dict | None = None,
-    horizontal_sizes: dict | None = None,
-    vertical_sizes: dict | None = None,
-    offset_provider: dict | None = None,
+    constant_args: dict[str, Field | Scalar] | None = None,
+    variants: dict[str, list[Scalar]] | None = None,
+    horizontal_sizes: dict[str, Scalar] | None = None,
+    vertical_sizes: dict[str, Scalar] | None = None,
+    offset_provider: OffsetProvider | None = None,
 ) -> typing.Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
