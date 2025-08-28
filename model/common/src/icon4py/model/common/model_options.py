@@ -21,7 +21,7 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
 
 def setup_program(
     backend: backend.Backend,
-    program: gtx.Program,
+    program: gtx.program,
     constant_args: dict | None = None,
     variants: dict | None = None,
     horizontal_sizes: dict | None = None,
