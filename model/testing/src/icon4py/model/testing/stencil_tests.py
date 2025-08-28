@@ -112,7 +112,7 @@ class StencilTest:
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
-        program = self.PROGRAM.with_backend(backend)
+        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
         if backend is not None:
             if isinstance(program, FieldOperator):
                 if len(static_args) > 0:
@@ -123,7 +123,7 @@ class StencilTest:
                 program.compile(
                     offset_provider=grid.connectivities,
                     enable_jit=False,
-                    **static_args,
+                    **static_args,  # type: ignore[arg-type]
                 )
 
         test_func = device_utils.synchronized_function(program, backend=backend)
