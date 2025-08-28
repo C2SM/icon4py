@@ -414,7 +414,7 @@ class SolveNonhydro:
         self._compute_theta_and_exner = program_compile_time(
             backend=self._backend,
             program_func=compute_theta_and_exner,
-            bound_args={
+            constant_args={
                 "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,
                 "rd_o_cvd": constants.RD_O_CVD,
                 "rd_o_p0ref": constants.RD_O_P0REF,
@@ -432,7 +432,7 @@ class SolveNonhydro:
         self._compute_exner_from_rhotheta = program_compile_time(
             backend=self._backend,
             program_func=compute_exner_from_rhotheta,
-            bound_args={
+            constant_args={
                 "rd_o_cvd": constants.RD_O_CVD,
                 "rd_o_p0ref": constants.RD_O_P0REF,
             },
@@ -449,7 +449,7 @@ class SolveNonhydro:
         self._update_theta_v = program_compile_time(
             backend=self._backend,
             program_func=update_theta_v,
-            bound_args={
+            constant_args={
                 "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
             },
             horizontal_sizes={
@@ -465,7 +465,7 @@ class SolveNonhydro:
         self._compute_hydrostatic_correction_term = program_compile_time(
             backend=self._backend,
             program_func=compute_hydrostatic_correction_term,
-            bound_args={
+            constant_args={
                 "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,
                 "zdiff_gradp": self._metric_state_nonhydro.zdiff_gradp,
                 "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
@@ -486,7 +486,7 @@ class SolveNonhydro:
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = program_compile_time(
             backend=self._backend,
             program_func=compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
-            bound_args={
+            constant_args={
                 "reference_rho_at_edges_on_model_levels": self._metric_state_nonhydro.reference_rho_at_edges_on_model_levels,
                 "reference_theta_at_edges_on_model_levels": self._metric_state_nonhydro.reference_theta_at_edges_on_model_levels,
                 "geofac_grg_x": self._interpolation_state.geofac_grg_x,
@@ -529,7 +529,7 @@ class SolveNonhydro:
         self._apply_divergence_damping_and_update_vn = program_compile_time(
             backend=self._backend,
             program_func=compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn,
-            bound_args={
+            constant_args={
                 "horizontal_mask_for_3d_divdamp": self._metric_state_nonhydro.horizontal_mask_for_3d_divdamp,
                 "scaling_factor_for_3d_divdamp": self._metric_state_nonhydro.scaling_factor_for_3d_divdamp,
                 "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
@@ -559,7 +559,7 @@ class SolveNonhydro:
         self._compute_horizontal_velocity_quantities_and_fluxes = program_compile_time(
             backend=self._backend,
             program_func=compute_horizontal_velocity_quantities_and_fluxes,
-            bound_args={
+            constant_args={
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
                 "ddxn_z_full": self._metric_state_nonhydro.ddxn_z_full,
                 "ddxt_z_full": self._metric_state_nonhydro.ddxt_z_full,
@@ -584,7 +584,7 @@ class SolveNonhydro:
         self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = program_compile_time(
             backend=self._backend,
             program_func=compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
-            bound_args={
+            constant_args={
                 "e_flx_avg": self._interpolation_state.e_flx_avg,
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
             },
@@ -606,7 +606,7 @@ class SolveNonhydro:
         self._vertically_implicit_solver_at_predictor_step = program_compile_time(
             backend=self._backend,
             program_func=vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step,
-            bound_args={
+            constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
                 "exner_w_explicit_weight_parameter": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
                 "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
@@ -643,7 +643,7 @@ class SolveNonhydro:
         self._vertically_implicit_solver_at_corrector_step = program_compile_time(
             backend=self._backend,
             program_func=vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step,
-            bound_args={
+            constant_args={
                 "exner_w_explicit_weight_parameter": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
                 "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
                 "exner_w_implicit_weight_parameter": self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
@@ -676,7 +676,7 @@ class SolveNonhydro:
         self._compute_dwdz_for_divergence_damping = program_compile_time(
             backend=self._backend,
             program_func=compute_dwdz_for_divergence_damping,
-            bound_args={
+            constant_args={
                 "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
             },
             horizontal_sizes={
@@ -705,7 +705,7 @@ class SolveNonhydro:
         self._update_mass_flux_weighted = program_compile_time(
             backend=self._backend,
             program_func=update_mass_flux_weighted,
-            bound_args={
+            constant_args={
                 "vwind_expl_wgt": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
                 "vwind_impl_wgt": self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
             },
@@ -721,7 +721,7 @@ class SolveNonhydro:
         self._compute_rayleigh_damping_factor = program_compile_time(
             backend=self._backend,
             program_func=dycore_utils.compute_rayleigh_damping_factor,
-            bound_args={
+            constant_args={
                 "rayleigh_w": self._metric_state_nonhydro.rayleigh_w,
             },
         )
@@ -729,7 +729,7 @@ class SolveNonhydro:
         self._compute_perturbed_quantities_and_interpolation = program_compile_time(
             backend=self._backend,
             program_func=compute_cell_diagnostics_for_dycore.compute_perturbed_quantities_and_interpolation,
-            bound_args={
+            constant_args={
                 "reference_rho_at_cells_on_model_levels": self._metric_state_nonhydro.reference_rho_at_cells_on_model_levels,
                 "reference_theta_at_cells_on_model_levels": self._metric_state_nonhydro.reference_theta_at_cells_on_model_levels,
                 "reference_theta_at_cells_on_half_levels": self._metric_state_nonhydro.reference_theta_at_cells_on_half_levels,
@@ -768,7 +768,7 @@ class SolveNonhydro:
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = program_compile_time(
             backend=self._backend,
             program_func=compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration,
-            bound_args={
+            constant_args={
                 "reference_theta_at_cells_on_model_levels": self._metric_state_nonhydro.reference_theta_at_cells_on_model_levels,
                 "ddz_of_reference_exner_at_cells_on_half_levels": self._metric_state_nonhydro.ddz_of_reference_exner_at_cells_on_half_levels,
                 "ddqz_z_half": self._metric_state_nonhydro.ddqz_z_half,
@@ -802,7 +802,7 @@ class SolveNonhydro:
         self._en_smag_fac_for_zero_nshift = program_compile_time(
             backend=self._backend,
             program_func=smagorinsky.en_smag_fac_for_zero_nshift,
-            bound_args={
+            constant_args={
                 "vect_a": self._vertical_params.interface_physical_height,
                 "hdiff_smag_fac": self._config.fourth_order_divdamp_factor,
                 "hdiff_smag_fac2": self._config.fourth_order_divdamp_factor2,

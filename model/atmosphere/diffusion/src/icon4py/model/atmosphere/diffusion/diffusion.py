@@ -399,7 +399,7 @@ class Diffusion:
         self.mo_intp_rbf_rbf_vec_interpol_vertex = program_compile_time(
             backend=self._backend,
             program_func=mo_intp_rbf_rbf_vec_interpol_vertex,
-            bound_args={
+            constant_args={
                 "ptr_coeff_1": self._interpolation_state.rbf_coeff_1,
                 "ptr_coeff_2": self._interpolation_state.rbf_coeff_2,
             },
@@ -414,7 +414,7 @@ class Diffusion:
         self.calculate_nabla2_and_smag_coefficients_for_vn = program_compile_time(
             backend=self._backend,
             program_func=calculate_nabla2_and_smag_coefficients_for_vn,
-            bound_args={
+            constant_args={
                 "tangent_orientation": self._edge_params.tangent_orientation,
                 "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
                 "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
@@ -435,7 +435,7 @@ class Diffusion:
         self.calculate_diagnostic_quantities_for_turbulence = program_compile_time(
             backend=self._backend,
             program_func=calculate_diagnostic_quantities_for_turbulence,
-            bound_args={
+            constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "geofac_div": self._interpolation_state.geofac_div,
                 "wgtfac_c": self._metric_state.wgtfac_c,
@@ -450,7 +450,7 @@ class Diffusion:
         self.apply_diffusion_to_vn = program_compile_time(
             backend=self._backend,
             program_func=apply_diffusion_to_vn,
-            bound_args={
+            constant_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
                 "primal_normal_vert_v2": self._edge_params.primal_normal_vert[1],
                 "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
@@ -473,7 +473,7 @@ class Diffusion:
             program_compile_time(
                 backend=self._backend,
                 program_func=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
-                bound_args={
+                constant_args={
                     "geofac_n2s": self._interpolation_state.geofac_n2s,
                     "geofac_grg_x": self._interpolation_state.geofac_grg_x,
                     "geofac_grg_y": self._interpolation_state.geofac_grg_y,
@@ -503,7 +503,7 @@ class Diffusion:
             program_compile_time(
                 backend=self._backend,
                 program_func=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
-                bound_args={
+                constant_args={
                     "theta_ref_mc": self._metric_state.theta_ref_mc,
                     "thresh_tdiff": self.thresh_tdiff,
                     "smallest_vpfloat": constants.DBL_EPS,
@@ -522,7 +522,7 @@ class Diffusion:
         self.apply_diffusion_to_theta_and_exner = program_compile_time(
             backend=self._backend,
             program_func=apply_diffusion_to_theta_and_exner,
-            bound_args={
+            constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
                 "mask": self._metric_state.mask_hdiff,
                 "zd_vertoffset": self._metric_state.zd_vertoffset,
@@ -573,7 +573,7 @@ class Diffusion:
         program_compile_time(
             backend=self._backend,
             program_func=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
-            bound_args={
+            constant_args={
                 "physical_heights": self._vertical_grid.interface_physical_height,
                 "nshift": 0,
             },
