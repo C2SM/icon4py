@@ -112,7 +112,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         e_refin_ctrl = gtx.as_field(
             (dims.EdgeDim,), self._grid.refinement_control[dims.EdgeDim].ndarray
         )
-        # TODO : here need to check () or []
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
