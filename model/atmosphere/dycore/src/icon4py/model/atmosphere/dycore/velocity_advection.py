@@ -30,7 +30,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.model_options import program_compile_time
+from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -59,38 +59,36 @@ class VelocityAdvection:
         self._allocate_local_fields()
         self._determine_local_domains()
 
-        self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = (
-            program_compile_time(
-                backend=self._backend,
-                program_func=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
-                constant_args={
-                    "rbf_vec_coeff_e": self.interpolation_state.rbf_vec_coeff_e,
-                    "wgtfac_e": self.metric_state.wgtfac_e,
-                    "ddxn_z_full": self.metric_state.ddxn_z_full,
-                    "ddxt_z_full": self.metric_state.ddxt_z_full,
-                    "wgtfacq_e": self.metric_state.wgtfacq_e,
-                    "c_intp": self.interpolation_state.c_intp,
-                    "inv_dual_edge_length": self.edge_params.inverse_dual_edge_lengths,
-                    "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
-                    "tangent_orientation": self.edge_params.tangent_orientation,
-                },
-                variants={
-                    "skip_compute_predictor_vertical_advection": [True, False],
-                },
-                horizontal_sizes={
-                    "horizontal_start": self._start_edge_lateral_boundary_level_5,
-                    "horizontal_end": self._end_edge_halo_level_2,
-                },
-                vertical_sizes={
-                    "vertical_start": gtx.int32(0),
-                    "vertical_end": gtx.int32(self.grid.num_levels + 1),
-                    "nflatlev": self.vertical_params.nflatlev,
-                },
-                offset_provider=self.grid.connectivities,
-            )
+        self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = setup_program(
+            backend=self._backend,
+            program_func=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
+            constant_args={
+                "rbf_vec_coeff_e": self.interpolation_state.rbf_vec_coeff_e,
+                "wgtfac_e": self.metric_state.wgtfac_e,
+                "ddxn_z_full": self.metric_state.ddxn_z_full,
+                "ddxt_z_full": self.metric_state.ddxt_z_full,
+                "wgtfacq_e": self.metric_state.wgtfacq_e,
+                "c_intp": self.interpolation_state.c_intp,
+                "inv_dual_edge_length": self.edge_params.inverse_dual_edge_lengths,
+                "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
+                "tangent_orientation": self.edge_params.tangent_orientation,
+            },
+            variants={
+                "skip_compute_predictor_vertical_advection": [True, False],
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                "horizontal_end": self._end_edge_halo_level_2,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self.grid.num_levels + 1),
+                "nflatlev": self.vertical_params.nflatlev,
+            },
+            offset_provider=self.grid.connectivities,
         )
 
-        self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = program_compile_time(
+        self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = setup_program(
             backend=self._backend,
             program_func=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
             constant_args={
@@ -115,7 +113,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        self._compute_advection_in_vertical_momentum_equation = program_compile_time(
+        self._compute_advection_in_vertical_momentum_equation = setup_program(
             backend=self._backend,
             program_func=compute_advection_in_vertical_momentum_equation,
             constant_args={
@@ -142,7 +140,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        self._compute_advection_in_horizontal_momentum_equation = program_compile_time(
+        self._compute_advection_in_horizontal_momentum_equation = setup_program(
             backend=self._backend,
             program_func=compute_advection_in_horizontal_momentum_equation,
             constant_args={

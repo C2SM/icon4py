@@ -8,6 +8,7 @@
 import functools
 import typing
 
+import gt4py.next as gtx
 from gt4py._core.definitions import (
     is_scalar_type,  # TODO(havogt): Should this function be public API?
 )
@@ -18,7 +19,7 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-def program_compile_time(
+def setup_program(
     backend: backend.Backend,
     program: gtx.Program,
     constant_args: dict | None = None,
@@ -45,7 +46,7 @@ def program_compile_time(
     offset_provider = {} if offset_provider is None else offset_provider
 
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
-    static_args_program = program_func.with_backend(backend).compile(
+    static_args_program = program.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),
         **variants,

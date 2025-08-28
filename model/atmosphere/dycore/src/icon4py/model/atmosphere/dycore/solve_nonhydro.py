@@ -59,7 +59,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
-from icon4py.model.common.model_options import program_compile_time
+from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -410,7 +410,7 @@ class SolveNonhydro:
         self._cell_params = cell_geometry
         self._determine_local_domains()
 
-        self._compute_theta_and_exner = program_compile_time(
+        self._compute_theta_and_exner = setup_program(
             backend=self._backend,
             program_func=compute_theta_and_exner,
             constant_args={
@@ -428,7 +428,7 @@ class SolveNonhydro:
             },
         )
 
-        self._compute_exner_from_rhotheta = program_compile_time(
+        self._compute_exner_from_rhotheta = setup_program(
             backend=self._backend,
             program_func=compute_exner_from_rhotheta,
             constant_args={
@@ -445,7 +445,7 @@ class SolveNonhydro:
             },
         )
 
-        self._update_theta_v = program_compile_time(
+        self._update_theta_v = setup_program(
             backend=self._backend,
             program_func=update_theta_v,
             constant_args={
@@ -461,7 +461,7 @@ class SolveNonhydro:
             },
         )
 
-        self._compute_hydrostatic_correction_term = program_compile_time(
+        self._compute_hydrostatic_correction_term = setup_program(
             backend=self._backend,
             program_func=compute_hydrostatic_correction_term,
             constant_args={
@@ -482,7 +482,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = program_compile_time(
+        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = setup_program(
             backend=self._backend,
             program_func=compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
             constant_args={
@@ -525,7 +525,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._apply_divergence_damping_and_update_vn = program_compile_time(
+        self._apply_divergence_damping_and_update_vn = setup_program(
             backend=self._backend,
             program_func=compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn,
             constant_args={
@@ -555,7 +555,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_horizontal_velocity_quantities_and_fluxes = program_compile_time(
+        self._compute_horizontal_velocity_quantities_and_fluxes = setup_program(
             backend=self._backend,
             program_func=compute_horizontal_velocity_quantities_and_fluxes,
             constant_args={
@@ -580,7 +580,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = program_compile_time(
+        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = setup_program(
             backend=self._backend,
             program_func=compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
             constant_args={
@@ -602,7 +602,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._vertically_implicit_solver_at_predictor_step = program_compile_time(
+        self._vertically_implicit_solver_at_predictor_step = setup_program(
             backend=self._backend,
             program_func=vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step,
             constant_args={
@@ -639,7 +639,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._vertically_implicit_solver_at_corrector_step = program_compile_time(
+        self._vertically_implicit_solver_at_corrector_step = setup_program(
             backend=self._backend,
             program_func=vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step,
             constant_args={
@@ -672,7 +672,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_dwdz_for_divergence_damping = program_compile_time(
+        self._compute_dwdz_for_divergence_damping = setup_program(
             backend=self._backend,
             program_func=compute_dwdz_for_divergence_damping,
             constant_args={
@@ -689,7 +689,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._init_cell_kdim_field_with_zero_wp = program_compile_time(
+        self._init_cell_kdim_field_with_zero_wp = setup_program(
             backend=self._backend,
             program_func=init_cell_kdim_field_with_zero_wp,
             horizontal_sizes={
@@ -701,7 +701,7 @@ class SolveNonhydro:
                 "vertical_end": gtx.int32(self._grid.num_levels + 1),
             },
         )
-        self._update_mass_flux_weighted = program_compile_time(
+        self._update_mass_flux_weighted = setup_program(
             backend=self._backend,
             program_func=update_mass_flux_weighted,
             constant_args={
@@ -717,7 +717,7 @@ class SolveNonhydro:
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
         )
-        self._compute_rayleigh_damping_factor = program_compile_time(
+        self._compute_rayleigh_damping_factor = setup_program(
             backend=self._backend,
             program_func=dycore_utils.compute_rayleigh_damping_factor,
             constant_args={
@@ -725,7 +725,7 @@ class SolveNonhydro:
             },
         )
 
-        self._compute_perturbed_quantities_and_interpolation = program_compile_time(
+        self._compute_perturbed_quantities_and_interpolation = setup_program(
             backend=self._backend,
             program_func=compute_cell_diagnostics_for_dycore.compute_perturbed_quantities_and_interpolation,
             constant_args={
@@ -764,7 +764,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = program_compile_time(
+        self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = setup_program(
             backend=self._backend,
             program_func=compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration,
             constant_args={
@@ -786,7 +786,7 @@ class SolveNonhydro:
             },
             offset_provider=self._grid.connectivities,
         )
-        self._stencils_61_62 = program_compile_time(
+        self._stencils_61_62 = setup_program(
             backend=self._backend,
             program_func=nhsolve_stencils.stencils_61_62,
             horizontal_sizes={
@@ -798,7 +798,7 @@ class SolveNonhydro:
                 "vertical_end": gtx.int32(self._grid.num_levels + 1),
             },
         )
-        self._en_smag_fac_for_zero_nshift = program_compile_time(
+        self._en_smag_fac_for_zero_nshift = setup_program(
             backend=self._backend,
             program_func=smagorinsky.en_smag_fac_for_zero_nshift,
             constant_args={
@@ -814,7 +814,7 @@ class SolveNonhydro:
             },
             offset_provider={"Koff": dims.KDim},
         )
-        self._init_test_fields = program_compile_time(
+        self._init_test_fields = setup_program(
             backend=self._backend,
             program_func=nhsolve_stencils.init_test_fields,
             horizontal_sizes={

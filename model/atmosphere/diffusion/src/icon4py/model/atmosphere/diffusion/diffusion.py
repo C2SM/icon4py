@@ -48,7 +48,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, v
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.model.common.model_options import program_compile_time
+from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.orchestration import decorator as dace_orchestration
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -396,7 +396,7 @@ class Diffusion:
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
 
-        self.mo_intp_rbf_rbf_vec_interpol_vertex = program_compile_time(
+        self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
             backend=self._backend,
             program_func=mo_intp_rbf_rbf_vec_interpol_vertex,
             constant_args={
@@ -411,7 +411,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
 
-        self.calculate_nabla2_and_smag_coefficients_for_vn = program_compile_time(
+        self.calculate_nabla2_and_smag_coefficients_for_vn = setup_program(
             backend=self._backend,
             program_func=calculate_nabla2_and_smag_coefficients_for_vn,
             constant_args={
@@ -431,7 +431,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
 
-        self.calculate_diagnostic_quantities_for_turbulence = program_compile_time(
+        self.calculate_diagnostic_quantities_for_turbulence = setup_program(
             backend=self._backend,
             program_func=calculate_diagnostic_quantities_for_turbulence,
             constant_args={
@@ -446,7 +446,7 @@ class Diffusion:
             vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_vn = program_compile_time(
+        self.apply_diffusion_to_vn = setup_program(
             backend=self._backend,
             program_func=apply_diffusion_to_vn,
             constant_args={
@@ -468,57 +468,53 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
-            program_compile_time(
-                backend=self._backend,
-                program_func=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
-                constant_args={
-                    "geofac_n2s": self._interpolation_state.geofac_n2s,
-                    "geofac_grg_x": self._interpolation_state.geofac_grg_x,
-                    "geofac_grg_y": self._interpolation_state.geofac_grg_y,
-                    "area": self._cell_params.area,
-                    "diff_multfac_w": self.diff_multfac_w,
-                    "type_shear": int32(
-                        self.config.shear_type.value
-                    ),  # DaCe parser peculiarity (does not work as gtx.int32)
-                },
-                horizontal_sizes={
-                    "horizontal_start": self._horizontal_start_index_w_diffusion,
-                    "horizontal_end": self._cell_end_halo,
-                    "halo_idx": self._cell_end_local,
-                    "interior_idx": self._cell_start_interior,
-                },
-                vertical_sizes={
-                    "vertical_start": 0,
-                    "vertical_end": self._grid.num_levels,
-                    "nrdmax": int32(  # DaCe parser peculiarity (does not work as gtx.int32)
-                        self._vertical_grid.end_index_of_damping_layer + 1
-                    ),  # +1 since Fortran includes boundaries
-                },
-                offset_provider=self._grid.connectivities,
-            )
+        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = setup_program(
+            backend=self._backend,
+            program_func=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+            constant_args={
+                "geofac_n2s": self._interpolation_state.geofac_n2s,
+                "geofac_grg_x": self._interpolation_state.geofac_grg_x,
+                "geofac_grg_y": self._interpolation_state.geofac_grg_y,
+                "area": self._cell_params.area,
+                "diff_multfac_w": self.diff_multfac_w,
+                "type_shear": int32(
+                    self.config.shear_type.value
+                ),  # DaCe parser peculiarity (does not work as gtx.int32)
+            },
+            horizontal_sizes={
+                "horizontal_start": self._horizontal_start_index_w_diffusion,
+                "horizontal_end": self._cell_end_halo,
+                "halo_idx": self._cell_end_local,
+                "interior_idx": self._cell_start_interior,
+            },
+            vertical_sizes={
+                "vertical_start": 0,
+                "vertical_end": self._grid.num_levels,
+                "nrdmax": int32(  # DaCe parser peculiarity (does not work as gtx.int32)
+                    self._vertical_grid.end_index_of_damping_layer + 1
+                ),  # +1 since Fortran includes boundaries
+            },
+            offset_provider=self._grid.connectivities,
         )
-        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
-            program_compile_time(
-                backend=self._backend,
-                program_func=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
-                constant_args={
-                    "theta_ref_mc": self._metric_state.theta_ref_mc,
-                    "thresh_tdiff": self.thresh_tdiff,
-                    "smallest_vpfloat": constants.DBL_EPS,
-                },
-                horizontal_sizes={
-                    "horizontal_start": self._edge_start_nudging,
-                    "horizontal_end": self._edge_end_halo,
-                },
-                vertical_sizes={
-                    "vertical_start": self._grid.num_levels - 2,
-                    "vertical_end": self._grid.num_levels,
-                },
-                offset_provider=self._grid.connectivities,
-            )
+        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = setup_program(
+            backend=self._backend,
+            program_func=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+            constant_args={
+                "theta_ref_mc": self._metric_state.theta_ref_mc,
+                "thresh_tdiff": self.thresh_tdiff,
+                "smallest_vpfloat": constants.DBL_EPS,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._edge_start_nudging,
+                "horizontal_end": self._edge_end_halo,
+            },
+            vertical_sizes={
+                "vertical_start": self._grid.num_levels - 2,
+                "vertical_end": self._grid.num_levels,
+            },
+            offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_theta_and_exner = program_compile_time(
+        self.apply_diffusion_to_theta_and_exner = setup_program(
             backend=self._backend,
             program_func=apply_diffusion_to_theta_and_exner,
             constant_args={
@@ -544,13 +540,13 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.copy_field = program_compile_time(backend=self._backend, program_func=copy_field)
-        self.scale_k = program_compile_time(backend=self._backend, program_func=scale_k)
-        self.setup_fields_for_initial_step = program_compile_time(
+        self.copy_field = setup_program(backend=self._backend, program_func=copy_field)
+        self.scale_k = setup_program(backend=self._backend, program_func=scale_k)
+        self.setup_fields_for_initial_step = setup_program(
             backend=self._backend, program_func=setup_fields_for_initial_step
         )
 
-        self.init_diffusion_local_fields_for_regular_timestep = program_compile_time(
+        self.init_diffusion_local_fields_for_regular_timestep = setup_program(
             backend=self._backend,
             program_func=init_diffusion_local_fields_for_regular_timestep,
             offset_provider={"Koff": dims.KDim},
@@ -569,7 +565,7 @@ class Diffusion:
             self.enh_smag_fac,
             offset_provider={"Koff": dims.KDim},
         )
-        program_compile_time(
+        setup_program(
             backend=self._backend,
             program_func=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
             constant_args={
