@@ -70,9 +70,9 @@ class RefinementValue:
 
     def __post_init__(self):
         _log.debug(f"Checking refinement value {self.value} for dimension {self.dim}")
-        assert (
-            _UNORDERED[self.dim][1] <= self.value <= _MAX_ORDERED[self.dim]
-        ), f"Invalid refinement control constant {self.value}"
+        assert _UNORDERED[self.dim][1] <= self.value <= _MAX_ORDERED[self.dim], (
+            f"Invalid refinement control constant {self.value}"
+        )
 
     def is_nested(self) -> bool:
         return self.value < 0
@@ -103,9 +103,9 @@ def convert_to_unnested_refinement_values(
 
 
 def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone) -> RefinementValue:
-    assert (
-        dim.kind == gtx.DimensionKind.HORIZONTAL
-    ), f"dim = {dim=} refinement control values only exist for horizontal dimensions"
+    assert dim.kind == gtx.DimensionKind.HORIZONTAL, (
+        f"dim = {dim=} refinement control values only exist for horizontal dimensions"
+    )
     match zone:
         case zone.NUDGING:
             assert dim in (dims.EdgeDim, dims.CellDim), "no nudging on vertices!"

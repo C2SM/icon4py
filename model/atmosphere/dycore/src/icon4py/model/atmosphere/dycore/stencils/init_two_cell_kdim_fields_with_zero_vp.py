@@ -17,9 +17,9 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _init_two_cell_kdim_fields_with_zero_vp() -> (
-    tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]
-):
+def _init_two_cell_kdim_fields_with_zero_vp() -> tuple[
+    fa.CellKField[vpfloat], fa.CellKField[vpfloat]
+]:
     """Formerly known as _mo_solve_nonhydro_stencil_01."""
     return _init_cell_kdim_field_with_zero_vp(), _init_cell_kdim_field_with_zero_vp()
 

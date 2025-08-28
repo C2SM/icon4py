@@ -22,7 +22,7 @@ def download_and_extract(uri: str, dst: Path, data_file: str = "downloaded.tar.g
     """
     dst.mkdir(parents=True, exist_ok=True)
     try:
-        import wget  # type: ignore[import-untyped]
+        import wget  # type: ignore[import-untyped] # noqa: PLC0415 [import-outside-top-level]
     except ImportError as err:
         raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
 

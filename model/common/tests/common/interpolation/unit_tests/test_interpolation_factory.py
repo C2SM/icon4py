@@ -155,9 +155,9 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs):
     s_val = np.argsort(val)
     s_ref = np.argsort(ref)
     for i in range(val.shape[0]):
-        assert test_helpers.dallclose(
-            val[i, s_val[i, :]], ref[i, s_ref[i, :]], **kwargs
-        ), f"assertion failed for row {i}"
+        assert test_helpers.dallclose(val[i, s_val[i, :]], ref[i, s_ref[i, :]], **kwargs), (
+            f"assertion failed for row {i}"
+        )
 
 
 @pytest.mark.level("integration")

@@ -61,7 +61,7 @@ log = logging.getLogger(__name__)
 
 
 def init_mpi():
-    from mpi4py import MPI
+    from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
     if not MPI.Is_initialized():
         log.info("initializing MPI")
@@ -69,7 +69,7 @@ def init_mpi():
 
 
 def finalize_mpi():
-    from mpi4py import MPI
+    from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
     if not MPI.Is_finalized():
         log.info("finalizing MPI")

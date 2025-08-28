@@ -361,9 +361,9 @@ def assert_up_to_order(table: np.ndarray, reference_table: np.ndarray, start_ind
     reduced_table = table[start_index:, :]
     reduced_reference = reference_table[start_index:, :]
     for n in range(reduced_table.shape[0]):
-        assert np.all(
-            np.in1d(reduced_table[n, :], reduced_reference[n, :])
-        ), f"values in row {n+start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        assert np.all(np.in1d(reduced_table[n, :], reduced_reference[n, :])), (
+            f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        )
 
 
 @pytest.mark.with_netcdf
@@ -444,23 +444,23 @@ def test_grid_manager_start_end_index(caplog, grid_savepoint, grid_file, experim
             pytest.xfail(
                 "FIXME: start_index in serialized data changed to 0 with unknown consequences, see also icon-exclaim output"
             )
-        assert grid.start_index(domain) == serialized_grid.start_index(
-            domain
-        ), f"start index wrong for domain {domain}"
-        assert grid.end_index(domain) == serialized_grid.end_index(
-            domain
-        ), f"end index wrong for domain {domain}"
+        assert grid.start_index(domain) == serialized_grid.start_index(domain), (
+            f"start index wrong for domain {domain}"
+        )
+        assert grid.end_index(domain) == serialized_grid.end_index(domain), (
+            f"end index wrong for domain {domain}"
+        )
 
     for domain in utils.valid_boundary_zones_for_dim(dim):
         if not grid.limited_area:
             assert grid.start_index(domain) == 0
             assert grid.end_index(domain) == 0
-        assert grid.start_index(domain) == serialized_grid.start_index(
-            domain
-        ), f"start index wrong for domain {domain}"
-        assert grid.end_index(domain) == serialized_grid.end_index(
-            domain
-        ), f"end index wrong for domain {domain}"
+        assert grid.start_index(domain) == serialized_grid.start_index(domain), (
+            f"start index wrong for domain {domain}"
+        )
+        assert grid.end_index(domain) == serialized_grid.end_index(domain), (
+            f"end index wrong for domain {domain}"
+        )
 
 
 @pytest.mark.datatest

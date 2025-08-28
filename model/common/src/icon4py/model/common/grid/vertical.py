@@ -58,9 +58,9 @@ class Domain:
     def _validate(self):
         assert self.dim.kind == gtx.DimensionKind.VERTICAL
         if self.marker == Zone.TOP:
-            assert (
-                self.offset >= 0
-            ), f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+            assert self.offset >= 0, (
+                f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+            )
 
 
 def domain(dim: gtx.Dimension):
@@ -182,7 +182,7 @@ class VerticalGrid:
         array_value = [
             f"   0   {vct_a_array[0]:12.3f}",
             *(
-                f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
+                f"{k + 1:4d}   {vct_a_array[k + 1]:12.3f} {dvct[k]:12.3f}"
                 for k in range(vct_a_array.shape[0] - 1)
             ),
         ]
@@ -216,9 +216,9 @@ class VerticalGrid:
                 raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
 
         index += domain.offset
-        assert (
-            0 <= index <= self._bottom_level(domain)
-        ), f"vertical index {index} outside of grid levels for {domain.dim}"
+        assert 0 <= index <= self._bottom_level(domain), (
+            f"vertical index {index} outside of grid levels for {domain.dim}"
+        )
         return gtx.int32(index)
 
     def _bottom_level(self, domain: Domain) -> int:

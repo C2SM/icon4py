@@ -8,7 +8,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ruff: noqa: ERA001
 
 # /// script
 # requires-python = ">=3.10"

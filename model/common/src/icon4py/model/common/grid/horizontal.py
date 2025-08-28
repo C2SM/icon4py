@@ -388,9 +388,9 @@ class Domain:
         return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_to_icon_index(self.dim, self.zone)} ])"
 
     def __post_init__(self):
-        assert _validate(
-            self.dim, self.zone
-        ), f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {get_zones_for_dim(self.dim)}"
+        assert _validate(self.dim, self.zone), (
+            f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {get_zones_for_dim(self.dim)}"
+        )
 
     @functools.cached_property
     def is_local(self) -> bool:

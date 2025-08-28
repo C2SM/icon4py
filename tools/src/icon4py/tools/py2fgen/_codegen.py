@@ -252,7 +252,7 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
 
 
 def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -> str:
-    return f"{','.join(attribute for attribute in  attributes if attribute is not None)} :: {name}"
+    return f"{','.join(attribute for attribute in attributes if attribute is not None)} :: {name}"
 
 
 def _size_arg_name(name: str, i: int) -> str:

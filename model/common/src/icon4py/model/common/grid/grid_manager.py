@@ -277,9 +277,9 @@ class GridManager:
             for dim, name in start_index_names.items()
         }
         for dim in grid_refinement_dimensions:
-            assert start_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
+            assert start_indices[dim].shape == (max_refinement_control_values[dim],), (
+                f"start index array for {dim} has wrong shape"
+            )
 
         end_index_names = {
             dims.CellDim: gridfile.GridRefinementName.END_INDEX_CELLS,
@@ -291,12 +291,12 @@ class GridManager:
             for dim, name in end_index_names.items()
         }
         for dim in grid_refinement_dimensions:
-            assert start_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-            assert end_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
+            assert start_indices[dim].shape == (max_refinement_control_values[dim],), (
+                f"start index array for {dim} has wrong shape"
+            )
+            assert end_indices[dim].shape == (max_refinement_control_values[dim],), (
+                f"start index array for {dim} has wrong shape"
+            )
 
         return start_indices, end_indices
 

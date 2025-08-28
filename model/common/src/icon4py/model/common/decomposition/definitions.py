@@ -131,9 +131,9 @@ class DecompositionInfo:
         data = self._global_index[dim]
         assert data.ndim == 1
         if isinstance(data, np.ndarray):
-            import numpy as xp
+            import numpy as xp  # noqa: PLC0415 [import-outside-top-level]
         else:
-            import cupy as xp
+            import cupy as xp  # noqa: PLC0415 [import-outside-top-level]
 
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
