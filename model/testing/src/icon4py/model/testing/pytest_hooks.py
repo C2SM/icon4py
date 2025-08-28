@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import collections
 import contextlib
 import os
 import re
@@ -129,6 +130,37 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
             item_filter.action()
 
 
+_name_from_fullname_pattern = re.compile(
+    r"""
+        ::(?P<class>[A-Za-z_]\w*)       # capture class name
+        (?::: [A-Za-z_]\w*              # skip method name
+        (?:\[(?P<params>[^\]]+)\])? )   # optional parameterization
+        """,
+    re.VERBOSE,
+)
+
+
+def _name_from_fullname(fullname: str) -> str:
+    match = _name_from_fullname_pattern.search(fullname)
+    class_name = match.group("class")
+    params = match.group("params")
+    return f"{class_name}[{params}]" if params else class_name
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_benchmark_group_stats(config, benchmarks, group_by):
+    """
+    Replace 'name' of pytest benchmarks with a shorter name for better readability in bencher.
+
+    See also the 'pytest_benchmark_update_json' hook below.
+    """
+    result = collections.defaultdict(list)
+    for bench in benchmarks:
+        bench["name"] = _name_from_fullname(bench["fullname"])
+        result[bench["name"]].append(bench)
+    yield result.items()
+
+
 # pytest benchmark hook, see:
 #     https://pytest-benchmark.readthedocs.io/en/latest/hooks.html#pytest_benchmark.hookspec.pytest_benchmark_update_json
 def pytest_benchmark_update_json(output_json):
@@ -139,18 +171,6 @@ def pytest_benchmark_update_json(output_json):
     Currently works only for 'StencilTest's as they have the following fixed structure:
       '<path>::<class_name>::test_stencil[<variant>]'.
     """
-    pattern = re.compile(
-        r"""
-        ::(?P<class>[A-Za-z_]\w*)       # capture class name
-        (?::: [A-Za-z_]\w*              # skip method name
-        (?:\[(?P<params>[^\]]+)\])? )   # optional parameterization
-        """,
-        re.VERBOSE,
-    )
 
     for bench in output_json["benchmarks"]:
-        match = pattern.search(bench["fullname"])
-        class_name = match.group("class")
-        params = match.group("params")
-
-        bench["fullname"] = f"{class_name}[{params}]" if params else class_name
+        bench["fullname"] = _name_from_fullname(bench["fullname"])
