@@ -158,7 +158,10 @@ ignore_errors = true
 module = [
   'icon4py.model.testing.fixtures.datatest',
   'icon4py.model.testing.pytest_hooks',
-  'icon4py.model.testing.serialbox'
+  'icon4py.model.testing.serialbox',
+  'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',
+  'icon4py.tools.py2fgen.wrappers.dycore_wrapper',
+  'icon4py.tools.py2fgen.wrappers.grid_wrapper'
 ]
 
 # -- pytest --
@@ -195,8 +198,11 @@ exclude = ["**/tests/**"]
 explicit-preview-rules = true
 ignore = [
   'E501',  # [line-too-long]
-  'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): remove when possible
-  'ISC001',  # [single-line-implicit-string-concatenation]
+  'B905',  # [zip-without-explicit-strict]  # TODO(egparedes): activate when possible
+  'PLR0913',  # [too-many-arguments]  # TODO(egparedes): activate when possible
+  'PLR2004',  # [magic-value-comparison]  # TODO(egparedes): activate when possible
+  'PLR5501',  # [collapsible-else-if]  # TODO(egparedes): rediscuss in future
+  'SIM102',  # [collapsible-if]  # TODO(egparedes): rediscuss in future
   'TD003',  # [missing-todo-link]
   'UP038'  # [non-pep604-isinstance]
 ]
@@ -204,32 +210,32 @@ preview = true  # use only with explicit-preview-rules=true
 select = [
   'A',  # flake8-builtins
   'B',  # flake8-bugbear
-  # 'C4', # flake8-comprehensions
+  # 'C4', #  flake8-comprehensions
   'CPY',  # flake8-copyright
-  # 'D', # pydocstyle
+  # 'D', #  pydocstyle
   'DOC',  # pydoclint
   'E',  # pycodestyle
   'ERA',  # eradicate
   'F',  # Pyflakes
   'F822',  # [undefined-export] (preview)  # TODO(egparedes): remove when not longer in preview
   'FA100',  # future-rewritable-type-annotation
-  # 'FBT', # flake8-boolean-trap
+  # 'FBT',  # flake8-boolean-trap
   'FLY',  # flynt
   'I',  # isort
-  # 'ICN', # flake8-import-conventions
+  # 'ICN',  # flake8-import-conventions
   'ISC',  # flake8-implicit-str-concat
-  # 'N', # pep8-naming
+  # 'N',  # pep8-naming
   'NPY',  # NumPy-specific rules
   'PERF',  # Perflint
-  # 'PGH', # pygrep-hooks
-  # 'PLC', # Pylint-Convention
-  # 'PLE', # Pylint-Error
-  # 'PLR', # Pylint-Refactor
-  # 'PLW', # Pylint-Warning
-  # 'PTH', # flake8-use-pathlib
+  'PGH',  # pygrep-hooks
+  'PLC',  # Pylint-Convention
+  'PLE',  # Pylint-Error
+  'PLR',  # Pylint-Refactor
+  'PLW',  # Pylint-Warning
+  'PTH',  # flake8-use-pathlib
   'Q',  # flake8-quotes
   'RUF',  # Ruff-specific rules
-  # 'SIM', # flake8-simplify
+  'SIM',  # flake8-simplify
   'T10',  # flake8-debugger
   'TD',  # flake8-todos
   'UP',  # pyupgrade
@@ -261,11 +267,17 @@ split-on-trailing-comma = false
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**/*_test.py" = ["F401", "F811"]
-"**/tests/**/fixtures.py" = ["F401", "F811"]
+# Avoid messing up conditions in gt4py stencils
+"**/model/**/stencils/*.py" = ["SIM300"]
 # Ignore spurious errors when explicitly importing fixtures in tests.
 # Check: https://github.com/astral-sh/ruff/issues/10662
+"**/tests/**/*_test.py" = ["F401", "F811"]
+"**/tests/**/fixtures.py" = ["F401", "F811"]
 "**/tests/**/test_*.py" = ["F401", "F811"]
+
+[tool.ruff.lint.pylint]
+max-branches = 12
+max-statements = 60
 
 # -- setuptools --
 [tool.setuptools]

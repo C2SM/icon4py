@@ -153,7 +153,7 @@ def _graupel_mask(
 
 
 @gtx.field_operator
-def _q_t_update(
+def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -439,7 +439,7 @@ def _precipitation_effects(
 def _graupel_run(
     k: fa.KField[gtx.int32],
     last_lev: gtx.int32,
-    dz: fa.CellKField[ta.wpfloat],  #
+    dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
@@ -483,7 +483,7 @@ def _graupel_run(
 def graupel_run(
     k: fa.KField[gtx.int32],
     last_lev: gtx.int32,
-    dz: fa.CellKField[ta.wpfloat],  #
+    dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
@@ -494,7 +494,7 @@ def graupel_run(
     qie: fa.CellKField[ta.wpfloat],  # Specific ice water content
     qge: fa.CellKField[ta.wpfloat],  # Specific graupel water content
     dt: ta.wpfloat,  # Time step
-    qnc: ta.wpfloat,  #
+    qnc: ta.wpfloat,
     t_out: fa.CellKField[ta.wpfloat],  # Revised temperature
     qv_out: fa.CellKField[ta.wpfloat],  # Revised humidity
     qc_out: fa.CellKField[ta.wpfloat],  # Revised cloud water

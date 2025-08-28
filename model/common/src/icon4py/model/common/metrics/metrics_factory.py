@@ -132,7 +132,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def _sources(self) -> factory.FieldSource:
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
 
-    def _register_computed_fields(self):
+    def _register_computed_fields(self):  # noqa: PLR0915 [too-many-statements]
         vertical_coordinates_on_half_levels = factory.NumpyFieldsProvider(
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
