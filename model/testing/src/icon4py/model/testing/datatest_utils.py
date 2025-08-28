@@ -146,13 +146,10 @@ def create_icon_serial_data_provider(
     processor_props: decomposition.ProcessProperties,
     backend: gtx_backend.Backend | None,
 ) -> serialbox.IconSerialDataProvider:
-    # NOTE 1: This needs to be here, otherwise spack doesn't find serialbox
-    # NOTE 2: Before `IconSerialDataProvider` was imported directly, which lead to a
-    #   PLC0415 error. However, ruff was always removing the `noqa` mark. This is the
-    #   only way I found that works.
-    import icon4py  # noqa: PLC0415 [import-outside-top-level]
+    # note: this needs to be here, otherwise spack doesn't find serialbox
+    from icon4py.model.testing.serialbox import IconSerialDataProvider
 
-    return icon4py.model.testing.serialbox.IconSerialDataProvider(
+    return IconSerialDataProvider(
         backend=backend,
         fname_prefix="icon_pydycore",
         path=str(datapath),
