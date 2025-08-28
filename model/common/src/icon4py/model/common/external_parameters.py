@@ -7,11 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
-import math
 
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common import constants as phy_const
+
 
 @dataclasses.dataclass
 class ExternalParameters:
@@ -19,4 +17,3 @@ class ExternalParameters:
 
     topo_c: fa.CellField[float]
     topo_smt_c: fa.CellField[float]
-

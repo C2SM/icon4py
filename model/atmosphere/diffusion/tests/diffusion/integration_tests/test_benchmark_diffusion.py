@@ -20,7 +20,8 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
-    vertical as v_grid, geometry,
+    vertical as v_grid,
+    geometry,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import (
@@ -35,9 +36,10 @@ from icon4py.model.common.grid import geometry as grid_geometry
 
 from ..fixtures import *
 
+
 def construct_dummy_decomposition_info(grid, backend) -> definitions.DecompositionInfo:
     """A public helper function to construct a dummy decomposition info object for test cases
-     refactored from grid_utils.py"""
+    refactored from grid_utils.py"""
 
     on_gpu = device_utils.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
@@ -47,13 +49,13 @@ def construct_dummy_decomposition_info(grid, backend) -> definitions.Decompositi
         owner_mask = xp.ones((grid.size[dim],), dtype=bool)
         decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
-
     decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
     _add_dimension(dims.EdgeDim)
     _add_dimension(dims.VertexDim)
     _add_dimension(dims.CellDim)
 
     return decomposition_info
+
 
 @pytest.fixture
 def vertical_grid_params(
@@ -98,10 +100,9 @@ def test_run_diffusion_benchmark(
     backend,
     benchmark,
 ):
-
     dtime = 10.0
 
-    config=diffusion.DiffusionConfig(
+    config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
@@ -110,7 +111,7 @@ def test_run_diffusion_benchmark(
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=False, # TODO (Yilu): zdiffu_t is the issue
+        zdiffu_t=False,  # TODO (Yilu): zdiffu_t is the issue
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
@@ -131,10 +132,10 @@ def test_run_diffusion_benchmark(
         backend=backend,
         coordinates=coordinates,
         extra_fields=geometry_input_fields,
-        metadata=geometry_meta.attrs
+        metadata=geometry_meta.attrs,
     )
 
-    cell_geometry= grid_states.CellParams(
+    cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
@@ -146,9 +147,13 @@ def test_run_diffusion_benchmark(
         coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
         edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
         primal_edge_lengths=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
-        inverse_primal_edge_lengths=geometry_field_source.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
+        inverse_primal_edge_lengths=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.EDGE_LENGTH}"
+        ),
         dual_edge_lengths=geometry_field_source.get(geometry_meta.DUAL_EDGE_LENGTH),
-        inverse_dual_edge_lengths=geometry_field_source.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
+        inverse_dual_edge_lengths=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+        ),
         inverse_vertex_vertex_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
@@ -164,7 +169,7 @@ def test_run_diffusion_benchmark(
         dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
     )
 
-    topo_c =  topography_initialization(
+    topo_c = topography_initialization(
         cell_lat=cell_geometry.cell_center_lat.asnumpy(),
         u0=35.0,
         backend=backend,
@@ -184,7 +189,6 @@ def test_run_diffusion_benchmark(
         vct_a=vct_a,
         vct_b=vct_b,
     )
-
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
         grid=grid,
@@ -258,9 +262,10 @@ def test_run_diffusion_benchmark(
         orchestration=False,
     )
 
-    benchmark.pedantic(diffusion_granule.run,
-        args=(diagnostic_state,prognostic_state,dtime),
-        rounds=10, warmup_rounds=2, iterations=1
+    benchmark.pedantic(
+        diffusion_granule.run,
+        args=(diagnostic_state, prognostic_state, dtime),
+        rounds=10,
+        warmup_rounds=2,
+        iterations=1,
     )
-
-

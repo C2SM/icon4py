@@ -106,10 +106,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         c_owner_mask = gtx.as_field(
             (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
         )
-        c_refin_ctrl= gtx.as_field(
+        c_refin_ctrl = gtx.as_field(
             (dims.CellDim,), self._grid.refinement_control[dims.CellDim].ndarray
         )
-        e_refin_ctrl= gtx.as_field(
+        e_refin_ctrl = gtx.as_field(
             (dims.EdgeDim,), self._grid.refinement_control[dims.EdgeDim].ndarray
         )
         # TODO : here need to check () or []
@@ -624,7 +624,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
-
             deps={
                 "c_refin_ctrl": "c_refin_ctrl",
             },

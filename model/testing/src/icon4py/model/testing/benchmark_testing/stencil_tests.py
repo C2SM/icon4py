@@ -12,7 +12,7 @@ from typing import Final
 import pytest
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common.grid import base as base_grid, simple as simple_grid
+from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.grid.base import Grid
 from icon4py.model.common.grid.grid_manager import GridManager
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
@@ -52,7 +52,9 @@ def _get_grid_from_preset(
 
 
 @pytest.fixture(scope="session")
-def grid_manager(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) -> Grid | GridManager:
+def grid_manager(
+    request: pytest.FixtureRequest, backend: gtx_backend.Backend | None
+) -> Grid | GridManager:
     """
     Fixture for providing a grid instance.
 

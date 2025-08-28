@@ -23,6 +23,7 @@ DEFAULT_NUM_LEVELS: Final[int] = (
 )
 VALID_GRID_PRESETS: tuple[str, str, str] = ("simple", "icon_regional", "icon_global")
 
+
 def _get_grid_from_preset(
     grid_preset: str,
     *,

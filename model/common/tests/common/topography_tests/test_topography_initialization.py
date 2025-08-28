@@ -12,12 +12,15 @@ from icon4py.model.common.initialization.topography_initialization import topogr
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing import test_utils
 from icon4py.model.common.grid import geometry as grid_geometry
-from model.atmosphere.diffusion.tests.diffusion.integration_tests.test_benchmark_diffusion import \
-    construct_dummy_decomposition_info, get_cell_geometry_for_grid_file
+from model.atmosphere.diffusion.tests.diffusion.integration_tests.test_benchmark_diffusion import (
+    construct_dummy_decomposition_info,
+    get_cell_geometry_for_grid_file,
+)
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
 )
 from model.common.tests.common.fixtures import *  # noqa: F403
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -32,7 +35,12 @@ def test_topography_initialization(
     topography_savepoint,
 ):
     num_levels = 65
-    grid_manager = grid_utils.get_grid_manager_from_identifier(grid_file_identifier=grid_file, num_levels=num_levels, keep_skip_values=True, backend=backend)
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid_file_identifier=grid_file,
+        num_levels=num_levels,
+        keep_skip_values=True,
+        backend=backend,
+    )
     grid = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
@@ -43,7 +51,7 @@ def test_topography_initialization(
         backend=backend,
         coordinates=coordinates,
         extra_fields=geometry_input_fields,
-        metadata=geometry_meta.attrs
+        metadata=geometry_meta.attrs,
     )
 
     cell_geometry = get_cell_geometry_for_grid_file(grid_file, geometry_field_source, backend)
@@ -56,10 +64,7 @@ def test_topography_initialization(
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()
 
-    assert  test_utils.dallclose(
+    assert test_utils.dallclose(
         topo_c,
         topo_c_ref,
     )
-
-
-

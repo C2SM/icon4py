@@ -51,7 +51,6 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
-
 @pytest.fixture
 def random_name() -> str:
     return "test" + str(random.randint(0, 100000))

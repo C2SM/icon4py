@@ -12,7 +12,6 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.testing import filters
-from typing import Tuple
 
 
 __all__ = [
@@ -167,7 +166,8 @@ def pytest_benchmark_update_json(output_json):
             params = match.group("params")
             bench["fullname"] = f"{class_name}[{params}]" if params else class_name
 
-def parse_grid_spec(spec: str | None) -> Tuple[str, int]:
+
+def parse_grid_spec(spec: str | None) -> tuple[str, int]:
     """Parse the '--grid' option string into (name, num_levels).
 
     The expected format is '<grid_name>[:<grid_levels>]' where <grid_levels> is optional.
