@@ -20,6 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+@pytest.mark.uses_concat_where
 class TestComputePpmSlope(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_slope
     OUTPUTS = (
@@ -27,7 +28,6 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
             "z_slope", refslice=(slice(None), slice(None, -1)), gtslice=(slice(None), slice(1, -1))
         ),
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(

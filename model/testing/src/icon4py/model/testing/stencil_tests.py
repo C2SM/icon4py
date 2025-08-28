@@ -78,7 +78,6 @@ class StencilTest:
         >>> class TestMultiplyByTwo(StencilTest):  # doctest: +SKIP
         ...     PROGRAM = multiply_by_two  # noqa: F821
         ...     OUTPUTS = ("some_output",)
-        ...     MARKERS = (pytest.mark.some_marker,)
         ...     STATIC_PARAMS = {"category_a": ["flag0"], "category_b": ["flag0", "flag1"]}
         ...
         ...     @pytest.fixture
@@ -92,7 +91,6 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKERS: ClassVar[tuple | None] = None
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]

@@ -43,10 +43,10 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
     return z_graddiv_vn
 
 
+@pytest.mark.skip_value_error
 class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest):
     PROGRAM = add_vertical_wind_derivative_to_divergence_damping
     OUTPUTS = ("z_graddiv_vn",)
-    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
