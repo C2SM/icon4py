@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 
 
 DEBUG_LEVEL = 2
+RANDOM_PERTURBATION_MAGNITUDE = 0.001  # perturbation magnitude for vn profile
 
 @gtx.field_operator
 def _set_boundary_conditions_cell(
@@ -75,7 +76,7 @@ class ChannelFlow:
         self.num_edges = grid.num_edges
         self.num_levels = grid.num_levels
 
-        self.random_perturbation_magnitude = 0 #0.001  # perturbation magnitude for velocity profile
+        self.random_perturbation_magnitude = RANDOM_PERTURBATION_MAGNITUDE  # perturbation magnitude for vn profile
 
         # Allocate here so it's not re-allocated every BC call
         self.random_field_full_edge_np = xp.random.normal(
