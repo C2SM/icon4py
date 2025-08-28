@@ -142,6 +142,8 @@ _name_from_fullname_pattern = re.compile(
 
 def _name_from_fullname(fullname: str) -> str:
     match = _name_from_fullname_pattern.search(fullname)
+    if match is None:
+        return fullname  # assume already fixed
     class_name = match.group("class")
     params = match.group("params")
     return f"{class_name}[{params}]" if params else class_name

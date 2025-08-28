@@ -55,6 +55,7 @@ def calculate_nabla4_numpy(
     return z_nabla4_e2
 
 
+@pytest.mark.to_performance_dashboard
 @pytest.mark.skip_value_error
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
