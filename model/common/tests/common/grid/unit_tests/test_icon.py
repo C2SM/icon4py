@@ -290,8 +290,8 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             ),
-            mean_cell_area,
             num_cells,
+            mean_cell_area,
         )
 
 
