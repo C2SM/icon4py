@@ -34,12 +34,12 @@ def setup_program(
     - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile').
     Args:
         - backend: GT4Py backend,
-        - program_func: gt4py program,
+        - program: GT4Py program,
         - constant_args: constant fields and scalars,
         - variants: list of all scalars potential values from which one is selected at run time,
-        - horizontal_sizes: horizontal scalars,
-        - vertical_sizes: vertical scalars,
-        - offset_provider: gt4py offset_provider,
+        - horizontal_sizes: horizontal domain bounds,
+        - vertical_sizes: vertical domain bounds,
+        - offset_provider: GT4Py offset_provider,
     """
     constant_args = {} if constant_args is None else constant_args
     variants = {} if variants is None else variants
