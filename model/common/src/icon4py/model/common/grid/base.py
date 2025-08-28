@@ -9,7 +9,6 @@ import dataclasses
 import enum
 import functools
 import logging
-import uuid
 from collections.abc import Mapping, Sequence
 from types import ModuleType
 
@@ -86,7 +85,7 @@ class Grid:
     require an 'IconGrid'.
     """
 
-    id: uuid.UUID
+    id: str
     """
     Unique identifier of the horizontal grid.
 
@@ -98,9 +97,8 @@ class Grid:
     connectivities: gtx_common.OffsetProvider
     geometry_type: GeometryType
     # only used internally for `start_index` and `end_index` public interface:
-    # TODO(havogt): consider refactoring to `Mapping[h_grid.Zone, gtx.int32]`
-    _start_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
-    _end_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
+    _start_indices: Mapping[h_grid.Domain, gtx.int32]
+    _end_indices: Mapping[h_grid.Domain, gtx.int32]
 
     def __post_init__(self):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
@@ -173,10 +171,10 @@ class Grid:
         For a given dimension, returns the start index of the
         horizontal region in a field given by the marker.
         """
-        if domain.local:
+        if domain.is_local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
-        return gtx.int32(self._start_indices[domain.dim][domain()])
+        return self._start_indices[domain]
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
@@ -188,7 +186,7 @@ class Grid:
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
-        return gtx.int32(self._end_indices[domain.dim][domain()])
+        return self._end_indices[domain]
 
 
 def construct_connectivity(

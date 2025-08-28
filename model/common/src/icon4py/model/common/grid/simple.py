@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import functools
-import uuid
 from typing import Final
 
 import gt4py.next as gtx
@@ -459,38 +458,31 @@ def simple_grid(
         for offset, table in neighbor_tables.items()
     }
 
+    cell_domain = h_grid.domain(dims.CellDim)
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    vertex_domain = h_grid.domain(dims.VertexDim)
     start_indices = {
-        dims.CellDim: {
-            h_grid._map_to_index(dims.CellDim, zone): (0 if not zone.is_halo() else _CELLS)
-            for zone in h_grid.Zone
-            if zone in h_grid.CELL_ZONES
+        **{
+            cell_domain(zone): gtx.int32(0 if not zone.is_halo() else _CELLS)
+            for zone in h_grid.CELL_ZONES
         },
-        dims.EdgeDim: {
-            h_grid._map_to_index(dims.EdgeDim, zone): (0 if not zone.is_halo() else _EDGES)
-            for zone in h_grid.Zone
+        **{
+            edge_domain(zone): gtx.int32(0 if not zone.is_halo() else _EDGES)
+            for zone in h_grid.EDGE_ZONES
         },
-        dims.VertexDim: {
-            h_grid._map_to_index(dims.VertexDim, zone): (0 if not zone.is_halo() else _VERTICES)
-            for zone in h_grid.Zone
-            if zone in h_grid.VERTEX_ZONES
+        **{
+            vertex_domain(zone): gtx.int32(0 if not zone.is_halo() else _VERTICES)
+            for zone in h_grid.VERTEX_ZONES
         },
     }
     end_indices = {
-        dims.CellDim: {
-            h_grid._map_to_index(dims.CellDim, zone): _CELLS
-            for zone in h_grid.Zone
-            if zone in h_grid.CELL_ZONES
-        },
-        dims.EdgeDim: {h_grid._map_to_index(dims.EdgeDim, zone): _EDGES for zone in h_grid.Zone},
-        dims.VertexDim: {
-            h_grid._map_to_index(dims.VertexDim, zone): _VERTICES
-            for zone in h_grid.Zone
-            if zone in h_grid.VERTEX_ZONES
-        },
+        **{cell_domain(zone): gtx.int32(_CELLS) for zone in h_grid.CELL_ZONES},
+        **{edge_domain(zone): gtx.int32(_EDGES) for zone in h_grid.EDGE_ZONES},
+        **{vertex_domain(zone): gtx.int32(_VERTICES) for zone in h_grid.VERTEX_ZONES},
     }
 
     return base.Grid(
-        id=uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85"),
+        id="simple_grid",
         config=config,
         connectivities=connectivities,
         geometry_type=base.GeometryType.TORUS,

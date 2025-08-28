@@ -9,14 +9,14 @@ import dataclasses
 import functools
 import logging
 import math
-import uuid
+from collections.abc import Mapping
 from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -81,9 +81,11 @@ class GlobalGridParams:
                 case base.GeometryType.ICOSAHEDRON:
                     return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
                 case base.GeometryType.TORUS:
-                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+                    raise NotImplementedError(
+                        f"mean_cell_area not implemented for {self.geometry_type}"
+                    )
                 case _:
-                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
         return self._mean_cell_area
 
@@ -159,12 +161,12 @@ def _should_replace_skip_values(
 
 
 def icon_grid(
-    id_: uuid.UUID,
+    id_: str,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    start_indices: dict[gtx.Dimension, data_alloc.NDArray],
-    end_indices: dict[gtx.Dimension, data_alloc.NDArray],
+    start_indices: Mapping[h_grid.Domain, gtx.int32],
+    end_indices: Mapping[h_grid.Domain, gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
