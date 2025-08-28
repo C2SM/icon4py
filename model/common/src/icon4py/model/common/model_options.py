@@ -8,6 +8,7 @@
 import functools
 import typing
 
+import gt4py.next as gtx
 from gt4py._core.definitions import (
     Scalar,
     is_scalar_type,  # TODO(havogt): Should this function be public API?
