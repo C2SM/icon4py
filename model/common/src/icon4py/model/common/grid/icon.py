@@ -125,7 +125,7 @@ class GlobalGridParams:
                 case base.GeometryType.TORUS:
                     raise NotImplementedError("TODO : lookup torus cell number computation")
                 case _:
-                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    raise ValueError(f"Unknown geometry type {self.geometry_type}")
 
         return self._num_cells
 
