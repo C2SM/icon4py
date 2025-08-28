@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import functools
-import uuid
 from typing import Final
 
 import gt4py.next as gtx
@@ -483,7 +482,7 @@ def simple_grid(
     }
 
     return base.Grid(
-        id=uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85"),
+        id="simple_grid",
         config=config,
         connectivities=connectivities,
         geometry_type=base.GeometryType.TORUS,

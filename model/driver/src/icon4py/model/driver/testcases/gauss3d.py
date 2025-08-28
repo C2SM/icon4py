@@ -31,7 +31,7 @@ from icon4py.model.testing import serialbox as sb
 log = logging.getLogger(__name__)
 
 
-def model_initialization_gauss3d(
+def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,

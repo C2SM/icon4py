@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ruff: noqa: ERA001, B008
 
-import logging
 import dataclasses
-from typing import Final, Optional
+import logging
+from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -18,9 +18,7 @@ import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stenci
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
 from icon4py.model.common.model_options import program_compile_time
-from icon4py.model.common.utils import data_allocation as data_alloc
-
-from icon4py.model.common import constants
+from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
@@ -35,6 +33,10 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
+
+from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
+    compute_avg_vn_and_graddiv_vn_and_vt,
+
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
@@ -48,27 +50,50 @@ from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import (
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
     dycore_utils,
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
+    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+    compute_horizontal_velocity_quantities_and_fluxes,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_mass_flux
+from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import compute_theta_and_exner
+from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
+    compute_vn_on_lateral_boundary,
+)
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp,
+)
+from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
+    init_two_edge_kdim_fields_with_zero_wp,
+)
+from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
-from icon4py.model.atmosphere.dycore.velocity_advection import (
-    VelocityAdvection,
+from icon4py.model.atmosphere.dycore.velocity_advection import VelocityAdvection
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    field_type_aliases as fa,
+    model_options,
+    type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common import dimension as dims, model_options
 from icon4py.model.common.grid import (
     base as grid_def,
     horizontal as h_grid,
-    vertical as v_grid,
     icon as icon_grid,
+    vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.utils import data_allocation as data_alloc
 
-# flake8: noqa
 log = logging.getLogger(__name__)
 
 
@@ -140,7 +165,7 @@ class IntermediateFields:
     def allocate(
         cls,
         grid: grid_def.Grid,
-        backend: Optional[gtx_backend.Backend] = None,
+        backend: gtx_backend.Backend | None = None,
     ):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
@@ -205,8 +230,8 @@ class NonHydrostaticConfig:
         l_vert_nested: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
-        _nudge_max_coeff: float = None,  # default is set in __init__
-        max_nudging_coefficient: float = None,  # default is set in __init__
+        _nudge_max_coeff: float | None = None,  # default is set in __init__
+        max_nudging_coefficient: float | None = None,  # default is set in __init__
         fourth_order_divdamp_factor: float = 0.0025,
         fourth_order_divdamp_factor2: float = 0.004,
         fourth_order_divdamp_factor3: float = 0.004,
@@ -399,7 +424,7 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
@@ -1180,7 +1205,7 @@ class SolveNonhydro:
         )
 
         log.debug(
-            f"predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
+            "predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
         )
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
@@ -1337,7 +1362,7 @@ class SolveNonhydro:
             ),
         )
 
-        log.debug(f"corrector run velocity advection")
+        log.debug("corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_states.next,
@@ -1351,8 +1376,7 @@ class SolveNonhydro:
             rayleigh_damping_factor=self.rayleigh_damping_factor,
             dtime=dtime,
         )
-
-        log.debug(f"corrector: start stencil 10")
+        log.debug("corrector: start stencil 10")
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
@@ -1369,7 +1393,7 @@ class SolveNonhydro:
             dtime=dtime,
         )
 
-        log.debug(f"corrector: start stencil apply_divergence_damping_and_update_vn")
+        log.debug("corrector: start stencil apply_divergence_damping_and_update_vn")
         apply_2nd_order_divergence_damping = (
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
             and second_order_divdamp_scaling_coeff > 1.0e-6
@@ -1460,12 +1484,12 @@ class SolveNonhydro:
         if lprep_adv:
             if at_first_substep:
                 log.debug(
-                    f"corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+                    "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
                 )
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 )
-            log.debug(f" corrector: start stencil 65")
+            log.debug(" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
                 w_now=prognostic_states.current.w,

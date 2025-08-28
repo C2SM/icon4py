@@ -14,16 +14,14 @@ import typing
 
 import math
 import sys
-from typing import Final, Optional
+from typing import Final
 
 import gt4py.next as gtx
+from gt4py.next import backend as gtx_backend, int32
+
 import icon4py.model.common.grid.states as grid_states
-from gt4py.next import int32
-
 import icon4py.model.common.states.prognostic_state as prognostics
-from gt4py.next import backend as gtx_backend
-
-from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
+from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
@@ -33,9 +31,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
     apply_diffusion_to_theta_and_exner,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
-    apply_diffusion_to_vn,
-)
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
@@ -48,21 +44,16 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common import field_type_aliases as fa, constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import (
-    horizontal as h_grid,
-    vertical as v_grid,
-    icon as icon_grid,
-)
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.model_options import program_compile_time
 
-from icon4py.model.common.utils import data_allocation as data_alloc
-
 from icon4py.model.common.orchestration import decorator as dace_orchestration
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -70,7 +61,6 @@ Diffusion module ported from ICON mo_nh_diffusion.f90.
 Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 """
 
-# flake8: noqa
 log = logging.getLogger(__name__)
 
 
@@ -370,13 +360,13 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         orchestration: bool = False,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
         self.config = config
         self._params = params
         self._grid = grid
@@ -922,7 +912,7 @@ class Diffusion:
             "compile_time_connectivities",
             *[
                 name
-                for name in self.__dict__.keys()
+                for name in self.__dict__
                 if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
             ],
         ]
