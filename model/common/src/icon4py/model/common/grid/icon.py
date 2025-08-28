@@ -112,7 +112,7 @@ class GlobalGridParams:
         )
 
     @property
-    def geometry_type(self) -> base.GeometryType:
+    def geometry_type(self) -> base.GeometryType | None:
         return self.grid_params.geometry_type if self.grid_params else None
 
     @functools.cached_property
