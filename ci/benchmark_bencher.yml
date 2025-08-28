@@ -21,7 +21,13 @@ include:
   parallel:
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-      - GRID: [icon_benchmark]
+        GRID: [icon_benchmark]
+  variables:
+    ICON4PY_ENABLE_GRID_DOWNLOAD: false
+    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
+    # TODO enable:
+    # GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE: true
+    # PYTHONOPTIMIZE: 2
 
 benchmark_bencher_aarch64:
   extends: [.benchmark_model_stencils, .test_template_aarch64]
