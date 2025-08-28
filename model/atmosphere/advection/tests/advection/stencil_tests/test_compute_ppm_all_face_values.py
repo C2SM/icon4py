@@ -37,7 +37,7 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         elevp1: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        p_face_a = p_face_in
+        p_face_a = p_face_in.copy()
         p_face_a[:, 1:] = p_cc[:, 1:] * (
             1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
         ) + (p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])) * (
