@@ -9,7 +9,6 @@ from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import exp, sqrt
-from gt4py.next.ffront.decorator import scan_operator
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -22,7 +21,7 @@ from icon4py.model.common import (
 physics_constants: Final = phy_const.PhysicsConstants()
 
 
-@scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
+@gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
 def _scan_pressure(
     state: tuple[ta.wpfloat, ta.wpfloat, bool],
     ddqz_z_full: ta.wpfloat,

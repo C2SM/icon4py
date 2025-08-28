@@ -25,7 +25,6 @@ from gt4py.next import (
     maximum,
     minimum,
     neighbor_sum,
-    scan_operator,
     sin,
     tanh,
     where,
@@ -985,7 +984,7 @@ def compute_max_nbhgt(
     )
 
 
-@scan_operator(axis=dims.KDim, forward=True, init=(0, False))
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0, False))
 def _compute_param(
     param: tuple[gtx.int32, bool],
     z_me_jk: float,
