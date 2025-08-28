@@ -20,7 +20,7 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
 
 def program_compile_time(
     backend: backend.Backend,
-    program_func: typing.Callable,
+    program: gtx.Program,
     constant_args: dict | None = None,
     variants: dict | None = None,
     horizontal_sizes: dict | None = None,
