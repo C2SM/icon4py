@@ -8,6 +8,7 @@
 
 from types import ModuleType
 
+import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -114,7 +115,7 @@ def compute_diffusion_mask_and_coef(
     cell_nudging: int,
     nlev: int,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
     mask_hdiff = array_ns.zeros(shape=(n_cells, nlev), dtype=bool)
     zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
@@ -167,13 +168,13 @@ def compute_diffusion_intcoef_and_vertoffset(
     cell_nudging: int,
     nlev: int,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
     n_c2e2c = c2e2c.shape[1]
     z_mc_off = z_mc[c2e2c]
     nbidx = array_ns.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
     z_vintcoeff = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
-    zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev), dtype=gtx.int32)
     zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     k_start, k_end, _ = _compute_k_start_end(
         z_mc=z_mc,

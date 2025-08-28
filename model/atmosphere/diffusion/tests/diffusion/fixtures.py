@@ -10,6 +10,8 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.testing import serialbox as sb
 
+from icon4py.model.testing.benchmark_testing.stencil_tests import grid_manager
+
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     damping_height,
@@ -23,9 +25,13 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     interpolation_savepoint,
     linit,
-    lowest_layer_thickness,
     maximal_layer_thickness,
     metrics_savepoint,
+    lowest_layer_thickness,
+    rayleigh_coeff,
+    exner_expol,
+    vwind_offctr,
+    rayleigh_type,
     model_top_height,
     ndyn_substeps,
     processor_props,

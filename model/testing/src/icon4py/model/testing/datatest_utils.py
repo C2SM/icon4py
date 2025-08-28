@@ -31,8 +31,12 @@ JABW_EXPERIMENT = "jabw_R02B04"
 GAUSS3D_EXPERIMENT = "gauss3d_torus"
 WEISMAN_KLEMP_EXPERIMENT = "weisman_klemp_torus"
 
+MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
+R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
 TORUS_100X116_1000M_GRID_URI = "https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download"
 TORUS_50000x5000_RES500_GRID_URI = "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
+TORUS_50000x5000_RES500 = "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
+EXTPAR_R04B09 = "https://polybox.ethz.ch/index.php/s/CWWtBHBC9iNpLEo/download"
 
 
 # GRID URIs for global grids
