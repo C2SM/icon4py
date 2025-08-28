@@ -247,7 +247,7 @@ def test_exchange_on_dummy_data(
     result = input_field.asnumpy()
     print(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
     print(
-        f" rank={processor_props.rank} - exchanged points: {np.sum(result != number) / grid.num_levels}"
+        f" rank={processor_props.rank} - exchanged points: {np.sum(result != number)/grid.num_levels}"
     )
     print(f"rank={processor_props.rank} - halo points: {halo_points}")
 

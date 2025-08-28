@@ -169,9 +169,9 @@ class NETCDFWriter:
                 actual_var_name = ds_var.get(var_name).name
                 dims = ds_var.get(actual_var_name).dimensions
                 shape = ds_var.get(actual_var_name).shape
-                assert len(canonical_new_slice.dims) == len(dims) - 1, (
-                    f"Data variable dimensions do not match for {standard_name}."
-                )
+                assert (
+                    len(canonical_new_slice.dims) == len(dims) - 1
+                ), f"Data variable dimensions do not match for {standard_name}."
 
                 # TODO(halungge): change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
                 # we can acutally assume fixed index ordering here, input arrays are  re-shaped to canonical order (see above)

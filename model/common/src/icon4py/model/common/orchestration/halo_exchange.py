@@ -209,8 +209,8 @@ def add_halo_tasklet(
 
             {fields_desc}
 
-            h_{unique_id} = communication_object->exchange({", ".join([f"(*pattern)({'' if wait else '*'}{descr_unique_names[i]})" for i in range(len(global_buffers))])});
-            {"h_" + str(unique_id) + ".wait();" if wait else ""}
+            h_{unique_id} = communication_object->exchange({", ".join([f'(*pattern)({"" if wait else "*"}{descr_unique_names[i]})' for i in range(len(global_buffers))])});
+            { 'h_'+str(unique_id)+'.wait();' if wait else ''}
 
             __out = 1234; // Dummy return;
             """

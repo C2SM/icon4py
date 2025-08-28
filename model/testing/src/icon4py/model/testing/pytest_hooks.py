@@ -107,9 +107,9 @@ def pytest_collection_modifyitems(config, items):
         return
     for item in items:
         if (marker := item.get_closest_marker("level")) is not None:
-            assert all(level in _TEST_LEVELS for level in marker.args), (
-                f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
-            )
+            assert all(
+                level in _TEST_LEVELS for level in marker.args
+            ), f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             if test_level not in marker.args:
                 item.add_marker(
                     pytest.mark.skip(
