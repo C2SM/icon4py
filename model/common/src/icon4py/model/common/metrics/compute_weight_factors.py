@@ -10,7 +10,6 @@ from types import ModuleType
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next.experimental import concat_where
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
@@ -59,7 +58,7 @@ def _compute_wgtfac_c(
 
 
 # TODO(halungge): missing test?
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=run_gtfn)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=gtx.gtfn_cpu)
 def compute_wgtfac_c(
     wgtfac_c: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],

@@ -8,14 +8,9 @@
 import functools
 import typing
 
+import gt4py.core as gt_core
 import gt4py.next as gtx
-from gt4py._core.definitions import (
-    Scalar,
-    is_scalar_type,  # TODO(havogt): Should this function be public API?
-)
-from gt4py.next import Field, backend
-from gt4py.next.common import OffsetProvider
-from gt4py.next.ffront.decorator import Program
+import gt4py.next.typing as gtx_typing
 
 
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
@@ -23,13 +18,13 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
 
 
 def setup_program(
-    backend: backend.Backend,
-    program: Program,
-    constant_args: dict[str, Field | Scalar] | None = None,
-    variants: dict[str, list[Scalar]] | None = None,
+    backend: gtx_typing.Backend,
+    program: gtx_typing.Program,
+    constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
+    variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
-    offset_provider: OffsetProvider | None = None,
+    offset_provider: gtx_typing.OffsetProvider | None = None,
 ) -> typing.Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
@@ -50,7 +45,7 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
+    bound_static_args = {k: v for k, v in constant_args.items() if gt_core.is_scalar_type(v)}
     static_args_program = program.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),

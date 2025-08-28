@@ -15,10 +15,11 @@ from typing import Any, ClassVar
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py import eve
-from gt4py._core.definitions import is_scalar_type
-from gt4py.next import backend as gtx_backend, constructors
-from gt4py.next.ffront.decorator import FieldOperator, Program
+from gt4py import core as gt_core, eve
+from gt4py.next import backend as gtx_backend, constructors, typing as gtx_typing
+
+# TODO(havogt): import will disappear after FieldOperators support `.compile`
+from gt4py.next.ffront.decorator import FieldOperator
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
@@ -33,7 +34,7 @@ def allocate_data(
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
         else _allocate_field(domain=v.domain, data=v.ndarray)
-        if not is_scalar_type(v) and k != "domain"
+        if not gt_core.is_scalar_type(v) and k != "domain"
         else v
         for k, v in input_data.items()
     }
@@ -90,7 +91,7 @@ class StencilTest:
         ...         return dict(some_output=np.asarray(some_input) * 2)
     """
 
-    PROGRAM: ClassVar[Program | FieldOperator]
+    PROGRAM: ClassVar[gtx_typing.Program | gtx_typing.FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     MARKERS: ClassVar[tuple | None] = None
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
@@ -111,7 +112,7 @@ class StencilTest:
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
-        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
+        program = self.PROGRAM.with_backend(backend)
         if backend is not None:
             if isinstance(program, FieldOperator):
                 if len(static_args) > 0:
@@ -122,7 +123,7 @@ class StencilTest:
                 program.compile(
                     offset_provider=grid.connectivities,
                     enable_jit=False,
-                    **static_args,  # type: ignore[arg-type]
+                    **static_args,
                 )
 
         test_func = device_utils.synchronized_function(program, backend=backend)
