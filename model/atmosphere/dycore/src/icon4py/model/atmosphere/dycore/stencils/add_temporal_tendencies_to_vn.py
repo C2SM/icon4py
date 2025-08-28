@@ -8,9 +8,7 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -19,7 +17,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 dycore_consts: Final = constants.PhysicsConstants()
 
 
-@field_operator
+@gtx.field_operator
 def _add_temporal_tendencies_to_vn(
     vn_nnow: fa.EdgeKField[wpfloat],
     ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],
@@ -39,7 +37,7 @@ def _add_temporal_tendencies_to_vn(
     return vn_nnew_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_temporal_tendencies_to_vn(
     vn_nnow: fa.EdgeKField[wpfloat],
     ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],

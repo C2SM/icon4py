@@ -6,16 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
+from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import V2E, V2EDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: fa.EdgeKField[wpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, V2EDim], wpfloat],
@@ -24,7 +22,7 @@ def _mo_math_divrot_rot_vertex_ri_dsl(
     return astype(rot_vec_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: fa.EdgeKField[wpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, V2EDim], wpfloat],

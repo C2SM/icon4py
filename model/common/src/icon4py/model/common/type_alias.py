@@ -9,7 +9,7 @@
 import os
 from typing import Literal, TypeAlias
 
-from gt4py.next.ffront.fbuiltins import float32, float64
+from gt4py.next import float32, float64
 
 
 DEFAULT_PRECISION = "double"

@@ -11,8 +11,6 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import simple_grid
@@ -37,14 +35,14 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
-@field_operator
+@gtx.field_operator
 def _square(
     inp: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
 ) -> gtx.Field[[dims.CellDim, dims.KDim], gtx.float64]:
     return inp**2
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def square(
     inp: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
     result: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],

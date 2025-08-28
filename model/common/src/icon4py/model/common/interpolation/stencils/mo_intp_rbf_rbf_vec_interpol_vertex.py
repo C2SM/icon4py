@@ -6,16 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import neighbor_sum
+from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import V2E, V2EDim
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: fa.EdgeKField[wpfloat],
     ptr_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, V2EDim], wpfloat],
@@ -29,7 +27,7 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     return p_u_out, p_v_out
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: fa.EdgeKField[wpfloat],
     ptr_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, V2EDim], wpfloat],

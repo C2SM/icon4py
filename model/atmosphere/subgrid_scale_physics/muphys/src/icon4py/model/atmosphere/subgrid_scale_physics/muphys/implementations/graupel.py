@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import maximum, minimum, power, sqrt, where
+from gt4py.next import maximum, minimum, power, sqrt, where
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, idx, t_d
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (

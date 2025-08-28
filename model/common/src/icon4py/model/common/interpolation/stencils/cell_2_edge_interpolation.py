@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import neighbor_sum
+from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2CDim
 
 
-@field_operator
+@gtx.field_operator
 def _cell_2_edge_interpolation(
     in_field: fa.CellKField[ta.wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
@@ -30,7 +28,7 @@ def _cell_2_edge_interpolation(
     return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def cell_2_edge_interpolation(
     in_field: fa.CellKField[ta.wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],

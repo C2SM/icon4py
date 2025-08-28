@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import (
+from gt4py.next import (
     abs,  # noqa: A004
     astype,
     maximum,
@@ -15,6 +14,7 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
     where,
 )
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
     _mo_math_divrot_rot_vertex_ri_dsl,

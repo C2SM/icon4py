@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import astype, max_over, maximum, min_over, minimum
+from gt4py.next import astype, max_over, maximum, min_over, minimum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2C

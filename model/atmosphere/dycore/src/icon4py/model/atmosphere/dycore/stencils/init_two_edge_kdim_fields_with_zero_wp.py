@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast
+from gt4py.next import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _init_two_edge_kdim_fields_with_zero_wp() -> (
     tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]
 ):
@@ -24,7 +22,7 @@ def _init_two_edge_kdim_fields_with_zero_wp() -> (
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_two_edge_kdim_fields_with_zero_wp(
     edge_kdim_field_with_zero_wp_1: fa.EdgeKField[wpfloat],
     edge_kdim_field_with_zero_wp_2: fa.EdgeKField[wpfloat],

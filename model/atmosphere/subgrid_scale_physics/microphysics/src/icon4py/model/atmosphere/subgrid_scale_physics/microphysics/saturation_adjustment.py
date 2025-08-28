@@ -10,8 +10,7 @@ from typing import Final
 
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
-from gt4py.next import backend as gtx_backend
-from gt4py.next.ffront.fbuiltins import abs, exp, maximum, where  # noqa: A004
+from gt4py.next import abs, backend as gtx_backend, exp, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils as common_utils
