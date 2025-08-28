@@ -29,15 +29,17 @@ def setup_program(
     offset_provider: dict | None = None,
 ) -> typing.Callable[..., None]:
     """
-    This function processes pre-compiled args and feeds some to the gt4py `compile` function.
+    This function processes arguments to the GT4Py program. It
+    - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', "vertical_sizes');
+    - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile').
     Args:
-        - backend: pre-set backend at run time,
-        - program_func: gt4py program,
+        - backend: GT4Py backend,
+        - program: GT4Py program,
         - constant_args: constant fields and scalars,
         - variants: list of all scalars potential values from which one is selected at run time,
-        - horizontal_sizes: horizontal scalars,
-        - vertical_sizes: vertical scalars,
-        - offset_provider: gt4py offset_provider,
+        - horizontal_sizes: horizontal domain bounds,
+        - vertical_sizes: vertical domain bounds,
+        - offset_provider: GT4Py offset_provider,
     """
     constant_args = {} if constant_args is None else constant_args
     variants = {} if variants is None else variants
