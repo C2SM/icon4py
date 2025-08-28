@@ -17,26 +17,11 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common.model_options import program_compile_time
 from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
     vertically_implicit_dycore_solver,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
-    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
-    compute_horizontal_velocity_quantities_and_fluxes,
-)
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    init_cell_kdim_field_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
-    compute_hydrostatic_correction_term,
-
-from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
-    compute_avg_vn_and_graddiv_vn_and_vt,
-
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
@@ -44,12 +29,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_dampin
 from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import (
     compute_exner_from_rhotheta,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import (
-    compute_theta_and_exner,
-)
-from icon4py.model.atmosphere.dycore import (
-    dycore_states,
-    dycore_utils,
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
     compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
     compute_horizontal_velocity_quantities_and_fluxes,
@@ -57,19 +36,9 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_mass_flux
 from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import compute_theta_and_exner
-from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
-    compute_vn_on_lateral_boundary,
-)
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
-    init_two_edge_kdim_fields_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
@@ -91,8 +60,10 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.model_options import program_compile_time
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
+
 
 log = logging.getLogger(__name__)
 
@@ -495,8 +466,8 @@ class SolveNonhydro:
             backend=self._backend,
             program_func=compute_hydrostatic_correction_term,
             bound_args={
-                "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,  # TODO
-                "zdiff_gradp": self._metric_state_nonhydro.zdiff_gradp,  # TODO
+                "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,
+                "zdiff_gradp": self._metric_state_nonhydro.zdiff_gradp,
                 "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
                 "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
                 "grav_o_cpd": constants.GRAV_O_CPD,

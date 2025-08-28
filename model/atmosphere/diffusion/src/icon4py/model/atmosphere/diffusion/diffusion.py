@@ -10,8 +10,6 @@ import dataclasses
 import enum
 import functools
 import logging
-import typing
-
 import math
 import sys
 from typing import Final
@@ -51,9 +49,9 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.model_options import program_compile_time
-
 from icon4py.model.common.orchestration import decorator as dace_orchestration
 from icon4py.model.common.utils import data_allocation as data_alloc
+
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
