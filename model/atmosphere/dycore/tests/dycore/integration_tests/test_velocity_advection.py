@@ -179,10 +179,6 @@ def test_velocity_predictor_step(
     step_date_init,
     step_date_exit,
     *,
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -193,7 +189,6 @@ def test_velocity_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_velocity_exit,
-    ndyn_substeps,
     backend,
     caplog,
 ):

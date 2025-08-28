@@ -74,9 +74,6 @@ class VelocityAdvection:
                     "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
                     "tangent_orientation": self.edge_params.tangent_orientation,
                 },
-                variants={
-                    "skip_compute_predictor_vertical_advection": [False, True],
-                },
                 horizontal_sizes={
                     "horizontal_start": self._start_edge_lateral_boundary_level_5,
                     "horizontal_end": self._end_edge_halo_level_2,
@@ -102,9 +99,9 @@ class VelocityAdvection:
                 "geofac_n2s": self.interpolation_state.geofac_n2s,
                 "owner_mask": self.c_owner_mask,
             },
-            variants={
-                "skip_compute_predictor_vertical_advection": [False, True],
-            },
+            # variants={
+            #     "skip_compute_predictor_vertical_advection": [True, False],
+            # },
             vertical_sizes={
                 "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
                 "nflatlev": self.vertical_params.nflatlev,
