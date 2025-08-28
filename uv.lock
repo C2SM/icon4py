@@ -1146,7 +1146,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_08_15#ae9afe235c2848399a6f4939da79c9f5ac705acf" }
+source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_08_06#0c6498d65a4b9a0d74bc5c7c2540a0e17b3c97eb" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1387,7 +1387,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749, upload-time = "2025-05-10T17:42:51.123Z" }
 wheels = [
@@ -1694,8 +1694,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post487+52590ccd"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering#52590ccdebcf0acb41f4d55169162734365562a7" }
+version = "1.0.7"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1725,6 +1725,10 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "versioningit" },
     { name = "xxhash" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4d/a4/fd6566548ea29cc20217606e630d6ec3eadecd54c56f8b99916205f49d5c/gt4py-1.0.7.tar.gz", hash = "sha256:281c1d99a456bb1acad236404457db128e7ace4d2b0361a48d8a979c72c2bc24", size = 722457, upload-time = "2025-08-12T13:56:33.006Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/28/730558ab41d18218b5a64607f61d7ec682cc306808969299cc9dee1553ee/gt4py-1.0.7-py3-none-any.whl", hash = "sha256:c243f12fc41d00b0d3df438449e819dc39d5927b71e559b4b55596b1444d3f10", size = 923552, upload-time = "2025-08-12T13:56:31.429Z" },
 ]
 
 [package.optional-dependencies]
@@ -2105,7 +2109,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -2122,7 +2126,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -2139,7 +2143,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -2156,7 +2160,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -2173,7 +2177,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -2243,13 +2247,13 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_08_15" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_08_06" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
-    { name = "gt4py", extras = ["next"], marker = "extra == 'dace'", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", extras = ["next"], marker = "extra == 'dace'" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["dace", "distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -2285,7 +2289,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2313,7 +2317,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2359,9 +2363,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/philip-paul-mueller/gt4py?branch=fixed_dimension_ordering_in_dace_lowering" },
+    { name = "gt4py", specifier = "==1.0.7" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
