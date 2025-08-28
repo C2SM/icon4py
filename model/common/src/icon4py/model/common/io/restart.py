@@ -89,6 +89,10 @@ class RestartManager:
                 "vertical_wind_advective_tendency.predictor",
                 "diagnostic_state_nh.vertical_wind_advective_tendency.predictor",
             ),
+            (
+                "vertical_wind_advective_tendency.corrector",
+                "diagnostic_state_nh.vertical_wind_advective_tendency.corrector",
+            ),
         ]
         for attr_path, key in diag_restore:
             if key in restart_data and restart_data[key] is not None:
@@ -158,6 +162,13 @@ class RestartManager:
             getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "predictor"
         )
         state["diagnostic_state_nh.vertical_wind_advective_tendency.predictor"] = {
+            "data": diag_field.asnumpy(),
+            "dims": [d.value for d in diag_field.domain.dims],
+        }
+        diag_field = getattr(
+            getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "corrector"
+        )
+        state["diagnostic_state_nh.vertical_wind_advective_tendency.corrector"] = {
             "data": diag_field.asnumpy(),
             "dims": [d.value for d in diag_field.domain.dims],
         }
