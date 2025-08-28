@@ -33,7 +33,7 @@ def setup_program(
     - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', "vertical_sizes');
     - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile').
     Args:
-        - backend: pre-set backend at run time,
+        - backend: GT4Py backend,
         - program_func: gt4py program,
         - constant_args: constant fields and scalars,
         - variants: list of all scalars potential values from which one is selected at run time,
