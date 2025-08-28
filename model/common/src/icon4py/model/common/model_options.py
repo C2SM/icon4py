@@ -8,11 +8,11 @@
 import functools
 import typing
 
-import gt4py.next as gtx
 from gt4py._core.definitions import (
     is_scalar_type,  # TODO(havogt): Should this function be public API?
 )
 from gt4py.next import backend
+from gt4py.next.ffront.decorator import Program
 
 
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
@@ -21,7 +21,7 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
 
 def setup_program(
     backend: backend.Backend,
-    program: gtx.program,
+    program: Program,
     constant_args: dict | None = None,
     variants: dict | None = None,
     horizontal_sizes: dict | None = None,

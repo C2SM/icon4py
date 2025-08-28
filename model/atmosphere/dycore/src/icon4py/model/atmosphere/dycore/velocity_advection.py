@@ -88,6 +88,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
+        # TODO(nfarabullini): add back skip_compute_predictor_vertical_advection once possible
         self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = setup_program(
             backend=self._backend,
             program=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
