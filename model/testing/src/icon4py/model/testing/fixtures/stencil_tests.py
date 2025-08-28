@@ -20,7 +20,12 @@ DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (
     10  # the number matters for performance measurements, but otherwise is arbitrary
 )
-VALID_GRID_PRESETS: tuple[str, str, str] = ("simple", "icon_regional", "icon_global")
+VALID_GRID_PRESETS: tuple[str, ...] = (
+    "simple",
+    "icon_regional",
+    "icon_global",
+    "icon_benchmark",
+)
 
 
 def _get_grid_from_preset(
@@ -41,6 +46,13 @@ def _get_grid_from_preset(
             return grid_utils.get_grid_manager_from_identifier(
                 dt_utils.R02B04_GLOBAL,
                 num_levels=num_levels,
+                keep_skip_values=False,
+                backend=backend,
+            ).grid
+        case "icon_benchmark":
+            return grid_utils.get_grid_manager_from_identifier(
+                dt_utils.REGIONAL_BENCHMARK,
+                num_levels=80,  # default benchmark size in ICON Fortran
                 keep_skip_values=False,
                 backend=backend,
             ).grid

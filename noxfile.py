@@ -15,7 +15,6 @@ from datetime import datetime
 from typing import Final, Literal, TypeAlias
 
 import nox
-import pytest
 
 
 # -- nox configuration --
@@ -56,12 +55,10 @@ def benchmark_model(session: nox.Session) -> None:
     """Run pytest benchmarks."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
-    performance_marker = pytest.mark.to_performance_dashboard.name
-
     session.run(
         *f"pytest \
         -v \
-        -m {performance_marker} \
+        -m to_performance_dashboard \
         --benchmark-only \
         --benchmark-warmup=on \
         --benchmark-warmup-iterations=30 \

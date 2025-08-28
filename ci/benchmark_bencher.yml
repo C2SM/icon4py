@@ -17,11 +17,10 @@ include:
   stage: benchmark
   script:
     - !reference [.bencher_setup_env, setup]
-    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
+    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=icon_benchmark
   parallel:
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-        GRID: [icon_grid, icon_grid_global]
 
 benchmark_bencher_aarch64:
   extends: [.benchmark_model_stencils, .test_template_aarch64]
