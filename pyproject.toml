@@ -179,7 +179,17 @@ markers = [
   "uses_concat_where",
   "cpu_only",
   "infinite_concat_where",
-  "gtfn_too_slow"
+  "gtfn_too_slow",
+  "to_performance_dashboard"
+]
+pythonpath = [
+  "model/atmosphere/diffusion",
+  "model/atmosphere/dycore",
+  "model/atmosphere/subgrid_scale_physics/microphysics",
+  "model/atmosphere/subgrid_scale_physics/muphys",
+  "model/common",
+  "model/driver",
+  "model/testing"
 ]
 
 # -- ruff --
