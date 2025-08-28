@@ -26,8 +26,8 @@ def setup_program(
     program: Program,
     constant_args: dict[str, Field | Scalar] | None = None,
     variants: dict[str, list[Scalar]] | None = None,
-    horizontal_sizes: dict[str, Scalar] | None = None,
-    vertical_sizes: dict[str, Scalar] | None = None,
+    horizontal_sizes: dict[str, gtx.int32] | None = None,
+    vertical_sizes: dict[str, gtx.int32] | None = None,
     offset_provider: OffsetProvider | None = None,
 ) -> typing.Callable[..., None]:
     """
