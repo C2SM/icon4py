@@ -20,7 +20,7 @@ import logging
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-RESTART_FREQUENCY = 4 # in time steps
+RESTART_FREQUENCY = 50000 # in time steps
 RESTART_DIR = os.path.join(
     os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output"), "restart"
 )
@@ -148,30 +148,19 @@ class RestartManager:
             for var in ["vn", "w", "rho", "exner", "theta_v"]:
                 key = f"prognostic_states.{state_name}.{var}"
                 field = getattr(state_obj, var)
-                state[key] = {
-                    "data": field.asnumpy(),
-                    "dims": [d.value for d in field.domain.dims],
-                }
-        # Save diagnostic_state_nh variables (handle nested attributes)
-        diag_field = getattr(diagnostic_state_nh, "perturbed_exner_at_cells_on_model_levels")
-        state["diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels"] = {
-            "data": diag_field.asnumpy(),
-            "dims": [d.value for d in diag_field.domain.dims],
-        }
-        diag_field = getattr(
-            getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "predictor"
-        )
-        state["diagnostic_state_nh.vertical_wind_advective_tendency.predictor"] = {
-            "data": diag_field.asnumpy(),
-            "dims": [d.value for d in diag_field.domain.dims],
-        }
-        diag_field = getattr(
-            getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "corrector"
-        )
-        state["diagnostic_state_nh.vertical_wind_advective_tendency.corrector"] = {
-            "data": diag_field.asnumpy(),
-            "dims": [d.value for d in diag_field.domain.dims],
-        }
+                self._store_field(state, key, field)
+
+        # Save diagnostic_state_nh variables
+        diag_fields = [
+            ("diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels",
+                getattr(diagnostic_state_nh, "perturbed_exner_at_cells_on_model_levels")),
+            ("diagnostic_state_nh.vertical_wind_advective_tendency.predictor",
+                getattr(getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "predictor")),
+            ("diagnostic_state_nh.vertical_wind_advective_tendency.corrector",
+                getattr(getattr(diagnostic_state_nh, "vertical_wind_advective_tendency"), "corrector")),
+        ]
+        for key, field in diag_fields:
+            self._store_field(state, key, field)
 
         # Add time_step_number
         state["time_step_number"] = time_step_number
@@ -211,6 +200,15 @@ class RestartManager:
             self.filepaths[idx], state["restart_timestamp"], time_step_number, list(state.keys())
         )
         return idx
+
+    def _store_field(self, state_dict, key, field):
+        """
+        Helper to store a field's data and dims in the state dict.
+        """
+        state_dict[key] = {
+            "data": field.asnumpy(),
+            "dims": [d.value for d in field.domain.dims],
+        }
 
     def _read_restart(self) -> Optional[dict]:
         """
