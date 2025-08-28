@@ -8,7 +8,7 @@
 import functools
 import typing
 
-from gt4py._core.definitions import is_scalar_type
+from gt4py._core.definitions import is_scalar_type #TODO(havogt): Should this function be public API?
 from gt4py.eve.utils import FrozenNamespace
 from gt4py.next import backend
 
