@@ -60,7 +60,7 @@ if dace:
             return EdgeDim_sym
         elif "vertex" in dim.value.lower():
             return VertexDim_sym
-        elif "k" == dim.value.lower():
+        elif dim.value.lower() == "k":
             return KDim_sym
         else:
             raise ValueError(f"The dimension [{dim}] is not supported.")

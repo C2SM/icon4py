@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import contextlib
 import os
 import re
 
@@ -71,36 +72,30 @@ def pytest_addoption(parser: pytest.Parser):
         )
     except ValueError:
         pass
-    try:
+    with contextlib.suppress(ValueError):
         parser.addoption(
             "--backend",
             action="store",
             default=model_backends.DEFAULT_BACKEND,
             help="GT4Py backend to use when executing stencils. Defaults to roundtrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
-    except ValueError:
-        pass
 
-    try:
+    with contextlib.suppress(ValueError):
         parser.addoption(
             "--grid",
             action="store",
             help="Grid to use.",
         )
-    except ValueError:
-        pass
 
-    try:
+    with contextlib.suppress(ValueError):
         parser.addoption(
             "--enable-mixed-precision",
             action="store_true",
             help="Switch unit tests from double to mixed-precision",
             default=False,
         )
-    except ValueError:
-        pass
 
-    try:
+    with contextlib.suppress(ValueError):
         parser.addoption(
             "--level",
             action="store",
@@ -108,8 +103,6 @@ def pytest_addoption(parser: pytest.Parser):
             help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
             default="any",
         )
-    except ValueError:
-        pass
 
 
 def pytest_collection_modifyitems(config, items):

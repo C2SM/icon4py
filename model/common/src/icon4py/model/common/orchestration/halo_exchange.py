@@ -22,7 +22,7 @@ except ImportError as e:
 import gt4py.next as gtx
 from dace import dtypes
 
-import icon4py.model.common as common
+from icon4py.model import common
 from icon4py.model.common import dimension as dims
 
 

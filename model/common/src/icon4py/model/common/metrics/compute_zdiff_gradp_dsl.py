@@ -13,7 +13,7 @@ import numpy as np
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def compute_zdiff_gradp_dsl(
+def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     e2c,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,

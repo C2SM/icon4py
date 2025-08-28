@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# type: ignore
-
 import dataclasses
 from typing import Annotated, TypeAlias
 
@@ -112,7 +110,7 @@ def grid_init(
     limited_area: bool,
     backend: gtx.int32,
 ) -> None:
-    on_gpu = not c2e.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = c2e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -200,7 +198,7 @@ def grid_init(
             num_vertices,
         )
 
-    global grid_state
+    global grid_state  # noqa: PLW0603 [global-statement]
     grid_state = GridState(
         grid=grid,
         edge_geometry=edge_params,

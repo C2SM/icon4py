@@ -589,7 +589,7 @@ def icon4py_driver(
     if icon4py_driver_backend not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {icon4py_driver_backend}. \n"
-            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
+            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS])}"
         )
     backend = model_backends.BACKENDS[icon4py_driver_backend]
 
