@@ -45,7 +45,7 @@ log = logging.getLogger(__name__)
 
 DO_PLOTS = True
 PLOT_IMGS_DIR = os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output")
-PLOT_FREQUENCY = 4 # in time steps
+PLOT_FREQUENCY = 1 # in time steps
 
 
 @gtx.field_operator
@@ -120,7 +120,7 @@ def pickle_data(state, label: str = "") -> None:
         file_name = f"{PLOT_IMGS_DIR}/{label}.pkl"
     with open(file_name, "wb") as f:
         pickle.dump(state_dict, f)
-        log.debug(f"PLOTS: saved {file_name}")
+        log.info(f"PLOTS: saved {file_name}")
 
 
 class Plot:
@@ -539,7 +539,7 @@ class Plot:
         #plt.show(block=False)
         if file_name != '':
             fig.savefig(f"{file_name}.png", bbox_inches='tight')
-            log.debug(f"Saved {file_name}")
+            log.info(f"Saved {file_name}")
         else:
             plt.pause(1)
 
@@ -648,7 +648,7 @@ class Plot:
         #plt.show(block=False)
         if file_name != '':
             fig.savefig(f"{file_name}.png", bbox_inches='tight')
-            log.debug(f"Saved {file_name}")
+            log.info(f"Saved {file_name}")
         else:
             plt.pause(1)
 
