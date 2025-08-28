@@ -61,7 +61,7 @@ class VelocityAdvection:
 
         self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = setup_program(
             backend=self._backend,
-            program_func=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
+            program=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
             constant_args={
                 "rbf_vec_coeff_e": self.interpolation_state.rbf_vec_coeff_e,
                 "wgtfac_e": self.metric_state.wgtfac_e,
@@ -90,7 +90,7 @@ class VelocityAdvection:
 
         self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = setup_program(
             backend=self._backend,
-            program_func=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
+            program=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
             constant_args={
                 "coeff1_dwdz": self.metric_state.coeff1_dwdz,
                 "coeff2_dwdz": self.metric_state.coeff2_dwdz,
@@ -115,7 +115,7 @@ class VelocityAdvection:
 
         self._compute_advection_in_vertical_momentum_equation = setup_program(
             backend=self._backend,
-            program_func=compute_advection_in_vertical_momentum_equation,
+            program=compute_advection_in_vertical_momentum_equation,
             constant_args={
                 "coeff1_dwdz": self.metric_state.coeff1_dwdz,
                 "coeff2_dwdz": self.metric_state.coeff2_dwdz,
@@ -142,7 +142,7 @@ class VelocityAdvection:
 
         self._compute_advection_in_horizontal_momentum_equation = setup_program(
             backend=self._backend,
-            program_func=compute_advection_in_horizontal_momentum_equation,
+            program=compute_advection_in_horizontal_momentum_equation,
             constant_args={
                 "e_bln_c_s": self.interpolation_state.e_bln_c_s,
                 "geofac_rot": self.interpolation_state.geofac_rot,
