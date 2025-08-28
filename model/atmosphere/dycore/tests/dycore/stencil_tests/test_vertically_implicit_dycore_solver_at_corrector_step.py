@@ -278,7 +278,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == model_options.RayleighType.KLEMP:
+        if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)

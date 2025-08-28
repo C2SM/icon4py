@@ -49,7 +49,6 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
-    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -190,7 +189,7 @@ class NonHydrostaticConfig:
         itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
-        rayleigh_type: model_options.RayleighType = model_options.RayleighType.KLEMP,
+        rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,
@@ -222,7 +221,7 @@ class NonHydrostaticConfig:
         self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
 
         #: type of Rayleigh damping
-        self.rayleigh_type: model_options.RayleighType = rayleigh_type
+        self.rayleigh_type: constants.RayleighType = rayleigh_type
         # used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
         self.rayleigh_coeff: float = rayleigh_coeff
 

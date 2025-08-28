@@ -8,41 +8,42 @@
 import functools
 import typing
 
-from gt4py._core.definitions import is_scalar_type #TODO(havogt): Should this function be public API?
-from gt4py.eve.utils import FrozenNamespace
+from gt4py._core.definitions import (
+    is_scalar_type,  # TODO(havogt): Should this function be public API?
+)
 from gt4py.next import backend
-
-
-class RayleighType(FrozenNamespace[int]):
-    #: classical Rayleigh damping, which makes use of a reference state.
-    CLASSIC = 1
-    #: Klemp (2008) type Rayleigh damping
-    KLEMP = 2
 
 
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-# flake8: noqa: B006
 def program_compile_time(
     backend: backend.Backend,
     program_func: typing.Callable,
-    constant_args: dict = {},
-    variants: dict = {},
-    horizontal_sizes: dict = {},
-    vertical_sizes: dict = {},
-    offset_provider: dict = {},
+    constant_args: dict | None = None,
+    variants: dict | None = None,
+    horizontal_sizes: dict | None = None,
+    vertical_sizes: dict | None = None,
+    offset_provider: dict | None = None,
 ) -> typing.Callable[..., None]:
     """
-    backend: pre-set backend at run time,
-    program_func: gt4py program,
-    constant_args: constant fields and scalars,
-    variants: list of all scalars potential values from which one is selected at run time,
-    horizontal_sizes: horizontal scalars,
-    vertical_sizes: vertical scalars,
-    offset_provider: gt4py offset_provider,
+    This function processes pre-compiled args and feeds some to the gt4py `compile` function.
+    Args:
+        - backend: pre-set backend at run time,
+        - program_func: gt4py program,
+        - constant_args: constant fields and scalars,
+        - variants: list of all scalars potential values from which one is selected at run time,
+        - horizontal_sizes: horizontal scalars,
+        - vertical_sizes: vertical scalars,
+        - offset_provider: gt4py offset_provider,
     """
+    constant_args = {} if constant_args is None else constant_args
+    variants = {} if variants is None else variants
+    horizontal_sizes = {} if horizontal_sizes is None else horizontal_sizes
+    vertical_sizes = {} if vertical_sizes is None else vertical_sizes
+    offset_provider = {} if offset_provider is None else offset_provider
+
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
     static_args_program = program_func.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
