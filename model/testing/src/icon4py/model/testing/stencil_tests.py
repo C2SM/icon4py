@@ -143,7 +143,6 @@ class StencilTest:
         self: StencilTest,
         benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
         grid: base.Grid,
-        backend: gtx_backend.Backend | None,
         _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         _configured_program: Callable[..., None],
     ) -> None:
@@ -225,9 +224,3 @@ class StencilTest:
                     cls.static_variant
                 )
             )
-
-        # apply markers to the test function.
-        # TODO(egparedes,havogt): use directly pytest.mark as class decorators
-        if cls.MARKERS:
-            for marker in cls.MARKERS:
-                cls.test_stencil = marker(cls.test_stencil)  # type:ignore[method-assign] # we override with a decorated function
