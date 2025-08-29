@@ -17,13 +17,15 @@ from gt4py.next import Field, backend
 from gt4py.next.common import OffsetProvider
 from gt4py.next.ffront.decorator import Program
 
+from icon4py.model.common.model_backends import make_custom_dace_backend, make_custom_gtfn_backend
+
 
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
 def setup_program(
-    backend: backend.Backend,
+    backend_options,
     program: Program,
     constant_args: dict[str, Field | Scalar] | None = None,
     variants: dict[str, list[Scalar]] | None = None,
@@ -50,8 +52,16 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
+    # customized backend params
+    if backend_options["backend_kind"] == "dace":
+        backend_func = make_custom_dace_backend
+    elif backend_options["backend_kind"] == "gtfn":
+        backend_func = make_custom_gtfn_backend
+    on_gpu = True if backend_options["backend_kind"] == "gpu" else False
+    custom_backend = backend_func(on_gpu=on_gpu, auto_optimize=backend_options["auto_optimize"], cached=backend_options["cached"])
+
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
-    static_args_program = program.with_backend(backend).compile(
+    static_args_program = program.with_backend(custom_backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),
         **variants,

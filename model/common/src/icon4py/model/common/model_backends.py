@@ -22,12 +22,12 @@ BACKENDS: dict[str, gtx_backend.Backend | None] = {
     "gtfn_cpu": gtfn_cpu,
     "gtfn_gpu": gtfn_gpu,
 }
-
+from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
 
 try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
-    def make_custom_dace_backend(on_gpu: bool) -> gtx_backend.Backend:
+    def make_custom_dace_backend(on_gpu: bool, auto_optimize = True, cached = True) -> gtx_backend.Backend:
         """Customize the dace backend with the following configuration.
 
         async_sdfg_call:
@@ -55,14 +55,14 @@ try:
             A dace backend with custom configuration for the target device.
         """
         return make_dace_backend(
-            auto_optimize=True,
-            cached=True,
+            auto_optimize=auto_optimize,
+            cached=cached,
             gpu=on_gpu,
             async_sdfg_call=True,
             blocking_dim=dims.KDim,
             blocking_size=10,
             make_persistent=False,
-            use_memory_pool=on_gpu,
+            use_memory_pool=(True if on_gpu else False),
             use_zero_origin=True,
         )
 
@@ -77,3 +77,10 @@ except ImportError:
     # dace module not installed, thus the dace backends are not available
     def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
         raise NotImplementedError("Depends on dace module, which is not installed.")
+
+def make_custom_gtfn_backend(on_gpu: bool, auto_optimize = True, cached = True) -> GTFNBackendFactory:
+    return GTFNBackendFactory(
+        #auto_optimize=auto_optimize,
+        gpu=on_gpu,
+        cached=cached,
+    )
