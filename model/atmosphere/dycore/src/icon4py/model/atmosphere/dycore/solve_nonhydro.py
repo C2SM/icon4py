@@ -396,7 +396,8 @@ class SolveNonhydro:
         owner_mask: fa.CellField[bool],
         backend: gtx_backend.Backend | None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
-        device = "gpu", backend_kind = "gtfn"
+        device="gpu",
+        backend_kind="gtfn",
     ):
         self._exchange = exchange
         self._backend = backend
@@ -411,10 +412,15 @@ class SolveNonhydro:
         self._cell_params = cell_geometry
         self._determine_local_domains()
 
-        backend_options = {"device": device, "backend_kind": backend_kind, "cached": True, "auto_optimize": True}#, "kwargs": **get_options_from_database(str(gt4py_program_name))}
+        backend_options = {
+            "device": device,
+            "backend_kind": backend_kind,
+            "cached": True,
+            "auto_optimize": True,
+        }  # , "kwargs": **get_options_from_database(str(gt4py_program_name))}
 
         self._compute_theta_and_exner = setup_program(
-            backend_options=backend_options, # (**get_options_from_database("compute_theta_and_exner"), <backend_kind>, <device>, <arch>),
+            backend_options=backend_options,  # (**get_options_from_database("compute_theta_and_exner"), <backend_kind>, <device>, <arch>),
             program=compute_theta_and_exner,
             constant_args={
                 "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,
@@ -840,7 +846,7 @@ class SolveNonhydro:
             edge_geometry,
             owner_mask,
             backend=self._backend,
-            backend_options=backend_options
+            backend_options=backend_options,
         )
         self._allocate_local_fields()
 

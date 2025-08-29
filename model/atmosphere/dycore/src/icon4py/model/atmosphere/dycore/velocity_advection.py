@@ -45,7 +45,7 @@ class VelocityAdvection:
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
         backend: gtx_backend.Backend | None,
-        backend_options
+        backend_options,
     ):
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend

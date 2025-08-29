@@ -13,7 +13,7 @@ from gt4py._core.definitions import (
     Scalar,
     is_scalar_type,  # TODO(havogt): Should this function be public API?
 )
-from gt4py.next import Field, backend
+from gt4py.next import Field
 from gt4py.next.common import OffsetProvider
 from gt4py.next.ffront.decorator import Program
 
@@ -57,8 +57,12 @@ def setup_program(
         backend_func = make_custom_dace_backend
     elif backend_options["backend_kind"] == "gtfn":
         backend_func = make_custom_gtfn_backend
-    on_gpu = True if backend_options["backend_kind"] == "gpu" else False
-    custom_backend = backend_func(on_gpu=on_gpu, auto_optimize=backend_options["auto_optimize"], cached=backend_options["cached"])
+    on_gpu = backend_options["backend_kind"] == "gpu"
+    custom_backend = backend_func(
+        on_gpu=on_gpu,
+        auto_optimize=backend_options["auto_optimize"],
+        cached=backend_options["cached"],
+    )
 
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
     static_args_program = program.with_backend(custom_backend).compile(
