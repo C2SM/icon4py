@@ -7,10 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
-import pytest
-import netCDF4 as nc4
-from pathlib import Path
-import numpy as np
 from icon4py.model.common.initialization.topography_initialization import topography_initialization
 import icon4py.model.common.dimension as dims
 import gt4py.next as gtx
@@ -23,7 +19,10 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
     geometry,
 )
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.interpolation import (
+    interpolation_attributes,
+    interpolation_factory,
+)
 from icon4py.model.common.metrics import (
     metrics_attributes,
     metrics_factory,
