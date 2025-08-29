@@ -9,12 +9,13 @@
 import gt4py.next as gtx
 import pytest
 
-import icon4py.model.common.grid.refinement as refin
+from icon4py.model.common.grid import refinement as refin, horizontal as h_grid
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
-from icon4py.model.testing.fixtures import backend
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, definitions as test_defs
 
 from .. import utils
+from ..fixtures import *  # noqa: F401, F403
 
 
 def out_of_range(dim: gtx.Dimension):
@@ -64,7 +65,8 @@ def test_valid_refinement_values(dim):
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize(
-    "grid_file, expected", [(dt_utils.R02B04_GLOBAL, False), (dt_utils.REGIONAL_EXPERIMENT, True)]
+    "grid_file, expected",
+    [(test_defs.Grids.R02B04_GLOBAL.name, False), (test_defs.Grids.MCH_CH_R04B09_DSL.name, True)],
 )
 def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
     grid = grid_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend).grid
@@ -73,3 +75,50 @@ def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
     limited_area = refin.is_limited_area_grid(refinement_field.ndarray, array_ns=xp)
     assert isinstance(limited_area, bool)
     assert expected == limited_area
+
+
+@pytest.fixture
+def start_indices(grid_savepoint) -> dict:
+    return {
+        dims.CellDim: grid_savepoint.cells_start_index(),
+        dims.EdgeDim: grid_savepoint.edge_start_index(),
+        dims.VertexDim: grid_savepoint.vertex_start_index(),
+    }
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(test_defs.Grids.MCH_CH_R04B09_DSL.name, test_defs.Experiments.MCH_CH_R04B09.name)],
+)
+def test_compute_start_index(dim, grid_file, start_indices, experiment):
+    reference_start = start_indices.get(dim)
+    grid = grid_utils.get_grid_manager_from_identifier(
+        grid_file, num_levels=1, keep_skip_values=True, backend=None
+    ).grid
+    refinement_control_field = grid.refinement_control[dim]
+    start_index = refin.compute_start_index(dim, refinement_control_field.ndarray)
+    assert start_index.ndim == 1
+    assert start_index.shape[0] == h_grid.GRID_REFINEMENT_SIZE[dim]
+    domain = h_grid.domain(dim)
+    assert (
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY)]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY)]
+    )
+    assert (
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)]
+    )
+    assert (
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)]
+    )
+    assert (
+        start_index[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)]
+        == reference_start[domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)]
+    )
+    assert start_index[domain(h_grid.Zone.NUDGING)] == reference_start[domain(h_grid.Zone.NUDGING)]
+    assert (
+        start_index[domain(h_grid.Zone.INTERIOR)] == reference_start[domain(h_grid.Zone.INTERIOR)]
+    )
