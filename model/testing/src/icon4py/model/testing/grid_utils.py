@@ -87,9 +87,9 @@ def get_grid_manager(
         backend: the gt4py Backend we are running on
     """
     manager = gm.GridManager(
-        gridfile.ToZeroBasedIndexTransformation(),
         filename,
         v_grid.VerticalGridConfig(num_levels=num_levels),
+        gridfile.ToZeroBasedIndexTransformation(),
     )
     manager(backend=backend, keep_skip_values=keep_skip_values)
     return manager

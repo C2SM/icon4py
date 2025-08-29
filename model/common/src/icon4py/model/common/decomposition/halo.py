@@ -84,7 +84,6 @@ class IconLikeHaloConstructor(HaloConstructor):
         self._xp = data_alloc.import_array_ns(backend)
         self._num_levels = num_levels
         self._props = run_properties
-
         self._connectivities = {_value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
 
@@ -379,13 +378,11 @@ class IconLikeHaloConstructor(HaloConstructor):
         return decomp_info
 
 
-# TODO(halungge):  refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and
-#  the return value an array of shape (n_cells,)
-
-
 @runtime_checkable
 class Decomposer(Protocol):
-    def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
+    def __call__(
+        self, adjacency_matrix: data_alloc.NDArray, num_partitions: int
+    ) -> data_alloc.NDArray:
         """
         Call the decomposition.
 
@@ -400,14 +397,17 @@ class SimpleMetisDecomposer(Decomposer):
     """
     A simple decomposer using METIS for partitioning a grid topology.
 
-    We use the simple pythonic interface to pymetis: just passing the adjacency matrix
+    We use the simple pythonic interface to pymetis: just passing the adjacency matrix, which for ICON is
+    the full grid C2E2C neigbhor table.
     if more control is needed (for example by using weights we need to switch to the C like interface)
     https://documen.tician.de/pymetis/functionality.html
     """
 
-    def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
+    def __call__(
+        self, adjacency_matrix: data_alloc.NDArray, num_partitions: int
+    ) -> data_alloc.NDArray:
         """
-        Generate partition labesl for this grid topology using METIS:
+        Generate partition labels for this grid topology using METIS:
         https://github.com/KarypisLab/METIS
 
         This method utilizes the pymetis Python bindings:
@@ -415,16 +415,56 @@ class SimpleMetisDecomposer(Decomposer):
 
         Args:
             n_part: int, number of partitions to create
+            adjacency_matrix: nd array: neighbor table describing of the main dimension object to be distributed: for example cell -> cell neighbors
         Returns: np.ndarray: array with partition label (int, rank number) for each cell
         """
 
         import pymetis
 
-        _, partition_index = pymetis.part_graph(nparts=n_part, adjacency=adjacency_matrix)
+        _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
         return np.array(partition_index)
 
 
 class SingleNodeDecomposer(Decomposer):
-    def __call__(self, adjacency_matrix: data_alloc.NDArray, n_part: int) -> data_alloc.NDArray:
+    def __call__(
+        self, adjacency_matrix: data_alloc.NDArray, num_partitions=1
+    ) -> data_alloc.NDArray:
         """Dummy decomposer for single node: assigns all cells to rank = 0"""
         return np.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)
+
+
+def halo_constructor(
+    run_properties: defs.ProcessProperties,
+    grid_config: base.GridConfig,
+    connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
+    backend=gtx_backend.Backend | None,
+) -> HaloConstructor:
+    """
+    Factory method to create the halo constructor. We need some input data from the global grid and from
+    Run parameters, hence this method is called during grid construction.
+
+    Currently there is only one halo type (except for single node dummy).
+    If in the future we want to experiment with different halo types we should add an extra selection
+    parameter
+    Args:
+        processor_props:
+        grid_config:
+        connectivities:
+        backend:
+
+    Returns: a HaloConstructor suitable for the run_properties
+
+    """
+    if run_properties.single_node():
+        return NoHalos(
+            num_levels=grid_config.num_levels,
+            horizontal_size=grid_config.horizontal_size,
+            backend=backend,
+        )
+    else:
+        return IconLikeHaloConstructor(
+            num_levels=grid_config.num_levels,
+            run_properties=run_properties,
+            connectivities=connectivities,
+            backend=backend,
+        )

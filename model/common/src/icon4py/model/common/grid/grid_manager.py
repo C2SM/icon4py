@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
 import pathlib
-from collections.abc import Callable
 from types import ModuleType
 from typing import Literal, TypeAlias
 
@@ -17,6 +16,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition, halo
+from icon4py.model.common.decomposition.halo import SingleNodeDecomposer
 from icon4py.model.common.exceptions import InvalidConfigError
 from icon4py.model.common.grid import (
     base,
@@ -30,8 +30,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _log = logging.getLogger(__name__)
-_single_node_properties = decomposition.SingleNodeProcessProperties()
 _single_node_decomposer = halo.SingleNodeDecomposer()
+_single_process_props = decomposition.SingleNodeProcessProperties()
+_fortan_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
 
 
 class IconGridError(RuntimeError):
@@ -54,26 +55,27 @@ class GridManager:
 
     """
 
-    def open(self):
-        """Open the gridfile resource for reading."""
-        self._reader = gridfile.GridFile(self._file_name, self._transformation)
-        self._reader.open()
-
     def __init__(
         self,
-        transformation: gridfile.IndexTransformation,
         grid_file: pathlib.Path | str,
-        config: v_grid.VerticalGridConfig,  # TODO(@halungge): remove: - separate vertical from horizontal grid
+        config: v_grid.VerticalGridConfig,
+        transformation: gridfile.IndexTransformation = _fortan_to_python_transformer,
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
-        self._halo_constructor = None
         self._vertical_config = config
+        self._halo_constructor: halo.HaloConstructor | None = None
+        # Output
         self._grid: icon.IconGrid | None = None
         self._decomposition_info: decomposition.DecompositionInfo | None = None
         self._geometry: GeometryDict = {}
         self._coordinates: CoordinateDict = {}
         self._reader = None
+
+    def open(self):
+        """Open the gridfile resource for reading."""
+        self._reader = gridfile.GridFile(self._file_name, self._transformation)
+        self._reader.open()
 
     def close(self):
         """close the gridfile resource."""
@@ -96,20 +98,20 @@ class GridManager:
         self,
         backend: gtx_backend.Backend | None,
         keep_skip_values: bool,
-        run_properties: decomposition.ProcessProperties = _single_node_properties,
-        decomposer: Callable[[np.ndarray, int], np.ndarray] = _single_node_decomposer,
+        decomposer: halo.Decomposer = _single_node_decomposer,
+        run_properties=_single_process_props,
     ):
-        self._run_properties = run_properties
-        if not run_properties.single_node() and isinstance(decomposer, halo.SingleNodeDecomposer):
-            raise InvalidConfigError(
-                f"Need a Decomposer for multi node run: running on: {run_properties.comm_size}"
-            )
+        if not run_properties.single_node() and isinstance(decomposer, SingleNodeDecomposer):
+            raise InvalidConfigError("Need a Decomposer for multi node run")
 
         if not self._reader:
             self.open()
 
-        self._grid = self._construct_grid(
-            backend=backend, with_skip_values=keep_skip_values, decomposer=decomposer
+        self._construct_decomposed_grid(
+            backend=backend,
+            with_skip_values=keep_skip_values,
+            decomposer=decomposer,
+            run_properties=run_properties,
         )
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
@@ -348,12 +350,13 @@ class GridManager:
     def decomposition_info(self) -> decomposition.DecompositionInfo:
         return self._decomposition_info
 
-    def _construct_grid(
+    def _construct_decomposed_grid(
         self,
         backend: gtx_backend.Backend | None,
         with_skip_values: bool,
-        decomposer: Callable[[np.ndarray, int], np.ndarray] | None = None,
-    ) -> icon.IconGrid:
+        decomposer: halo.Decomposer,
+        run_properties: decomposition.ProcessProperties,
+    ) -> None:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in
@@ -362,20 +365,8 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(backend)
         ## FULL GRID PROPERTIES
-        uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
-        global_grid_size = self._read_full_grid_size()
-        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
-        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
-        cell_refinment = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
-        limited_area = refinement.is_limited_area_grid(cell_refinment, array_ns=xp)
+        global_params, grid_config = self._construct_config(with_skip_values, xp)
 
-        grid_config = base.GridConfig(
-            horizontal_size=global_grid_size,
-            vertical_size=self._vertical_config.num_levels,
-            limited_area=limited_area,
-            keep_skip_values=with_skip_values,
-        )
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
         neighbor_tables = {
             dims.C2E2C: cell_to_cell_neighbors,
@@ -388,41 +379,30 @@ class GridManager:
             dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
         }
 
-        if decomposer is not None:
-            # DECOMPOSITION
+        cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, run_properties.comm_size)
+        # HALO CONSTRUCTION
+        # TODO(halungge): reduce the set of neighbor tables used in the halo construction
+        # TODO(halungge): figure out where to do the host to device copies (xp.asarray...)
+        neighbor_tables_for_halo_construction = neighbor_tables
+        halo_constructor = halo.halo_constructor(
+            run_properties=run_properties,
+            grid_config=grid_config,
+            connectivities=neighbor_tables_for_halo_construction,
+            backend=backend,
+        )
 
-            cells_to_rank_mapping = decomposer(
-                cell_to_cell_neighbors,
-                self._run_properties.comm_size,
+        self._decomposition_info = halo_constructor(cells_to_rank_mapping)
+
+        # TODO(halungge): run this only for distrbuted grids otherwise to nothing internally
+        neighbor_tables = {
+            k: self._decomposition_info.global_to_local(
+                k.source, v[self._decomposition_info.global_index(k.target[0])]
             )
-            # HALO CONSTRUCTION
-            # TODO(halungge): reduce the set of neighbor tables used in the halo construction
-            # TODO(halungge): figure out where to do the host to device copies (xp.asarray...)
-            neighbor_tables_for_halo_construction = neighbor_tables
-            # halo_constructor - creates the decomposition info, which can then be used to generate the local patches on each rank
-            halo_constructor = self._initialize_halo_constructor(
-                global_grid_size, neighbor_tables_for_halo_construction, backend
-            )
-
-            self._decomposition_info = halo_constructor(cells_to_rank_mapping)
-
-            ## TODO(halungge): do local reads (and halo exchanges!!) FIX: my_cells etc are in 0 base python coding - reading from file fails...
-            ##
-            # CONSTRUCT LOCAL PATCH
-
-            # TODO(halungge): run this only for distrbuted grids otherwise to nothing internally
-            neighbor_tables = {
-                k: self._decomposition_info.global_to_local(
-                    k.source, v[self._decomposition_info.global_index(k.target[0])]
-                )
-                for k, v in neighbor_tables_for_halo_construction.items()
-            }
-
-        # COMPUTE remaining derived connectivities
-        else:
-            self._decomposition_info = _single_node_decomposition_info(grid_config, xp)
+            for k, v in neighbor_tables_for_halo_construction.items()
+        }
 
         # JOINT functionality
+        # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
         start, end = self._read_start_end_indices()
@@ -436,9 +416,10 @@ class GridManager:
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
             for k, v in h_grid.map_icon_domain_bounds(dim, end[dim]).items()
         }
+        refinement_fields = self._read_grid_refinement_fields(backend)
 
         grid = icon.icon_grid(
-            uuid_,
+            self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
             allocator=backend,
             config=grid_config,
             neighbor_tables=neighbor_tables,
@@ -447,7 +428,21 @@ class GridManager:
             global_properties=global_params,
             refinement_control=refinement_fields,
         )
-        return grid
+        self._grid = grid
+
+    def _construct_config(self, with_skip_values, xp):
+        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
+        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
+        cell_refinement = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
+        limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
+        grid_config = base.GridConfig(
+            horizontal_size=self._read_full_grid_size(),
+            vertical_size=self._vertical_config.num_levels,
+            limited_area=limited_area,
+            keep_skip_values=with_skip_values,
+        )
+        return global_params, grid_config
 
     def _get_index_field(
         self,
@@ -474,26 +469,6 @@ class GridManager:
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
         return full_grid_size
-
-    def _initialize_halo_constructor(
-        self,
-        grid_size: base.HorizontalGridSize,
-        connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
-        backend=gtx_backend.Backend | None,
-    ) -> halo.HaloConstructor:
-        if self._run_properties.single_node():
-            return halo.NoHalos(
-                num_levels=self._vertical_config.num_levels,
-                horizontal_size=grid_size,
-                backend=backend,
-            )
-        else:
-            return halo.IconLikeHaloConstructor(
-                run_properties=self._run_properties,
-                connectivities=connectivities,
-                num_levels=self._vertical_config.num_levels,
-                backend=backend,
-            )
 
 
 def _get_derived_connectivities(

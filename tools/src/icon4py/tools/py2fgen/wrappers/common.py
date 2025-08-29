@@ -267,10 +267,9 @@ def construct_decomposition(
     e_owner_mask = e_owner_mask[:num_edges]
     v_owner_mask = v_owner_mask[:num_vertices]
 
+
     decomposition_info = (
-        definitions.DecompositionInfo(
-            klevels=num_levels, num_cells=num_cells, num_edges=num_edges, num_vertices=num_vertices
-        )
+        definitions.DecompositionInfo(klevels=num_levels)
         .set_dimension(dims.CellDim, c_glb_index, c_owner_mask)
         .set_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)
         .set_dimension(dims.VertexDim, v_glb_index, v_owner_mask)

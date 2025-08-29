@@ -54,11 +54,7 @@ def run_gridmananger_for_multinode(
 
 
 def _grid_manager(file: pathlib.Path, vertical_config: v_grid.VerticalGridConfig):
-    manager = gm.GridManager(
-        gridfile.ToZeroBasedIndexTransformation(),
-        str(file),
-        vertical_config,
-    )
+    manager = gm.GridManager(str(file), vertical_config)
     return manager
 
 
@@ -69,7 +65,7 @@ def run_grid_manager_for_singlenode(
     manager(
         keep_skip_values=True,
         run_properties=defs.SingleNodeProcessProperties(),
-        decomposer=None,
+        decomposer=halo.SingleNodeDecomposer(),
         backend=None,
     )
     return manager
@@ -94,20 +90,15 @@ def test_start_end_index(
 
     partitioner = halo.SimpleMetisDecomposer()
     manager = gm.GridManager(
-        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
         file,
         v_grid.VerticalGridConfig(1),
-        run_properties=processor_props,
+        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
     )
     single_node_grid = gm.GridManager(
-        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
         file,
         v_grid.VerticalGridConfig(1),
-        run_properties=defs.get_processor_properties(defs.SingleNodeRun()),
+        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
     ).grid
-    with manager.set_decomposer(partitioner) as manage:
-        manage(backend=backend, keep_skip_values=True)
-        grid = manage.grid
 
     for domain in utils.global_grid_domains(dim):
         assert grid.start_index(domain) == single_node_grid.start_index(
@@ -122,11 +113,7 @@ def test_start_end_index(
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(processor_props):
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
-    manager = gm.GridManager(
-        gridfile.ToZeroBasedIndexTransformation(),
-        file,
-        vertical_config,
-    )
+    manager = gm.GridManager(file, vertical_config, gridfile.ToZeroBasedIndexTransformation())
     with pytest.raises(exceptions.InvalidConfigError) as e:
         manager(
             keep_skip_values=True,

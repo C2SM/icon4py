@@ -78,7 +78,7 @@ class DomainDescriptorIdGenerator:
             self._counter = self._counter + 1
         return next_id
 
-
+#TODO(halungge): halo_levels.. can we get rid of them?
 class DecompositionInfo:
     class EntryType(IntEnum):
         ALL = 0
