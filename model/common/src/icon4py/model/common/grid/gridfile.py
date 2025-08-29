@@ -233,7 +233,7 @@ class GridRefinementName(FieldName):
 
 
 class GridFile:
-    """Represent and ICON netcdf grid file."""
+    """Represent an ICON netcdf grid file."""
 
     INVALID_INDEX = -1
 
@@ -246,8 +246,16 @@ class GridFile:
         return self._dataset.dimensions[name].size
 
     def attribute(self, name: PropertyName) -> str | int | float:
-        "Read a global attribute with name 'name' from the grid file."
+        """Read a global attribute with name 'name' from the grid file."""
         return self._dataset.getncattr(name)
+
+    def try_attribute(self, name: PropertyName) -> str | int | float | None:
+        """Try reading a global attribute with name 'name' from the grid file.
+        Return None if the attribute does not exist."""
+        if name in self._dataset.ncattrs():
+            return self._dataset.getncattr(name)
+        else:
+            return None
 
     def int_variable(
         self, name: FieldName, indices: np.ndarray = None, transpose: bool = True
@@ -273,7 +281,7 @@ class GridFile:
         transpose=False,
         dtype: np.dtype = gtx.float64,
     ) -> np.ndarray:
-        """Read a  field from the grid file.
+        """Read a field from the grid file.
 
         If a index array is given it only reads the values at those positions.
         Args:

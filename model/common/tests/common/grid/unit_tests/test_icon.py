@@ -7,13 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
+import math
 import re
 
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
+    base,
     gridfile,
     horizontal as h_grid,
     icon,
@@ -197,38 +199,184 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(grid_file, di
         assert connectivity.skip_value is None
 
 
+def _sphere_area(radius: float) -> float:
+    return 4.0 * math.pi * radius**2.0
+
+
 @pytest.mark.parametrize(
-    "grid_root,grid_level,num_cells,mean_cell_area,expected_num_cells,expected_mean_cell_area",
+    "geometry_type,grid_root,grid_level,num_cells,mean_cell_area,expected_num_cells,expected_mean_cell_area",
     [
-        (2, 4, None, None, 20480, 24907282236.708576),
-        (4, 9, None, None, 83886080, 6080879.45232143),
-        (2, 4, 42, 123.456, 42, 123.456),
-        (4, 9, None, 123.456, 83886080, 123.456),
-        (4, 9, 42, None, 42, 12145265243042.658),
+        (
+            base.GeometryType.ICOSAHEDRON,
+            1,
+            0,
+            None,
+            None,
+            20,
+            _sphere_area(constants.EARTH_RADIUS) / 20,
+        ),
+        (
+            base.GeometryType.ICOSAHEDRON,
+            1,
+            1,
+            None,
+            None,
+            20 * 4,
+            _sphere_area(constants.EARTH_RADIUS) / (20 * 4),
+        ),
+        (
+            base.GeometryType.ICOSAHEDRON,
+            1,
+            2,
+            None,
+            None,
+            20 * 16,
+            _sphere_area(constants.EARTH_RADIUS) / (20 * 16),
+        ),
+        (base.GeometryType.ICOSAHEDRON, 2, 4, None, None, 20480, 24907282236.708576),
+        (base.GeometryType.ICOSAHEDRON, 4, 9, None, None, 83886080, 6080879.45232143),
+        (base.GeometryType.ICOSAHEDRON, 2, 4, 42, 123.456, 42, 123.456),
+        (base.GeometryType.ICOSAHEDRON, 4, 9, None, 123.456, 83886080, 123.456),
+        (base.GeometryType.ICOSAHEDRON, 4, 9, 42, None, 42, 12145265243042.658),
+        (base.GeometryType.TORUS, 2, 0, 42, None, 42, None),
+        (base.GeometryType.TORUS, None, None, 42, None, 42, None),
     ],
 )
 def test_global_grid_params(
-    grid_root, grid_level, num_cells, mean_cell_area, expected_num_cells, expected_mean_cell_area
+    geometry_type,
+    grid_root,
+    grid_level,
+    num_cells,
+    mean_cell_area,
+    expected_num_cells,
+    expected_mean_cell_area,
 ):
-    params = icon.GlobalGridParams(grid_root, grid_level, num_cells, mean_cell_area)
+    params = icon.GlobalGridParams(
+        grid_params=icon.GridParams(
+            geometry_type=geometry_type,
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)
+            if grid_root is not None
+            else None,
+        ),
+        num_cells=num_cells,
+        mean_cell_area=mean_cell_area,
+    )
+    assert geometry_type == params.geometry_type
+    if geometry_type == base.GeometryType.TORUS:
+        assert None == params.grid_params.subdivision
+    else:
+        assert (
+            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_params.subdivision
+        )
     assert expected_num_cells == params.num_cells
-    assert expected_mean_cell_area == params.mean_cell_area
+    if geometry_type == base.GeometryType.TORUS:
+        with pytest.raises(NotImplementedError) as e:
+            assert expected_mean_cell_area == params.mean_cell_area
+            e.match("mean_cell_area is not implemented for GeometryType.TORUS")
+    else:
+        assert expected_mean_cell_area == params.mean_cell_area
 
 
 @pytest.mark.parametrize(
-    "grid_root,grid_level,num_cells,mean_cell_area,expected_num_cells,expected_mean_cell_area",
+    "geometry_type,grid_root,grid_level,num_cells,mean_cell_area",
     [
-        (2, 4, 42, 123.456, 42, 123.456),
-        (4, 9, None, 123.456, 83886080, 123.456),
-        (0, 0, 42, 123.456, 42, 123.456),
-        (None, None, 42, 123.456, 42, 123.456),
+        (base.GeometryType.ICOSAHEDRON, 0, 0, 42, 123.456),
     ],
 )
-def test_global_grid_params_from_mean_cell_area(
-    grid_root, grid_level, num_cells, mean_cell_area, expected_num_cells, expected_mean_cell_area
+def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells, mean_cell_area):
+    with pytest.raises(ValueError) as e:
+        _ = icon.GlobalGridParams(
+            grid_params=icon.GridParams(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            ),
+            num_cells=num_cells,
+            mean_cell_area=mean_cell_area,
+        )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, geometry_type, subdivision, global_num_cells, num_cells, mean_cell_area",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            base.GeometryType.ICOSAHEDRON,
+            icon.GridSubdivision(root=4, level=9),
+            83886080,
+            20896,
+            6080879.45232143,
+        ),
+        (
+            dt_utils.R02B04_GLOBAL,
+            base.GeometryType.ICOSAHEDRON,
+            icon.GridSubdivision(root=2, level=4),
+            20480,
+            20480,
+            24907282236.708576,
+        ),
+        (
+            dt_utils.R02B07_GLOBAL,
+            base.GeometryType.ICOSAHEDRON,
+            icon.GridSubdivision(root=2, level=7),
+            1310720,
+            1310720,
+            389176284.94852674,
+        ),
+        (
+            dt_utils.ICON_CH2_SMALL,
+            base.GeometryType.ICOSAHEDRON,
+            icon.GridSubdivision(root=4, level=7),
+            5242880,
+            10700,
+            87967127.69851978,
+        ),
+        (
+            dt_utils.REGIONAL_BENCHMARK,
+            base.GeometryType.ICOSAHEDRON,
+            icon.GridSubdivision(root=19, level=8),
+            473169920,
+            44528,
+            1078050.650827068,
+        ),
+        (
+            dt_utils.GAUSS3D_EXPERIMENT,
+            base.GeometryType.TORUS,
+            None,
+            None,
+            1056,
+            248515.0952090332,
+        ),
+        (
+            dt_utils.WEISMAN_KLEMP_EXPERIMENT,
+            base.GeometryType.TORUS,
+            None,
+            None,
+            1056,
+            248515.0952090332,
+        ),
+    ],
+)
+def test_global_grid_params_from_grid_manager(
+    grid_file, backend, geometry_type, subdivision, global_num_cells, num_cells, mean_cell_area
 ):
-    params = icon.GlobalGridParams.from_mean_cell_area(
-        mean_cell_area, num_cells=num_cells, root=grid_root, level=grid_level
-    )
-    assert expected_num_cells == params.num_cells
-    assert expected_mean_cell_area == params.mean_cell_area
+    params = utils.run_grid_manager(
+        grid_file, keep_skip_values=False, backend=backend
+    ).grid.global_properties
+    assert params is not None
+    assert params.geometry_type == geometry_type
+    assert params.subdivision == subdivision
+
+    if geometry_type == base.GeometryType.TORUS:
+        with pytest.raises(NotImplementedError) as e:
+            assert params.global_num_cells == global_num_cells
+            e.match("TODO : lookup torus cell number computation")
+    else:
+        assert params.global_num_cells == global_num_cells
+
+    assert params.num_cells == num_cells
+    # Depending on which method is used to calculate the mean cell area, the
+    # result may be slightly different. Allow a bit of tolerance.
+    # TODO: How much to allow? Or just use exact values based on current
+    # implementation and update if implementation changes?
+    assert np.isclose(params.mean_cell_area, mean_cell_area, rtol=5e-2)

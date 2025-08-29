@@ -148,7 +148,7 @@ def export(
     '@py2fgen.export(param_descriptors=...)'. Where 'ParamDescriptors' is a dictionary
     that provides a :class:`ParamDescriptor` for each parameter of the function.
 
-    Additionally, the user can provide a hock to fill 'param_descriptors' from the parameters
+    Additionally, the user can provide a hook to fill 'param_descriptors' from the parameters
     type annotations.
 
     For runtime processing of a scalar parameter or an 'ArrayInfo', the user can provide a hook
