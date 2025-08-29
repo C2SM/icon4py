@@ -6,25 +6,22 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pathlib
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.grid.gridfile
-from ..fixtures import *  # noqa: F403
-
 import icon4py.model.common.dimension as dims
 from icon4py.model.common import exceptions
-from icon4py.model.common.decomposition import definitions as defs, mpi_decomposition
-
+from icon4py.model.common.decomposition import definitions as defs
+from icon4py.model.testing.fixtures import processor_props
+from icon4py.model.testing import parallel_helpers
 from .. import utils
-from ..utils import assert_same_entries
+
 
 try:
     import mpi4py  # import mpi4py to check for optional mpi dependency
     import mpi4py.MPI
+    from icon4py.model.common.decomposition import mpi_decomposition
 
     mpi_decomposition.init_mpi()
 except ImportError:
@@ -35,10 +32,7 @@ from gt4py.next import common as gtx_common
 from icon4py.model.common.decomposition import halo
 from icon4py.model.common.grid import (
     base as base_grid,
-    grid_manager as gm,
-    gridfile,
     simple,
-    vertical as v_grid,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
@@ -47,11 +41,6 @@ UGRID_FILE = (
     test_defs.grids_path()
     .joinpath(dt_utils.R02B04_GLOBAL)
     .joinpath("icon_grid_0013_R02B04_R_ugrid.nc")
-)
-GRID_FILE = (
-    test_defs.grids_path()
-    .joinpath(test_defs.Grids.R02B04_GLOBAL.name)
-    .joinpath("icon_grid_0012_R02B04_G.nc")
 )
 backend = None
 
@@ -63,26 +52,6 @@ def simple_neighbor_tables():
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
     return neighbor_tables
-
-
-def run_gridmananger_for_single_node(file: pathlib.Path, vertical_config:v_grid.VerticalGridConfig) -> gm.GridManager:
-    manager = _grid_manager(file, vertical_config)
-    manager(keep_skip_values=True)
-    return manager
-
-
-def _grid_manager(file:pathlib.Path,vertical_config:v_grid.VerticalGridConfig):
-    manager = gm.GridManager(
-        gridfile.ToZeroBasedIndexTransformation(),
-        str(file),
-        vertical_config,
-    )
-    return manager
-
-
-def run_grid_manager_for_multinode(gm:pathlib.Path, verical_config)->gm.GridManager:
-    manager = _grid_manager(file, vertical_config)
-    manager(keep_skip_values=True, run_properties=)
 
 
 @pytest.mark.mpi(min_size=4)
@@ -136,11 +105,11 @@ def global_indices(dim: gtx.Dimension) -> np.ndarray:
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 @pytest.mark.mpi(min_size=4)
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_element_ownership_is_unique(
     dim, processor_props, simple_neighbor_tables
 ):  # F811 # fixture
-    if processor_props.comm_size != 4:
-        pytest.skip("This test requires exactly 4 MPI ranks.")
+    parallel_helpers.check_comm_size(processor_props, sizes=[4])
 
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
@@ -180,11 +149,14 @@ def test_element_ownership_is_unique(
 
 @pytest.mark.mpi(min_size=4)
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_constructor_decomposition_info_global_indices(
     processor_props, simple_neighbor_tables, dim
 ):  # F811 # fixture
     if processor_props.comm_size != 4:
-        pytest.skip("This test requires exactly 4 MPI ranks.")
+        pytest.skip(
+            f"This test requires exactly 4 MPI ranks, current run has {processor_props.comm_size}"
+        )
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         run_properties=processor_props,
@@ -200,7 +172,7 @@ def test_halo_constructor_decomposition_info_global_indices(
     )
     my_owned = decomp_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"rank {processor_props.rank} owns {dim} : {my_owned} ")
-    assert_same_entries(dim, my_owned, utils.OWNED, processor_props.rank)
+    utils.assert_same_entries(dim, my_owned, utils.OWNED, processor_props.rank)
 
 
 @pytest.mark.mpi(min_size=4)
@@ -236,7 +208,7 @@ def test_halo_constructor_decomposition_info_halo_levels(
     first_halo_line_global_index = decomp_info.global_index(
         dim, defs.DecompositionInfo.EntryType.ALL
     )[first_halo_line_local_index]
-    assert_same_entries(
+    utils.assert_same_entries(
         dim, first_halo_line_global_index, utils.FIRST_HALO_LINE, processor_props.rank
     )
     second_halo_line_local_index = np.where(
@@ -245,40 +217,9 @@ def test_halo_constructor_decomposition_info_halo_levels(
     second_halo_line_global_index = decomp_info.global_index(
         dim, defs.DecompositionInfo.EntryType.ALL
     )[second_halo_line_local_index]
-    assert_same_entries(
+    utils.assert_same_entries(
         dim, second_halo_line_global_index, utils.SECOND_HALO_LINE, processor_props.rank
     )
-
-
-# TODO unused - remove or fix and use?
-def icon_distribution(
-    props: defs.ProcessProperties, decomposition_info: defs.DecompositionInfo
-) -> np.ndarray:
-    cell_index = decomposition_info.global_index(
-        dims.CellDim, defs.DecompositionInfo.EntryType.OWNED
-    )
-    comm = props.comm
-    local_sizes, recv_buffer = gather_field(cell_index, comm)
-    distribution = np.empty((sum(local_sizes)), dtype=int)
-    if comm.rank == 0:
-        start_index = 0
-        for s in comm.size:
-            end_index = local_sizes[s]
-            distribution[recv_buffer[start_index:end_index]] = s
-            start_index = end_index
-
-    comm.Bcast(distribution, root=0)
-    return distribution
-
-
-def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
-    local_sizes = np.array(comm.gather(field.size, root=0))
-    if comm.rank == 0:
-        recv_buffer = np.empty(sum(local_sizes), dtype=field.dtype)
-    else:
-        recv_buffer = None
-    comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
-    return local_sizes, recv_buffer
 
 
 def decompose(grid: base_grid.Grid, processor_props):  # F811 # fixture
@@ -287,79 +228,6 @@ def decompose(grid: base_grid.Grid, processor_props):  # F811 # fixture
         grid.connectivities[dims.C2E2C].asnumpy(), n_part=processor_props.comm_size
     )
     return labels
-
-
-
-@pytest.mark.mpi
-def test_distributed_fields(processor_props):  # F811 # fixture
-    grid_manager = run_gridmananger_for_single_node(GRID_FILE)
-    single_node_grid = grid_manager.grid
-    global_cell_area = grid_manager.geometry[gridfile.GeometryName.CELL_AREA]
-    global_edge_lat = grid_manager.coordinates[dims.EdgeDim]["lat"]
-    global_vertex_lon = grid_manager.coordinates[dims.VertexDim]["lon"]
-
-
-    labels = decompose(single_node_grid, processor_props)
-    neighbor_tables = {k: v.ndarray for k, v in single_node_grid.connectivities.items()}
-    halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=neighbor_tables,
-        run_properties=processor_props,
-        num_levels=1,
-    )
-    decomposition_info = halo_generator(labels)
-    multi_node_grid_manager = gm.GridManager(gridfile.ToZeroBased)
-    # distributed read: read one field per dimension
-
-    ## TODO why is this local??
-    local_cell_area = grid_manager.geometry[gridfile.GeometryName.CELL_AREA]
-    local_edge_lat = grid_manager.coordinates[dims.EdgeDim]["lat"]
-    local_vertex_lon = grid_manager.coordinates[dims.VertexDim]["lon"]
-    print(
-        f"rank = {processor_props.rank} has size(cell_area): {local_cell_area.ndarray.shape}, "
-        f"has size(edge_length): {local_edge_lat.ndarray.shape}, has size(vertex_length): {local_vertex_lon.ndarray.shape}"
-    )
-    # the local number of cells must be at most the global number of cells (analytically computed)
-    assert (
-        local_cell_area.asnumpy().shape[0] <= single_node_grid.global_properties.num_cells
-    ), "local field is larger than global field"
-    # global read: read the same (global fields)
-
-    assert_gathered_field_against_global(
-        decomposition_info, processor_props, dims.CellDim, global_cell_area, local_cell_area
-    )
-
-    assert_gathered_field_against_global(
-        decomposition_info, processor_props, dims.EdgeDim, global_edge_lat, local_edge_lat
-    )
-    assert_gathered_field_against_global(
-        decomposition_info, processor_props, dims.VertexDim, global_vertex_lon, local_vertex_lon
-    )
-
-
-def assert_gathered_field_against_global(
-    decomposition_info: defs.DecompositionInfo,
-    processor_props: defs.ProcessProperties,  # F811 # fixture
-    dim: gtx.Dimension,
-    global_reference_field: np.ndarray,
-    local_field: np.ndarray,
-):
-    assert (
-        local_field.size
-        == decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.ALL).size
-    )
-    owned_entries = local_field[
-        decomposition_info.local_index(dim, defs.DecompositionInfo.EntryType.OWNED)
-    ]
-    gathered_sizes, gathered_field = gather_field(owned_entries, processor_props.comm)
-    global_index_sizes, gathered_global_indices = gather_field(
-        decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED),
-        processor_props.comm,
-    )
-    if processor_props.rank == 0:
-        assert np.all(gathered_sizes == global_index_sizes)
-        sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)
-        sorted_[gathered_global_indices] = gathered_field
-        assert helpers.dallclose(sorted_, global_reference_field)
 
 
 # TODO add test including halo access:

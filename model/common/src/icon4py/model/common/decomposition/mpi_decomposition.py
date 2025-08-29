@@ -111,7 +111,6 @@ def get_multinode_properties(
     return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
-# TODO (@halungge): changed for dev/testing set back to frozen
 @dataclass(frozen=False)
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
@@ -144,6 +143,10 @@ class GHexMultiNodeExchange:
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
             dim: self._create_domain_descriptor(dim)
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        }
+        self._field_size: dict[gtx.Dimension : int] = {
+            dim: self._decomposition_info.global_index[dim].shape[0]
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
@@ -208,15 +211,17 @@ class GHexMultiNodeExchange:
     def _slice_field_based_on_dim(self, field: gtx.Field, dim: gtx.Dimension) -> data_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
+
+        This is a helper function needed for the granule - Fortran integration. As the Fortran fields have nproma
+        size but the global_index fields used to initialize GHEX exchanges have only local num_edge,
+        num_cell_num_vertex size.
         """
-        if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices, :]
-        elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges, :]
-        elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells, :]
-        else:
-            raise ValueError(f"Unknown dimension {dim}")
+        try:
+            assert field.ndarray.ndim == 2
+            trim_length = self._field_size[dim]
+            return field.ndarray[:trim_length, :]
+        except KeyError:
+            log.warn(f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming.")
 
     def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]):
         """

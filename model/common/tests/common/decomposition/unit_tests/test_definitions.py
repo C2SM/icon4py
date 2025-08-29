@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import dataclasses
 
 import numpy as np
 import pytest
@@ -18,7 +17,8 @@ from icon4py.model.common.grid import simple
 
 
 from .. import utils
-from ..fixtures import *  # noqa: F403
+from ..utils import dummy_four_ranks
+from icon4py.model.testing.fixtures import processor_props
 
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
@@ -29,19 +29,6 @@ def test_create_single_node_runtime_without_mpi(processor_props):  # fixture
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     assert isinstance(exchange, definitions.SingleNodeExchange)
-
-
-@dataclasses.dataclass(frozen=True)
-class DummyProps(definitions.ProcessProperties):
-    def __init__(self, rank: int):
-        object.__setattr__(self, "rank", rank % 4)
-        object.__setattr__(self, "comm", None)
-        object.__setattr__(self, "comm_name", "dummy on 4")
-        object.__setattr__(self, "comm_size", 4)
-
-
-def dummy_four_ranks(rank) -> definitions.ProcessProperties:
-    return DummyProps(rank=rank)
 
 
 def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:

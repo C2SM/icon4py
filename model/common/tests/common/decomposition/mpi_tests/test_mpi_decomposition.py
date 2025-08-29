@@ -8,22 +8,31 @@
 
 import numpy as np
 import pytest
-
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import parallel_helpers
-from ..fixtures import *  # noqa: F403
-
-
-try:
-    import mpi4py  # import mpi4py to check for optional mpi dependency
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
-
 import logging
 
 from icon4py.model.common import dimension as dims
 
-from icon4py.model.common.decomposition import definitions, mpi_decomposition
+from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import parallel_helpers
+
+from icon4py.model.testing.fixtures.datatest import (
+    experiment,
+    backend,
+    download_ser_data,
+    ranked_data_path,
+    data_provider,
+    processor_props,
+    decomposition_info,
+)
+
+try:
+    import mpi4py  # import mpi4py to check for optional mpi dependency
+    from icon4py.model.common.decomposition import mpi_decomposition
+
+    mpi_decomposition.init_mpi()
+except ImportError:
+    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 
 _log = logging.getLogger(__name__)
@@ -43,6 +52,7 @@ mpirun -np 2 pytest -v --with-mpi -k mpi_tests/
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props):
     assert processor_props.comm
+    assert processor_props.comm_size > 1
 
 
 @pytest.mark.mpi(min_size=2)
@@ -112,12 +122,12 @@ def test_decomposition_info_local_index(
     decomposition_info,
     processor_props,
 ):
-    parallel_helpers.check_comm_size(processor_props, sizes=[2])
+    caplog.set_level("info")
+    parallel_helpers.check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
     all_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
-
     assert all_indices.shape[0] == my_total
     assert np.array_equal(all_indices, np.arange(0, my_total))
     halo_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.HALO)
@@ -211,7 +221,6 @@ def test_exchange_on_dummy_data(
     processor_props,
     decomposition_info,
     grid_savepoint,
-    metrics_savepoint,
     dimension,
     caplog,
 ):
@@ -234,7 +243,7 @@ def test_exchange_on_dummy_data(
         dimension, definitions.DecompositionInfo.EntryType.OWNED
     )
     assert np.all(input_field == number)
-    exchange.exchange_and_wait(dimension, input_field)
+    exchange.exchange_and_wait(dimension, (input_field,))
     result = input_field.asnumpy()
     _log.info(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
     _log.info(

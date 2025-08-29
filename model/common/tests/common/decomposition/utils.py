@@ -5,12 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import dataclasses
 
 import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
-
+from icon4py.model.common.decomposition import definitions
 
 """
 TESTDATA using the [SimpleGrid](../../../src/icon4py/model/common/grid/simple.py)
@@ -154,3 +155,16 @@ def assert_same_entries(
 ):
     assert my_owned.size == len(reference[dim][rank])
     assert np.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0
+
+
+def dummy_four_ranks(rank) -> definitions.ProcessProperties:
+    return DummyProps(rank=rank)
+
+
+@dataclasses.dataclass(frozen=True)
+class DummyProps(definitions.ProcessProperties):
+    def __init__(self, rank: int):
+        object.__setattr__(self, "rank", rank % 4)
+        object.__setattr__(self, "comm", None)
+        object.__setattr__(self, "comm_name", "dummy on 4")
+        object.__setattr__(self, "comm_size", 4)

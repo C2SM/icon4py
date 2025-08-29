@@ -141,14 +141,22 @@ class DecompositionInfo:
         sorter = np.argsort(global_indices)
 
         mask = np.isin(indices_to_translate, global_indices)
-        # Find the positions of `values_to_find` in the sorted `global_indices`.
-        # The `sorter` argument tells searchsorted to work with the sorted version
-        # of `global_indices` without creating an explicit sorted copy.
-        local_neighbors = np.where(
-            mask,
-            sorter[np.searchsorted(global_indices, indices_to_translate, sorter=sorter)],
-            gridfile.GridFile.INVALID_INDEX,
-        )
+        positions = np.searchsorted(global_indices, indices_to_translate, sorter=sorter)
+        local_neighbors = np.full_like(indices_to_translate, gridfile.GridFile.INVALID_INDEX)
+        local_neighbors[mask] = sorter[positions[mask]]
+        return local_neighbors
+
+    # TODO (halungge): use for test reference? in test_definitions.py
+    def global_to_local_ref(
+        self, dim: gtx.Dimension, indices_to_translate: data_alloc.NDArray
+    ) -> data_alloc.NDArray:
+        global_indices = self.global_index(dim)
+        local_neighbors = np.full_like(indices_to_translate, gridfile.GridFile.INVALID_INDEX)
+        for i in range(indices_to_translate.shape[0]):
+            for j in range(indices_to_translate.shape[1]):
+                if np.isin(indices_to_translate[i, j], global_indices):
+                    pos = np.where(indices_to_translate[i, j] == global_indices)[0]
+                    local_neighbors[i, j] = pos
         return local_neighbors
 
     def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
