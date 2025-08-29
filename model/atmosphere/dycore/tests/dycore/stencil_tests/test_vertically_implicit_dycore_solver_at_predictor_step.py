@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
 from icon4py.model.common import (
     constants,
     dimension as dims,
-    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -310,7 +309,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == model_options.RayleighType.KLEMP:
+        if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (start_cell_index_nudging <= horz_idx)
                 & (horz_idx < end_cell_index_local)
