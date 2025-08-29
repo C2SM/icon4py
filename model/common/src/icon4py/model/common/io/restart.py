@@ -20,7 +20,7 @@ import logging
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-RESTART_FREQUENCY = 50000 # in time steps
+RESTART_FREQUENCY = int(os.environ.get("ICON4PY_RESTART_FREQUENCY", 10000))
 RESTART_DIR = os.path.join(
     os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output"), "restart"
 )
