@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
+import os
 
 import gt4py.next as gtx
 import xarray as xr
@@ -355,11 +356,18 @@ class ImmersedBoundaryMethod:
         #     [75, 175, 78, 178, 100],  # 1x1 100x100x100
         # ]
 
-        # on Channel_950m_x_350m_res5m
-        blocks = [
-            #
-            [150, 200, 150, 199, 50],  # 1x1 50x50x50
-        ]
+        # Channel
+        match savepoint_path.split("/")[-2]:
+            case "exclaim_channel_950x350x100_5m_nlev20":
+                blocks = [ [150, 200, 150, 199, 50] ]
+            case "exclaim_channel_950x350x100_2.5m_nlev40":
+                blocks = [ [150, 200, 149, 200, 50] ]
+            case "exclaim_channel_950x350x100_1.5m_nlev64":
+                blocks = [ [150, 200, 150, 199, 50] ]
+            case "exclaim_channel_950x350x100_1.25m_nlev80":
+                blocks = [ [150, 200, 150, 199, 50] ]
+            case "exclaim_channel_950x350x100_1m_nlev100":
+                blocks = [ [150, 200, 150, 199, 50] ]
 
         grid_file = xr.open_dataset(grid_file_path)
         data_provider = sb.IconSerialDataProvider(
