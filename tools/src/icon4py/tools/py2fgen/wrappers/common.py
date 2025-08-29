@@ -239,7 +239,7 @@ def construct_icon_grid(
         neighbor_tables=neighbor_tables,
         start_indices=start_indices,
         end_indices=end_indices,
-        global_properties=icon.GlobalGridParams.from_mean_cell_area(mean_cell_area),
+        global_properties=icon.GlobalGridParams(mean_cell_area=mean_cell_area),
     )
 
 
