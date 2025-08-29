@@ -20,10 +20,10 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+@pytest.mark.uses_concat_where
 class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_all_face_values
     OUTPUTS = ("p_face",)
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(

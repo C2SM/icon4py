@@ -48,6 +48,7 @@ def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.nd
     return vn_at_surface
 
 
+@pytest.mark.embedded_remap_error
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
     stencil_tests.StencilTest
 ):
@@ -60,7 +61,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         "contravariant_correction_at_edges_on_model_levels",
         "horizontal_advection_of_w_at_edges_on_half_levels",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
